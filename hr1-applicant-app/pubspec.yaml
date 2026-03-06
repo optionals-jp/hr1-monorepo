@@ -1,0 +1,60 @@
+name: hr1_applicant_app
+description: "HR1 - 応募者向けモバイルアプリ"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # 状態管理
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+  hooks_riverpod: ^2.6.1
+  flutter_hooks: ^0.20.5
+
+  # バックエンド
+  supabase_flutter: ^2.8.0
+
+  # ルーティング
+  go_router: ^14.6.2
+
+  # UI
+  cached_network_image: ^3.4.1
+  flutter_svg: ^2.0.10+1
+  shimmer: ^3.0.0
+  fluttertoast: ^8.2.8
+
+  # ネットワーク
+  dio: ^5.7.0
+
+  # データモデル
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # 国際化
+  intl: ^0.19.0
+
+  # フォント
+  google_fonts: ^6.2.1
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # コード生成
+  riverpod_generator: ^2.6.2
+  build_runner: ^2.4.13
+  freezed: ^2.5.7
+  json_serializable: ^6.8.0
+
+  # リント
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

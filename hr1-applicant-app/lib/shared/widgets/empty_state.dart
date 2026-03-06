@@ -1,0 +1,60 @@
+import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_spacing.dart';
+import '../../core/constants/app_text_styles.dart';
+
+/// 共通の空状態ウィジェット（データがない場合に表示）
+class EmptyState extends StatelessWidget {
+  const EmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.description,
+    this.action,
+  });
+
+  /// 表示アイコン
+  final IconData icon;
+
+  /// タイトルテキスト
+  final String title;
+
+  /// 説明テキスト（任意）
+  final String? description;
+
+  /// アクションボタン（任意）
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 64,
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(title, style: AppTextStyles.subtitle),
+            if (description != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                description!,
+                style: AppTextStyles.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+            ],
+            if (action != null) ...[
+              const SizedBox(height: AppSpacing.xl),
+              action!,
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

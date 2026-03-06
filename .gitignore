@@ -1,0 +1,53 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Flutter/Dart
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.pub/
+**/pubspec.lock
+
+# iOS
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/flutter_export_environment.sh
+
+# Android
+**/android/.gradle/
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+**/android/local.properties
+**/android/key.properties
+**/*.jks
+
+# Generated
+**/*.g.dart
+**/*.freezed.dart
+**/*.mocks.dart
+**/doc/api/
+**/coverage/
+
+# Symbolication/Obfuscation
+app.*.symbols
+app.*.map.json
+
+# Misc
+*.log
+*.pyc
+*.swp
+*.class
+.env
+.env.*
