@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../applications/presentation/providers/applications_providers.dart';
 import '../../domain/entities/form_field_item.dart';
 import '../providers/forms_providers.dart';
 
@@ -12,10 +14,12 @@ class FormFillScreen extends ConsumerStatefulWidget {
     super.key,
     required this.formId,
     required this.applicationId,
+    this.stepId,
   });
 
   final String formId;
   final String applicationId;
+  final String? stepId;
 
   @override
   ConsumerState<FormFillScreen> createState() => _FormFillScreenState();
@@ -28,18 +32,17 @@ class _FormFillScreenState extends ConsumerState<FormFillScreen> {
   Widget build(BuildContext context) {
     final asyncForm = ref.watch(formDetailProvider(widget.formId));
 
-    return asyncForm.when(
-      data: (form) {
-        if (form == null) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('フォーム')),
-            body: const Center(child: Text('フォームが見つかりません')),
-          );
-        }
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(asyncForm.valueOrNull?.title ?? 'フォーム'),
+      ),
+      body: asyncForm.when(
+        data: (form) {
+          if (form == null) {
+            return const Center(child: Text('フォームが見つかりません'));
+          }
 
-        return Scaffold(
-          appBar: AppBar(title: Text(form.title)),
-          body: Form(
+          return Form(
             key: _formKey,
             child: ListView(
               padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
@@ -95,32 +98,55 @@ class _FormFillScreenState extends ConsumerState<FormFillScreen> {
                 const SizedBox(height: AppSpacing.xxl),
               ],
             ),
-          ),
-        );
-      },
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, _) => const Scaffold(body: Center(child: Text('エラーが発生しました'))),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => const Center(child: Text('エラーが発生しました')),
+      ),
     );
   }
 
   void _submit() {
     if (_formKey.currentState?.validate() ?? false) {
+      // 画面のcontextとrefを保持
+      final screenContext = context;
+      final screenRef = ref;
+
       showDialog(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (dialogContext) => AlertDialog(
           title: const Text('送信確認'),
           content: const Text('回答を送信しますか？送信後の変更はできません。'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text('キャンセル'),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-                ref.invalidate(formAnswersProvider(widget.formId));
-                ScaffoldMessenger.of(context).showSnackBar(
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+
+                final client = Supabase.instance.client;
+
+                // ステップを完了に更新
+                if (widget.stepId != null) {
+                  await client
+                      .from('application_steps')
+                      .update({
+                        'status': 'completed',
+                        'completed_at': DateTime.now().toIso8601String(),
+                      })
+                      .eq('id', widget.stepId!);
+                }
+
+                screenRef.invalidate(formAnswersProvider(widget.formId));
+                screenRef.invalidate(applicationsProvider);
+                screenRef.invalidate(
+                    applicationDetailProvider(widget.applicationId));
+
+                if (!screenContext.mounted) return;
+                Navigator.pop(screenContext);
+                ScaffoldMessenger.of(screenContext).showSnackBar(
                   const SnackBar(
                     content: Text('回答を送信しました'),
                     backgroundColor: AppColors.success,
@@ -129,7 +155,7 @@ class _FormFillScreenState extends ConsumerState<FormFillScreen> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryLight,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                foregroundColor: Theme.of(dialogContext).colorScheme.onPrimary,
               ),
               child: const Text('送信する'),
             ),

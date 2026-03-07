@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../applications/presentation/providers/applications_providers.dart';
 import '../../domain/entities/interview.dart';
 import '../../domain/entities/interview_slot.dart';
 import '../providers/interviews_providers.dart';
@@ -14,29 +16,28 @@ class InterviewScheduleScreen extends ConsumerWidget {
     super.key,
     required this.interviewId,
     required this.applicationId,
+    this.stepId,
   });
 
   final String interviewId;
   final String applicationId;
+  final String? stepId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncInterview = ref.watch(interviewDetailProvider(interviewId));
 
-    return asyncInterview.when(
-      data: (interview) {
-        if (interview == null) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('面接日程')),
-            body: const Center(child: Text('面接情報が見つかりません')),
-          );
-        }
+    return Scaffold(
+      appBar: AppBar(title: const Text('面接日程の選択')),
+      body: asyncInterview.when(
+        data: (interview) {
+          if (interview == null) {
+            return const Center(child: Text('面接情報が見つかりません'));
+          }
 
-        final selectedSlotId = ref.watch(selectedSlotProvider(interviewId));
+          final selectedSlotId = ref.watch(selectedSlotProvider(interviewId));
 
-        return Scaffold(
-          appBar: AppBar(title: const Text('面接日程の選択')),
-          body: Column(
+          return Column(
             children: [
               Expanded(
                 child: ListView(
@@ -106,15 +107,15 @@ class InterviewScheduleScreen extends ConsumerWidget {
                 ),
               ),
             ],
-          ),
-        );
-      },
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, _) => const Scaffold(body: Center(child: Text('エラーが発生しました'))),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => const Center(child: Text('エラーが発生しました')),
+      ),
     );
   }
 
-  void _confirm(BuildContext context, WidgetRef ref,
+  void _confirm(BuildContext screenContext, WidgetRef ref,
       Interview interview, String slotId) {
     final slot =
         interview.slots.where((s) => s.id == slotId).firstOrNull;
@@ -123,23 +124,54 @@ class InterviewScheduleScreen extends ConsumerWidget {
     final dateFormat = DateFormat('M月d日(E) HH:mm', 'ja');
 
     showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
+      context: screenContext,
+      builder: (dialogContext) => AlertDialog(
         title: const Text('日程確定'),
         content: Text(
           '${dateFormat.format(slot.startAt)} 〜 ${DateFormat('HH:mm').format(slot.endAt)}\n\nこの日程で確定しますか？',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('キャンセル'),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+
+              final client = Supabase.instance.client;
+
+              // Supabase: 面接ステータスを confirmed に更新
+              await client.from('interviews').update({
+                'status': 'confirmed',
+                'confirmed_slot_id': slotId,
+              }).eq('id', interviewId);
+
+              // Supabase: スロットの is_selected を更新
+              await client
+                  .from('interview_slots')
+                  .update({'is_selected': true})
+                  .eq('id', slotId);
+
+              // ステップを完了に更新
+              if (stepId != null) {
+                await client
+                    .from('application_steps')
+                    .update({
+                      'status': 'completed',
+                      'completed_at': DateTime.now().toIso8601String(),
+                    })
+                    .eq('id', stepId!);
+              }
+
               ref.invalidate(selectedSlotProvider(interviewId));
-              ScaffoldMessenger.of(context).showSnackBar(
+              ref.invalidate(interviewDetailProvider(interviewId));
+              ref.invalidate(applicationsProvider);
+              ref.invalidate(applicationDetailProvider(applicationId));
+
+              if (!screenContext.mounted) return;
+              Navigator.pop(screenContext);
+              ScaffoldMessenger.of(screenContext).showSnackBar(
                 const SnackBar(
                   content: Text('面接日程を確定しました'),
                   backgroundColor: AppColors.success,
@@ -148,7 +180,7 @@ class InterviewScheduleScreen extends ConsumerWidget {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryLight,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onPrimary,
             ),
             child: const Text('確定する'),
           ),

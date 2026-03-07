@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app.dart';
 
 /// HR1 アプリケーションのエントリーポイント
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 日本語ロケールデータ初期化
+  await initializeDateFormatting('ja');
 
   // Supabase 初期化
   await Supabase.initialize(

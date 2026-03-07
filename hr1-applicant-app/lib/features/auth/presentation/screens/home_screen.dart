@@ -13,15 +13,20 @@ class HomeScreen extends ConsumerWidget {
   /// StatefulShellRoute のナビゲーションシェル
   final StatefulNavigationShell navigationShell;
 
+  static const _tabTitles = ['', '応募状況', 'メッセージ', 'マイページ'];
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentOrg = ref.watch(currentOrganizationProvider);
+    final isCompanyTab = navigationShell.currentIndex == 0;
 
     return Scaffold(
       appBar: AppBar(
-        // 応募先企業の切り替えウィジェット
-        title: const OrganizationSwitcher(),
-        centerTitle: false,
+        // 企業切り替えはホーム（企業）タブのみ
+        title: isCompanyTab
+            ? const OrganizationSwitcher()
+            : Text(_tabTitles[navigationShell.currentIndex]),
+        centerTitle: !isCompanyTab,
         actions: currentOrg != null
             ? [
                 IconButton(

@@ -11,7 +11,6 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
 
   @override
   List<Application> getApplications(String organizationId) {
-    // 同期APIのため、FutureProviderに移行するまでは未使用
     throw UnimplementedError('Use getApplicationsAsync instead');
   }
 
@@ -34,18 +33,12 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
   Future<List<Application>> getApplicationsAsync(String organizationId) async {
     final response = await _client
         .from('applications')
-        .select('*, jobs(*)')
+        .select('*, jobs(*), application_steps(*)')
         .eq('organization_id', organizationId)
         .order('applied_at', ascending: false);
 
     return (response as List).map((row) {
-      final map = Map<String, dynamic>.from(row);
-      // Supabase の join 結果を Application.fromJson 互換にマッピング
-      if (map['jobs'] != null) {
-        map['job'] = map['jobs'];
-      }
-      map.remove('jobs');
-      return Application.fromJson(map);
+      return _mapApplication(Map<String, dynamic>.from(row));
     }).toList();
   }
 
@@ -53,16 +46,69 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
   Future<Application?> getApplicationAsync(String applicationId) async {
     final response = await _client
         .from('applications')
-        .select('*, jobs(*)')
+        .select('*, jobs(*), application_steps(*)')
         .eq('id', applicationId)
         .maybeSingle();
 
     if (response == null) return null;
-    final map = Map<String, dynamic>.from(response);
+    return _mapApplication(Map<String, dynamic>.from(response));
+  }
+
+  /// 求人に応募（application + application_steps を作成）
+  Future<Application> applyAsync({
+    required String jobId,
+    required String applicantId,
+    required String organizationId,
+  }) async {
+    // 1. application を作成
+    final appId = 'app-${DateTime.now().millisecondsSinceEpoch}';
+    await _client.from('applications').insert({
+      'id': appId,
+      'job_id': jobId,
+      'applicant_id': applicantId,
+      'organization_id': organizationId,
+      'status': 'active',
+    });
+
+    // 2. job_steps を取得してコピー
+    final jobSteps = await _client
+        .from('job_steps')
+        .select()
+        .eq('job_id', jobId)
+        .order('step_order');
+
+    if ((jobSteps as List).isNotEmpty) {
+      final steps = jobSteps.asMap().entries.map((entry) {
+        final s = entry.value;
+        return {
+          'id': '$appId-step-${s['step_order']}',
+          'application_id': appId,
+          'step_type': s['step_type'],
+          'step_order': s['step_order'],
+          'label': s['label'],
+          'status': entry.key == 0 ? 'in_progress' : 'pending',
+          'started_at':
+              entry.key == 0 ? DateTime.now().toIso8601String() : null,
+        };
+      }).toList();
+
+      await _client.from('application_steps').insert(steps);
+    }
+
+    // 3. 作成した application を返す
+    return (await getApplicationAsync(appId))!;
+  }
+
+  Application _mapApplication(Map<String, dynamic> map) {
     if (map['jobs'] != null) {
       map['job'] = map['jobs'];
     }
     map.remove('jobs');
+
+    // application_steps → steps にマッピング
+    map['steps'] = map['application_steps'] ?? [];
+    map.remove('application_steps');
+
     return Application.fromJson(map);
   }
 
@@ -70,21 +116,12 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
   Future<List<Job>> getJobsAsync(String organizationId) async {
     final response = await _client
         .from('jobs')
-        .select('*, job_sections(*)')
+        .select('*, job_sections(*), job_steps(*)')
         .eq('organization_id', organizationId)
         .order('posted_at', ascending: false);
 
     return (response as List).map((row) {
-      final map = Map<String, dynamic>.from(row);
-      final rawSections = (map['job_sections'] as List?) ?? [];
-      map['sections'] = rawSections.map((s) {
-        final sMap = Map<String, dynamic>.from(s);
-        sMap['order'] = sMap['sort_order'];
-        return sMap;
-      }).toList()
-        ..sort((a, b) => (a['order'] as int).compareTo(b['order'] as int));
-      map.remove('job_sections');
-      return Job.fromJson(map);
+      return _mapJob(Map<String, dynamic>.from(row));
     }).toList();
   }
 
@@ -92,12 +129,15 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
   Future<Job?> getJobAsync(String jobId) async {
     final response = await _client
         .from('jobs')
-        .select('*, job_sections(*)')
+        .select('*, job_sections(*), job_steps(*)')
         .eq('id', jobId)
         .maybeSingle();
 
     if (response == null) return null;
-    final map = Map<String, dynamic>.from(response);
+    return _mapJob(Map<String, dynamic>.from(response));
+  }
+
+  Job _mapJob(Map<String, dynamic> map) {
     final rawSections = (map['job_sections'] as List?) ?? [];
     map['sections'] = rawSections.map((s) {
       final sMap = Map<String, dynamic>.from(s);
@@ -106,6 +146,11 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
     }).toList()
       ..sort((a, b) => (a['order'] as int).compareTo(b['order'] as int));
     map.remove('job_sections');
+
+    // job_steps → selection_steps にマッピング
+    map['selection_steps'] = map['job_steps'] ?? [];
+    map.remove('job_steps');
+
     return Job.fromJson(map);
   }
 }

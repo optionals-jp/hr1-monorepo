@@ -45,22 +45,33 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     context.go(AppRoutes.login);
   }
 
-  /// 開発用ユーザーをセット（企業情報はSupabaseから取得）
+  /// 開発用ユーザーをセット（profiles + user_organizations からSupabase取得）
   Future<void> _setDevUser() async {
-    final response = await Supabase.instance.client
-        .from('organizations')
-        .select()
-        .order('created_at');
+    final client = Supabase.instance.client;
 
-    final orgs = (response as List)
-        .map((row) => Organization.fromJson(Map<String, dynamic>.from(row)))
+    // プロフィール取得
+    final profile = await client
+        .from('profiles')
+        .select()
+        .eq('id', 'dev-user-001')
+        .single();
+
+    // user_organizations 経由で所属企業を取得
+    final userOrgs = await client
+        .from('user_organizations')
+        .select('organization_id, organizations(*)')
+        .eq('user_id', profile['id']);
+
+    final orgs = (userOrgs as List)
+        .map((row) => Organization.fromJson(
+            Map<String, dynamic>.from(row['organizations'])))
         .toList();
 
     final user = AppUser(
-      id: 'dev-user-001',
-      email: 'tanaka@example.com',
-      displayName: '田中 太郎',
-      role: UserRole.applicant,
+      id: profile['id'] as String,
+      email: profile['email'] as String,
+      displayName: profile['display_name'] as String?,
+      role: UserRole.values.byName(profile['role'] as String),
       organizations: orgs,
     );
     ref.read(appUserProvider.notifier).setUser(user);

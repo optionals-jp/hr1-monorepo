@@ -43,24 +43,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     context.go(AppRoutes.login);
   }
 
-  /// 開発用ユーザーをセット（企業情報はSupabaseから取得）
+  /// 開発用ユーザーをセット（profiles からSupabase取得）
   Future<void> _setDevUser() async {
-    final response = await Supabase.instance.client
-        .from('organizations')
+    final profile = await Supabase.instance.client
+        .from('profiles')
         .select()
-        .eq('id', 'org-001')
+        .eq('id', 'dev-employee-001')
         .single();
 
-    final org = Map<String, dynamic>.from(response);
-    final user = AppUser(
-      id: 'dev-employee-001',
-      email: 'suzuki@example.com',
-      displayName: '鈴木 花子',
-      organizationId: org['id'] as String,
-      organizationName: org['name'] as String,
-      department: 'エンジニアリング部',
-      position: 'シニアエンジニア',
-    );
+    final user = AppUser.fromJson(Map<String, dynamic>.from(profile));
     ref.read(appUserProvider.notifier).setUser(user);
   }
 

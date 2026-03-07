@@ -1,4 +1,5 @@
 import '../../../../shared/domain/entities/page_section.dart';
+import 'job_step.dart';
 
 /// 求人情報
 class Job {
@@ -14,6 +15,7 @@ class Job {
     this.postedAt,
     this.closingAt,
     this.sections = const [],
+    this.selectionSteps = const [],
   });
 
   final String id;
@@ -29,6 +31,9 @@ class Job {
 
   /// 求人詳細のカスタマイズ可能なセクション
   final List<PageSection> sections;
+
+  /// 選考フローテンプレート（step_order 昇順）
+  final List<JobStep> selectionSteps;
 
   /// 募集中かどうか
   bool get isOpen =>
@@ -55,6 +60,13 @@ class Job {
                   (e) => PageSection.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      selectionSteps: () {
+        final raw = (json['selection_steps'] as List<dynamic>?)
+            ?.map((e) => JobStep.fromJson(e as Map<String, dynamic>))
+            .toList() ?? [];
+        raw.sort((a, b) => a.stepOrder.compareTo(b.stepOrder));
+        return raw;
+      }(),
     );
   }
 }

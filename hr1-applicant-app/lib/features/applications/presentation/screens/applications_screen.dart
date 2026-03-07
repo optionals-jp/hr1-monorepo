@@ -124,7 +124,7 @@ class _ApplicationCard extends StatelessWidget {
                     style: AppTextStyles.subtitle,
                   ),
                 ),
-                _StatusChip(status: application.status),
+                _StatusChip(application: application),
               ],
             ),
             if (application.job?.department != null) ...[
@@ -146,7 +146,7 @@ class _ApplicationCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                if (application.status.requiresAction)
+                if (application.requiresAction)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -174,8 +174,8 @@ class _ApplicationCard extends StatelessWidget {
 }
 
 class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
-  final ApplicationStatus status;
+  const _StatusChip({required this.application});
+  final Application application;
 
   @override
   Widget build(BuildContext context) {
@@ -187,7 +187,7 @@ class _StatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        status.label,
+        application.currentStepLabel,
         style: AppTextStyles.caption.copyWith(
           color: chipColor,
           fontWeight: FontWeight.w600,
@@ -196,15 +196,14 @@ class _StatusChip extends StatelessWidget {
     );
   }
 
-  Color _getColor(BuildContext context) => switch (status) {
-        ApplicationStatus.screening => AppColors.primaryLight,
-        ApplicationStatus.formPending => AppColors.warning,
-        ApplicationStatus.interviewScheduling => AppColors.warning,
-        ApplicationStatus.interviewScheduled => AppColors.primaryLight,
-        ApplicationStatus.interviewCompleted => AppColors.success,
+  Color _getColor(BuildContext context) => switch (application.status) {
         ApplicationStatus.offered => AppColors.success,
         ApplicationStatus.rejected => AppColors.error,
-        ApplicationStatus.withdrawn => Theme.of(context).colorScheme.onSurfaceVariant,
+        ApplicationStatus.withdrawn =>
+          Theme.of(context).colorScheme.onSurfaceVariant,
+        ApplicationStatus.active => application.requiresAction
+            ? AppColors.warning
+            : AppColors.primaryLight,
       };
 }
 

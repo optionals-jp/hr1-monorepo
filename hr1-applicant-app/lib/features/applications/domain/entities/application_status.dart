@@ -1,19 +1,7 @@
-/// 応募ステータス
+/// 応募ステータス（大分類）
 enum ApplicationStatus {
-  /// 書類選考中
-  screening('書類選考中'),
-
-  /// フォーム回答待ち
-  formPending('フォーム回答待ち'),
-
-  /// 面接日程調整中
-  interviewScheduling('面接日程調整中'),
-
-  /// 面接予定
-  interviewScheduled('面接予定'),
-
-  /// 面接完了
-  interviewCompleted('面接完了'),
+  /// 選考中（ステップが進行中）
+  active('選考中'),
 
   /// 内定
   offered('内定'),
@@ -30,9 +18,5 @@ enum ApplicationStatus {
   final String label;
 
   /// 進行中かどうか
-  bool get isActive => this != rejected && this != withdrawn;
-
-  /// アクションが必要かどうか
-  bool get requiresAction =>
-      this == formPending || this == interviewScheduling;
+  bool get isActive => this == active;
 }

@@ -21,28 +21,24 @@ class CompanyHomeScreen extends ConsumerWidget {
     final asyncConfig = ref.watch(companyPageConfigProvider);
 
     if (currentOrg == null) {
-      return const Scaffold(
-        body: Center(child: Text('企業が選択されていません')),
-      );
+      return const Center(child: Text('企業が選択されていません'));
     }
 
     return asyncConfig.when(
       data: (config) {
         if (config == null || config.tabs.isEmpty) {
-          return Scaffold(
-            body: Center(
-              child: Text('ページが設定されていません',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  )),
-            ),
+          return Center(
+            child: Text('ページが設定されていません',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                )),
           );
         }
 
         return _CompanyPageBody(org: currentOrg, config: config);
       },
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, _) => const Scaffold(body: Center(child: Text('エラーが発生しました'))),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => const Center(child: Text('エラーが発生しました')),
     );
   }
 }

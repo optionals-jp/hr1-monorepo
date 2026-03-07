@@ -71,6 +71,32 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
+      /// 応募詳細（シェル外 → 独自AppBar、BottomNav非表示）
+      GoRoute(
+        path: '${AppRoutes.applications}/:applicationId',
+        builder: (context, state) => ApplicationDetailScreen(
+          applicationId: state.pathParameters['applicationId']!,
+        ),
+        routes: [
+          GoRoute(
+            path: 'form/:formId',
+            builder: (context, state) => FormFillScreen(
+              formId: state.pathParameters['formId']!,
+              applicationId: state.pathParameters['applicationId']!,
+              stepId: state.extra as String?,
+            ),
+          ),
+          GoRoute(
+            path: 'interview/:interviewId',
+            builder: (context, state) => InterviewScheduleScreen(
+              interviewId: state.pathParameters['interviewId']!,
+              applicationId: state.pathParameters['applicationId']!,
+              stepId: state.extra as String?,
+            ),
+          ),
+        ],
+      ),
+
       /// メイン画面（ホーム / 応募状況 / メッセージ / マイページ）
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -92,34 +118,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.applications,
                 builder: (context, state) => const ApplicationsScreen(),
-                routes: [
-                  GoRoute(
-                    path: ':applicationId',
-                    builder: (context, state) => ApplicationDetailScreen(
-                      applicationId: state.pathParameters['applicationId']!,
-                    ),
-                    routes: [
-                      GoRoute(
-                        path: 'form/:formId',
-                        builder: (context, state) => FormFillScreen(
-                          formId: state.pathParameters['formId']!,
-                          applicationId:
-                              state.pathParameters['applicationId']!,
-                        ),
-                      ),
-                      GoRoute(
-                        path: 'interview/:interviewId',
-                        builder: (context, state) =>
-                            InterviewScheduleScreen(
-                          interviewId:
-                              state.pathParameters['interviewId']!,
-                          applicationId:
-                              state.pathParameters['applicationId']!,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ),
             ],
           ),

@@ -1,4 +1,5 @@
 import 'application_status.dart';
+import 'application_step.dart';
 import 'job.dart';
 
 /// 応募情報
@@ -11,8 +12,7 @@ class Application {
     required this.status,
     required this.appliedAt,
     this.job,
-    this.pendingFormId,
-    this.interviewId,
+    this.steps = const [],
     this.updatedAt,
   });
 
@@ -24,13 +24,27 @@ class Application {
   final DateTime appliedAt;
   final Job? job;
 
-  /// 回答待ちのフォームID
-  final String? pendingFormId;
-
-  /// 関連する面接ID
-  final String? interviewId;
+  /// 選考ステップ一覧（step_order 昇順）
+  final List<ApplicationStep> steps;
 
   final DateTime? updatedAt;
+
+  /// 現在進行中のステップ
+  ApplicationStep? get currentStep =>
+      steps.where((s) => s.status == StepStatus.inProgress).firstOrNull;
+
+  /// 応募者側のアクションが必要なステップがあるか
+  bool get requiresAction => steps.any((s) => s.requiresAction);
+
+  /// 現在のステップのラベル（一覧画面用）
+  String get currentStepLabel {
+    final current = currentStep;
+    if (current != null) return current.label;
+    if (status == ApplicationStatus.offered) return status.label;
+    if (status == ApplicationStatus.rejected) return status.label;
+    if (status == ApplicationStatus.withdrawn) return status.label;
+    return '選考中';
+  }
 
   factory Application.fromJson(Map<String, dynamic> json) {
     return Application(
@@ -40,14 +54,20 @@ class Application {
       organizationId: json['organization_id'] as String,
       status: ApplicationStatus.values.firstWhere(
         (s) => s.name == json['status'],
-        orElse: () => ApplicationStatus.screening,
+        orElse: () => ApplicationStatus.active,
       ),
       appliedAt: DateTime.parse(json['applied_at'] as String),
       job: json['job'] != null
           ? Job.fromJson(json['job'] as Map<String, dynamic>)
           : null,
-      pendingFormId: json['pending_form_id'] as String?,
-      interviewId: json['interview_id'] as String?,
+      steps: () {
+        final rawSteps = (json['steps'] as List<dynamic>?)
+            ?.map((e) =>
+                ApplicationStep.fromJson(e as Map<String, dynamic>))
+            .toList() ?? [];
+        rawSteps.sort((a, b) => a.stepOrder.compareTo(b.stepOrder));
+        return rawSteps;
+      }(),
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
           : null,
