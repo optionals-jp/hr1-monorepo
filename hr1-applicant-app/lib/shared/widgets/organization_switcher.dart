@@ -148,15 +148,16 @@ class _OrganizationAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return CircleAvatar(
       radius: 16,
-      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
       child: Text(
         organization?.name.isNotEmpty == true
             ? organization!.name.substring(0, 1)
             : '?',
         style: AppTextStyles.label.copyWith(
-          color: AppColors.primary,
+          color: theme.colorScheme.primary,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -178,16 +179,17 @@ class _OrganizationListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return ListTile(
       leading: CircleAvatar(
         radius: 20,
         backgroundColor: isSelected
-            ? AppColors.primary
-            : AppColors.primary.withValues(alpha: 0.1),
+            ? theme.colorScheme.primary
+            : theme.colorScheme.primary.withValues(alpha: 0.1),
         child: Text(
           organization.name.substring(0, 1),
           style: AppTextStyles.subtitle.copyWith(
-            color: isSelected ? AppColors.surface : AppColors.primary,
+            color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
           ),
         ),
       ),
@@ -198,10 +200,12 @@ class _OrganizationListTile extends StatelessWidget {
         ),
       ),
       subtitle: organization.industry != null
-          ? Text(organization.industry!, style: AppTextStyles.caption)
+          ? Text(organization.industry!, style: AppTextStyles.caption.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ))
           : null,
       trailing: isSelected
-          ? const Icon(Icons.check_circle, color: AppColors.primary)
+          ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
           : null,
       onTap: onTap,
     );

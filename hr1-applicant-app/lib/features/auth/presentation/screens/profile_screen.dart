@@ -12,6 +12,7 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(appUserProvider);
+    final theme = Theme.of(context);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
@@ -26,7 +27,7 @@ class ProfileScreen extends ConsumerWidget {
             child: Text(
               user?.displayName?.substring(0, 1) ?? '?',
               style: AppTextStyles.heading2.copyWith(
-                color: AppColors.surface,
+                color: Colors.white,
               ),
             ),
           ),
@@ -42,7 +43,9 @@ class ProfileScreen extends ConsumerWidget {
           // メール
           Text(
             user?.email ?? '',
-            style: AppTextStyles.bodySmall,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
 
@@ -126,7 +129,9 @@ class _ProfileMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDestructive ? AppColors.error : AppColors.textPrimary;
+    final theme = Theme.of(context);
+    final color =
+        isDestructive ? AppColors.error : theme.colorScheme.onSurface;
 
     return ListTile(
       leading: Icon(icon, color: color),
@@ -134,9 +139,9 @@ class _ProfileMenuItem extends StatelessWidget {
         label,
         style: AppTextStyles.body.copyWith(color: color),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.chevron_right,
-        color: AppColors.textSecondary,
+        color: theme.colorScheme.onSurfaceVariant,
       ),
       onTap: onTap,
     );

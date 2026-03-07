@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
@@ -33,9 +34,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     if (!mounted) return;
 
     if (kDevMode) {
-      // 開発モード：モックユーザーをセットして直接ホームへ
-      _setDevMockUser();
-      context.go(AppRoutes.applications);
+      // 開発モード：Supabaseからデータ取得して直接ホームへ
+      await _setDevUser();
+      if (!mounted) return;
+      context.go(AppRoutes.companyHome);
       return;
     }
 
@@ -43,30 +45,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     context.go(AppRoutes.login);
   }
 
-  /// 開発用モックユーザーをセット
-  void _setDevMockUser() {
-    const user = AppUser(
+  /// 開発用ユーザーをセット（企業情報はSupabaseから取得）
+  Future<void> _setDevUser() async {
+    final response = await Supabase.instance.client
+        .from('organizations')
+        .select()
+        .order('created_at');
+
+    final orgs = (response as List)
+        .map((row) => Organization.fromJson(Map<String, dynamic>.from(row)))
+        .toList();
+
+    final user = AppUser(
       id: 'dev-user-001',
       email: 'tanaka@example.com',
       displayName: '田中 太郎',
       role: UserRole.applicant,
-      organizations: [
-        Organization(
-          id: 'org-001',
-          name: '株式会社テックコープ',
-          industry: 'IT・通信',
-        ),
-        Organization(
-          id: 'org-002',
-          name: 'グローバルHR株式会社',
-          industry: '人材サービス',
-        ),
-        Organization(
-          id: 'org-003',
-          name: '未来建設株式会社',
-          industry: '建設・不動産',
-        ),
-      ],
+      organizations: orgs,
     );
     ref.read(appUserProvider.notifier).setUser(user);
   }
@@ -84,7 +79,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Center(
@@ -102,14 +97,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             Text(
               'HR1',
               style: AppTextStyles.heading1.copyWith(
-                color: AppColors.surface,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'AI-Native HR SaaS',
               style: AppTextStyles.body.copyWith(
-                color: AppColors.surface.withValues(alpha: 0.7),
+                color: Colors.white.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 48),
@@ -118,7 +113,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               height: 24,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             ),
           ],

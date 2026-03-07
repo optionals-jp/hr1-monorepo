@@ -15,6 +15,7 @@ class HR1App extends ConsumerWidget {
       title: 'HR1',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
       routerConfig: router,
     );
   }
