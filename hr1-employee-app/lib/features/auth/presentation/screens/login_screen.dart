@@ -66,8 +66,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -89,13 +91,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
                           'HR1',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.surface,
+                            color: theme.colorScheme.surface,
                           ),
                         ),
                       ),
@@ -111,7 +113,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Center(
                     child: Text(
                       'HR1社員アカウントでログインしてください',
-                      style: AppTextStyles.bodySmall,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xxl),
@@ -156,13 +160,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ElevatedButton(
                     onPressed: _isLoading ? null : _signIn,
                     child: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
                               valueColor: AlwaysStoppedAnimation<Color>(
-                                AppColors.surface,
+                                theme.colorScheme.surface,
                               ),
                             ),
                           )

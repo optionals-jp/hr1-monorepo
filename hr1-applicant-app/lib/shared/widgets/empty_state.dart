@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
 
@@ -36,7 +35,7 @@ class EmptyState extends StatelessWidget {
             Icon(
               icon,
               size: 64,
-              color: AppColors.textSecondary.withValues(alpha: 0.5),
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(title, style: AppTextStyles.subtitle),
@@ -44,7 +43,9 @@ class EmptyState extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 description!,
-                style: AppTextStyles.bodySmall,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],

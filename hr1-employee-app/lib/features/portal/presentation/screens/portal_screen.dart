@@ -12,6 +12,7 @@ class PortalScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final user = ref.watch(appUserProvider);
 
     return SingleChildScrollView(
@@ -27,7 +28,9 @@ class PortalScreen extends ConsumerWidget {
           if (user?.department != null)
             Text(
               '${user!.department} / ${user.position ?? ''}',
-              style: AppTextStyles.bodySmall,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           const SizedBox(height: AppSpacing.xl),
 
@@ -163,6 +166,8 @@ class _NoticeItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
@@ -181,7 +186,7 @@ class _NoticeItem extends StatelessWidget {
               child: Text(
                 'NEW',
                 style: AppTextStyles.caption.copyWith(
-                  color: AppColors.surface,
+                  color: theme.colorScheme.surface,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -189,7 +194,12 @@ class _NoticeItem extends StatelessWidget {
           Expanded(
             child: Text(title, style: AppTextStyles.body),
           ),
-          Text(date, style: AppTextStyles.caption),
+          Text(
+            date,
+            style: AppTextStyles.caption.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );

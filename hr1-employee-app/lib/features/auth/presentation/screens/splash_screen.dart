@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
@@ -31,8 +32,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     if (!mounted) return;
 
     if (kDevMode) {
-      // 開発モード：モックユーザーをセットして直接ホームへ
-      _setDevMockUser();
+      // 開発モード：Supabaseから企業情報を取得して直接ホームへ
+      await _setDevUser();
+      if (!mounted) return;
       context.go(AppRoutes.portal);
       return;
     }
@@ -41,22 +43,22 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     context.go(AppRoutes.login);
   }
 
-  /// 開発用モックユーザーをセット
-  void _setDevMockUser() {
-    const user = AppUser(
-      id: 'dev-employee-001',
-      email: 'suzuki@example.com',
-      displayName: '鈴木 花子',
-      organizationId: 'org-001',
-      organizationName: '株式会社テックコープ',
-      department: 'エンジニアリング部',
-      position: 'シニアエンジニア',
-    );
+  /// 開発用ユーザーをセット（profiles からSupabase取得）
+  Future<void> _setDevUser() async {
+    final profile = await Supabase.instance.client
+        .from('profiles')
+        .select()
+        .eq('id', 'dev-employee-001')
+        .single();
+
+    final user = AppUser.fromJson(Map<String, dynamic>.from(profile));
     ref.read(appUserProvider.notifier).setUser(user);
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       backgroundColor: AppColors.primary,
       body: Center(
@@ -68,16 +70,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
                   'HR1',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.primary,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
               ),
@@ -86,23 +88,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             Text(
               'HR1',
               style: AppTextStyles.heading1.copyWith(
-                color: AppColors.surface,
+                color: theme.colorScheme.surface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'AI-Native HR SaaS',
               style: AppTextStyles.body.copyWith(
-                color: AppColors.surface.withValues(alpha: 0.7),
+                color: theme.colorScheme.surface.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 48),
-            const SizedBox(
+            SizedBox(
               width: 24,
               height: 24,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
+                valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.surface),
               ),
             ),
           ],

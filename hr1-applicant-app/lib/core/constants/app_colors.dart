@@ -4,6 +4,10 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
+  // ---------------------------------------------------------------------------
+  // ブランドカラー（ライト/ダーク共通）
+  // ---------------------------------------------------------------------------
+
   /// プライマリカラー（ネイビー）
   static const Color primary = Color(0xFF1B2F4E);
 
@@ -22,6 +26,10 @@ class AppColors {
   /// エラー（レッド）
   static const Color error = Color(0xFFDC2626);
 
+  // ---------------------------------------------------------------------------
+  // ライトモード
+  // ---------------------------------------------------------------------------
+
   /// 背景色（ライトグレー）
   static const Color background = Color(0xFFF8FAFC);
 
@@ -37,7 +45,20 @@ class AppColors {
   /// ボーダー（ライトグレー）
   static const Color border = Color(0xFFCBD5E1);
 
-  /// プライマリカラーのMaterialColor（テーマ用）
+  // ---------------------------------------------------------------------------
+  // ダークモード
+  // ---------------------------------------------------------------------------
+
+  static const Color darkBackground = Color(0xFF0F172A);
+  static const Color darkSurface = Color(0xFF1E293B);
+  static const Color darkTextPrimary = Color(0xFFE2E8F0);
+  static const Color darkTextSecondary = Color(0xFF94A3B8);
+  static const Color darkBorder = Color(0xFF334155);
+
+  // ---------------------------------------------------------------------------
+  // MaterialColor
+  // ---------------------------------------------------------------------------
+
   static const MaterialColor primarySwatch = MaterialColor(
     0xFF1B2F4E,
     <int, Color>{

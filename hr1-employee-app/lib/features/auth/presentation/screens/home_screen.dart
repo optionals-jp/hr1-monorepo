@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../providers/auth_providers.dart';
 
@@ -26,7 +26,8 @@ class HomeScreen extends ConsumerWidget {
         centerTitle: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined),
+            icon: AppIcons.svg(AppIcons.notification,
+                color: Theme.of(context).appBarTheme.foregroundColor),
             onPressed: () {
               // TODO: 通知画面へ遷移
             },
@@ -34,34 +35,43 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) {
-          navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
-          );
-        },
-        backgroundColor: AppColors.surface,
-        indicatorColor: AppColors.primary.withValues(alpha: 0.1),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home, color: AppColors.primary),
-            label: 'ポータル',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline),
-            selectedIcon: Icon(Icons.chat_bubble, color: AppColors.primary),
-            label: 'メッセージ',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person, color: AppColors.primary),
-            label: 'マイページ',
-          ),
-        ],
-      ),
+      bottomNavigationBar: Builder(builder: (context) {
+        final navTheme = Theme.of(context).bottomNavigationBarTheme;
+        final selectedColor = navTheme.selectedItemColor!;
+        final unselectedColor = navTheme.unselectedItemColor!;
+        return BottomNavigationBar(
+          currentIndex: navigationShell.currentIndex,
+          onTap: (index) {
+            navigationShell.goBranch(
+              index,
+              initialLocation: index == navigationShell.currentIndex,
+            );
+          },
+          selectedFontSize: 11,
+          unselectedFontSize: 11,
+          iconSize: 24,
+          items: [
+            BottomNavigationBarItem(
+              icon: AppIcons.svg(AppIcons.home, color: unselectedColor),
+              activeIcon:
+                  AppIcons.svg(AppIcons.homeFill, color: selectedColor),
+              label: 'ポータル',
+            ),
+            BottomNavigationBarItem(
+              icon: AppIcons.svg(AppIcons.note, color: unselectedColor),
+              activeIcon:
+                  AppIcons.svg(AppIcons.noteFill, color: selectedColor),
+              label: 'メッセージ',
+            ),
+            BottomNavigationBarItem(
+              icon: AppIcons.svg(AppIcons.user, color: unselectedColor),
+              activeIcon:
+                  AppIcons.svg(AppIcons.userFill, color: selectedColor),
+              label: 'マイページ',
+            ),
+          ],
+        );
+      }),
     );
   }
 }

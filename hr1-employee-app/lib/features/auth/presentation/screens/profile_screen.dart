@@ -11,6 +11,7 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final user = ref.watch(appUserProvider);
 
     return SingleChildScrollView(
@@ -26,7 +27,7 @@ class ProfileScreen extends ConsumerWidget {
             child: Text(
               user?.displayName?.substring(0, 1) ?? '?',
               style: AppTextStyles.heading2.copyWith(
-                color: AppColors.surface,
+                color: theme.colorScheme.surface,
               ),
             ),
           ),
@@ -42,7 +43,9 @@ class ProfileScreen extends ConsumerWidget {
           // メール
           Text(
             user?.email ?? '',
-            style: AppTextStyles.bodySmall,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
 
@@ -72,14 +75,16 @@ class ProfileScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('所属企業', style: AppTextStyles.label),
+                  Text('所属企業', style: AppTextStyles.label.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  )),
                   const SizedBox(height: AppSpacing.sm),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.business,
                         size: AppSpacing.iconMd,
-                        color: AppColors.textSecondary,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: AppSpacing.md),
                       Expanded(
@@ -93,7 +98,9 @@ class ProfileScreen extends ConsumerWidget {
                             if (user?.department != null)
                               Text(
                                 '${user!.department}${user.position != null ? ' / ${user.position}' : ''}',
-                                style: AppTextStyles.bodySmall,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
                               ),
                           ],
                         ),
@@ -167,7 +174,8 @@ class _ProfileMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDestructive ? AppColors.error : AppColors.textPrimary;
+    final theme = Theme.of(context);
+    final color = isDestructive ? AppColors.error : theme.colorScheme.onSurface;
 
     return ListTile(
       leading: Icon(icon, color: color),
@@ -175,9 +183,9 @@ class _ProfileMenuItem extends StatelessWidget {
         label,
         style: AppTextStyles.body.copyWith(color: color),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.chevron_right,
-        color: AppColors.textSecondary,
+        color: theme.colorScheme.onSurfaceVariant,
       ),
       onTap: onTap,
     );
