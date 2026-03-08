@@ -63,50 +63,48 @@ export default function JobsPage() {
       />
 
       <div className="flex-1 overflow-y-auto bg-white">
-          <Table>
-            <TableHeader>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>タイトル</TableHead>
+              <TableHead>部署</TableHead>
+              <TableHead>勤務地</TableHead>
+              <TableHead>雇用形態</TableHead>
+              <TableHead>ステータス</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
               <TableRow>
-                <TableHead>タイトル</TableHead>
-                <TableHead>部署</TableHead>
-                <TableHead>勤務地</TableHead>
-                <TableHead>雇用形態</TableHead>
-                <TableHead>ステータス</TableHead>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  読み込み中...
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    読み込み中...
+            ) : jobs.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  求人がありません
+                </TableCell>
+              </TableRow>
+            ) : (
+              jobs.map((job) => (
+                <TableRow
+                  key={job.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/jobs/${job.id}`)}
+                >
+                  <TableCell className="font-medium">{job.title}</TableCell>
+                  <TableCell>{job.department ?? "-"}</TableCell>
+                  <TableCell>{job.location ?? "-"}</TableCell>
+                  <TableCell>{job.employment_type ?? "-"}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusColors[job.status]}>{statusLabels[job.status]}</Badge>
                   </TableCell>
                 </TableRow>
-              ) : jobs.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    求人がありません
-                  </TableCell>
-                </TableRow>
-              ) : (
-                jobs.map((job) => (
-                  <TableRow
-                    key={job.id}
-                    className="cursor-pointer"
-                    onClick={() => router.push(`/jobs/${job.id}`)}
-                  >
-                    <TableCell className="font-medium">{job.title}</TableCell>
-                    <TableCell>{job.department ?? "-"}</TableCell>
-                    <TableCell>{job.location ?? "-"}</TableCell>
-                    <TableCell>{job.employment_type ?? "-"}</TableCell>
-                    <TableCell>
-                      <Badge variant={statusColors[job.status]}>
-                        {statusLabels[job.status]}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

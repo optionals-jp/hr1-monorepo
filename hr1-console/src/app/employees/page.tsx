@@ -39,20 +39,21 @@ export default function EmployeesPage() {
   const [newDepartment, setNewDepartment] = useState("");
   const [newPosition, setNewPosition] = useState("");
 
-  const { data: employees = [], isLoading, mutate } = useQuery<Profile[]>(
-    organization ? `employees-${organization.id}` : null,
-    async () => {
-      const { data } = await supabase
-        .from("user_organizations")
-        .select("profiles(*)")
-        .eq("organization_id", organization!.id)
-        .eq("profiles.role", "employee");
+  const {
+    data: employees = [],
+    isLoading,
+    mutate,
+  } = useQuery<Profile[]>(organization ? `employees-${organization.id}` : null, async () => {
+    const { data } = await supabase
+      .from("user_organizations")
+      .select("profiles(*)")
+      .eq("organization_id", organization!.id)
+      .eq("profiles.role", "employee");
 
-      return (data ?? [])
-        .map((row) => (row as unknown as { profiles: Profile }).profiles)
-        .filter(Boolean);
-    }
-  );
+    return (data ?? [])
+      .map((row) => (row as unknown as { profiles: Profile }).profiles)
+      .filter(Boolean);
+  });
 
   const handleAdd = async () => {
     if (!organization || !newEmail) return;
@@ -157,53 +158,53 @@ export default function EmployeesPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto bg-white">
-          <Table>
-            <TableHeader>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>名前</TableHead>
+              <TableHead>メールアドレス</TableHead>
+              <TableHead>部署</TableHead>
+              <TableHead>役職</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
               <TableRow>
-                <TableHead>名前</TableHead>
-                <TableHead>メールアドレス</TableHead>
-                <TableHead>部署</TableHead>
-                <TableHead>役職</TableHead>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  読み込み中...
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    読み込み中...
+            ) : filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  社員がいません
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map((emp) => (
+                <TableRow
+                  key={emp.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/employees/${emp.id}`)}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-green-100 text-green-700 text-xs font-medium">
+                          {(emp.display_name ?? emp.email)[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{emp.display_name ?? "-"}</span>
+                    </div>
                   </TableCell>
+                  <TableCell>{emp.email}</TableCell>
+                  <TableCell>{emp.department ?? "-"}</TableCell>
+                  <TableCell>{emp.position ?? "-"}</TableCell>
                 </TableRow>
-              ) : filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    社員がいません
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filtered.map((emp) => (
-                  <TableRow
-                    key={emp.id}
-                    className="cursor-pointer"
-                    onClick={() => router.push(`/employees/${emp.id}`)}
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-green-100 text-green-700 text-xs font-medium">
-                            {(emp.display_name ?? emp.email)[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{emp.display_name ?? "-"}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{emp.email}</TableCell>
-                    <TableCell>{emp.department ?? "-"}</TableCell>
-                    <TableCell>{emp.position ?? "-"}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

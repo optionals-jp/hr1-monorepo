@@ -47,11 +47,7 @@ export default function JobDetailPage() {
     setLoading(true);
     const [{ data: jobData }, { data: stepsData }] = await Promise.all([
       supabase.from("jobs").select("*").eq("id", id).single(),
-      supabase
-        .from("job_steps")
-        .select("*")
-        .eq("job_id", id)
-        .order("step_order"),
+      supabase.from("job_steps").select("*").eq("job_id", id).order("step_order"),
     ]);
 
     setJob(jobData);
@@ -134,116 +130,109 @@ export default function JobDetailPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* 求人情報 */}
           <Card>
-          <CardHeader>
-            <CardTitle>求人情報</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">部署</span>
-              <span>{job.department ?? "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">勤務地</span>
-              <span>{job.location ?? "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">雇用形態</span>
-              <span>{job.employment_type ?? "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">年収</span>
-              <span>{job.salary_range ?? "-"}</span>
-            </div>
-            {job.description && (
-              <div className="pt-3 border-t">
-                <p className="text-muted-foreground mb-1">説明</p>
-                <p className="whitespace-pre-wrap">{job.description}</p>
+            <CardHeader>
+              <CardTitle>求人情報</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">部署</span>
+                <span>{job.department ?? "-"}</span>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">勤務地</span>
+                <span>{job.location ?? "-"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">雇用形態</span>
+                <span>{job.employment_type ?? "-"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">年収</span>
+                <span>{job.salary_range ?? "-"}</span>
+              </div>
+              {job.description && (
+                <div className="pt-3 border-t">
+                  <p className="text-muted-foreground mb-1">説明</p>
+                  <p className="whitespace-pre-wrap">{job.description}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* 選考ステップ */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>選考ステップ</CardTitle>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger render={<Button variant="outline" size="sm" />}>
-                <Plus className="mr-1 h-4 w-4" />
-                追加
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>選考ステップを追加</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Label>種類</Label>
-                    <Select value={newStepType} onValueChange={(v) => v && setNewStepType(v)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(stepTypeLabels).map(([key, label]) => (
-                          <SelectItem key={key} value={key}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+          {/* 選考ステップ */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>選考ステップ</CardTitle>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger render={<Button variant="outline" size="sm" />}>
+                  <Plus className="mr-1 h-4 w-4" />
+                  追加
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>選考ステップを追加</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                      <Label>種類</Label>
+                      <Select value={newStepType} onValueChange={(v) => v && setNewStepType(v)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(stepTypeLabels).map(([key, label]) => (
+                            <SelectItem key={key} value={key}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>ラベル *</Label>
+                      <Input
+                        value={newStepLabel}
+                        onChange={(e) => setNewStepLabel(e.target.value)}
+                        placeholder="一次面接"
+                      />
+                    </div>
+                    <Button onClick={addStep} className="w-full" disabled={!newStepLabel}>
+                      追加する
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label>ラベル *</Label>
-                    <Input
-                      value={newStepLabel}
-                      onChange={(e) => setNewStepLabel(e.target.value)}
-                      placeholder="一次面接"
-                    />
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {steps.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  選考ステップがありません
+                </p>
+              ) : (
+                steps.map((step, index) => (
+                  <div key={step.id} className="flex items-center gap-3 rounded-lg border p-3">
+                    <span className="text-sm font-bold text-muted-foreground w-6 text-center">
+                      {index + 1}
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{step.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {stepTypeLabels[step.step_type] ?? step.step_type}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeStep(step.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button
-                    onClick={addStep}
-                    className="w-full"
-                    disabled={!newStepLabel}
-                  >
-                    追加する
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {steps.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                選考ステップがありません
-              </p>
-            ) : (
-              steps.map((step, index) => (
-                <div
-                  key={step.id}
-                  className="flex items-center gap-3 rounded-lg border p-3"
-                >
-                  <span className="text-sm font-bold text-muted-foreground w-6 text-center">
-                    {index + 1}
-                  </span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{step.label}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {stepTypeLabels[step.step_type] ?? step.step_type}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeStep(step.id)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+                ))
+              )}
+            </CardContent>
+          </Card>
         </div>
       </PageContent>
     </>

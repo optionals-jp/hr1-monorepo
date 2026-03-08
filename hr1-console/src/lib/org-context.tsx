@@ -25,10 +25,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     async function loadOrgs() {
-      const { data } = await supabase
-        .from("organizations")
-        .select("*")
-        .order("name");
+      const { data } = await supabase.from("organizations").select("*").order("name");
 
       if (data && data.length > 0) {
         setOrganizations(data);

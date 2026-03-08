@@ -22,30 +22,28 @@ export default function DashboardPage() {
     async () => {
       const orgId = organization!.id;
 
-      const [applicantsRes, employeesRes, jobsRes, appsRes] = await Promise.all(
-        [
-          supabase
-            .from("user_organizations")
-            .select("user_id, profiles!inner(role)", { count: "exact" })
-            .eq("organization_id", orgId)
-            .eq("profiles.role", "applicant"),
-          supabase
-            .from("user_organizations")
-            .select("user_id, profiles!inner(role)", { count: "exact" })
-            .eq("organization_id", orgId)
-            .eq("profiles.role", "employee"),
-          supabase
-            .from("jobs")
-            .select("id", { count: "exact" })
-            .eq("organization_id", orgId)
-            .eq("status", "open"),
-          supabase
-            .from("applications")
-            .select("id", { count: "exact" })
-            .eq("organization_id", orgId)
-            .eq("status", "active"),
-        ]
-      );
+      const [applicantsRes, employeesRes, jobsRes, appsRes] = await Promise.all([
+        supabase
+          .from("user_organizations")
+          .select("user_id, profiles!inner(role)", { count: "exact" })
+          .eq("organization_id", orgId)
+          .eq("profiles.role", "applicant"),
+        supabase
+          .from("user_organizations")
+          .select("user_id, profiles!inner(role)", { count: "exact" })
+          .eq("organization_id", orgId)
+          .eq("profiles.role", "employee"),
+        supabase
+          .from("jobs")
+          .select("id", { count: "exact" })
+          .eq("organization_id", orgId)
+          .eq("status", "open"),
+        supabase
+          .from("applications")
+          .select("id", { count: "exact" })
+          .eq("organization_id", orgId)
+          .eq("status", "active"),
+      ]);
 
       return {
         applicants: applicantsRes.count ?? 0,
@@ -96,10 +94,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <PageHeader
-        title="ダッシュボード"
-        description={organization?.name ?? ""}
-      />
+      <PageHeader title="ダッシュボード" description={organization?.name ?? ""} />
       <PageContent>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {cards.map((card) => (

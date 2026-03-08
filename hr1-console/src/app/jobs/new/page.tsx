@@ -66,9 +66,7 @@ export default function NewJobPage() {
   };
 
   const updateStep = (tempId: string, field: keyof StepDraft, value: string) => {
-    setSteps(
-      steps.map((s) => (s.tempId === tempId ? { ...s, [field]: value } : s))
-    );
+    setSteps(steps.map((s) => (s.tempId === tempId ? { ...s, [field]: value } : s)));
   };
 
   const handleSubmit = async () => {
@@ -109,151 +107,144 @@ export default function NewJobPage() {
       <PageHeader title="求人を作成" />
 
       <PageContent>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* 基本情報 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>基本情報</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>タイトル *</Label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="バックエンドエンジニア"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>説明</Label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="求人の説明を入力してください"
-                rows={5}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* 基本情報 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>基本情報</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>部署</Label>
+                <Label>タイトル *</Label>
                 <Input
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  placeholder="エンジニアリング"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="バックエンドエンジニア"
                 />
               </div>
               <div className="space-y-2">
-                <Label>勤務地</Label>
-                <Input
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="東京"
+                <Label>説明</Label>
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="求人の説明を入力してください"
+                  rows={5}
                 />
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>部署</Label>
+                  <Input
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    placeholder="エンジニアリング"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>勤務地</Label>
+                  <Input
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="東京"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>雇用形態</Label>
+                  <Input
+                    value={employmentType}
+                    onChange={(e) => setEmploymentType(e.target.value)}
+                    placeholder="正社員"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>年収レンジ</Label>
+                  <Input
+                    value={salaryRange}
+                    onChange={(e) => setSalaryRange(e.target.value)}
+                    placeholder="500万〜800万"
+                  />
+                </div>
+              </div>
               <div className="space-y-2">
-                <Label>雇用形態</Label>
-                <Input
-                  value={employmentType}
-                  onChange={(e) => setEmploymentType(e.target.value)}
-                  placeholder="正社員"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>年収レンジ</Label>
-                <Input
-                  value={salaryRange}
-                  onChange={(e) => setSalaryRange(e.target.value)}
-                  placeholder="500万〜800万"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>ステータス</Label>
-              <Select value={status} onValueChange={(v) => v && setStatus(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="open">公開中</SelectItem>
-                  <SelectItem value="draft">下書き</SelectItem>
-                  <SelectItem value="closed">終了</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 選考ステップ */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>選考ステップ</CardTitle>
-            <Button variant="outline" size="sm" onClick={addStep}>
-              <Plus className="mr-1 h-4 w-4" />
-              追加
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {steps.map((step, index) => (
-              <div
-                key={step.tempId}
-                className="flex items-center gap-2 rounded-lg border p-3"
-              >
-                <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="text-sm font-medium text-muted-foreground w-6">
-                  {index + 1}
-                </span>
-                <Select
-                  value={step.step_type}
-                  onValueChange={(v) => v && updateStep(step.tempId, "step_type", v)}
-                >
-                  <SelectTrigger className="w-40">
+                <Label>ステータス</Label>
+                <Select value={status} onValueChange={(v) => v && setStatus(v)}>
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(stepTypeLabels).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>
-                        {label}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="open">公開中</SelectItem>
+                    <SelectItem value="draft">下書き</SelectItem>
+                    <SelectItem value="closed">終了</SelectItem>
                   </SelectContent>
                 </Select>
-                <Input
-                  value={step.label}
-                  onChange={(e) =>
-                    updateStep(step.tempId, "label", e.target.value)
-                  }
-                  placeholder="ステップ名"
-                  className="flex-1"
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeStep(step.tempId)}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
               </div>
-            ))}
-            {steps.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                選考ステップを追加してください
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
 
-      <div className="mt-6 flex justify-end gap-3">
-        <Button variant="outline" onClick={() => router.push("/jobs")}>
-          キャンセル
-        </Button>
-        <Button onClick={handleSubmit} disabled={!title || saving}>
-          {saving ? "作成中..." : "求人を作成"}
-        </Button>
-      </div>
+          {/* 選考ステップ */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>選考ステップ</CardTitle>
+              <Button variant="outline" size="sm" onClick={addStep}>
+                <Plus className="mr-1 h-4 w-4" />
+                追加
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {steps.map((step, index) => (
+                <div key={step.tempId} className="flex items-center gap-2 rounded-lg border p-3">
+                  <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}</span>
+                  <Select
+                    value={step.step_type}
+                    onValueChange={(v) => v && updateStep(step.tempId, "step_type", v)}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(stepTypeLabels).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    value={step.label}
+                    onChange={(e) => updateStep(step.tempId, "label", e.target.value)}
+                    placeholder="ステップ名"
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeStep(step.tempId)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {steps.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  選考ステップを追加してください
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <Button variant="outline" onClick={() => router.push("/jobs")}>
+            キャンセル
+          </Button>
+          <Button onClick={handleSubmit} disabled={!title || saving}>
+            {saving ? "作成中..." : "求人を作成"}
+          </Button>
+        </div>
       </PageContent>
     </>
   );

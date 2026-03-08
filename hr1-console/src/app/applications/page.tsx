@@ -55,7 +55,9 @@ export default function ApplicationsPage() {
     async () => {
       const { data } = await supabase
         .from("applications")
-        .select("*, jobs(*), profiles:applicant_id(id, email, display_name, role), application_steps(*)")
+        .select(
+          "*, jobs(*), profiles:applicant_id(id, email, display_name, role), application_steps(*)"
+        )
         .eq("organization_id", organization!.id)
         .order("applied_at", { ascending: false });
       return data ?? [];
@@ -66,11 +68,8 @@ export default function ApplicationsPage() {
     if (statusFilter !== "all" && app.status !== statusFilter) return false;
     if (search) {
       const s = search.toLowerCase();
-      const name =
-        (app.profiles as unknown as { display_name: string | null })
-          ?.display_name ?? "";
-      const email =
-        (app.profiles as unknown as { email: string })?.email ?? "";
+      const name = (app.profiles as unknown as { display_name: string | null })?.display_name ?? "";
+      const email = (app.profiles as unknown as { email: string })?.email ?? "";
       const jobTitle = app.jobs?.title ?? "";
       if (
         !name.toLowerCase().includes(s) &&
@@ -86,27 +85,22 @@ export default function ApplicationsPage() {
     const steps = app.application_steps ?? [];
     const inProgress = steps.find((s) => s.status === "in_progress");
     if (inProgress) return inProgress.label;
-    const allCompleted = steps.every(
-      (s) => s.status === "completed" || s.status === "skipped"
-    );
+    const allCompleted = steps.every((s) => s.status === "completed" || s.status === "skipped");
     if (allCompleted && steps.length > 0) return "全ステップ完了";
     return statusLabels[app.status];
   };
 
   return (
     <>
-      <PageHeader
-        title="応募管理"
-        description="応募の確認・選考ステップの管理"
-        sticky={false}
-      />
+      <PageHeader title="応募管理" description="応募の確認・選考ステップの管理" sticky={false} />
 
       <div className="sticky top-0 z-10 bg-white">
         <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8">
           {statusTabs.map((tab) => {
-            const count = tab.value === "all"
-              ? applications.length
-              : applications.filter((a) => a.status === tab.value).length;
+            const count =
+              tab.value === "all"
+                ? applications.length
+                : applications.filter((a) => a.status === tab.value).length;
             return (
               <button
                 key={tab.value}
@@ -120,9 +114,7 @@ export default function ApplicationsPage() {
                 )}
               >
                 {tab.label}
-                <span className="ml-1.5 text-xs text-muted-foreground">
-                  {count}
-                </span>
+                <span className="ml-1.5 text-xs text-muted-foreground">{count}</span>
                 {statusFilter === tab.value && (
                   <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
                 )}
@@ -131,13 +123,13 @@ export default function ApplicationsPage() {
           })}
         </div>
         <div className="flex items-center h-12 border-b px-4 sm:px-6 md:px-8">
-        <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-        <Input
-          placeholder="応募者名・求人名で検索"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-transparent h-12"
-        />
+          <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+          <Input
+            placeholder="応募者名・求人名で検索"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-transparent h-12"
+          />
         </div>
       </div>
 
@@ -184,7 +176,9 @@ export default function ApplicationsPage() {
                             {(profile?.display_name ?? profile?.email ?? "?")[0]}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="font-medium">{profile?.display_name ?? profile?.email ?? "-"}</span>
+                        <span className="font-medium">
+                          {profile?.display_name ?? profile?.email ?? "-"}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>{app.jobs?.title ?? "-"}</TableCell>
@@ -192,9 +186,7 @@ export default function ApplicationsPage() {
                       <span className="text-sm">{getCurrentStepLabel(app)}</span>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusColors[app.status]}>
-                        {statusLabels[app.status]}
-                      </Badge>
+                      <Badge variant={statusColors[app.status]}>{statusLabels[app.status]}</Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {format(new Date(app.applied_at), "yyyy/MM/dd")}

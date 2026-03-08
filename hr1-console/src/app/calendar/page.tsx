@@ -86,9 +86,7 @@ export default function CalendarPage() {
   }, [currentMonth]);
 
   const { data: events = [] } = useQuery<CalendarEvent[]>(
-    organization
-      ? `calendar-${organization.id}-${currentMonth.toISOString()}`
-      : null,
+    organization ? `calendar-${organization.id}-${currentMonth.toISOString()}` : null,
     async () => {
       // Fetch interview slots within range with applicant + job details
       const { data: slotsData } = await supabase
@@ -124,9 +122,7 @@ export default function CalendarPage() {
           title: (interview?.title as string) ?? "面接",
           startAt,
           endAt,
-          durationMin: Math.round(
-            (endAt.getTime() - startAt.getTime()) / 60000
-          ),
+          durationMin: Math.round((endAt.getTime() - startAt.getTime()) / 60000),
           applicantName: (profile?.display_name as string | null) ?? null,
           applicantEmail: (profile?.email as string | null) ?? null,
           jobTitle: (job?.title as string | null) ?? null,
@@ -154,19 +150,14 @@ export default function CalendarPage() {
     return result;
   }, [rangeStart, rangeEnd]);
 
-  const eventsForDate = (date: Date) =>
-    events.filter((e) => isSameDay(e.startAt, date));
+  const eventsForDate = (date: Date) => events.filter((e) => isSameDay(e.startAt, date));
 
   const today = new Date();
 
   const prevMonth = () =>
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
-    );
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   const nextMonth = () =>
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
-    );
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   const goToday = () => {
     setCurrentMonth(startOfMonth(new Date()));
     setSelectedDate(new Date());
@@ -198,202 +189,179 @@ export default function CalendarPage() {
         </div>
 
         <div className="flex flex-col gap-4 lg:flex-row flex-1 min-h-0">
-        {/* Calendar grid */}
-        <div className="flex-1 min-w-0 flex flex-col border rounded-lg overflow-hidden bg-white">
-          {/* Weekday headers */}
-          <div className="grid grid-cols-7 border-b">
-            {WEEKDAYS.map((d, i) => (
-              <div
-                key={d}
-                className={cn(
-                  "text-center text-xs font-medium py-2 bg-slate-50",
-                  i < 6 && "border-r",
-                  i === 5
-                    ? "text-blue-500"
-                    : i === 6
-                      ? "text-red-500"
-                      : "text-muted-foreground"
-                )}
-              >
-                {d}
-              </div>
-            ))}
-          </div>
-
-          {/* Date cells */}
-          <div className="grid grid-cols-7 flex-1" style={{ gridTemplateRows: `repeat(${weeks.length}, 1fr)` }}>
-            {weeks.flat().map((date) => {
-              const isCurrentMonth =
-                date.getMonth() === currentMonth.getMonth();
-              const isToday = isSameDay(date, today);
-              const isSelected = selectedDate && isSameDay(date, selectedDate);
-              const dayEvents = eventsForDate(date);
-              const dayOfWeek = dayOfWeekMon(date);
-
-              return (
-                <button
-                  key={date.toISOString()}
-                  type="button"
-                  onClick={() => setSelectedDate(date)}
+          {/* Calendar grid */}
+          <div className="flex-1 min-w-0 flex flex-col border rounded-lg overflow-hidden bg-white">
+            {/* Weekday headers */}
+            <div className="grid grid-cols-7 border-b">
+              {WEEKDAYS.map((d, i) => (
+                <div
+                  key={d}
                   className={cn(
-                    "relative p-1 transition-colors overflow-hidden flex flex-col items-center",
-                    dayOfWeek < 6 && "border-r",
-                    "border-b",
-                    "hover:bg-accent/50",
-                    isSelected && "bg-accent",
-                    !isCurrentMonth && "bg-muted/30"
+                    "text-center text-xs font-medium py-2 bg-slate-50",
+                    i < 6 && "border-r",
+                    i === 5 ? "text-blue-500" : i === 6 ? "text-red-500" : "text-muted-foreground"
                   )}
                 >
-                  <span
+                  {d}
+                </div>
+              ))}
+            </div>
+
+            {/* Date cells */}
+            <div
+              className="grid grid-cols-7 flex-1"
+              style={{ gridTemplateRows: `repeat(${weeks.length}, 1fr)` }}
+            >
+              {weeks.flat().map((date) => {
+                const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
+                const isToday = isSameDay(date, today);
+                const isSelected = selectedDate && isSameDay(date, selectedDate);
+                const dayEvents = eventsForDate(date);
+                const dayOfWeek = dayOfWeekMon(date);
+
+                return (
+                  <button
+                    key={date.toISOString()}
+                    type="button"
+                    onClick={() => setSelectedDate(date)}
                     className={cn(
-                      "inline-flex h-6 w-6 items-center justify-center rounded-full text-xs sm:text-sm",
-                      isToday && "bg-primary text-primary-foreground font-bold",
-                      !isCurrentMonth && "text-muted-foreground/50",
-                      dayOfWeek === 5 && isCurrentMonth && !isToday && "text-blue-500",
-                      dayOfWeek === 6 && isCurrentMonth && !isToday && "text-red-500"
+                      "relative p-1 transition-colors overflow-hidden flex flex-col items-center",
+                      dayOfWeek < 6 && "border-r",
+                      "border-b",
+                      "hover:bg-accent/50",
+                      isSelected && "bg-accent",
+                      !isCurrentMonth && "bg-muted/30"
                     )}
                   >
-                    {date.getDate()}
-                  </span>
+                    <span
+                      className={cn(
+                        "inline-flex h-6 w-6 items-center justify-center rounded-full text-xs sm:text-sm",
+                        isToday && "bg-primary text-primary-foreground font-bold",
+                        !isCurrentMonth && "text-muted-foreground/50",
+                        dayOfWeek === 5 && isCurrentMonth && !isToday && "text-blue-500",
+                        dayOfWeek === 6 && isCurrentMonth && !isToday && "text-red-500"
+                      )}
+                    >
+                      {date.getDate()}
+                    </span>
 
-                  {/* Event dots / previews */}
-                  {dayEvents.length > 0 && (
-                    <div className="mt-0.5 space-y-0.5 w-full text-left">
-                      {/* Mobile: dots only */}
-                      <div className="flex gap-0.5 sm:hidden">
-                        {dayEvents.slice(0, 3).map((ev) => (
-                          <span
-                            key={ev.id}
-                            className={cn(
-                              "h-1.5 w-1.5 rounded-full",
-                              ev.status === "booked"
-                                ? "bg-primary"
-                                : "bg-muted-foreground/40"
-                            )}
-                          />
-                        ))}
-                        {dayEvents.length > 3 && (
-                          <span className="text-[9px] text-muted-foreground leading-none">
-                            +{dayEvents.length - 3}
-                          </span>
-                        )}
-                      </div>
-                      {/* Desktop: mini labels */}
-                      <div className="hidden sm:block space-y-0.5">
-                        {dayEvents.slice(0, 2).map((ev) => (
-                          <div
-                            key={ev.id}
-                            className={cn(
-                              "truncate rounded px-1 py-0.5 text-[10px] leading-tight",
-                              ev.status === "booked"
-                                ? "bg-primary/10 text-primary"
-                                : "bg-muted text-muted-foreground"
-                            )}
-                          >
-                            {formatTime(ev.startAt)}{" "}
-                            {ev.applicantName ?? ev.title}
-                          </div>
-                        ))}
-                        {dayEvents.length > 2 && (
-                          <div className="text-[10px] text-muted-foreground px-1">
-                            +{dayEvents.length - 2}件
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Selected date detail panel */}
-        <div className="w-full lg:w-80 shrink-0 lg:overflow-y-auto">
-          <Card className="h-full border rounded-lg bg-white">
-            <CardContent className="p-4">
-              {selectedDate ? (
-                <>
-                  <h3 className="font-medium mb-3">
-                    {selectedDate.getFullYear()}/
-                    {String(selectedDate.getMonth() + 1).padStart(2, "0")}/
-                    {String(selectedDate.getDate()).padStart(2, "0")}
-                    （{WEEKDAYS[dayOfWeekMon(selectedDate)]}）
-                  </h3>
-
-                  {selectedEvents.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      予定はありません
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {selectedEvents
-                        .sort(
-                          (a, b) => a.startAt.getTime() - b.startAt.getTime()
-                        )
-                        .map((ev) => (
-                          <button
-                            key={ev.id}
-                            type="button"
-                            onClick={() =>
-                              ev.applicationId
-                                ? router.push(`/applications/${ev.applicationId}`)
-                                : router.push(`/scheduling/${ev.interviewId}`)
-                            }
-                            className="w-full text-left rounded-lg border p-3 hover:bg-accent transition-colors"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="text-sm font-medium truncate">
-                                {ev.title}
-                              </p>
-                              <Badge
-                                variant={
-                                  ev.status === "booked"
-                                    ? "default"
-                                    : "outline"
-                                }
-                                className="text-[10px] shrink-0"
-                              >
-                                {ev.status === "booked" ? "予約済" : "空き"}
-                              </Badge>
+                    {/* Event dots / previews */}
+                    {dayEvents.length > 0 && (
+                      <div className="mt-0.5 space-y-0.5 w-full text-left">
+                        {/* Mobile: dots only */}
+                        <div className="flex gap-0.5 sm:hidden">
+                          {dayEvents.slice(0, 3).map((ev) => (
+                            <span
+                              key={ev.id}
+                              className={cn(
+                                "h-1.5 w-1.5 rounded-full",
+                                ev.status === "booked" ? "bg-primary" : "bg-muted-foreground/40"
+                              )}
+                            />
+                          ))}
+                          {dayEvents.length > 3 && (
+                            <span className="text-[9px] text-muted-foreground leading-none">
+                              +{dayEvents.length - 3}
+                            </span>
+                          )}
+                        </div>
+                        {/* Desktop: mini labels */}
+                        <div className="hidden sm:block space-y-0.5">
+                          {dayEvents.slice(0, 2).map((ev) => (
+                            <div
+                              key={ev.id}
+                              className={cn(
+                                "truncate rounded px-1 py-0.5 text-[10px] leading-tight",
+                                ev.status === "booked"
+                                  ? "bg-primary/10 text-primary"
+                                  : "bg-muted text-muted-foreground"
+                              )}
+                            >
+                              {formatTime(ev.startAt)} {ev.applicantName ?? ev.title}
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {formatTime(ev.startAt)} 〜{" "}
-                              {formatTime(ev.endAt)}（{ev.durationMin}分）
-                            </p>
-                            {ev.applicantName && (
-                              <p className="text-sm mt-1.5">
-                                {ev.applicantName}
-                              </p>
-                            )}
-                            {ev.applicantEmail && (
-                              <p className="text-xs text-muted-foreground">
-                                {ev.applicantEmail}
-                              </p>
-                            )}
-                            {ev.jobTitle && (
+                          ))}
+                          {dayEvents.length > 2 && (
+                            <div className="text-[10px] text-muted-foreground px-1">
+                              +{dayEvents.length - 2}件
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Selected date detail panel */}
+          <div className="w-full lg:w-80 shrink-0 lg:overflow-y-auto">
+            <Card className="h-full border rounded-lg bg-white">
+              <CardContent className="p-4">
+                {selectedDate ? (
+                  <>
+                    <h3 className="font-medium mb-3">
+                      {selectedDate.getFullYear()}/
+                      {String(selectedDate.getMonth() + 1).padStart(2, "0")}/
+                      {String(selectedDate.getDate()).padStart(2, "0")}（
+                      {WEEKDAYS[dayOfWeekMon(selectedDate)]}）
+                    </h3>
+
+                    {selectedEvents.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">予定はありません</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {selectedEvents
+                          .sort((a, b) => a.startAt.getTime() - b.startAt.getTime())
+                          .map((ev) => (
+                            <button
+                              key={ev.id}
+                              type="button"
+                              onClick={() =>
+                                ev.applicationId
+                                  ? router.push(`/applications/${ev.applicationId}`)
+                                  : router.push(`/scheduling/${ev.interviewId}`)
+                              }
+                              className="w-full text-left rounded-lg border p-3 hover:bg-accent transition-colors"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-medium truncate">{ev.title}</p>
+                                <Badge
+                                  variant={ev.status === "booked" ? "default" : "outline"}
+                                  className="text-[10px] shrink-0"
+                                >
+                                  {ev.status === "booked" ? "予約済" : "空き"}
+                                </Badge>
+                              </div>
                               <p className="text-xs text-muted-foreground mt-1">
-                                求人: {ev.jobTitle}
+                                {formatTime(ev.startAt)} 〜 {formatTime(ev.endAt)}（{ev.durationMin}
+                                分）
                               </p>
-                            )}
-                            {ev.location && (
-                              <p className="text-xs text-muted-foreground">
-                                場所: {ev.location}
-                              </p>
-                            )}
-                          </button>
-                        ))}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  日付を選択してください
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                              {ev.applicantName && (
+                                <p className="text-sm mt-1.5">{ev.applicantName}</p>
+                              )}
+                              {ev.applicantEmail && (
+                                <p className="text-xs text-muted-foreground">{ev.applicantEmail}</p>
+                              )}
+                              {ev.jobTitle && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  求人: {ev.jobTitle}
+                                </p>
+                              )}
+                              {ev.location && (
+                                <p className="text-xs text-muted-foreground">場所: {ev.location}</p>
+                              )}
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">日付を選択してください</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

@@ -41,7 +41,9 @@ export default function SchedulingDetailPage() {
     setLoading(true);
     const { data } = await supabase
       .from("interviews")
-      .select("*, interview_slots(*, applications:application_id(id, profiles:applicant_id(display_name, email)))")
+      .select(
+        "*, interview_slots(*, applications:application_id(id, profiles:applicant_id(display_name, email)))"
+      )
       .eq("id", id)
       .single();
 
@@ -65,9 +67,7 @@ export default function SchedulingDetailPage() {
 
   const updateStatus = async (status: string) => {
     await supabase.from("interviews").update({ status }).eq("id", id);
-    setInterview((prev) =>
-      prev ? { ...prev, status: status as Interview["status"] } : prev
-    );
+    setInterview((prev) => (prev ? { ...prev, status: status as Interview["status"] } : prev));
   };
 
   if (loading) {
@@ -92,10 +92,7 @@ export default function SchedulingDetailPage() {
         title={interview.title}
         description="面接詳細"
         action={
-          <Select
-            value={interview.status}
-            onValueChange={(v) => v && updateStatus(v)}
-          >
+          <Select value={interview.status} onValueChange={(v) => v && updateStatus(v)}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -110,91 +107,90 @@ export default function SchedulingDetailPage() {
       />
 
       <PageContent>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle>面接情報</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">場所</span>
-              <span>{interview.location ?? "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">ステータス</span>
-              <Badge variant={statusColors[interview.status]}>
-                {statusLabels[interview.status]}
-              </Badge>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">枠の予約状況</span>
-              <span>
-                {slots.filter((s) => s.application_id).length} / {slots.length} 予約済み
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">作成日</span>
-              <span>
-                {format(new Date(interview.created_at), "yyyy/MM/dd")}
-              </span>
-            </div>
-            {interview.notes && (
-              <div className="pt-3 border-t">
-                <p className="text-muted-foreground mb-1">備考</p>
-                <p className="whitespace-pre-wrap">{interview.notes}</p>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>面接情報</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">場所</span>
+                <span>{interview.location ?? "-"}</span>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">ステータス</span>
+                <Badge variant={statusColors[interview.status]}>
+                  {statusLabels[interview.status]}
+                </Badge>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">枠の予約状況</span>
+                <span>
+                  {slots.filter((s) => s.application_id).length} / {slots.length} 予約済み
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">作成日</span>
+                <span>{format(new Date(interview.created_at), "yyyy/MM/dd")}</span>
+              </div>
+              {interview.notes && (
+                <div className="pt-3 border-t">
+                  <p className="text-muted-foreground mb-1">備考</p>
+                  <p className="whitespace-pre-wrap">{interview.notes}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>候補日時</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {slots.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                候補日時がありません
-              </p>
-            ) : (
-              slots.map((slot) => (
-                <div
-                  key={slot.id}
-                  className={`flex items-center gap-3 rounded-lg border p-4 ${
-                    slot.is_selected ? "border-primary bg-primary/5" : ""
-                  }`}
-                >
-                  <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">
-                      {format(new Date(slot.start_at), "yyyy/MM/dd HH:mm")}
-                      {" 〜 "}
-                      {format(new Date(slot.end_at), "HH:mm")}
-                    </p>
-                    {slot.application_id ? (
-                      <p className="text-xs text-primary font-medium">
-                        予約済み：{(() => {
-                          const app = slot.applications as unknown as {
-                            profiles?: { display_name: string | null; email: string };
-                          } | null;
-                          return app?.profiles?.display_name ?? app?.profiles?.email ?? "不明";
-                        })()}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>候補日時</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {slots.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  候補日時がありません
+                </p>
+              ) : (
+                slots.map((slot) => (
+                  <div
+                    key={slot.id}
+                    className={`flex items-center gap-3 rounded-lg border p-4 ${
+                      slot.is_selected ? "border-primary bg-primary/5" : ""
+                    }`}
+                  >
+                    <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">
+                        {format(new Date(slot.start_at), "yyyy/MM/dd HH:mm")}
+                        {" 〜 "}
+                        {format(new Date(slot.end_at), "HH:mm")}
                       </p>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">空き</p>
+                      {slot.application_id ? (
+                        <p className="text-xs text-primary font-medium">
+                          予約済み：
+                          {(() => {
+                            const app = slot.applications as unknown as {
+                              profiles?: { display_name: string | null; email: string };
+                            } | null;
+                            return app?.profiles?.display_name ?? app?.profiles?.email ?? "不明";
+                          })()}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">空き</p>
+                      )}
+                    </div>
+                    {!slot.application_id && interview.status !== "completed" && (
+                      <Badge variant="outline" className="text-xs shrink-0">
+                        空き枠
+                      </Badge>
                     )}
                   </div>
-                  {!slot.application_id && interview.status !== "completed" && (
-                    <Badge variant="outline" className="text-xs shrink-0">
-                      空き枠
-                    </Badge>
-                  )}
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </PageContent>
     </>
   );

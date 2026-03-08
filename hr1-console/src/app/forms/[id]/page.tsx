@@ -46,19 +46,18 @@ export default function FormDetailPage() {
     async function load() {
       setLoading(true);
 
-      const [{ data: formData }, { data: fieldsData }, { data: responsesData }] =
-        await Promise.all([
+      const [{ data: formData }, { data: fieldsData }, { data: responsesData }] = await Promise.all(
+        [
           supabase.from("custom_forms").select("*").eq("id", id).single(),
-          supabase
-            .from("form_fields")
-            .select("*")
-            .eq("form_id", id)
-            .order("sort_order"),
+          supabase.from("form_fields").select("*").eq("form_id", id).order("sort_order"),
           supabase
             .from("form_responses")
-            .select("*, applications:application_id(applicant_id, profiles:applicant_id(display_name, email))")
+            .select(
+              "*, applications:application_id(applicant_id, profiles:applicant_id(display_name, email))"
+            )
             .eq("form_id", id),
-        ]);
+        ]
+      );
 
       setForm(formData);
       setFields(fieldsData ?? []);
@@ -74,8 +73,7 @@ export default function FormDetailPage() {
           };
           grouped[appId] = {
             application_id: appId,
-            applicant_name:
-              app?.profiles?.display_name ?? app?.profiles?.email ?? "-",
+            applicant_name: app?.profiles?.display_name ?? app?.profiles?.email ?? "-",
             answers: {},
             created_at: resp.created_at,
           };
@@ -107,106 +105,95 @@ export default function FormDetailPage() {
 
   return (
     <>
-      <PageHeader
-        title={form.title}
-        description={form.description ?? undefined}
-      />
+      <PageHeader title={form.title} description={form.description ?? undefined} />
 
       <PageContent>
-      <Tabs defaultValue="fields">
-        <TabsList>
-          <TabsTrigger value="fields">
-            フィールド ({fields.length})
-          </TabsTrigger>
-          <TabsTrigger value="responses">
-            回答 ({responses.length})
-          </TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="fields">
+          <TabsList>
+            <TabsTrigger value="fields">フィールド ({fields.length})</TabsTrigger>
+            <TabsTrigger value="responses">回答 ({responses.length})</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="fields" className="mt-4">
-          <div className="space-y-3">
-            {fields.map((field, index) => (
-              <Card key={field.id}>
-                <CardContent className="flex items-start gap-4 pt-4">
-                  <span className="text-sm font-bold text-muted-foreground w-6 pt-0.5">
-                    {index + 1}
-                  </span>
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{field.label}</p>
-                      {field.is_required && (
-                        <Badge variant="destructive" className="text-xs">
-                          必須
-                        </Badge>
+          <TabsContent value="fields" className="mt-4">
+            <div className="space-y-3">
+              {fields.map((field, index) => (
+                <Card key={field.id}>
+                  <CardContent className="flex items-start gap-4 pt-4">
+                    <span className="text-sm font-bold text-muted-foreground w-6 pt-0.5">
+                      {index + 1}
+                    </span>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{field.label}</p>
+                        {field.is_required && (
+                          <Badge variant="destructive" className="text-xs">
+                            必須
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {fieldTypeLabels[field.type] ?? field.type}
+                      </p>
+                      {field.description && (
+                        <p className="text-sm text-muted-foreground">{field.description}</p>
+                      )}
+                      {field.options && field.options.length > 0 && (
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {field.options.map((opt, i) => (
+                            <Badge key={i} variant="outline">
+                              {opt}
+                            </Badge>
+                          ))}
+                        </div>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {fieldTypeLabels[field.type] ?? field.type}
-                    </p>
-                    {field.description && (
-                      <p className="text-sm text-muted-foreground">
-                        {field.description}
-                      </p>
-                    )}
-                    {field.options && field.options.length > 0 && (
-                      <div className="flex flex-wrap gap-1 pt-1">
-                        {field.options.map((opt, i) => (
-                          <Badge key={i} variant="outline">
-                            {opt}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="responses" className="mt-4">
+            {responses.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8 text-muted-foreground">
+                  まだ回答がありません
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="responses" className="mt-4">
-          {responses.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-8 text-muted-foreground">
-                まだ回答がありません
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="overflow-x-auto bg-white rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="sticky left-0 bg-background">
-                      応募者
-                    </TableHead>
-                    {fields.map((field) => (
-                      <TableHead key={field.id}>{field.label}</TableHead>
-                    ))}
-                    <TableHead>回答日</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {responses.map((row) => (
-                    <TableRow key={row.application_id}>
-                      <TableCell className="font-medium sticky left-0 bg-background">
-                        {row.applicant_name}
-                      </TableCell>
+            ) : (
+              <div className="overflow-x-auto bg-white rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="sticky left-0 bg-background">応募者</TableHead>
                       {fields.map((field) => (
-                        <TableCell key={field.id} className="max-w-xs truncate">
-                          {row.answers[field.id] ?? "-"}
-                        </TableCell>
+                        <TableHead key={field.id}>{field.label}</TableHead>
                       ))}
-                      <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(row.created_at), "yyyy/MM/dd")}
-                      </TableCell>
+                      <TableHead>回答日</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+                  </TableHeader>
+                  <TableBody>
+                    {responses.map((row) => (
+                      <TableRow key={row.application_id}>
+                        <TableCell className="font-medium sticky left-0 bg-background">
+                          {row.applicant_name}
+                        </TableCell>
+                        {fields.map((field) => (
+                          <TableCell key={field.id} className="max-w-xs truncate">
+                            {row.answers[field.id] ?? "-"}
+                          </TableCell>
+                        ))}
+                        <TableCell className="text-sm text-muted-foreground">
+                          {format(new Date(row.created_at), "yyyy/MM/dd")}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </PageContent>
     </>
   );

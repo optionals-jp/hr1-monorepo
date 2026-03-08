@@ -37,20 +37,21 @@ export default function ApplicantsPage() {
   const [newEmail, setNewEmail] = useState("");
   const [newName, setNewName] = useState("");
 
-  const { data: applicants = [], isLoading, mutate } = useQuery<Profile[]>(
-    organization ? `applicants-${organization.id}` : null,
-    async () => {
-      const { data } = await supabase
-        .from("user_organizations")
-        .select("profiles(*)")
-        .eq("organization_id", organization!.id)
-        .eq("profiles.role", "applicant");
+  const {
+    data: applicants = [],
+    isLoading,
+    mutate,
+  } = useQuery<Profile[]>(organization ? `applicants-${organization.id}` : null, async () => {
+    const { data } = await supabase
+      .from("user_organizations")
+      .select("profiles(*)")
+      .eq("organization_id", organization!.id)
+      .eq("profiles.role", "applicant");
 
-      return (data ?? [])
-        .map((row) => (row as unknown as { profiles: Profile }).profiles)
-        .filter(Boolean);
-    }
-  );
+    return (data ?? [])
+      .map((row) => (row as unknown as { profiles: Profile }).profiles)
+      .filter(Boolean);
+  });
 
   const handleAdd = async () => {
     if (!organization || !newEmail) return;
@@ -134,53 +135,53 @@ export default function ApplicantsPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto bg-white">
-          <Table>
-            <TableHeader>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>名前</TableHead>
+              <TableHead>メールアドレス</TableHead>
+              <TableHead>ロール</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
               <TableRow>
-                <TableHead>名前</TableHead>
-                <TableHead>メールアドレス</TableHead>
-                <TableHead>ロール</TableHead>
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  読み込み中...
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    読み込み中...
+            ) : filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  応募者がいません
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map((applicant) => (
+                <TableRow
+                  key={applicant.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/applicants/${applicant.id}`)}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-medium">
+                          {(applicant.display_name ?? applicant.email)[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{applicant.display_name ?? "-"}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>{applicant.email}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">応募者</Badge>
                   </TableCell>
                 </TableRow>
-              ) : filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    応募者がいません
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filtered.map((applicant) => (
-                  <TableRow
-                    key={applicant.id}
-                    className="cursor-pointer"
-                    onClick={() => router.push(`/applicants/${applicant.id}`)}
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-medium">
-                            {(applicant.display_name ?? applicant.email)[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{applicant.display_name ?? "-"}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{applicant.email}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">応募者</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

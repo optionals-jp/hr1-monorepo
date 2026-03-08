@@ -51,46 +51,46 @@ export default function FormsPage() {
       />
 
       <div className="flex-1 overflow-y-auto bg-white">
-          <Table>
-            <TableHeader>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>タイトル</TableHead>
+              <TableHead>説明</TableHead>
+              <TableHead>作成日</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
               <TableRow>
-                <TableHead>タイトル</TableHead>
-                <TableHead>説明</TableHead>
-                <TableHead>作成日</TableHead>
+                <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                  読み込み中...
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                    読み込み中...
+            ) : forms.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                  フォームがありません
+                </TableCell>
+              </TableRow>
+            ) : (
+              forms.map((form) => (
+                <TableRow
+                  key={form.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/forms/${form.id}`)}
+                >
+                  <TableCell className="font-medium">{form.title}</TableCell>
+                  <TableCell className="text-muted-foreground max-w-xs truncate">
+                    {form.description ?? "-"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {format(new Date(form.created_at), "yyyy/MM/dd")}
                   </TableCell>
                 </TableRow>
-              ) : forms.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                    フォームがありません
-                  </TableCell>
-                </TableRow>
-              ) : (
-                forms.map((form) => (
-                  <TableRow
-                    key={form.id}
-                    className="cursor-pointer"
-                    onClick={() => router.push(`/forms/${form.id}`)}
-                  >
-                    <TableCell className="font-medium">{form.title}</TableCell>
-                    <TableCell className="text-muted-foreground max-w-xs truncate">
-                      {form.description ?? "-"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {format(new Date(form.created_at), "yyyy/MM/dd")}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

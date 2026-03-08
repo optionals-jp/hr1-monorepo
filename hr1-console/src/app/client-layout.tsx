@@ -14,9 +14,7 @@ export function ClientLayout({ children }: { children: ReactNode }) {
           <Header />
           <div className="flex flex-1 overflow-hidden">
             <Sidebar />
-            <main className="flex-1 overflow-y-auto bg-slate-50">
-              {children}
-            </main>
+            <main className="flex-1 overflow-y-auto bg-slate-50">{children}</main>
           </div>
         </div>
       </OrgProvider>

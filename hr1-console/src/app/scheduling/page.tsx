@@ -51,13 +51,13 @@ export default function SchedulingPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newLocation, setNewLocation] = useState("");
   const [newNotes, setNewNotes] = useState("");
-  const [slots, setSlots] = useState<
-    { startAt: string; endAt: string }[]
-  >([]);
+  const [slots, setSlots] = useState<{ startAt: string; endAt: string }[]>([]);
 
-  const { data: interviews = [], isLoading, mutate } = useQuery<
-    (Interview & { interview_slots: InterviewSlot[] })[]
-  >(
+  const {
+    data: interviews = [],
+    isLoading,
+    mutate,
+  } = useQuery<(Interview & { interview_slots: InterviewSlot[] })[]>(
     organization ? `interviews-${organization.id}` : null,
     async () => {
       const { data } = await supabase
@@ -74,11 +74,7 @@ export default function SchedulingPage() {
     setSlots([...slots, { startAt: "", endAt: "" }]);
   };
 
-  const updateSlot = (
-    index: number,
-    field: "startAt" | "endAt",
-    value: string
-  ) => {
+  const updateSlot = (index: number, field: "startAt" | "endAt", value: string) => {
     const updated = [...slots];
     updated[index][field] = value;
     setSlots(updated);
@@ -180,36 +176,24 @@ export default function SchedulingPage() {
                       <Input
                         type="datetime-local"
                         value={slot.startAt}
-                        onChange={(e) =>
-                          updateSlot(index, "startAt", e.target.value)
-                        }
+                        onChange={(e) => updateSlot(index, "startAt", e.target.value)}
                         className="flex-1"
                       />
                       <span className="text-muted-foreground">〜</span>
                       <Input
                         type="datetime-local"
                         value={slot.endAt}
-                        onChange={(e) =>
-                          updateSlot(index, "endAt", e.target.value)
-                        }
+                        onChange={(e) => updateSlot(index, "endAt", e.target.value)}
                         className="flex-1"
                       />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeSlot(index)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => removeSlot(index)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   ))}
                 </div>
 
-                <Button
-                  onClick={handleCreate}
-                  className="w-full"
-                  disabled={!newTitle}
-                >
+                <Button onClick={handleCreate} className="w-full" disabled={!newTitle}>
                   作成する
                 </Button>
               </div>
@@ -219,7 +203,7 @@ export default function SchedulingPage() {
       />
 
       <div className="flex-1 overflow-y-auto bg-white">
-          <Table>
+        <Table>
           <TableHeader>
             <TableRow>
               <TableHead>タイトル</TableHead>
@@ -244,18 +228,15 @@ export default function SchedulingPage() {
             ) : (
               interviews.map((interview) => {
                 const totalSlots = interview.interview_slots?.length ?? 0;
-                const bookedSlots = interview.interview_slots?.filter(
-                  (s) => s.application_id
-                ).length ?? 0;
+                const bookedSlots =
+                  interview.interview_slots?.filter((s) => s.application_id).length ?? 0;
                 return (
                   <TableRow
                     key={interview.id}
                     className="cursor-pointer"
                     onClick={() => router.push(`/scheduling/${interview.id}`)}
                   >
-                    <TableCell className="font-medium">
-                      {interview.title}
-                    </TableCell>
+                    <TableCell className="font-medium">{interview.title}</TableCell>
                     <TableCell>{interview.location ?? "-"}</TableCell>
                     <TableCell>
                       {bookedSlots} / {totalSlots} 枠
