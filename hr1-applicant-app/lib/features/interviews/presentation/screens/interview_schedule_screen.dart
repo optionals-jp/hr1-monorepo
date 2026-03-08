@@ -59,8 +59,10 @@ class InterviewScheduleScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: AppSpacing.lg),
 
-                    // スロット一覧
-                    ...interview.slots.map((slot) => Padding(
+                    // スロット一覧（未予約のスロットのみ表示）
+                    ...interview.slots
+                        .where((slot) => !slot.isBooked)
+                        .map((slot) => Padding(
                           padding:
                               const EdgeInsets.only(bottom: AppSpacing.md),
                           child: _SlotCard(
@@ -141,16 +143,13 @@ class InterviewScheduleScreen extends ConsumerWidget {
 
               final client = Supabase.instance.client;
 
-              // Supabase: 面接ステータスを confirmed に更新
-              await client.from('interviews').update({
-                'status': 'confirmed',
-                'confirmed_slot_id': slotId,
-              }).eq('id', interviewId);
-
-              // Supabase: スロットの is_selected を更新
+              // Supabase: スロットを予約（application_id をセットして二重予約を防止）
               await client
                   .from('interview_slots')
-                  .update({'is_selected': true})
+                  .update({
+                    'is_selected': true,
+                    'application_id': applicationId,
+                  })
                   .eq('id', slotId);
 
               // ステップを完了に更新

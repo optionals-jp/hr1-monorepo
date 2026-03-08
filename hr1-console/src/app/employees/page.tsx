@@ -89,7 +89,7 @@ export default function EmployeesPage() {
   );
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       <PageHeader
         title="社員一覧"
         description="社員の管理・招待"
@@ -146,67 +146,65 @@ export default function EmployeesPage() {
         }
       />
 
-      <div className="mb-4">
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="名前・メール・部署で検索"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+      <div className="flex items-center h-12 bg-white border-b px-4 sm:px-6 md:px-8">
+        <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+        <Input
+          placeholder="名前・メール・部署で検索"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-transparent h-12"
+        />
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>名前</TableHead>
-              <TableHead>メールアドレス</TableHead>
-              <TableHead>部署</TableHead>
-              <TableHead>役職</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
+      <div className="flex-1 overflow-y-auto bg-white">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  読み込み中...
-                </TableCell>
+                <TableHead>名前</TableHead>
+                <TableHead>メールアドレス</TableHead>
+                <TableHead>部署</TableHead>
+                <TableHead>役職</TableHead>
               </TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  社員がいません
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((emp) => (
-                <TableRow
-                  key={emp.id}
-                  className="cursor-pointer"
-                  onClick={() => router.push(`/employees/${emp.id}`)}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-green-100 text-green-700 text-xs font-medium">
-                          {(emp.display_name ?? emp.email)[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">{emp.display_name ?? "-"}</span>
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    読み込み中...
                   </TableCell>
-                  <TableCell>{emp.email}</TableCell>
-                  <TableCell>{emp.department ?? "-"}</TableCell>
-                  <TableCell>{emp.position ?? "-"}</TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    社員がいません
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filtered.map((emp) => (
+                  <TableRow
+                    key={emp.id}
+                    className="cursor-pointer"
+                    onClick={() => router.push(`/employees/${emp.id}`)}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-green-100 text-green-700 text-xs font-medium">
+                            {(emp.display_name ?? emp.email)[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{emp.display_name ?? "-"}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{emp.email}</TableCell>
+                    <TableCell>{emp.department ?? "-"}</TableCell>
+                    <TableCell>{emp.position ?? "-"}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
       </div>
-    </>
+    </div>
   );
 }

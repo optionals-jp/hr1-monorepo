@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/layout/page-header";
+import { useSWRConfig } from "swr";
+import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,13 +21,13 @@ import { supabase } from "@/lib/supabase";
 import { Plus, Trash2, GripVertical } from "lucide-react";
 
 const fieldTypeLabels: Record<string, string> = {
-  short_text: "短文テキスト",
-  long_text: "長文テキスト",
+  shortText: "短文テキスト",
+  longText: "長文テキスト",
   radio: "ラジオボタン",
   checkbox: "チェックボックス",
   dropdown: "ドロップダウン",
   date: "日付",
-  file_upload: "ファイルアップロード",
+  fileUpload: "ファイルアップロード",
 };
 
 interface FieldDraft {
@@ -41,6 +42,7 @@ interface FieldDraft {
 
 export default function NewFormPage() {
   const router = useRouter();
+  const { mutate } = useSWRConfig();
   const { organization } = useOrg();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -52,7 +54,7 @@ export default function NewFormPage() {
       ...fields,
       {
         tempId: `${Date.now()}`,
-        field_type: "short_text",
+        field_type: "shortText",
         label: "",
         description: "",
         placeholder: "",
@@ -90,7 +92,7 @@ export default function NewFormPage() {
         fields.map((field, index) => ({
           id: `field-${formId}-${index + 1}`,
           form_id: formId,
-          field_type: field.field_type,
+          type: field.field_type,
           label: field.label,
           description: field.description || null,
           placeholder: field.placeholder || null,
@@ -99,11 +101,12 @@ export default function NewFormPage() {
             field.options && ["radio", "checkbox", "dropdown"].includes(field.field_type)
               ? field.options.split("\n").filter(Boolean)
               : null,
-          field_order: index + 1,
+          sort_order: index + 1,
         }))
       );
     }
 
+    await mutate(`forms-${organization.id}`);
     router.push("/forms");
   };
 
@@ -111,6 +114,7 @@ export default function NewFormPage() {
     <>
       <PageHeader title="フォームを作成" />
 
+      <PageContent>
       <div className="space-y-6 max-w-3xl">
         {/* 基本情報 */}
         <Card>
@@ -249,6 +253,7 @@ export default function NewFormPage() {
           </Button>
         </div>
       </div>
+      </PageContent>
     </>
   );
 }

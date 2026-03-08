@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -108,6 +108,7 @@ export default function NewJobPage() {
     <>
       <PageHeader title="求人を作成" />
 
+      <PageContent>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* 基本情報 */}
         <Card>
@@ -253,6 +254,7 @@ export default function NewJobPage() {
           {saving ? "作成中..." : "求人を作成"}
         </Button>
       </div>
+      </PageContent>
     </>
   );
 }

@@ -12,17 +12,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
 import { supabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import type { Application } from "@/types/database";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -40,6 +35,14 @@ const statusColors: Record<string, "default" | "secondary" | "destructive" | "ou
   rejected: "destructive",
   withdrawn: "outline",
 };
+
+const statusTabs = [
+  { value: "all", label: "すべて" },
+  { value: "active", label: "選考中" },
+  { value: "offered", label: "内定" },
+  { value: "rejected", label: "不採用" },
+  { value: "withdrawn", label: "辞退" },
+];
 
 export default function ApplicationsPage() {
   const router = useRouter();
@@ -92,33 +95,53 @@ export default function ApplicationsPage() {
 
   return (
     <>
-      <PageHeader title="応募管理" description="応募の確認・選考ステップの管理" />
+      <PageHeader
+        title="応募管理"
+        description="応募の確認・選考ステップの管理"
+        sticky={false}
+      />
 
-      <div className="mb-4 flex gap-3">
-        <div className="relative max-w-sm flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="応募者名・求人名で検索"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+      <div className="sticky top-0 z-10 bg-white">
+        <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8">
+          {statusTabs.map((tab) => {
+            const count = tab.value === "all"
+              ? applications.length
+              : applications.filter((a) => a.status === tab.value).length;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => setStatusFilter(tab.value)}
+                className={cn(
+                  "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
+                  statusFilter === tab.value
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {tab.label}
+                <span className="ml-1.5 text-xs text-muted-foreground">
+                  {count}
+                </span>
+                {statusFilter === tab.value && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                )}
+              </button>
+            );
+          })}
         </div>
-        <Select value={statusFilter} onValueChange={(v) => v && setStatusFilter(v)}>
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">すべて</SelectItem>
-            <SelectItem value="active">選考中</SelectItem>
-            <SelectItem value="offered">内定</SelectItem>
-            <SelectItem value="rejected">不採用</SelectItem>
-            <SelectItem value="withdrawn">辞退</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center h-12 border-b px-4 sm:px-6 md:px-8">
+        <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+        <Input
+          placeholder="応募者名・求人名で検索"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-transparent h-12"
+        />
+        </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="bg-white">
         <Table>
           <TableHeader>
             <TableRow>
@@ -154,8 +177,15 @@ export default function ApplicationsPage() {
                     className="cursor-pointer"
                     onClick={() => router.push(`/applications/${app.id}`)}
                   >
-                    <TableCell className="font-medium">
-                      {profile?.display_name ?? profile?.email ?? "-"}
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-medium">
+                            {(profile?.display_name ?? profile?.email ?? "?")[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{profile?.display_name ?? profile?.email ?? "-"}</span>
+                      </div>
                     </TableCell>
                     <TableCell>{app.jobs?.title ?? "-"}</TableCell>
                     <TableCell>

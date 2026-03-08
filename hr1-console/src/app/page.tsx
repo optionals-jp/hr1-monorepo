@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { useOrg } from "@/lib/org-context";
 import { supabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
@@ -100,23 +100,25 @@ export default function DashboardPage() {
         title="ダッシュボード"
         description={organization?.name ?? ""}
       />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((card) => (
-          <Card key={card.title} className="border">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {card.title}
-              </CardTitle>
-              <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${card.bg}`}>
-                <card.icon className={`h-4.5 w-4.5 ${card.color}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{card.value}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <PageContent>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {cards.map((card) => (
+            <Card key={card.title} className="border">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {card.title}
+                </CardTitle>
+                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${card.bg}`}>
+                  <card.icon className={`h-4.5 w-4.5 ${card.color}`} />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{card.value}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </PageContent>
     </>
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -86,8 +86,9 @@ export default function ApplicantDetailPage() {
         description="応募者詳細"
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card>
+      <PageContent>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <Card>
           <CardHeader>
             <CardTitle>プロフィール</CardTitle>
           </CardHeader>
@@ -158,7 +159,8 @@ export default function ApplicantDetailPage() {
             )}
           </CardContent>
         </Card>
-      </div>
+        </div>
+      </PageContent>
     </>
   );
 }

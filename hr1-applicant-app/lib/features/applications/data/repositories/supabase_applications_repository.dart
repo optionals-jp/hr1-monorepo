@@ -29,7 +29,7 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
     throw UnimplementedError('Use getJobAsync instead');
   }
 
-  /// 企業IDに紐づく応募一覧を非同期取得
+  @override
   Future<List<Application>> getApplicationsAsync(String organizationId) async {
     final response = await _client
         .from('applications')
@@ -42,7 +42,7 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
     }).toList();
   }
 
-  /// 応募IDから応募情報を非同期取得
+  @override
   Future<Application?> getApplicationAsync(String applicationId) async {
     final response = await _client
         .from('applications')
@@ -54,7 +54,7 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
     return _mapApplication(Map<String, dynamic>.from(response));
   }
 
-  /// 求人に応募（application + application_steps を作成）
+  @override
   Future<Application> applyAsync({
     required String jobId,
     required String applicantId,
@@ -112,7 +112,7 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
     return Application.fromJson(map);
   }
 
-  /// 企業IDに紐づく求人一覧を非同期取得
+  @override
   Future<List<Job>> getJobsAsync(String organizationId) async {
     final response = await _client
         .from('jobs')
@@ -125,7 +125,7 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
     }).toList();
   }
 
-  /// 求人IDから求人情報を非同期取得
+  @override
   Future<Job?> getJobAsync(String jobId) async {
     final response = await _client
         .from('jobs')

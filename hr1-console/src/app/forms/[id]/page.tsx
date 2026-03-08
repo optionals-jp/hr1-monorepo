@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,13 +19,13 @@ import type { CustomForm, FormField, FormResponse } from "@/types/database";
 import { format } from "date-fns";
 
 const fieldTypeLabels: Record<string, string> = {
-  short_text: "短文テキスト",
-  long_text: "長文テキスト",
+  shortText: "短文テキスト",
+  longText: "長文テキスト",
   radio: "ラジオボタン",
   checkbox: "チェックボックス",
   dropdown: "ドロップダウン",
   date: "日付",
-  file_upload: "ファイルアップロード",
+  fileUpload: "ファイルアップロード",
 };
 
 interface ResponseRow {
@@ -53,7 +53,7 @@ export default function FormDetailPage() {
             .from("form_fields")
             .select("*")
             .eq("form_id", id)
-            .order("field_order"),
+            .order("sort_order"),
           supabase
             .from("form_responses")
             .select("*, applications:application_id(applicant_id, profiles:applicant_id(display_name, email))")
@@ -112,6 +112,7 @@ export default function FormDetailPage() {
         description={form.description ?? undefined}
       />
 
+      <PageContent>
       <Tabs defaultValue="fields">
         <TabsList>
           <TabsTrigger value="fields">
@@ -140,7 +141,7 @@ export default function FormDetailPage() {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {fieldTypeLabels[field.field_type] ?? field.field_type}
+                      {fieldTypeLabels[field.type] ?? field.type}
                     </p>
                     {field.description && (
                       <p className="text-sm text-muted-foreground">
@@ -171,7 +172,7 @@ export default function FormDetailPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
+            <div className="overflow-x-auto bg-white rounded-md">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -206,6 +207,7 @@ export default function FormDetailPage() {
           )}
         </TabsContent>
       </Tabs>
+      </PageContent>
     </>
   );
 }

@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
+import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -15,18 +14,18 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/lib/supabase";
 import type { Interview, InterviewSlot } from "@/types/database";
-import { Check, Calendar } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { format } from "date-fns";
 
 const statusLabels: Record<string, string> = {
-  pending: "未確定",
+  scheduling: "未確定",
   confirmed: "確定済み",
   completed: "完了",
   cancelled: "キャンセル",
 };
 
 const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  pending: "outline",
+  scheduling: "outline",
   confirmed: "default",
   completed: "secondary",
   cancelled: "destructive",
@@ -42,7 +41,7 @@ export default function SchedulingDetailPage() {
     setLoading(true);
     const { data } = await supabase
       .from("interviews")
-      .select("*, interview_slots(*)")
+      .select("*, interview_slots(*, applications:application_id(id, profiles:applicant_id(display_name, email)))")
       .eq("id", id)
       .single();
 
@@ -63,23 +62,6 @@ export default function SchedulingDetailPage() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
-
-  const selectSlot = async (slotId: string) => {
-    // Deselect all, then select the chosen one
-    await supabase
-      .from("interview_slots")
-      .update({ is_selected: false })
-      .eq("interview_id", id);
-    await supabase
-      .from("interview_slots")
-      .update({ is_selected: true })
-      .eq("id", slotId);
-    await supabase
-      .from("interviews")
-      .update({ status: "confirmed", confirmed_slot_id: slotId })
-      .eq("id", id);
-    load();
-  };
 
   const updateStatus = async (status: string) => {
     await supabase.from("interviews").update({ status }).eq("id", id);
@@ -118,7 +100,7 @@ export default function SchedulingDetailPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="pending">未確定</SelectItem>
+              <SelectItem value="scheduling">未確定</SelectItem>
               <SelectItem value="confirmed">確定済み</SelectItem>
               <SelectItem value="completed">完了</SelectItem>
               <SelectItem value="cancelled">キャンセル</SelectItem>
@@ -127,6 +109,7 @@ export default function SchedulingDetailPage() {
         }
       />
 
+      <PageContent>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card>
           <CardHeader>
@@ -142,6 +125,12 @@ export default function SchedulingDetailPage() {
               <Badge variant={statusColors[interview.status]}>
                 {statusLabels[interview.status]}
               </Badge>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">枠の予約状況</span>
+              <span>
+                {slots.filter((s) => s.application_id).length} / {slots.length} 予約済み
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">作成日</span>
@@ -182,19 +171,23 @@ export default function SchedulingDetailPage() {
                       {" 〜 "}
                       {format(new Date(slot.end_at), "HH:mm")}
                     </p>
-                    {slot.is_selected && (
-                      <p className="text-xs text-primary font-medium">確定済み</p>
+                    {slot.application_id ? (
+                      <p className="text-xs text-primary font-medium">
+                        予約済み：{(() => {
+                          const app = slot.applications as unknown as {
+                            profiles?: { display_name: string | null; email: string };
+                          } | null;
+                          return app?.profiles?.display_name ?? app?.profiles?.email ?? "不明";
+                        })()}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">空き</p>
                     )}
                   </div>
-                  {!slot.is_selected && interview.status !== "completed" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => selectSlot(slot.id)}
-                    >
-                      <Check className="mr-1 h-3 w-3" />
-                      確定
-                    </Button>
+                  {!slot.application_id && interview.status !== "completed" && (
+                    <Badge variant="outline" className="text-xs shrink-0">
+                      空き枠
+                    </Badge>
                   )}
                 </div>
               ))
@@ -202,6 +195,7 @@ export default function SchedulingDetailPage() {
           </CardContent>
         </Card>
       </div>
+      </PageContent>
     </>
   );
 }

@@ -48,7 +48,7 @@ export default function JobsPage() {
   );
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       <PageHeader
         title="求人管理"
         description="求人の作成・管理"
@@ -62,52 +62,52 @@ export default function JobsPage() {
         }
       />
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>タイトル</TableHead>
-              <TableHead>部署</TableHead>
-              <TableHead>勤務地</TableHead>
-              <TableHead>雇用形態</TableHead>
-              <TableHead>ステータス</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
+      <div className="flex-1 overflow-y-auto bg-white">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  読み込み中...
-                </TableCell>
+                <TableHead>タイトル</TableHead>
+                <TableHead>部署</TableHead>
+                <TableHead>勤務地</TableHead>
+                <TableHead>雇用形態</TableHead>
+                <TableHead>ステータス</TableHead>
               </TableRow>
-            ) : jobs.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  求人がありません
-                </TableCell>
-              </TableRow>
-            ) : (
-              jobs.map((job) => (
-                <TableRow
-                  key={job.id}
-                  className="cursor-pointer"
-                  onClick={() => router.push(`/jobs/${job.id}`)}
-                >
-                  <TableCell className="font-medium">{job.title}</TableCell>
-                  <TableCell>{job.department ?? "-"}</TableCell>
-                  <TableCell>{job.location ?? "-"}</TableCell>
-                  <TableCell>{job.employment_type ?? "-"}</TableCell>
-                  <TableCell>
-                    <Badge variant={statusColors[job.status]}>
-                      {statusLabels[job.status]}
-                    </Badge>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    読み込み中...
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : jobs.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    求人がありません
+                  </TableCell>
+                </TableRow>
+              ) : (
+                jobs.map((job) => (
+                  <TableRow
+                    key={job.id}
+                    className="cursor-pointer"
+                    onClick={() => router.push(`/jobs/${job.id}`)}
+                  >
+                    <TableCell className="font-medium">{job.title}</TableCell>
+                    <TableCell>{job.department ?? "-"}</TableCell>
+                    <TableCell>{job.location ?? "-"}</TableCell>
+                    <TableCell>{job.employment_type ?? "-"}</TableCell>
+                    <TableCell>
+                      <Badge variant={statusColors[job.status]}>
+                        {statusLabels[job.status]}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
       </div>
-    </>
+    </div>
   );
 }

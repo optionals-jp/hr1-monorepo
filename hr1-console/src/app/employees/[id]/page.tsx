@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
@@ -52,8 +52,9 @@ export default function EmployeeDetailPage() {
         description="社員詳細"
       />
 
-      <div className="max-w-2xl">
-        <Card>
+      <PageContent>
+        <div className="max-w-2xl">
+          <Card>
           <CardHeader>
             <CardTitle>プロフィール</CardTitle>
           </CardHeader>
@@ -84,7 +85,8 @@ export default function EmployeeDetailPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+        </div>
+      </PageContent>
     </>
   );
 }

@@ -1,21 +1,26 @@
 import '../../../../shared/domain/entities/page_section.dart';
 import '../../domain/entities/application.dart';
 import '../../domain/entities/application_status.dart';
+import '../../domain/entities/application_step.dart';
 import '../../domain/entities/job.dart';
+import '../../domain/entities/job_step.dart';
 import '../../domain/repositories/applications_repository.dart';
 
 /// ApplicationsRepository のモック実装
 class MockApplicationsRepository implements ApplicationsRepository {
+  final List<Application> _applications = List.of(_initialApplications);
+  int _idCounter = 100;
+
   @override
   List<Application> getApplications(String organizationId) {
-    return _mockApplications
+    return _applications
         .where((a) => a.organizationId == organizationId)
         .toList();
   }
 
   @override
   Application? getApplication(String applicationId) {
-    return _mockApplications
+    return _applications
         .where((a) => a.id == applicationId)
         .firstOrNull;
   }
@@ -30,6 +35,69 @@ class MockApplicationsRepository implements ApplicationsRepository {
   @override
   Job? getJob(String jobId) {
     return _mockJobs.where((j) => j.id == jobId).firstOrNull;
+  }
+
+  @override
+  Future<List<Application>> getApplicationsAsync(String organizationId) async {
+    return getApplications(organizationId);
+  }
+
+  @override
+  Future<Application?> getApplicationAsync(String applicationId) async {
+    return getApplication(applicationId);
+  }
+
+  @override
+  Future<List<Job>> getJobsAsync(String organizationId) async {
+    return getJobs(organizationId);
+  }
+
+  @override
+  Future<Job?> getJobAsync(String jobId) async {
+    return getJob(jobId);
+  }
+
+  @override
+  Future<Application> applyAsync({
+    required String jobId,
+    required String applicantId,
+    required String organizationId,
+  }) async {
+    final job = getJob(jobId);
+    if (job == null) {
+      throw StateError('求人が見つかりません: $jobId');
+    }
+
+    final appId = 'app-mock-${_idCounter++}';
+
+    // job_steps を application_steps にコピー
+    final steps = job.selectionSteps.asMap().entries.map((entry) {
+      final index = entry.key;
+      final jobStep = entry.value;
+      return ApplicationStep(
+        id: '$appId-step-${jobStep.stepOrder}',
+        applicationId: appId,
+        stepType: StepType.fromString(jobStep.stepType),
+        stepOrder: jobStep.stepOrder,
+        status: index == 0 ? StepStatus.inProgress : StepStatus.pending,
+        label: jobStep.label,
+        startedAt: index == 0 ? DateTime.now() : null,
+      );
+    }).toList();
+
+    final application = Application(
+      id: appId,
+      jobId: jobId,
+      applicantId: applicantId,
+      organizationId: organizationId,
+      status: ApplicationStatus.active,
+      appliedAt: DateTime.now(),
+      job: job,
+      steps: steps,
+    );
+
+    _applications.add(application);
+    return application;
   }
 }
 
@@ -49,6 +117,13 @@ final _mockJobs = [
     salaryRange: '500万〜800万円',
     postedAt: DateTime(2026, 2, 1),
     closingAt: DateTime(2026, 4, 30),
+    selectionSteps: const [
+      JobStep(id: 'js-001-1', jobId: 'job-001', stepType: 'screening', stepOrder: 1, label: '書類選考'),
+      JobStep(id: 'js-001-2', jobId: 'job-001', stepType: 'form', stepOrder: 2, label: 'アンケート回答'),
+      JobStep(id: 'js-001-3', jobId: 'job-001', stepType: 'interview', stepOrder: 3, label: '一次面接'),
+      JobStep(id: 'js-001-4', jobId: 'job-001', stepType: 'interview', stepOrder: 4, label: '最終面接'),
+      JobStep(id: 'js-001-5', jobId: 'job-001', stepType: 'offer', stepOrder: 5, label: 'オファー'),
+    ],
     sections: [
       PageSection(
         id: 'j1-s1',
@@ -146,6 +221,13 @@ HR Tech SaaS「HR1」の急成長に伴い、フロントエンドチームを�
     salaryRange: '550万〜900万円',
     postedAt: DateTime(2026, 2, 15),
     closingAt: DateTime(2026, 5, 31),
+    selectionSteps: const [
+      JobStep(id: 'js-002-1', jobId: 'job-002', stepType: 'screening', stepOrder: 1, label: '書類選考'),
+      JobStep(id: 'js-002-2', jobId: 'job-002', stepType: 'interview', stepOrder: 2, label: 'カジュアル面談'),
+      JobStep(id: 'js-002-3', jobId: 'job-002', stepType: 'external_test', stepOrder: 3, label: '適性検査（外部）'),
+      JobStep(id: 'js-002-4', jobId: 'job-002', stepType: 'interview', stepOrder: 4, label: '技術面接'),
+      JobStep(id: 'js-002-5', jobId: 'job-002', stepType: 'offer', stepOrder: 5, label: 'オファー'),
+    ],
     sections: [
       PageSection(
         id: 'j2-s1',
@@ -226,6 +308,12 @@ HR1プラットフォームのAPI基盤を強化するため、バックエン�
     salaryRange: '450万〜700万円',
     postedAt: DateTime(2026, 1, 10),
     closingAt: DateTime(2026, 3, 31),
+    selectionSteps: const [
+      JobStep(id: 'js-003-1', jobId: 'job-003', stepType: 'screening', stepOrder: 1, label: '書類選考'),
+      JobStep(id: 'js-003-2', jobId: 'job-003', stepType: 'form', stepOrder: 2, label: 'アンケート回答'),
+      JobStep(id: 'js-003-3', jobId: 'job-003', stepType: 'interview', stepOrder: 3, label: '面接'),
+      JobStep(id: 'js-003-4', jobId: 'job-003', stepType: 'offer', stepOrder: 4, label: 'オファー'),
+    ],
     sections: [
       PageSection(
         id: 'j3-s1',
@@ -265,7 +353,11 @@ HR1プラットフォームのAPI基盤を強化するため、バックエン�
   ),
 ];
 
-final _mockApplications = [
+// ---------------------------------------------------------------------------
+// 初期モック応募データ（ステップ付き）
+// ---------------------------------------------------------------------------
+
+final _initialApplications = [
   Application(
     id: 'app-001',
     jobId: 'job-001',
@@ -274,6 +366,51 @@ final _mockApplications = [
     status: ApplicationStatus.active,
     appliedAt: DateTime(2026, 2, 20),
     job: _mockJobs[0],
+    steps: const [
+      ApplicationStep(
+        id: 'app-001-step-1',
+        applicationId: 'app-001',
+        stepType: StepType.screening,
+        stepOrder: 1,
+        status: StepStatus.completed,
+        label: '書類選考',
+        startedAt: null,
+        completedAt: null,
+      ),
+      ApplicationStep(
+        id: 'app-001-step-2',
+        applicationId: 'app-001',
+        stepType: StepType.form,
+        stepOrder: 2,
+        status: StepStatus.inProgress,
+        label: 'アンケート回答',
+        relatedId: 'form-mock-001',
+      ),
+      ApplicationStep(
+        id: 'app-001-step-3',
+        applicationId: 'app-001',
+        stepType: StepType.interview,
+        stepOrder: 3,
+        status: StepStatus.pending,
+        label: '一次面接',
+      ),
+      ApplicationStep(
+        id: 'app-001-step-4',
+        applicationId: 'app-001',
+        stepType: StepType.interview,
+        stepOrder: 4,
+        status: StepStatus.pending,
+        label: '最終面接',
+      ),
+      ApplicationStep(
+        id: 'app-001-step-5',
+        applicationId: 'app-001',
+        stepType: StepType.offer,
+        stepOrder: 5,
+        status: StepStatus.pending,
+        label: 'オファー',
+      ),
+    ],
   ),
   Application(
     id: 'app-002',
@@ -283,6 +420,49 @@ final _mockApplications = [
     status: ApplicationStatus.active,
     appliedAt: DateTime(2026, 3, 1),
     job: _mockJobs[1],
+    steps: const [
+      ApplicationStep(
+        id: 'app-002-step-1',
+        applicationId: 'app-002',
+        stepType: StepType.screening,
+        stepOrder: 1,
+        status: StepStatus.completed,
+        label: '書類選考',
+      ),
+      ApplicationStep(
+        id: 'app-002-step-2',
+        applicationId: 'app-002',
+        stepType: StepType.interview,
+        stepOrder: 2,
+        status: StepStatus.inProgress,
+        label: 'カジュアル面談',
+        relatedId: 'interview-mock-001',
+      ),
+      ApplicationStep(
+        id: 'app-002-step-3',
+        applicationId: 'app-002',
+        stepType: StepType.externalTest,
+        stepOrder: 3,
+        status: StepStatus.pending,
+        label: '適性検査（外部）',
+      ),
+      ApplicationStep(
+        id: 'app-002-step-4',
+        applicationId: 'app-002',
+        stepType: StepType.interview,
+        stepOrder: 4,
+        status: StepStatus.pending,
+        label: '技術面接',
+      ),
+      ApplicationStep(
+        id: 'app-002-step-5',
+        applicationId: 'app-002',
+        stepType: StepType.offer,
+        stepOrder: 5,
+        status: StepStatus.pending,
+        label: 'オファー',
+      ),
+    ],
   ),
   Application(
     id: 'app-003',
@@ -292,5 +472,39 @@ final _mockApplications = [
     status: ApplicationStatus.active,
     appliedAt: DateTime(2026, 3, 5),
     job: _mockJobs[2],
+    steps: const [
+      ApplicationStep(
+        id: 'app-003-step-1',
+        applicationId: 'app-003',
+        stepType: StepType.screening,
+        stepOrder: 1,
+        status: StepStatus.inProgress,
+        label: '書類選考',
+      ),
+      ApplicationStep(
+        id: 'app-003-step-2',
+        applicationId: 'app-003',
+        stepType: StepType.form,
+        stepOrder: 2,
+        status: StepStatus.pending,
+        label: 'アンケート回答',
+      ),
+      ApplicationStep(
+        id: 'app-003-step-3',
+        applicationId: 'app-003',
+        stepType: StepType.interview,
+        stepOrder: 3,
+        status: StepStatus.pending,
+        label: '面接',
+      ),
+      ApplicationStep(
+        id: 'app-003-step-4',
+        applicationId: 'app-003',
+        stepType: StepType.offer,
+        stepOrder: 4,
+        status: StepStatus.pending,
+        label: 'オファー',
+      ),
+    ],
   ),
 ];

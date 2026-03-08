@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -130,9 +130,10 @@ export default function JobDetailPage() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* 求人情報 */}
-        <Card>
+      <PageContent>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* 求人情報 */}
+          <Card>
           <CardHeader>
             <CardTitle>求人情報</CardTitle>
           </CardHeader>
@@ -243,7 +244,8 @@ export default function JobDetailPage() {
             )}
           </CardContent>
         </Card>
-      </div>
+        </div>
+      </PageContent>
     </>
   );
 }

@@ -85,13 +85,13 @@ export interface CustomForm {
 export interface FormField {
   id: string;
   form_id: string;
-  field_type: string;
+  type: string;
   label: string;
   description: string | null;
   placeholder: string | null;
   is_required: boolean;
   options: string[] | null;
-  field_order: number;
+  sort_order: number;
 }
 
 export interface FormResponse {
@@ -109,7 +109,7 @@ export interface Interview {
   title: string;
   location: string | null;
   notes: string | null;
-  status: "pending" | "confirmed" | "completed" | "cancelled";
+  status: "scheduling" | "confirmed" | "completed" | "cancelled";
   confirmed_slot_id: string | null;
   created_at: string;
 }
@@ -120,4 +120,9 @@ export interface InterviewSlot {
   start_at: string;
   end_at: string;
   is_selected: boolean;
+  application_id: string | null;
+  applications?: {
+    id: string;
+    profiles?: { display_name: string | null; email: string };
+  };
 }

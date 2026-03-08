@@ -31,14 +31,14 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
 const statusLabels: Record<string, string> = {
-  pending: "未確定",
+  scheduling: "未確定",
   confirmed: "確定済み",
   completed: "完了",
   cancelled: "キャンセル",
 };
 
 const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  pending: "outline",
+  scheduling: "outline",
   confirmed: "default",
   completed: "secondary",
   cancelled: "destructive",
@@ -99,7 +99,7 @@ export default function SchedulingPage() {
       title: newTitle,
       location: newLocation || null,
       notes: newNotes || null,
-      status: "pending",
+      status: "scheduling",
     });
 
     if (slots.length > 0) {
@@ -126,7 +126,7 @@ export default function SchedulingPage() {
   };
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       <PageHeader
         title="日程調整"
         description="面接の日程管理"
@@ -218,35 +218,35 @@ export default function SchedulingPage() {
         }
       />
 
-      <div className="rounded-md border">
-        <Table>
+      <div className="flex-1 overflow-y-auto bg-white">
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead>タイトル</TableHead>
               <TableHead>場所</TableHead>
-              <TableHead>候補日時数</TableHead>
+              <TableHead>予約状況</TableHead>
               <TableHead>ステータス</TableHead>
-              <TableHead>確定日時</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                   読み込み中...
                 </TableCell>
               </TableRow>
             ) : interviews.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                   面接がありません
                 </TableCell>
               </TableRow>
             ) : (
               interviews.map((interview) => {
-                const confirmedSlot = interview.interview_slots?.find(
-                  (s) => s.is_selected
-                );
+                const totalSlots = interview.interview_slots?.length ?? 0;
+                const bookedSlots = interview.interview_slots?.filter(
+                  (s) => s.application_id
+                ).length ?? 0;
                 return (
                   <TableRow
                     key={interview.id}
@@ -258,20 +258,12 @@ export default function SchedulingPage() {
                     </TableCell>
                     <TableCell>{interview.location ?? "-"}</TableCell>
                     <TableCell>
-                      {interview.interview_slots?.length ?? 0}件
+                      {bookedSlots} / {totalSlots} 枠
                     </TableCell>
                     <TableCell>
                       <Badge variant={statusColors[interview.status]}>
                         {statusLabels[interview.status]}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {confirmedSlot
-                        ? format(
-                            new Date(confirmedSlot.start_at),
-                            "yyyy/MM/dd HH:mm"
-                          )
-                        : "-"}
                     </TableCell>
                   </TableRow>
                 );
@@ -280,6 +272,6 @@ export default function SchedulingPage() {
           </TableBody>
         </Table>
       </div>
-    </>
+    </div>
   );
 }
