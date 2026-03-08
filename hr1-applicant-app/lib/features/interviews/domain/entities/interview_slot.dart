@@ -5,6 +5,7 @@ class InterviewSlot {
     required this.startAt,
     required this.endAt,
     this.isSelected = false,
+    this.applicationId,
   });
 
   final String id;
@@ -13,6 +14,12 @@ class InterviewSlot {
 
   /// 応募者が選択したかどうか
   final bool isSelected;
+
+  /// このスロットを予約した応募ID（null なら空き）
+  final String? applicationId;
+
+  /// このスロットが予約済みかどうか
+  bool get isBooked => applicationId != null;
 
   /// 所要時間（分）
   int get durationMinutes => endAt.difference(startAt).inMinutes;
@@ -23,6 +30,7 @@ class InterviewSlot {
       startAt: DateTime.parse(json['start_at'] as String),
       endAt: DateTime.parse(json['end_at'] as String),
       isSelected: json['is_selected'] as bool? ?? false,
+      applicationId: json['application_id'] as String?,
     );
   }
 }
