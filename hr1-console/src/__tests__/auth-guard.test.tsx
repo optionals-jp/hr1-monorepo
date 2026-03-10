@@ -69,7 +69,7 @@ describe("AuthGuard", () => {
     render(
       <ClientLayout>
         <div>Protected Content</div>
-      </ClientLayout>,
+      </ClientLayout>
     );
 
     expect(screen.getByText("読み込み中...")).toBeInTheDocument();
@@ -83,7 +83,7 @@ describe("AuthGuard", () => {
     render(
       <ClientLayout>
         <div>Protected Content</div>
-      </ClientLayout>,
+      </ClientLayout>
     );
 
     await waitFor(() => {
@@ -100,7 +100,7 @@ describe("AuthGuard", () => {
     render(
       <ClientLayout>
         <div>Protected Content</div>
-      </ClientLayout>,
+      </ClientLayout>
     );
 
     expect(screen.getByText("Protected Content")).toBeInTheDocument();
@@ -117,7 +117,7 @@ describe("AuthGuard", () => {
     render(
       <ClientLayout>
         <div>Login Form</div>
-      </ClientLayout>,
+      </ClientLayout>
     );
 
     expect(screen.getByText("Login Form")).toBeInTheDocument();
@@ -132,7 +132,7 @@ describe("AuthGuard", () => {
     render(
       <ClientLayout>
         <div>Protected Content</div>
-      </ClientLayout>,
+      </ClientLayout>
     );
 
     expect(screen.getByText("読み込み中...")).toBeInTheDocument();

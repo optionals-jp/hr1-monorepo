@@ -21,9 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" className="h-full overflow-hidden">
-      <body
-        className={`${notoSansJP.variable} antialiased h-full overflow-hidden`}
-      >
+      <body className={`${notoSansJP.variable} antialiased h-full overflow-hidden`}>
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
