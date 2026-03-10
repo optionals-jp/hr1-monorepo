@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/home_screen.dart';
@@ -13,9 +14,6 @@ import '../../features/forms/presentation/screens/form_fill_screen.dart';
 import '../../features/interviews/presentation/screens/interview_schedule_screen.dart';
 import '../../features/messages/presentation/screens/messages_screen.dart';
 import '../../features/auth/presentation/screens/profile_screen.dart';
-
-/// 開発モードフラグ（trueの場合、認証ガードをスキップ）
-const bool kDevMode = true;
 
 /// ルートパス定数
 class AppRoutes {
@@ -30,17 +28,27 @@ class AppRoutes {
   static const String profile = '/profile';
 }
 
+/// 認証不要なルート
+const _publicRoutes = [AppRoutes.splash, AppRoutes.login];
+
 /// GoRouter プロバイダー
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
 
-    /// 認証ガード：開発モードではスキップ
+    /// 認証ガード
     redirect: (BuildContext context, GoRouterState state) {
-      if (kDevMode) return null;
+      final isAuthenticated =
+          Supabase.instance.client.auth.currentSession != null;
+      final currentPath = state.matchedLocation;
 
-      // TODO: 本番用認証ガードを実装
+      // 公開ルートはそのまま通す
+      if (_publicRoutes.contains(currentPath)) return null;
+
+      // 未認証の場合はログインへ
+      if (!isAuthenticated) return AppRoutes.login;
+
       return null;
     },
 

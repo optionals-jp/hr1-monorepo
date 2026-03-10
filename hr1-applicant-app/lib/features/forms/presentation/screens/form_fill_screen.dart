@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
@@ -126,17 +125,11 @@ class _FormFillScreenState extends ConsumerState<FormFillScreen> {
               onPressed: () async {
                 Navigator.pop(dialogContext);
 
-                final client = Supabase.instance.client;
-
-                // ステップを完了に更新
+                // ステップを完了に更新し、次のステップを自動開始
                 if (widget.stepId != null) {
-                  await client
-                      .from('application_steps')
-                      .update({
-                        'status': 'completed',
-                        'completed_at': DateTime.now().toIso8601String(),
-                      })
-                      .eq('id', widget.stepId!);
+                  final repo = screenRef.read(applicationsRepositoryProvider);
+                  await repo.completeStepAsync(
+                      widget.stepId!, widget.applicationId);
                 }
 
                 screenRef.invalidate(formAnswersProvider(widget.formId));

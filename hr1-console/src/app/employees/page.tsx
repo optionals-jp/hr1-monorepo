@@ -14,80 +14,166 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { useOrg } from "@/lib/org-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
-import type { Profile } from "@/types/database";
+import type { Department } from "@/types/database";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Plus, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
+
+interface EmployeeWithDepts {
+  id: string;
+  email: string;
+  display_name: string | null;
+  position: string | null;
+  departments: { id: string; name: string }[];
+}
+
+const addTabs: EditPanelTab[] = [
+  { value: "basic", label: "基本情報" },
+  { value: "departments", label: "部署" },
+];
 
 export default function EmployeesPage() {
   const router = useRouter();
   const { organization } = useOrg();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [addTab, setAddTab] = useState("basic");
   const [newEmail, setNewEmail] = useState("");
   const [newName, setNewName] = useState("");
-  const [newDepartment, setNewDepartment] = useState("");
   const [newPosition, setNewPosition] = useState("");
+  const [selectedDeptIds, setSelectedDeptIds] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  const { data: departments = [] } = useQuery<Department[]>(
+    organization ? `departments-${organization.id}` : null,
+    async () => {
+      const { data } = await getSupabase()
+        .from("departments")
+        .select("*")
+        .eq("organization_id", organization!.id)
+        .order("name");
+      return data ?? [];
+    }
+  );
 
   const {
     data: employees = [],
     isLoading,
     mutate,
-  } = useQuery<Profile[]>(organization ? `employees-${organization.id}` : null, async () => {
-    const { data } = await supabase
-      .from("user_organizations")
-      .select("profiles(*)")
-      .eq("organization_id", organization!.id)
-      .eq("profiles.role", "employee");
+  } = useQuery<EmployeeWithDepts[]>(
+    organization ? `employees-${organization.id}` : null,
+    async () => {
+      const { data } = await getSupabase()
+        .from("user_organizations")
+        .select("profiles(id, email, display_name, position)")
+        .eq("organization_id", organization!.id)
+        .eq("profiles.role", "employee");
 
-    return (data ?? [])
-      .map((row) => (row as unknown as { profiles: Profile }).profiles)
-      .filter(Boolean);
-  });
+      const profiles = (data ?? [])
+        .map(
+          (row) =>
+            (
+              row as unknown as {
+                profiles: {
+                  id: string;
+                  email: string;
+                  display_name: string | null;
+                  position: string | null;
+                };
+              }
+            ).profiles
+        )
+        .filter(Boolean);
+
+      if (profiles.length === 0) return [];
+
+      const { data: edData } = await getSupabase()
+        .from("employee_departments")
+        .select("user_id, departments(id, name)")
+        .in(
+          "user_id",
+          profiles.map((p) => p.id)
+        );
+
+      const deptMap = new Map<string, { id: string; name: string }[]>();
+      for (const ed of edData ?? []) {
+        const dept = ed as unknown as {
+          user_id: string;
+          departments: { id: string; name: string };
+        };
+        if (!dept.departments) continue;
+        const list = deptMap.get(dept.user_id) ?? [];
+        list.push(dept.departments);
+        deptMap.set(dept.user_id, list);
+      }
+
+      return profiles.map((p) => ({
+        ...p,
+        departments: deptMap.get(p.id) ?? [],
+      }));
+    }
+  );
+
+  const openAddDialog = () => {
+    setNewEmail("");
+    setNewName("");
+    setNewPosition("");
+    setSelectedDeptIds([]);
+    setAddTab("basic");
+    setDialogOpen(true);
+  };
 
   const handleAdd = async () => {
     if (!organization || !newEmail) return;
+    setSaving(true);
 
-    const id = `employee-${Date.now()}`;
-    await supabase.from("profiles").insert({
-      id,
-      email: newEmail,
-      display_name: newName || null,
-      role: "employee",
-      department: newDepartment || null,
-      position: newPosition || null,
-    });
+    const id = crypto.randomUUID();
+    await getSupabase()
+      .from("profiles")
+      .insert({
+        id,
+        email: newEmail,
+        display_name: newName || null,
+        role: "employee",
+        position: newPosition || null,
+      });
 
-    await supabase.from("user_organizations").insert({
+    await getSupabase().from("user_organizations").insert({
       user_id: id,
       organization_id: organization.id,
     });
 
-    setNewEmail("");
-    setNewName("");
-    setNewDepartment("");
-    setNewPosition("");
+    if (selectedDeptIds.length > 0) {
+      await getSupabase()
+        .from("employee_departments")
+        .insert(selectedDeptIds.map((deptId) => ({ user_id: id, department_id: deptId })));
+    }
+
+    setSaving(false);
     setDialogOpen(false);
     mutate();
   };
 
-  const filtered = employees.filter(
-    (e) =>
-      !search ||
-      e.email.toLowerCase().includes(search.toLowerCase()) ||
-      e.display_name?.toLowerCase().includes(search.toLowerCase()) ||
-      e.department?.toLowerCase().includes(search.toLowerCase())
-  );
+  const toggleDept = (deptId: string) => {
+    setSelectedDeptIds((prev) =>
+      prev.includes(deptId) ? prev.filter((id) => id !== deptId) : [...prev, deptId]
+    );
+  };
+
+  const filtered = employees.filter((e) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      e.email.toLowerCase().includes(q) ||
+      e.display_name?.toLowerCase().includes(q) ||
+      e.departments.some((d) => d.name.toLowerCase().includes(q))
+    );
+  });
 
   return (
     <div className="flex flex-col h-full">
@@ -95,55 +181,10 @@ export default function EmployeesPage() {
         title="社員一覧"
         description="社員の管理・招待"
         action={
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger render={<Button />}>
-              <Plus className="mr-2 h-4 w-4" />
-              社員を追加
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>社員を追加</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label>メールアドレス *</Label>
-                  <Input
-                    type="email"
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="example@company.com"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>名前</Label>
-                  <Input
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder="田中 太郎"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>部署</Label>
-                  <Input
-                    value={newDepartment}
-                    onChange={(e) => setNewDepartment(e.target.value)}
-                    placeholder="エンジニアリング"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>役職</Label>
-                  <Input
-                    value={newPosition}
-                    onChange={(e) => setNewPosition(e.target.value)}
-                    placeholder="マネージャー"
-                  />
-                </div>
-                <Button onClick={handleAdd} className="w-full" disabled={!newEmail}>
-                  追加する
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={openAddDialog}>
+            <Plus className="mr-2 h-4 w-4" />
+            社員を追加
+          </Button>
         }
       />
 
@@ -170,13 +211,13 @@ export default function EmployeesPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                   読み込み中...
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                   社員がいません
                 </TableCell>
               </TableRow>
@@ -198,7 +239,19 @@ export default function EmployeesPage() {
                     </div>
                   </TableCell>
                   <TableCell>{emp.email}</TableCell>
-                  <TableCell>{emp.department ?? "-"}</TableCell>
+                  <TableCell>
+                    {emp.departments.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {emp.departments.map((d) => (
+                          <Badge key={d.id} variant="secondary">
+                            {d.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
                   <TableCell>{emp.position ?? "-"}</TableCell>
                 </TableRow>
               ))
@@ -206,6 +259,66 @@ export default function EmployeesPage() {
           </TableBody>
         </Table>
       </div>
+
+      <EditPanel
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        title="社員を追加"
+        tabs={addTabs}
+        activeTab={addTab}
+        onTabChange={setAddTab}
+        onSave={handleAdd}
+        saving={saving}
+        saveDisabled={!newEmail}
+        saveLabel="追加"
+      >
+        {addTab === "basic" && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>メールアドレス *</Label>
+              <Input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="example@company.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>名前</Label>
+              <Input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="田中 太郎"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>役職</Label>
+              <Input
+                value={newPosition}
+                onChange={(e) => setNewPosition(e.target.value)}
+                placeholder="マネージャー"
+              />
+            </div>
+          </div>
+        )}
+        {addTab === "departments" && (
+          <div className="space-y-3">
+            {departments.length === 0 ? (
+              <p className="text-sm text-muted-foreground">部署管理から部署を追加してください</p>
+            ) : (
+              departments.map((dept) => (
+                <label key={dept.id} className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={selectedDeptIds.includes(dept.id)}
+                    onCheckedChange={() => toggleDept(dept.id)}
+                  />
+                  <span className="text-sm">{dept.name}</span>
+                </label>
+              ))
+            )}
+          </div>
+        )}
+      </EditPanel>
     </div>
   );
 }

@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "postToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": []
+      }
+    ],
+    "preCompact": [],
+    "stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd hr1-console && npm run format:check 2>&1 | tail -5"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import type { Application } from "@/types/database";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -53,7 +53,7 @@ export default function ApplicationsPage() {
   const { data: applications = [], isLoading } = useQuery<Application[]>(
     organization ? `applications-${organization.id}` : null,
     async () => {
-      const { data } = await supabase
+      const { data } = await getSupabase()
         .from("applications")
         .select(
           "*, jobs(*), profiles:applicant_id(id, email, display_name, role), application_steps(*)"

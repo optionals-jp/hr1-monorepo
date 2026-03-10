@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/router/app_router.dart';
 import '../providers/auth_providers.dart';
 
 /// マイページ画面
@@ -100,8 +102,29 @@ class ProfileScreen extends ConsumerWidget {
                   icon: Icons.logout,
                   label: 'ログアウト',
                   isDestructive: true,
-                  onTap: () {
-                    // TODO: ログアウト処理
+                  onTap: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('ログアウト'),
+                        content: const Text('ログアウトしますか？'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('キャンセル'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('ログアウト'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed != true) return;
+                    await ref.read(authRepositoryProvider).signOut();
+                    ref.read(appUserProvider.notifier).clearUser();
+                    if (!context.mounted) return;
+                    GoRouter.of(context).go(AppRoutes.login);
                   },
                 ),
               ],

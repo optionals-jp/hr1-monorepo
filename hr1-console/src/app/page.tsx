@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { useOrg } from "@/lib/org-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import { Users, UserPlus, Briefcase, ClipboardList } from "lucide-react";
 
@@ -23,22 +23,22 @@ export default function DashboardPage() {
       const orgId = organization!.id;
 
       const [applicantsRes, employeesRes, jobsRes, appsRes] = await Promise.all([
-        supabase
+        getSupabase()
           .from("user_organizations")
           .select("user_id, profiles!inner(role)", { count: "exact" })
           .eq("organization_id", orgId)
           .eq("profiles.role", "applicant"),
-        supabase
+        getSupabase()
           .from("user_organizations")
           .select("user_id, profiles!inner(role)", { count: "exact" })
           .eq("organization_id", orgId)
           .eq("profiles.role", "employee"),
-        supabase
+        getSupabase()
           .from("jobs")
           .select("id", { count: "exact" })
           .eq("organization_id", orgId)
           .eq("status", "open"),
-        supabase
+        getSupabase()
           .from("applications")
           .select("id", { count: "exact" })
           .eq("organization_id", orgId)

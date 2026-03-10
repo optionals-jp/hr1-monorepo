@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useOrg } from "@/lib/org-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { Plus, Trash2, GripVertical } from "lucide-react";
 
 const fieldTypeLabels: Record<string, string> = {
@@ -78,30 +78,34 @@ export default function NewFormPage() {
 
     const formId = `form-${Date.now()}`;
 
-    await supabase.from("custom_forms").insert({
-      id: formId,
-      organization_id: organization.id,
-      title,
-      description: description || null,
-    });
+    await getSupabase()
+      .from("custom_forms")
+      .insert({
+        id: formId,
+        organization_id: organization.id,
+        title,
+        description: description || null,
+      });
 
     if (fields.length > 0) {
-      await supabase.from("form_fields").insert(
-        fields.map((field, index) => ({
-          id: `field-${formId}-${index + 1}`,
-          form_id: formId,
-          type: field.field_type,
-          label: field.label,
-          description: field.description || null,
-          placeholder: field.placeholder || null,
-          is_required: field.is_required,
-          options:
-            field.options && ["radio", "checkbox", "dropdown"].includes(field.field_type)
-              ? field.options.split("\n").filter(Boolean)
-              : null,
-          sort_order: index + 1,
-        }))
-      );
+      await getSupabase()
+        .from("form_fields")
+        .insert(
+          fields.map((field, index) => ({
+            id: `field-${formId}-${index + 1}`,
+            form_id: formId,
+            type: field.field_type,
+            label: field.label,
+            description: field.description || null,
+            placeholder: field.placeholder || null,
+            is_required: field.is_required,
+            options:
+              field.options && ["radio", "checkbox", "dropdown"].includes(field.field_type)
+                ? field.options.split("\n").filter(Boolean)
+                : null,
+            sort_order: index + 1,
+          }))
+        );
     }
 
     await mutate(`forms-${organization.id}`);

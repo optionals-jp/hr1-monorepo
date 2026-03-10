@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { supabase } from "./supabase";
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
+import { getSupabase } from "./supabase";
+import { useAuth } from "./auth-context";
 import type { Organization } from "@/types/database";
 
 interface OrgContextValue {
@@ -19,25 +20,55 @@ const OrgContext = createContext<OrgContextValue>({
 });
 
 export function OrgProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
+  const prevUserId = useRef<string | null>(null);
+
+  // ユーザーが変わったらリセット
+  if (user?.id !== prevUserId.current) {
+    prevUserId.current = user?.id ?? null;
+    if (!user) {
+      if (organizations.length > 0) setOrganizations([]);
+      if (organization !== null) setOrganization(null);
+      if (loading) setLoading(false);
+    }
+  }
 
   useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+
     async function loadOrgs() {
-      const { data } = await supabase.from("organizations").select("*").order("name");
+      const { data } = await getSupabase()
+        .from("user_organizations")
+        .select("organization_id, organizations(*)")
+        .eq("user_id", user!.id)
+        .order("organization_id");
+
+      if (cancelled) return;
 
       if (data && data.length > 0) {
-        setOrganizations(data);
-        // Restore saved org or use first
+        const orgs = data
+          .map((uo) => uo.organizations as unknown as Organization | null)
+          .filter((o): o is Organization => o !== null);
+
+        setOrganizations(orgs);
+
         const savedId = localStorage.getItem("hr1_org_id");
-        const saved = data.find((o: Organization) => o.id === savedId);
-        setOrganization(saved || data[0]);
+        const saved = orgs.find((o) => o.id === savedId);
+        setOrganization(saved || orgs[0]);
       }
       setLoading(false);
     }
+
     loadOrgs();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const handleSetOrg = (org: Organization) => {
     setOrganization(org);

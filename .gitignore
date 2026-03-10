@@ -51,3 +51,4 @@ app.*.map.json
 *.class
 .env
 .env.*
+.vercel

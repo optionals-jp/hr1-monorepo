@@ -18,7 +18,8 @@ class ApplicationDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncApplication = ref.watch(applicationDetailProvider(applicationId));
+    final asyncApplication =
+        ref.watch(applicationDetailProvider(applicationId));
 
     return Scaffold(
       appBar: AppBar(title: const Text('応募詳細')),
@@ -28,34 +29,102 @@ class ApplicationDetailScreen extends ConsumerWidget {
             return const Center(child: Text('応募情報が見つかりません'));
           }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ステータスバッジ
-                _StatusBadge(application: application),
-                const SizedBox(height: AppSpacing.lg),
-
-                // 求人情報カード
-                if (application.job != null) ...[
-                  _JobInfoCard(application: application),
-                  const SizedBox(height: AppSpacing.lg),
-                ],
-
-                // タイムライン（動的）
-                _StepTimeline(application: application),
-                const SizedBox(height: AppSpacing.xl),
-
-                // アクションボタン
-                _ActionSection(application: application),
-              ],
-            ),
-          );
+          return _ApplicationDetailBody(application: application);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => const Center(child: Text('エラーが発生しました')),
       ),
+    );
+  }
+}
+
+class _ApplicationDetailBody extends StatefulWidget {
+  const _ApplicationDetailBody({required this.application});
+  final Application application;
+
+  @override
+  State<_ApplicationDetailBody> createState() =>
+      _ApplicationDetailBodyState();
+}
+
+class _ApplicationDetailBodyState extends State<_ApplicationDetailBody>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final application = widget.application;
+
+    return Column(
+      children: [
+        // ヘッダー部分（スクロールしない）
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screenHorizontal,
+            AppSpacing.screenHorizontal,
+            AppSpacing.screenHorizontal,
+            0,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _StatusBadge(application: application),
+              const SizedBox(height: AppSpacing.lg),
+              if (application.job != null) ...[
+                _JobInfoCard(application: application),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+            ],
+          ),
+        ),
+
+        // タブバー
+        TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: '選考ステップ'),
+            Tab(text: '履歴'),
+          ],
+          labelColor: Theme.of(context).colorScheme.onSurface,
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+          indicatorColor: AppColors.primaryLight,
+        ),
+
+        // タブコンテンツ
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              // 選考ステップタブ
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+                child: Column(
+                  children: [
+                    _StepTimeline(application: application),
+                    const SizedBox(height: AppSpacing.xl),
+                    _ActionSection(application: application),
+                  ],
+                ),
+              ),
+
+              // 履歴タブ
+              _HistoryTab(application: application),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -312,9 +381,11 @@ class _ActionSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 現在進行中でアクションが必要なステップを見つける
-    final actionSteps =
-        application.steps.where((s) => s.requiresAction).toList();
+    // 最初の in_progress ステップのみアクション可能（順序を強制）
+    final currentStep = application.currentStep;
+    final actionSteps = (currentStep != null && currentStep.requiresAction)
+        ? [currentStep]
+        : <ApplicationStep>[];
 
     if (actionSteps.isEmpty) return const SizedBox.shrink();
 
@@ -366,6 +437,154 @@ class _ActionSection extends StatelessWidget {
         break;
     }
   }
+}
+
+/// 履歴タブ：ステップの変更履歴を時系列で表示
+class _HistoryTab extends StatelessWidget {
+  const _HistoryTab({required this.application});
+  final Application application;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final events = _buildHistoryEvents(application);
+
+    if (events.isEmpty) {
+      return Center(
+        child: Text('履歴がありません', style: AppTextStyles.body),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+      itemCount: events.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final event = events[index];
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // アイコン
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: event.color.withValues(alpha: 0.1),
+                ),
+                child: Icon(event.icon, size: 16, color: event.color),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              // 内容
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(event.title, style: AppTextStyles.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                    )),
+                    const SizedBox(height: 2),
+                    Text(event.subtitle, style: AppTextStyles.bodySmall.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    )),
+                  ],
+                ),
+              ),
+              // 日時
+              Text(
+                _formatDateTime(event.dateTime),
+                style: AppTextStyles.caption.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  List<_HistoryEvent> _buildHistoryEvents(Application application) {
+    final events = <_HistoryEvent>[];
+
+    // 応募イベント
+    events.add(_HistoryEvent(
+      title: '応募しました',
+      subtitle: application.job?.title ?? '求人',
+      dateTime: application.appliedAt,
+      icon: Icons.send,
+      color: AppColors.primaryLight,
+    ));
+
+    // 各ステップのイベント
+    for (final step in application.steps) {
+      if (step.startedAt != null) {
+        events.add(_HistoryEvent(
+          title: '${step.label} - 開始',
+          subtitle: _stepTypeLabel(step.stepType),
+          dateTime: step.startedAt!,
+          icon: Icons.play_circle_outline,
+          color: AppColors.primaryLight,
+        ));
+      }
+
+      if (step.status == StepStatus.completed && step.completedAt != null) {
+        events.add(_HistoryEvent(
+          title: '${step.label} - 完了',
+          subtitle: _stepTypeLabel(step.stepType),
+          dateTime: step.completedAt!,
+          icon: Icons.check_circle_outline,
+          color: AppColors.success,
+        ));
+      }
+
+      if (step.status == StepStatus.skipped) {
+        events.add(_HistoryEvent(
+          title: '${step.label} - スキップ',
+          subtitle: _stepTypeLabel(step.stepType),
+          dateTime: step.completedAt ?? step.startedAt ?? application.appliedAt,
+          icon: Icons.skip_next,
+          color: Colors.grey,
+        ));
+      }
+    }
+
+    // 日時の新しい順にソート
+    events.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    return events;
+  }
+
+  String _stepTypeLabel(StepType type) {
+    return switch (type) {
+      StepType.screening => '書類選考',
+      StepType.form => 'アンケート/フォーム',
+      StepType.interview => '面接',
+      StepType.externalTest => '外部テスト',
+      StepType.offer => '内定',
+    };
+  }
+
+  String _formatDateTime(DateTime date) {
+    return '${date.month}/${date.day} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+class _HistoryEvent {
+  const _HistoryEvent({
+    required this.title,
+    required this.subtitle,
+    required this.dateTime,
+    required this.icon,
+    required this.color,
+  });
+
+  final String title;
+  final String subtitle;
+  final DateTime dateTime;
+  final IconData icon;
+  final Color color;
 }
 
 Color _applicationColor(Application application, BuildContext context) {

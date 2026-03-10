@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useOrg } from "@/lib/org-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import type { Interview, InterviewSlot } from "@/types/database";
 import { Plus, Trash2 } from "lucide-react";
@@ -60,7 +60,7 @@ export default function SchedulingPage() {
   } = useQuery<(Interview & { interview_slots: InterviewSlot[] })[]>(
     organization ? `interviews-${organization.id}` : null,
     async () => {
-      const { data } = await supabase
+      const { data } = await getSupabase()
         .from("interviews")
         .select("*, interview_slots(*)")
         .eq("organization_id", organization!.id)
@@ -89,27 +89,31 @@ export default function SchedulingPage() {
 
     const interviewId = `interview-${Date.now()}`;
 
-    await supabase.from("interviews").insert({
-      id: interviewId,
-      organization_id: organization.id,
-      title: newTitle,
-      location: newLocation || null,
-      notes: newNotes || null,
-      status: "scheduling",
-    });
+    await getSupabase()
+      .from("interviews")
+      .insert({
+        id: interviewId,
+        organization_id: organization.id,
+        title: newTitle,
+        location: newLocation || null,
+        notes: newNotes || null,
+        status: "scheduling",
+      });
 
     if (slots.length > 0) {
       const validSlots = slots.filter((s) => s.startAt && s.endAt);
       if (validSlots.length > 0) {
-        await supabase.from("interview_slots").insert(
-          validSlots.map((slot, i) => ({
-            id: `slot-${interviewId}-${i + 1}`,
-            interview_id: interviewId,
-            start_at: new Date(slot.startAt).toISOString(),
-            end_at: new Date(slot.endAt).toISOString(),
-            is_selected: false,
-          }))
-        );
+        await getSupabase()
+          .from("interview_slots")
+          .insert(
+            validSlots.map((slot, i) => ({
+              id: `slot-${interviewId}-${i + 1}`,
+              interview_id: interviewId,
+              start_at: new Date(slot.startAt).toISOString(),
+              end_at: new Date(slot.endAt).toISOString(),
+              is_selected: false,
+            }))
+          );
       }
     }
 

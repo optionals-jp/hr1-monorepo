@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useOrg } from "@/lib/org-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -89,7 +89,7 @@ export default function CalendarPage() {
     organization ? `calendar-${organization.id}-${currentMonth.toISOString()}` : null,
     async () => {
       // Fetch interview slots within range with applicant + job details
-      const { data: slotsData } = await supabase
+      const { data: slotsData } = await getSupabase()
         .from("interview_slots")
         .select(
           `*,

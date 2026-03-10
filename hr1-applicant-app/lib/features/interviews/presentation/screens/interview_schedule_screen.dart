@@ -152,15 +152,10 @@ class InterviewScheduleScreen extends ConsumerWidget {
                   })
                   .eq('id', slotId);
 
-              // ステップを完了に更新
+              // ステップを完了に更新し、次のステップを自動開始
               if (stepId != null) {
-                await client
-                    .from('application_steps')
-                    .update({
-                      'status': 'completed',
-                      'completed_at': DateTime.now().toIso8601String(),
-                    })
-                    .eq('id', stepId!);
+                final repo = ref.read(applicationsRepositoryProvider);
+                await repo.completeStepAsync(stepId!, applicationId);
               }
 
               ref.invalidate(selectedSlotProvider(interviewId));
