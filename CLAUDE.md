@@ -36,9 +36,8 @@ Backend: Supabase (Auth, Database, Edge Functions)
 `hr1-console` only:
 1. `format:check` — Prettier
 2. `lint` — ESLint
-3. `build` — Next.js build
-
-Tests are **not** run in CI. Run locally before pushing.
+3. `test` — Vitest
+4. `build` — Next.js build
 
 ## Task Completion Checklist
 
@@ -46,4 +45,4 @@ Before considering a task complete in `hr1-console/`:
 1. `npm run format` — Apply Prettier formatting (also checked by stop hook)
 2. `npm run lint` — Check for ESLint errors
 3. `npm run build` — Verify production build succeeds
-4. `npm run test` — Verify tests pass (not in CI, but required locally)
+4. `npm run test` — Verify tests pass
