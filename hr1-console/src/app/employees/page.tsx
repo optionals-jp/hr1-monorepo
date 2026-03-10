@@ -17,7 +17,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { useOrg } from "@/lib/org-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import type { Department } from "@/types/database";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -52,7 +52,7 @@ export default function EmployeesPage() {
   const { data: departments = [] } = useQuery<Department[]>(
     organization ? `departments-${organization.id}` : null,
     async () => {
-      const { data } = await supabase
+      const { data } = await getSupabase()
         .from("departments")
         .select("*")
         .eq("organization_id", organization!.id)
@@ -68,7 +68,7 @@ export default function EmployeesPage() {
   } = useQuery<EmployeeWithDepts[]>(
     organization ? `employees-${organization.id}` : null,
     async () => {
-      const { data } = await supabase
+      const { data } = await getSupabase()
         .from("user_organizations")
         .select("profiles(id, email, display_name, position)")
         .eq("organization_id", organization!.id)
@@ -92,7 +92,7 @@ export default function EmployeesPage() {
 
       if (profiles.length === 0) return [];
 
-      const { data: edData } = await supabase
+      const { data: edData } = await getSupabase()
         .from("employee_departments")
         .select("user_id, departments(id, name)")
         .in(
@@ -133,21 +133,23 @@ export default function EmployeesPage() {
     setSaving(true);
 
     const id = crypto.randomUUID();
-    await supabase.from("profiles").insert({
-      id,
-      email: newEmail,
-      display_name: newName || null,
-      role: "employee",
-      position: newPosition || null,
-    });
+    await getSupabase()
+      .from("profiles")
+      .insert({
+        id,
+        email: newEmail,
+        display_name: newName || null,
+        role: "employee",
+        position: newPosition || null,
+      });
 
-    await supabase.from("user_organizations").insert({
+    await getSupabase().from("user_organizations").insert({
       user_id: id,
       organization_id: organization.id,
     });
 
     if (selectedDeptIds.length > 0) {
-      await supabase
+      await getSupabase()
         .from("employee_departments")
         .insert(selectedDeptIds.map((deptId) => ({ user_id: id, department_id: deptId })));
     }

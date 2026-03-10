@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import type { Department } from "@/types/database";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
@@ -53,8 +53,8 @@ export default function DepartmentDetailPage() {
   const load = async () => {
     setLoading(true);
     const [{ data: dept }, { data: edData }] = await Promise.all([
-      supabase.from("departments").select("*").eq("id", id).single(),
-      supabase
+      getSupabase().from("departments").select("*").eq("id", id).single(),
+      getSupabase()
         .from("employee_departments")
         .select("profiles:user_id(id, email, display_name, position)")
         .eq("department_id", id),
@@ -84,7 +84,10 @@ export default function DepartmentDetailPage() {
   const saveEdit = async () => {
     if (!department || !editName.trim()) return;
     setSaving(true);
-    await supabase.from("departments").update({ name: editName.trim() }).eq("id", department.id);
+    await getSupabase()
+      .from("departments")
+      .update({ name: editName.trim() })
+      .eq("id", department.id);
     setEditing(false);
     setSaving(false);
     await load();

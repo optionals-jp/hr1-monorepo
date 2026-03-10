@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { useOrg } from "@/lib/org-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import type { Profile } from "@/types/database";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -52,7 +52,7 @@ export default function ApplicantsPage() {
     isLoading,
     mutate,
   } = useQuery<Profile[]>(organization ? `applicants-${organization.id}` : null, async () => {
-    const { data } = await supabase
+    const { data } = await getSupabase()
       .from("user_organizations")
       .select("profiles(*)")
       .eq("organization_id", organization!.id)
@@ -77,16 +77,18 @@ export default function ApplicantsPage() {
     setSaving(true);
 
     const id = crypto.randomUUID();
-    await supabase.from("profiles").insert({
-      id,
-      email: newEmail,
-      display_name: newName || null,
-      role: "applicant",
-      hiring_type: newHiringType || null,
-      graduation_year: newHiringType === "new_grad" && newGradYear ? Number(newGradYear) : null,
-    });
+    await getSupabase()
+      .from("profiles")
+      .insert({
+        id,
+        email: newEmail,
+        display_name: newName || null,
+        role: "applicant",
+        hiring_type: newHiringType || null,
+        graduation_year: newHiringType === "new_grad" && newGradYear ? Number(newGradYear) : null,
+      });
 
-    await supabase.from("user_organizations").insert({
+    await getSupabase().from("user_organizations").insert({
       user_id: id,
       organization_id: organization.id,
     });

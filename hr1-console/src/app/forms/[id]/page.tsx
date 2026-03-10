@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/table";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import type { CustomForm, FormField, FormChangeLog } from "@/types/database";
 import { format } from "date-fns";
 import { Plus, Trash2, Pencil } from "lucide-react";
@@ -106,15 +106,15 @@ export default function FormDetailPage() {
 
     const [{ data: formData }, { data: fieldsData }, { data: responsesData }, { data: logsData }] =
       await Promise.all([
-        supabase.from("custom_forms").select("*").eq("id", id).single(),
-        supabase.from("form_fields").select("*").eq("form_id", id).order("sort_order"),
-        supabase
+        getSupabase().from("custom_forms").select("*").eq("id", id).single(),
+        getSupabase().from("form_fields").select("*").eq("form_id", id).order("sort_order"),
+        getSupabase()
           .from("form_responses")
           .select(
             "*, applications:application_id(applicant_id, profiles:applicant_id(display_name, email))"
           )
           .eq("form_id", id),
-        supabase
+        getSupabase()
           .from("form_change_logs")
           .select("*")
           .eq("form_id", id)
@@ -202,7 +202,7 @@ export default function FormDetailPage() {
 
     // 1. Update form title/description
     if (editTitle !== form.title || editDescription !== (form.description ?? "")) {
-      await supabase
+      await getSupabase()
         .from("custom_forms")
         .update({ title: editTitle, description: editDescription || null })
         .eq("id", form.id);
@@ -226,7 +226,7 @@ export default function FormDetailPage() {
     // Deleted fields
     const deletedIds = existingIds.filter((fid) => !editIds.includes(fid));
     if (deletedIds.length > 0) {
-      await supabase.from("form_fields").delete().in("id", deletedIds);
+      await getSupabase().from("form_fields").delete().in("id", deletedIds);
       const deletedLabels = fields
         .filter((f) => deletedIds.includes(f.id))
         .map((f) => f.label)
@@ -237,22 +237,24 @@ export default function FormDetailPage() {
     // New fields
     const newFields = editFields.filter((f) => f.isNew);
     if (newFields.length > 0) {
-      await supabase.from("form_fields").insert(
-        newFields.map((f, i) => ({
-          id: `field-${form.id}-${Date.now()}-${i}`,
-          form_id: form.id,
-          type: f.field_type,
-          label: f.label,
-          description: f.description || null,
-          placeholder: f.placeholder || null,
-          is_required: f.is_required,
-          options:
-            f.options && ["radio", "checkbox", "dropdown"].includes(f.field_type)
-              ? f.options.split("\n").filter(Boolean)
-              : null,
-          sort_order: f.sort_order,
-        }))
-      );
+      await getSupabase()
+        .from("form_fields")
+        .insert(
+          newFields.map((f, i) => ({
+            id: `field-${form.id}-${Date.now()}-${i}`,
+            form_id: form.id,
+            type: f.field_type,
+            label: f.label,
+            description: f.description || null,
+            placeholder: f.placeholder || null,
+            is_required: f.is_required,
+            options:
+              f.options && ["radio", "checkbox", "dropdown"].includes(f.field_type)
+                ? f.options.split("\n").filter(Boolean)
+                : null,
+            sort_order: f.sort_order,
+          }))
+        );
       const newLabels = newFields.map((f) => f.label).join("、");
       logs.push({ change_type: "field_added", summary: `フィールド「${newLabels}」を追加` });
     }
@@ -270,7 +272,7 @@ export default function FormDetailPage() {
         ef.options !== (original.options?.join("\n") ?? "");
 
       if (changed) {
-        await supabase
+        await getSupabase()
           .from("form_fields")
           .update({
             type: ef.field_type,
@@ -291,15 +293,17 @@ export default function FormDetailPage() {
 
     // 3. Save change logs
     if (logs.length > 0) {
-      await supabase.from("form_change_logs").insert(
-        logs.map((log, i) => ({
-          id: `log-${form.id}-${Date.now()}-${i}`,
-          form_id: form.id,
-          change_type: log.change_type,
-          summary: log.summary,
-          details: log.details ?? null,
-        }))
-      );
+      await getSupabase()
+        .from("form_change_logs")
+        .insert(
+          logs.map((log, i) => ({
+            id: `log-${form.id}-${Date.now()}-${i}`,
+            form_id: form.id,
+            change_type: log.change_type,
+            summary: log.summary,
+            details: log.details ?? null,
+          }))
+        );
     }
 
     setSaving(false);

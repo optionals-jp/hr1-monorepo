@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
-import { supabase } from "./supabase";
+import { getSupabase } from "./supabase";
 import { useAuth } from "./auth-context";
 import type { Organization } from "@/types/database";
 
@@ -42,7 +42,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function loadOrgs() {
-      const { data } = await supabase
+      const { data } = await getSupabase()
         .from("user_organizations")
         .select("organization_id, organizations(*)")
         .eq("user_id", user!.id)

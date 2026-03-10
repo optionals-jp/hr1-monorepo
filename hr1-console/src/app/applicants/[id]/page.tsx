@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import type { Profile, Application, ApplicationStep } from "@/types/database";
 import {
   DropdownMenu,
@@ -93,8 +93,8 @@ export default function ApplicantDetailPage() {
     async function load() {
       setLoading(true);
       const [{ data: profileData }, { data: appsData }] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", id).single(),
-        supabase
+        getSupabase().from("profiles").select("*").eq("id", id).single(),
+        getSupabase()
           .from("applications")
           .select("*, jobs(*), application_steps(*)")
           .eq("applicant_id", id)
@@ -182,7 +182,7 @@ export default function ApplicantDetailPage() {
       // Fetch linked forms
       if (formStepIds.length > 0) {
         const formIds = [...new Set(formStepIds.map((f) => f.relatedId))];
-        const { data: formsData } = await supabase
+        const { data: formsData } = await getSupabase()
           .from("custom_forms")
           .select("id, title")
           .in("id", formIds);
@@ -207,7 +207,7 @@ export default function ApplicantDetailPage() {
       // Fetch linked interviews
       if (interviewStepIds.length > 0) {
         const intIds = [...new Set(interviewStepIds.map((i) => i.relatedId))];
-        const { data: intData } = await supabase
+        const { data: intData } = await getSupabase()
           .from("interviews")
           .select("id, title, status")
           .in("id", intIds);

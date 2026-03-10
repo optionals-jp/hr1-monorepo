@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/table";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import type { Interview, InterviewSlot, InterviewChangeLog } from "@/types/database";
 import { Calendar, Plus, Trash2, Pencil, Search } from "lucide-react";
 import { format } from "date-fns";
@@ -107,14 +107,14 @@ export default function SchedulingDetailPage() {
   const load = async () => {
     setLoading(true);
     const [{ data }, { data: logsData }] = await Promise.all([
-      supabase
+      getSupabase()
         .from("interviews")
         .select(
           "*, interview_slots(*, applications:application_id(id, profiles:applicant_id(display_name, email)))"
         )
         .eq("id", id)
         .single(),
-      supabase
+      getSupabase()
         .from("interview_change_logs")
         .select("*")
         .eq("interview_id", id)
@@ -161,19 +161,21 @@ export default function SchedulingDetailPage() {
 
   const updateStatus = async (status: string) => {
     const oldStatus = interview?.status;
-    await supabase.from("interviews").update({ status }).eq("id", id);
+    await getSupabase().from("interviews").update({ status }).eq("id", id);
     setInterview((prev) => (prev ? { ...prev, status: status as Interview["status"] } : prev));
 
     // Log status change
     if (oldStatus && oldStatus !== status) {
-      await supabase.from("interview_change_logs").insert({
-        id: `log-${id}-${Date.now()}`,
-        interview_id: id,
-        change_type: "status_updated",
-        summary: `ステータスを「${statusLabels[oldStatus]}」から「${statusLabels[status]}」に変更`,
-        details: { old: oldStatus, new: status },
-      });
-      const { data: logsData } = await supabase
+      await getSupabase()
+        .from("interview_change_logs")
+        .insert({
+          id: `log-${id}-${Date.now()}`,
+          interview_id: id,
+          change_type: "status_updated",
+          summary: `ステータスを「${statusLabels[oldStatus]}」から「${statusLabels[status]}」に変更`,
+          details: { old: oldStatus, new: status },
+        });
+      const { data: logsData } = await getSupabase()
         .from("interview_change_logs")
         .select("*")
         .eq("interview_id", id)
@@ -232,7 +234,7 @@ export default function SchedulingDetailPage() {
       logs.push({ change_type: "notes_updated", summary: "備考を変更" });
     }
 
-    await supabase
+    await getSupabase()
       .from("interviews")
       .update({
         title: editTitle,
@@ -251,21 +253,23 @@ export default function SchedulingDetailPage() {
       return !slot?.application_id;
     });
     if (deletableIds.length > 0) {
-      await supabase.from("interview_slots").delete().in("id", deletableIds);
+      await getSupabase().from("interview_slots").delete().in("id", deletableIds);
       logs.push({ change_type: "slot_deleted", summary: `候補日時を${deletableIds.length}件削除` });
     }
 
     const newSlots = editSlots.filter((s) => s.isNew && s.startAt && s.endAt);
     if (newSlots.length > 0) {
-      await supabase.from("interview_slots").insert(
-        newSlots.map((s, i) => ({
-          id: `slot-${interview.id}-${Date.now()}-${i}`,
-          interview_id: interview.id,
-          start_at: new Date(s.startAt).toISOString(),
-          end_at: new Date(s.endAt).toISOString(),
-          is_selected: false,
-        }))
-      );
+      await getSupabase()
+        .from("interview_slots")
+        .insert(
+          newSlots.map((s, i) => ({
+            id: `slot-${interview.id}-${Date.now()}-${i}`,
+            interview_id: interview.id,
+            start_at: new Date(s.startAt).toISOString(),
+            end_at: new Date(s.endAt).toISOString(),
+            is_selected: false,
+          }))
+        );
       logs.push({ change_type: "slot_added", summary: `候補日時を${newSlots.length}件追加` });
     }
 
@@ -276,7 +280,7 @@ export default function SchedulingDetailPage() {
       const origStart = toLocalDatetime(original.start_at);
       const origEnd = toLocalDatetime(original.end_at);
       if (es.startAt !== origStart || es.endAt !== origEnd) {
-        await supabase
+        await getSupabase()
           .from("interview_slots")
           .update({
             start_at: new Date(es.startAt).toISOString(),
@@ -291,14 +295,16 @@ export default function SchedulingDetailPage() {
     }
 
     if (logs.length > 0) {
-      await supabase.from("interview_change_logs").insert(
-        logs.map((log, i) => ({
-          id: `log-${interview.id}-${Date.now()}-${i}`,
-          interview_id: interview.id,
-          change_type: log.change_type,
-          summary: log.summary,
-        }))
-      );
+      await getSupabase()
+        .from("interview_change_logs")
+        .insert(
+          logs.map((log, i) => ({
+            id: `log-${interview.id}-${Date.now()}-${i}`,
+            interview_id: interview.id,
+            change_type: log.change_type,
+            summary: log.summary,
+          }))
+        );
     }
 
     setSaving(false);

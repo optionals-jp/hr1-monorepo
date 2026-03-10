@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/table";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import type { Job, JobStep, JobChangeLog } from "@/types/database";
 import {
   DropdownMenu,
@@ -139,14 +139,14 @@ export default function JobDetailPage() {
     setLoading(true);
     const [{ data: jobData }, { data: stepsData }, { data: appsData }, { data: logsData }] =
       await Promise.all([
-        supabase.from("jobs").select("*").eq("id", id).single(),
-        supabase.from("job_steps").select("*").eq("job_id", id).order("step_order"),
-        supabase
+        getSupabase().from("jobs").select("*").eq("id", id).single(),
+        getSupabase().from("job_steps").select("*").eq("job_id", id).order("step_order"),
+        getSupabase()
           .from("applications")
           .select("*, profiles:applicant_id(display_name, email), application_steps(*)")
           .eq("job_id", id)
           .order("applied_at", { ascending: false }),
-        supabase
+        getSupabase()
           .from("job_change_logs")
           .select("*")
           .eq("job_id", id)
@@ -206,18 +206,20 @@ export default function JobDetailPage() {
 
   const updateJobStatus = async (status: string) => {
     const oldStatus = job?.status;
-    await supabase.from("jobs").update({ status }).eq("id", id);
+    await getSupabase().from("jobs").update({ status }).eq("id", id);
     setJob((prev) => (prev ? { ...prev, status: status as Job["status"] } : prev));
 
     if (oldStatus && oldStatus !== status) {
-      await supabase.from("job_change_logs").insert({
-        id: `log-${id}-${Date.now()}`,
-        job_id: id,
-        change_type: "status_updated",
-        summary: `ステータスを「${statusLabels[oldStatus]}」から「${statusLabels[status]}」に変更`,
-        details: { old: oldStatus, new: status },
-      });
-      const { data: logsData } = await supabase
+      await getSupabase()
+        .from("job_change_logs")
+        .insert({
+          id: `log-${id}-${Date.now()}`,
+          job_id: id,
+          change_type: "status_updated",
+          summary: `ステータスを「${statusLabels[oldStatus]}」から「${statusLabels[status]}」に変更`,
+          details: { old: oldStatus, new: status },
+        });
+      const { data: logsData } = await getSupabase()
         .from("job_change_logs")
         .select("*")
         .eq("job_id", id)
@@ -231,7 +233,7 @@ export default function JobDetailPage() {
     const nextOrder = steps.length + 1;
     const stepId = `step-${id}-${Date.now()}`;
 
-    await supabase.from("job_steps").insert({
+    await getSupabase().from("job_steps").insert({
       id: stepId,
       job_id: id,
       step_type: newStepType,
@@ -239,12 +241,14 @@ export default function JobDetailPage() {
       label: newStepLabel,
     });
 
-    await supabase.from("job_change_logs").insert({
-      id: `log-${id}-${Date.now()}-step`,
-      job_id: id,
-      change_type: "step_added",
-      summary: `ステップ「${newStepLabel}」を追加`,
-    });
+    await getSupabase()
+      .from("job_change_logs")
+      .insert({
+        id: `log-${id}-${Date.now()}-step`,
+        job_id: id,
+        change_type: "step_added",
+        summary: `ステップ「${newStepLabel}」を追加`,
+      });
 
     setNewStepType("interview");
     setNewStepLabel("");
@@ -254,15 +258,17 @@ export default function JobDetailPage() {
 
   const removeStep = async (stepId: string) => {
     const step = steps.find((s) => s.id === stepId);
-    await supabase.from("job_steps").delete().eq("id", stepId);
+    await getSupabase().from("job_steps").delete().eq("id", stepId);
 
     if (step) {
-      await supabase.from("job_change_logs").insert({
-        id: `log-${id}-${Date.now()}-stepdel`,
-        job_id: id,
-        change_type: "step_deleted",
-        summary: `ステップ「${step.label}」を削除`,
-      });
+      await getSupabase()
+        .from("job_change_logs")
+        .insert({
+          id: `log-${id}-${Date.now()}-stepdel`,
+          job_id: id,
+          change_type: "step_deleted",
+          summary: `ステップ「${step.label}」を削除`,
+        });
     }
 
     load();
@@ -307,7 +313,7 @@ export default function JobDetailPage() {
       logs.push({ change_type: "info_updated", summary: "求人情報を変更" });
     }
 
-    await supabase
+    await getSupabase()
       .from("jobs")
       .update({
         title: editTitle,
@@ -320,15 +326,17 @@ export default function JobDetailPage() {
       .eq("id", job.id);
 
     if (logs.length > 0) {
-      await supabase.from("job_change_logs").insert(
-        logs.map((log, i) => ({
-          id: `log-${job.id}-${Date.now()}-${i}`,
-          job_id: job.id,
-          change_type: log.change_type,
-          summary: log.summary,
-          details: log.details ?? null,
-        }))
-      );
+      await getSupabase()
+        .from("job_change_logs")
+        .insert(
+          logs.map((log, i) => ({
+            id: `log-${job.id}-${Date.now()}-${i}`,
+            job_id: job.id,
+            change_type: log.change_type,
+            summary: log.summary,
+            details: log.details ?? null,
+          }))
+        );
     }
 
     setSavingInfo(false);

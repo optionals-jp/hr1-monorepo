@@ -30,7 +30,7 @@ const mockSupabase = vi.hoisted(() => {
 });
 
 vi.mock("@/lib/supabase", () => ({
-  supabase: mockSupabase,
+  getSupabase: () => mockSupabase,
 }));
 
 import { AuthProvider, useAuth } from "@/lib/auth-context";

@@ -16,7 +16,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import type { Application, ApplicationStep, CustomForm, Interview } from "@/types/database";
 import {
   Check,
@@ -79,7 +79,7 @@ export default function ApplicationDetailPage() {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase
+    const { data } = await getSupabase()
       .from("applications")
       .select(
         "*, jobs(*), profiles:applicant_id(id, email, display_name, role), application_steps(*)"
@@ -111,14 +111,14 @@ export default function ApplicationDetailPage() {
     setResourceDialogOpen(true);
 
     if (step.step_type === "form") {
-      const { data } = await supabase
+      const { data } = await getSupabase()
         .from("custom_forms")
         .select("*")
         .eq("organization_id", organization.id)
         .order("created_at", { ascending: false });
       setForms(data ?? []);
     } else if (step.step_type === "interview") {
-      const { data } = await supabase
+      const { data } = await getSupabase()
         .from("interviews")
         .select("*")
         .eq("organization_id", organization.id)
@@ -133,7 +133,7 @@ export default function ApplicationDetailPage() {
   const startStepWithResource = async (resourceId: string) => {
     if (!resourceDialogStep) return;
 
-    await supabase
+    await getSupabase()
       .from("application_steps")
       .update({
         status: "in_progress",
@@ -157,7 +157,7 @@ export default function ApplicationDetailPage() {
       }
 
       // その他のステップは直接開始
-      await supabase
+      await getSupabase()
         .from("application_steps")
         .update({
           status: "in_progress",
@@ -165,7 +165,7 @@ export default function ApplicationDetailPage() {
         })
         .eq("id", step.id);
     } else if (step.status === "in_progress") {
-      await supabase
+      await getSupabase()
         .from("application_steps")
         .update({
           status: "completed",
@@ -180,7 +180,7 @@ export default function ApplicationDetailPage() {
       if (nextStep) {
         // 次ステップがリソース選択を必要としない場合のみ自動開始
         if (!isResourceStepType(nextStep.step_type)) {
-          await supabase
+          await getSupabase()
             .from("application_steps")
             .update({
               status: "in_progress",
@@ -194,7 +194,7 @@ export default function ApplicationDetailPage() {
   };
 
   const skipStep = async (step: ApplicationStep) => {
-    await supabase
+    await getSupabase()
       .from("application_steps")
       .update({ status: "skipped", completed_at: new Date().toISOString() })
       .eq("id", step.id);
@@ -202,7 +202,7 @@ export default function ApplicationDetailPage() {
   };
 
   const unskipStep = async (step: ApplicationStep) => {
-    await supabase
+    await getSupabase()
       .from("application_steps")
       .update({ status: "pending", started_at: null, completed_at: null })
       .eq("id", step.id);
@@ -228,7 +228,7 @@ export default function ApplicationDetailPage() {
 
   const updateApplicationStatus = async (status: string | null) => {
     if (!status) return;
-    await supabase.from("applications").update({ status }).eq("id", id);
+    await getSupabase().from("applications").update({ status }).eq("id", id);
     setApplication((prev) => (prev ? { ...prev, status: status as Application["status"] } : prev));
   };
 

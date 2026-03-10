@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOrg } from "@/lib/org-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { Plus, Trash2, GripVertical } from "lucide-react";
 
 const stepTypeLabels: Record<string, string> = {
@@ -75,28 +75,32 @@ export default function NewJobPage() {
 
     const jobId = `job-${Date.now()}`;
 
-    await supabase.from("jobs").insert({
-      id: jobId,
-      organization_id: organization.id,
-      title,
-      description,
-      department: department || null,
-      location: location || null,
-      employment_type: employmentType || null,
-      salary_range: salaryRange || null,
-      status,
-    });
+    await getSupabase()
+      .from("jobs")
+      .insert({
+        id: jobId,
+        organization_id: organization.id,
+        title,
+        description,
+        department: department || null,
+        location: location || null,
+        employment_type: employmentType || null,
+        salary_range: salaryRange || null,
+        status,
+      });
 
     if (steps.length > 0) {
-      await supabase.from("job_steps").insert(
-        steps.map((step, index) => ({
-          id: `step-${jobId}-${index + 1}`,
-          job_id: jobId,
-          step_type: step.step_type,
-          step_order: index + 1,
-          label: step.label,
-        }))
-      );
+      await getSupabase()
+        .from("job_steps")
+        .insert(
+          steps.map((step, index) => ({
+            id: `step-${jobId}-${index + 1}`,
+            job_id: jobId,
+            step_type: step.step_type,
+            step_order: index + 1,
+            label: step.label,
+          }))
+        );
     }
 
     router.push("/jobs");

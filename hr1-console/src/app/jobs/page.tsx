@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useOrg } from "@/lib/org-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import type { Job } from "@/types/database";
 import { Plus } from "lucide-react";
@@ -38,7 +38,7 @@ export default function JobsPage() {
   const { data: jobs = [], isLoading } = useQuery<Job[]>(
     organization ? `jobs-${organization.id}` : null,
     async () => {
-      const { data } = await supabase
+      const { data } = await getSupabase()
         .from("jobs")
         .select("*")
         .eq("organization_id", organization!.id)

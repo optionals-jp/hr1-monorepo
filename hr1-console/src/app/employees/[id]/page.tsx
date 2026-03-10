@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { useOrg } from "@/lib/org-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import type { Profile, Department } from "@/types/database";
 import { Pencil } from "lucide-react";
 import { format } from "date-fns";
@@ -40,8 +40,8 @@ export default function EmployeeDetailPage() {
   const load = async () => {
     setLoading(true);
     const [{ data: profileData }, { data: edData }] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", id).single(),
-      supabase
+      getSupabase().from("profiles").select("*").eq("id", id).single(),
+      getSupabase()
         .from("employee_departments")
         .select("department_id, departments(id, name)")
         .eq("user_id", id),
@@ -57,7 +57,7 @@ export default function EmployeeDetailPage() {
 
     // Fetch all departments for the org
     if (organization) {
-      const { data: allDepts } = await supabase
+      const { data: allDepts } = await getSupabase()
         .from("departments")
         .select("*")
         .eq("organization_id", organization.id)
@@ -87,7 +87,7 @@ export default function EmployeeDetailPage() {
     if (!profile) return;
     setSaving(true);
 
-    await supabase
+    await getSupabase()
       .from("profiles")
       .update({
         display_name: editName.trim() || null,
@@ -95,9 +95,9 @@ export default function EmployeeDetailPage() {
       })
       .eq("id", profile.id);
 
-    await supabase.from("employee_departments").delete().eq("user_id", profile.id);
+    await getSupabase().from("employee_departments").delete().eq("user_id", profile.id);
     if (editDeptIds.length > 0) {
-      await supabase
+      await getSupabase()
         .from("employee_departments")
         .insert(editDeptIds.map((deptId) => ({ user_id: profile.id, department_id: deptId })));
     }

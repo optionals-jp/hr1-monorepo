@@ -9,7 +9,7 @@ import {
   useRef,
   ReactNode,
 } from "react";
-import { supabase } from "./supabase";
+import { getSupabase } from "./supabase";
 import type { Profile } from "@/types/database";
 
 interface AuthContextValue {
@@ -25,7 +25,11 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const CONSOLE_ROLES: Profile["role"][] = ["admin", "employee"];
 
 async function fetchProfile(userId: string): Promise<Profile | null> {
-  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
+  const { data, error } = await getSupabase()
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
 
   if (error || !data) return null;
   if (!CONSOLE_ROLES.includes(data.role)) return null;
@@ -36,54 +40,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  // signIn 処理中は onAuthStateChange での状態更新をスキップ
   const signingIn = useRef(false);
 
-  // onAuthStateChange はセッション復元（ページリロード、トークンリフレッシュ）を担当
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      // signIn が処理中の場合はスキップ（signIn 内で直接状態を設定する）
+    } = getSupabase().auth.onAuthStateChange((_event, session) => {
+      // onAuthStateChange は内部ロックを保持するため、
+      // コールバック内で await してはいけない（デッドロックになる）。
+      // 非同期処理はコールバックの外で実行する。
       if (signingIn.current) {
         setLoading(false);
         return;
       }
 
-      try {
-        if (session?.user) {
-          const prof = await fetchProfile(session.user.id);
+      if (!session?.user) {
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      // セッション情報を保持し、ロック解放後にプロフィール取得を実行
+      const sessionUser = session.user;
+      fetchProfile(sessionUser.id)
+        .then((prof) => {
           if (prof) {
-            setUser({
-              id: session.user.id,
-              email: session.user.email ?? "",
-            });
+            setUser({ id: sessionUser.id, email: sessionUser.email ?? "" });
             setProfile(prof);
           } else {
-            await supabase.auth.signOut();
+            getSupabase().auth.signOut();
             setUser(null);
             setProfile(null);
           }
-        } else {
+        })
+        .catch(() => {
           setUser(null);
           setProfile(null);
-        }
-      } catch {
-        setUser(null);
-        setProfile(null);
-      } finally {
-        setLoading(false);
-      }
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // signIn は認証・ロールチェック・状態更新をすべて担当
   const signIn = useCallback(async (email: string, password: string) => {
     signingIn.current = true;
     try {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: authError } = await getSupabase().auth.signInWithPassword({
         email,
         password,
       });
@@ -94,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const prof = await fetchProfile(authData.user.id);
       if (!prof) {
-        await supabase.auth.signOut();
+        await getSupabase().auth.signOut();
         return {
           error: "このアカウントにはコンソールへのアクセス権限がありません。",
         };
@@ -104,7 +110,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(prof);
       return { error: null };
     } finally {
-      // onAuthStateChange の pending コールバックが処理されてからリセット
       setTimeout(() => {
         signingIn.current = false;
       }, 0);
@@ -112,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    await getSupabase().auth.signOut();
     setUser(null);
     setProfile(null);
   }, []);

@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { EditPanel } from "@/components/ui/edit-panel";
 import { useOrg } from "@/lib/org-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import type { Department } from "@/types/database";
 import { Plus, Trash2, Pencil } from "lucide-react";
@@ -38,7 +38,7 @@ export default function DepartmentsPage() {
     isLoading,
     mutate,
   } = useQuery<Department[]>(organization ? `departments-${organization.id}` : null, async () => {
-    const { data } = await supabase
+    const { data } = await getSupabase()
       .from("departments")
       .select("*")
       .eq("organization_id", organization!.id)
@@ -54,7 +54,7 @@ export default function DepartmentsPage() {
   const handleAdd = async () => {
     if (!organization || !newDeptName.trim()) return;
     setSavingAdd(true);
-    await supabase.from("departments").insert({
+    await getSupabase().from("departments").insert({
       id: crypto.randomUUID(),
       organization_id: organization.id,
       name: newDeptName.trim(),
@@ -65,7 +65,7 @@ export default function DepartmentsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from("departments").delete().eq("id", id);
+    await getSupabase().from("departments").delete().eq("id", id);
     mutate();
   };
 
@@ -78,7 +78,7 @@ export default function DepartmentsPage() {
   const saveEdit = async () => {
     if (!editingId || !editName.trim()) return;
     setSavingEdit(true);
-    await supabase.from("departments").update({ name: editName.trim() }).eq("id", editingId);
+    await getSupabase().from("departments").update({ name: editName.trim() }).eq("id", editingId);
     setSavingEdit(false);
     setEditingId(null);
     setEditDialogOpen(false);

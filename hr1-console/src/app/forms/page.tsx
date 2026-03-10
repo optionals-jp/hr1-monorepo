@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useOrg } from "@/lib/org-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import type { CustomForm } from "@/types/database";
 import { Plus } from "lucide-react";
@@ -26,7 +26,7 @@ export default function FormsPage() {
   const { data: forms = [], isLoading } = useQuery<CustomForm[]>(
     organization ? `forms-${organization.id}` : null,
     async () => {
-      const { data } = await supabase
+      const { data } = await getSupabase()
         .from("custom_forms")
         .select("*")
         .eq("organization_id", organization!.id)

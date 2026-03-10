@@ -12,10 +12,3 @@ export function getSupabase(): SupabaseClient {
   }
   return _supabase;
 }
-
-/** @deprecated Use getSupabase() instead — kept for compatibility */
-export const supabase = new Proxy({} as SupabaseClient, {
-  get(_, prop) {
-    return (getSupabase() as unknown as Record<string | symbol, unknown>)[prop];
-  },
-});
