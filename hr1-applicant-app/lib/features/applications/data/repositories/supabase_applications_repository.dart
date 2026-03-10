@@ -30,11 +30,13 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
   }
 
   @override
-  Future<List<Application>> getApplicationsAsync(String organizationId) async {
+  Future<List<Application>> getApplicationsAsync(
+      String organizationId, String applicantId) async {
     final response = await _client
         .from('applications')
         .select('*, jobs(*), application_steps(*)')
         .eq('organization_id', organizationId)
+        .eq('applicant_id', applicantId)
         .order('applied_at', ascending: false);
 
     return (response as List).map((row) {
@@ -97,6 +99,39 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
 
     // 3. 作成した application を返す
     return (await getApplicationAsync(appId))!;
+  }
+
+  @override
+  Future<void> completeStepAsync(String stepId, String applicationId) async {
+    // 1. 現在のステップを完了にする
+    await _client.from('application_steps').update({
+      'status': 'completed',
+      'completed_at': DateTime.now().toIso8601String(),
+    }).eq('id', stepId);
+
+    // 2. このアプリケーションの全ステップを取得
+    final allSteps = await _client
+        .from('application_steps')
+        .select()
+        .eq('application_id', applicationId)
+        .order('step_order');
+
+    // 3. 完了したステップの次のpendingステップを in_progress にする
+    final completedStep =
+        (allSteps as List).firstWhere((s) => s['id'] == stepId);
+    final completedOrder = completedStep['step_order'] as int;
+
+    final nextStep = allSteps.cast<Map<String, dynamic>>().where((s) {
+      return (s['step_order'] as int) > completedOrder &&
+          s['status'] == 'pending';
+    }).firstOrNull;
+
+    if (nextStep != null) {
+      await _client.from('application_steps').update({
+        'status': 'in_progress',
+        'started_at': DateTime.now().toIso8601String(),
+      }).eq('id', nextStep['id']);
+    }
   }
 
   Application _mapApplication(Map<String, dynamic> map) {

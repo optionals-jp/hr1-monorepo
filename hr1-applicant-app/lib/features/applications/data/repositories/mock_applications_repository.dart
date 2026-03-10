@@ -38,8 +38,13 @@ class MockApplicationsRepository implements ApplicationsRepository {
   }
 
   @override
-  Future<List<Application>> getApplicationsAsync(String organizationId) async {
-    return getApplications(organizationId);
+  Future<List<Application>> getApplicationsAsync(
+      String organizationId, String applicantId) async {
+    return _applications
+        .where((a) =>
+            a.organizationId == organizationId &&
+            a.applicantId == applicantId)
+        .toList();
   }
 
   @override
@@ -98,6 +103,11 @@ class MockApplicationsRepository implements ApplicationsRepository {
 
     _applications.add(application);
     return application;
+  }
+
+  @override
+  Future<void> completeStepAsync(String stepId, String applicationId) async {
+    // モックでは何もしない
   }
 }
 

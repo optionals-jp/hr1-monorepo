@@ -4,10 +4,13 @@ import '../entities/app_user.dart';
 /// 認証リポジトリの抽象インターフェース
 /// domain層はこのインターフェースにのみ依存する
 abstract class AuthRepository {
-  /// メール・パスワードでログイン
-  Future<Result<AppUser>> signInWithPassword({
+  /// メールアドレスにOTPを送信
+  Future<Result<void>> sendOtp({required String email});
+
+  /// OTPを検証してログイン
+  Future<Result<AppUser>> verifyOtp({
     required String email,
-    required String password,
+    required String token,
   });
 
   /// ログアウト
@@ -18,4 +21,7 @@ abstract class AuthRepository {
 
   /// 認証状態の変更を監視
   Stream<bool> watchAuthState();
+
+  /// 現在認証済みかどうか
+  bool get isAuthenticated;
 }

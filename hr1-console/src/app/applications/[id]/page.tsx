@@ -3,10 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -15,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
 import { supabase } from "@/lib/supabase";
 import type { Application, ApplicationStep, CustomForm, Interview } from "@/types/database";
@@ -27,6 +27,7 @@ import {
   Calendar,
   ExternalLink,
   Plus,
+  Undo2,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -69,6 +70,7 @@ export default function ApplicationDetailPage() {
   const [loading, setLoading] = useState(true);
 
   // リソース選択ダイアログの状態
+  const [activeTab, setActiveTab] = useState<"dashboard" | "steps" | "history">("dashboard");
   const [resourceDialogOpen, setResourceDialogOpen] = useState(false);
   const [resourceDialogStep, setResourceDialogStep] = useState<ApplicationStep | null>(null);
   const [forms, setForms] = useState<CustomForm[]>([]);
@@ -192,8 +194,36 @@ export default function ApplicationDetailPage() {
   };
 
   const skipStep = async (step: ApplicationStep) => {
-    await supabase.from("application_steps").update({ status: "skipped" }).eq("id", step.id);
+    await supabase
+      .from("application_steps")
+      .update({ status: "skipped", completed_at: new Date().toISOString() })
+      .eq("id", step.id);
     load();
+  };
+
+  const unskipStep = async (step: ApplicationStep) => {
+    await supabase
+      .from("application_steps")
+      .update({ status: "pending", started_at: null, completed_at: null })
+      .eq("id", step.id);
+    load();
+  };
+
+  /** 現在アクション可能なステップを判定（順序を強制） */
+  const currentStepOrder = (() => {
+    // 進行中のステップがあればそれが現在のステップ
+    const inProgress = steps.find((s) => s.status === "in_progress");
+    if (inProgress) return inProgress.step_order;
+    // なければ、最初の pending ステップ（skipped は飛ばす）
+    const firstPending = steps.find((s) => s.status === "pending");
+    if (firstPending) return firstPending.step_order;
+    return null;
+  })();
+
+  const canActOnStep = (step: ApplicationStep) => {
+    if (step.status === "completed") return false;
+    if (step.status === "skipped") return true; // 元に戻すボタンのみ表示
+    return step.step_order === currentStepOrder;
   };
 
   const updateApplicationStatus = async (status: string | null) => {
@@ -223,11 +253,19 @@ export default function ApplicationDetailPage() {
     email: string;
   };
 
+  const tabs = [
+    { value: "dashboard" as const, label: "ダッシュボード" },
+    { value: "steps" as const, label: "選考ステップ", count: steps.length },
+    { value: "history" as const, label: "選考履歴" },
+  ];
+
   return (
     <>
       <PageHeader
         title={`${profile?.display_name ?? profile?.email ?? "不明"} の応募`}
         description={application.jobs?.title ?? ""}
+        breadcrumb={[{ label: "応募管理", href: "/applications" }]}
+        sticky={false}
         action={
           <Select value={application.status} onValueChange={updateApplicationStatus}>
             <SelectTrigger className="w-32">
@@ -243,128 +281,128 @@ export default function ApplicationDetailPage() {
         }
       />
 
-      <PageContent>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* 応募者情報 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>応募者情報</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">名前</span>
-                <span>{profile?.display_name ?? "-"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">メール</span>
-                <span>{profile?.email ?? "-"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">応募日</span>
-                <span>{format(new Date(application.applied_at), "yyyy/MM/dd")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">ステータス</span>
-                <Badge>{statusLabels[application.status]}</Badge>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 選考ステップ */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>選考ステップ</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {steps.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  選考ステップがありません
-                </p>
-              ) : (
-                steps.map((step) => (
-                  <div
-                    key={step.id}
-                    className={`flex items-center gap-3 rounded-lg border p-4 ${
-                      step.status === "in_progress" ? "border-primary bg-primary/5" : ""
-                    }`}
-                  >
-                    {/* Icon */}
-                    <div className="shrink-0">
-                      {step.status === "completed" ? (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-600">
-                          <Check className="h-4 w-4" />
-                        </div>
-                      ) : step.status === "in_progress" ? (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                          <Circle className="h-4 w-4 fill-current" />
-                        </div>
-                      ) : step.status === "skipped" ? (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                          <SkipForward className="h-4 w-4" />
-                        </div>
-                      ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                          <span className="text-xs font-bold">{step.step_order}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">{step.label}</p>
-                        <Badge variant="outline" className="text-xs">
-                          {stepTypeLabels[step.step_type] ?? step.step_type}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {stepStatusLabels[step.status]}
-                        {step.completed_at &&
-                          ` (${format(new Date(step.completed_at), "yyyy/MM/dd")})`}
-                      </p>
-                      {/* 紐付けリソースへのリンク */}
-                      {step.related_id && <ResourceLink step={step} />}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-2 shrink-0">
-                      {(step.status === "pending" || step.status === "in_progress") && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant={step.status === "in_progress" ? "default" : "outline"}
-                            onClick={() => advanceStep(step)}
-                          >
-                            {step.status === "pending" ? (
-                              <>
-                                開始
-                                <ArrowRight className="ml-1 h-3 w-3" />
-                              </>
-                            ) : (
-                              <>
-                                完了
-                                <Check className="ml-1 h-3 w-3" />
-                              </>
-                            )}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => skipStep(step)}
-                            className="text-muted-foreground"
-                          >
-                            スキップ
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))
+      {/* タブナビゲーション（sticky） */}
+      <div className="sticky top-0 z-10 bg-white">
+        <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8">
+          {tabs.map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setActiveTab(tab.value)}
+              className={cn(
+                "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
+                activeTab === tab.value
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               )}
-            </CardContent>
-          </Card>
+            >
+              {tab.label}
+              {"count" in tab && tab.count !== undefined && (
+                <span className="ml-1.5 text-xs text-muted-foreground">{tab.count}</span>
+              )}
+              {activeTab === tab.value && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+              )}
+            </button>
+          ))}
         </div>
-      </PageContent>
+      </div>
+
+      <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
+        {/* ===== ダッシュボードタブ ===== */}
+        {activeTab === "dashboard" && (
+          <div className="space-y-6 max-w-3xl">
+            {/* 応募者情報 */}
+            <section>
+              <div className="rounded-lg bg-white border">
+                <div className="px-5 pt-4 pb-2">
+                  <h2 className="text-sm font-semibold text-muted-foreground">応募者情報</h2>
+                </div>
+                <div className="px-5 py-4 space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">名前</span>
+                    <span className="font-medium">{profile?.display_name ?? "-"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">メール</span>
+                    <span>{profile?.email ?? "-"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">応募日</span>
+                    <span>{format(new Date(application.applied_at), "yyyy/MM/dd")}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">ステータス</span>
+                    <Badge>{statusLabels[application.status]}</Badge>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 選考ステップ概要 */}
+            <section>
+              <div className="rounded-lg bg-white border">
+                <div className="px-5 pt-4 pb-2">
+                  <h2 className="text-sm font-semibold text-muted-foreground">
+                    選考ステップ
+                    <span className="ml-1.5 text-xs font-normal">{steps.length}</span>
+                  </h2>
+                </div>
+                <div className="px-5 py-4 space-y-3">
+                  <StepList
+                    steps={steps}
+                    canActOnStep={canActOnStep}
+                    advanceStep={advanceStep}
+                    skipStep={skipStep}
+                    unskipStep={unskipStep}
+                  />
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* ===== 選考ステップタブ ===== */}
+        {activeTab === "steps" && (
+          <div className="space-y-6 max-w-3xl">
+            <section>
+              <div className="rounded-lg bg-white border">
+                <div className="px-5 pt-4 pb-2">
+                  <h2 className="text-sm font-semibold text-muted-foreground">
+                    選考ステップ
+                    <span className="ml-1.5 text-xs font-normal">{steps.length}</span>
+                  </h2>
+                </div>
+                <div className="px-5 py-4 space-y-3">
+                  <StepList
+                    steps={steps}
+                    canActOnStep={canActOnStep}
+                    advanceStep={advanceStep}
+                    skipStep={skipStep}
+                    unskipStep={unskipStep}
+                  />
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* ===== 選考履歴タブ ===== */}
+        {activeTab === "history" && (
+          <div className="space-y-6 max-w-3xl">
+            <section>
+              <div className="rounded-lg bg-white border">
+                <div className="px-5 pt-4 pb-2">
+                  <h2 className="text-sm font-semibold text-muted-foreground">選考履歴</h2>
+                </div>
+                <div className="px-5 py-4">
+                  <StepHistory steps={steps} />
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+      </div>
 
       {/* リソース選択ダイアログ */}
       <ResourceSelectDialog
@@ -377,6 +415,209 @@ export default function ApplicationDetailPage() {
         onSelect={startStepWithResource}
       />
     </>
+  );
+}
+
+/** ステップ一覧コンポーネント */
+function StepList({
+  steps,
+  canActOnStep,
+  advanceStep,
+  skipStep,
+  unskipStep,
+}: {
+  steps: ApplicationStep[];
+  canActOnStep: (step: ApplicationStep) => boolean;
+  advanceStep: (step: ApplicationStep) => void;
+  skipStep: (step: ApplicationStep) => void;
+  unskipStep: (step: ApplicationStep) => void;
+}) {
+  if (steps.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground text-center py-4">
+        選考ステップがありません
+      </p>
+    );
+  }
+
+  return (
+    <>
+      {steps.map((step) => (
+        <div
+          key={step.id}
+          className={`flex items-center gap-3 rounded-lg border p-4 ${
+            step.status === "in_progress" ? "border-primary bg-primary/5" : ""
+          }`}
+        >
+          {/* Icon */}
+          <div className="shrink-0">
+            {step.status === "completed" ? (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-600">
+                <Check className="h-4 w-4" />
+              </div>
+            ) : step.status === "in_progress" ? (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Circle className="h-4 w-4 fill-current" />
+              </div>
+            ) : step.status === "skipped" ? (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-orange-500">
+                <SkipForward className="h-4 w-4" />
+              </div>
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <span className="text-xs font-bold">{step.step_order}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">{step.label}</p>
+              <Badge variant="outline" className="text-xs">
+                {stepTypeLabels[step.step_type] ?? step.step_type}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {stepStatusLabels[step.status]}
+              {step.started_at &&
+                step.status === "in_progress" &&
+                ` (開始: ${format(new Date(step.started_at), "yyyy/MM/dd")})`}
+              {step.completed_at &&
+                step.status === "completed" &&
+                ` (完了: ${format(new Date(step.completed_at), "yyyy/MM/dd")})`}
+            </p>
+            {/* 紐付けリソースへのリンク */}
+            {step.related_id && <ResourceLink step={step} />}
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2 shrink-0">
+            {step.status === "skipped" && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => unskipStep(step)}
+                className="text-orange-600 hover:text-orange-700"
+              >
+                <Undo2 className="mr-1 h-3 w-3" />
+                元に戻す
+              </Button>
+            )}
+            {canActOnStep(step) &&
+              step.status !== "skipped" && (
+                <>
+                  <Button
+                    size="sm"
+                    variant={step.status === "in_progress" ? "default" : "outline"}
+                    onClick={() => advanceStep(step)}
+                  >
+                    {step.status === "pending" ? (
+                      <>
+                        開始
+                        <ArrowRight className="ml-1 h-3 w-3" />
+                      </>
+                    ) : (
+                      <>
+                        完了
+                        <Check className="ml-1 h-3 w-3" />
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => skipStep(step)}
+                    className="text-muted-foreground"
+                  >
+                    スキップ
+                  </Button>
+                </>
+              )}
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+/** ステップの履歴タイムライン */
+function StepHistory({ steps }: { steps: ApplicationStep[] }) {
+  // 各ステップの started_at / completed_at からイベントを生成
+  const events: { date: string; label: string; stepLabel: string; type: string }[] = [];
+
+  for (const step of steps) {
+    if (step.started_at) {
+      events.push({
+        date: step.started_at,
+        label: step.status === "skipped" ? "スキップ" : "開始",
+        stepLabel: step.label,
+        type: step.status === "skipped" ? "skipped" : "started",
+      });
+    }
+    if (step.completed_at && step.status === "completed") {
+      events.push({
+        date: step.completed_at,
+        label: "完了",
+        stepLabel: step.label,
+        type: "completed",
+      });
+    }
+    if (step.completed_at && step.status === "skipped") {
+      events.push({
+        date: step.completed_at,
+        label: "スキップ",
+        stepLabel: step.label,
+        type: "skipped",
+      });
+    }
+  }
+
+  // 日時の新しい順にソート
+  events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  if (events.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground text-center py-4">
+        まだ履歴がありません
+      </p>
+    );
+  }
+
+  return (
+    <div className="relative space-y-0">
+      {events.map((event, i) => (
+        <div key={`${event.date}-${event.stepLabel}-${event.type}`} className="flex gap-3 pb-4">
+          {/* タイムラインの線とドット */}
+          <div className="flex flex-col items-center">
+            <div
+              className={`h-3 w-3 rounded-full shrink-0 mt-1 ${
+                event.type === "completed"
+                  ? "bg-green-500"
+                  : event.type === "skipped"
+                    ? "bg-orange-400"
+                    : "bg-primary"
+              }`}
+            />
+            {i < events.length - 1 && (
+              <div className="w-px flex-1 bg-border mt-1" />
+            )}
+          </div>
+          {/* 内容 */}
+          <div className="pb-2">
+            <p className="text-sm font-medium">
+              {event.stepLabel}
+              <span className="ml-2 text-muted-foreground font-normal">
+                — {event.label}
+              </span>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {format(new Date(event.date), "yyyy/MM/dd HH:mm")}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 

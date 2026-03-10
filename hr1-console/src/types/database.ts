@@ -19,6 +19,8 @@ export interface Profile {
   avatar_url: string | null;
   department: string | null;
   position: string | null;
+  hiring_type: "new_grad" | "mid_career" | null;
+  graduation_year: number | null;
   created_at: string;
 }
 
@@ -71,6 +73,7 @@ export interface ApplicationStep {
   label: string;
   status: "pending" | "in_progress" | "completed" | "skipped";
   related_id: string | null;
+  started_at: string | null;
   completed_at: string | null;
 }
 
@@ -103,6 +106,26 @@ export interface FormResponse {
   created_at: string;
 }
 
+export interface FormChangeLog {
+  id: string;
+  form_id: string;
+  changed_by: string | null;
+  change_type: string;
+  summary: string;
+  details: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface JobChangeLog {
+  id: string;
+  job_id: string;
+  changed_by: string | null;
+  change_type: string;
+  summary: string;
+  details: Record<string, unknown> | null;
+  created_at: string;
+}
+
 export interface Interview {
   id: string;
   organization_id: string;
@@ -111,6 +134,16 @@ export interface Interview {
   notes: string | null;
   status: "scheduling" | "confirmed" | "completed" | "cancelled";
   confirmed_slot_id: string | null;
+  created_at: string;
+}
+
+export interface InterviewChangeLog {
+  id: string;
+  interview_id: string;
+  changed_by: string | null;
+  change_type: string;
+  summary: string;
+  details: Record<string, unknown> | null;
   created_at: string;
 }
 
@@ -125,4 +158,17 @@ export interface InterviewSlot {
     id: string;
     profiles?: { display_name: string | null; email: string };
   };
+}
+
+export interface Department {
+  id: string;
+  organization_id: string;
+  name: string;
+  created_at: string;
+}
+
+export interface EmployeeDepartment {
+  user_id: string;
+  department_id: string;
+  departments?: Department;
 }

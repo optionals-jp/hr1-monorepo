@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/router/app_router.dart';
-import '../../domain/entities/app_user.dart';
-import '../../domain/entities/organization.dart';
-import '../../domain/entities/user_role.dart';
 import '../providers/auth_providers.dart';
 
 /// スプラッシュ画面
@@ -33,48 +30,25 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
     if (!mounted) return;
 
-    if (kDevMode) {
-      // 開発モード：Supabaseからデータ取得して直接ホームへ
-      await _setDevUser();
+    final authRepo = ref.read(authRepositoryProvider);
+
+    if (authRepo.isAuthenticated) {
+      // セッションが有効 → プロフィール取得してホームへ
+      final result = await authRepo.getCurrentUser();
       if (!mounted) return;
-      context.go(AppRoutes.companyHome);
-      return;
+
+      switch (result) {
+        case Success(data: final user):
+          ref.read(appUserProvider.notifier).setUser(user);
+          context.go(AppRoutes.companyHome);
+        case Failure():
+          // プロフィール取得失敗 → ログインへ
+          context.go(AppRoutes.login);
+      }
+    } else {
+      // 未認証 → ログインへ
+      context.go(AppRoutes.login);
     }
-
-    // TODO: 本番用の認証チェック
-    context.go(AppRoutes.login);
-  }
-
-  /// 開発用ユーザーをセット（profiles + user_organizations からSupabase取得）
-  Future<void> _setDevUser() async {
-    final client = Supabase.instance.client;
-
-    // プロフィール取得
-    final profile = await client
-        .from('profiles')
-        .select()
-        .eq('id', 'dev-user-001')
-        .single();
-
-    // user_organizations 経由で所属企業を取得
-    final userOrgs = await client
-        .from('user_organizations')
-        .select('organization_id, organizations(*)')
-        .eq('user_id', profile['id']);
-
-    final orgs = (userOrgs as List)
-        .map((row) => Organization.fromJson(
-            Map<String, dynamic>.from(row['organizations'])))
-        .toList();
-
-    final user = AppUser(
-      id: profile['id'] as String,
-      email: profile['email'] as String,
-      displayName: profile['display_name'] as String?,
-      role: UserRole.values.byName(profile['role'] as String),
-      organizations: orgs,
-    );
-    ref.read(appUserProvider.notifier).setUser(user);
   }
 
   @override

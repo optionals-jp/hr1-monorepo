@@ -11,13 +11,15 @@ import {
   ClipboardList,
   Calendar,
   CalendarDays,
+  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const navItems = [
+const mainNavItems = [
   { href: "/", label: "ダッシュボード", icon: LayoutDashboard },
   { href: "/applicants", label: "応募者一覧", icon: UserPlus },
   { href: "/employees", label: "社員一覧", icon: Users },
+  { href: "/departments", label: "部署管理", icon: Building2 },
   { href: "/jobs", label: "求人管理", icon: Briefcase },
   { href: "/applications", label: "応募管理", icon: ClipboardList },
   { href: "/forms", label: "フォーム管理", icon: FileText },
@@ -30,7 +32,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-      {navItems.map(({ href, label, icon: Icon }) => {
+      {mainNavItems.map(({ href, label, icon: Icon }) => {
         const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
         return (
           <Link

@@ -15,8 +15,9 @@ abstract class ApplicationsRepository {
   /// 求人IDから求人情報を取得
   Job? getJob(String jobId);
 
-  /// 企業IDに紐づく応募一覧を非同期取得
-  Future<List<Application>> getApplicationsAsync(String organizationId);
+  /// 企業IDと応募者IDに紐づく応募一覧を非同期取得
+  Future<List<Application>> getApplicationsAsync(
+      String organizationId, String applicantId);
 
   /// 応募IDから応募情報を非同期取得
   Future<Application?> getApplicationAsync(String applicationId);
@@ -33,4 +34,7 @@ abstract class ApplicationsRepository {
     required String applicantId,
     required String organizationId,
   });
+
+  /// 選考ステップを完了し、次のステップを自動的に開始する
+  Future<void> completeStepAsync(String stepId, String applicationId);
 }
