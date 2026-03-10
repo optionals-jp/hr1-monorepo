@@ -434,9 +434,7 @@ function StepList({
 }) {
   if (steps.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground text-center py-4">
-        選考ステップがありません
-      </p>
+      <p className="text-sm text-muted-foreground text-center py-4">選考ステップがありません</p>
     );
   }
 
@@ -504,36 +502,35 @@ function StepList({
                 元に戻す
               </Button>
             )}
-            {canActOnStep(step) &&
-              step.status !== "skipped" && (
-                <>
-                  <Button
-                    size="sm"
-                    variant={step.status === "in_progress" ? "default" : "outline"}
-                    onClick={() => advanceStep(step)}
-                  >
-                    {step.status === "pending" ? (
-                      <>
-                        開始
-                        <ArrowRight className="ml-1 h-3 w-3" />
-                      </>
-                    ) : (
-                      <>
-                        完了
-                        <Check className="ml-1 h-3 w-3" />
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => skipStep(step)}
-                    className="text-muted-foreground"
-                  >
-                    スキップ
-                  </Button>
-                </>
-              )}
+            {canActOnStep(step) && step.status !== "skipped" && (
+              <>
+                <Button
+                  size="sm"
+                  variant={step.status === "in_progress" ? "default" : "outline"}
+                  onClick={() => advanceStep(step)}
+                >
+                  {step.status === "pending" ? (
+                    <>
+                      開始
+                      <ArrowRight className="ml-1 h-3 w-3" />
+                    </>
+                  ) : (
+                    <>
+                      完了
+                      <Check className="ml-1 h-3 w-3" />
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => skipStep(step)}
+                  className="text-muted-foreground"
+                >
+                  スキップ
+                </Button>
+              </>
+            )}
           </div>
         </div>
       ))}
@@ -577,11 +574,7 @@ function StepHistory({ steps }: { steps: ApplicationStep[] }) {
   events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   if (events.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground text-center py-4">
-        まだ履歴がありません
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground text-center py-4">まだ履歴がありません</p>;
   }
 
   return (
@@ -599,17 +592,13 @@ function StepHistory({ steps }: { steps: ApplicationStep[] }) {
                     : "bg-primary"
               }`}
             />
-            {i < events.length - 1 && (
-              <div className="w-px flex-1 bg-border mt-1" />
-            )}
+            {i < events.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
           </div>
           {/* 内容 */}
           <div className="pb-2">
             <p className="text-sm font-medium">
               {event.stepLabel}
-              <span className="ml-2 text-muted-foreground font-normal">
-                — {event.label}
-              </span>
+              <span className="ml-2 text-muted-foreground font-normal">— {event.label}</span>
             </p>
             <p className="text-xs text-muted-foreground">
               {format(new Date(event.date), "yyyy/MM/dd HH:mm")}

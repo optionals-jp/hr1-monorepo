@@ -99,7 +99,9 @@ export default function SchedulingDetailPage() {
   const [editTitle, setEditTitle] = useState("");
   const [editLocation, setEditLocation] = useState("");
   const [editNotes, setEditNotes] = useState("");
-  const [editSlots, setEditSlots] = useState<{ id: string; startAt: string; endAt: string; isNew?: boolean; applicationId?: string | null }[]>([]);
+  const [editSlots, setEditSlots] = useState<
+    { id: string; startAt: string; endAt: string; isNew?: boolean; applicationId?: string | null }[]
+  >([]);
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -198,10 +200,7 @@ export default function SchedulingDetailPage() {
   }
 
   function addSlot() {
-    setEditSlots([
-      ...editSlots,
-      { id: `new-${Date.now()}`, startAt: "", endAt: "", isNew: true },
-    ]);
+    setEditSlots([...editSlots, { id: `new-${Date.now()}`, startAt: "", endAt: "", isNew: true }]);
   }
 
   function removeSlot(slotId: string) {
@@ -380,138 +379,143 @@ export default function SchedulingDetailPage() {
       </div>
 
       {(activeTab === "detail" || activeTab === "history") && (
-      <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
-        {/* ===== 面接詳細タブ ===== */}
-        {activeTab === "detail" && (
-          <div className="space-y-6 max-w-3xl">
-            {/* 面接情報セクション */}
-            <section>
-              <div className="rounded-lg bg-white border">
-                <div className="flex items-center justify-between px-5 pt-4 pb-2">
-                  <h2 className="text-sm font-semibold text-muted-foreground">面接情報</h2>
-                  <Button variant="outline" size="sm" onClick={startEditing}>
-                    <Pencil className="mr-1 h-4 w-4" />
-                    編集
-                  </Button>
+        <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
+          {/* ===== 面接詳細タブ ===== */}
+          {activeTab === "detail" && (
+            <div className="space-y-6 max-w-3xl">
+              {/* 面接情報セクション */}
+              <section>
+                <div className="rounded-lg bg-white border">
+                  <div className="flex items-center justify-between px-5 pt-4 pb-2">
+                    <h2 className="text-sm font-semibold text-muted-foreground">面接情報</h2>
+                    <Button variant="outline" size="sm" onClick={startEditing}>
+                      <Pencil className="mr-1 h-4 w-4" />
+                      編集
+                    </Button>
+                  </div>
+                  <div className="px-5 py-4 space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">タイトル</span>
+                      <span className="font-medium">{interview.title}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">場所</span>
+                      <span>{interview.location ?? "-"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">ステータス</span>
+                      <Badge variant={statusColors[interview.status]}>
+                        {statusLabels[interview.status]}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">枠の予約状況</span>
+                      <span>
+                        {slots.filter((s) => s.application_id).length} / {slots.length} 予約済み
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">作成日</span>
+                      <span>{format(new Date(interview.created_at), "yyyy/MM/dd")}</span>
+                    </div>
+                    {interview.notes && (
+                      <div className="pt-3 border-t">
+                        <p className="text-muted-foreground mb-1">備考</p>
+                        <p className="whitespace-pre-wrap">{interview.notes}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="px-5 py-4 space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">タイトル</span>
-                    <span className="font-medium">{interview.title}</span>
+              </section>
+
+              {/* 候補日時セクション */}
+              <section>
+                <div className="rounded-lg bg-white border">
+                  <div className="flex items-center justify-between px-5 pt-4 pb-2">
+                    <h2 className="text-sm font-semibold text-muted-foreground">
+                      候補日時
+                      <span className="ml-1.5 text-xs font-normal">{slots.length}</span>
+                    </h2>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">場所</span>
-                    <span>{interview.location ?? "-"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">ステータス</span>
-                    <Badge variant={statusColors[interview.status]}>
-                      {statusLabels[interview.status]}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">枠の予約状況</span>
-                    <span>
-                      {slots.filter((s) => s.application_id).length} / {slots.length} 予約済み
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">作成日</span>
-                    <span>{format(new Date(interview.created_at), "yyyy/MM/dd")}</span>
-                  </div>
-                  {interview.notes && (
-                    <div className="pt-3 border-t">
-                      <p className="text-muted-foreground mb-1">備考</p>
-                      <p className="whitespace-pre-wrap">{interview.notes}</p>
+                  {slots.length === 0 ? (
+                    <p className="text-center py-8 text-muted-foreground">候補日時がありません</p>
+                  ) : (
+                    <div>
+                      {slots.map((slot) => (
+                        <div
+                          key={slot.id}
+                          className={cn(
+                            "flex items-center gap-3 px-5 py-4",
+                            slot.is_selected && "bg-primary/5"
+                          )}
+                        >
+                          <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">
+                              {format(new Date(slot.start_at), "yyyy/MM/dd HH:mm")}
+                              {" 〜 "}
+                              {format(new Date(slot.end_at), "HH:mm")}
+                            </p>
+                            {slot.application_id ? (
+                              <p className="text-xs text-primary font-medium">
+                                予約済み：
+                                {(() => {
+                                  const app = slot.applications as unknown as {
+                                    profiles?: { display_name: string | null; email: string };
+                                  } | null;
+                                  return (
+                                    app?.profiles?.display_name ?? app?.profiles?.email ?? "不明"
+                                  );
+                                })()}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">空き</p>
+                            )}
+                          </div>
+                          {!slot.application_id && interview.status !== "completed" && (
+                            <Badge variant="outline" className="text-xs shrink-0">
+                              空き枠
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-              </div>
-            </section>
+              </section>
+            </div>
+          )}
 
-            {/* 候補日時セクション */}
-            <section>
-              <div className="rounded-lg bg-white border">
-                <div className="flex items-center justify-between px-5 pt-4 pb-2">
-                  <h2 className="text-sm font-semibold text-muted-foreground">
-                    候補日時
-                    <span className="ml-1.5 text-xs font-normal">{slots.length}</span>
-                  </h2>
-                </div>
-                {slots.length === 0 ? (
-                  <p className="text-center py-8 text-muted-foreground">候補日時がありません</p>
-                ) : (
-                  <div>
-                    {slots.map((slot) => (
-                      <div
-                        key={slot.id}
-                        className={cn(
-                          "flex items-center gap-3 px-5 py-4",
-                          slot.is_selected && "bg-primary/5"
-                        )}
-                      >
-                        <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">
-                            {format(new Date(slot.start_at), "yyyy/MM/dd HH:mm")}
-                            {" 〜 "}
-                            {format(new Date(slot.end_at), "HH:mm")}
-                          </p>
-                          {slot.application_id ? (
-                            <p className="text-xs text-primary font-medium">
-                              予約済み：
-                              {(() => {
-                                const app = slot.applications as unknown as {
-                                  profiles?: { display_name: string | null; email: string };
-                                } | null;
-                                return app?.profiles?.display_name ?? app?.profiles?.email ?? "不明";
-                              })()}
-                            </p>
-                          ) : (
-                            <p className="text-xs text-muted-foreground">空き</p>
-                          )}
-                        </div>
-                        {!slot.application_id && interview.status !== "completed" && (
-                          <Badge variant="outline" className="text-xs shrink-0">
-                            空き枠
-                          </Badge>
-                        )}
+          {/* ===== 編集履歴タブ ===== */}
+          {activeTab === "history" && (
+            <>
+              {changeLogs.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">編集履歴がありません</p>
+              ) : (
+                <div className="space-y-3 max-w-3xl">
+                  {changeLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="flex items-start gap-4 py-3 border-b last:border-0"
+                    >
+                      <div className="shrink-0 mt-0.5">
+                        <Badge variant="outline" className="text-xs">
+                          {changeTypeLabels[log.change_type] ?? log.change_type}
+                        </Badge>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </section>
-          </div>
-        )}
-
-        {/* ===== 編集履歴タブ ===== */}
-        {activeTab === "history" && (
-          <>
-            {changeLogs.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">編集履歴がありません</p>
-            ) : (
-              <div className="space-y-3 max-w-3xl">
-                {changeLogs.map((log) => (
-                  <div key={log.id} className="flex items-start gap-4 py-3 border-b last:border-0">
-                    <div className="shrink-0 mt-0.5">
-                      <Badge variant="outline" className="text-xs">
-                        {changeTypeLabels[log.change_type] ?? log.change_type}
-                      </Badge>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm">{log.summary}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {format(new Date(log.created_at), "yyyy/MM/dd HH:mm")}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm">{log.summary}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {format(new Date(log.created_at), "yyyy/MM/dd HH:mm")}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
 
       {/* ===== 履歴タブ（白背景・全幅） ===== */}
@@ -549,7 +553,9 @@ export default function SchedulingDetailPage() {
                     return (
                       <TableRow>
                         <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                          {bookedApps.length === 0 ? "履歴がありません" : "該当する履歴がありません"}
+                          {bookedApps.length === 0
+                            ? "履歴がありません"
+                            : "該当する履歴がありません"}
                         </TableCell>
                       </TableRow>
                     );

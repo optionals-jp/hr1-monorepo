@@ -102,7 +102,10 @@ describe("LoginPage", () => {
 
   it("サーバーエラーパラメータ ?error=unauthorized が表示される", () => {
     Object.defineProperty(window, "location", {
-      value: { search: "?error=unauthorized", href: "http://localhost:3000/login?error=unauthorized" },
+      value: {
+        search: "?error=unauthorized",
+        href: "http://localhost:3000/login?error=unauthorized",
+      },
       writable: true,
     });
 

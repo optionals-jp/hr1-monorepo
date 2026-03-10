@@ -122,8 +122,14 @@ export default function ApplicantDetailPage() {
       }
 
       // Collect related_ids for batch fetching
-      const formStepIds: { stepId: string; relatedId: string; jobTitle: string; date: string }[] = [];
-      const interviewStepIds: { stepId: string; relatedId: string; jobTitle: string; date: string }[] = [];
+      const formStepIds: { stepId: string; relatedId: string; jobTitle: string; date: string }[] =
+        [];
+      const interviewStepIds: {
+        stepId: string;
+        relatedId: string;
+        jobTitle: string;
+        date: string;
+      }[] = [];
 
       for (const app of appsData ?? []) {
         const jobTitle = app.jobs?.title ?? "-";
@@ -155,10 +161,20 @@ export default function ApplicantDetailPage() {
 
           // Collect related resources
           if (step.related_id && step.step_type === "form") {
-            formStepIds.push({ stepId: step.id, relatedId: step.related_id, jobTitle, date: step.completed_at ?? app.applied_at });
+            formStepIds.push({
+              stepId: step.id,
+              relatedId: step.related_id,
+              jobTitle,
+              date: step.completed_at ?? app.applied_at,
+            });
           }
           if (step.related_id && step.step_type === "interview") {
-            interviewStepIds.push({ stepId: step.id, relatedId: step.related_id, jobTitle, date: step.completed_at ?? app.applied_at });
+            interviewStepIds.push({
+              stepId: step.id,
+              relatedId: step.related_id,
+              jobTitle,
+              date: step.completed_at ?? app.applied_at,
+            });
           }
         }
       }
@@ -249,8 +265,7 @@ export default function ApplicantDetailPage() {
       <div className="sticky top-0 z-10 bg-white">
         <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8">
           {tabs.map((tab) => {
-            const count =
-              tab.value === "timeline" ? timelineEvents.length : undefined;
+            const count = tab.value === "timeline" ? timelineEvents.length : undefined;
             return (
               <button
                 key={tab.value}
@@ -354,9 +369,7 @@ export default function ApplicantDetailPage() {
         <>
           {/* フィルターバー */}
           <DropdownMenu>
-            <DropdownMenuTrigger
-              className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer"
-            >
+            <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
               <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
               {(statusFilter || eventFilter) && (
@@ -366,7 +379,10 @@ export default function ApplicantDetailPage() {
                       ステータス：{statusFilter}
                       <span
                         role="button"
-                        onClick={(e) => { e.stopPropagation(); setStatusFilter(null); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setStatusFilter(null);
+                        }}
                         className="ml-0.5 hover:text-foreground"
                       >
                         <X className="h-3 w-3" />
@@ -378,7 +394,10 @@ export default function ApplicantDetailPage() {
                       カテゴリ：{eventFilter}
                       <span
                         role="button"
-                        onClick={(e) => { e.stopPropagation(); setEventFilter(null); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEventFilter(null);
+                        }}
                         className="ml-0.5 hover:text-foreground"
                       >
                         <X className="h-3 w-3" />
@@ -397,7 +416,11 @@ export default function ApplicantDetailPage() {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {[...new Set(timelineEvents.map((ev) => ev.label))].map((label) => (
-                    <DropdownMenuItem className="py-2" key={label} onClick={() => setStatusFilter(label)}>
+                    <DropdownMenuItem
+                      className="py-2"
+                      key={label}
+                      onClick={() => setStatusFilter(label)}
+                    >
                       <span className={cn(statusFilter === label && "font-medium")}>{label}</span>
                     </DropdownMenuItem>
                   ))}
@@ -411,7 +434,11 @@ export default function ApplicantDetailPage() {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {[...new Set(timelineEvents.map((ev) => ev.category))].map((cat) => (
-                    <DropdownMenuItem className="py-2" key={cat} onClick={() => setEventFilter(cat)}>
+                    <DropdownMenuItem
+                      className="py-2"
+                      key={cat}
+                      onClick={() => setEventFilter(cat)}
+                    >
                       <span className={cn(eventFilter === cat && "font-medium")}>{cat}</span>
                     </DropdownMenuItem>
                   ))}
@@ -448,15 +475,16 @@ export default function ApplicantDetailPage() {
                     if (!historySearch) return true;
                     const q = historySearch.toLowerCase();
                     return (
-                      ev.source.toLowerCase().includes(q) ||
-                      ev.eventType.toLowerCase().includes(q)
+                      ev.source.toLowerCase().includes(q) || ev.eventType.toLowerCase().includes(q)
                     );
                   });
                   if (filtered.length === 0) {
                     return (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                          {timelineEvents.length === 0 ? "履歴がありません" : "該当する履歴がありません"}
+                          {timelineEvents.length === 0
+                            ? "履歴がありません"
+                            : "該当する履歴がありません"}
                         </TableCell>
                       </TableRow>
                     );
@@ -467,7 +495,9 @@ export default function ApplicantDetailPage() {
                         <Badge variant="outline">{ev.category}</Badge>
                       </TableCell>
                       <TableCell className="font-medium">{ev.eventType}</TableCell>
-                      <TableCell className="text-muted-foreground">{ev.source !== "-" ? ev.source : ""}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {ev.source !== "-" ? ev.source : ""}
+                      </TableCell>
                       <TableCell>
                         <Badge
                           variant={

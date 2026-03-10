@@ -16,10 +16,7 @@ interface AuthContextValue {
   user: { id: string; email: string } | null;
   profile: Profile | null;
   loading: boolean;
-  signIn: (
-    email: string,
-    password: string
-  ) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -28,11 +25,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const CONSOLE_ROLES: Profile["role"][] = ["admin", "employee"];
 
 async function fetchProfile(userId: string): Promise<Profile | null> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .single();
+  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
 
   if (error || !data) return null;
   if (!CONSOLE_ROLES.includes(data.role)) return null;
@@ -87,37 +80,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // signIn は認証・ロールチェック・状態更新をすべて担当
-  const signIn = useCallback(
-    async (email: string, password: string) => {
-      signingIn.current = true;
-      try {
-        const { data: authData, error: authError } =
-          await supabase.auth.signInWithPassword({ email, password });
+  const signIn = useCallback(async (email: string, password: string) => {
+    signingIn.current = true;
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-        if (authError) {
-          return { error: authError.message };
-        }
-
-        const prof = await fetchProfile(authData.user.id);
-        if (!prof) {
-          await supabase.auth.signOut();
-          return {
-            error: "このアカウントにはコンソールへのアクセス権限がありません。",
-          };
-        }
-
-        setUser({ id: authData.user.id, email: authData.user.email ?? "" });
-        setProfile(prof);
-        return { error: null };
-      } finally {
-        // onAuthStateChange の pending コールバックが処理されてからリセット
-        setTimeout(() => {
-          signingIn.current = false;
-        }, 0);
+      if (authError) {
+        return { error: authError.message };
       }
-    },
-    []
-  );
+
+      const prof = await fetchProfile(authData.user.id);
+      if (!prof) {
+        await supabase.auth.signOut();
+        return {
+          error: "このアカウントにはコンソールへのアクセス権限がありません。",
+        };
+      }
+
+      setUser({ id: authData.user.id, email: authData.user.email ?? "" });
+      setProfile(prof);
+      return { error: null };
+    } finally {
+      // onAuthStateChange の pending コールバックが処理されてからリセット
+      setTimeout(() => {
+        signingIn.current = false;
+      }, 0);
+    }
+  }, []);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();

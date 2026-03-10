@@ -75,7 +75,19 @@ export default function EmployeesPage() {
         .eq("profiles.role", "employee");
 
       const profiles = (data ?? [])
-        .map((row) => (row as unknown as { profiles: { id: string; email: string; display_name: string | null; position: string | null } }).profiles)
+        .map(
+          (row) =>
+            (
+              row as unknown as {
+                profiles: {
+                  id: string;
+                  email: string;
+                  display_name: string | null;
+                  position: string | null;
+                };
+              }
+            ).profiles
+        )
         .filter(Boolean);
 
       if (profiles.length === 0) return [];
@@ -83,11 +95,17 @@ export default function EmployeesPage() {
       const { data: edData } = await supabase
         .from("employee_departments")
         .select("user_id, departments(id, name)")
-        .in("user_id", profiles.map((p) => p.id));
+        .in(
+          "user_id",
+          profiles.map((p) => p.id)
+        );
 
       const deptMap = new Map<string, { id: string; name: string }[]>();
       for (const ed of edData ?? []) {
-        const dept = (ed as unknown as { user_id: string; departments: { id: string; name: string } });
+        const dept = ed as unknown as {
+          user_id: string;
+          departments: { id: string; name: string };
+        };
         if (!dept.departments) continue;
         const list = deptMap.get(dept.user_id) ?? [];
         list.push(dept.departments);
@@ -129,9 +147,9 @@ export default function EmployeesPage() {
     });
 
     if (selectedDeptIds.length > 0) {
-      await supabase.from("employee_departments").insert(
-        selectedDeptIds.map((deptId) => ({ user_id: id, department_id: deptId }))
-      );
+      await supabase
+        .from("employee_departments")
+        .insert(selectedDeptIds.map((deptId) => ({ user_id: id, department_id: deptId })));
     }
 
     setSaving(false);
@@ -223,7 +241,9 @@ export default function EmployeesPage() {
                     {emp.departments.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {emp.departments.map((d) => (
-                          <Badge key={d.id} variant="secondary">{d.name}</Badge>
+                          <Badge key={d.id} variant="secondary">
+                            {d.name}
+                          </Badge>
                         ))}
                       </div>
                     ) : (
@@ -282,9 +302,7 @@ export default function EmployeesPage() {
         {addTab === "departments" && (
           <div className="space-y-3">
             {departments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                部署管理から部署を追加してください
-              </p>
+              <p className="text-sm text-muted-foreground">部署管理から部署を追加してください</p>
             ) : (
               departments.map((dept) => (
                 <label key={dept.id} className="flex items-center gap-2 cursor-pointer">

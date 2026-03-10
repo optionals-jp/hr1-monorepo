@@ -35,9 +35,7 @@ const tabs = [
   { value: "members", label: "社員" },
 ];
 
-const editTabs: EditPanelTab[] = [
-  { value: "basic", label: "基本情報" },
-];
+const editTabs: EditPanelTab[] = [{ value: "basic", label: "基本情報" }];
 
 export default function DepartmentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -86,10 +84,7 @@ export default function DepartmentDetailPage() {
   const saveEdit = async () => {
     if (!department || !editName.trim()) return;
     setSaving(true);
-    await supabase
-      .from("departments")
-      .update({ name: editName.trim() })
-      .eq("id", department.id);
+    await supabase.from("departments").update({ name: editName.trim() }).eq("id", department.id);
     setEditing(false);
     setSaving(false);
     await load();
@@ -238,10 +233,7 @@ export default function DepartmentDetailPage() {
       >
         <div className="space-y-2">
           <Label>部署名 *</Label>
-          <Input
-            value={editName}
-            onChange={(e) => setEditName(e.target.value)}
-          />
+          <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
         </div>
       </EditPanel>
     </div>

@@ -16,7 +16,14 @@ interface PageHeaderProps {
   breadcrumb?: BreadcrumbItem[];
 }
 
-export function PageHeader({ title, description, action, tabs, sticky = true, breadcrumb }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  description,
+  action,
+  tabs,
+  sticky = true,
+  breadcrumb,
+}: PageHeaderProps) {
   return (
     <div
       className={`bg-white px-4 pt-4 sm:px-6 md:px-8 md:pt-6${sticky ? " border-b sticky top-0 z-10" : ""}`}

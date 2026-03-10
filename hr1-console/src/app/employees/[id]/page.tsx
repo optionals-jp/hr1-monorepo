@@ -97,9 +97,9 @@ export default function EmployeeDetailPage() {
 
     await supabase.from("employee_departments").delete().eq("user_id", profile.id);
     if (editDeptIds.length > 0) {
-      await supabase.from("employee_departments").insert(
-        editDeptIds.map((deptId) => ({ user_id: profile.id, department_id: deptId }))
-      );
+      await supabase
+        .from("employee_departments")
+        .insert(editDeptIds.map((deptId) => ({ user_id: profile.id, department_id: deptId })));
     }
 
     setSaving(false);
@@ -159,12 +159,15 @@ export default function EmployeeDetailPage() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">部署</span>
                 <div className="flex flex-wrap gap-1 justify-end">
-                  {departments.length === 0
-                    ? <span>-</span>
-                    : departments.map((d) => (
-                        <Badge key={d.id} variant="secondary">{d.name}</Badge>
-                      ))
-                  }
+                  {departments.length === 0 ? (
+                    <span>-</span>
+                  ) : (
+                    departments.map((d) => (
+                      <Badge key={d.id} variant="secondary">
+                        {d.name}
+                      </Badge>
+                    ))
+                  )}
                 </div>
               </div>
               <div className="flex justify-between">

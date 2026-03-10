@@ -61,9 +61,7 @@ export default function LoginPage() {
             <span className="text-sm font-bold text-white">H</span>
           </div>
           <CardTitle className="text-xl">HR1 Console</CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            管理者アカウントでログイン
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">管理者アカウントでログイン</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

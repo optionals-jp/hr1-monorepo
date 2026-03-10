@@ -410,134 +410,155 @@ export default function JobDetailPage() {
       </div>
 
       {(activeTab === "detail" || activeTab === "history") && (
-      <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
-        {/* ===== 求人詳細タブ ===== */}
-        {activeTab === "detail" && (
-          <div className="space-y-6 max-w-3xl">
-            {/* 求人情報セクション */}
-            <section>
-              <div className="rounded-lg bg-white border">
-                <div className="flex items-center justify-between px-5 pt-4 pb-2">
-                  <h2 className="text-sm font-semibold text-muted-foreground">求人情報</h2>
-                  <Button variant="outline" size="sm" onClick={startEditingInfo}>
-                    <Pencil className="mr-1 h-4 w-4" />
-                    編集
-                  </Button>
+        <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
+          {/* ===== 求人詳細タブ ===== */}
+          {activeTab === "detail" && (
+            <div className="space-y-6 max-w-3xl">
+              {/* 求人情報セクション */}
+              <section>
+                <div className="rounded-lg bg-white border">
+                  <div className="flex items-center justify-between px-5 pt-4 pb-2">
+                    <h2 className="text-sm font-semibold text-muted-foreground">求人情報</h2>
+                    <Button variant="outline" size="sm" onClick={startEditingInfo}>
+                      <Pencil className="mr-1 h-4 w-4" />
+                      編集
+                    </Button>
+                  </div>
+                  <div className="px-5 py-4 space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">タイトル</span>
+                      <span className="font-medium">{job.title}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">部署</span>
+                      <span>{job.department ?? "-"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">勤務地</span>
+                      <span>{job.location ?? "-"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">雇用形態</span>
+                      <span>{job.employment_type ?? "-"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">年収</span>
+                      <span>{job.salary_range ?? "-"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">ステータス</span>
+                      <Badge
+                        variant={
+                          job.status === "open"
+                            ? "default"
+                            : job.status === "closed"
+                              ? "destructive"
+                              : "outline"
+                        }
+                      >
+                        {statusLabels[job.status]}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">作成日</span>
+                      <span>{format(new Date(job.created_at), "yyyy/MM/dd")}</span>
+                    </div>
+                    {job.description && (
+                      <div className="pt-3 border-t">
+                        <p className="text-muted-foreground mb-1">説明</p>
+                        <p className="whitespace-pre-wrap">{job.description}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="px-5 py-4 space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">タイトル</span>
-                    <span className="font-medium">{job.title}</span>
+              </section>
+
+              {/* 選考ステップセクション */}
+              <section>
+                <div className="rounded-lg bg-white border">
+                  <div className="flex items-center justify-between px-5 pt-4 pb-2">
+                    <h2 className="text-sm font-semibold text-muted-foreground">
+                      選考ステップ
+                      <span className="ml-1.5 text-xs font-normal">{steps.length}</span>
+                    </h2>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setNewStepType("interview");
+                        setNewStepLabel("");
+                        setDialogOpen(true);
+                      }}
+                    >
+                      <Plus className="mr-1 h-4 w-4" />
+                      追加
+                    </Button>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">部署</span>
-                    <span>{job.department ?? "-"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">勤務地</span>
-                    <span>{job.location ?? "-"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">雇用形態</span>
-                    <span>{job.employment_type ?? "-"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">年収</span>
-                    <span>{job.salary_range ?? "-"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">ステータス</span>
-                    <Badge variant={job.status === "open" ? "default" : job.status === "closed" ? "destructive" : "outline"}>
-                      {statusLabels[job.status]}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">作成日</span>
-                    <span>{format(new Date(job.created_at), "yyyy/MM/dd")}</span>
-                  </div>
-                  {job.description && (
-                    <div className="pt-3 border-t">
-                      <p className="text-muted-foreground mb-1">説明</p>
-                      <p className="whitespace-pre-wrap">{job.description}</p>
+
+                  {steps.length === 0 ? (
+                    <p className="text-center py-8 text-muted-foreground">
+                      選考ステップがありません
+                    </p>
+                  ) : (
+                    <div>
+                      {steps.map((step, index) => (
+                        <div key={step.id} className="flex items-center gap-3 px-5 py-4">
+                          <span className="text-sm font-bold text-muted-foreground w-6 text-center">
+                            {index + 1}
+                          </span>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{step.label}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {stepTypeLabels[step.step_type] ?? step.step_type}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeStep(step.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-              </div>
-            </section>
+              </section>
+            </div>
+          )}
 
-            {/* 選考ステップセクション */}
-            <section>
-              <div className="rounded-lg bg-white border">
-                <div className="flex items-center justify-between px-5 pt-4 pb-2">
-                  <h2 className="text-sm font-semibold text-muted-foreground">
-                    選考ステップ
-                    <span className="ml-1.5 text-xs font-normal">{steps.length}</span>
-                  </h2>
-                  <Button variant="outline" size="sm" onClick={() => { setNewStepType("interview"); setNewStepLabel(""); setDialogOpen(true); }}>
-                    <Plus className="mr-1 h-4 w-4" />
-                    追加
-                  </Button>
-                </div>
-
-                {steps.length === 0 ? (
-                  <p className="text-center py-8 text-muted-foreground">選考ステップがありません</p>
-                ) : (
-                  <div>
-                    {steps.map((step, index) => (
-                      <div key={step.id} className="flex items-center gap-3 px-5 py-4">
-                        <span className="text-sm font-bold text-muted-foreground w-6 text-center">
-                          {index + 1}
-                        </span>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{step.label}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {stepTypeLabels[step.step_type] ?? step.step_type}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeStep(step.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+          {/* ===== 編集履歴タブ ===== */}
+          {activeTab === "history" && (
+            <>
+              {changeLogs.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">編集履歴がありません</p>
+              ) : (
+                <div className="space-y-3 max-w-3xl">
+                  {changeLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="flex items-start gap-4 py-3 border-b last:border-0"
+                    >
+                      <div className="shrink-0 mt-0.5">
+                        <Badge variant="outline" className="text-xs">
+                          {changeTypeLabels[log.change_type] ?? log.change_type}
+                        </Badge>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </section>
-          </div>
-        )}
-
-        {/* ===== 編集履歴タブ ===== */}
-        {activeTab === "history" && (
-          <>
-            {changeLogs.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">編集履歴がありません</p>
-            ) : (
-              <div className="space-y-3 max-w-3xl">
-                {changeLogs.map((log) => (
-                  <div key={log.id} className="flex items-start gap-4 py-3 border-b last:border-0">
-                    <div className="shrink-0 mt-0.5">
-                      <Badge variant="outline" className="text-xs">
-                        {changeTypeLabels[log.change_type] ?? log.change_type}
-                      </Badge>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm">{log.summary}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {format(new Date(log.created_at), "yyyy/MM/dd HH:mm")}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm">{log.summary}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {format(new Date(log.created_at), "yyyy/MM/dd HH:mm")}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
 
       {/* ===== 履歴タブ（白背景・全幅） ===== */}
@@ -545,9 +566,7 @@ export default function JobDetailPage() {
         <>
           {/* フィルターバー */}
           <DropdownMenu>
-            <DropdownMenuTrigger
-              className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer"
-            >
+            <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
               <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
               {(statusFilter || eventFilter) && (
@@ -557,7 +576,10 @@ export default function JobDetailPage() {
                       ステータス：{statusFilter}
                       <span
                         role="button"
-                        onClick={(e) => { e.stopPropagation(); setStatusFilter(null); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setStatusFilter(null);
+                        }}
                         className="ml-0.5 hover:text-foreground"
                       >
                         <X className="h-3 w-3" />
@@ -569,7 +591,10 @@ export default function JobDetailPage() {
                       イベント：{eventFilter}
                       <span
                         role="button"
-                        onClick={(e) => { e.stopPropagation(); setEventFilter(null); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEventFilter(null);
+                        }}
                         className="ml-0.5 hover:text-foreground"
                       >
                         <X className="h-3 w-3" />
@@ -588,7 +613,11 @@ export default function JobDetailPage() {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {[...new Set(historyEvents.map((ev) => ev.label))].map((label) => (
-                    <DropdownMenuItem className="py-2" key={label} onClick={() => setStatusFilter(label)}>
+                    <DropdownMenuItem
+                      className="py-2"
+                      key={label}
+                      onClick={() => setStatusFilter(label)}
+                    >
                       <span className={cn(statusFilter === label && "font-medium")}>{label}</span>
                     </DropdownMenuItem>
                   ))}
@@ -602,7 +631,11 @@ export default function JobDetailPage() {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {[...new Set(historyEvents.map((ev) => ev.eventType))].map((type) => (
-                    <DropdownMenuItem className="py-2" key={type} onClick={() => setEventFilter(type)}>
+                    <DropdownMenuItem
+                      className="py-2"
+                      key={type}
+                      onClick={() => setEventFilter(type)}
+                    >
                       <span className={cn(eventFilter === type && "font-medium")}>{type}</span>
                     </DropdownMenuItem>
                   ))}
@@ -647,7 +680,9 @@ export default function JobDetailPage() {
                     return (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                          {historyEvents.length === 0 ? "履歴がありません" : "該当する履歴がありません"}
+                          {historyEvents.length === 0
+                            ? "履歴がありません"
+                            : "該当する履歴がありません"}
                         </TableCell>
                       </TableRow>
                     );

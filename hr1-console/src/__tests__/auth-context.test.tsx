@@ -17,12 +17,12 @@ const mockSupabase = vi.hoisted(() => {
     auth: {
       signInWithPassword: vi.fn(),
       signOut: vi.fn().mockResolvedValue({ error: null }),
-      onAuthStateChange: vi.fn().mockImplementation(
-        (cb: (event: string, session: unknown) => void) => {
+      onAuthStateChange: vi
+        .fn()
+        .mockImplementation((cb: (event: string, session: unknown) => void) => {
           Promise.resolve().then(() => cb("INITIAL_SESSION", null));
           return { data: { subscription: { unsubscribe: vi.fn() } } };
-        }
-      ),
+        }),
     },
     from: vi.fn().mockReturnValue(createQueryBuilder(null, { message: "Not found" })),
     _createQueryBuilder: createQueryBuilder,

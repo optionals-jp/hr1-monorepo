@@ -219,7 +219,13 @@ export default function ApplicantsPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>採用区分</Label>
-              <Select value={newHiringType} onValueChange={(v) => { setNewHiringType(v ?? ""); if (v !== "new_grad") setNewGradYear(""); }}>
+              <Select
+                value={newHiringType}
+                onValueChange={(v) => {
+                  setNewHiringType(v ?? "");
+                  if (v !== "new_grad") setNewGradYear("");
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="未設定" />
                 </SelectTrigger>
@@ -238,7 +244,9 @@ export default function ApplicantsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i).map((y) => (
-                      <SelectItem key={y} value={String(y)}>{y}年卒</SelectItem>
+                      <SelectItem key={y} value={String(y)}>
+                        {y}年卒
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

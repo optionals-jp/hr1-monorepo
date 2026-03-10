@@ -37,17 +37,14 @@ export default function DepartmentsPage() {
     data: departments = [],
     isLoading,
     mutate,
-  } = useQuery<Department[]>(
-    organization ? `departments-${organization.id}` : null,
-    async () => {
-      const { data } = await supabase
-        .from("departments")
-        .select("*")
-        .eq("organization_id", organization!.id)
-        .order("name");
-      return data ?? [];
-    }
-  );
+  } = useQuery<Department[]>(organization ? `departments-${organization.id}` : null, async () => {
+    const { data } = await supabase
+      .from("departments")
+      .select("*")
+      .eq("organization_id", organization!.id)
+      .order("name");
+    return data ?? [];
+  });
 
   const openAddDialog = () => {
     setNewDeptName("");
@@ -81,10 +78,7 @@ export default function DepartmentsPage() {
   const saveEdit = async () => {
     if (!editingId || !editName.trim()) return;
     setSavingEdit(true);
-    await supabase
-      .from("departments")
-      .update({ name: editName.trim() })
-      .eq("id", editingId);
+    await supabase.from("departments").update({ name: editName.trim() }).eq("id", editingId);
     setSavingEdit(false);
     setEditingId(null);
     setEditDialogOpen(false);
@@ -141,14 +135,24 @@ export default function DepartmentsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); startEditing(dept); }}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEditing(dept);
+                        }}
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
                         className="text-destructive hover:text-destructive"
-                        onClick={(e) => { e.stopPropagation(); handleDelete(dept.id); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(dept.id);
+                        }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
