@@ -13,6 +13,7 @@ interface PageHeaderProps {
   action?: ReactNode;
   tabs?: ReactNode;
   sticky?: boolean;
+  border?: boolean;
   breadcrumb?: BreadcrumbItem[];
 }
 
@@ -22,11 +23,12 @@ export function PageHeader({
   action,
   tabs,
   sticky = true,
+  border = true,
   breadcrumb,
 }: PageHeaderProps) {
   return (
     <div
-      className={`bg-white px-4 pt-4 sm:px-6 md:px-8 md:pt-6${sticky ? " border-b sticky top-0 z-10" : ""}`}
+      className={`bg-white px-4 pt-4 sm:px-6 md:px-8 md:pt-6${sticky ? " sticky top-0 z-10" : ""}${sticky && border ? " border-b" : ""}`}
     >
       {breadcrumb && breadcrumb.length > 0 && (
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">

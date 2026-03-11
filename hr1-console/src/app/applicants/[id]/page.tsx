@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,7 @@ import {
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { ExternalLink, SlidersHorizontal, Search, X } from "lucide-react";
+import { ExternalLink, SlidersHorizontal, Search, X, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 
 const statusLabels: Record<string, string> = {
@@ -78,12 +78,14 @@ const tabs = [
 
 export default function ApplicantDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const { organization } = useOrg();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("profile");
+  const [creatingThread, setCreatingThread] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [eventFilter, setEventFilter] = useState<string | null>(null);
   const [historySearch, setHistorySearch] = useState("");
@@ -237,6 +239,44 @@ export default function ApplicantDetailPage() {
     load();
   }, [id, organization]);
 
+  const handleOpenMessage = async () => {
+    if (!profile || !organization) return;
+
+    setCreatingThread(true);
+
+    // 既存スレッドを検索（応募者単位）
+    const { data: existing } = await getSupabase()
+      .from("message_threads")
+      .select("id")
+      .eq("organization_id", organization.id)
+      .eq("participant_id", profile.id)
+      .eq("participant_type", "applicant")
+      .single();
+
+    if (existing) {
+      router.push(`/messages?thread=${existing.id}`);
+      setCreatingThread(false);
+      return;
+    }
+
+    // 新規スレッド作成
+    const { data: newThread } = await getSupabase()
+      .from("message_threads")
+      .insert({
+        organization_id: organization.id,
+        participant_id: profile.id,
+        participant_type: "applicant",
+      })
+      .select("id")
+      .single();
+
+    setCreatingThread(false);
+
+    if (newThread) {
+      router.push(`/messages?thread=${newThread.id}`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
@@ -260,6 +300,12 @@ export default function ApplicantDetailPage() {
         description="応募者詳細"
         breadcrumb={[{ label: "応募者一覧", href: "/applicants" }]}
         sticky={false}
+        action={
+          <Button size="sm" onClick={handleOpenMessage} disabled={creatingThread}>
+            <MessageSquare className="mr-1.5 h-4 w-4" />
+            メッセージを送る
+          </Button>
+        }
       />
 
       <div className="sticky top-0 z-10 bg-white">

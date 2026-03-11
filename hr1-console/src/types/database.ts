@@ -164,6 +164,7 @@ export interface Department {
   id: string;
   organization_id: string;
   name: string;
+  parent_id: string | null;
   created_at: string;
 }
 
@@ -171,4 +172,39 @@ export interface EmployeeDepartment {
   user_id: string;
   department_id: string;
   departments?: Department;
+}
+
+export interface MessageThread {
+  id: string;
+  organization_id: string;
+  participant_id: string;
+  participant_type: "applicant" | "employee";
+  title: string | null;
+  created_at: string;
+  updated_at: string;
+  participant?: {
+    id: string;
+    display_name: string | null;
+    email: string;
+    avatar_url: string | null;
+    department?: string | null;
+    position?: string | null;
+  };
+  /** カンマ区切りの応募求人名（応募者スレッドのみ） */
+  job_titles?: string | null;
+  /** 応募件数（応募者スレッドのみ） */
+  application_count?: number;
+  latest_message?: Message;
+  unread_count?: number;
+}
+
+export interface Message {
+  id: string;
+  thread_id: string;
+  sender_id: string;
+  content: string;
+  read_at: string | null;
+  edited_at: string | null;
+  created_at: string;
+  sender?: Profile;
 }
