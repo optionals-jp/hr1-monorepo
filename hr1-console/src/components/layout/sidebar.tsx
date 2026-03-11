@@ -12,6 +12,7 @@ import {
   Calendar,
   CalendarDays,
   Building2,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ const mainNavItems = [
   { href: "/departments", label: "部署管理", icon: Building2 },
   { href: "/jobs", label: "求人管理", icon: Briefcase },
   { href: "/applications", label: "応募管理", icon: ClipboardList },
+  { href: "/messages", label: "メッセージ", icon: MessageSquare },
   { href: "/forms", label: "フォーム管理", icon: FileText },
   { href: "/scheduling", label: "日程調整", icon: Calendar },
   { href: "/calendar", label: "カレンダー", icon: CalendarDays },

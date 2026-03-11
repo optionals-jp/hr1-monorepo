@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { SearchBar } from "@/components/ui/search-bar";
 import {
   Table,
   TableBody,
@@ -12,13 +12,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
-import type { Application } from "@/types/database";
+import type { Application, Job } from "@/types/database";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
@@ -49,6 +56,19 @@ export default function ApplicationsPage() {
   const { organization } = useOrg();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [filterJobId, setFilterJobId] = useState<string>("all");
+
+  const { data: jobs = [] } = useQuery<Job[]>(
+    organization ? `jobs-${organization.id}` : null,
+    async () => {
+      const { data } = await getSupabase()
+        .from("jobs")
+        .select("*")
+        .eq("organization_id", organization!.id)
+        .order("title");
+      return data ?? [];
+    }
+  );
 
   const { data: applications = [], isLoading } = useQuery<Application[]>(
     organization ? `applications-${organization.id}` : null,
@@ -66,6 +86,7 @@ export default function ApplicationsPage() {
 
   const filtered = applications.filter((app) => {
     if (statusFilter !== "all" && app.status !== statusFilter) return false;
+    if (filterJobId !== "all" && app.job_id !== filterJobId) return false;
     if (search) {
       const s = search.toLowerCase();
       const name = (app.profiles as unknown as { display_name: string | null })?.display_name ?? "";
@@ -91,49 +112,73 @@ export default function ApplicationsPage() {
   };
 
   return (
-    <>
-      <PageHeader title="応募管理" description="応募の確認・選考ステップの管理" sticky={false} />
+    <div className="flex flex-col h-full">
+      <PageHeader title="応募管理" description="応募の確認・選考ステップの管理" border={false} />
 
-      <div className="sticky top-0 z-10 bg-white">
-        <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8">
-          {statusTabs.map((tab) => {
-            const count =
-              tab.value === "all"
-                ? applications.length
-                : applications.filter((a) => a.status === tab.value).length;
-            return (
-              <button
-                key={tab.value}
-                type="button"
-                onClick={() => setStatusFilter(tab.value)}
-                className={cn(
-                  "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-                  statusFilter === tab.value
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {tab.label}
-                <span className="ml-1.5 text-xs text-muted-foreground">{count}</span>
-                {statusFilter === tab.value && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-        <div className="flex items-center h-12 border-b px-4 sm:px-6 md:px-8">
-          <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-          <Input
-            placeholder="応募者名・求人名で検索"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-transparent h-12"
-          />
-        </div>
+      <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8 bg-white">
+        {statusTabs.map((tab) => {
+          const count =
+            tab.value === "all"
+              ? applications.length
+              : applications.filter((a) => a.status === tab.value).length;
+          return (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setStatusFilter(tab.value)}
+              className={cn(
+                "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
+                statusFilter === tab.value
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {tab.label}
+              <span className="ml-1.5 text-xs text-muted-foreground">{count}</span>
+              {statusFilter === tab.value && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+              )}
+            </button>
+          );
+        })}
       </div>
+      <SearchBar value={search} onChange={setSearch} />
+      <DropdownMenu>
+        <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
+          <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
+          {filterJobId !== "all" && (
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                求人：{jobs.find((j) => j.id === filterJobId)?.title}
+                <span
+                  role="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFilterJobId("all");
+                  }}
+                  className="ml-0.5 hover:text-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </span>
+              </Badge>
+            </div>
+          )}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-auto py-2">
+          <DropdownMenuItem className="py-2" onClick={() => setFilterJobId("all")}>
+            <span className={cn(filterJobId === "all" && "font-medium")}>すべて</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          {jobs.map((job) => (
+            <DropdownMenuItem key={job.id} className="py-2" onClick={() => setFilterJobId(job.id)}>
+              <span className={cn(filterJobId === job.id && "font-medium")}>{job.title}</span>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-      <div className="bg-white">
+      <div className="flex-1 overflow-y-auto bg-white">
         <Table>
           <TableHeader>
             <TableRow>
@@ -198,6 +243,6 @@ export default function ApplicationsPage() {
           </TableBody>
         </Table>
       </div>
-    </>
+    </div>
   );
 }
