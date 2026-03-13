@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
+import { useCreateMessageThread } from "@/lib/use-create-message-thread";
 import type { Profile, Application, ApplicationStep } from "@/types/database";
 import {
   DropdownMenu,
@@ -32,34 +33,12 @@ import {
 import { SearchBar } from "@/components/ui/search-bar";
 import { ExternalLink, SlidersHorizontal, X } from "lucide-react";
 import { format } from "date-fns";
-
-const statusLabels: Record<string, string> = {
-  active: "選考中",
-  offered: "内定",
-  rejected: "不採用",
-  withdrawn: "辞退",
-};
-
-const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  active: "default",
-  offered: "secondary",
-  rejected: "destructive",
-  withdrawn: "outline",
-};
-
-const stepStatusLabels: Record<string, string> = {
-  pending: "未開始",
-  in_progress: "進行中",
-  completed: "完了",
-  skipped: "スキップ",
-};
-
-const interviewStatusLabels: Record<string, string> = {
-  scheduling: "日程調整中",
-  confirmed: "確定済み",
-  completed: "完了",
-  cancelled: "キャンセル",
-};
+import {
+  applicationStatusLabels as statusLabels,
+  applicationStatusColors as statusColors,
+  stepStatusLabels,
+  interviewStatusLabels,
+} from "@/lib/constants";
 
 interface TimelineEvent {
   id: string;
@@ -78,14 +57,12 @@ const tabs = [
 
 export default function ApplicantDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const { organization } = useOrg();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("profile");
-  const [creatingThread, setCreatingThread] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [eventFilter, setEventFilter] = useState<string | null>(null);
   const [historySearch, setHistorySearch] = useState("");
@@ -250,43 +227,11 @@ export default function ApplicantDetailPage() {
     load();
   }, [id, organization]);
 
-  const handleOpenMessage = async () => {
-    if (!profile || !organization) return;
-
-    setCreatingThread(true);
-
-    // 既存スレッドを検索（応募者単位）
-    const { data: existing } = await getSupabase()
-      .from("message_threads")
-      .select("id")
-      .eq("organization_id", organization.id)
-      .eq("participant_id", profile.id)
-      .eq("participant_type", "applicant")
-      .maybeSingle();
-
-    if (existing) {
-      router.push(`/messages?thread=${existing.id}`);
-      setCreatingThread(false);
-      return;
-    }
-
-    // 新規スレッド作成
-    const { data: newThread } = await getSupabase()
-      .from("message_threads")
-      .insert({
-        organization_id: organization.id,
-        participant_id: profile.id,
-        participant_type: "applicant",
-      })
-      .select("id")
-      .single();
-
-    setCreatingThread(false);
-
-    if (newThread) {
-      router.push(`/messages?thread=${newThread.id}`);
-    }
-  };
+  const { handleOpenMessage, creatingThread } = useCreateMessageThread({
+    participantId: profile?.id,
+    participantType: "applicant",
+    organizationId: organization?.id,
+  });
 
   if (loading) {
     return (

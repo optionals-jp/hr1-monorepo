@@ -10,7 +10,7 @@ final formsRepositoryProvider = Provider<SupabaseFormsRepository>((ref) {
 
 /// フォームIDからフォーム情報を取得
 final formDetailProvider =
-    FutureProvider.family<CustomForm?, String>((ref, formId) async {
+    FutureProvider.autoDispose.family<CustomForm?, String>((ref, formId) async {
   final repo = ref.watch(formsRepositoryProvider);
   return repo.getFormAsync(formId);
 });

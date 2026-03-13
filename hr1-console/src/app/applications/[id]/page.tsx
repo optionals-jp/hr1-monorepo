@@ -26,28 +26,11 @@ import type {
 } from "@/types/database";
 import { Check, Circle, SkipForward, FileText, Calendar, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
-
-const statusLabels: Record<string, string> = {
-  active: "選考中",
-  offered: "内定",
-  rejected: "不採用",
-  withdrawn: "辞退",
-};
-
-const stepStatusLabels: Record<string, string> = {
-  pending: "未開始",
-  in_progress: "進行中",
-  completed: "完了",
-  skipped: "スキップ",
-};
-
-const stepTypeLabels: Record<string, string> = {
-  screening: "書類選考",
-  form: "アンケート/フォーム",
-  interview: "面接",
-  external_test: "外部テスト",
-  offer: "内定",
-};
+import {
+  applicationStatusLabels as statusLabels,
+  stepStatusLabels,
+  stepTypeLabels,
+} from "@/lib/constants";
 
 /** リソース選択が必要なステップ種別 */
 const RESOURCE_STEP_TYPES = ["form", "interview"] as const;

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
 import '../../domain/entities/application.dart';
@@ -249,7 +250,7 @@ class _JobInfoCard extends StatelessWidget {
             _InfoRow(icon: Icons.payments_outlined, text: job.salaryRange!),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            '応募日: ${_formatDate(application.appliedAt)}',
+            '応募日: ${DateFormatter.toShortDate(application.appliedAt)}',
             style: AppTextStyles.caption.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -634,7 +635,7 @@ class _HistoryTab extends StatelessWidget {
   }
 
   String _formatDateTime(DateTime date) {
-    return '${date.month}/${date.day} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    return DateFormatter.toDateTime(date);
   }
 }
 
@@ -667,6 +668,3 @@ Color _applicationColor(Application application, BuildContext context) {
   };
 }
 
-String _formatDate(DateTime date) {
-  return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
-}

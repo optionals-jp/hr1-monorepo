@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
+import { useCreateMessageThread } from "@/lib/use-create-message-thread";
 import type { Profile, Department } from "@/types/database";
 
 import { format } from "date-fns";
@@ -22,7 +23,6 @@ const editTabs: EditPanelTab[] = [
 
 export default function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const { organization } = useOrg();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -37,44 +37,12 @@ export default function EmployeeDetailPage() {
   const [editPosition, setEditPosition] = useState("");
   const [editDeptIds, setEditDeptIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  const [creatingThread, setCreatingThread] = useState(false);
 
-  const handleOpenMessage = async () => {
-    if (!organization || !profile) return;
-    setCreatingThread(true);
-
-    // 既存スレッドを検索
-    const { data: existing } = await getSupabase()
-      .from("message_threads")
-      .select("id")
-      .eq("organization_id", organization.id)
-      .eq("participant_id", profile.id)
-      .eq("participant_type", "employee")
-      .maybeSingle();
-
-    if (existing) {
-      router.push(`/messages?thread=${existing.id}`);
-      setCreatingThread(false);
-      return;
-    }
-
-    // 新規スレッド作成
-    const { data: newThread } = await getSupabase()
-      .from("message_threads")
-      .insert({
-        organization_id: organization.id,
-        participant_id: profile.id,
-        participant_type: "employee",
-      })
-      .select("id")
-      .single();
-
-    setCreatingThread(false);
-
-    if (newThread) {
-      router.push(`/messages?thread=${newThread.id}`);
-    }
-  };
+  const { handleOpenMessage, creatingThread } = useCreateMessageThread({
+    participantId: profile?.id,
+    participantType: "employee",
+    organizationId: organization?.id,
+  });
 
   const load = async () => {
     if (!organization) return;

@@ -12,7 +12,7 @@ final messagesRepositoryProvider =
 
 /// スレッド一覧
 final messageThreadsProvider =
-    FutureProvider<List<MessageThread>>((ref) async {
+    FutureProvider.autoDispose<List<MessageThread>>((ref) async {
   final currentUser = ref.watch(appUserProvider);
   if (currentUser == null) return [];
   final repo = ref.watch(messagesRepositoryProvider);
@@ -21,7 +21,7 @@ final messageThreadsProvider =
 
 /// スレッドIDからメッセージ一覧を取得
 final threadMessagesProvider =
-    FutureProvider.family<List<Message>, String>((ref, threadId) async {
+    FutureProvider.autoDispose.family<List<Message>, String>((ref, threadId) async {
   final repo = ref.watch(messagesRepositoryProvider);
   return repo.getMessages(threadId);
 });

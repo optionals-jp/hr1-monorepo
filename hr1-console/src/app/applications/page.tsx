@@ -28,20 +28,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SlidersHorizontal, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-
-const statusLabels: Record<string, string> = {
-  active: "選考中",
-  offered: "内定",
-  rejected: "不採用",
-  withdrawn: "辞退",
-};
-
-const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  active: "default",
-  offered: "secondary",
-  rejected: "destructive",
-  withdrawn: "outline",
-};
+import {
+  applicationStatusLabels as statusLabels,
+  applicationStatusColors as statusColors,
+} from "@/lib/constants";
 
 const statusTabs = [
   { value: "all", label: "すべて" },

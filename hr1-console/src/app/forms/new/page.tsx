@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/toast";
 import { useSWRConfig } from "swr";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -18,17 +19,8 @@ import {
 } from "@/components/ui/select";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
-import { Trash2, GripVertical } from "lucide-react";
-
-const fieldTypeLabels: Record<string, string> = {
-  shortText: "短文テキスト",
-  longText: "長文テキスト",
-  radio: "ラジオボタン",
-  checkbox: "チェックボックス",
-  dropdown: "ドロップダウン",
-  date: "日付",
-  fileUpload: "ファイルアップロード",
-};
+import { Trash2 } from "lucide-react";
+import { fieldTypeLabels } from "@/lib/constants";
 
 interface FieldDraft {
   tempId: string;
@@ -42,6 +34,7 @@ interface FieldDraft {
 
 export default function NewFormPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { mutate } = useSWRConfig();
   const { organization } = useOrg();
   const [title, setTitle] = useState("");
@@ -76,40 +69,49 @@ export default function NewFormPage() {
     if (!organization || !title) return;
     setSaving(true);
 
-    const formId = `form-${Date.now()}`;
+    try {
+      const formId = `form-${Date.now()}`;
 
-    await getSupabase()
-      .from("custom_forms")
-      .insert({
-        id: formId,
-        organization_id: organization.id,
-        title,
-        description: description || null,
-      });
+      const { error: formError } = await getSupabase()
+        .from("custom_forms")
+        .insert({
+          id: formId,
+          organization_id: organization.id,
+          title,
+          description: description || null,
+        });
+      if (formError) throw formError;
 
-    if (fields.length > 0) {
-      await getSupabase()
-        .from("form_fields")
-        .insert(
-          fields.map((field, index) => ({
-            id: `field-${formId}-${index + 1}`,
-            form_id: formId,
-            type: field.field_type,
-            label: field.label,
-            description: field.description || null,
-            placeholder: field.placeholder || null,
-            is_required: field.is_required,
-            options:
-              field.options && ["radio", "checkbox", "dropdown"].includes(field.field_type)
-                ? field.options.split("\n").filter(Boolean)
-                : null,
-            sort_order: index + 1,
-          }))
-        );
+      if (fields.length > 0) {
+        const { error: fieldsError } = await getSupabase()
+          .from("form_fields")
+          .insert(
+            fields.map((field, index) => ({
+              id: `field-${formId}-${index + 1}`,
+              form_id: formId,
+              type: field.field_type,
+              label: field.label,
+              description: field.description || null,
+              placeholder: field.placeholder || null,
+              is_required: field.is_required,
+              options:
+                field.options && ["radio", "checkbox", "dropdown"].includes(field.field_type)
+                  ? field.options.split("\n").filter(Boolean)
+                  : null,
+              sort_order: index + 1,
+            }))
+          );
+        if (fieldsError) throw fieldsError;
+      }
+
+      await mutate(`forms-${organization.id}`);
+      showToast("フォームを作成しました");
+      router.push("/forms");
+    } catch {
+      showToast("フォームの作成に失敗しました", "error");
+    } finally {
+      setSaving(false);
     }
-
-    await mutate(`forms-${organization.id}`);
-    router.push("/forms");
   };
 
   return (

@@ -30,25 +30,7 @@ import { useOrg } from "@/lib/org-context";
 import type { CustomForm, FormField, FormChangeLog } from "@/types/database";
 import { format } from "date-fns";
 import { Trash2 } from "lucide-react";
-
-const fieldTypeLabels: Record<string, string> = {
-  shortText: "短文テキスト",
-  longText: "長文テキスト",
-  radio: "ラジオボタン",
-  checkbox: "チェックボックス",
-  dropdown: "ドロップダウン",
-  date: "日付",
-  fileUpload: "ファイルアップロード",
-};
-
-const changeTypeLabels: Record<string, string> = {
-  created: "作成",
-  title_updated: "タイトル変更",
-  description_updated: "説明変更",
-  field_added: "フィールド追加",
-  field_updated: "フィールド変更",
-  field_deleted: "フィールド削除",
-};
+import { fieldTypeLabels, formChangeTypeLabels as changeTypeLabels } from "@/lib/constants";
 
 interface FieldDraft {
   id: string;

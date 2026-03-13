@@ -22,27 +22,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import type { Interview, InterviewSlot } from "@/types/database";
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
-
-const statusLabels: Record<string, string> = {
-  scheduling: "未確定",
-  confirmed: "確定済み",
-  completed: "完了",
-  cancelled: "キャンセル",
-};
-
-const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  scheduling: "outline",
-  confirmed: "default",
-  completed: "secondary",
-  cancelled: "destructive",
-};
+import {
+  interviewScheduleStatusLabels as statusLabels,
+  interviewScheduleStatusColors as statusColors,
+} from "@/lib/constants";
 
 export default function SchedulingPage() {
   const router = useRouter();
@@ -213,20 +203,13 @@ export default function SchedulingPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                  読み込み中...
-                </TableCell>
-              </TableRow>
-            ) : interviews.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                  面接がありません
-                </TableCell>
-              </TableRow>
-            ) : (
-              interviews.map((interview) => {
+            <TableEmptyState
+              colSpan={4}
+              isLoading={isLoading}
+              isEmpty={interviews.length === 0}
+              emptyMessage="面接がありません"
+            >
+              {interviews.map((interview) => {
                 const totalSlots = interview.interview_slots?.length ?? 0;
                 const bookedSlots =
                   interview.interview_slots?.filter((s) => s.application_id).length ?? 0;
@@ -248,8 +231,8 @@ export default function SchedulingPage() {
                     </TableCell>
                   </TableRow>
                 );
-              })
-            )}
+              })}
+            </TableEmptyState>
           </TableBody>
         </Table>
       </div>

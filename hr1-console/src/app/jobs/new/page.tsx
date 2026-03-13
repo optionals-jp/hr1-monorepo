@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/toast";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,20 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { Trash2, GripVertical } from "lucide-react";
-
-const jobStatusLabels: Record<string, string> = {
-  open: "公開中",
-  draft: "下書き",
-  closed: "終了",
-};
-
-const stepTypeLabels: Record<string, string> = {
-  screening: "書類選考",
-  form: "アンケート/フォーム",
-  interview: "面接",
-  external_test: "外部テスト",
-  offer: "内定",
-};
+import { jobStatusLabels, stepTypeLabels } from "@/lib/constants";
 
 interface StepDraft {
   tempId: string;
@@ -41,6 +29,7 @@ interface StepDraft {
 
 export default function NewJobPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { organization } = useOrg();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -79,37 +68,46 @@ export default function NewJobPage() {
     if (!organization || !title) return;
     setSaving(true);
 
-    const jobId = `job-${Date.now()}`;
+    try {
+      const jobId = `job-${Date.now()}`;
 
-    await getSupabase()
-      .from("jobs")
-      .insert({
-        id: jobId,
-        organization_id: organization.id,
-        title,
-        description,
-        department: department || null,
-        location: location || null,
-        employment_type: employmentType || null,
-        salary_range: salaryRange || null,
-        status,
-      });
+      const { error: jobError } = await getSupabase()
+        .from("jobs")
+        .insert({
+          id: jobId,
+          organization_id: organization.id,
+          title,
+          description,
+          department: department || null,
+          location: location || null,
+          employment_type: employmentType || null,
+          salary_range: salaryRange || null,
+          status,
+        });
+      if (jobError) throw jobError;
 
-    if (steps.length > 0) {
-      await getSupabase()
-        .from("job_steps")
-        .insert(
-          steps.map((step, index) => ({
-            id: `step-${jobId}-${index + 1}`,
-            job_id: jobId,
-            step_type: step.step_type,
-            step_order: index + 1,
-            label: step.label,
-          }))
-        );
+      if (steps.length > 0) {
+        const { error: stepsError } = await getSupabase()
+          .from("job_steps")
+          .insert(
+            steps.map((step, index) => ({
+              id: `step-${jobId}-${index + 1}`,
+              job_id: jobId,
+              step_type: step.step_type,
+              step_order: index + 1,
+              label: step.label,
+            }))
+          );
+        if (stepsError) throw stepsError;
+      }
+
+      showToast("求人を作成しました");
+      router.push("/jobs");
+    } catch {
+      showToast("求人の作成に失敗しました", "error");
+    } finally {
+      setSaving(false);
     }
-
-    router.push("/jobs");
   };
 
   return (

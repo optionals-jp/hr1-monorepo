@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableEmptyState } from "@/components/ui/table-empty-state";
 import {
   Select,
   SelectContent,
@@ -46,6 +48,7 @@ const addTabs: EditPanelTab[] = [
 
 export default function ApplicantsPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { organization } = useOrg();
   const [search, setSearch] = useState("");
   const [filterHiringType, setFilterHiringType] = useState<string>("all");
@@ -86,26 +89,34 @@ export default function ApplicantsPage() {
     if (!organization || !newEmail) return;
     setSaving(true);
 
-    const id = crypto.randomUUID();
-    await getSupabase()
-      .from("profiles")
-      .insert({
-        id,
-        email: newEmail,
-        display_name: newName || null,
-        role: "applicant",
-        hiring_type: newHiringType || null,
-        graduation_year: newHiringType === "new_grad" && newGradYear ? Number(newGradYear) : null,
+    try {
+      const id = crypto.randomUUID();
+      const { error: profileError } = await getSupabase()
+        .from("profiles")
+        .insert({
+          id,
+          email: newEmail,
+          display_name: newName || null,
+          role: "applicant",
+          hiring_type: newHiringType || null,
+          graduation_year: newHiringType === "new_grad" && newGradYear ? Number(newGradYear) : null,
+        });
+      if (profileError) throw profileError;
+
+      const { error: orgError } = await getSupabase().from("user_organizations").insert({
+        user_id: id,
+        organization_id: organization.id,
       });
+      if (orgError) throw orgError;
 
-    await getSupabase().from("user_organizations").insert({
-      user_id: id,
-      organization_id: organization.id,
-    });
-
-    setSaving(false);
-    setDialogOpen(false);
-    mutate();
+      setDialogOpen(false);
+      mutate();
+      showToast("応募者を追加しました");
+    } catch {
+      showToast("応募者の追加に失敗しました", "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const filtered = applicants.filter((a) => {
@@ -183,20 +194,13 @@ export default function ApplicantsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                  読み込み中...
-                </TableCell>
-              </TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                  応募者がいません
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((applicant) => (
+            <TableEmptyState
+              colSpan={3}
+              isLoading={isLoading}
+              isEmpty={filtered.length === 0}
+              emptyMessage="応募者がいません"
+            >
+              {filtered.map((applicant) => (
                 <TableRow
                   key={applicant.id}
                   className="cursor-pointer"
@@ -223,8 +227,8 @@ export default function ApplicantsPage() {
                     )}
                   </TableCell>
                 </TableRow>
-              ))
-            )}
+              ))}
+            </TableEmptyState>
           </TableBody>
         </Table>
       </div>

@@ -43,51 +43,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SearchBar } from "@/components/ui/search-bar";
 import { X, Search, SlidersHorizontal, GripVertical } from "lucide-react";
 import { format } from "date-fns";
-
-const stepTypeLabels: Record<string, string> = {
-  screening: "書類選考",
-  form: "アンケート/フォーム",
-  interview: "面接",
-  external_test: "外部テスト",
-  offer: "内定",
-};
-
-const statusLabels: Record<string, string> = {
-  open: "公開中",
-  draft: "下書き",
-  closed: "終了",
-};
-
-const appStatusLabels: Record<string, string> = {
-  active: "選考中",
-  offered: "内定",
-  rejected: "不採用",
-  withdrawn: "辞退",
-};
-
-const appStatusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  active: "default",
-  offered: "secondary",
-  rejected: "destructive",
-  withdrawn: "outline",
-};
-
-const changeTypeLabels: Record<string, string> = {
-  created: "作成",
-  status_updated: "ステータス変更",
-  title_updated: "タイトル変更",
-  description_updated: "説明変更",
-  info_updated: "求人情報変更",
-  step_added: "ステップ追加",
-  step_deleted: "ステップ削除",
-};
-
-const stepStatusLabels: Record<string, string> = {
-  pending: "未着手",
-  in_progress: "進行中",
-  completed: "完了",
-  skipped: "スキップ",
-};
+import {
+  stepTypeLabels,
+  jobStatusLabels as statusLabels,
+  applicationStatusLabels as appStatusLabels,
+  applicationStatusColors as appStatusColors,
+  jobChangeTypeLabels as changeTypeLabels,
+  stepStatusLabels,
+} from "@/lib/constants";
 
 interface HistoryEvent {
   id: string;

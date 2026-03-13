@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableEmptyState } from "@/components/ui/table-empty-state";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,18 +29,7 @@ import { useQuery } from "@/lib/use-query";
 import { cn } from "@/lib/utils";
 import type { Job } from "@/types/database";
 import { SlidersHorizontal, X } from "lucide-react";
-
-const statusLabels: Record<string, string> = {
-  open: "公開中",
-  closed: "終了",
-  draft: "下書き",
-};
-
-const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  open: "default",
-  closed: "secondary",
-  draft: "outline",
-};
+import { jobStatusLabels as statusLabels, jobStatusColors as statusColors } from "@/lib/constants";
 
 interface AppCounts {
   total: number;
@@ -157,20 +147,13 @@ export default function JobsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                  読み込み中...
-                </TableCell>
-              </TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                  {jobs.length === 0 ? "求人がありません" : "該当する求人がありません"}
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((job) => {
+            <TableEmptyState
+              colSpan={7}
+              isLoading={isLoading}
+              isEmpty={filtered.length === 0}
+              emptyMessage={jobs.length === 0 ? "求人がありません" : "該当する求人がありません"}
+            >
+              {filtered.map((job) => {
                 const counts = appCounts[job.id] ?? { total: 0, offered: 0 };
                 return (
                   <TableRow
@@ -201,8 +184,8 @@ export default function JobsPage() {
                     </TableCell>
                   </TableRow>
                 );
-              })
-            )}
+              })}
+            </TableEmptyState>
           </TableBody>
         </Table>
       </div>

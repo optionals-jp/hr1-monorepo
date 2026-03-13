@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/interview.dart';
 import '../../domain/repositories/interviews_repository.dart';
@@ -15,17 +16,23 @@ class SupabaseInterviewsRepository implements InterviewsRepository {
 
   /// 面接IDから面接情報を非同期取得
   Future<Interview?> getInterviewAsync(String interviewId) async {
-    final response = await _client
-        .from('interviews')
-        .select('*, interview_slots(*)')
-        .eq('id', interviewId)
-        .maybeSingle();
+    try {
+      final response = await _client
+          .from('interviews')
+          .select('*, interview_slots(*)')
+          .eq('id', interviewId)
+          .maybeSingle();
 
-    if (response == null) return null;
-    final map = Map<String, dynamic>.from(response);
-    // interview_slots を slots にリネーム
-    map['slots'] = map['interview_slots'] ?? [];
-    map.remove('interview_slots');
-    return Interview.fromJson(map);
+      if (response == null) return null;
+      final map = Map<String, dynamic>.from(response);
+      // interview_slots を slots にリネーム
+      map['slots'] = map['interview_slots'] ?? [];
+      map.remove('interview_slots');
+      return Interview.fromJson(map);
+    } catch (e, stackTrace) {
+      debugPrint('Error fetching interview $interviewId: $e');
+      debugPrint('$stackTrace');
+      rethrow;
+    }
   }
 }

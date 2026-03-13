@@ -147,12 +147,12 @@ const TOOLBAR_ACTIONS: ToolbarAction[] = [
   {
     label: "見出し",
     title: "見出し（大）",
-    action: (v, s, e) => prefixCurrentLine(v, s, "## "),
+    action: (v, s) => prefixCurrentLine(v, s, "## "),
   },
   {
     label: "小見出し",
     title: "見出し（小）",
-    action: (v, s, e) => prefixCurrentLine(v, s, "### "),
+    action: (v, s) => prefixCurrentLine(v, s, "### "),
   },
   {
     label: "B",
@@ -168,17 +168,17 @@ const TOOLBAR_ACTIONS: ToolbarAction[] = [
   {
     label: "・リスト",
     title: "箇条書き",
-    action: (v, s, e) => prefixCurrentLine(v, s, "- "),
+    action: (v, s) => prefixCurrentLine(v, s, "- "),
   },
   {
     label: "1. リスト",
     title: "番号付きリスト",
-    action: (v, s, e) => prefixCurrentLine(v, s, "1. "),
+    action: (v, s) => prefixCurrentLine(v, s, "1. "),
   },
   {
     label: "引用",
     title: "引用",
-    action: (v, s, e) => prefixCurrentLine(v, s, "> "),
+    action: (v, s) => prefixCurrentLine(v, s, "> "),
   },
   {
     label: "──",

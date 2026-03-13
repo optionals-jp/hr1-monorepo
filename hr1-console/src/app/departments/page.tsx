@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +51,7 @@ const pageTabs = [
 
 export default function DepartmentsPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { organization } = useOrg();
   const [activeTab, setActiveTab] = useState("list");
   const [search, setSearch] = useState("");
@@ -172,24 +174,40 @@ export default function DepartmentsPage() {
   const handleAdd = async () => {
     if (!organization || !newDeptName.trim()) return;
     setSavingAdd(true);
-    await getSupabase()
-      .from("departments")
-      .insert({
-        id: crypto.randomUUID(),
-        organization_id: organization.id,
-        name: newDeptName.trim(),
-        parent_id: newParentId === "none" ? null : newParentId,
-      });
-    setSavingAdd(false);
-    setDialogOpen(false);
-    mutate();
-    mutateOrg();
+
+    try {
+      const { error } = await getSupabase()
+        .from("departments")
+        .insert({
+          id: crypto.randomUUID(),
+          organization_id: organization.id,
+          name: newDeptName.trim(),
+          parent_id: newParentId === "none" ? null : newParentId,
+        });
+      if (error) throw error;
+
+      setDialogOpen(false);
+      mutate();
+      mutateOrg();
+      showToast("部署を追加しました");
+    } catch {
+      showToast("部署の追加に失敗しました", "error");
+    } finally {
+      setSavingAdd(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await getSupabase().from("departments").delete().eq("id", id);
-    mutate();
-    mutateOrg();
+    try {
+      const { error } = await getSupabase().from("departments").delete().eq("id", id);
+      if (error) throw error;
+
+      mutate();
+      mutateOrg();
+      showToast("部署を削除しました");
+    } catch {
+      showToast("部署の削除に失敗しました", "error");
+    }
   };
 
   const startEditing = (dept: Department) => {
@@ -202,18 +220,27 @@ export default function DepartmentsPage() {
   const saveEdit = async () => {
     if (!editingId || !editName.trim()) return;
     setSavingEdit(true);
-    await getSupabase()
-      .from("departments")
-      .update({
-        name: editName.trim(),
-        parent_id: editParentId === "none" ? null : editParentId,
-      })
-      .eq("id", editingId);
-    setSavingEdit(false);
-    setEditingId(null);
-    setEditDialogOpen(false);
-    mutate();
-    mutateOrg();
+
+    try {
+      const { error } = await getSupabase()
+        .from("departments")
+        .update({
+          name: editName.trim(),
+          parent_id: editParentId === "none" ? null : editParentId,
+        })
+        .eq("id", editingId);
+      if (error) throw error;
+
+      setEditingId(null);
+      setEditDialogOpen(false);
+      mutate();
+      mutateOrg();
+      showToast("部署を更新しました");
+    } catch {
+      showToast("部署の更新に失敗しました", "error");
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const filtered = departments.filter(

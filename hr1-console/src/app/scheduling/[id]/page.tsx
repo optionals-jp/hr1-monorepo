@@ -30,31 +30,11 @@ import { useOrg } from "@/lib/org-context";
 import type { Interview, InterviewSlot, InterviewChangeLog } from "@/types/database";
 import { Calendar, Trash2, Search } from "lucide-react";
 import { format } from "date-fns";
-
-const statusLabels: Record<string, string> = {
-  scheduling: "未確定",
-  confirmed: "確定済み",
-  completed: "完了",
-  cancelled: "キャンセル",
-};
-
-const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  scheduling: "outline",
-  confirmed: "default",
-  completed: "secondary",
-  cancelled: "destructive",
-};
-
-const changeTypeLabels: Record<string, string> = {
-  created: "作成",
-  title_updated: "タイトル変更",
-  location_updated: "場所変更",
-  notes_updated: "備考変更",
-  status_updated: "ステータス変更",
-  slot_added: "候補日時追加",
-  slot_updated: "候補日時変更",
-  slot_deleted: "候補日時削除",
-};
+import {
+  interviewScheduleStatusLabels as statusLabels,
+  interviewScheduleStatusColors as statusColors,
+  scheduleChangeTypeLabels as changeTypeLabels,
+} from "@/lib/constants";
 
 const tabs = [
   { value: "detail", label: "面接詳細" },

@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
@@ -57,20 +58,13 @@ export default function FormsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                  読み込み中...
-                </TableCell>
-              </TableRow>
-            ) : forms.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                  フォームがありません
-                </TableCell>
-              </TableRow>
-            ) : (
-              forms.map((form) => (
+            <TableEmptyState
+              colSpan={3}
+              isLoading={isLoading}
+              isEmpty={forms.length === 0}
+              emptyMessage="フォームがありません"
+            >
+              {forms.map((form) => (
                 <TableRow
                   key={form.id}
                   className="cursor-pointer"
@@ -84,8 +78,8 @@ export default function FormsPage() {
                     {format(new Date(form.created_at), "yyyy/MM/dd")}
                   </TableCell>
                 </TableRow>
-              ))
-            )}
+              ))}
+            </TableEmptyState>
           </TableBody>
         </Table>
       </div>
