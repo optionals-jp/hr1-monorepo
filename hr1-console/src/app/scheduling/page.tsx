@@ -26,7 +26,7 @@ import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import type { Interview, InterviewSlot } from "@/types/database";
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
@@ -132,10 +132,7 @@ export default function SchedulingPage() {
         description="面接の日程管理"
         action={
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger render={<Button />}>
-              <Plus className="mr-2 h-4 w-4" />
-              面接を作成
-            </DialogTrigger>
+            <DialogTrigger render={<Button />}>面接を作成</DialogTrigger>
             <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>面接を作成</DialogTitle>
@@ -171,7 +168,6 @@ export default function SchedulingPage() {
                   <div className="flex items-center justify-between">
                     <Label>候補日時</Label>
                     <Button variant="outline" size="sm" onClick={addSlot}>
-                      <Plus className="mr-1 h-3 w-3" />
                       追加
                     </Button>
                   </div>

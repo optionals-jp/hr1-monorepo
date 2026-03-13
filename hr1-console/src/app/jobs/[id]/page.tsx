@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,8 @@ import {
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase";
-import type { Job, JobStep, JobChangeLog } from "@/types/database";
+import type { Job, JobStep, JobChangeLog, Application } from "@/types/database";
+import { useOrg } from "@/lib/org-context";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -37,7 +39,9 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Trash2, Pencil, X, Search, SlidersHorizontal } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { SearchBar } from "@/components/ui/search-bar";
+import { X, Search, SlidersHorizontal, GripVertical } from "lucide-react";
 import { format } from "date-fns";
 
 const stepTypeLabels: Record<string, string> = {
@@ -97,6 +101,7 @@ interface HistoryEvent {
 
 const tabs = [
   { value: "detail", label: "求人詳細" },
+  { value: "applicants", label: "応募者" },
   { value: "timeline", label: "履歴" },
   { value: "history", label: "編集履歴" },
 ];
@@ -108,21 +113,45 @@ const editTabs: EditPanelTab[] = [
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { organization } = useOrg();
   const [job, setJob] = useState<Job | null>(null);
   const [steps, setSteps] = useState<JobStep[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>([]);
   const [changeLogs, setChangeLogs] = useState<JobChangeLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("detail");
 
+  const [applicantSearch, setApplicantSearch] = useState("");
+  const [applicantStatusFilter, setApplicantStatusFilter] = useState<string>("all");
+
   const [historySearch, setHistorySearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [eventFilter, setEventFilter] = useState<string | null>(null);
 
-  // Step dialog
+  // Step dialog (add)
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newStepType, setNewStepType] = useState("interview");
   const [newStepLabel, setNewStepLabel] = useState("");
+  const [newStepFormId, setNewStepFormId] = useState<string>("");
+  const [savingStep, setSavingStep] = useState(false);
+  const [forms, setForms] = useState<{ id: string; title: string }[]>([]);
+
+  // Step edit
+  const [editStepOpen, setEditStepOpen] = useState(false);
+  const [editStepId, setEditStepId] = useState<string>("");
+  const [editStepType, setEditStepType] = useState("interview");
+  const [editStepLabel, setEditStepLabel] = useState("");
+  const [editStepFormId, setEditStepFormId] = useState<string>("");
+  const [savingEditStep, setSavingEditStep] = useState(false);
+  const [deletingEditStep, setDeletingEditStep] = useState(false);
+
+  // Drag-and-drop reorder
+  const [reorderMode, setReorderMode] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [confirmingReorder, setConfirmingReorder] = useState(false);
+  const stepsBeforeReorder = useRef<JobStep[]>([]);
 
   // Job info editing
   const [editingInfo, setEditingInfo] = useState(false);
@@ -136,10 +165,16 @@ export default function JobDetailPage() {
   const [savingInfo, setSavingInfo] = useState(false);
 
   const load = async () => {
+    if (!organization) return;
     setLoading(true);
     const [{ data: jobData }, { data: stepsData }, { data: appsData }, { data: logsData }] =
       await Promise.all([
-        getSupabase().from("jobs").select("*").eq("id", id).single(),
+        getSupabase()
+          .from("jobs")
+          .select("*")
+          .eq("id", id)
+          .eq("organization_id", organization.id)
+          .single(),
         getSupabase().from("job_steps").select("*").eq("job_id", id).order("step_order"),
         getSupabase()
           .from("applications")
@@ -155,6 +190,7 @@ export default function JobDetailPage() {
 
     setJob(jobData);
     setSteps(stepsData ?? []);
+    setApplications((appsData as Application[]) ?? []);
     setChangeLogs(logsData ?? []);
 
     // Build timeline events
@@ -200,9 +236,20 @@ export default function JobDetailPage() {
   };
 
   useEffect(() => {
+    if (!organization) return;
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, organization]);
+
+  useEffect(() => {
+    if (!organization) return;
+    getSupabase()
+      .from("custom_forms")
+      .select("id, title")
+      .eq("organization_id", organization.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => setForms(data ?? []));
+  }, [organization]);
 
   const updateJobStatus = async (status: string) => {
     const oldStatus = job?.status;
@@ -230,30 +277,51 @@ export default function JobDetailPage() {
 
   const addStep = async () => {
     if (!newStepLabel) return;
-    const nextOrder = steps.length + 1;
-    const stepId = `step-${id}-${Date.now()}`;
+    setSavingStep(true);
 
-    await getSupabase().from("job_steps").insert({
+    const nextOrder = steps.length + 1;
+    const stepId = crypto.randomUUID();
+    const relatedId =
+      ["screening", "form"].includes(newStepType) && newStepFormId ? newStepFormId : null;
+
+    const { error } = await getSupabase().from("job_steps").insert({
       id: stepId,
       job_id: id,
       step_type: newStepType,
       step_order: nextOrder,
       label: newStepLabel,
+      related_id: relatedId,
     });
+
+    if (error) {
+      setSavingStep(false);
+      return;
+    }
 
     await getSupabase()
       .from("job_change_logs")
       .insert({
-        id: `log-${id}-${Date.now()}-step`,
+        id: crypto.randomUUID(),
         job_id: id,
         change_type: "step_added",
         summary: `ステップ「${newStepLabel}」を追加`,
       });
 
+    const newStep: JobStep = {
+      id: stepId,
+      job_id: id,
+      step_type: newStepType,
+      step_order: nextOrder,
+      label: newStepLabel,
+      related_id: relatedId,
+    };
+
+    setSteps((prev) => [...prev, newStep]);
+    setSavingStep(false);
+    setDialogOpen(false);
     setNewStepType("interview");
     setNewStepLabel("");
-    setDialogOpen(false);
-    load();
+    setNewStepFormId("");
   };
 
   const removeStep = async (stepId: string) => {
@@ -272,6 +340,70 @@ export default function JobDetailPage() {
     }
 
     load();
+  };
+
+  const reorderSteps = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    const newSteps = [...steps];
+    const [moved] = newSteps.splice(fromIndex, 1);
+    newSteps.splice(toIndex, 0, moved);
+    setSteps(newSteps.map((s, i) => ({ ...s, step_order: i + 1 })));
+  };
+
+  const confirmReorder = async () => {
+    setConfirmingReorder(true);
+    // UNIQUE(job_id, step_order) 制約のため、並列更新すると衝突する。
+    // 一時値（1000+）に退避してから最終値を設定することで衝突を回避する。
+    await Promise.all(
+      steps.map((s) =>
+        getSupabase()
+          .from("job_steps")
+          .update({ step_order: s.step_order + 1000 })
+          .eq("id", s.id)
+      )
+    );
+    await Promise.all(
+      steps.map((s) =>
+        getSupabase().from("job_steps").update({ step_order: s.step_order }).eq("id", s.id)
+      )
+    );
+    setConfirmingReorder(false);
+    setReorderMode(false);
+  };
+
+  const startEditStep = (step: JobStep) => {
+    setEditStepId(step.id);
+    setEditStepType(step.step_type);
+    setEditStepLabel(step.label);
+    setEditStepFormId(step.related_id ?? "");
+    setEditStepOpen(true);
+  };
+
+  const saveEditStep = async () => {
+    if (!editStepLabel) return;
+    setSavingEditStep(true);
+    const relatedId =
+      ["screening", "form"].includes(editStepType) && editStepFormId ? editStepFormId : null;
+    await getSupabase()
+      .from("job_steps")
+      .update({ step_type: editStepType, label: editStepLabel, related_id: relatedId })
+      .eq("id", editStepId);
+    setSteps((prev) =>
+      prev.map((s) =>
+        s.id === editStepId
+          ? { ...s, step_type: editStepType, label: editStepLabel, related_id: relatedId }
+          : s
+      )
+    );
+    setSavingEditStep(false);
+    setEditStepOpen(false);
+  };
+
+  const deleteEditStep = async () => {
+    setDeletingEditStep(true);
+    await removeStep(editStepId);
+    setDeletingEditStep(false);
+    setEditStepOpen(false);
   };
 
   // === Info editing ===
@@ -372,7 +504,7 @@ export default function JobDetailPage() {
         action={
           <Select value={job.status} onValueChange={(v) => v && updateJobStatus(v)}>
             <SelectTrigger className="w-32">
-              <SelectValue />
+              <SelectValue>{(v: string) => statusLabels[v] ?? v}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="open">公開中</SelectItem>
@@ -387,11 +519,13 @@ export default function JobDetailPage() {
         <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8">
           {tabs.map((tab) => {
             const count =
-              tab.value === "timeline"
-                ? historyEvents.length
-                : tab.value === "history"
-                  ? changeLogs.length
-                  : undefined;
+              tab.value === "applicants"
+                ? applications.length
+                : tab.value === "timeline"
+                  ? historyEvents.length
+                  : tab.value === "history"
+                    ? changeLogs.length
+                    : undefined;
             return (
               <button
                 key={tab.value}
@@ -417,6 +551,132 @@ export default function JobDetailPage() {
         </div>
       </div>
 
+      {/* ===== 応募者タブ（全幅） ===== */}
+      {activeTab === "applicants" && (
+        <>
+          <SearchBar
+            value={applicantSearch}
+            onChange={setApplicantSearch}
+            placeholder="名前・メールで検索"
+          />
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
+              <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
+              {applicantStatusFilter !== "all" && (
+                <div className="flex items-center gap-1.5 overflow-x-auto">
+                  <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                    ステータス：{appStatusLabels[applicantStatusFilter] ?? applicantStatusFilter}
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setApplicantStatusFilter("all");
+                      }}
+                      className="ml-0.5 hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </span>
+                  </Badge>
+                </div>
+              )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-auto py-2">
+              <DropdownMenuItem className="py-2" onClick={() => setApplicantStatusFilter("all")}>
+                <span className={cn(applicantStatusFilter === "all" && "font-medium")}>すべて</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {Object.entries(appStatusLabels).map(([key, label]) => (
+                <DropdownMenuItem
+                  className="py-2"
+                  key={key}
+                  onClick={() => setApplicantStatusFilter(key)}
+                >
+                  <span className={cn(applicantStatusFilter === key && "font-medium")}>
+                    {label}
+                  </span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <div className="flex-1 overflow-y-auto bg-white">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>名前</TableHead>
+                  <TableHead>メール</TableHead>
+                  <TableHead>ステータス</TableHead>
+                  <TableHead>応募日</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(() => {
+                  const filtered = applications.filter((app) => {
+                    const profile = app.profiles as unknown as {
+                      display_name: string | null;
+                      email: string;
+                    } | null;
+                    if (applicantStatusFilter !== "all" && app.status !== applicantStatusFilter)
+                      return false;
+                    if (!applicantSearch) return true;
+                    const q = applicantSearch.toLowerCase();
+                    return (
+                      (profile?.display_name ?? "").toLowerCase().includes(q) ||
+                      (profile?.email ?? "").toLowerCase().includes(q)
+                    );
+                  });
+                  if (filtered.length === 0) {
+                    return (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          {applications.length === 0
+                            ? "応募者がいません"
+                            : "該当する応募者がいません"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+                  return filtered.map((app) => {
+                    const profile = app.profiles as unknown as {
+                      display_name: string | null;
+                      email: string;
+                    } | null;
+                    return (
+                      <TableRow key={app.id}>
+                        <TableCell>
+                          <Link
+                            href={`/applications/${app.id}`}
+                            className="flex items-center gap-3 hover:underline"
+                          >
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-medium">
+                                {(profile?.display_name ?? profile?.email ?? "-")[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{profile?.display_name ?? "-"}</span>
+                          </Link>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {profile?.email ?? "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={appStatusColors[app.status] ?? "default"}>
+                            {appStatusLabels[app.status] ?? app.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {format(new Date(app.applied_at), "yyyy/MM/dd")}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  });
+                })()}
+              </TableBody>
+            </Table>
+          </div>
+        </>
+      )}
+
       {(activeTab === "detail" || activeTab === "history") && (
         <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
           {/* ===== 求人詳細タブ ===== */}
@@ -428,7 +688,6 @@ export default function JobDetailPage() {
                   <div className="flex items-center justify-between px-5 pt-4 pb-2">
                     <h2 className="text-sm font-semibold text-muted-foreground">求人情報</h2>
                     <Button variant="outline" size="sm" onClick={startEditingInfo}>
-                      <Pencil className="mr-1 h-4 w-4" />
                       編集
                     </Button>
                   </div>
@@ -489,18 +748,53 @@ export default function JobDetailPage() {
                       選考ステップ
                       <span className="ml-1.5 text-xs font-normal">{steps.length}</span>
                     </h2>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setNewStepType("interview");
-                        setNewStepLabel("");
-                        setDialogOpen(true);
-                      }}
-                    >
-                      <Plus className="mr-1 h-4 w-4" />
-                      追加
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {!reorderMode && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={steps.length < 2}
+                            onClick={() => {
+                              stepsBeforeReorder.current = [...steps];
+                              setReorderMode(true);
+                            }}
+                          >
+                            並び替え
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setNewStepType("interview");
+                              setNewStepLabel("");
+                              setNewStepFormId("");
+                              setDialogOpen(true);
+                            }}
+                          >
+                            追加
+                          </Button>
+                        </>
+                      )}
+                      {reorderMode && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={confirmingReorder}
+                            onClick={() => {
+                              setSteps(stepsBeforeReorder.current);
+                              setReorderMode(false);
+                            }}
+                          >
+                            キャンセル
+                          </Button>
+                          <Button size="sm" onClick={confirmReorder} disabled={confirmingReorder}>
+                            {confirmingReorder ? "保存中..." : "確定"}
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
 
                   {steps.length === 0 ? (
@@ -510,24 +804,60 @@ export default function JobDetailPage() {
                   ) : (
                     <div>
                       {steps.map((step, index) => (
-                        <div key={step.id} className="flex items-center gap-3 px-5 py-4">
-                          <span className="text-sm font-bold text-muted-foreground w-6 text-center">
+                        <div
+                          key={step.id}
+                          draggable={reorderMode}
+                          onDragStart={reorderMode ? () => setDragIndex(index) : undefined}
+                          onDragOver={
+                            reorderMode
+                              ? (e) => {
+                                  e.preventDefault();
+                                  setDragOverIndex(index);
+                                }
+                              : undefined
+                          }
+                          onDrop={
+                            reorderMode
+                              ? () => {
+                                  if (dragIndex !== null) reorderSteps(dragIndex, index);
+                                  setDragIndex(null);
+                                  setDragOverIndex(null);
+                                }
+                              : undefined
+                          }
+                          onDragEnd={
+                            reorderMode
+                              ? () => {
+                                  setDragIndex(null);
+                                  setDragOverIndex(null);
+                                }
+                              : undefined
+                          }
+                          onClick={!reorderMode ? () => startEditStep(step) : undefined}
+                          className={cn(
+                            "flex items-center gap-3 px-5 py-4 border-b last:border-0",
+                            reorderMode ? "cursor-grab" : "cursor-pointer hover:bg-accent/40",
+                            reorderMode &&
+                              dragOverIndex === index &&
+                              dragIndex !== index &&
+                              "bg-accent/60"
+                          )}
+                        >
+                          <GripVertical
+                            className={cn(
+                              "h-4 w-4 shrink-0",
+                              reorderMode ? "text-muted-foreground" : "text-muted-foreground/30"
+                            )}
+                          />
+                          <span className="text-sm font-bold text-muted-foreground w-6 text-center shrink-0">
                             {index + 1}
                           </span>
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium">{step.label}</p>
                             <p className="text-xs text-muted-foreground">
                               {stepTypeLabels[step.step_type] ?? step.step_type}
                             </p>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeStep(step.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       ))}
                     </div>
@@ -796,19 +1126,28 @@ export default function JobDetailPage() {
       </EditPanel>
 
       <EditPanel
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        title="選考ステップを追加"
-        onSave={addStep}
-        saveDisabled={!newStepLabel}
-        saveLabel="追加"
+        open={editStepOpen}
+        onOpenChange={setEditStepOpen}
+        title="ステップを編集"
+        onSave={saveEditStep}
+        saving={savingEditStep}
+        saveDisabled={!editStepLabel}
+        onDelete={deleteEditStep}
+        deleting={deletingEditStep}
       >
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>種類</Label>
-            <Select value={newStepType} onValueChange={(v) => v && setNewStepType(v)}>
+            <Select
+              value={editStepType}
+              onValueChange={(v) => {
+                if (!v) return;
+                setEditStepType(v);
+                setEditStepFormId("");
+              }}
+            >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue>{(v: string) => stepTypeLabels[v] ?? v}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(stepTypeLabels).map(([key, label]) => (
@@ -819,6 +1158,107 @@ export default function JobDetailPage() {
               </SelectContent>
             </Select>
           </div>
+          {["screening", "form"].includes(editStepType) && (
+            <div className="space-y-2">
+              <Label>フォーム</Label>
+              <Select value={editStepFormId} onValueChange={(v) => v && setEditStepFormId(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="フォームを選択（任意）">
+                    {(v: string) => forms.find((f) => f.id === v)?.title ?? v}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {forms.length === 0 ? (
+                    <div className="py-2 px-3 text-sm text-muted-foreground">
+                      フォームがありません
+                    </div>
+                  ) : (
+                    forms.map((form) => (
+                      <SelectItem key={form.id} value={form.id}>
+                        {form.title}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              {editStepFormId && (
+                <Link
+                  href={`/forms/${editStepFormId}`}
+                  className="text-sm text-primary hover:underline"
+                >
+                  フォームの詳細を表示 →
+                </Link>
+              )}
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label>ラベル *</Label>
+            <Input
+              value={editStepLabel}
+              onChange={(e) => setEditStepLabel(e.target.value)}
+              placeholder="一次面接"
+            />
+          </div>
+        </div>
+      </EditPanel>
+
+      <EditPanel
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        title="選考ステップを追加"
+        onSave={addStep}
+        saving={savingStep}
+        saveDisabled={!newStepLabel}
+        saveLabel="追加"
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>種類</Label>
+            <Select
+              value={newStepType}
+              onValueChange={(v) => {
+                if (!v) return;
+                setNewStepType(v);
+                setNewStepFormId("");
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue>{(v: string) => stepTypeLabels[v] ?? v}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(stepTypeLabels).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {["screening", "form"].includes(newStepType) && (
+            <div className="space-y-2">
+              <Label>フォーム</Label>
+              <Select value={newStepFormId} onValueChange={(v) => v && setNewStepFormId(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="フォームを選択（任意）">
+                    {(v: string) => forms.find((f) => f.id === v)?.title ?? v}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {forms.length === 0 ? (
+                    <div className="py-2 px-3 text-sm text-muted-foreground">
+                      フォームがありません
+                    </div>
+                  ) : (
+                    forms.map((form) => (
+                      <SelectItem key={form.id} value={form.id}>
+                        {form.title}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label>ラベル *</Label>
             <Input

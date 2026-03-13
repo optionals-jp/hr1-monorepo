@@ -13,6 +13,8 @@ import '../../features/applications/presentation/screens/job_detail_screen.dart'
 import '../../features/forms/presentation/screens/form_fill_screen.dart';
 import '../../features/interviews/presentation/screens/interview_schedule_screen.dart';
 import '../../features/messages/presentation/screens/messages_screen.dart';
+import '../../features/messages/presentation/screens/thread_chat_screen.dart';
+import '../../features/messages/domain/entities/message_thread.dart';
 import '../../features/auth/presentation/screens/profile_screen.dart';
 
 /// ルートパス定数
@@ -25,6 +27,7 @@ class AppRoutes {
   static const String applications = '/applications';
   static const String jobs = '/jobs';
   static const String messages = '/messages';
+  static const String messageThread = '/messages/:threadId';
   static const String profile = '/profile';
 }
 
@@ -103,6 +106,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
         ],
+      ),
+
+      /// メッセージ詳細（シェル外 → 独自AppBar、BottomNav非表示）
+      GoRoute(
+        path: '/messages/:threadId',
+        builder: (context, state) => ThreadChatScreen(
+          thread: state.extra as MessageThread,
+        ),
       ),
 
       /// メイン画面（ホーム / 応募状況 / メッセージ / マイページ）

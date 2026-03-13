@@ -3,7 +3,7 @@ class MessageThread {
   const MessageThread({
     required this.id,
     required this.organizationId,
-    required this.applicationId,
+    this.applicationId,
     this.title,
     required this.createdAt,
     required this.updatedAt,
@@ -15,7 +15,7 @@ class MessageThread {
 
   final String id;
   final String organizationId;
-  final String applicationId;
+  final String? applicationId;
   final String? title;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -25,17 +25,14 @@ class MessageThread {
   final int unreadCount;
 
   factory MessageThread.fromJson(Map<String, dynamic> json) {
-    final app = json['applications'] as Map<String, dynamic>?;
-    final job = app?['jobs'] as Map<String, dynamic>?;
-
     return MessageThread(
       id: json['id'] as String,
       organizationId: json['organization_id'] as String,
-      applicationId: json['application_id'] as String,
+      applicationId: json['application_id'] as String?,
       title: json['title'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      jobTitle: job?['title'] as String?,
+      jobTitle: json['job_title'] as String?,
       organizationName: json['organization_name'] as String?,
     );
   }

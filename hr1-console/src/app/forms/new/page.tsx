@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Trash2, GripVertical } from "lucide-react";
 
 const fieldTypeLabels: Record<string, string> = {
   shortText: "短文テキスト",
@@ -149,7 +149,6 @@ export default function NewFormPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>フィールド</CardTitle>
               <Button variant="outline" size="sm" onClick={addField}>
-                <Plus className="mr-1 h-4 w-4" />
                 追加
               </Button>
             </CardHeader>
@@ -190,7 +189,7 @@ export default function NewFormPage() {
                           onValueChange={(v) => v && updateField(field.tempId, "field_type", v)}
                         >
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue>{(v: string) => fieldTypeLabels[v] ?? v}</SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {Object.entries(fieldTypeLabels).map(([key, label]) => (

@@ -17,7 +17,13 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Trash2, GripVertical } from "lucide-react";
+
+const jobStatusLabels: Record<string, string> = {
+  open: "公開中",
+  draft: "下書き",
+  closed: "終了",
+};
 
 const stepTypeLabels: Record<string, string> = {
   screening: "書類選考",
@@ -175,7 +181,7 @@ export default function NewJobPage() {
                 <Label>ステータス</Label>
                 <Select value={status} onValueChange={(v) => v && setStatus(v)}>
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue>{(v: string) => jobStatusLabels[v] ?? v}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="open">公開中</SelectItem>
@@ -192,7 +198,6 @@ export default function NewJobPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>選考ステップ</CardTitle>
               <Button variant="outline" size="sm" onClick={addStep}>
-                <Plus className="mr-1 h-4 w-4" />
                 追加
               </Button>
             </CardHeader>
@@ -206,7 +211,7 @@ export default function NewJobPage() {
                     onValueChange={(v) => v && updateStep(step.tempId, "step_type", v)}
                   >
                     <SelectTrigger className="w-40">
-                      <SelectValue />
+                      <SelectValue>{(v: string) => stepTypeLabels[v] ?? v}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {Object.entries(stepTypeLabels).map(([key, label]) => (

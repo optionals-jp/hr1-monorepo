@@ -17,18 +17,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
-import type { Application, ApplicationStep, CustomForm, Interview } from "@/types/database";
-import {
-  Check,
-  Circle,
-  SkipForward,
-  ArrowRight,
-  FileText,
-  Calendar,
-  ExternalLink,
-  Plus,
-  Undo2,
-} from "lucide-react";
+import type {
+  Application,
+  ApplicationStep,
+  CustomForm,
+  FormField,
+  Interview,
+} from "@/types/database";
+import { Check, Circle, SkipForward, FileText, Calendar, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 
 const statusLabels: Record<string, string> = {
@@ -69,6 +65,12 @@ export default function ApplicationDetailPage() {
   const [steps, setSteps] = useState<ApplicationStep[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // フォーム回答シートの状態
+  const [formSheetOpen, setFormSheetOpen] = useState(false);
+  const [formSheetStep, setFormSheetStep] = useState<ApplicationStep | null>(null);
+  const [formSheetFields, setFormSheetFields] = useState<{ field: FormField; value: string }[]>([]);
+  const [formSheetLoading, setFormSheetLoading] = useState(false);
+
   // リソース選択ダイアログの状態
   const [activeTab, setActiveTab] = useState<"dashboard" | "steps" | "history">("dashboard");
   const [resourceDialogOpen, setResourceDialogOpen] = useState(false);
@@ -78,6 +80,7 @@ export default function ApplicationDetailPage() {
   const [resourcesLoading, setResourcesLoading] = useState(false);
 
   const load = async () => {
+    if (!organization) return;
     setLoading(true);
     const { data } = await getSupabase()
       .from("applications")
@@ -85,6 +88,7 @@ export default function ApplicationDetailPage() {
         "*, jobs(*), profiles:applicant_id(id, email, display_name, role), application_steps(*)"
       )
       .eq("id", id)
+      .eq("organization_id", organization.id)
       .single();
 
     if (data) {
@@ -98,9 +102,34 @@ export default function ApplicationDetailPage() {
   };
 
   useEffect(() => {
+    if (!organization) return;
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, organization]);
+
+  // Realtime: application_steps の変更をリッスンして自動リロード
+  useEffect(() => {
+    const channel = getSupabase()
+      .channel(`application_steps:${id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "application_steps",
+          filter: `application_id=eq.${id}`,
+        },
+        () => {
+          load();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      getSupabase().removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, organization]);
 
   /** リソース選択ダイアログを開き、フォームまたは面接一覧を取得 */
   const openResourceDialog = async (step: ApplicationStep) => {
@@ -149,63 +178,77 @@ export default function ApplicationDetailPage() {
 
   /** ステップを進行させる */
   const advanceStep = async (step: ApplicationStep) => {
-    if (step.status === "pending") {
-      // リソース選択が必要なステップ種別の場合はダイアログを開く
-      if (isResourceStepType(step.step_type)) {
-        openResourceDialog(step);
-        return;
-      }
+    try {
+      if (step.status === "pending") {
+        // リソース選択が必要なステップ種別の場合はダイアログを開く
+        if (isResourceStepType(step.step_type)) {
+          openResourceDialog(step);
+          return;
+        }
 
-      // その他のステップは直接開始
-      await getSupabase()
-        .from("application_steps")
-        .update({
-          status: "in_progress",
-          started_at: new Date().toISOString(),
-        })
-        .eq("id", step.id);
-    } else if (step.status === "in_progress") {
-      await getSupabase()
-        .from("application_steps")
-        .update({
-          status: "completed",
-          completed_at: new Date().toISOString(),
-        })
-        .eq("id", step.id);
+        // その他のステップは直接開始
+        const { error } = await getSupabase()
+          .from("application_steps")
+          .update({
+            status: "in_progress",
+            started_at: new Date().toISOString(),
+          })
+          .eq("id", step.id);
+        if (error) throw error;
+      } else if (step.status === "in_progress") {
+        const { error } = await getSupabase()
+          .from("application_steps")
+          .update({
+            status: "completed",
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", step.id);
+        if (error) throw error;
 
-      // 次のステップを自動開始
-      const nextStep = steps.find(
-        (s) => s.step_order === step.step_order + 1 && s.status === "pending"
-      );
-      if (nextStep) {
-        // 次ステップがリソース選択を必要としない場合のみ自動開始
-        if (!isResourceStepType(nextStep.step_type)) {
-          await getSupabase()
-            .from("application_steps")
-            .update({
-              status: "in_progress",
-              started_at: new Date().toISOString(),
-            })
-            .eq("id", nextStep.id);
+        // 次のステップを自動開始
+        const nextStep = steps.find(
+          (s) => s.step_order === step.step_order + 1 && s.status === "pending"
+        );
+        if (nextStep) {
+          // 次ステップがリソース選択を必要としない場合のみ自動開始
+          if (!isResourceStepType(nextStep.step_type)) {
+            await getSupabase()
+              .from("application_steps")
+              .update({
+                status: "in_progress",
+                started_at: new Date().toISOString(),
+              })
+              .eq("id", nextStep.id);
+          }
         }
       }
+      load();
+    } catch (err) {
+      console.error("ステップ更新エラー:", err);
+    }
+  };
+
+  const skipStep = async (step: ApplicationStep) => {
+    const { error } = await getSupabase()
+      .from("application_steps")
+      .update({ status: "skipped", completed_at: new Date().toISOString() })
+      .eq("id", step.id);
+    if (error) {
+      console.error("ステップスキップエラー:", error);
+      return;
     }
     load();
   };
 
-  const skipStep = async (step: ApplicationStep) => {
-    await getSupabase()
-      .from("application_steps")
-      .update({ status: "skipped", completed_at: new Date().toISOString() })
-      .eq("id", step.id);
-    load();
-  };
-
   const unskipStep = async (step: ApplicationStep) => {
-    await getSupabase()
+    const { error } = await getSupabase()
       .from("application_steps")
       .update({ status: "pending", started_at: null, completed_at: null })
       .eq("id", step.id);
+    if (error) {
+      console.error("ステップ復元エラー:", error);
+      return;
+    }
     load();
   };
 
@@ -224,6 +267,39 @@ export default function ApplicationDetailPage() {
     if (step.status === "completed") return false;
     if (step.status === "skipped") return true; // 元に戻すボタンのみ表示
     return step.step_order === currentStepOrder;
+  };
+
+  /** フォーム回答シートを開く */
+  const openFormResponses = async (step: ApplicationStep) => {
+    if (!step.related_id || !application) return;
+    setFormSheetStep(step);
+    setFormSheetLoading(true);
+    setFormSheetOpen(true);
+
+    const [{ data: fieldsData }, { data: responsesData }] = await Promise.all([
+      getSupabase()
+        .from("form_fields")
+        .select("*")
+        .eq("form_id", step.related_id)
+        .order("sort_order"),
+      getSupabase()
+        .from("form_responses")
+        .select("*")
+        .eq("form_id", step.related_id)
+        .eq("applicant_id", application.applicant_id),
+    ]);
+
+    const answerMap: Record<string, string> = {};
+    for (const r of responsesData ?? []) {
+      answerMap[r.field_id] = Array.isArray(r.value)
+        ? (r.value as string[]).join(", ")
+        : String(r.value ?? "");
+    }
+
+    setFormSheetFields(
+      (fieldsData ?? []).map((f) => ({ field: f as FormField, value: answerMap[f.id] ?? "-" }))
+    );
+    setFormSheetLoading(false);
   };
 
   const updateApplicationStatus = async (status: string | null) => {
@@ -269,7 +345,7 @@ export default function ApplicationDetailPage() {
         action={
           <Select value={application.status} onValueChange={updateApplicationStatus}>
             <SelectTrigger className="w-32">
-              <SelectValue />
+              <SelectValue>{(v: string) => statusLabels[v] ?? v}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="active">選考中</SelectItem>
@@ -355,6 +431,7 @@ export default function ApplicationDetailPage() {
                     advanceStep={advanceStep}
                     skipStep={skipStep}
                     unskipStep={unskipStep}
+                    onViewFormResponses={openFormResponses}
                   />
                 </div>
               </div>
@@ -380,6 +457,7 @@ export default function ApplicationDetailPage() {
                     advanceStep={advanceStep}
                     skipStep={skipStep}
                     unskipStep={unskipStep}
+                    onViewFormResponses={openFormResponses}
                   />
                 </div>
               </div>
@@ -404,6 +482,32 @@ export default function ApplicationDetailPage() {
         )}
       </div>
 
+      {/* フォーム回答ダイアログ */}
+      <Dialog open={formSheetOpen} onOpenChange={setFormSheetOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{formSheetStep?.label ?? "フォーム回答"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {formSheetLoading ? (
+              <p className="text-sm text-muted-foreground text-center py-8">読み込み中...</p>
+            ) : formSheetFields.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">回答がありません</p>
+            ) : (
+              formSheetFields.map(({ field, value }) => (
+                <div key={field.id} className="rounded-lg border p-4 space-y-1">
+                  <p className="text-sm font-medium">{field.label}</p>
+                  {field.description && (
+                    <p className="text-xs text-muted-foreground">{field.description}</p>
+                  )}
+                  <p className="text-sm pt-1 whitespace-pre-wrap">{value}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* リソース選択ダイアログ */}
       <ResourceSelectDialog
         open={resourceDialogOpen}
@@ -425,12 +529,14 @@ function StepList({
   advanceStep,
   skipStep,
   unskipStep,
+  onViewFormResponses,
 }: {
   steps: ApplicationStep[];
   canActOnStep: (step: ApplicationStep) => boolean;
   advanceStep: (step: ApplicationStep) => void;
   skipStep: (step: ApplicationStep) => void;
   unskipStep: (step: ApplicationStep) => void;
+  onViewFormResponses?: (step: ApplicationStep) => void;
 }) {
   if (steps.length === 0) {
     return (
@@ -491,6 +597,14 @@ function StepList({
 
           {/* Actions */}
           <div className="flex gap-2 shrink-0">
+            {step.step_type === "form" &&
+              step.status === "completed" &&
+              step.related_id &&
+              onViewFormResponses && (
+                <Button size="sm" variant="outline" onClick={() => onViewFormResponses(step)}>
+                  回答を確認
+                </Button>
+              )}
             {step.status === "skipped" && (
               <Button
                 size="sm"
@@ -498,7 +612,6 @@ function StepList({
                 onClick={() => unskipStep(step)}
                 className="text-orange-600 hover:text-orange-700"
               >
-                <Undo2 className="mr-1 h-3 w-3" />
                 元に戻す
               </Button>
             )}
@@ -509,17 +622,7 @@ function StepList({
                   variant={step.status === "in_progress" ? "default" : "outline"}
                   onClick={() => advanceStep(step)}
                 >
-                  {step.status === "pending" ? (
-                    <>
-                      開始
-                      <ArrowRight className="ml-1 h-3 w-3" />
-                    </>
-                  ) : (
-                    <>
-                      完了
-                      <Check className="ml-1 h-3 w-3" />
-                    </>
-                  )}
+                  {step.status === "pending" ? "開始" : "完了"}
                 </Button>
                 <Button
                   size="sm"
@@ -739,7 +842,6 @@ function ResourceSelectDialog({
         <div className="pt-2 border-t">
           <Link href={createHref}>
             <Button variant="outline" size="sm" className="w-full">
-              <Plus className="mr-1 h-4 w-4" />
               {createLabel}
             </Button>
           </Link>

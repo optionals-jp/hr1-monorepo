@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
@@ -9,17 +12,60 @@ import '../../domain/entities/application.dart';
 import '../../domain/entities/application_status.dart';
 import '../../domain/entities/application_step.dart';
 import '../providers/applications_providers.dart';
+import '../../../forms/presentation/screens/form_fill_screen.dart';
 
 /// 応募詳細画面
-class ApplicationDetailScreen extends ConsumerWidget {
+class ApplicationDetailScreen extends ConsumerStatefulWidget {
   const ApplicationDetailScreen({super.key, required this.applicationId});
 
   final String applicationId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ApplicationDetailScreen> createState() =>
+      _ApplicationDetailScreenState();
+}
+
+class _ApplicationDetailScreenState
+    extends ConsumerState<ApplicationDetailScreen> {
+  RealtimeChannel? _channel;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscribeToStepChanges();
+  }
+
+  void _subscribeToStepChanges() {
+    _channel = Supabase.instance.client
+        .channel('application_steps:${widget.applicationId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'application_steps',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'application_id',
+            value: widget.applicationId,
+          ),
+          callback: (payload) {
+            ref.invalidate(applicationDetailProvider(widget.applicationId));
+          },
+        )
+        .subscribe();
+  }
+
+  @override
+  void dispose() {
+    if (_channel != null) {
+      Supabase.instance.client.removeChannel(_channel!);
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final asyncApplication =
-        ref.watch(applicationDetailProvider(applicationId));
+        ref.watch(applicationDetailProvider(widget.applicationId));
 
     return Scaffold(
       appBar: AppBar(title: const Text('応募詳細')),
@@ -32,7 +78,20 @@ class ApplicationDetailScreen extends ConsumerWidget {
           return _ApplicationDetailBody(application: application);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => const Center(child: Text('エラーが発生しました')),
+        error: (e, _) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('エラーが発生しました'),
+              const SizedBox(height: AppSpacing.md),
+              TextButton(
+                onPressed: () => ref.invalidate(
+                    applicationDetailProvider(widget.applicationId)),
+                child: const Text('再試行'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -428,8 +487,16 @@ class _ActionSection extends StatelessWidget {
     final basePath = '${AppRoutes.applications}/${application.id}';
     switch (step.stepType) {
       case StepType.form:
-        context.push('$basePath/form/${step.relatedId}',
-            extra: step.id);
+        showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          builder: (sheetContext) => FormFillScreen(
+            formId: step.relatedId!,
+            applicationId: application.id,
+            stepId: step.id,
+          ),
+        );
       case StepType.interview:
         context.push('$basePath/interview/${step.relatedId}',
             extra: step.id);

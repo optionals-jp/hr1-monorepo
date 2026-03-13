@@ -28,7 +28,7 @@ import { useQuery } from "@/lib/use-query";
 import type { Department } from "@/types/database";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SearchBar } from "@/components/ui/search-bar";
-import { Plus, Trash2, Pencil, Users, ZoomIn, ZoomOut, Maximize } from "lucide-react";
+import { Trash2, Pencil, Users, ZoomIn, ZoomOut, Maximize } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
@@ -349,12 +349,7 @@ export default function DepartmentsPage() {
         title="部署管理"
         description="組織の部署を管理"
         border={false}
-        action={
-          <Button onClick={openAddDialog}>
-            <Plus className="mr-2 h-4 w-4" />
-            部署を追加
-          </Button>
-        }
+        action={<Button onClick={openAddDialog}>部署を追加</Button>}
       />
 
       <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8 bg-white">
@@ -527,7 +522,11 @@ export default function DepartmentsPage() {
             <Label>親部署</Label>
             <Select value={newParentId} onValueChange={(v) => setNewParentId(v ?? "none")}>
               <SelectTrigger>
-                <SelectValue placeholder="なし" />
+                <SelectValue placeholder="なし">
+                  {(v: string) =>
+                    v === "none" ? "なし" : (departments.find((d) => d.id === v)?.name ?? v)
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">なし</SelectItem>
@@ -563,7 +562,11 @@ export default function DepartmentsPage() {
             <Label>親部署</Label>
             <Select value={editParentId} onValueChange={(v) => setEditParentId(v ?? "none")}>
               <SelectTrigger>
-                <SelectValue placeholder="なし" />
+                <SelectValue placeholder="なし">
+                  {(v: string) =>
+                    v === "none" ? "なし" : (departments.find((d) => d.id === v)?.name ?? v)
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">なし</SelectItem>

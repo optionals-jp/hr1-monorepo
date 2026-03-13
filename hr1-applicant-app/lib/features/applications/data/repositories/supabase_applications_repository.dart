@@ -46,10 +46,14 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
 
   @override
   Future<Application?> getApplicationAsync(String applicationId) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return null;
+
     final response = await _client
         .from('applications')
         .select('*, jobs(*), application_steps(*)')
         .eq('id', applicationId)
+        .eq('applicant_id', userId)
         .maybeSingle();
 
     if (response == null) return null;
@@ -88,6 +92,7 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
           'step_type': s['step_type'],
           'step_order': s['step_order'],
           'label': s['label'],
+          'related_id': s['related_id'],
           'status': entry.key == 0 ? 'in_progress' : 'pending',
           'started_at':
               entry.key == 0 ? DateTime.now().toIso8601String() : null,

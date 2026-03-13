@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,122 +8,68 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/lib/auth-context";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
-import type { Profile, Department } from "@/types/database";
-
+import type { Department } from "@/types/database";
 import { format } from "date-fns";
+
+const roleLabels: Record<string, string> = {
+  admin: "管理者",
+  employee: "社員",
+};
 
 const editTabs: EditPanelTab[] = [
   { value: "basic", label: "基本情報" },
   { value: "departments", label: "部署" },
 ];
 
-export default function EmployeeDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const router = useRouter();
+export default function ProfileSettingsPage() {
+  const { profile, refreshProfile } = useAuth();
   const { organization } = useOrg();
-  const [profile, setProfile] = useState<Profile | null>(null);
+
   const [departments, setDepartments] = useState<Department[]>([]);
   const [assignedDeptIds, setAssignedDeptIds] = useState<string[]>([]);
   const [allDepartments, setAllDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Editing state
   const [editing, setEditing] = useState(false);
   const [editTab, setEditTab] = useState("basic");
   const [editName, setEditName] = useState("");
   const [editPosition, setEditPosition] = useState("");
   const [editDeptIds, setEditDeptIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  const [creatingThread, setCreatingThread] = useState(false);
-
-  const handleOpenMessage = async () => {
-    if (!organization || !profile) return;
-    setCreatingThread(true);
-
-    // 既存スレッドを検索
-    const { data: existing } = await getSupabase()
-      .from("message_threads")
-      .select("id")
-      .eq("organization_id", organization.id)
-      .eq("participant_id", profile.id)
-      .eq("participant_type", "employee")
-      .maybeSingle();
-
-    if (existing) {
-      router.push(`/messages?thread=${existing.id}`);
-      setCreatingThread(false);
-      return;
-    }
-
-    // 新規スレッド作成
-    const { data: newThread } = await getSupabase()
-      .from("message_threads")
-      .insert({
-        organization_id: organization.id,
-        participant_id: profile.id,
-        participant_type: "employee",
-      })
-      .select("id")
-      .single();
-
-    setCreatingThread(false);
-
-    if (newThread) {
-      router.push(`/messages?thread=${newThread.id}`);
-    }
-  };
 
   const load = async () => {
-    if (!organization) return;
+    if (!profile || !organization) return;
     setLoading(true);
 
-    // まず、このユーザーが自社に所属しているか確認
-    const { data: membership } = await getSupabase()
-      .from("user_organizations")
-      .select("user_id")
-      .eq("user_id", id)
-      .eq("organization_id", organization.id)
-      .maybeSingle();
-
-    if (!membership) {
-      setProfile(null);
-      setLoading(false);
-      return;
-    }
-
-    const [{ data: profileData }, { data: edData }] = await Promise.all([
-      getSupabase().from("profiles").select("*").eq("id", id).single(),
+    const [{ data: edData }, { data: allDepts }] = await Promise.all([
       getSupabase()
         .from("employee_departments")
         .select("department_id, departments(id, name)")
-        .eq("user_id", id),
+        .eq("user_id", profile.id),
+      getSupabase()
+        .from("departments")
+        .select("*")
+        .eq("organization_id", organization.id)
+        .order("name"),
     ]);
-
-    setProfile(profileData);
 
     const depts = (edData ?? [])
       .map((row) => (row as unknown as { departments: Department }).departments)
       .filter(Boolean);
     setDepartments(depts);
     setAssignedDeptIds(depts.map((d) => d.id));
-
-    const { data: allDepts } = await getSupabase()
-      .from("departments")
-      .select("*")
-      .eq("organization_id", organization.id)
-      .order("name");
     setAllDepartments(allDepts ?? []);
-
     setLoading(false);
   };
 
   useEffect(() => {
-    if (!organization) return;
-    load();
+    if (profile && organization) load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, organization]);
+  }, [profile?.id, organization?.id]);
 
   const startEditing = () => {
     if (!profile) return;
@@ -156,6 +101,7 @@ export default function EmployeeDetailPage() {
 
     setSaving(false);
     setEditing(false);
+    await refreshProfile();
     await load();
   };
 
@@ -165,7 +111,10 @@ export default function EmployeeDetailPage() {
     );
   };
 
-  if (loading) {
+  const displayName = profile?.display_name || profile?.email || "";
+  const avatarInitial = displayName[0]?.toUpperCase() ?? "?";
+
+  if (!profile || loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
         読み込み中...
@@ -173,32 +122,32 @@ export default function EmployeeDetailPage() {
     );
   }
 
-  if (!profile) {
-    return (
-      <div className="flex items-center justify-center py-20 text-muted-foreground">
-        社員が見つかりません
-      </div>
-    );
-  }
-
   return (
     <>
-      <PageHeader
-        title={profile.display_name ?? profile.email}
-        description="社員詳細"
-        breadcrumb={[{ label: "社員一覧", href: "/employees" }]}
-        action={
-          <Button size="sm" onClick={handleOpenMessage} disabled={creatingThread}>
-            メッセージを送る
-          </Button>
-        }
-      />
+      <PageHeader title="個人情報" description="あなたのアカウント情報を管理します" />
 
       <PageContent>
-        <div className="max-w-2xl">
+        <div className="max-w-2xl space-y-4">
+          {/* Avatar */}
+          <div className="flex items-center gap-4 rounded-lg bg-white border px-5 py-4">
+            <Avatar className="h-14 w-14">
+              <AvatarFallback className="bg-purple-600 text-white text-xl font-medium">
+                {avatarInitial}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-medium">{displayName}</p>
+              <p className="text-sm text-muted-foreground">{profile.email}</p>
+              <Badge variant="secondary" className="mt-1 text-xs">
+                {roleLabels[profile.role] ?? profile.role}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Profile details */}
           <div className="rounded-lg bg-white border">
             <div className="flex items-center justify-between px-5 pt-4 pb-2">
-              <h2 className="text-sm font-semibold text-muted-foreground">プロフィール</h2>
+              <h2 className="text-sm font-semibold text-muted-foreground">基本情報</h2>
               <Button variant="outline" size="sm" onClick={startEditing}>
                 編集
               </Button>
@@ -209,8 +158,12 @@ export default function EmployeeDetailPage() {
                 <span>{profile.display_name ?? "-"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">メール</span>
+                <span className="text-muted-foreground">メールアドレス</span>
                 <span>{profile.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">役職</span>
+                <span>{profile.position ?? "-"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">部署</span>
@@ -227,12 +180,8 @@ export default function EmployeeDetailPage() {
                 </div>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">役職</span>
-                <span>{profile.position ?? "-"}</span>
-              </div>
-              <div className="flex justify-between">
                 <span className="text-muted-foreground">ロール</span>
-                <Badge variant="secondary">社員</Badge>
+                <span>{roleLabels[profile.role] ?? profile.role}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">登録日</span>
@@ -246,7 +195,7 @@ export default function EmployeeDetailPage() {
       <EditPanel
         open={editing}
         onOpenChange={setEditing}
-        title="社員情報を編集"
+        title="個人情報を編集"
         tabs={editTabs}
         activeTab={editTab}
         onTabChange={setEditTab}
@@ -264,7 +213,7 @@ export default function EmployeeDetailPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>メール</Label>
+              <Label>メールアドレス</Label>
               <Input value={profile.email} disabled className="bg-muted" />
             </div>
             <div className="space-y-2">

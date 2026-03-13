@@ -22,6 +22,9 @@ interface EditPanelProps {
   saving?: boolean;
   saveDisabled?: boolean;
   saveLabel?: string;
+  onDelete?: () => void;
+  deleteLabel?: string;
+  deleting?: boolean;
 }
 
 export function EditPanel({
@@ -36,6 +39,9 @@ export function EditPanel({
   saving = false,
   saveDisabled = false,
   saveLabel = "保存",
+  onDelete,
+  deleteLabel = "削除",
+  deleting = false,
 }: EditPanelProps) {
   const showSidebar = tabs && tabs.length > 1;
 
@@ -84,13 +90,20 @@ export function EditPanel({
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-3 border-t flex justify-end gap-2 shrink-0">
-            <DialogPrimitive.Close render={<Button variant="outline" />}>
-              閉じる
-            </DialogPrimitive.Close>
-            <Button onClick={onSave} disabled={saving || saveDisabled}>
-              {saving ? "保存中..." : saveLabel}
-            </Button>
+          <div className="px-6 py-3 border-t flex items-center shrink-0">
+            {onDelete && (
+              <Button variant="destructive" onClick={onDelete} disabled={deleting || saving}>
+                {deleting ? "削除中..." : deleteLabel}
+              </Button>
+            )}
+            <div className="flex gap-2 ml-auto">
+              <DialogPrimitive.Close render={<Button variant="outline" />}>
+                閉じる
+              </DialogPrimitive.Close>
+              <Button onClick={onSave} disabled={saving || saveDisabled || deleting}>
+                {saving ? "保存中..." : saveLabel}
+              </Button>
+            </div>
           </div>
         </DialogPrimitive.Popup>
       </DialogPrimitive.Portal>

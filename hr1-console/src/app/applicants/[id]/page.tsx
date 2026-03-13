@@ -29,8 +29,8 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { ExternalLink, SlidersHorizontal, Search, X, MessageSquare } from "lucide-react";
+import { SearchBar } from "@/components/ui/search-bar";
+import { ExternalLink, SlidersHorizontal, X } from "lucide-react";
 import { format } from "date-fns";
 
 const statusLabels: Record<string, string> = {
@@ -94,18 +94,29 @@ export default function ApplicantDetailPage() {
     if (!organization) return;
     async function load() {
       setLoading(true);
-      const [{ data: profileData }, { data: appsData }] = await Promise.all([
-        getSupabase().from("profiles").select("*").eq("id", id).single(),
-        getSupabase()
-          .from("applications")
-          .select("*, jobs(*), application_steps(*)")
-          .eq("applicant_id", id)
-          .eq("organization_id", organization!.id)
-          .order("applied_at", { ascending: false }),
-      ]);
+      const { data: appsData } = await getSupabase()
+        .from("applications")
+        .select("*, jobs(*), application_steps(*)")
+        .eq("applicant_id", id)
+        .eq("organization_id", organization!.id)
+        .order("applied_at", { ascending: false });
+
+      // この企業に応募がない場合は表示しない（他社の応募者情報の閲覧防止）
+      if (!appsData || appsData.length === 0) {
+        setProfile(null);
+        setApplications([]);
+        setLoading(false);
+        return;
+      }
+
+      const { data: profileData } = await getSupabase()
+        .from("profiles")
+        .select("*")
+        .eq("id", id)
+        .single();
 
       setProfile(profileData);
-      setApplications(appsData ?? []);
+      setApplications(appsData);
 
       // Build timeline events
       const events: TimelineEvent[] = [];
@@ -251,7 +262,7 @@ export default function ApplicantDetailPage() {
       .eq("organization_id", organization.id)
       .eq("participant_id", profile.id)
       .eq("participant_type", "applicant")
-      .single();
+      .maybeSingle();
 
     if (existing) {
       router.push(`/messages?thread=${existing.id}`);
@@ -302,7 +313,6 @@ export default function ApplicantDetailPage() {
         sticky={false}
         action={
           <Button size="sm" onClick={handleOpenMessage} disabled={creatingThread}>
-            <MessageSquare className="mr-1.5 h-4 w-4" />
             メッセージを送る
           </Button>
         }
@@ -493,15 +503,11 @@ export default function ApplicantDetailPage() {
             </DropdownMenuContent>
           </DropdownMenu>
           {/* 検索バー */}
-          <div className="flex items-center h-12 bg-white border-b px-4 sm:px-6 md:px-8">
-            <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-            <Input
-              placeholder="求人名・イベントで検索"
-              value={historySearch}
-              onChange={(e) => setHistorySearch(e.target.value)}
-              className="border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-transparent h-12"
-            />
-          </div>
+          <SearchBar
+            value={historySearch}
+            onChange={setHistorySearch}
+            placeholder="求人名・イベントで検索"
+          />
           <div className="flex-1 overflow-y-auto bg-white">
             <Table>
               <TableHeader>

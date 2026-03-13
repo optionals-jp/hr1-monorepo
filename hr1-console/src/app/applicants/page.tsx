@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { SearchBar } from "@/components/ui/search-bar";
-import { Plus, SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const addTabs: EditPanelTab[] = [
@@ -125,12 +125,7 @@ export default function ApplicantsPage() {
         title="応募者一覧"
         description="応募者の管理・招待"
         border={false}
-        action={
-          <Button onClick={openAddDialog}>
-            <Plus className="mr-2 h-4 w-4" />
-            応募者を追加
-          </Button>
-        }
+        action={<Button onClick={openAddDialog}>応募者を追加</Button>}
       />
 
       <SearchBar value={search} onChange={setSearch} />
@@ -279,7 +274,11 @@ export default function ApplicantsPage() {
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="未設定" />
+                  <SelectValue placeholder="未設定">
+                    {(v: string) =>
+                      v === "new_grad" ? "新卒採用" : v === "mid_career" ? "中途採用" : v
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="new_grad">新卒採用</SelectItem>
@@ -292,7 +291,9 @@ export default function ApplicantsPage() {
                 <Label>卒業年</Label>
                 <Select value={newGradYear} onValueChange={(v) => setNewGradYear(v ?? "")}>
                   <SelectTrigger>
-                    <SelectValue placeholder="選択してください" />
+                    <SelectValue placeholder="選択してください">
+                      {(v: string) => (v ? `${v}年卒` : v)}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i).map((y) => (

@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { SearchBar } from "@/components/ui/search-bar";
-import { Plus, SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface EmployeeWithDepts {
@@ -194,12 +194,7 @@ export default function EmployeesPage() {
       <PageHeader
         title="社員一覧"
         description="社員の管理・招待"
-        action={
-          <Button onClick={openAddDialog}>
-            <Plus className="mr-2 h-4 w-4" />
-            社員を追加
-          </Button>
-        }
+        action={<Button onClick={openAddDialog}>社員を追加</Button>}
         border={false}
       />
 

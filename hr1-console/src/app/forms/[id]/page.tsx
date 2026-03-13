@@ -26,9 +26,10 @@ import {
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase";
+import { useOrg } from "@/lib/org-context";
 import type { CustomForm, FormField, FormChangeLog } from "@/types/database";
 import { format } from "date-fns";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 const fieldTypeLabels: Record<string, string> = {
   shortText: "短文テキスト",
@@ -62,7 +63,7 @@ interface FieldDraft {
 }
 
 interface ResponseRow {
-  application_id: string;
+  applicant_id: string;
   applicant_name: string;
   answers: Record<string, string>;
   created_at: string;
@@ -81,6 +82,7 @@ const editTabs: EditPanelTab[] = [
 
 export default function FormDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { organization } = useOrg();
   const [form, setForm] = useState<CustomForm | null>(null);
   const [fields, setFields] = useState<FormField[]>([]);
   const [responses, setResponses] = useState<ResponseRow[]>([]);
@@ -97,23 +99,25 @@ export default function FormDetailPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (!organization) return;
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, organization]);
 
   async function loadData() {
+    if (!organization) return;
     setLoading(true);
 
     const [{ data: formData }, { data: fieldsData }, { data: responsesData }, { data: logsData }] =
       await Promise.all([
-        getSupabase().from("custom_forms").select("*").eq("id", id).single(),
-        getSupabase().from("form_fields").select("*").eq("form_id", id).order("sort_order"),
         getSupabase()
-          .from("form_responses")
-          .select(
-            "*, applications:application_id(applicant_id, profiles:applicant_id(display_name, email))"
-          )
-          .eq("form_id", id),
+          .from("custom_forms")
+          .select("*")
+          .eq("id", id)
+          .eq("organization_id", organization.id)
+          .single(),
+        getSupabase().from("form_fields").select("*").eq("form_id", id).order("sort_order"),
+        getSupabase().from("form_responses").select("*").eq("form_id", id),
         getSupabase()
           .from("form_change_logs")
           .select("*")
@@ -125,24 +129,37 @@ export default function FormDetailPage() {
     setFields(fieldsData ?? []);
     setChangeLogs(logsData ?? []);
 
-    // Group responses by application_id
+    // Group responses by applicant_id
     const grouped: Record<string, ResponseRow> = {};
     for (const resp of responsesData ?? []) {
-      const appId = resp.application_id;
-      if (!grouped[appId]) {
-        const app = resp.applications as unknown as {
-          applicant_id: string;
-          profiles: { display_name: string | null; email: string };
-        };
-        grouped[appId] = {
-          application_id: appId,
-          applicant_name: app?.profiles?.display_name ?? app?.profiles?.email ?? "-",
+      const applicantId = resp.applicant_id as string;
+      if (!grouped[applicantId]) {
+        grouped[applicantId] = {
+          applicant_id: applicantId,
+          applicant_name: applicantId,
           answers: {},
-          created_at: resp.created_at,
+          created_at: resp.submitted_at,
         };
       }
-      grouped[appId].answers[resp.field_id] = resp.value;
+      grouped[applicantId].answers[resp.field_id] = Array.isArray(resp.value)
+        ? (resp.value as string[]).join(", ")
+        : String(resp.value ?? "");
     }
+
+    // Fetch profile names
+    const applicantIds = Object.keys(grouped);
+    if (applicantIds.length > 0) {
+      const { data: profilesData } = await getSupabase()
+        .from("profiles")
+        .select("id, display_name, email")
+        .in("id", applicantIds);
+      for (const p of profilesData ?? []) {
+        if (grouped[p.id]) {
+          grouped[p.id].applicant_name = p.display_name ?? p.email ?? p.id;
+        }
+      }
+    }
+
     setResponses(Object.values(grouped));
 
     setLoading(false);
@@ -374,7 +391,6 @@ export default function FormDetailPage() {
           <div className="max-w-3xl">
             <div className="flex justify-end mb-3">
               <Button variant="outline" size="sm" onClick={startEditing}>
-                <Pencil className="mr-1 h-4 w-4" />
                 編集
               </Button>
             </div>
@@ -438,7 +454,7 @@ export default function FormDetailPage() {
                   </TableHeader>
                   <TableBody>
                     {responses.map((row) => (
-                      <TableRow key={row.application_id}>
+                      <TableRow key={row.applicant_id}>
                         <TableCell className="font-medium sticky left-0 bg-white">
                           {row.applicant_name}
                         </TableCell>
@@ -557,7 +573,7 @@ export default function FormDetailPage() {
                       onValueChange={(v) => v && updateField(field.id, "field_type", v)}
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue>{(v: string) => fieldTypeLabels[v] ?? v}</SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {Object.entries(fieldTypeLabels).map(([key, label]) => (
@@ -600,7 +616,6 @@ export default function FormDetailPage() {
               </div>
             ))}
             <Button variant="outline" onClick={addField} className="w-full">
-              <Plus className="mr-1 h-4 w-4" />
               フィールドを追加
             </Button>
           </div>

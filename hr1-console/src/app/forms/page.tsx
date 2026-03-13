@@ -15,7 +15,7 @@ import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import type { CustomForm } from "@/types/database";
-import { Plus } from "lucide-react";
+
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
@@ -42,10 +42,7 @@ export default function FormsPage() {
         description="書類選考用フォームの作成・管理"
         action={
           <Link href="/forms/new">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              フォームを作成
-            </Button>
+            <Button>フォームを作成</Button>
           </Link>
         }
       />

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../domain/entities/message_thread.dart';
 import '../providers/messages_providers.dart';
-import 'thread_chat_screen.dart';
 
 /// メッセージ画面
 /// 応募先企業とのメッセージ一覧
@@ -142,11 +142,7 @@ class _ThreadTile extends StatelessWidget {
       contentPadding:
           const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 4),
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ThreadChatScreen(thread: thread),
-          ),
-        );
+        context.push('/messages/${thread.id}', extra: thread);
       },
     );
   }

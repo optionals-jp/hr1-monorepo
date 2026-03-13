@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,6 @@ import {
   Send,
   MessageSquare,
   ArrowLeft,
-  Plus,
   X,
   Pencil,
   Trash2,
@@ -30,6 +29,8 @@ import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 30;
 
+type MessageCache = Map<string, { messages: Message[]; hasMore: boolean }>;
+
 export default function MessagesPage() {
   const { organization } = useOrg();
   const { user } = useAuth();
@@ -39,6 +40,7 @@ export default function MessagesPage() {
   );
   const [search, setSearch] = useState("");
   const [showNewThread, setShowNewThread] = useState(false);
+  const messageCache = useRef<MessageCache>(new Map());
 
   // --- スレッド一覧 (RPC で1回のクエリで取得) ---
   const {
@@ -108,7 +110,6 @@ export default function MessagesPage() {
         sticky={false}
         action={
           <Button size="sm" onClick={() => setShowNewThread(true)}>
-            <Plus className="mr-1.5 h-4 w-4" />
             新規メッセージ
           </Button>
         }
@@ -259,6 +260,7 @@ export default function MessagesPage() {
               key={selectedThread.id}
               thread={selectedThread}
               onBack={() => setSelectedThreadId(null)}
+              messageCache={messageCache}
             />
           ) : (
             <div className="flex-1 flex items-center justify-center">
@@ -278,12 +280,21 @@ export default function MessagesPage() {
 // スレッドチャットコンポーネント
 // ---------------------------------------------------------------------------
 
-function ThreadChat({ thread, onBack }: { thread: MessageThread; onBack: () => void }) {
+function ThreadChat({
+  thread,
+  onBack,
+  messageCache,
+}: {
+  thread: MessageThread;
+  onBack: () => void;
+  messageCache: React.MutableRefObject<MessageCache>;
+}) {
   const { user, profile: myProfile } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = messageCache.current.get(thread.id);
+  const [messages, setMessages] = useState<Message[]>(cached?.messages ?? []);
+  const [loading, setLoading] = useState(!cached);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
+  const [hasMore, setHasMore] = useState(cached?.hasMore ?? false);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -302,23 +313,55 @@ function ThreadChat({ thread, onBack }: { thread: MessageThread; onBack: () => v
   const displayName = thread.participant?.display_name ?? thread.participant?.email ?? "不明";
   const isEmployee = thread.participant_type === "employee";
 
-  // --- 初回メッセージ取得 (最新 PAGE_SIZE 件) ---
+  // --- キャッシュをメッセージ・hasMore の変化に合わせて同期 ---
+  useEffect(() => {
+    if (messages.length > 0) {
+      messageCache.current.set(thread.id, { messages, hasMore });
+    }
+  }, [messages, hasMore, thread.id, messageCache]);
+
+  // --- 初回メッセージ取得 ---
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      setLoading(true);
-      const { data, count } = await getSupabase()
-        .from("messages")
-        .select("*, sender:sender_id(id, display_name, avatar_url, role)", { count: "exact" })
-        .eq("thread_id", thread.id)
-        .order("created_at", { ascending: false })
-        .range(0, PAGE_SIZE - 1);
+      const hasCached = (messageCache.current.get(thread.id)?.messages.length ?? 0) > 0;
 
-      if (cancelled) return;
-      const fetched = ((data ?? []) as Message[]).reverse();
-      setMessages(fetched);
-      setHasMore((count ?? 0) > PAGE_SIZE);
-      setLoading(false);
+      if (!hasCached) {
+        // キャッシュなし: 最新 PAGE_SIZE 件をフルフェッチ
+        setLoading(true);
+        const { data, count } = await getSupabase()
+          .from("messages")
+          .select("*, sender:sender_id(id, display_name, avatar_url, role)", { count: "exact" })
+          .eq("thread_id", thread.id)
+          .order("created_at", { ascending: false })
+          .range(0, PAGE_SIZE - 1);
+
+        if (cancelled) return;
+        const fetched = ((data ?? []) as Message[]).reverse();
+        setMessages(fetched);
+        setHasMore((count ?? 0) > PAGE_SIZE);
+        setLoading(false);
+        setTimeout(() => bottomRef.current?.scrollIntoView(), 50);
+      } else {
+        // キャッシュあり: キャッシュ最終メッセージ以降の差分のみ取得
+        const cachedMsgs = messageCache.current.get(thread.id)!.messages;
+        const lastCreatedAt = cachedMsgs[cachedMsgs.length - 1].created_at;
+        const { data } = await getSupabase()
+          .from("messages")
+          .select("*, sender:sender_id(id, display_name, avatar_url, role)")
+          .eq("thread_id", thread.id)
+          .gt("created_at", lastCreatedAt)
+          .order("created_at", { ascending: true });
+
+        if (cancelled) return;
+        const newMsgs = (data ?? []) as Message[];
+        if (newMsgs.length > 0) {
+          setMessages((prev) => {
+            const ids = new Set(prev.map((m) => m.id));
+            return [...prev, ...newMsgs.filter((m) => !ids.has(m.id))];
+          });
+        }
+      }
 
       // 未読を既読にする
       if (user) {
@@ -328,15 +371,15 @@ function ThreadChat({ thread, onBack }: { thread: MessageThread; onBack: () => v
           .eq("thread_id", thread.id)
           .neq("sender_id", user.id)
           .is("read_at", null)
-          .then();
+          .then(({ error }) => {
+            if (error) console.error("既読更新エラー:", error);
+          });
       }
-
-      // 初回は一番下へスクロール
-      setTimeout(() => bottomRef.current?.scrollIntoView(), 50);
     })();
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [thread.id, user]);
 
   // --- ページネーション: 古いメッセージを読み込み ---
@@ -345,9 +388,9 @@ function ThreadChat({ thread, onBack }: { thread: MessageThread; onBack: () => v
     setLoadingMore(true);
 
     const oldest = messages[0];
-    const { data, count } = await getSupabase()
+    const { data } = await getSupabase()
       .from("messages")
-      .select("*, sender:sender_id(id, display_name, avatar_url, role)", { count: "exact" })
+      .select("*, sender:sender_id(id, display_name, avatar_url, role)")
       .eq("thread_id", thread.id)
       .lt("created_at", oldest.created_at)
       .order("created_at", { ascending: false })
@@ -555,10 +598,15 @@ function ThreadChat({ thread, onBack }: { thread: MessageThread; onBack: () => v
     const content = editContent.trim();
     if (content.length > 5000) return;
 
-    await getSupabase()
+    const { error } = await getSupabase()
       .from("messages")
       .update({ content, edited_at: new Date().toISOString() })
       .eq("id", editingId);
+
+    if (error) {
+      console.error("メッセージ編集エラー:", error);
+      return;
+    }
 
     setEditingId(null);
     setEditContent("");
@@ -572,7 +620,10 @@ function ThreadChat({ thread, onBack }: { thread: MessageThread; onBack: () => v
   // --- メッセージ削除 ---
   const handleDelete = async (msgId: string) => {
     setDeletingId(null);
-    await getSupabase().from("messages").delete().eq("id", msgId);
+    const { error } = await getSupabase().from("messages").delete().eq("id", msgId);
+    if (error) {
+      console.error("メッセージ削除エラー:", error);
+    }
   };
 
   return (
