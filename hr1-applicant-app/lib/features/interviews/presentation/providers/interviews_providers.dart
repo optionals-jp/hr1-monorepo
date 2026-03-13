@@ -11,7 +11,7 @@ final interviewsRepositoryProvider =
 
 /// 面接IDから面接情報を取得
 final interviewDetailProvider =
-    FutureProvider.family<Interview?, String>((ref, interviewId) async {
+    FutureProvider.autoDispose.family<Interview?, String>((ref, interviewId) async {
   final repo = ref.watch(interviewsRepositoryProvider);
   return repo.getInterviewAsync(interviewId);
 });

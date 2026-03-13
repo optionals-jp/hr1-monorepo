@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/toast";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,15 +18,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
-import { Plus, Trash2, GripVertical } from "lucide-react";
-
-const stepTypeLabels: Record<string, string> = {
-  screening: "書類選考",
-  form: "アンケート/フォーム",
-  interview: "面接",
-  external_test: "外部テスト",
-  offer: "内定",
-};
+import { Trash2, GripVertical } from "lucide-react";
+import { jobStatusLabels, stepTypeLabels } from "@/lib/constants";
 
 interface StepDraft {
   tempId: string;
@@ -35,6 +29,7 @@ interface StepDraft {
 
 export default function NewJobPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { organization } = useOrg();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -73,37 +68,46 @@ export default function NewJobPage() {
     if (!organization || !title) return;
     setSaving(true);
 
-    const jobId = `job-${Date.now()}`;
+    try {
+      const jobId = `job-${Date.now()}`;
 
-    await getSupabase()
-      .from("jobs")
-      .insert({
-        id: jobId,
-        organization_id: organization.id,
-        title,
-        description,
-        department: department || null,
-        location: location || null,
-        employment_type: employmentType || null,
-        salary_range: salaryRange || null,
-        status,
-      });
+      const { error: jobError } = await getSupabase()
+        .from("jobs")
+        .insert({
+          id: jobId,
+          organization_id: organization.id,
+          title,
+          description,
+          department: department || null,
+          location: location || null,
+          employment_type: employmentType || null,
+          salary_range: salaryRange || null,
+          status,
+        });
+      if (jobError) throw jobError;
 
-    if (steps.length > 0) {
-      await getSupabase()
-        .from("job_steps")
-        .insert(
-          steps.map((step, index) => ({
-            id: `step-${jobId}-${index + 1}`,
-            job_id: jobId,
-            step_type: step.step_type,
-            step_order: index + 1,
-            label: step.label,
-          }))
-        );
+      if (steps.length > 0) {
+        const { error: stepsError } = await getSupabase()
+          .from("job_steps")
+          .insert(
+            steps.map((step, index) => ({
+              id: `step-${jobId}-${index + 1}`,
+              job_id: jobId,
+              step_type: step.step_type,
+              step_order: index + 1,
+              label: step.label,
+            }))
+          );
+        if (stepsError) throw stepsError;
+      }
+
+      showToast("求人を作成しました");
+      router.push("/jobs");
+    } catch {
+      showToast("求人の作成に失敗しました", "error");
+    } finally {
+      setSaving(false);
     }
-
-    router.push("/jobs");
   };
 
   return (
@@ -175,7 +179,7 @@ export default function NewJobPage() {
                 <Label>ステータス</Label>
                 <Select value={status} onValueChange={(v) => v && setStatus(v)}>
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue>{(v: string) => jobStatusLabels[v] ?? v}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="open">公開中</SelectItem>
@@ -192,7 +196,6 @@ export default function NewJobPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>選考ステップ</CardTitle>
               <Button variant="outline" size="sm" onClick={addStep}>
-                <Plus className="mr-1 h-4 w-4" />
                 追加
               </Button>
             </CardHeader>
@@ -206,7 +209,7 @@ export default function NewJobPage() {
                     onValueChange={(v) => v && updateStep(step.tempId, "step_type", v)}
                   >
                     <SelectTrigger className="w-40">
-                      <SelectValue />
+                      <SelectValue>{(v: string) => stepTypeLabels[v] ?? v}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {Object.entries(stepTypeLabels).map(([key, label]) => (

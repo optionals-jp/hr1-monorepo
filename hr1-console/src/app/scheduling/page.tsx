@@ -22,27 +22,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import type { Interview, InterviewSlot } from "@/types/database";
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
-
-const statusLabels: Record<string, string> = {
-  scheduling: "未確定",
-  confirmed: "確定済み",
-  completed: "完了",
-  cancelled: "キャンセル",
-};
-
-const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  scheduling: "outline",
-  confirmed: "default",
-  completed: "secondary",
-  cancelled: "destructive",
-};
+import {
+  interviewScheduleStatusLabels as statusLabels,
+  interviewScheduleStatusColors as statusColors,
+} from "@/lib/constants";
 
 export default function SchedulingPage() {
   const router = useRouter();
@@ -132,10 +122,7 @@ export default function SchedulingPage() {
         description="面接の日程管理"
         action={
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger render={<Button />}>
-              <Plus className="mr-2 h-4 w-4" />
-              面接を作成
-            </DialogTrigger>
+            <DialogTrigger render={<Button />}>面接を作成</DialogTrigger>
             <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>面接を作成</DialogTitle>
@@ -171,7 +158,6 @@ export default function SchedulingPage() {
                   <div className="flex items-center justify-between">
                     <Label>候補日時</Label>
                     <Button variant="outline" size="sm" onClick={addSlot}>
-                      <Plus className="mr-1 h-3 w-3" />
                       追加
                     </Button>
                   </div>
@@ -217,20 +203,13 @@ export default function SchedulingPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                  読み込み中...
-                </TableCell>
-              </TableRow>
-            ) : interviews.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                  面接がありません
-                </TableCell>
-              </TableRow>
-            ) : (
-              interviews.map((interview) => {
+            <TableEmptyState
+              colSpan={4}
+              isLoading={isLoading}
+              isEmpty={interviews.length === 0}
+              emptyMessage="面接がありません"
+            >
+              {interviews.map((interview) => {
                 const totalSlots = interview.interview_slots?.length ?? 0;
                 const bookedSlots =
                   interview.interview_slots?.filter((s) => s.application_id).length ?? 0;
@@ -252,8 +231,8 @@ export default function SchedulingPage() {
                     </TableCell>
                   </TableRow>
                 );
-              })
-            )}
+              })}
+            </TableEmptyState>
           </TableBody>
         </Table>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +29,7 @@ import { useQuery } from "@/lib/use-query";
 import type { Department } from "@/types/database";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SearchBar } from "@/components/ui/search-bar";
-import { Plus, Trash2, Pencil, Users, ZoomIn, ZoomOut, Maximize } from "lucide-react";
+import { Trash2, Pencil, Users, ZoomIn, ZoomOut, Maximize } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
@@ -50,6 +51,7 @@ const pageTabs = [
 
 export default function DepartmentsPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { organization } = useOrg();
   const [activeTab, setActiveTab] = useState("list");
   const [search, setSearch] = useState("");
@@ -172,24 +174,40 @@ export default function DepartmentsPage() {
   const handleAdd = async () => {
     if (!organization || !newDeptName.trim()) return;
     setSavingAdd(true);
-    await getSupabase()
-      .from("departments")
-      .insert({
-        id: crypto.randomUUID(),
-        organization_id: organization.id,
-        name: newDeptName.trim(),
-        parent_id: newParentId === "none" ? null : newParentId,
-      });
-    setSavingAdd(false);
-    setDialogOpen(false);
-    mutate();
-    mutateOrg();
+
+    try {
+      const { error } = await getSupabase()
+        .from("departments")
+        .insert({
+          id: crypto.randomUUID(),
+          organization_id: organization.id,
+          name: newDeptName.trim(),
+          parent_id: newParentId === "none" ? null : newParentId,
+        });
+      if (error) throw error;
+
+      setDialogOpen(false);
+      mutate();
+      mutateOrg();
+      showToast("部署を追加しました");
+    } catch {
+      showToast("部署の追加に失敗しました", "error");
+    } finally {
+      setSavingAdd(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await getSupabase().from("departments").delete().eq("id", id);
-    mutate();
-    mutateOrg();
+    try {
+      const { error } = await getSupabase().from("departments").delete().eq("id", id);
+      if (error) throw error;
+
+      mutate();
+      mutateOrg();
+      showToast("部署を削除しました");
+    } catch {
+      showToast("部署の削除に失敗しました", "error");
+    }
   };
 
   const startEditing = (dept: Department) => {
@@ -202,18 +220,27 @@ export default function DepartmentsPage() {
   const saveEdit = async () => {
     if (!editingId || !editName.trim()) return;
     setSavingEdit(true);
-    await getSupabase()
-      .from("departments")
-      .update({
-        name: editName.trim(),
-        parent_id: editParentId === "none" ? null : editParentId,
-      })
-      .eq("id", editingId);
-    setSavingEdit(false);
-    setEditingId(null);
-    setEditDialogOpen(false);
-    mutate();
-    mutateOrg();
+
+    try {
+      const { error } = await getSupabase()
+        .from("departments")
+        .update({
+          name: editName.trim(),
+          parent_id: editParentId === "none" ? null : editParentId,
+        })
+        .eq("id", editingId);
+      if (error) throw error;
+
+      setEditingId(null);
+      setEditDialogOpen(false);
+      mutate();
+      mutateOrg();
+      showToast("部署を更新しました");
+    } catch {
+      showToast("部署の更新に失敗しました", "error");
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const filtered = departments.filter(
@@ -349,12 +376,7 @@ export default function DepartmentsPage() {
         title="部署管理"
         description="組織の部署を管理"
         border={false}
-        action={
-          <Button onClick={openAddDialog}>
-            <Plus className="mr-2 h-4 w-4" />
-            部署を追加
-          </Button>
-        }
+        action={<Button onClick={openAddDialog}>部署を追加</Button>}
       />
 
       <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8 bg-white">
@@ -527,7 +549,11 @@ export default function DepartmentsPage() {
             <Label>親部署</Label>
             <Select value={newParentId} onValueChange={(v) => setNewParentId(v ?? "none")}>
               <SelectTrigger>
-                <SelectValue placeholder="なし" />
+                <SelectValue placeholder="なし">
+                  {(v: string) =>
+                    v === "none" ? "なし" : (departments.find((d) => d.id === v)?.name ?? v)
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">なし</SelectItem>
@@ -563,7 +589,11 @@ export default function DepartmentsPage() {
             <Label>親部署</Label>
             <Select value={editParentId} onValueChange={(v) => setEditParentId(v ?? "none")}>
               <SelectTrigger>
-                <SelectValue placeholder="なし" />
+                <SelectValue placeholder="なし">
+                  {(v: string) =>
+                    v === "none" ? "なし" : (departments.find((d) => d.id === v)?.name ?? v)
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">なし</SelectItem>

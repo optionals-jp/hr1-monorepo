@@ -26,34 +26,15 @@ import {
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase";
+import { useOrg } from "@/lib/org-context";
 import type { Interview, InterviewSlot, InterviewChangeLog } from "@/types/database";
-import { Calendar, Plus, Trash2, Pencil, Search } from "lucide-react";
+import { Calendar, Trash2, Search } from "lucide-react";
 import { format } from "date-fns";
-
-const statusLabels: Record<string, string> = {
-  scheduling: "未確定",
-  confirmed: "確定済み",
-  completed: "完了",
-  cancelled: "キャンセル",
-};
-
-const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  scheduling: "outline",
-  confirmed: "default",
-  completed: "secondary",
-  cancelled: "destructive",
-};
-
-const changeTypeLabels: Record<string, string> = {
-  created: "作成",
-  title_updated: "タイトル変更",
-  location_updated: "場所変更",
-  notes_updated: "備考変更",
-  status_updated: "ステータス変更",
-  slot_added: "候補日時追加",
-  slot_updated: "候補日時変更",
-  slot_deleted: "候補日時削除",
-};
+import {
+  interviewScheduleStatusLabels as statusLabels,
+  interviewScheduleStatusColors as statusColors,
+  scheduleChangeTypeLabels as changeTypeLabels,
+} from "@/lib/constants";
 
 const tabs = [
   { value: "detail", label: "面接詳細" },
@@ -84,6 +65,7 @@ interface BookedApplication {
 
 export default function SchedulingDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { organization } = useOrg();
   const [interview, setInterview] = useState<Interview | null>(null);
   const [slots, setSlots] = useState<InterviewSlot[]>([]);
   const [changeLogs, setChangeLogs] = useState<InterviewChangeLog[]>([]);
@@ -105,6 +87,7 @@ export default function SchedulingDetailPage() {
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
+    if (!organization) return;
     setLoading(true);
     const [{ data }, { data: logsData }] = await Promise.all([
       getSupabase()
@@ -113,6 +96,7 @@ export default function SchedulingDetailPage() {
           "*, interview_slots(*, applications:application_id(id, profiles:applicant_id(display_name, email)))"
         )
         .eq("id", id)
+        .eq("organization_id", organization.id)
         .single(),
       getSupabase()
         .from("interview_change_logs")
@@ -155,9 +139,10 @@ export default function SchedulingDetailPage() {
   };
 
   useEffect(() => {
+    if (!organization) return;
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, organization]);
 
   const updateStatus = async (status: string) => {
     const oldStatus = interview?.status;
@@ -338,7 +323,7 @@ export default function SchedulingDetailPage() {
         action={
           <Select value={interview.status} onValueChange={(v) => v && updateStatus(v)}>
             <SelectTrigger className="w-32">
-              <SelectValue />
+              <SelectValue>{(v: string) => statusLabels[v] ?? v}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="scheduling">未確定</SelectItem>
@@ -395,7 +380,6 @@ export default function SchedulingDetailPage() {
                   <div className="flex items-center justify-between px-5 pt-4 pb-2">
                     <h2 className="text-sm font-semibold text-muted-foreground">面接情報</h2>
                     <Button variant="outline" size="sm" onClick={startEditing}>
-                      <Pencil className="mr-1 h-4 w-4" />
                       編集
                     </Button>
                   </div>
@@ -665,7 +649,6 @@ export default function SchedulingDetailPage() {
               </div>
             ))}
             <Button variant="outline" onClick={addSlot} className="w-full">
-              <Plus className="mr-1 h-4 w-4" />
               候補日時を追加
             </Button>
           </div>

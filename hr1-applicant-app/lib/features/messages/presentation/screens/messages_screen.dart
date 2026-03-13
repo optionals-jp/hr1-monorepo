@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../domain/entities/message_thread.dart';
 import '../providers/messages_providers.dart';
-import 'thread_chat_screen.dart';
 
 /// メッセージ画面
 /// 応募先企業とのメッセージ一覧
@@ -80,7 +81,7 @@ class _ThreadTile extends StatelessWidget {
           ),
           if (thread.latestMessage != null)
             Text(
-              _formatDate(thread.latestMessage!.createdAt),
+              DateFormatter.toRelative(thread.latestMessage!.createdAt),
               style: AppTextStyles.caption.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -142,23 +143,9 @@ class _ThreadTile extends StatelessWidget {
       contentPadding:
           const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 4),
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ThreadChatScreen(thread: thread),
-          ),
-        );
+        context.push('/messages/${thread.id}', extra: thread);
       },
     );
   }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-    if (diff.inDays == 0) {
-      return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-    }
-    if (diff.inDays == 1) return '昨日';
-    if (diff.inDays < 7) return '${diff.inDays}日前';
-    return '${date.month}/${date.day}';
-  }
 }

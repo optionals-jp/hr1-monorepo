@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -15,10 +14,11 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase";
+import { useOrg } from "@/lib/org-context";
 import type { Department } from "@/types/database";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
-import { Pencil } from "lucide-react";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
@@ -40,6 +40,7 @@ const editTabs: EditPanelTab[] = [{ value: "basic", label: "基本情報" }];
 export default function DepartmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { organization } = useOrg();
   const [department, setDepartment] = useState<Department | null>(null);
   const [members, setMembers] = useState<DeptMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,9 +52,15 @@ export default function DepartmentDetailPage() {
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
+    if (!organization) return;
     setLoading(true);
     const [{ data: dept }, { data: edData }] = await Promise.all([
-      getSupabase().from("departments").select("*").eq("id", id).single(),
+      getSupabase()
+        .from("departments")
+        .select("*")
+        .eq("id", id)
+        .eq("organization_id", organization.id)
+        .single(),
       getSupabase()
         .from("employee_departments")
         .select("profiles:user_id(id, email, display_name, position)")
@@ -71,9 +78,10 @@ export default function DepartmentDetailPage() {
   };
 
   useEffect(() => {
+    if (!organization) return;
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, organization]);
 
   const startEditing = () => {
     if (!department) return;
@@ -155,7 +163,6 @@ export default function DepartmentDetailPage() {
                 <div className="flex items-center justify-between px-5 pt-4 pb-2">
                   <h2 className="text-sm font-semibold text-muted-foreground">部署情報</h2>
                   <Button variant="outline" size="sm" onClick={startEditing}>
-                    <Pencil className="mr-1 h-4 w-4" />
                     編集
                   </Button>
                 </div>

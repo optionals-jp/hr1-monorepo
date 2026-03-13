@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface BreadcrumbItem {
   label: string;
@@ -28,7 +29,11 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <div
-      className={`bg-white px-4 pt-4 sm:px-6 md:px-8 md:pt-6${sticky ? " sticky top-0 z-10" : ""}${sticky && border ? " border-b" : ""}`}
+      className={cn(
+        "bg-white px-4 pt-4 sm:px-6 md:px-8 md:pt-6",
+        sticky && "sticky top-0 z-10",
+        sticky && border && "border-b"
+      )}
     >
       {breadcrumb && breadcrumb.length > 0 && (
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
@@ -45,7 +50,10 @@ export function PageHeader({
         </div>
       )}
       <div
-        className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${tabs ? "pb-3" : sticky ? "pb-4 sm:pb-5" : "pb-2"}`}
+        className={cn(
+          "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+          tabs ? "pb-3" : sticky ? "pb-4 sm:pb-5" : "pb-2"
+        )}
       >
         <div className="min-w-0">
           <h1 className="text-lg sm:text-xl font-semibold tracking-tight truncate">{title}</h1>

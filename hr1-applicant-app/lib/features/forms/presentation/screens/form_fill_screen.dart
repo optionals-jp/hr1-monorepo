@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
@@ -124,6 +125,34 @@ class _FormFillScreenState extends ConsumerState<FormFillScreen> {
             ElevatedButton(
               onPressed: () async {
                 Navigator.pop(dialogContext);
+
+                // 回答をDBに保存
+                final answers =
+                    screenRef.read(formAnswersProvider(widget.formId));
+                final userId =
+                    Supabase.instance.client.auth.currentUser?.id;
+                if (userId != null && answers.isNotEmpty) {
+                  final now = DateTime.now().toIso8601String();
+                  final rows = answers.entries
+                      .where((e) => e.value != null)
+                      .map((e) {
+                        dynamic value = e.value;
+                        if (value is DateTime) {
+                          value = value.toIso8601String();
+                        }
+                        return {
+                          'form_id': widget.formId,
+                          'field_id': e.key,
+                          'applicant_id': userId,
+                          'value': value,
+                          'submitted_at': now,
+                        };
+                      })
+                      .toList();
+                  await Supabase.instance.client
+                      .from('form_responses')
+                      .insert(rows);
+                }
 
                 // ステップを完了に更新し、次のステップを自動開始
                 if (widget.stepId != null) {

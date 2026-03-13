@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LogIn, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 const SERVER_ERRORS: Record<string, string> = {
   unauthorized: "このアカウントにはコンソールへのアクセス権限がありません。",
@@ -99,7 +99,6 @@ export default function LoginPage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={submitting}>
-              <LogIn className="mr-2 h-4 w-4" />
               {submitting ? "ログイン中..." : "ログイン"}
             </Button>
           </form>

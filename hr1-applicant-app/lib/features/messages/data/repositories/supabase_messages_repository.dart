@@ -10,12 +10,11 @@ class SupabaseMessagesRepository implements MessagesRepository {
 
   @override
   Future<List<MessageThread>> getThreads(String userId) async {
-    // 自分が応募者であるスレッドを取得
+    // participant_id で自分のスレッドを取得
     final response = await _client
         .from('message_threads')
-        .select(
-            '*, applications!inner(id, applicant_id, jobs(id, title)), organizations:organization_id(name)')
-        .eq('applications.applicant_id', userId)
+        .select('*, organizations:organization_id(name)')
+        .eq('participant_id', userId)
         .order('updated_at', ascending: false);
 
     final threads = (response as List).map((row) {

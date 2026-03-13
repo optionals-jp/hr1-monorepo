@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { useOrg } from "@/lib/org-context";
@@ -30,7 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { SearchBar } from "@/components/ui/search-bar";
-import { Plus, SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface EmployeeWithDepts {
@@ -48,6 +50,7 @@ const addTabs: EditPanelTab[] = [
 
 export default function EmployeesPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { organization } = useOrg();
   const [search, setSearch] = useState("");
   const [filterDeptId, setFilterDeptId] = useState<string>("all");
@@ -142,31 +145,40 @@ export default function EmployeesPage() {
     if (!organization || !newEmail) return;
     setSaving(true);
 
-    const id = crypto.randomUUID();
-    await getSupabase()
-      .from("profiles")
-      .insert({
-        id,
-        email: newEmail,
-        display_name: newName || null,
-        role: "employee",
-        position: newPosition || null,
+    try {
+      const id = crypto.randomUUID();
+      const { error: profileError } = await getSupabase()
+        .from("profiles")
+        .insert({
+          id,
+          email: newEmail,
+          display_name: newName || null,
+          role: "employee",
+          position: newPosition || null,
+        });
+      if (profileError) throw profileError;
+
+      const { error: orgError } = await getSupabase().from("user_organizations").insert({
+        user_id: id,
+        organization_id: organization.id,
       });
+      if (orgError) throw orgError;
 
-    await getSupabase().from("user_organizations").insert({
-      user_id: id,
-      organization_id: organization.id,
-    });
+      if (selectedDeptIds.length > 0) {
+        const { error: deptError } = await getSupabase()
+          .from("employee_departments")
+          .insert(selectedDeptIds.map((deptId) => ({ user_id: id, department_id: deptId })));
+        if (deptError) throw deptError;
+      }
 
-    if (selectedDeptIds.length > 0) {
-      await getSupabase()
-        .from("employee_departments")
-        .insert(selectedDeptIds.map((deptId) => ({ user_id: id, department_id: deptId })));
+      setDialogOpen(false);
+      mutate();
+      showToast("社員を追加しました");
+    } catch {
+      showToast("社員の追加に失敗しました", "error");
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
-    setDialogOpen(false);
-    mutate();
   };
 
   const toggleDept = (deptId: string) => {
@@ -194,12 +206,7 @@ export default function EmployeesPage() {
       <PageHeader
         title="社員一覧"
         description="社員の管理・招待"
-        action={
-          <Button onClick={openAddDialog}>
-            <Plus className="mr-2 h-4 w-4" />
-            社員を追加
-          </Button>
-        }
+        action={<Button onClick={openAddDialog}>社員を追加</Button>}
         border={false}
       />
 
@@ -261,20 +268,13 @@ export default function EmployeesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                  読み込み中...
-                </TableCell>
-              </TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                  社員がいません
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((emp) => (
+            <TableEmptyState
+              colSpan={4}
+              isLoading={isLoading}
+              isEmpty={filtered.length === 0}
+              emptyMessage="社員がいません"
+            >
+              {filtered.map((emp) => (
                 <TableRow
                   key={emp.id}
                   className="cursor-pointer"
@@ -306,8 +306,8 @@ export default function EmployeesPage() {
                   </TableCell>
                   <TableCell>{emp.position ?? "-"}</TableCell>
                 </TableRow>
-              ))
-            )}
+              ))}
+            </TableEmptyState>
           </TableBody>
         </Table>
       </div>

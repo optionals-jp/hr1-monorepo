@@ -13,7 +13,8 @@ final applicationsRepositoryProvider =
 });
 
 /// 現在の企業に対する応募一覧（現在のユーザーのみ）
-final applicationsProvider = FutureProvider<List<Application>>((ref) async {
+final applicationsProvider =
+    FutureProvider.autoDispose<List<Application>>((ref) async {
   final currentOrg = ref.watch(currentOrganizationProvider);
   final currentUser = ref.watch(appUserProvider);
   if (currentOrg == null || currentUser == null) return [];
@@ -23,13 +24,15 @@ final applicationsProvider = FutureProvider<List<Application>>((ref) async {
 
 /// 応募IDから応募情報を取得
 final applicationDetailProvider =
-    FutureProvider.family<Application?, String>((ref, applicationId) async {
+    FutureProvider.autoDispose.family<Application?, String>(
+        (ref, applicationId) async {
   final repo = ref.watch(applicationsRepositoryProvider);
   return repo.getApplicationAsync(applicationId);
 });
 
 /// 現在の企業の求人一覧
-final jobsProvider = FutureProvider<List<Job>>((ref) async {
+final jobsProvider =
+    FutureProvider.autoDispose<List<Job>>((ref) async {
   final currentOrg = ref.watch(currentOrganizationProvider);
   if (currentOrg == null) return [];
   final repo = ref.watch(applicationsRepositoryProvider);
@@ -38,7 +41,7 @@ final jobsProvider = FutureProvider<List<Job>>((ref) async {
 
 /// 求人IDから求人情報を取得
 final jobDetailProvider =
-    FutureProvider.family<Job?, String>((ref, jobId) async {
+    FutureProvider.autoDispose.family<Job?, String>((ref, jobId) async {
   final repo = ref.watch(applicationsRepositoryProvider);
   return repo.getJobAsync(jobId);
 });
