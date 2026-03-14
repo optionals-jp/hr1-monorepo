@@ -505,7 +505,7 @@ export default function JobDetailPage() {
         }
       />
 
-      <div className="sticky top-0 z-10 bg-white">
+      <div className="sticky top-14 z-10 bg-white">
         <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8">
           {tabs.map((tab) => {
             const count =

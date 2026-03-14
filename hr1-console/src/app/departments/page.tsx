@@ -371,38 +371,41 @@ export default function DepartmentsPage() {
   const topLevelDepts = [...rootDepts, ...orphanDepts];
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       <PageHeader
         title="部署管理"
         description="組織の部署を管理"
+        sticky={false}
         border={false}
         action={<Button onClick={openAddDialog}>部署を追加</Button>}
       />
 
-      <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8 bg-white">
-        {pageTabs.map((tab) => (
-          <button
-            key={tab.value}
-            type="button"
-            onClick={() => setActiveTab(tab.value)}
-            className={cn(
-              "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-              activeTab === tab.value
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {tab.label}
-            {activeTab === tab.value && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-            )}
-          </button>
-        ))}
+      <div className="sticky top-14 z-10">
+        <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8 bg-white">
+          {pageTabs.map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setActiveTab(tab.value)}
+              className={cn(
+                "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
+                activeTab === tab.value
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {tab.label}
+              {activeTab === tab.value && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+              )}
+            </button>
+          ))}
+        </div>
+        {activeTab === "list" && <SearchBar value={search} onChange={setSearch} />}
       </div>
-      {activeTab === "list" && <SearchBar value={search} onChange={setSearch} />}
 
       {activeTab === "list" && (
-        <div className="flex-1 overflow-y-auto bg-white">
+        <div className="bg-white">
           <Table>
             <TableHeader>
               <TableRow>
@@ -475,7 +478,7 @@ export default function DepartmentsPage() {
       )}
 
       {activeTab === "orgchart" && (
-        <div className="flex-1 relative overflow-hidden bg-gray-50">
+        <div className="relative overflow-hidden bg-gray-50 h-[calc(100dvh-7.5rem)]">
           {orgLoading ? (
             <div className="text-center py-8 text-muted-foreground">読み込み中...</div>
           ) : deptWithMembers.length === 0 ? (

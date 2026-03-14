@@ -88,10 +88,11 @@ export default function JobsPage() {
   });
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       <PageHeader
         title="求人管理"
         description="求人の作成・管理"
+        sticky={false}
         border={false}
         action={
           <Link href="/jobs/new">
@@ -100,38 +101,39 @@ export default function JobsPage() {
         }
       />
 
-      <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8 bg-white">
-        {tabCounts.map((tab) => (
-          <button
-            key={tab.value}
-            type="button"
-            onClick={() => setActiveTab(tab.value)}
-            className={cn(
-              "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-              activeTab === tab.value
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {tab.label}
-            <span
+      <div className="sticky top-14 z-10">
+        <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8 bg-white">
+          {tabCounts.map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setActiveTab(tab.value)}
               className={cn(
-                "ml-1.5 text-xs tabular-nums",
-                activeTab === tab.value ? "text-foreground" : "text-muted-foreground"
+                "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
+                activeTab === tab.value
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {tab.count}
-            </span>
-            {activeTab === tab.value && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-            )}
-          </button>
-        ))}
+              {tab.label}
+              <span
+                className={cn(
+                  "ml-1.5 text-xs tabular-nums",
+                  activeTab === tab.value ? "text-foreground" : "text-muted-foreground"
+                )}
+              >
+                {tab.count}
+              </span>
+              {activeTab === tab.value && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+              )}
+            </button>
+          ))}
+        </div>
+        <SearchBar value={search} onChange={setSearch} placeholder="タイトル・部署・勤務地で検索" />
       </div>
 
-      <SearchBar value={search} onChange={setSearch} placeholder="タイトル・部署・勤務地で検索" />
-
-      <div className="flex-1 overflow-y-auto bg-white">
+      <div className="bg-white">
         <Table>
           <TableHeader>
             <TableRow>

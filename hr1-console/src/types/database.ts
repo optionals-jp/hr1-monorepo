@@ -15,12 +15,19 @@ export interface Profile {
   id: string;
   email: string;
   display_name: string | null;
+  name_kana: string | null;
   role: "admin" | "employee" | "applicant";
   avatar_url: string | null;
   department: string | null;
   position: string | null;
   hiring_type: "new_grad" | "mid_career" | null;
   graduation_year: number | null;
+  birth_date: string | null;
+  gender: "male" | "female" | "other" | null;
+  hire_date: string | null;
+  phone: string | null;
+  registered_address: string | null;
+  current_address: string | null;
   created_at: string;
 }
 
@@ -82,6 +89,7 @@ export interface CustomForm {
   organization_id: string;
   title: string;
   description: string | null;
+  target: "applicant" | "employee" | "both";
   created_at: string;
 }
 
@@ -173,6 +181,95 @@ export interface EmployeeDepartment {
   user_id: string;
   department_id: string;
   departments?: Department;
+}
+
+export interface EvaluationTemplate {
+  id: string;
+  organization_id: string;
+  title: string;
+  description: string | null;
+  target: "applicant" | "employee" | "both";
+  evaluation_type: "single" | "multi_rater";
+  anonymity_mode: "none" | "peer_only" | "full";
+  created_at: string;
+}
+
+export interface EvaluationCriterion {
+  id: string;
+  template_id: string;
+  label: string;
+  description: string | null;
+  score_type: "five_star" | "ten_point" | "text" | "select";
+  options: string[] | null;
+  sort_order: number;
+  weight: number;
+}
+
+export interface EvaluationAnchor {
+  id: string;
+  criterion_id: string;
+  score_value: number;
+  description: string;
+  sort_order: number;
+}
+
+export interface EvaluationCycle {
+  id: string;
+  organization_id: string;
+  title: string;
+  description: string | null;
+  template_id: string;
+  status: "draft" | "active" | "closed" | "calibrating" | "finalized";
+  start_date: string;
+  end_date: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  evaluation_templates?: EvaluationTemplate;
+}
+
+export type RaterType = "supervisor" | "peer" | "subordinate" | "self" | "external";
+
+export interface EvaluationAssignment {
+  id: string;
+  cycle_id: string;
+  target_user_id: string;
+  evaluator_id: string;
+  rater_type: RaterType;
+  evaluation_id: string | null;
+  status: "pending" | "in_progress" | "submitted" | "skipped";
+  due_date: string | null;
+  reminded_at: string | null;
+  created_at: string;
+  target_user?: Profile;
+  evaluator?: Profile;
+}
+
+export interface Evaluation {
+  id: string;
+  organization_id: string;
+  template_id: string;
+  target_user_id: string;
+  evaluator_id: string;
+  application_id: string | null;
+  cycle_id: string | null;
+  rater_type: RaterType | null;
+  assignment_id: string | null;
+  status: "draft" | "submitted";
+  overall_comment: string | null;
+  created_at: string;
+  submitted_at: string | null;
+  evaluation_templates?: EvaluationTemplate;
+  evaluator?: Profile;
+}
+
+export interface EvaluationScore {
+  id: string;
+  evaluation_id: string;
+  criterion_id: string;
+  score: number | null;
+  value: string | null;
+  comment: string | null;
 }
 
 export interface MessageThread {

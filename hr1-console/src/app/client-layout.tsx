@@ -28,7 +28,7 @@ function AuthGuard({ children }: { children: ReactNode }) {
   // 認証状態の読み込み中、またはリダイレクト中
   if (loading || !user || !profile) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-50">
+      <div className="fixed inset-0 flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded bg-red-600">
             <span className="text-sm font-bold text-white">H</span>
@@ -44,12 +44,10 @@ function AuthGuard({ children }: { children: ReactNode }) {
 
   return (
     <OrgProvider>
-      <div className="flex h-screen flex-col bg-white">
-        <Header />
-        <div className="flex flex-1 overflow-hidden">
-          {!isSettings && <Sidebar />}
-          <main className="flex flex-col flex-1 overflow-y-auto bg-slate-50">{children}</main>
-        </div>
+      <Header />
+      <div className="flex min-h-0">
+        {!isSettings && <Sidebar />}
+        <main className="flex flex-col flex-1 min-w-0 bg-slate-50">{children}</main>
       </div>
     </OrgProvider>
   );

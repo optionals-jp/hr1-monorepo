@@ -202,62 +202,65 @@ export default function EmployeesPage() {
   });
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       <PageHeader
         title="社員一覧"
         description="社員の管理・招待"
-        action={<Button onClick={openAddDialog}>社員を追加</Button>}
+        sticky={false}
         border={false}
+        action={<Button onClick={openAddDialog}>社員を追加</Button>}
       />
 
-      <SearchBar value={search} onChange={setSearch} />
-      <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
-          <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
-          {filterDeptId !== "all" && (
-            <div className="flex items-center gap-1.5 overflow-x-auto">
-              <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
-                部署：
-                {filterDeptId === "none"
-                  ? "未所属"
-                  : departments.find((d) => d.id === filterDeptId)?.name}
-                <span
-                  role="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setFilterDeptId("all");
-                  }}
-                  className="ml-0.5 hover:text-foreground"
-                >
-                  <X className="h-3 w-3" />
-                </span>
-              </Badge>
-            </div>
-          )}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-auto py-2">
-          <DropdownMenuItem className="py-2" onClick={() => setFilterDeptId("all")}>
-            <span className={cn(filterDeptId === "all" && "font-medium")}>すべて</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          {departments.map((dept) => (
-            <DropdownMenuItem
-              key={dept.id}
-              className="py-2"
-              onClick={() => setFilterDeptId(dept.id)}
-            >
-              <span className={cn(filterDeptId === dept.id && "font-medium")}>{dept.name}</span>
+      <div className="sticky top-14 z-10">
+        <SearchBar value={search} onChange={setSearch} />
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
+            {filterDeptId !== "all" && (
+              <div className="flex items-center gap-1.5 overflow-x-auto">
+                <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                  部署：
+                  {filterDeptId === "none"
+                    ? "未所属"
+                    : departments.find((d) => d.id === filterDeptId)?.name}
+                  <span
+                    role="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFilterDeptId("all");
+                    }}
+                    className="ml-0.5 hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </span>
+                </Badge>
+              </div>
+            )}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-auto py-2">
+            <DropdownMenuItem className="py-2" onClick={() => setFilterDeptId("all")}>
+              <span className={cn(filterDeptId === "all" && "font-medium")}>すべて</span>
             </DropdownMenuItem>
-          ))}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="py-2" onClick={() => setFilterDeptId("none")}>
-            <span className={cn(filterDeptId === "none" && "font-medium")}>未所属</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <DropdownMenuSeparator />
+            {departments.map((dept) => (
+              <DropdownMenuItem
+                key={dept.id}
+                className="py-2"
+                onClick={() => setFilterDeptId(dept.id)}
+              >
+                <span className={cn(filterDeptId === dept.id && "font-medium")}>{dept.name}</span>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="py-2" onClick={() => setFilterDeptId("none")}>
+              <span className={cn(filterDeptId === "none" && "font-medium")}>未所属</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
-      <div className="flex-1 overflow-y-auto bg-white">
+      <div className="bg-white">
         <Table>
           <TableHeader>
             <TableRow>

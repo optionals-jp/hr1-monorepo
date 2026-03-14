@@ -6,8 +6,8 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { AlertCircle, Lock } from "lucide-react";
 
 const SERVER_ERRORS: Record<string, string> = {
   unauthorized: "このアカウントにはコンソールへのアクセス権限がありません。",
@@ -54,56 +54,77 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <Card className="w-full max-w-sm border shadow-sm">
-        <CardHeader className="text-center pb-4">
-          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded bg-red-600">
-            <span className="text-sm font-bold text-white">H</span>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-linear-to-br from-slate-50 via-white to-red-50/30 px-4">
+      {/* 装飾 */}
+      <div className="pointer-events-none absolute -top-40 -right-40 h-80 w-80 rounded-full bg-red-100/40 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-slate-200/40 blur-3xl" />
+
+      <div className="relative w-full max-w-sm py-8">
+        {/* ロゴ・タイトル */}
+        <div className="mb-6 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-red-600 shadow-lg shadow-red-600/20">
+            <span className="text-base font-bold text-white">H</span>
           </div>
-          <CardTitle className="text-xl">HR1 Console</CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">管理者アカウントでログイン</p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{error}</span>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">HR1 Console</h1>
+          <p className="mt-1 text-sm text-muted-foreground">管理者アカウントでログイン</p>
+        </div>
+
+        {/* ログインカード */}
+        <Card>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="email">メールアドレス</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@example.com"
+                  required
+                  autoComplete="email"
+                />
               </div>
-            )}
 
-            <div className="space-y-1.5">
-              <Label htmlFor="email">メールアドレス</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@example.com"
-                required
-                autoComplete="email"
-              />
-            </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="password">パスワード</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  autoComplete="current-password"
+                />
+              </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="password">パスワード</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                autoComplete="current-password"
-              />
-            </div>
+              <Button type="submit" className="w-full" disabled={submitting}>
+                {submitting ? (
+                  "ログイン中..."
+                ) : (
+                  <>
+                    <Lock className="mr-2 h-4 w-4" />
+                    ログイン
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "ログイン中..." : "ログイン"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+        {/* フッター */}
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          &copy; 2026 HR1 Studio. All rights reserved.
+        </p>
+      </div>
     </div>
   );
 }

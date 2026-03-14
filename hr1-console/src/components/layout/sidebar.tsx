@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -15,20 +15,46 @@ import {
   Building2,
   MessageSquare,
   Settings,
+  ChevronDown,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const mainNavItems = [
-  { href: "/", label: "ダッシュボード", icon: LayoutDashboard },
-  { href: "/applicants", label: "応募者一覧", icon: UserPlus },
-  { href: "/employees", label: "社員一覧", icon: Users },
-  { href: "/departments", label: "部署管理", icon: Building2 },
-  { href: "/jobs", label: "求人管理", icon: Briefcase },
-  { href: "/applications", label: "応募管理", icon: ClipboardList },
-  { href: "/messages", label: "メッセージ", icon: MessageSquare },
-  { href: "/forms", label: "フォーム管理", icon: FileText },
-  { href: "/scheduling", label: "日程調整", icon: Calendar },
-  { href: "/calendar", label: "カレンダー", icon: CalendarDays },
+interface NavSection {
+  label: string;
+  items: { href: string; label: string; icon: React.ElementType }[];
+}
+
+const navSections: NavSection[] = [
+  {
+    label: "",
+    items: [{ href: "/", label: "ダッシュボード", icon: LayoutDashboard }],
+  },
+  {
+    label: "採用",
+    items: [
+      { href: "/applicants", label: "応募者一覧", icon: UserPlus },
+      { href: "/jobs", label: "求人管理", icon: Briefcase },
+      { href: "/applications", label: "応募管理", icon: ClipboardList },
+      { href: "/scheduling", label: "日程調整", icon: Calendar },
+    ],
+  },
+  {
+    label: "社内",
+    items: [
+      { href: "/employees", label: "社員一覧", icon: Users },
+      { href: "/departments", label: "部署管理", icon: Building2 },
+    ],
+  },
+  {
+    label: "共通",
+    items: [
+      { href: "/messages", label: "メッセージ", icon: MessageSquare },
+      { href: "/calendar", label: "カレンダー", icon: CalendarDays },
+      { href: "/forms", label: "フォーム管理", icon: FileText },
+      { href: "/evaluations", label: "評価管理", icon: Star },
+    ],
+  },
 ];
 
 function NavLink({
@@ -65,22 +91,80 @@ function NavLink({
   );
 }
 
+function CollapsibleSection({
+  section,
+  pathname,
+  onNavigate,
+}: {
+  section: NavSection;
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const hasActiveItem = section.items.some(({ href }) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href)
+  );
+  const [open, setOpen] = useState(true);
+
+  return (
+    <div className="space-y-0.5">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-3 pb-1 pt-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+      >
+        {section.label}
+        <ChevronDown
+          className={cn("h-3.5 w-3.5 transition-transform duration-200", !open && "-rotate-90")}
+        />
+      </button>
+      {open && (
+        <>
+          {section.items.map(({ href, label, icon }) => (
+            <NavLink
+              key={href}
+              href={href}
+              label={label}
+              icon={icon}
+              pathname={pathname}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </>
+      )}
+      {!open && hasActiveItem && <div className="mx-3 h-0.5 rounded-full bg-primary/30" />}
+    </div>
+  );
+}
+
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
     <nav className="flex flex-col h-full py-3 px-2 overflow-y-auto">
-      <div className="flex-1 space-y-0.5">
-        {mainNavItems.map(({ href, label, icon }) => (
-          <NavLink
-            key={href}
-            href={href}
-            label={label}
-            icon={icon}
-            pathname={pathname}
-            onNavigate={onNavigate}
-          />
-        ))}
+      <div className="flex-1 space-y-4">
+        {navSections.map((section) =>
+          section.label ? (
+            <CollapsibleSection
+              key={section.label}
+              section={section}
+              pathname={pathname}
+              onNavigate={onNavigate}
+            />
+          ) : (
+            <div key="_top" className="space-y-0.5">
+              {section.items.map(({ href, label, icon }) => (
+                <NavLink
+                  key={href}
+                  href={href}
+                  label={label}
+                  icon={icon}
+                  pathname={pathname}
+                  onNavigate={onNavigate}
+                />
+              ))}
+            </div>
+          )
+        )}
       </div>
       <div className="border-t pt-2 mt-2 space-y-0.5">
         <NavLink
@@ -97,7 +181,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
 export function Sidebar() {
   return (
-    <aside className="hidden md:flex h-full w-56 flex-col border-r border-border bg-white shrink-0">
+    <aside className="hidden md:flex sticky top-14 h-[calc(100dvh-3.5rem)] w-56 flex-col border-r border-border bg-white shrink-0 shadow-md z-20">
       <SidebarNav />
     </aside>
   );
