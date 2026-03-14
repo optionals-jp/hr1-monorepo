@@ -40,7 +40,7 @@ export interface Job {
   location: string | null;
   employment_type: string | null;
   salary_range: string | null;
-  status: "open" | "closed" | "draft";
+  status: "open" | "closed" | "draft" | "archived";
   created_at: string;
 }
 
@@ -153,6 +153,7 @@ export interface InterviewSlot {
   start_at: string;
   end_at: string;
   is_selected: boolean;
+  max_applicants: number;
   application_id: string | null;
   applications?: {
     id: string;

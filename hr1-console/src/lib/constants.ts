@@ -36,17 +36,27 @@ export const stepTypeLabels: Record<string, string> = {
   offer: "内定",
 };
 
+/** 選考ステップ追加・編集時の選択肢（内定は自動付与のため除外） */
+export const selectableStepTypes: Record<string, string> = {
+  screening: "書類選考",
+  form: "アンケート/フォーム",
+  interview: "面接",
+  external_test: "外部テスト",
+};
+
 // --- 求人ステータス ---
 export const jobStatusLabels: Record<string, string> = {
   open: "公開中",
   draft: "下書き",
   closed: "終了",
+  archived: "アーカイブ",
 };
 
 export const jobStatusColors: Record<string, BadgeVariant> = {
   open: "default",
   closed: "secondary",
   draft: "outline",
+  archived: "secondary",
 };
 
 // --- 面接ステータス ---

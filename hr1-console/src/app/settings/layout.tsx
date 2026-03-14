@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SettingsSection {
@@ -31,6 +32,13 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
       {/* 設定サイドバー */}
       <aside className="hidden md:flex w-60 shrink-0 flex-col border-r bg-white overflow-y-auto">
         <div className="px-4 py-4 border-b">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            戻る
+          </Link>
           <h1 className="text-sm font-semibold text-foreground">設定</h1>
         </div>
         <nav className="flex-1 py-3 px-3">

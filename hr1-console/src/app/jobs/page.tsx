@@ -15,21 +15,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { SearchBar } from "@/components/ui/search-bar";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import { cn } from "@/lib/utils";
 import type { Job } from "@/types/database";
-import { SlidersHorizontal, X } from "lucide-react";
 import { jobStatusLabels as statusLabels, jobStatusColors as statusColors } from "@/lib/constants";
+
+const pageTabs = [
+  { value: "open", label: "公開中" },
+  { value: "draft", label: "ドラフト" },
+  { value: "closed", label: "終了" },
+  { value: "archived", label: "アーカイブ" },
+];
 
 interface AppCounts {
   total: number;
@@ -40,7 +39,7 @@ export default function JobsPage() {
   const router = useRouter();
   const { organization } = useOrg();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState("open");
 
   const { data: jobs = [], isLoading } = useQuery<Job[]>(
     organization ? `jobs-${organization.id}` : null,
@@ -72,8 +71,13 @@ export default function JobsPage() {
     }
   );
 
+  const tabCounts = pageTabs.map((tab) => ({
+    ...tab,
+    count: jobs.filter((j) => j.status === tab.value).length,
+  }));
+
   const filtered = jobs.filter((job) => {
-    if (statusFilter !== "all" && job.status !== statusFilter) return false;
+    if (job.status !== activeTab) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -96,42 +100,36 @@ export default function JobsPage() {
         }
       />
 
-      <SearchBar value={search} onChange={setSearch} placeholder="タイトル・部署・勤務地で検索" />
+      <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8 bg-white">
+        {tabCounts.map((tab) => (
+          <button
+            key={tab.value}
+            type="button"
+            onClick={() => setActiveTab(tab.value)}
+            className={cn(
+              "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
+              activeTab === tab.value
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {tab.label}
+            <span
+              className={cn(
+                "ml-1.5 text-xs tabular-nums",
+                activeTab === tab.value ? "text-foreground" : "text-muted-foreground"
+              )}
+            >
+              {tab.count}
+            </span>
+            {activeTab === tab.value && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+            )}
+          </button>
+        ))}
+      </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
-          <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
-          {statusFilter !== "all" && (
-            <div className="flex items-center gap-1.5 overflow-x-auto">
-              <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
-                ステータス：{statusLabels[statusFilter] ?? statusFilter}
-                <span
-                  role="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setStatusFilter("all");
-                  }}
-                  className="ml-0.5 hover:text-foreground"
-                >
-                  <X className="h-3 w-3" />
-                </span>
-              </Badge>
-            </div>
-          )}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-auto py-2">
-          <DropdownMenuItem className="py-2" onClick={() => setStatusFilter("all")}>
-            <span className={cn(statusFilter === "all" && "font-medium")}>すべて</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          {Object.entries(statusLabels).map(([key, label]) => (
-            <DropdownMenuItem className="py-2" key={key} onClick={() => setStatusFilter(key)}>
-              <span className={cn(statusFilter === key && "font-medium")}>{label}</span>
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <SearchBar value={search} onChange={setSearch} placeholder="タイトル・部署・勤務地で検索" />
 
       <div className="flex-1 overflow-y-auto bg-white">
         <Table>

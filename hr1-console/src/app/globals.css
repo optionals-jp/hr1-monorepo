@@ -127,3 +127,15 @@
     @apply font-sans;
   }
 }
+
+/* react-datepicker: 土曜・日曜の色 */
+.datepicker-saturday {
+  color: #3b82f6 !important;
+}
+.datepicker-sunday {
+  color: #ef4444 !important;
+}
+.react-datepicker__day--selected.datepicker-saturday,
+.react-datepicker__day--selected.datepicker-sunday {
+  color: #fff !important;
+}

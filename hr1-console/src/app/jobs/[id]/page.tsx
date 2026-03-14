@@ -27,7 +27,7 @@ import {
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase";
-import type { Job, JobStep, JobChangeLog, Application } from "@/types/database";
+import type { Job, JobStep, JobChangeLog, Application, Interview } from "@/types/database";
 import { useOrg } from "@/lib/org-context";
 import {
   DropdownMenu,
@@ -41,10 +41,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SearchBar } from "@/components/ui/search-bar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { X, Search, SlidersHorizontal, GripVertical } from "lucide-react";
 import { format } from "date-fns";
 import {
   stepTypeLabels,
+  selectableStepTypes,
   jobStatusLabels as statusLabels,
   applicationStatusLabels as appStatusLabels,
   applicationStatusColors as appStatusColors,
@@ -97,8 +99,10 @@ export default function JobDetailPage() {
   const [newStepType, setNewStepType] = useState("interview");
   const [newStepLabel, setNewStepLabel] = useState("");
   const [newStepFormId, setNewStepFormId] = useState<string>("");
+  const [newStepScheduleIds, setNewStepScheduleIds] = useState<string[]>([]);
   const [savingStep, setSavingStep] = useState(false);
   const [forms, setForms] = useState<{ id: string; title: string }[]>([]);
+  const [interviews, setInterviews] = useState<Interview[]>([]);
 
   // Step edit
   const [editStepOpen, setEditStepOpen] = useState(false);
@@ -106,6 +110,7 @@ export default function JobDetailPage() {
   const [editStepType, setEditStepType] = useState("interview");
   const [editStepLabel, setEditStepLabel] = useState("");
   const [editStepFormId, setEditStepFormId] = useState<string>("");
+  const [editStepScheduleIds, setEditStepScheduleIds] = useState<string[]>([]);
   const [savingEditStep, setSavingEditStep] = useState(false);
   const [deletingEditStep, setDeletingEditStep] = useState(false);
 
@@ -212,6 +217,12 @@ export default function JobDetailPage() {
       .eq("organization_id", organization.id)
       .order("created_at", { ascending: false })
       .then(({ data }) => setForms(data ?? []));
+    getSupabase()
+      .from("interviews")
+      .select("*")
+      .eq("organization_id", organization.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => setInterviews((data as Interview[]) ?? []));
   }, [organization]);
 
   const updateJobStatus = async (status: string) => {
@@ -245,7 +256,11 @@ export default function JobDetailPage() {
     const nextOrder = steps.length + 1;
     const stepId = crypto.randomUUID();
     const relatedId =
-      ["screening", "form"].includes(newStepType) && newStepFormId ? newStepFormId : null;
+      ["screening", "form"].includes(newStepType) && newStepFormId
+        ? newStepFormId
+        : newStepType === "interview" && newStepScheduleIds.length > 0
+          ? newStepScheduleIds.join(",")
+          : null;
 
     const { error } = await getSupabase().from("job_steps").insert({
       id: stepId,
@@ -285,6 +300,7 @@ export default function JobDetailPage() {
     setNewStepType("interview");
     setNewStepLabel("");
     setNewStepFormId("");
+    setNewStepScheduleIds([]);
   };
 
   const removeStep = async (stepId: string) => {
@@ -338,7 +354,13 @@ export default function JobDetailPage() {
     setEditStepId(step.id);
     setEditStepType(step.step_type);
     setEditStepLabel(step.label);
-    setEditStepFormId(step.related_id ?? "");
+    if (step.step_type === "interview" && step.related_id) {
+      setEditStepFormId("");
+      setEditStepScheduleIds(step.related_id.split(",").filter(Boolean));
+    } else {
+      setEditStepFormId(step.related_id ?? "");
+      setEditStepScheduleIds([]);
+    }
     setEditStepOpen(true);
   };
 
@@ -346,7 +368,11 @@ export default function JobDetailPage() {
     if (!editStepLabel) return;
     setSavingEditStep(true);
     const relatedId =
-      ["screening", "form"].includes(editStepType) && editStepFormId ? editStepFormId : null;
+      ["screening", "form"].includes(editStepType) && editStepFormId
+        ? editStepFormId
+        : editStepType === "interview" && editStepScheduleIds.length > 0
+          ? editStepScheduleIds.join(",")
+          : null;
     await getSupabase()
       .from("job_steps")
       .update({ step_type: editStepType, label: editStepLabel, related_id: relatedId })
@@ -473,6 +499,7 @@ export default function JobDetailPage() {
               <SelectItem value="open">公開中</SelectItem>
               <SelectItem value="draft">下書き</SelectItem>
               <SelectItem value="closed">終了</SelectItem>
+              <SelectItem value="archived">アーカイブ</SelectItem>
             </SelectContent>
           </Select>
         }
@@ -709,7 +736,9 @@ export default function JobDetailPage() {
                   <div className="flex items-center justify-between px-5 pt-4 pb-2">
                     <h2 className="text-sm font-semibold text-muted-foreground">
                       選考ステップ
-                      <span className="ml-1.5 text-xs font-normal">{steps.length}</span>
+                      <span className="ml-1.5 text-xs font-normal">
+                        {steps.filter((s) => s.step_type !== "offer").length + 1}
+                      </span>
                     </h2>
                     <div className="flex items-center gap-2">
                       {!reorderMode && (
@@ -760,13 +789,10 @@ export default function JobDetailPage() {
                     </div>
                   </div>
 
-                  {steps.length === 0 ? (
-                    <p className="text-center py-8 text-muted-foreground">
-                      選考ステップがありません
-                    </p>
-                  ) : (
-                    <div>
-                      {steps.map((step, index) => (
+                  <div>
+                    {steps
+                      .filter((s) => s.step_type !== "offer")
+                      .map((step, index) => (
                         <div
                           key={step.id}
                           draggable={reorderMode}
@@ -798,7 +824,7 @@ export default function JobDetailPage() {
                           }
                           onClick={!reorderMode ? () => startEditStep(step) : undefined}
                           className={cn(
-                            "flex items-center gap-3 px-5 py-4 border-b last:border-0",
+                            "flex items-center gap-3 px-5 py-4 border-b",
                             reorderMode ? "cursor-grab" : "cursor-pointer hover:bg-accent/40",
                             reorderMode &&
                               dragOverIndex === index &&
@@ -819,12 +845,64 @@ export default function JobDetailPage() {
                             <p className="text-sm font-medium">{step.label}</p>
                             <p className="text-xs text-muted-foreground">
                               {stepTypeLabels[step.step_type] ?? step.step_type}
+                              {step.related_id &&
+                                ["screening", "form"].includes(step.step_type) &&
+                                forms.find((f) => f.id === step.related_id) && (
+                                  <>
+                                    {" — "}
+                                    <Link
+                                      href={`/forms/${step.related_id}`}
+                                      className="text-primary hover:underline"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {forms.find((f) => f.id === step.related_id)!.title}
+                                    </Link>
+                                  </>
+                                )}
+                              {step.related_id &&
+                                step.step_type === "interview" &&
+                                (() => {
+                                  const ids = step.related_id!.split(",").filter(Boolean);
+                                  const linked = ids
+                                    .map((sid) => interviews.find((iv) => iv.id === sid))
+                                    .filter(Boolean);
+                                  if (linked.length === 0) return null;
+                                  return (
+                                    <>
+                                      {" — "}
+                                      {linked.map((iv, i) => (
+                                        <span key={iv!.id}>
+                                          {i > 0 && "、"}
+                                          <Link
+                                            href={`/scheduling/${iv!.id}`}
+                                            className="text-primary hover:underline"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            {iv!.title}
+                                          </Link>
+                                        </span>
+                                      ))}
+                                    </>
+                                  );
+                                })()}
                             </p>
                           </div>
                         </div>
                       ))}
+                    {/* 内定ステップ（固定・末尾） */}
+                    <div className="flex items-center gap-3 px-5 py-4 bg-muted/30">
+                      <div className="h-4 w-4 shrink-0" />
+                      <span className="text-sm font-bold text-muted-foreground w-6 text-center shrink-0">
+                        ✓
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-muted-foreground">内定</p>
+                        <p className="text-xs text-muted-foreground">
+                          すべてのステップ完了後に自動適用
+                        </p>
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               </section>
             </div>
@@ -1107,13 +1185,14 @@ export default function JobDetailPage() {
                 if (!v) return;
                 setEditStepType(v);
                 setEditStepFormId("");
+                setEditStepScheduleIds([]);
               }}
             >
               <SelectTrigger>
                 <SelectValue>{(v: string) => stepTypeLabels[v] ?? v}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(stepTypeLabels).map(([key, label]) => (
+                {Object.entries(selectableStepTypes).map(([key, label]) => (
                   <SelectItem key={key} value={key}>
                     {label}
                   </SelectItem>
@@ -1154,6 +1233,46 @@ export default function JobDetailPage() {
               )}
             </div>
           )}
+          {editStepType === "interview" && (
+            <div className="space-y-2">
+              <Label>日程調整</Label>
+              {interviews.length === 0 ? (
+                <p className="text-sm text-muted-foreground">日程調整がありません</p>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto rounded-md border p-3">
+                  {interviews.map((iv) => (
+                    <label key={iv.id} className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={editStepScheduleIds.includes(iv.id)}
+                        onCheckedChange={(checked) => {
+                          setEditStepScheduleIds((prev) =>
+                            checked ? [...prev, iv.id] : prev.filter((sid) => sid !== iv.id)
+                          );
+                        }}
+                      />
+                      <span className="text-sm">{iv.title}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              {editStepScheduleIds.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {editStepScheduleIds.map((sid) => {
+                    const iv = interviews.find((i) => i.id === sid);
+                    return iv ? (
+                      <Link
+                        key={sid}
+                        href={`/scheduling/${sid}`}
+                        className="text-sm text-primary hover:underline"
+                      >
+                        {iv.title}
+                      </Link>
+                    ) : null;
+                  })}
+                </div>
+              )}
+            </div>
+          )}
           <div className="space-y-2">
             <Label>ラベル *</Label>
             <Input
@@ -1183,13 +1302,14 @@ export default function JobDetailPage() {
                 if (!v) return;
                 setNewStepType(v);
                 setNewStepFormId("");
+                setNewStepScheduleIds([]);
               }}
             >
               <SelectTrigger>
                 <SelectValue>{(v: string) => stepTypeLabels[v] ?? v}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(stepTypeLabels).map(([key, label]) => (
+                {Object.entries(selectableStepTypes).map(([key, label]) => (
                   <SelectItem key={key} value={key}>
                     {label}
                   </SelectItem>
@@ -1220,6 +1340,30 @@ export default function JobDetailPage() {
                   )}
                 </SelectContent>
               </Select>
+            </div>
+          )}
+          {newStepType === "interview" && (
+            <div className="space-y-2">
+              <Label>日程調整</Label>
+              {interviews.length === 0 ? (
+                <p className="text-sm text-muted-foreground">日程調整がありません</p>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto rounded-md border p-3">
+                  {interviews.map((iv) => (
+                    <label key={iv.id} className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={newStepScheduleIds.includes(iv.id)}
+                        onCheckedChange={(checked) => {
+                          setNewStepScheduleIds((prev) =>
+                            checked ? [...prev, iv.id] : prev.filter((sid) => sid !== iv.id)
+                          );
+                        }}
+                      />
+                      <span className="text-sm">{iv.title}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           <div className="space-y-2">

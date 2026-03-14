@@ -48,14 +48,17 @@ export function Header() {
         </Button>
 
         {/* Logo */}
-        <div className="flex items-center gap-2 shrink-0 pr-2">
+        <button
+          onClick={() => router.push("/")}
+          className="flex items-center gap-2 shrink-0 pr-2 hover:opacity-80 transition-opacity"
+        >
           <div className="flex h-7 w-7 items-center justify-center rounded bg-red-600">
             <span className="text-xs font-bold text-white">H</span>
           </div>
           <span className="hidden sm:inline text-[15px] font-medium text-foreground">
             HR1 Studio
           </span>
-        </div>
+        </button>
 
         {/* Org Switcher */}
         <DropdownMenu>

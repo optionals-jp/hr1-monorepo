@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { DatetimeInput } from "@/components/ui/datetime-input";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,7 @@ import {
   interviewScheduleStatusLabels as statusLabels,
   interviewScheduleStatusColors as statusColors,
 } from "@/lib/constants";
+import { autoFillEndAt } from "@/lib/utils";
 
 export default function SchedulingPage() {
   const router = useRouter();
@@ -41,7 +43,9 @@ export default function SchedulingPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newLocation, setNewLocation] = useState("");
   const [newNotes, setNewNotes] = useState("");
-  const [slots, setSlots] = useState<{ startAt: string; endAt: string }[]>([]);
+  const [slots, setSlots] = useState<{ startAt: string; endAt: string; maxApplicants: number }[]>(
+    []
+  );
 
   const {
     data: interviews = [],
@@ -61,12 +65,24 @@ export default function SchedulingPage() {
   );
 
   const addSlot = () => {
-    setSlots([...slots, { startAt: "", endAt: "" }]);
+    setSlots([...slots, { startAt: "", endAt: "", maxApplicants: 1 }]);
   };
 
-  const updateSlot = (index: number, field: "startAt" | "endAt", value: string) => {
+  const updateSlot = (
+    index: number,
+    field: "startAt" | "endAt" | "maxApplicants",
+    value: string | number
+  ) => {
     const updated = [...slots];
-    updated[index][field] = value;
+    if (field === "maxApplicants") {
+      updated[index] = { ...updated[index], maxApplicants: value as number };
+    } else {
+      updated[index] = { ...updated[index], [field]: value as string };
+    }
+    // 開始日時が設定され、終了日時が未設定なら30分後を自動入力
+    if (field === "startAt" && value && !updated[index].endAt) {
+      updated[index] = { ...updated[index], endAt: autoFillEndAt(value as string) };
+    }
     setSlots(updated);
   };
 
@@ -102,6 +118,7 @@ export default function SchedulingPage() {
               start_at: new Date(slot.startAt).toISOString(),
               end_at: new Date(slot.endAt).toISOString(),
               is_selected: false,
+              max_applicants: slot.maxApplicants,
             }))
           );
       }
@@ -123,7 +140,7 @@ export default function SchedulingPage() {
         action={
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger render={<Button />}>面接を作成</DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>面接を作成</DialogTitle>
               </DialogHeader>
@@ -162,23 +179,50 @@ export default function SchedulingPage() {
                     </Button>
                   </div>
                   {slots.map((slot, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <Input
-                        type="datetime-local"
-                        value={slot.startAt}
-                        onChange={(e) => updateSlot(index, "startAt", e.target.value)}
-                        className="flex-1"
-                      />
-                      <span className="text-muted-foreground">〜</span>
-                      <Input
-                        type="datetime-local"
-                        value={slot.endAt}
-                        onChange={(e) => updateSlot(index, "endAt", e.target.value)}
-                        className="flex-1"
-                      />
-                      <Button variant="ghost" size="sm" onClick={() => removeSlot(index)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <div key={index} className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <DatetimeInput
+                          value={slot.startAt}
+                          onChange={(v) => updateSlot(index, "startAt", v)}
+                          className="flex-1"
+                        />
+                        <span className="text-muted-foreground shrink-0">〜</span>
+                        <DatetimeInput
+                          value={slot.endAt}
+                          onChange={(v) => updateSlot(index, "endAt", v)}
+                          className="flex-1"
+                          minDateTime={slot.startAt}
+                        />
+                        <Button variant="ghost" size="sm" onClick={() => removeSlot(index)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {slot.startAt &&
+                        slot.endAt &&
+                        (new Date(slot.endAt).getTime() - new Date(slot.startAt).getTime()) /
+                          (1000 * 60) >
+                          180 && (
+                          <p className="text-xs text-amber-600 pl-1">
+                            ⚠ 面接枠が3時間以上あります。設定に誤りがないか確認してください。
+                          </p>
+                        )}
+                      <div className="flex items-center gap-2 pl-1">
+                        <span className="text-xs text-muted-foreground shrink-0">応募上限</span>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={slot.maxApplicants}
+                          onChange={(e) =>
+                            updateSlot(
+                              index,
+                              "maxApplicants",
+                              Math.max(1, parseInt(e.target.value) || 1)
+                            )
+                          }
+                          className="w-20 h-7 text-xs"
+                        />
+                        <span className="text-xs text-muted-foreground">名</span>
+                      </div>
                     </div>
                   ))}
                 </div>

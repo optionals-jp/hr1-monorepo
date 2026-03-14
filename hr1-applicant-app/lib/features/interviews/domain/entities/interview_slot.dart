@@ -5,6 +5,7 @@ class InterviewSlot {
     required this.startAt,
     required this.endAt,
     this.isSelected = false,
+    this.maxApplicants = 1,
     this.applicationId,
   });
 
@@ -14,6 +15,9 @@ class InterviewSlot {
 
   /// 応募者が選択したかどうか
   final bool isSelected;
+
+  /// 応募上限（最低1）
+  final int maxApplicants;
 
   /// このスロットを予約した応募ID（null なら空き）
   final String? applicationId;
@@ -30,6 +34,7 @@ class InterviewSlot {
       startAt: DateTime.parse(json['start_at'] as String),
       endAt: DateTime.parse(json['end_at'] as String),
       isSelected: json['is_selected'] as bool? ?? false,
+      maxApplicants: json['max_applicants'] as int? ?? 1,
       applicationId: json['application_id'] as String?,
     );
   }

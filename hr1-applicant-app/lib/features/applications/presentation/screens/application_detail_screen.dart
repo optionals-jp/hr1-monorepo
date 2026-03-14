@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/utils/date_formatter.dart';
@@ -14,6 +15,7 @@ import '../../domain/entities/application_status.dart';
 import '../../domain/entities/application_step.dart';
 import '../providers/applications_providers.dart';
 import '../../../forms/presentation/screens/form_fill_screen.dart';
+import '../../../interviews/presentation/providers/interviews_providers.dart';
 
 /// 応募詳細画面
 class ApplicationDetailScreen extends ConsumerStatefulWidget {
@@ -287,12 +289,12 @@ class _InfoRow extends StatelessWidget {
 }
 
 /// 動的な選考ステップタイムライン
-class _StepTimeline extends StatelessWidget {
+class _StepTimeline extends ConsumerWidget {
   const _StepTimeline({required this.application});
   final Application application;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final steps = application.steps;
 
@@ -323,7 +325,7 @@ class _StepTimeline extends StatelessWidget {
                     if (!isLast)
                       Container(
                         width: 2,
-                        height: 32,
+                        height: _stepLineHeight(step),
                         color: step.status == StepStatus.completed
                             ? AppColors.success
                             : theme.dividerColor,
@@ -383,6 +385,13 @@ class _StepTimeline extends StatelessWidget {
                             ),
                           ),
                         ],
+                        // 面接ステップ: 確定した日程を表示
+                        if (step.stepType == StepType.interview &&
+                            step.relatedId != null &&
+                            step.status != StepStatus.pending)
+                          _InterviewDateLabel(
+                            interviewId: step.relatedId!,
+                          ),
                       ],
                     ),
                   ),
@@ -392,6 +401,67 @@ class _StepTimeline extends StatelessWidget {
           }),
         ],
       ),
+    );
+  }
+
+  double _stepLineHeight(ApplicationStep step) {
+    if (step.stepType == StepType.interview &&
+        step.relatedId != null &&
+        step.status != StepStatus.pending) {
+      return 48;
+    }
+    return 32;
+  }
+}
+
+/// 面接の確定日時を表示するウィジェット
+class _InterviewDateLabel extends ConsumerWidget {
+  const _InterviewDateLabel({
+    required this.interviewId,
+  });
+  final String interviewId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncInterview = ref.watch(interviewDetailProvider(interviewId));
+
+    return asyncInterview.when(
+      data: (interview) {
+        if (interview == null) return const SizedBox.shrink();
+        final confirmedSlot = interview.confirmedSlot;
+        if (confirmedSlot == null) {
+          // 日程未確定
+          return Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              '日程調整中',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.warning,
+              ),
+            ),
+          );
+        }
+        final dateFormat = DateFormat('M月d日(E) HH:mm', 'ja');
+        final timeFormat = DateFormat('HH:mm');
+        return Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Row(
+            children: [
+              Icon(Icons.event, size: 14, color: AppColors.success),
+              const SizedBox(width: 4),
+              Text(
+                '${dateFormat.format(confirmedSlot.startAt)} 〜 ${timeFormat.format(confirmedSlot.endAt)}',
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.success,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

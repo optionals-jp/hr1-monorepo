@@ -24,7 +24,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
-import { cn } from "@/lib/utils";
+import { DatetimeInput } from "@/components/ui/datetime-input";
+import { cn, autoFillEndAt } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase";
 import { useOrg } from "@/lib/org-context";
 import type { Interview, InterviewSlot, InterviewChangeLog } from "@/types/database";
@@ -82,7 +83,14 @@ export default function SchedulingDetailPage() {
   const [editLocation, setEditLocation] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editSlots, setEditSlots] = useState<
-    { id: string; startAt: string; endAt: string; isNew?: boolean; applicationId?: string | null }[]
+    {
+      id: string;
+      startAt: string;
+      endAt: string;
+      maxApplicants: number;
+      isNew?: boolean;
+      applicationId?: string | null;
+    }[]
   >([]);
   const [saving, setSaving] = useState(false);
 
@@ -179,6 +187,7 @@ export default function SchedulingDetailPage() {
         id: s.id,
         startAt: toLocalDatetime(s.start_at),
         endAt: toLocalDatetime(s.end_at),
+        maxApplicants: Math.max(1, s.max_applicants ?? 1),
         applicationId: s.application_id,
       }))
     );
@@ -187,15 +196,32 @@ export default function SchedulingDetailPage() {
   }
 
   function addSlot() {
-    setEditSlots([...editSlots, { id: `new-${Date.now()}`, startAt: "", endAt: "", isNew: true }]);
+    setEditSlots([
+      ...editSlots,
+      { id: `new-${Date.now()}`, startAt: "", endAt: "", maxApplicants: 1, isNew: true },
+    ]);
   }
 
   function removeSlot(slotId: string) {
     setEditSlots(editSlots.filter((s) => s.id !== slotId));
   }
 
-  function updateSlot(slotId: string, field: "startAt" | "endAt", value: string) {
-    setEditSlots(editSlots.map((s) => (s.id === slotId ? { ...s, [field]: value } : s)));
+  function updateSlot(
+    slotId: string,
+    field: "startAt" | "endAt" | "maxApplicants",
+    value: string | number
+  ) {
+    setEditSlots(
+      editSlots.map((s) => {
+        if (s.id !== slotId) return s;
+        const updated = { ...s, [field]: value };
+        // 開始日時が設定され、終了日時が未設定なら30分後を自動入力
+        if (field === "startAt" && value && !s.endAt) {
+          updated.endAt = autoFillEndAt(value as string);
+        }
+        return updated;
+      })
+    );
   }
 
   async function handleSave() {
@@ -253,6 +279,7 @@ export default function SchedulingDetailPage() {
             start_at: new Date(s.startAt).toISOString(),
             end_at: new Date(s.endAt).toISOString(),
             is_selected: false,
+            max_applicants: s.maxApplicants,
           }))
         );
       logs.push({ change_type: "slot_added", summary: `候補日時を${newSlots.length}件追加` });
@@ -261,17 +288,19 @@ export default function SchedulingDetailPage() {
     let updatedCount = 0;
     for (const es of editSlots.filter((s) => !s.isNew)) {
       const original = slots.find((s) => s.id === es.id);
-      if (!original || original.application_id) continue;
+      if (!original) continue;
       const origStart = toLocalDatetime(original.start_at);
       const origEnd = toLocalDatetime(original.end_at);
-      if (es.startAt !== origStart || es.endAt !== origEnd) {
-        await getSupabase()
-          .from("interview_slots")
-          .update({
-            start_at: new Date(es.startAt).toISOString(),
-            end_at: new Date(es.endAt).toISOString(),
-          })
-          .eq("id", es.id);
+      const timeChanged =
+        !original.application_id && (es.startAt !== origStart || es.endAt !== origEnd);
+      const maxChanged = es.maxApplicants !== (original.max_applicants ?? 0);
+      if (timeChanged || maxChanged) {
+        const updates: Record<string, unknown> = { max_applicants: es.maxApplicants };
+        if (timeChanged) {
+          updates.start_at = new Date(es.startAt).toISOString();
+          updates.end_at = new Date(es.endAt).toISOString();
+        }
+        await getSupabase().from("interview_slots").update(updates).eq("id", es.id);
         updatedCount++;
       }
     }
@@ -462,6 +491,9 @@ export default function SchedulingDetailPage() {
                               <p className="text-xs text-muted-foreground">空き</p>
                             )}
                           </div>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            上限: {`${slot.max_applicants}名`}
+                          </span>
                           {!slot.application_id && interview.status !== "completed" && (
                             <Badge variant="outline" className="text-xs shrink-0">
                               空き枠
@@ -611,41 +643,68 @@ export default function SchedulingDetailPage() {
         {editTab === "slots" && (
           <div className="space-y-3">
             {editSlots.map((slot) => (
-              <div key={slot.id} className="flex items-center gap-2">
-                <Input
-                  type="datetime-local"
-                  value={slot.startAt}
-                  onChange={(e) => updateSlot(slot.id, "startAt", e.target.value)}
-                  className="flex-1"
-                  disabled={!!slot.applicationId}
-                />
-                <span className="text-muted-foreground shrink-0">〜</span>
-                <Input
-                  type="datetime-local"
-                  value={slot.endAt}
-                  onChange={(e) => updateSlot(slot.id, "endAt", e.target.value)}
-                  className="flex-1"
-                  disabled={!!slot.applicationId}
-                />
-                {slot.applicationId ? (
-                  <Badge variant="secondary" className="text-xs shrink-0">
-                    予約済
-                  </Badge>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeSlot(slot.id)}
-                    className="text-destructive hover:text-destructive shrink-0"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-                {slot.isNew && (
-                  <Badge variant="outline" className="text-xs shrink-0">
-                    新規
-                  </Badge>
-                )}
+              <div key={slot.id} className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <DatetimeInput
+                    value={slot.startAt}
+                    onChange={(v) => updateSlot(slot.id, "startAt", v)}
+                    className="flex-1"
+                    disabled={!!slot.applicationId}
+                  />
+                  <span className="text-muted-foreground shrink-0">〜</span>
+                  <DatetimeInput
+                    value={slot.endAt}
+                    onChange={(v) => updateSlot(slot.id, "endAt", v)}
+                    className="flex-1"
+                    disabled={!!slot.applicationId}
+                    minDateTime={slot.startAt}
+                  />
+                  {slot.applicationId ? (
+                    <Badge variant="secondary" className="text-xs shrink-0">
+                      予約済
+                    </Badge>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeSlot(slot.id)}
+                      className="text-destructive hover:text-destructive shrink-0"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {slot.isNew && (
+                    <Badge variant="outline" className="text-xs shrink-0">
+                      新規
+                    </Badge>
+                  )}
+                </div>
+                {slot.startAt &&
+                  slot.endAt &&
+                  (new Date(slot.endAt).getTime() - new Date(slot.startAt).getTime()) /
+                    (1000 * 60) >
+                    180 && (
+                    <p className="text-xs text-amber-600 pl-1">
+                      ⚠ 面接枠が3時間以上あります。設定に誤りがないか確認してください。
+                    </p>
+                  )}
+                <div className="flex items-center gap-2 pl-1">
+                  <span className="text-xs text-muted-foreground shrink-0">応募上限</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={slot.maxApplicants}
+                    onChange={(e) =>
+                      updateSlot(
+                        slot.id,
+                        "maxApplicants",
+                        Math.max(1, parseInt(e.target.value) || 1)
+                      )
+                    }
+                    className="w-20 h-7 text-xs"
+                  />
+                  <span className="text-xs text-muted-foreground">名</span>
+                </div>
               </div>
             ))}
             <Button variant="outline" onClick={addSlot} className="w-full">
