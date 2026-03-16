@@ -5,7 +5,7 @@ import '../../domain/repositories/forms_repository.dart';
 /// FormsRepository のモック実装
 class MockFormsRepository implements FormsRepository {
   @override
-  CustomForm? getForm(String formId) {
+  Future<CustomForm?> getForm(String formId) async {
     return _mockForms.where((f) => f.id == formId).firstOrNull;
   }
 }

@@ -116,7 +116,9 @@ export default function NewEvaluationCyclePage() {
                 ) : (
                   <Select value={templateId} onValueChange={(v) => v && setTemplateId(v)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="評価シートを選択" />
+                      <SelectValue placeholder="評価シートを選択">
+                        {(v: string) => templates?.find((t) => t.id === v)?.title ?? v}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {(templates ?? []).map((t) => (

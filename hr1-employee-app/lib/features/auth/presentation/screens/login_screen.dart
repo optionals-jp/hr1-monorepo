@@ -9,7 +9,7 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/validators.dart';
 import '../providers/auth_providers.dart';
 
-/// ログイン画面
+/// ログイン画面（OTP認証）
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -20,27 +20,61 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _otpController = TextEditingController();
   bool _isLoading = false;
-  bool _obscurePassword = true;
+  bool _otpSent = false;
 
   @override
   void dispose() {
     _emailController.dispose();
-    _passwordController.dispose();
+    _otpController.dispose();
     super.dispose();
   }
 
-  /// メール・パスワードでログイン
-  Future<void> _signIn() async {
+  Future<void> _sendOtp() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      final result = await ref.read(authRepositoryProvider).signInWithPassword(
+      final result = await ref.read(authRepositoryProvider).sendOtp(
             email: _emailController.text.trim(),
-            password: _passwordController.text,
+          );
+
+      if (!mounted) return;
+
+      switch (result) {
+        case Success():
+          setState(() => _otpSent = true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('認証コードを送信しました。メールをご確認ください。'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        case Failure(message: final message):
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: AppColors.error,
+            ),
+          );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _verifyOtp() async {
+    final otp = _otpController.text.trim();
+    if (otp.isEmpty) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await ref.read(authRepositoryProvider).verifyOtp(
+            email: _emailController.text.trim(),
+            token: otp,
           );
 
       if (!mounted) return;
@@ -58,10 +92,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _backToEmail() {
+    setState(() {
+      _otpSent = false;
+      _otpController.clear();
+    });
   }
 
   @override
@@ -69,13 +108,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: theme.colorScheme.surface,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenHorizontal,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Form(
               key: _formKey,
               child: Column(
@@ -85,93 +122,122 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   // ロゴ
                   Center(
                     child: Container(
-                      width: 64,
-                      height: 64,
+                      width: 56,
+                      height: 56,
                       decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(16),
+                        color: AppColors.brandPrimary,
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      child: Center(
+                      child: const Center(
                         child: Text(
                           'HR1',
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: 18,
                             fontWeight: FontWeight.w800,
-                            color: theme.colorScheme.surface,
+                            color: Colors.white,
+                            letterSpacing: -0.3,
                           ),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xl),
+                  const SizedBox(height: AppSpacing.xxl),
 
                   // タイトル
                   Center(
-                    child: Text('ログイン', style: AppTextStyles.heading2),
+                    child: Text(
+                      _otpSent ? '認証コードを入力' : 'ログイン',
+                      style: AppTextStyles.heading2,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Center(
                     child: Text(
-                      'HR1社員アカウントでログインしてください',
+                      _otpSent
+                          ? '${_emailController.text.trim()} に送信された\n6桁のコードを入力してください'
+                          : 'メールアドレスを入力してください',
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 36),
+
+                  if (!_otpSent) ...[
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: Validators.email,
+                      decoration: const InputDecoration(
+                        labelText: 'メールアドレス',
+                        prefixIcon: Icon(Icons.email_outlined, size: 20),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.xl),
 
-                  // メールアドレス入力
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    validator: Validators.email,
-                    decoration: const InputDecoration(
-                      labelText: 'メールアドレス',
-                      prefixIcon: Icon(Icons.email_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // パスワード入力
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    validator: Validators.password,
-                    decoration: InputDecoration(
-                      labelText: 'パスワード',
-                      prefixIcon: const Icon(Icons.lock_outlined),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // ログインボタン
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _signIn,
-                    child: _isLoading
-                        ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                theme.colorScheme.surface,
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _sendOtp,
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
                               ),
-                            ),
-                          )
-                        : const Text('ログイン'),
-                  ),
+                            )
+                          : const Text('認証コードを送信'),
+                    ),
+                  ] else ...[
+                    TextFormField(
+                      controller: _otpController,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        letterSpacing: 8,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLength: 6,
+                      decoration: const InputDecoration(
+                        labelText: '認証コード',
+                        prefixIcon: Icon(Icons.lock_outlined, size: 20),
+                        counterText: '',
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _verifyOtp,
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('ログイン'),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        TextButton(
+                          onPressed: _isLoading ? null : _backToEmail,
+                          child: const Text('メールアドレスを変更'),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        TextButton(
+                          onPressed: _isLoading ? null : _sendOtp,
+                          child: const Text('コードを再送信'),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

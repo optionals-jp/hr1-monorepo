@@ -14,8 +14,9 @@ class SupabaseMessagesRepository implements MessagesRepository {
     final response = await _client
         .from('message_threads')
         .select(
-            '*, applications(id, applicant_id, profiles:applicant_id(id, email, display_name), jobs(id, title))')
+            '*, participant:participant_id(id, email, display_name)')
         .eq('organization_id', organizationId)
+        .eq('participant_id', userId)
         .order('updated_at', ascending: false);
 
     final threads = (response as List)
@@ -83,8 +84,6 @@ class SupabaseMessagesRepository implements MessagesRepository {
         })
         .select('*, sender:sender_id(id, display_name, role)')
         .single();
-
-    // updated_at はDBトリガーで自動更新される
 
     return Message.fromJson(response);
   }

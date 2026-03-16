@@ -22,13 +22,29 @@ import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useCreateMessageThread } from "@/lib/use-create-message-thread";
-import { genderLabels } from "@/lib/constants";
+import {
+  genderLabels,
+  projectStatusLabels,
+  projectStatusColors,
+  teamMemberRoleLabels,
+} from "@/lib/constants";
 import type { Profile, Department } from "@/types/database";
+import { useRouter } from "next/navigation";
+import { FolderKanban, Users, LogIn, LogOut } from "lucide-react";
 
-import { format, differenceInYears, differenceInMonths } from "date-fns";
+import { format, differenceInYears, differenceInMonths, parseISO } from "date-fns";
+
+interface MembershipRecord {
+  id: string;
+  role: "leader" | "member";
+  joined_at: string;
+  left_at: string | null;
+  team: { id: string; name: string; project: { id: string; name: string; status: string } };
+}
 
 const pageTabs = [
   { value: "profile", label: "プロフィール" },
+  { value: "projects", label: "プロジェクト" },
   { value: "evaluations", label: "評価" },
 ];
 
@@ -57,11 +73,13 @@ function calcTenure(hireDate: string | null): string {
 
 export default function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const { organization } = useOrg();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [assignedDeptIds, setAssignedDeptIds] = useState<string[]>([]);
   const [allDepartments, setAllDepartments] = useState<Department[]>([]);
+  const [memberships, setMemberships] = useState<MembershipRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("profile");
 
@@ -126,6 +144,39 @@ export default function EmployeeDetailPage() {
       .eq("organization_id", organization.id)
       .order("name");
     setAllDepartments(allDepts ?? []);
+
+    // プロジェクトチームメンバーシップを取得
+    const { data: memberData } = await getSupabase()
+      .from("project_team_members")
+      .select("id, role, joined_at, left_at, project_teams(id, name, projects(id, name, status))")
+      .eq("user_id", id)
+      .order("joined_at", { ascending: false });
+
+    const records: MembershipRecord[] = (memberData ?? []).map((row) => {
+      const r = row as unknown as {
+        id: string;
+        role: "leader" | "member";
+        joined_at: string;
+        left_at: string | null;
+        project_teams: {
+          id: string;
+          name: string;
+          projects: { id: string; name: string; status: string };
+        };
+      };
+      return {
+        id: r.id,
+        role: r.role,
+        joined_at: r.joined_at,
+        left_at: r.left_at,
+        team: {
+          id: r.project_teams.id,
+          name: r.project_teams.name,
+          project: r.project_teams.projects,
+        },
+      };
+    });
+    setMemberships(records);
 
     setLoading(false);
   };
@@ -341,6 +392,150 @@ export default function EmployeeDetailPage() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </PageContent>
+      )}
+
+      {activeTab === "projects" && (
+        <PageContent>
+          <div className="max-w-2xl space-y-6">
+            {/* 現在のプロジェクト */}
+            {(() => {
+              const active = memberships.filter((m) => !m.left_at);
+              return active.length > 0 ? (
+                <section>
+                  <h2 className="text-sm font-semibold text-muted-foreground mb-3">
+                    現在のプロジェクト
+                  </h2>
+                  <div className="space-y-2">
+                    {active.map((m) => (
+                      <Card
+                        key={m.id}
+                        className="cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => router.push(`/projects/${m.team.project.id}`)}
+                      >
+                        <CardContent className="py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-700 shrink-0">
+                              <FolderKanban className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-sm truncate">
+                                  {m.team.project.name}
+                                </span>
+                                <Badge variant={projectStatusColors[m.team.project.status]}>
+                                  {projectStatusLabels[m.team.project.status]}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <Users className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">{m.team.name}</span>
+                                <Badge variant="outline" className="text-xs py-0 px-1.5">
+                                  {teamMemberRoleLabels[m.role]}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="text-xs text-muted-foreground shrink-0">
+                              {format(parseISO(m.joined_at), "yyyy/MM/dd")} 〜
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </section>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  現在参加中のプロジェクトはありません
+                </p>
+              );
+            })()}
+
+            {/* 在籍履歴タイムライン */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground mb-3">在籍履歴</h2>
+              {memberships.length === 0 ? (
+                <p className="text-sm text-muted-foreground">履歴がありません</p>
+              ) : (
+                <div className="relative">
+                  {/* タイムラインの縦線 */}
+                  <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-gray-200" />
+
+                  <div className="space-y-0">
+                    {(() => {
+                      // 全イベントを時系列に並べる（新しい順）
+                      const events: {
+                        type: "joined" | "left";
+                        date: string;
+                        membership: MembershipRecord;
+                      }[] = [];
+
+                      for (const m of memberships) {
+                        events.push({ type: "joined", date: m.joined_at, membership: m });
+                        if (m.left_at) {
+                          events.push({ type: "left", date: m.left_at, membership: m });
+                        }
+                      }
+
+                      events.sort(
+                        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+                      );
+
+                      return events.map((event) => (
+                        <div
+                          key={`${event.membership.id}-${event.type}`}
+                          className="relative flex items-start gap-4 py-3"
+                        >
+                          {/* ドット */}
+                          <div
+                            className={cn(
+                              "relative z-10 flex h-[31px] w-[31px] items-center justify-center rounded-full border-2 bg-white shrink-0",
+                              event.type === "joined" ? "border-green-400" : "border-gray-300"
+                            )}
+                          >
+                            {event.type === "joined" ? (
+                              <LogIn className="h-3.5 w-3.5 text-green-600" />
+                            ) : (
+                              <LogOut className="h-3.5 w-3.5 text-gray-400" />
+                            )}
+                          </div>
+
+                          {/* コンテンツ */}
+                          <div className="flex-1 min-w-0 pt-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span
+                                className="text-sm font-medium text-primary hover:underline cursor-pointer"
+                                onClick={() =>
+                                  router.push(`/projects/${event.membership.team.project.id}`)
+                                }
+                              >
+                                {event.membership.team.project.name}
+                              </span>
+                              <span className="text-muted-foreground text-sm">/</span>
+                              <span className="text-sm text-muted-foreground">
+                                {event.membership.team.name}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {event.type === "joined" ? (
+                                <span className="text-green-600">
+                                  {teamMemberRoleLabels[event.membership.role]}として参加
+                                </span>
+                              ) : (
+                                <span className="text-gray-500">チームから離脱</span>
+                              )}
+                              <span className="mx-1.5">·</span>
+                              {format(parseISO(event.date), "yyyy年MM月dd日")}
+                            </p>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              )}
+            </section>
           </div>
         </PageContent>
       )}

@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/repositories/supabase_messages_repository.dart';
 import '../../domain/entities/message_thread.dart';
+import '../../domain/repositories/messages_repository.dart';
 
 /// MessagesRepository プロバイダー
 final messagesRepositoryProvider =
-    Provider<SupabaseMessagesRepository>((ref) {
-  return SupabaseMessagesRepository(Supabase.instance.client);
+    Provider<MessagesRepository>((ref) {
+  return SupabaseMessagesRepository(ref.watch(supabaseClientProvider));
 });
 
 /// スレッド一覧

@@ -5,7 +5,7 @@ import '../../domain/repositories/company_repository.dart';
 /// CompanyRepository のモック実装
 class MockCompanyRepository implements CompanyRepository {
   @override
-  CompanyPageConfig? getPageConfig(String organizationId) {
+  Future<CompanyPageConfig?> getPageConfig(String organizationId) async {
     return _mockConfigs[organizationId];
   }
 }

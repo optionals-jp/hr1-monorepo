@@ -660,7 +660,13 @@ export default function EvaluationCycleDetailPage() {
                           <Label className="text-xs">対象者</Label>
                           <Select value={addTargetId} onValueChange={(v) => v && setAddTargetId(v)}>
                             <SelectTrigger>
-                              <SelectValue placeholder="選択" />
+                              <SelectValue placeholder="選択">
+                                {(v: string) =>
+                                  orgMembers.find((m) => m.id === v)?.display_name ??
+                                  orgMembers.find((m) => m.id === v)?.email ??
+                                  v
+                                }
+                              </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               {orgMembers.map((m) => (
@@ -678,7 +684,13 @@ export default function EvaluationCycleDetailPage() {
                             onValueChange={(v) => v && setAddEvaluatorId(v)}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="選択" />
+                              <SelectValue placeholder="選択">
+                                {(v: string) =>
+                                  orgMembers.find((m) => m.id === v)?.display_name ??
+                                  orgMembers.find((m) => m.id === v)?.email ??
+                                  v
+                                }
+                              </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               {orgMembers.map((m) => (

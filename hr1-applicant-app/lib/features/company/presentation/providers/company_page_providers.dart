@@ -1,12 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/providers/organization_context_provider.dart';
 import '../../data/repositories/supabase_company_repository.dart';
 import '../../domain/entities/company_page_config.dart';
+import '../../domain/repositories/company_repository.dart';
 
 /// CompanyRepository プロバイダー
-final companyRepositoryProvider = Provider<SupabaseCompanyRepository>((ref) {
-  return SupabaseCompanyRepository(Supabase.instance.client);
+final companyRepositoryProvider = Provider<CompanyRepository>((ref) {
+  return SupabaseCompanyRepository(ref.watch(supabaseClientProvider));
 });
 
 /// 現在の企業のページ設定を取得
@@ -17,5 +18,5 @@ final companyPageConfigProvider =
   final org = ref.watch(currentOrganizationProvider);
   if (org == null) return null;
   final repo = ref.watch(companyRepositoryProvider);
-  return repo.getPageConfigAsync(org.id);
+  return repo.getPageConfig(org.id);
 });

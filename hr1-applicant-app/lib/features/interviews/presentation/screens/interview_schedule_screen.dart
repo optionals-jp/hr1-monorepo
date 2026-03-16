@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../applications/presentation/providers/applications_providers.dart';
 import '../../domain/entities/interview.dart';
 import '../../domain/entities/interview_slot.dart';
@@ -141,7 +141,7 @@ class InterviewScheduleScreen extends ConsumerWidget {
             onPressed: () async {
               Navigator.pop(dialogContext);
 
-              final client = Supabase.instance.client;
+              final client = ref.read(supabaseClientProvider);
 
               // Supabase: スロットを予約（application_id をセットして二重予約を防止）
               await client
@@ -155,7 +155,7 @@ class InterviewScheduleScreen extends ConsumerWidget {
               // ステップを完了に更新し、次のステップを自動開始
               if (stepId != null) {
                 final repo = ref.read(applicationsRepositoryProvider);
-                await repo.completeStepAsync(stepId!, applicationId);
+                await repo.completeStep(stepId!, applicationId);
               }
 
               ref.invalidate(selectedSlotProvider(interviewId));

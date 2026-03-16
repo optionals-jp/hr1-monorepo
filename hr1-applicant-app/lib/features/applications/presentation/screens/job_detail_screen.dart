@@ -363,7 +363,7 @@ class _ApplyBar extends ConsumerWidget {
               if (org == null) return;
 
               final repo = ref.read(applicationsRepositoryProvider);
-              await repo.applyAsync(
+              await repo.apply(
                 jobId: job.id,
                 applicantId: ref.read(appUserProvider)!.id,
                 organizationId: org.id,

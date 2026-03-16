@@ -11,15 +11,24 @@ class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDatasource _datasource;
 
   @override
-  Future<Result<AppUser>> signInWithPassword({
+  Future<Result<void>> sendOtp({required String email}) async {
+    try {
+      await _datasource.signInWithOtp(email: email);
+      return Result.success(null);
+    } on AuthException catch (e) {
+      return Result.failure(e.message);
+    } on Exception catch (e) {
+      return Result.failure(e.toString());
+    }
+  }
+
+  @override
+  Future<Result<AppUser>> verifyOtp({
     required String email,
-    required String password,
+    required String token,
   }) async {
     try {
-      await _datasource.signInWithPassword(
-        email: email,
-        password: password,
-      );
+      await _datasource.verifyOtp(email: email, token: token);
       final user = await _datasource.fetchCurrentUserProfile();
       return Result.success(user);
     } on AuthException catch (e) {

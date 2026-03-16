@@ -13,10 +13,13 @@ import {
   Calendar,
   CalendarDays,
   Building2,
+  FolderKanban,
+  Clock,
   MessageSquare,
   Settings,
   ChevronDown,
   Star,
+  ListTodo,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,11 +47,14 @@ const navSections: NavSection[] = [
     items: [
       { href: "/employees", label: "社員一覧", icon: Users },
       { href: "/departments", label: "部署管理", icon: Building2 },
+      { href: "/projects", label: "プロジェクト", icon: FolderKanban },
+      { href: "/attendance", label: "勤怠管理", icon: Clock },
     ],
   },
   {
     label: "共通",
     items: [
+      { href: "/tasks", label: "タスク", icon: ListTodo },
       { href: "/messages", label: "メッセージ", icon: MessageSquare },
       { href: "/calendar", label: "カレンダー", icon: CalendarDays },
       { href: "/forms", label: "フォーム管理", icon: FileText },

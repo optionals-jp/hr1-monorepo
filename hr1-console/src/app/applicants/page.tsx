@@ -90,24 +90,20 @@ export default function ApplicantsPage() {
     setSaving(true);
 
     try {
-      const id = crypto.randomUUID();
-      const { error: profileError } = await getSupabase()
-        .from("profiles")
-        .insert({
-          id,
+      const { data, error } = await getSupabase().functions.invoke("create-user", {
+        body: {
           email: newEmail,
           display_name: newName || null,
           role: "applicant",
+          organization_id: organization.id,
           hiring_type: newHiringType || null,
-          graduation_year: newHiringType === "new_grad" && newGradYear ? Number(newGradYear) : null,
-        });
-      if (profileError) throw profileError;
-
-      const { error: orgError } = await getSupabase().from("user_organizations").insert({
-        user_id: id,
-        organization_id: organization.id,
+          graduation_year:
+            newHiringType === "new_grad" && newGradYear ? Number(newGradYear) : undefined,
+        },
       });
-      if (orgError) throw orgError;
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       setDialogOpen(false);
       mutate();

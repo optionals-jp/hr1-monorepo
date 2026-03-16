@@ -306,3 +306,146 @@ export interface Message {
   created_at: string;
   sender?: Profile;
 }
+
+export interface Project {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  status: "active" | "completed" | "archived";
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
+}
+
+export interface ProjectTeam {
+  id: string;
+  project_id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+}
+
+export interface ProjectTeamMember {
+  id: string;
+  team_id: string;
+  user_id: string;
+  role: "leader" | "member";
+  joined_at: string;
+  left_at: string | null;
+  created_at: string;
+  profiles?: Profile;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  date: string;
+  clock_in: string | null;
+  clock_out: string | null;
+  break_minutes: number;
+  status:
+    | "present"
+    | "absent"
+    | "late"
+    | "early_leave"
+    | "paid_leave"
+    | "half_day_am"
+    | "half_day_pm"
+    | "holiday"
+    | "sick_leave"
+    | "special_leave";
+  note: string | null;
+  overtime_minutes: number;
+  late_night_minutes: number;
+  created_at: string;
+  updated_at: string;
+  profiles?: Profile;
+}
+
+export interface AttendancePunch {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  record_id: string | null;
+  punch_type: "clock_in" | "clock_out" | "break_start" | "break_end";
+  punched_at: string;
+  note: string | null;
+}
+
+export interface AttendanceSettingsRow {
+  id: string;
+  organization_id: string;
+  work_start_time: string;
+  work_end_time: string;
+  break_minutes: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttendanceApprover {
+  id: string;
+  organization_id: string;
+  user_id: string | null;
+  department_id: string | null;
+  project_id: string | null;
+  approver_id: string;
+  created_at: string;
+  profiles?: Profile;
+  approver?: Profile;
+  departments?: Department;
+  projects?: Project;
+}
+
+export interface AttendanceCorrection {
+  id: string;
+  organization_id: string;
+  record_id: string;
+  user_id: string;
+  original_clock_in: string | null;
+  original_clock_out: string | null;
+  requested_clock_in: string | null;
+  requested_clock_out: string | null;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_comment: string | null;
+  created_at: string;
+  updated_at: string;
+  profiles?: Profile;
+  reviewer?: Profile;
+  attendance_records?: AttendanceRecord;
+}
+
+export interface Task {
+  id: string;
+  organization_id: string;
+  title: string;
+  description: string | null;
+  status: "open" | "in_progress" | "completed" | "cancelled";
+  priority: "low" | "medium" | "high" | "urgent";
+  scope: "personal" | "organization" | "project" | "team";
+  project_id: string | null;
+  team_id: string | null;
+  due_date: string | null;
+  assign_to_all: boolean;
+  created_by: string;
+  source: "employee" | "console";
+  created_at: string;
+  updated_at: string;
+  projects?: Project;
+  project_teams?: ProjectTeam;
+  creator?: Profile;
+}
+
+export interface TaskAssignee {
+  id: string;
+  task_id: string;
+  user_id: string;
+  status: "pending" | "in_progress" | "completed";
+  completed_at: string | null;
+  created_at: string;
+  profiles?: Profile;
+}

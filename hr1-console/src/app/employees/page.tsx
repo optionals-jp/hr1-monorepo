@@ -146,30 +146,19 @@ export default function EmployeesPage() {
     setSaving(true);
 
     try {
-      const id = crypto.randomUUID();
-      const { error: profileError } = await getSupabase()
-        .from("profiles")
-        .insert({
-          id,
+      const { data, error } = await getSupabase().functions.invoke("create-user", {
+        body: {
           email: newEmail,
           display_name: newName || null,
           role: "employee",
+          organization_id: organization.id,
           position: newPosition || null,
-        });
-      if (profileError) throw profileError;
-
-      const { error: orgError } = await getSupabase().from("user_organizations").insert({
-        user_id: id,
-        organization_id: organization.id,
+          department_ids: selectedDeptIds.length > 0 ? selectedDeptIds : undefined,
+        },
       });
-      if (orgError) throw orgError;
 
-      if (selectedDeptIds.length > 0) {
-        const { error: deptError } = await getSupabase()
-          .from("employee_departments")
-          .insert(selectedDeptIds.map((deptId) => ({ user_id: id, department_id: deptId })));
-        if (deptError) throw deptError;
-      }
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       setDialogOpen(false);
       mutate();

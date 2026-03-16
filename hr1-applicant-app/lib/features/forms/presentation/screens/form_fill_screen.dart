@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../applications/presentation/providers/applications_providers.dart';
 import '../../domain/entities/form_field_item.dart';
 import '../providers/forms_providers.dart';
@@ -129,8 +129,8 @@ class _FormFillScreenState extends ConsumerState<FormFillScreen> {
                 // 回答をDBに保存
                 final answers =
                     screenRef.read(formAnswersProvider(widget.formId));
-                final userId =
-                    Supabase.instance.client.auth.currentUser?.id;
+                final client = screenRef.read(supabaseClientProvider);
+                final userId = client.auth.currentUser?.id;
                 if (userId != null && answers.isNotEmpty) {
                   final now = DateTime.now().toIso8601String();
                   final rows = answers.entries
@@ -149,7 +149,7 @@ class _FormFillScreenState extends ConsumerState<FormFillScreen> {
                         };
                       })
                       .toList();
-                  await Supabase.instance.client
+                  await client
                       .from('form_responses')
                       .insert(rows);
                 }
@@ -157,7 +157,7 @@ class _FormFillScreenState extends ConsumerState<FormFillScreen> {
                 // ステップを完了に更新し、次のステップを自動開始
                 if (widget.stepId != null) {
                   final repo = screenRef.read(applicationsRepositoryProvider);
-                  await repo.completeStepAsync(
+                  await repo.completeStep(
                       widget.stepId!, widget.applicationId);
                 }
 

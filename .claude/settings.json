@@ -34,10 +34,16 @@
       "Bash(for f:*)",
       "Bash(do sed:*)",
       "Bash(echo \"Updated: $f\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(git diff:*)",
+      "Bash(grep -r \"signUp\\\\|register\\\\|password\\\\|forgot\" /Users/takama/hr1/hr1-applicant-app/lib/features/auth --include=*.dart)",
+      "mcp__claude_ai_Supabase__list_edge_functions",
+      "Bash(supabase init:*)",
+      "Bash(supabase link:*)",
+      "Bash(find /Users/takama/hr1 -type f -name *.sql)"
     ],
     "additionalDirectories": [
-      "/Users/takama/hr1/hr1-console/src/app/evaluations/cycles"
+      "/Users/takama/hr1/hr1-console/src/app/attendance"
     ]
   }
 }

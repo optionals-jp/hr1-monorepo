@@ -5,7 +5,7 @@ import '../../domain/repositories/interviews_repository.dart';
 /// InterviewsRepository のモック実装
 class MockInterviewsRepository implements InterviewsRepository {
   @override
-  Interview? getInterview(String interviewId) {
+  Future<Interview?> getInterview(String interviewId) async {
     return _mockInterviews.where((i) => i.id == interviewId).firstOrNull;
   }
 }

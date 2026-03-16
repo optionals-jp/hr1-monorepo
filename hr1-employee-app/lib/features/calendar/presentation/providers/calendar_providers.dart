@@ -1,0 +1,66 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/repositories/supabase_calendar_repository.dart';
+import '../../domain/entities/calendar_event.dart';
+import '../../domain/repositories/calendar_repository.dart';
+
+/// カレンダーリポジトリプロバイダー
+final calendarRepositoryProvider = Provider<CalendarRepository>((ref) {
+  return SupabaseCalendarRepository(Supabase.instance.client);
+});
+
+/// 選択中の日付
+final selectedDateProvider = StateProvider<DateTime>((ref) {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day);
+});
+
+/// フォーカス中の月
+final focusedMonthProvider = StateProvider<DateTime>((ref) {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month);
+});
+
+/// カレンダービューモード
+enum CalendarViewMode { agenda, day, threeDay, month }
+
+final calendarViewModeProvider =
+    StateProvider<CalendarViewMode>((ref) => CalendarViewMode.agenda);
+
+/// 月のイベント取得
+final monthEventsProvider =
+    FutureProvider.family<List<CalendarEvent>, DateTime>((ref, month) async {
+  final repo = ref.watch(calendarRepositoryProvider);
+  final start = DateTime(month.year, month.month, 1);
+  final end = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
+  return repo.getEvents(start: start, end: end);
+});
+
+/// 選択日のイベント取得
+final selectedDateEventsProvider =
+    FutureProvider<List<CalendarEvent>>((ref) async {
+  final repo = ref.watch(calendarRepositoryProvider);
+  final date = ref.watch(selectedDateProvider);
+  final start = DateTime(date.year, date.month, date.day);
+  final end = DateTime(date.year, date.month, date.day, 23, 59, 59);
+  return repo.getEvents(start: start, end: end);
+});
+
+/// アジェンダビュー用のイベント（選択日から30日分）
+final agendaEventsProvider =
+    FutureProvider<List<CalendarEvent>>((ref) async {
+  final repo = ref.watch(calendarRepositoryProvider);
+  final date = ref.watch(selectedDateProvider);
+  final start = DateTime(date.year, date.month, date.day);
+  final end = start.add(const Duration(days: 30));
+  return repo.getEvents(start: start, end: end);
+});
+
+/// 月のイベント日付セット（カレンダードット表示用）
+final eventDatesProvider =
+    FutureProvider.family<Set<DateTime>, DateTime>((ref, month) async {
+  final repo = ref.watch(calendarRepositoryProvider);
+  final start = DateTime(month.year, month.month, 1);
+  final end = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
+  return repo.getEventDates(start: start, end: end);
+});
