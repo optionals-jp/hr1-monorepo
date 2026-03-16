@@ -407,6 +407,7 @@ export interface AttendanceCorrection {
   original_clock_out: string | null;
   requested_clock_in: string | null;
   requested_clock_out: string | null;
+  punch_corrections: PunchCorrection[] | null;
   reason: string;
   status: "pending" | "approved" | "rejected";
   reviewed_by: string | null;
@@ -417,6 +418,13 @@ export interface AttendanceCorrection {
   profiles?: Profile;
   reviewer?: Profile;
   attendance_records?: AttendanceRecord;
+}
+
+export interface PunchCorrection {
+  punch_id: string;
+  punch_type: string;
+  original_punched_at: string;
+  requested_punched_at: string;
 }
 
 export interface Task {

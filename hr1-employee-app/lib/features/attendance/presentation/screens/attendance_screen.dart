@@ -274,23 +274,35 @@ class _PunchButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final iconColor = enabled ? Colors.white : theme.colorScheme.onSurface.withValues(alpha: 0.3);
 
     return SizedBox(
       height: 56,
       child: Material(
-        color: enabled ? color : Colors.transparent,
+        color: enabled ? color : theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: enabled ? onPressed : null,
           borderRadius: BorderRadius.circular(14),
           child: Container(
-            decoration: enabled
-                ? null
-                : BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.12), width: 1),
-                  ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: enabled
+                  ? null
+                  : Border.all(
+                      color: isDark
+                          ? theme.colorScheme.outline.withValues(alpha: 0.35)
+                          : theme.colorScheme.outlineVariant,
+                    ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.06),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -325,18 +337,41 @@ class _SummaryRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: isDark ? Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2), width: 0.5) : null,
-        boxShadow: isDark
-            ? null
-            : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 3, offset: const Offset(0, 1))],
+        border: Border.all(
+          color: isDark
+              ? theme.colorScheme.outline.withValues(alpha: 0.35)
+              : theme.colorScheme.outlineVariant,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.06),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          _KVItem(label: '勤務', value: record.workDurationFormatted),
+          _KVItem(
+            label: '勤務',
+            value: record.workDurationFormatted,
+            iconAsset: AppIcons.briefcase,
+            iconColor: AppColors.success,
+          ),
           _Divider(),
-          _KVItem(label: '休憩', value: _fmtMin(record.breakMinutes)),
+          _KVItem(
+            label: '休憩',
+            value: _fmtMin(record.breakMinutes),
+            iconAsset: AppIcons.coffee,
+            iconColor: AppColors.warning,
+          ),
           _Divider(),
-          _KVItem(label: 'ステータス', value: AttendanceStatus.label(record.status)),
+          _KVItem(
+            label: '残業',
+            value: _fmtMin(record.overtimeMinutes),
+            iconAsset: AppIcons.clock,
+            iconColor: AppColors.error,
+          ),
         ],
       ),
     );
@@ -349,9 +384,16 @@ class _SummaryRow extends StatelessWidget {
 }
 
 class _KVItem extends StatelessWidget {
-  const _KVItem({required this.label, required this.value});
+  const _KVItem({
+    required this.label,
+    required this.value,
+    required this.iconAsset,
+    required this.iconColor,
+  });
   final String label;
   final String value;
+  final String iconAsset;
+  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -359,6 +401,8 @@ class _KVItem extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
+          AppIcons.svg(iconAsset, size: 18, color: iconColor),
+          const SizedBox(height: 6),
           Text(value, style: AppTextStyles.semiBold16),
           const SizedBox(height: 2),
           Text(

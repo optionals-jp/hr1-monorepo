@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../domain/entities/attendance_record.dart';
@@ -20,9 +21,72 @@ class CorrectionRequestScreen extends ConsumerStatefulWidget {
 
 class _CorrectionRequestScreenState
     extends ConsumerState<CorrectionRequestScreen> {
-  TimeOfDay? _requestedClockIn;
-  TimeOfDay? _requestedClockOut;
+  /// 打刻IDごとの修正後時刻を保持
+  final Map<String, TimeOfDay> _correctedTimes = {};
   final _reasonController = TextEditingController();
+
+  /// 打刻の時刻を取得（修正後があればそちら、なければ元の時刻）
+  DateTime _resolvedPunchTime(AttendancePunch punch) {
+    final corrected = _correctedTimes[punch.id];
+    if (corrected != null) {
+      final local = punch.punchedAt.toLocal();
+      return DateTime(
+          local.year, local.month, local.day, corrected.hour, corrected.minute);
+    }
+    return punch.punchedAt.toLocal();
+  }
+
+  /// 打刻リストから勤務/休憩/残業（分）を計算
+  ({int work, int breakMin, int overtime}) _calcDurations(
+    List<AttendancePunch> punches,
+    AttendanceSettings settings,
+  ) {
+    DateTime? clockIn;
+    DateTime? clockOut;
+    int breakMinutes = 0;
+
+    // clock_in / clock_out を取得
+    for (final p in punches) {
+      final t = _resolvedPunchTime(p);
+      if (p.punchType == PunchType.clockIn) clockIn = t;
+      if (p.punchType == PunchType.clockOut) clockOut = t;
+    }
+
+    // 休憩時間を計算（break_start〜break_end のペア）
+    DateTime? breakStart;
+    for (final p in punches) {
+      final t = _resolvedPunchTime(p);
+      if (p.punchType == PunchType.breakStart) {
+        breakStart = t;
+      } else if (p.punchType == PunchType.breakEnd && breakStart != null) {
+        breakMinutes += t.difference(breakStart).inMinutes;
+        breakStart = null;
+      }
+    }
+
+    if (clockIn == null || clockOut == null) {
+      return (work: 0, breakMin: breakMinutes, overtime: 0);
+    }
+
+    final totalMinutes = clockOut.difference(clockIn).inMinutes;
+    final workMinutes = totalMinutes - breakMinutes;
+
+    // 残業計算
+    final startParts = settings.workStartTime.split(':');
+    final endParts = settings.workEndTime.split(':');
+    final workStart = DateTime(clockIn.year, clockIn.month, clockIn.day,
+        int.parse(startParts[0]), int.parse(startParts[1]));
+    final workEnd = DateTime(clockIn.year, clockIn.month, clockIn.day,
+        int.parse(endParts[0]), int.parse(endParts[1]));
+    final scheduledMinutes = workEnd.difference(workStart).inMinutes;
+    final overtime = workMinutes - scheduledMinutes;
+
+    return (
+      work: workMinutes > 0 ? workMinutes : 0,
+      breakMin: breakMinutes,
+      overtime: overtime > 0 ? overtime : 0,
+    );
+  }
 
   @override
   void dispose() {
@@ -30,41 +94,34 @@ class _CorrectionRequestScreenState
     super.dispose();
   }
 
-  Future<void> _pickTime(bool isClockIn) async {
-    final now = TimeOfDay.now();
+  Future<void> _pickTime(AttendancePunch punch) async {
+    final current = _correctedTimes[punch.id] ??
+        TimeOfDay.fromDateTime(punch.punchedAt.toLocal());
     final picked = await showTimePicker(
       context: context,
-      initialTime: isClockIn
-          ? (_requestedClockIn ?? now)
-          : (_requestedClockOut ?? now),
+      initialTime: current,
     );
     if (picked != null) {
-      setState(() {
-        if (isClockIn) {
-          _requestedClockIn = picked;
-        } else {
-          _requestedClockOut = picked;
-        }
-      });
+      setState(() => _correctedTimes[punch.id] = picked);
     }
   }
 
-  String _formatTimeOfDay(TimeOfDay? t) {
-    if (t == null) return '変更なし';
-    return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+  void _clearCorrection(String punchId) {
+    setState(() => _correctedTimes.remove(punchId));
   }
 
-  DateTime? _timeOfDayToDateTime(TimeOfDay? t) {
-    if (t == null) return null;
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day, t.hour, t.minute);
+  /// 修正された打刻の DateTime を構築（元の日付 + 新しい時刻）
+  DateTime _buildCorrectedDateTime(AttendancePunch punch) {
+    final time = _correctedTimes[punch.id]!;
+    final local = punch.punchedAt.toLocal();
+    return DateTime(local.year, local.month, local.day, time.hour, time.minute);
   }
 
-  Future<void> _submit(AttendanceRecord record) async {
-    if (_requestedClockIn == null && _requestedClockOut == null) {
+  Future<void> _submit(AttendanceRecord record, List<AttendancePunch> punches) async {
+    if (_correctedTimes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('出勤時刻または退勤時刻を変更してください'),
+          content: Text('修正する打刻時刻を選択してください'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -80,30 +137,44 @@ class _CorrectionRequestScreenState
       return;
     }
 
-    final resolvedClockIn =
-        _timeOfDayToDateTime(_requestedClockIn)?.toIso8601String() ??
-            record.clockIn?.toIso8601String();
-    final resolvedClockOut =
-        _timeOfDayToDateTime(_requestedClockOut)?.toIso8601String() ??
-            record.clockOut?.toIso8601String();
+    // 打刻単位の修正データを構築
+    final punchCorrections = <Map<String, dynamic>>[];
+    String? requestedClockIn;
+    String? requestedClockOut;
 
-    if (resolvedClockIn == null || resolvedClockOut == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('出勤・退勤の記録がないため修正依頼を送信できません'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
+    for (final punch in punches) {
+      if (!_correctedTimes.containsKey(punch.id)) continue;
+
+      final correctedDt = _buildCorrectedDateTime(punch);
+      punchCorrections.add({
+        'punch_id': punch.id,
+        'punch_type': punch.punchType,
+        'original_punched_at': punch.punchedAt.toUtc().toIso8601String(),
+        'requested_punched_at': correctedDt.toUtc().toIso8601String(),
+      });
+
+      // clock_in / clock_out はレコードレベルにも反映
+      if (punch.punchType == PunchType.clockIn) {
+        requestedClockIn = correctedDt.toUtc().toIso8601String();
+      } else if (punch.punchType == PunchType.clockOut) {
+        requestedClockOut = correctedDt.toUtc().toIso8601String();
+      }
     }
+
+    // 修正なしの clock_in/out は元の値をそのまま使用
+    final resolvedClockIn =
+        requestedClockIn ?? record.clockIn?.toIso8601String();
+    final resolvedClockOut =
+        requestedClockOut ?? record.clockOut?.toIso8601String();
 
     try {
       await ref.read(correctionControllerProvider.notifier).requestCorrection(
         recordId: record.id,
         originalClockIn: record.clockIn?.toIso8601String(),
         originalClockOut: record.clockOut?.toIso8601String(),
-        requestedClockIn: resolvedClockIn,
-        requestedClockOut: resolvedClockOut,
+        requestedClockIn: resolvedClockIn ?? '',
+        requestedClockOut: resolvedClockOut ?? '',
+        punchCorrections: punchCorrections,
         reason: _reasonController.text.trim(),
       );
 
@@ -131,6 +202,7 @@ class _CorrectionRequestScreenState
   @override
   Widget build(BuildContext context) {
     final todayRecord = ref.watch(todayRecordProvider);
+    final todayPunches = ref.watch(todayPunchesProvider);
     final isSubmitting = ref.watch(correctionControllerProvider);
     final theme = Theme.of(context);
 
@@ -146,43 +218,12 @@ class _CorrectionRequestScreenState
       body: todayRecord.when(
         data: (record) {
           if (record == null) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: theme.scaffoldBackgroundColor,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.info_outline_rounded,
-                        size: 28,
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.6),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      '今日の勤怠記録がありません',
-                      style: AppTextStyles.semiBold16,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      '出勤打刻後に修正依頼を送信できます',
-                      style: AppTextStyles.regular12.copyWith(
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
+            return _buildEmptyState(theme);
+          }
+
+          final punches = todayPunches.valueOrNull ?? [];
+          if (punches.isEmpty) {
+            return _buildEmptyState(theme);
           }
 
           return SingleChildScrollView(
@@ -192,50 +233,23 @@ class _CorrectionRequestScreenState
               children: [
                 const SizedBox(height: AppSpacing.sm),
 
-                // 現在の記録
+                // 時間サマリー
+                _buildDurationSummary(theme, punches),
+                const SizedBox(height: AppSpacing.xxl),
+
+                // 打刻履歴と修正
                 Text(
-                  '現在の記録',
+                  '打刻時刻の修正',
                   style: AppTextStyles.medium12.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     letterSpacing: 0.3,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _InfoTile(
-                        label: '出勤時刻',
-                        value: record.clockIn != null
-                            ? DateFormat('HH:mm')
-                                .format(record.clockIn!.toLocal())
-                            : '-',
-                        icon: Icons.login_rounded,
-                        color: AppColors.success,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: _InfoTile(
-                        label: '退勤時刻',
-                        value: record.clockOut != null
-                            ? DateFormat('HH:mm')
-                                .format(record.clockOut!.toLocal())
-                            : '-',
-                        icon: Icons.logout_rounded,
-                        color: AppColors.error,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xxl),
-
-                // 修正内容
+                const SizedBox(height: AppSpacing.xs),
                 Text(
-                  '修正内容',
-                  style: AppTextStyles.medium12.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    letterSpacing: 0.3,
+                  '修正が必要な打刻の「変更」ボタンを押してください',
+                  style: AppTextStyles.regular11.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -244,35 +258,21 @@ class _CorrectionRequestScreenState
                   padding: EdgeInsets.zero,
                   child: Column(
                     children: [
-                      _CorrectionRow(
-                        icon: Icons.login_rounded,
-                        iconColor: AppColors.success,
-                        title: '出勤時刻',
-                        value: _requestedClockIn != null
-                            ? _formatTimeOfDay(_requestedClockIn)
-                            : '変更なし',
-                        isChanged: _requestedClockIn != null,
-                        onEdit: () => _pickTime(true),
-                        onClear: _requestedClockIn != null
-                            ? () => setState(() => _requestedClockIn = null)
-                            : null,
-                      ),
-                      Divider(
-                          height: 0.5,
-                          color: theme.colorScheme.outlineVariant),
-                      _CorrectionRow(
-                        icon: Icons.logout_rounded,
-                        iconColor: AppColors.error,
-                        title: '退勤時刻',
-                        value: _requestedClockOut != null
-                            ? _formatTimeOfDay(_requestedClockOut)
-                            : '変更なし',
-                        isChanged: _requestedClockOut != null,
-                        onEdit: () => _pickTime(false),
-                        onClear: _requestedClockOut != null
-                            ? () => setState(() => _requestedClockOut = null)
-                            : null,
-                      ),
+                      for (var i = 0; i < punches.length; i++) ...[
+                        if (i > 0)
+                          Divider(
+                            height: 0.5,
+                            color: theme.colorScheme.outlineVariant,
+                          ),
+                        _PunchCorrectionRow(
+                          punch: punches[i],
+                          correctedTime: _correctedTimes[punches[i].id],
+                          onEdit: () => _pickTime(punches[i]),
+                          onClear: _correctedTimes.containsKey(punches[i].id)
+                              ? () => _clearCorrection(punches[i].id)
+                              : null,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -302,7 +302,8 @@ class _CorrectionRequestScreenState
 
                 // 送信ボタン
                 ElevatedButton(
-                  onPressed: isSubmitting ? null : () => _submit(record),
+                  onPressed:
+                      isSubmitting ? null : () => _submit(record, punches),
                   child: isSubmitting
                       ? const SizedBox(
                           width: 20,
@@ -318,7 +319,8 @@ class _CorrectionRequestScreenState
                 Text(
                   '承認者が修正を承認すると、勤怠記録が更新されます。',
                   style: AppTextStyles.regular11.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                    color:
+                        theme.colorScheme.onSurface.withValues(alpha: 0.45),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -329,6 +331,125 @@ class _CorrectionRequestScreenState
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('エラー: $e')),
+      ),
+    );
+  }
+
+  Widget _buildDurationSummary(ThemeData theme, List<AttendancePunch> punches) {
+    final settings =
+        ref.watch(attendanceSettingsProvider).valueOrNull ??
+        const AttendanceSettings();
+    final durations = _calcDurations(punches, settings);
+    final isDark = theme.brightness == Brightness.dark;
+
+    String fmtMin(int m) {
+      if (m <= 0) return '-';
+      return '${m ~/ 60}:${(m % 60).toString().padLeft(2, '0')}';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '時間サマリー${_correctedTimes.isNotEmpty ? '（修正後）' : ''}',
+          style: AppTextStyles.medium12.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+            border: Border.all(
+              color: isDark
+                  ? theme.colorScheme.outline.withValues(alpha: 0.35)
+                  : theme.colorScheme.outlineVariant,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color:
+                    Colors.black.withValues(alpha: isDark ? 0.15 : 0.06),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              _SummaryItem(
+                label: '勤務',
+                value: fmtMin(durations.work),
+                iconAsset: AppIcons.briefcase,
+                iconColor: AppColors.success,
+              ),
+              Container(
+                width: 0.5,
+                height: 28,
+                color: theme.colorScheme.outlineVariant,
+              ),
+              _SummaryItem(
+                label: '休憩',
+                value: fmtMin(durations.breakMin),
+                iconAsset: AppIcons.coffee,
+                iconColor: AppColors.warning,
+              ),
+              Container(
+                width: 0.5,
+                height: 28,
+                color: theme.colorScheme.outlineVariant,
+              ),
+              _SummaryItem(
+                label: '残業',
+                value: fmtMin(durations.overtime),
+                iconAsset: AppIcons.clock,
+                iconColor: AppColors.error,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState(ThemeData theme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.info_outline_rounded,
+                size: 28,
+                color:
+                    theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              '今日の打刻記録がありません',
+              style: AppTextStyles.semiBold16,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              '出勤打刻後に修正依頼を送信できます',
+              style: AppTextStyles.regular12.copyWith(
+                color:
+                    theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -362,93 +483,42 @@ class _CorrectionRequestScreenState
   }
 }
 
-class _InfoTile extends StatelessWidget {
-  const _InfoTile({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: isDark
-            ? Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                width: 0.5,
-              )
-            : null,
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(value, style: AppTextStyles.semiBold20),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: AppTextStyles.regular11.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CorrectionRow extends StatelessWidget {
-  const _CorrectionRow({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.value,
-    required this.isChanged,
+/// 打刻修正行
+class _PunchCorrectionRow extends StatelessWidget {
+  const _PunchCorrectionRow({
+    required this.punch,
+    required this.correctedTime,
     required this.onEdit,
     this.onClear,
   });
 
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String value;
-  final bool isChanged;
+  final AttendancePunch punch;
+  final TimeOfDay? correctedTime;
   final VoidCallback onEdit;
   final VoidCallback? onClear;
+
+  bool get isChanged => correctedTime != null;
+
+  (String, Color) get _iconInfo {
+    return switch (punch.punchType) {
+      PunchType.clockIn => (AppIcons.login, AppColors.success),
+      PunchType.clockOut => (AppIcons.logout, AppColors.error),
+      PunchType.breakStart => (AppIcons.coffee, AppColors.warning),
+      PunchType.breakEnd => (AppIcons.pause, AppColors.brandLight),
+      _ => (AppIcons.clock, AppColors.brandPrimary),
+    };
+  }
+
+  String get _correctedTimeText {
+    if (correctedTime == null) return '';
+    return '${correctedTime!.hour.toString().padLeft(2, '0')}:${correctedTime!.minute.toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final originalTime = DateFormat('HH:mm').format(punch.punchedAt.toLocal());
+    final label = PunchType.label(punch.punchType);
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -457,31 +527,58 @@ class _CorrectionRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: iconColor, size: 16),
+          Builder(builder: (_) {
+            final (iconAsset, iconColor) = _iconInfo;
+            return Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: iconColor.withValues(alpha: 0.25), width: 1),
+              ),
+              child: Center(child: AppIcons.svg(iconAsset, size: 16, color: iconColor)),
+            );
+          },
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTextStyles.regular12),
-                Text(
-                  value,
-                  style: isChanged
-                      ? AppTextStyles.semiBold16
-                          .copyWith(color: AppColors.brandPrimary)
-                      : AppTextStyles.regular12.copyWith(
+                Text(label, style: AppTextStyles.regular12),
+                if (isChanged)
+                  Row(
+                    children: [
+                      Text(
+                        originalTime,
+                        style: AppTextStyles.regular12.copyWith(
                           color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.45),
+                              .withValues(alpha: 0.4),
+                          decoration: TextDecoration.lineThrough,
                         ),
-                ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 14,
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.4),
+                        ),
+                      ),
+                      Text(
+                        _correctedTimeText,
+                        style: AppTextStyles.semiBold16
+                            .copyWith(color: AppColors.brandPrimary),
+                      ),
+                    ],
+                  )
+                else
+                  Text(
+                    originalTime,
+                    style: AppTextStyles.semiBold16,
+                  ),
               ],
             ),
           ),
@@ -495,6 +592,42 @@ class _CorrectionRow extends StatelessWidget {
               onPressed: onClear,
               visualDensity: VisualDensity.compact,
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 時間サマリーアイテム
+class _SummaryItem extends StatelessWidget {
+  const _SummaryItem({
+    required this.label,
+    required this.value,
+    required this.iconAsset,
+    required this.iconColor,
+  });
+
+  final String label;
+  final String value;
+  final String iconAsset;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Expanded(
+      child: Column(
+        children: [
+          AppIcons.svg(iconAsset, size: 18, color: iconColor),
+          const SizedBox(height: 6),
+          Text(value, style: AppTextStyles.semiBold16),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: AppTextStyles.medium12.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+            ),
+          ),
         ],
       ),
     );

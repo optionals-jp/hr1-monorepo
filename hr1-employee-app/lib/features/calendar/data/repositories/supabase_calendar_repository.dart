@@ -29,8 +29,8 @@ class SupabaseCalendarRepository implements CalendarRepository {
         .from('calendar_events')
         .select()
         .eq('user_id', _userId)
-        .gte('start_at', start.toIso8601String())
-        .lte('start_at', end.toIso8601String())
+        .gte('start_at', start.toUtc().toIso8601String())
+        .lte('start_at', end.toUtc().toIso8601String())
         .order('start_at');
 
     return response.map((e) => CalendarEvent.fromJson(e)).toList();
@@ -97,8 +97,8 @@ class SupabaseCalendarRepository implements CalendarRepository {
         .from('calendar_events')
         .select('start_at')
         .eq('user_id', _userId)
-        .gte('start_at', start.toIso8601String())
-        .lte('start_at', end.toIso8601String());
+        .gte('start_at', start.toUtc().toIso8601String())
+        .lte('start_at', end.toUtc().toIso8601String());
 
     final dates = <DateTime>{};
     for (final row in response) {

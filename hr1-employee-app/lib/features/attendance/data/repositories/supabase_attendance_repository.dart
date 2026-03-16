@@ -365,12 +365,17 @@ class SupabaseAttendanceRepository {
   }
 
   /// 修正依頼を送信
+  ///
+  /// [punchCorrections] は打刻単位の修正リスト。各要素:
+  /// `{ "punch_id": "...", "punch_type": "clock_in",
+  ///    "original_punched_at": "...", "requested_punched_at": "..." }`
   Future<void> requestCorrection({
     required String recordId,
     required String? originalClockIn,
     required String? originalClockOut,
     required String? requestedClockIn,
     required String? requestedClockOut,
+    List<Map<String, dynamic>>? punchCorrections,
     required String reason,
   }) async {
     final orgId = await _getOrganizationId();
@@ -383,6 +388,7 @@ class SupabaseAttendanceRepository {
       'original_clock_out': originalClockOut,
       'requested_clock_in': requestedClockIn,
       'requested_clock_out': requestedClockOut,
+      'punch_corrections': punchCorrections,
       'reason': reason,
       'status': 'pending',
     });

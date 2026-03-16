@@ -22,37 +22,17 @@ final focusedMonthProvider = StateProvider<DateTime>((ref) {
 });
 
 /// カレンダービューモード
-enum CalendarViewMode { agenda, day, threeDay, month }
+enum CalendarViewMode { agenda, day, threeDay }
 
 final calendarViewModeProvider =
     StateProvider<CalendarViewMode>((ref) => CalendarViewMode.agenda);
 
-/// 月のイベント取得
-final monthEventsProvider =
-    FutureProvider.family<List<CalendarEvent>, DateTime>((ref, month) async {
+/// 指定日のイベント取得（PageView用）
+final dayEventsProvider =
+    FutureProvider.family<List<CalendarEvent>, DateTime>((ref, date) async {
   final repo = ref.watch(calendarRepositoryProvider);
-  final start = DateTime(month.year, month.month, 1);
-  final end = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
-  return repo.getEvents(start: start, end: end);
-});
-
-/// 選択日のイベント取得
-final selectedDateEventsProvider =
-    FutureProvider<List<CalendarEvent>>((ref) async {
-  final repo = ref.watch(calendarRepositoryProvider);
-  final date = ref.watch(selectedDateProvider);
   final start = DateTime(date.year, date.month, date.day);
   final end = DateTime(date.year, date.month, date.day, 23, 59, 59);
-  return repo.getEvents(start: start, end: end);
-});
-
-/// アジェンダビュー用のイベント（選択日から30日分）
-final agendaEventsProvider =
-    FutureProvider<List<CalendarEvent>>((ref) async {
-  final repo = ref.watch(calendarRepositoryProvider);
-  final date = ref.watch(selectedDateProvider);
-  final start = DateTime(date.year, date.month, date.day);
-  final end = start.add(const Duration(days: 30));
   return repo.getEvents(start: start, end: end);
 });
 

@@ -69,6 +69,7 @@ class CorrectionController extends AutoDisposeNotifier<bool> {
     String? originalClockOut,
     required String requestedClockIn,
     required String requestedClockOut,
+    List<Map<String, dynamic>>? punchCorrections,
     required String reason,
   }) async {
     state = true;
@@ -80,6 +81,7 @@ class CorrectionController extends AutoDisposeNotifier<bool> {
         originalClockOut: originalClockOut,
         requestedClockIn: requestedClockIn,
         requestedClockOut: requestedClockOut,
+        punchCorrections: punchCorrections,
         reason: reason,
       );
     } finally {

@@ -1,58 +1,76 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/calendar_event.dart';
 import '../../domain/repositories/calendar_repository.dart';
 import '../providers/calendar_providers.dart';
 
 /// カレンダーイベント管理コントローラー
-class CalendarController extends AutoDisposeAsyncNotifier<List<CalendarEvent>> {
+///
+/// イベントの CRUD 操作と日付ナビゲーションを担当。
+/// イベント取得はビュー側で dayEventsProvider を使用する。
+class CalendarController extends AutoDisposeNotifier<void> {
   CalendarRepository get _repo => ref.read(calendarRepositoryProvider);
 
   @override
-  Future<List<CalendarEvent>> build() async {
-    final date = ref.watch(selectedDateProvider);
-    final start = DateTime(date.year, date.month, date.day);
-    final end = DateTime(date.year, date.month, date.day, 23, 59, 59);
-    return _repo.getEvents(start: start, end: end);
-  }
+  void build() {}
 
   /// イベント作成
   Future<void> createEvent(CalendarEvent event) async {
     await _repo.createEvent(event);
-    _invalidateAll();
+    _invalidateEventCaches();
   }
 
   /// イベント更新
   Future<void> updateEvent(CalendarEvent event) async {
     await _repo.updateEvent(event);
-    _invalidateAll();
+    _invalidateEventCaches();
   }
 
   /// イベント削除
   Future<void> deleteEvent(String id) async {
     await _repo.deleteEvent(id);
-    _invalidateAll();
+    _invalidateEventCaches();
   }
 
   /// 今日にフォーカス
   void goToToday() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    ref.read(selectedDateProvider.notifier).state = today;
     ref.read(focusedMonthProvider.notifier).state =
         DateTime(now.year, now.month);
+    ref.read(selectedDateProvider.notifier).state = today;
   }
 
-  void _invalidateAll() {
-    ref.invalidateSelf();
+  /// 日付選択
+  void selectDate(DateTime date) {
+    final focusedMonth = ref.read(focusedMonthProvider);
+    if (date.month != focusedMonth.month || date.year != focusedMonth.year) {
+      ref.read(focusedMonthProvider.notifier).state =
+          DateTime(date.year, date.month);
+    }
+    ref.read(selectedDateProvider.notifier).state = date;
+  }
+
+  /// 月変更
+  void changeFocusedMonth(DateTime month) {
+    ref.read(focusedMonthProvider.notifier).state = month;
+  }
+
+  /// ビューモード変更
+  void changeViewMode(CalendarViewMode mode) {
+    ref.read(calendarViewModeProvider.notifier).state = mode;
+  }
+
+  void _invalidateEventCaches() {
+    final date = ref.read(selectedDateProvider);
     final month = ref.read(focusedMonthProvider);
-    ref.invalidate(monthEventsProvider(month));
-    ref.invalidate(agendaEventsProvider);
+    ref.invalidate(dayEventsProvider(date));
     ref.invalidate(eventDatesProvider(month));
   }
 }
 
 final calendarControllerProvider =
-    AutoDisposeAsyncNotifierProvider<CalendarController, List<CalendarEvent>>(
+    AutoDisposeNotifierProvider<CalendarController, void>(
   CalendarController.new,
 );
 
@@ -61,15 +79,67 @@ class EventFormController extends AutoDisposeNotifier<bool> {
   @override
   bool build() => false; // isSaving
 
-  /// イベント保存（作成 or 更新）
-  Future<void> saveEvent(CalendarEvent event, {required bool isNew}) async {
+  CalendarController get _controller =>
+      ref.read(calendarControllerProvider.notifier);
+
+  /// フォームデータからイベントを構築して保存
+  Future<void> saveFromForm({
+    required CalendarEvent? existingEvent,
+    required String title,
+    required String description,
+    required String location,
+    required DateTime startDate,
+    required TimeOfDay startTime,
+    required DateTime endDate,
+    required TimeOfDay endTime,
+    required bool isAllDay,
+    required String categoryColor,
+  }) async {
+    final startAt = isAllDay
+        ? DateTime(startDate.year, startDate.month, startDate.day)
+        : DateTime(startDate.year, startDate.month, startDate.day,
+            startTime.hour, startTime.minute);
+    final endAt = isAllDay
+        ? DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59)
+        : DateTime(
+            endDate.year, endDate.month, endDate.day, endTime.hour, endTime.minute);
+
+    final trimmedDesc = description.trim();
+    final trimmedLocation = location.trim();
+
     state = true;
     try {
-      final controller = ref.read(calendarControllerProvider.notifier);
-      if (isNew) {
-        await controller.createEvent(event);
+      if (existingEvent != null) {
+        await _controller.updateEvent(
+          existingEvent.copyWith(
+            title: title,
+            description: trimmedDesc.isEmpty ? null : trimmedDesc,
+            clearDescription: trimmedDesc.isEmpty,
+            startAt: startAt,
+            endAt: endAt,
+            isAllDay: isAllDay,
+            location: trimmedLocation.isEmpty ? null : trimmedLocation,
+            clearLocation: trimmedLocation.isEmpty,
+            categoryColor: categoryColor,
+          ),
+        );
       } else {
-        await controller.updateEvent(event);
+        await _controller.createEvent(
+          CalendarEvent(
+            id: '',
+            userId: '',
+            organizationId: '',
+            title: title,
+            description: trimmedDesc.isEmpty ? null : trimmedDesc,
+            startAt: startAt,
+            endAt: endAt,
+            isAllDay: isAllDay,
+            location: trimmedLocation.isEmpty ? null : trimmedLocation,
+            categoryColor: categoryColor,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
       }
     } finally {
       state = false;
@@ -80,7 +150,7 @@ class EventFormController extends AutoDisposeNotifier<bool> {
   Future<void> deleteEvent(String id) async {
     state = true;
     try {
-      await ref.read(calendarControllerProvider.notifier).deleteEvent(id);
+      await _controller.deleteEvent(id);
     } finally {
       state = false;
     }

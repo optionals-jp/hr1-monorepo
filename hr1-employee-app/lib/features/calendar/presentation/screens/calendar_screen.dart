@@ -29,6 +29,120 @@ class CalendarScreen extends ConsumerStatefulWidget {
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   bool _isCalendarExpanded = false;
 
+  // コンテンツエリア用 PageView
+  static const _pageCenter = 10000;
+  final PageController _dayPageController =
+      PageController(initialPage: _pageCenter);
+  DateTime? _baseDate; // PageView の基準日
+  bool _isSyncing = false; // 外部からのPageView同期中フラグ
+
+  @override
+  void dispose() {
+    _dayPageController.dispose();
+    super.dispose();
+  }
+
+  DateTime _dateForPage(int page) {
+    _baseDate ??= ref.read(selectedDateProvider);
+    return _baseDate!.add(Duration(days: page - _pageCenter));
+  }
+
+  void _showMonthPicker(BuildContext context, DateTime current) {
+    var selectedYear = current.year;
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final theme = Theme.of(ctx);
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 年選択
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.chevron_left_rounded),
+                          onPressed: () =>
+                              setSheetState(() => selectedYear--),
+                        ),
+                        Text(
+                          '$selectedYear年',
+                          style: AppTextStyles.semiBold16,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.chevron_right_rounded),
+                          onPressed: () =>
+                              setSheetState(() => selectedYear++),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // 月グリッド
+                    GridView.count(
+                      crossAxisCount: 4,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      childAspectRatio: 2,
+                      children: List.generate(12, (i) {
+                        final month = i + 1;
+                        final isCurrent = selectedYear == current.year &&
+                            month == current.month;
+                        return GestureDetector(
+                          onTap: () {
+                            final controller = ref.read(
+                                calendarControllerProvider.notifier);
+                            controller.changeFocusedMonth(
+                                DateTime(selectedYear, month));
+                            controller.selectDate(
+                                DateTime(selectedYear, month, 1));
+                            Navigator.pop(ctx);
+                          },
+                          child: Container(
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: isCurrent
+                                  ? AppColors.brandPrimary
+                                      .withValues(alpha: 0.1)
+                                  : null,
+                              borderRadius: BorderRadius.circular(8),
+                              border: isCurrent
+                                  ? Border.all(
+                                      color: AppColors.brandPrimary,
+                                      width: 1.5)
+                                  : null,
+                            ),
+                            child: Text(
+                              '$month月',
+                              style: AppTextStyles.regular14.copyWith(
+                                color: isCurrent
+                                    ? AppColors.brandPrimary
+                                    : theme.colorScheme.onSurface,
+                                fontWeight: isCurrent
+                                    ? FontWeight.w600
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _navigateToEventForm({CalendarEvent? event}) {
     Navigator.of(
       context,
@@ -37,6 +151,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ミニカレンダーや「今日」ボタンから日付が変わった時にPageViewを同期
+    ref.listen<DateTime>(selectedDateProvider, (prev, next) {
+      _baseDate ??= next;
+      final targetPage =
+          _pageCenter + next.difference(_baseDate!).inDays;
+      if (_dayPageController.hasClients &&
+          _dayPageController.page?.round() != targetPage) {
+        _isSyncing = true;
+        // jumpToPage を使用して中間ページのウィジェット構築（API呼び出し）を防止
+        _dayPageController.jumpToPage(targetPage);
+        _isSyncing = false;
+      }
+    });
+
     final selectedDate = ref.watch(selectedDateProvider);
     final focusedMonth = ref.watch(focusedMonthProvider);
     final viewMode = ref.watch(calendarViewModeProvider);
@@ -55,9 +183,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             OrgIcon(initial: (user?.organizationName ?? 'H').substring(0, 1), size: 32),
             const SizedBox(width: 10),
             GestureDetector(
-              onTap: () {
-                // TODO: 月ピッカー
-              },
+              onTap: () => _showMonthPicker(context, focusedMonth),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -90,7 +216,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           PopupMenuButton<CalendarViewMode>(
             icon: Icon(Icons.view_agenda_outlined, size: 20, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
             onSelected: (mode) {
-              ref.read(calendarViewModeProvider.notifier).state = mode;
+              ref.read(calendarControllerProvider.notifier).changeViewMode(mode);
             },
             itemBuilder: (_) => [
               _viewMenuItem(CalendarViewMode.agenda, 'アジェンダ', Icons.view_agenda_outlined, viewMode),
@@ -114,48 +240,49 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       body: Column(
         children: [
           // ミニカレンダー
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
-            child: MiniCalendar(
+          MiniCalendar(
               focusedMonth: focusedMonth,
               selectedDate: selectedDate,
               onDateSelected: (date) {
-                ref.read(selectedDateProvider.notifier).state = date;
-                if (date.month != focusedMonth.month || date.year != focusedMonth.year) {
-                  ref.read(focusedMonthProvider.notifier).state = DateTime(date.year, date.month);
-                }
+                ref.read(calendarControllerProvider.notifier).selectDate(date);
               },
               onMonthChanged: (month) {
-                ref.read(focusedMonthProvider.notifier).state = month;
+                ref.read(calendarControllerProvider.notifier).changeFocusedMonth(month);
               },
               isExpanded: _isCalendarExpanded,
               onToggleExpand: () {
                 setState(() => _isCalendarExpanded = !_isCalendarExpanded);
               },
               eventDates: eventDatesAsync.valueOrNull ?? {},
-            ),
           ),
           Divider(height: 0.5, color: theme.colorScheme.outlineVariant),
-          // コンテンツ（ビューモードに応じて切替）
+          // コンテンツ（ビューモードに応じて切替）— PageView でスワイプ
           Expanded(
-            child: switch (viewMode) {
-              CalendarViewMode.agenda => _AgendaView(
-                selectedDate: selectedDate,
-                onEventTap: (event) => _navigateToEventForm(event: event),
-              ),
-              CalendarViewMode.day => _DayViewWrapper(
-                selectedDate: selectedDate,
-                onEventTap: (event) => _navigateToEventForm(event: event),
-              ),
-              CalendarViewMode.threeDay => _ThreeDayViewWrapper(
-                selectedDate: selectedDate,
-                onEventTap: (event) => _navigateToEventForm(event: event),
-              ),
-              CalendarViewMode.month => _AgendaView(
-                selectedDate: selectedDate,
-                onEventTap: (event) => _navigateToEventForm(event: event),
-              ),
-            },
+            child: PageView.builder(
+              controller: _dayPageController,
+              onPageChanged: (page) {
+                if (_isSyncing) return;
+                final newDate = _dateForPage(page);
+                ref.read(calendarControllerProvider.notifier).selectDate(newDate);
+              },
+              itemBuilder: (context, page) {
+                final pageDate = _dateForPage(page);
+                return switch (viewMode) {
+                  CalendarViewMode.agenda => _DayEventListView(
+                    selectedDate: pageDate,
+                    onEventTap: (event) => _navigateToEventForm(event: event),
+                  ),
+                  CalendarViewMode.day => _DayViewWrapper(
+                    selectedDate: pageDate,
+                    onEventTap: (event) => _navigateToEventForm(event: event),
+                  ),
+                  CalendarViewMode.threeDay => _ThreeDayViewWrapper(
+                    selectedDate: pageDate,
+                    onEventTap: (event) => _navigateToEventForm(event: event),
+                  ),
+                };
+              },
+            ),
           ),
         ],
       ),
@@ -195,72 +322,66 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 }
 
-/// アジェンダビュー — Outlook のデフォルトビュー
-class _AgendaView extends ConsumerWidget {
-  const _AgendaView({required this.selectedDate, required this.onEventTap});
+/// 日別イベントリストビュー — 選択日のイベント一覧を表示
+class _DayEventListView extends ConsumerWidget {
+  const _DayEventListView({required this.selectedDate, required this.onEventTap});
 
   final DateTime selectedDate;
   final ValueChanged<CalendarEvent> onEventTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eventsAsync = ref.watch(agendaEventsProvider);
+    final events = ref.watch(dayEventsProvider(selectedDate)).valueOrNull ?? [];
     final theme = Theme.of(context);
 
-    return eventsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('エラー: $e')),
-      data: (events) {
-        if (events.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppIcons.svg(AppIcons.calendar, size: 48, color: theme.colorScheme.onSurface.withValues(alpha: 0.25)),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  '予定はありません',
-                  style: AppTextStyles.regular12.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
-                ),
-              ],
+    if (events.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppIcons.svg(AppIcons.calendar, size: 48, color: theme.colorScheme.onSurface.withValues(alpha: 0.25)),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              '予定はありません',
+              style: AppTextStyles.regular12.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
             ),
-          );
-        }
+          ],
+        ),
+      );
+    }
 
-        // 日付ごとにグループ化
-        final grouped = <DateTime, List<CalendarEvent>>{};
-        for (final event in events) {
-          final date = event.startAt.toLocal();
-          final key = DateTime(date.year, date.month, date.day);
-          grouped.putIfAbsent(key, () => []).add(event);
-        }
+    // 日付ごとにグループ化
+    final grouped = <DateTime, List<CalendarEvent>>{};
+    for (final event in events) {
+      final date = event.startAt.toLocal();
+      final key = DateTime(date.year, date.month, date.day);
+      grouped.putIfAbsent(key, () => []).add(event);
+    }
 
-        final sortedDates = grouped.keys.toList()..sort();
+    final sortedDates = grouped.keys.toList()..sort();
 
-        return ListView.builder(
-          padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: 80),
-          itemCount: sortedDates.length,
-          itemBuilder: (context, index) {
-            final date = sortedDates[index];
-            final dayEvents = grouped[date]!;
-            // 終日イベントを先に
-            dayEvents.sort((a, b) {
-              if (a.isAllDay && !b.isAllDay) return -1;
-              if (!a.isAllDay && b.isAllDay) return 1;
-              return a.startAt.compareTo(b.startAt);
-            });
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: 80),
+      itemCount: sortedDates.length,
+      itemBuilder: (context, index) {
+        final date = sortedDates[index];
+        final dayEvents = grouped[date]!;
+        // 終日イベントを先に
+        dayEvents.sort((a, b) {
+          if (a.isAllDay && !b.isAllDay) return -1;
+          if (!a.isAllDay && b.isAllDay) return 1;
+          return a.startAt.compareTo(b.startAt);
+        });
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 日付ヘッダー（sticky風）
-                _DateHeader(date: date),
-                // イベントカード
-                for (final event in dayEvents) EventCard(event: event, onTap: () => onEventTap(event)),
-                const SizedBox(height: AppSpacing.sm),
-              ],
-            );
-          },
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 日付ヘッダー（sticky風）
+            _DateHeader(date: date),
+            // イベントカード
+            for (final event in dayEvents) EventCard(event: event, onTap: () => onEventTap(event)),
+            const SizedBox(height: AppSpacing.sm),
+          ],
         );
       },
     );
@@ -316,18 +437,14 @@ class _DayViewWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eventsAsync = ref.watch(selectedDateEventsProvider);
+    final eventsAsync = ref.watch(dayEventsProvider(selectedDate));
     final punchesAsync = ref.watch(punchesByDateProvider(selectedDate));
 
-    return eventsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('エラー: $e')),
-      data: (events) => DayView(
-        date: selectedDate,
-        events: events,
-        punches: punchesAsync.valueOrNull ?? [],
-        onEventTap: onEventTap,
-      ),
+    return DayView(
+      date: selectedDate,
+      events: eventsAsync.valueOrNull ?? [],
+      punches: punchesAsync.valueOrNull ?? [],
+      onEventTap: onEventTap,
     );
   }
 }
@@ -342,51 +459,39 @@ class _ThreeDayViewWrapper extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    // 選択日から3日分のイベントを取得
-    final eventsAsync = ref.watch(agendaEventsProvider);
+    final dates = List.generate(3, (i) => selectedDate.add(Duration(days: i)));
 
-    return eventsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('エラー: $e')),
-      data: (allEvents) {
-        final dates = List.generate(3, (i) => selectedDate.add(Duration(days: i)));
+    return Row(
+      children: dates.map((date) {
+        final dayEvents = ref.watch(dayEventsProvider(date)).valueOrNull ?? [];
 
-        return Row(
-          children: dates.map((date) {
-            final dayEvents = allEvents.where((e) {
-              final eDate = e.startAt.toLocal();
-              return eDate.year == date.year && eDate.month == date.month && eDate.day == date.day;
-            }).toList();
-
-            return Expanded(
-              child: Column(
-                children: [
-                  // 日付ラベル
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant, width: 0.5)),
-                    ),
-                    child: Center(
-                      child: Text(
-                        DateFormat('d日（E）', 'ja').format(date),
-                        style: AppTextStyles.medium12.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: _isToday(date) ? AppColors.brandPrimary : theme.colorScheme.onSurface,
-                        ),
-                      ),
+        return Expanded(
+          child: Column(
+            children: [
+              // 日付ラベル
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant, width: 0.5)),
+                ),
+                child: Center(
+                  child: Text(
+                    DateFormat('d日（E）', 'ja').format(date),
+                    style: AppTextStyles.medium12.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: _isToday(date) ? AppColors.brandPrimary : theme.colorScheme.onSurface,
                     ),
                   ),
-                  // デイビュー
-                  Expanded(
-                    child: DayView(date: date, events: dayEvents, onEventTap: onEventTap),
-                  ),
-                ],
+                ),
               ),
-            );
-          }).toList(),
+              // デイビュー
+              Expanded(
+                child: DayView(date: date, events: dayEvents, onEventTap: onEventTap),
+              ),
+            ],
+          ),
         );
-      },
+      }).toList(),
     );
   }
 
@@ -438,10 +543,12 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
     } else {
       final selectedDate = ref.read(selectedDateProvider);
       final now = DateTime.now();
+      final startHour = (now.hour + 1) % 24;
+      final endHour = (now.hour + 2) % 24;
       _startDate = selectedDate;
-      _startTime = TimeOfDay(hour: now.hour + 1, minute: 0);
+      _startTime = TimeOfDay(hour: startHour, minute: 0);
       _endDate = selectedDate;
-      _endTime = TimeOfDay(hour: now.hour + 2, minute: 0);
+      _endTime = TimeOfDay(hour: endHour, minute: 0);
       _isAllDay = false;
       _categoryColor = '#0F6CBD';
     }
@@ -492,45 +599,18 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
     if (title.isEmpty) return;
 
     try {
-      final startAt = _isAllDay
-          ? DateTime(_startDate.year, _startDate.month, _startDate.day)
-          : DateTime(_startDate.year, _startDate.month, _startDate.day, _startTime.hour, _startTime.minute);
-      final endAt = _isAllDay
-          ? DateTime(_endDate.year, _endDate.month, _endDate.day, 23, 59, 59)
-          : DateTime(_endDate.year, _endDate.month, _endDate.day, _endTime.hour, _endTime.minute);
-
-      if (_isEditing) {
-        await ref.read(eventFormControllerProvider.notifier).saveEvent(
-          widget.event!.copyWith(
-            title: title,
-            description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
-            startAt: startAt,
-            endAt: endAt,
-            isAllDay: _isAllDay,
-            location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
-            categoryColor: _categoryColor,
-          ),
-          isNew: false,
-        );
-      } else {
-        await ref.read(eventFormControllerProvider.notifier).saveEvent(
-          CalendarEvent(
-            id: '',
-            userId: '',
-            organizationId: '',
-            title: title,
-            description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
-            startAt: startAt,
-            endAt: endAt,
-            isAllDay: _isAllDay,
-            location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
-            categoryColor: _categoryColor,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-          isNew: true,
-        );
-      }
+      await ref.read(eventFormControllerProvider.notifier).saveFromForm(
+        existingEvent: widget.event,
+        title: title,
+        description: _descriptionController.text,
+        location: _locationController.text,
+        startDate: _startDate,
+        startTime: _startTime,
+        endDate: _endDate,
+        endTime: _endTime,
+        isAllDay: _isAllDay,
+        categoryColor: _categoryColor,
+      );
 
       if (mounted) Navigator.of(context).pop();
     } catch (e) {

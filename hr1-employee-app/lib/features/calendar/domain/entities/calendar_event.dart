@@ -55,8 +55,8 @@ class CalendarEvent {
     return {
       'title': title,
       'description': description,
-      'start_at': startAt.toIso8601String(),
-      'end_at': endAt.toIso8601String(),
+      'start_at': startAt.toUtc().toIso8601String(),
+      'end_at': endAt.toUtc().toIso8601String(),
       'is_all_day': isAllDay,
       'location': location,
       'category_color': categoryColor,
@@ -65,19 +65,25 @@ class CalendarEvent {
     };
   }
 
+  /// nullable フィールドを明示的に null にクリアする場合は
+  /// `clearDescription: true` のように clear フラグを使用する。
   CalendarEvent copyWith({
     String? id,
     String? userId,
     String? organizationId,
     String? title,
     String? description,
+    bool clearDescription = false,
     DateTime? startAt,
     DateTime? endAt,
     bool? isAllDay,
     String? location,
+    bool clearLocation = false,
     String? categoryColor,
     String? recurrenceRule,
+    bool clearRecurrenceRule = false,
     int? reminderMinutes,
+    bool clearReminderMinutes = false,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -86,14 +92,17 @@ class CalendarEvent {
       userId: userId ?? this.userId,
       organizationId: organizationId ?? this.organizationId,
       title: title ?? this.title,
-      description: description ?? this.description,
+      description: clearDescription ? null : (description ?? this.description),
       startAt: startAt ?? this.startAt,
       endAt: endAt ?? this.endAt,
       isAllDay: isAllDay ?? this.isAllDay,
-      location: location ?? this.location,
+      location: clearLocation ? null : (location ?? this.location),
       categoryColor: categoryColor ?? this.categoryColor,
-      recurrenceRule: recurrenceRule ?? this.recurrenceRule,
-      reminderMinutes: reminderMinutes ?? this.reminderMinutes,
+      recurrenceRule:
+          clearRecurrenceRule ? null : (recurrenceRule ?? this.recurrenceRule),
+      reminderMinutes: clearReminderMinutes
+          ? null
+          : (reminderMinutes ?? this.reminderMinutes),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
