@@ -9,12 +9,7 @@ class SupabaseCompanyRepository implements CompanyRepository {
   final SupabaseClient _client;
 
   @override
-  CompanyPageConfig? getPageConfig(String organizationId) {
-    throw UnimplementedError('Use getPageConfigAsync instead');
-  }
-
-  /// 企業IDからページ設定を非同期取得
-  Future<CompanyPageConfig?> getPageConfigAsync(String organizationId) async {
+  Future<CompanyPageConfig?> getPageConfig(String organizationId) async {
     final tabsResponse = await _client
         .from('page_tabs')
         .select('*, page_sections(*)')

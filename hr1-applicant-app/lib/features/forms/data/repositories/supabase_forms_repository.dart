@@ -10,12 +10,7 @@ class SupabaseFormsRepository implements FormsRepository {
   final SupabaseClient _client;
 
   @override
-  CustomForm? getForm(String formId) {
-    throw UnimplementedError('Use getFormAsync instead');
-  }
-
-  /// フォームIDからフォーム情報を非同期取得
-  Future<CustomForm?> getFormAsync(String formId) async {
+  Future<CustomForm?> getForm(String formId) async {
     try {
       final response = await _client
           .from('custom_forms')

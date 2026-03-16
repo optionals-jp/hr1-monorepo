@@ -16,6 +16,8 @@ import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import type { CustomForm } from "@/types/database";
+import { Badge } from "@/components/ui/badge";
+import { formTargetLabels } from "@/lib/constants";
 
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -37,10 +39,11 @@ export default function FormsPage() {
   );
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       <PageHeader
         title="フォーム管理"
         description="書類選考用フォームの作成・管理"
+        sticky={false}
         action={
           <Link href="/forms/new">
             <Button>フォームを作成</Button>
@@ -48,18 +51,19 @@ export default function FormsPage() {
         }
       />
 
-      <div className="flex-1 overflow-y-auto bg-white">
+      <div className="bg-white">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>タイトル</TableHead>
+              <TableHead>対象</TableHead>
               <TableHead>説明</TableHead>
               <TableHead>作成日</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableEmptyState
-              colSpan={3}
+              colSpan={4}
               isLoading={isLoading}
               isEmpty={forms.length === 0}
               emptyMessage="フォームがありません"
@@ -71,6 +75,9 @@ export default function FormsPage() {
                   onClick={() => router.push(`/forms/${form.id}`)}
                 >
                   <TableCell className="font-medium">{form.title}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{formTargetLabels[form.target] ?? form.target}</Badge>
+                  </TableCell>
                   <TableCell className="text-muted-foreground max-w-xs truncate">
                     {form.description ?? "-"}
                   </TableCell>

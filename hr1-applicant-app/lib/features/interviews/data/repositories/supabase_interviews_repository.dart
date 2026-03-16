@@ -10,12 +10,7 @@ class SupabaseInterviewsRepository implements InterviewsRepository {
   final SupabaseClient _client;
 
   @override
-  Interview? getInterview(String interviewId) {
-    throw UnimplementedError('Use getInterviewAsync instead');
-  }
-
-  /// 面接IDから面接情報を非同期取得
-  Future<Interview?> getInterviewAsync(String interviewId) async {
+  Future<Interview?> getInterview(String interviewId) async {
     try {
       final response = await _client
           .from('interviews')

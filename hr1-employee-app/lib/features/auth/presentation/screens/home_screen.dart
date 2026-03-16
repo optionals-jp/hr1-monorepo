@@ -2,76 +2,114 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_icons.dart';
-import '../../../../core/constants/app_text_styles.dart';
-import '../providers/auth_providers.dart';
 
-/// ホーム画面（BottomNavigationBar付きのシェル）
-/// 社員向け: ポータル / メッセージ / マイページ
+/// ホーム画面（BottomNavigationBar付きのシェル）— Teams モバイルスタイル
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key, required this.navigationShell});
 
-  /// StatefulShellRoute のナビゲーションシェル
   final StatefulNavigationShell navigationShell;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(appUserProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          user?.organizationName ?? 'HR1',
-          style: AppTextStyles.subtitle,
-        ),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: AppIcons.svg(AppIcons.notification,
-                color: Theme.of(context).appBarTheme.foregroundColor),
-            onPressed: () {
-              // TODO: 通知画面へ遷移
-            },
-          ),
-        ],
-      ),
       body: navigationShell,
-      bottomNavigationBar: Builder(builder: (context) {
-        final navTheme = Theme.of(context).bottomNavigationBarTheme;
-        final selectedColor = navTheme.selectedItemColor!;
-        final unselectedColor = navTheme.unselectedItemColor!;
-        return BottomNavigationBar(
-          currentIndex: navigationShell.currentIndex,
-          onTap: (index) {
-            navigationShell.goBranch(
-              index,
-              initialLocation: index == navigationShell.currentIndex,
-            );
-          },
-          selectedFontSize: 11,
-          unselectedFontSize: 11,
-          iconSize: 24,
-          items: [
-            BottomNavigationBarItem(
-              icon: AppIcons.svg(AppIcons.home, color: unselectedColor),
-              activeIcon:
-                  AppIcons.svg(AppIcons.homeFill, color: selectedColor),
-              label: 'ポータル',
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: theme.colorScheme.outlineVariant,
+              width: 0.5,
             ),
-            BottomNavigationBarItem(
-              icon: AppIcons.svg(AppIcons.note, color: unselectedColor),
-              activeIcon:
-                  AppIcons.svg(AppIcons.noteFill, color: selectedColor),
-              label: 'メッセージ',
-            ),
-            BottomNavigationBarItem(
-              icon: AppIcons.svg(AppIcons.user, color: unselectedColor),
-              activeIcon:
-                  AppIcons.svg(AppIcons.userFill, color: selectedColor),
-              label: 'マイページ',
-            ),
-          ],
-        );
-      }),
+          ),
+        ),
+        child: Builder(builder: (context) {
+          final navTheme = theme.bottomNavigationBarTheme;
+          final selectedColor = navTheme.selectedItemColor!;
+          final unselectedColor = navTheme.unselectedItemColor!;
+          return BottomNavigationBar(
+            currentIndex: navigationShell.currentIndex,
+            onTap: (index) {
+              navigationShell.goBranch(
+                index,
+                initialLocation: index == navigationShell.currentIndex,
+              );
+            },
+            selectedFontSize: 10,
+            unselectedFontSize: 10,
+            iconSize: 24,
+            type: BottomNavigationBarType.fixed,
+            items: [
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: AppIcons.svg(AppIcons.home,
+                      color: unselectedColor, size: 24),
+                ),
+                activeIcon: Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: AppIcons.svg(AppIcons.homeFill,
+                      color: selectedColor, size: 24),
+                ),
+                label: 'ホーム',
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: AppIcons.svg(AppIcons.calendar,
+                      color: unselectedColor, size: 24),
+                ),
+                activeIcon: Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: AppIcons.svg(AppIcons.calendarFill,
+                      color: selectedColor, size: 24),
+                ),
+                label: 'カレンダー',
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: AppIcons.svg(AppIcons.note,
+                      color: unselectedColor, size: 24),
+                ),
+                activeIcon: Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: AppIcons.svg(AppIcons.noteFill,
+                      color: selectedColor, size: 24),
+                ),
+                label: 'チャット',
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: AppIcons.svg(AppIcons.tickCircle,
+                      color: unselectedColor, size: 24),
+                ),
+                activeIcon: Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: AppIcons.svg(AppIcons.tickCircleFill,
+                      color: selectedColor, size: 24),
+                ),
+                label: 'タスク',
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: AppIcons.svg(AppIcons.user,
+                      color: unselectedColor, size: 24),
+                ),
+                activeIcon: Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: AppIcons.svg(AppIcons.userFill,
+                      color: selectedColor, size: 24),
+                ),
+                label: 'その他',
+              ),
+            ],
+          );
+        }),
+      ),
     );
   }
 }

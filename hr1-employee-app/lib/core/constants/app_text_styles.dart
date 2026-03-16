@@ -2,61 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// HR1 テキストスタイル定数
+/// 命名規則: {fontWeight}{fontSize} (例: bold28 = w700/28pt)
 /// 色はテーマから自動継承されるため、ここでは指定しない
 class AppTextStyles {
   AppTextStyles._();
 
-  /// 見出し1（大見出し）
-  static TextStyle heading1 = GoogleFonts.notoSansJp(
-    fontSize: 28,
-    fontWeight: FontWeight.w700,
-  );
+  /// 28pt Bold — 大見出し
+  static TextStyle bold28 = GoogleFonts.notoSansJp(fontSize: 28, fontWeight: FontWeight.w700);
 
-  /// 見出し2（中見出し）
-  static TextStyle heading2 = GoogleFonts.notoSansJp(
-    fontSize: 24,
-    fontWeight: FontWeight.w700,
-  );
+  /// 24pt Bold — 中見出し
+  static TextStyle bold24 = GoogleFonts.notoSansJp(fontSize: 24, fontWeight: FontWeight.w700);
 
-  /// 見出し3（小見出し）
-  static TextStyle heading3 = GoogleFonts.notoSansJp(
-    fontSize: 20,
-    fontWeight: FontWeight.w600,
-  );
+  /// 20pt SemiBold — 小見出し
+  static TextStyle semiBold20 = GoogleFonts.notoSansJp(fontSize: 20, fontWeight: FontWeight.w600);
 
-  /// サブタイトル
-  static TextStyle subtitle = GoogleFonts.notoSansJp(
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
-  );
+  /// 16pt SemiBold — サブタイトル
+  static TextStyle semiBold16 = GoogleFonts.notoSansJp(fontSize: 16, fontWeight: FontWeight.w600);
 
-  /// 本文（通常）
-  static TextStyle body = GoogleFonts.notoSansJp(
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-  );
+  /// 14pt SemiBold — ボタン等
+  static TextStyle semiBold14 = GoogleFonts.notoSansJp(fontSize: 14, fontWeight: FontWeight.w600);
 
-  /// 本文（小）
-  static TextStyle bodySmall = GoogleFonts.notoSansJp(
-    fontSize: 12,
-    fontWeight: FontWeight.w400,
-  );
+  /// 14pt Regular — 本文
+  static TextStyle regular14 = GoogleFonts.notoSansJp(fontSize: 14, fontWeight: FontWeight.w400);
 
-  /// キャプション
-  static TextStyle caption = GoogleFonts.notoSansJp(
-    fontSize: 11,
-    fontWeight: FontWeight.w400,
-  );
+  /// 12pt Medium — ラベル
+  static TextStyle medium12 = GoogleFonts.notoSansJp(fontSize: 12, fontWeight: FontWeight.w500);
 
-  /// ボタンテキスト
-  static TextStyle button = GoogleFonts.notoSansJp(
-    fontSize: 14,
-    fontWeight: FontWeight.w600,
-  );
+  /// 12pt Regular — 本文（小）
+  static TextStyle regular12 = GoogleFonts.notoSansJp(fontSize: 12, fontWeight: FontWeight.w400);
 
-  /// ラベル
-  static TextStyle label = GoogleFonts.notoSansJp(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-  );
+  /// 11pt Regular — キャプション
+  static TextStyle regular11 = GoogleFonts.notoSansJp(fontSize: 11, fontWeight: FontWeight.w400);
+
+  /// 48pt ExtraLight — 時刻・カウンター等の数値表示
+  static TextStyle extraLight48 = GoogleFonts.notoSansJp(fontSize: 48, fontWeight: FontWeight.w200);
 }

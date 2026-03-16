@@ -31,6 +31,7 @@ import {
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { SearchBar } from "@/components/ui/search-bar";
+import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
 import { ExternalLink, SlidersHorizontal, X } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -52,6 +53,7 @@ interface TimelineEvent {
 
 const tabs = [
   { value: "profile", label: "プロフィール" },
+  { value: "evaluations", label: "評価" },
   { value: "timeline", label: "履歴" },
 ];
 
@@ -263,7 +265,7 @@ export default function ApplicantDetailPage() {
         }
       />
 
-      <div className="sticky top-0 z-10 bg-white">
+      <div className="sticky top-14 z-10 bg-white">
         <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8">
           {tabs.map((tab) => {
             const count = tab.value === "timeline" ? timelineEvents.length : undefined;
@@ -363,6 +365,12 @@ export default function ApplicantDetailPage() {
               </CardContent>
             </Card>
           </div>
+        </PageContent>
+      )}
+
+      {activeTab === "evaluations" && (
+        <PageContent>
+          <EvaluationTab targetUserId={id} targetType="applicant" />
         </PageContent>
       )}
 

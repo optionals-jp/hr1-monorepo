@@ -30,7 +30,11 @@ import { useOrg } from "@/lib/org-context";
 import type { CustomForm, FormField, FormChangeLog } from "@/types/database";
 import { format } from "date-fns";
 import { Trash2 } from "lucide-react";
-import { fieldTypeLabels, formChangeTypeLabels as changeTypeLabels } from "@/lib/constants";
+import {
+  fieldTypeLabels,
+  formChangeTypeLabels as changeTypeLabels,
+  formTargetLabels,
+} from "@/lib/constants";
 
 interface FieldDraft {
   id: string;
@@ -76,6 +80,7 @@ export default function FormDetailPage() {
   const [editing, setEditing] = useState(false);
   const [editTab, setEditTab] = useState("basic");
   const [editTitle, setEditTitle] = useState("");
+  const [editTarget, setEditTarget] = useState<string>("both");
   const [editDescription, setEditDescription] = useState("");
   const [editFields, setEditFields] = useState<FieldDraft[]>([]);
   const [saving, setSaving] = useState(false);
@@ -150,6 +155,7 @@ export default function FormDetailPage() {
   function startEditing() {
     if (!form) return;
     setEditTitle(form.title);
+    setEditTarget(form.target ?? "both");
     setEditDescription(form.description ?? "");
     setEditFields(
       fields.map((f) => ({
@@ -199,21 +205,35 @@ export default function FormDetailPage() {
 
     const logs: { change_type: string; summary: string; details?: Record<string, unknown> }[] = [];
 
-    // 1. Update form title/description
-    if (editTitle !== form.title || editDescription !== (form.description ?? "")) {
+    // 1. Update form title/description/target
+    const titleChanged = editTitle !== form.title;
+    const targetChanged = editTarget !== (form.target ?? "both");
+    const descChanged = editDescription !== (form.description ?? "");
+
+    if (titleChanged || targetChanged || descChanged) {
       await getSupabase()
         .from("custom_forms")
-        .update({ title: editTitle, description: editDescription || null })
+        .update({
+          title: editTitle,
+          target: editTarget,
+          description: editDescription || null,
+        })
         .eq("id", form.id);
 
-      if (editTitle !== form.title) {
+      if (titleChanged) {
         logs.push({
           change_type: "title_updated",
           summary: `タイトルを「${form.title}」から「${editTitle}」に変更`,
           details: { old: form.title, new: editTitle },
         });
       }
-      if (editDescription !== (form.description ?? "")) {
+      if (targetChanged) {
+        logs.push({
+          change_type: "target_updated",
+          summary: `対象を「${formTargetLabels[form.target] ?? form.target}」から「${formTargetLabels[editTarget]}」に変更`,
+        });
+      }
+      if (descChanged) {
         logs.push({ change_type: "description_updated", summary: "説明を変更" });
       }
     }
@@ -333,9 +353,10 @@ export default function FormDetailPage() {
         description={form.description ?? undefined}
         breadcrumb={[{ label: "フォーム管理", href: "/forms" }]}
         sticky={false}
+        action={<Badge variant="outline">{formTargetLabels[form.target] ?? form.target}</Badge>}
       />
 
-      <div className="sticky top-0 z-10 bg-white">
+      <div className="sticky top-14 z-10 bg-white">
         <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8">
           {tabs.map((tab) => {
             const count =
@@ -505,6 +526,21 @@ export default function FormDetailPage() {
                 onChange={(e) => setEditTitle(e.target.value)}
                 placeholder="フォームタイトル"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>対象 *</Label>
+              <Select value={editTarget} onValueChange={(v) => v && setEditTarget(v)}>
+                <SelectTrigger>
+                  <SelectValue>{(v: string) => formTargetLabels[v] ?? v}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(formTargetLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>説明</Label>

@@ -20,7 +20,7 @@ import {
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { Trash2 } from "lucide-react";
-import { fieldTypeLabels } from "@/lib/constants";
+import { fieldTypeLabels, formTargetLabels } from "@/lib/constants";
 
 interface FieldDraft {
   tempId: string;
@@ -38,6 +38,7 @@ export default function NewFormPage() {
   const { mutate } = useSWRConfig();
   const { organization } = useOrg();
   const [title, setTitle] = useState("");
+  const [target, setTarget] = useState<string>("both");
   const [description, setDescription] = useState("");
   const [fields, setFields] = useState<FieldDraft[]>([]);
   const [saving, setSaving] = useState(false);
@@ -78,6 +79,7 @@ export default function NewFormPage() {
           id: formId,
           organization_id: organization.id,
           title,
+          target,
           description: description || null,
         });
       if (formError) throw formError;
@@ -133,6 +135,21 @@ export default function NewFormPage() {
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="エントリーシート"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>対象 *</Label>
+                <Select value={target} onValueChange={(v) => v && setTarget(v)}>
+                  <SelectTrigger>
+                    <SelectValue>{(v: string) => formTargetLabels[v] ?? v}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(formTargetLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>説明</Label>

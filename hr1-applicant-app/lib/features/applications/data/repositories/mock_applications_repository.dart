@@ -12,33 +12,7 @@ class MockApplicationsRepository implements ApplicationsRepository {
   int _idCounter = 100;
 
   @override
-  List<Application> getApplications(String organizationId) {
-    return _applications
-        .where((a) => a.organizationId == organizationId)
-        .toList();
-  }
-
-  @override
-  Application? getApplication(String applicationId) {
-    return _applications
-        .where((a) => a.id == applicationId)
-        .firstOrNull;
-  }
-
-  @override
-  List<Job> getJobs(String organizationId) {
-    return _mockJobs
-        .where((j) => j.organizationId == organizationId)
-        .toList();
-  }
-
-  @override
-  Job? getJob(String jobId) {
-    return _mockJobs.where((j) => j.id == jobId).firstOrNull;
-  }
-
-  @override
-  Future<List<Application>> getApplicationsAsync(
+  Future<List<Application>> getApplications(
       String organizationId, String applicantId) async {
     return _applications
         .where((a) =>
@@ -48,27 +22,31 @@ class MockApplicationsRepository implements ApplicationsRepository {
   }
 
   @override
-  Future<Application?> getApplicationAsync(String applicationId) async {
-    return getApplication(applicationId);
+  Future<Application?> getApplication(String applicationId) async {
+    return _applications
+        .where((a) => a.id == applicationId)
+        .firstOrNull;
   }
 
   @override
-  Future<List<Job>> getJobsAsync(String organizationId) async {
-    return getJobs(organizationId);
+  Future<List<Job>> getJobs(String organizationId) async {
+    return _mockJobs
+        .where((j) => j.organizationId == organizationId)
+        .toList();
   }
 
   @override
-  Future<Job?> getJobAsync(String jobId) async {
-    return getJob(jobId);
+  Future<Job?> getJob(String jobId) async {
+    return _mockJobs.where((j) => j.id == jobId).firstOrNull;
   }
 
   @override
-  Future<Application> applyAsync({
+  Future<Application> apply({
     required String jobId,
     required String applicantId,
     required String organizationId,
   }) async {
-    final job = getJob(jobId);
+    final job = await getJob(jobId);
     if (job == null) {
       throw StateError('求人が見つかりません: $jobId');
     }
@@ -106,7 +84,7 @@ class MockApplicationsRepository implements ApplicationsRepository {
   }
 
   @override
-  Future<void> completeStepAsync(String stepId, String applicationId) async {
+  Future<void> completeStep(String stepId, String applicationId) async {
     // モックでは何もしない
   }
 }

@@ -20,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" className="h-full overflow-hidden">
-      <body className={`${notoSansJP.variable} antialiased h-full overflow-hidden`}>
+    <html lang="ja">
+      <body className={`${notoSansJP.variable} antialiased`}>
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>

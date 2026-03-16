@@ -7,13 +7,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/auth-context";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
+import { genderLabels } from "@/lib/constants";
 import type { Department } from "@/types/database";
-import { format } from "date-fns";
+import { format, differenceInYears, differenceInMonths } from "date-fns";
 
 const roleLabels: Record<string, string> = {
   admin: "管理者",
@@ -22,8 +31,26 @@ const roleLabels: Record<string, string> = {
 
 const editTabs: EditPanelTab[] = [
   { value: "basic", label: "基本情報" },
+  { value: "personal", label: "個人情報" },
   { value: "departments", label: "部署" },
 ];
+
+function calcAge(birthDate: string | null): string {
+  if (!birthDate) return "-";
+  const age = differenceInYears(new Date(), new Date(birthDate));
+  return `${age}歳`;
+}
+
+function calcTenure(hireDate: string | null): string {
+  if (!hireDate) return "-";
+  const now = new Date();
+  const hire = new Date(hireDate);
+  const years = differenceInYears(now, hire);
+  const months = differenceInMonths(now, hire) % 12;
+  if (years === 0) return `${months}ヶ月`;
+  if (months === 0) return `${years}年`;
+  return `${years}年${months}ヶ月`;
+}
 
 export default function ProfileSettingsPage() {
   const { profile, refreshProfile } = useAuth();
@@ -37,7 +64,14 @@ export default function ProfileSettingsPage() {
   const [editing, setEditing] = useState(false);
   const [editTab, setEditTab] = useState("basic");
   const [editName, setEditName] = useState("");
+  const [editNameKana, setEditNameKana] = useState("");
   const [editPosition, setEditPosition] = useState("");
+  const [editBirthDate, setEditBirthDate] = useState("");
+  const [editGender, setEditGender] = useState("");
+  const [editHireDate, setEditHireDate] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editRegisteredAddress, setEditRegisteredAddress] = useState("");
+  const [editCurrentAddress, setEditCurrentAddress] = useState("");
   const [editDeptIds, setEditDeptIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -74,7 +108,14 @@ export default function ProfileSettingsPage() {
   const startEditing = () => {
     if (!profile) return;
     setEditName(profile.display_name ?? "");
+    setEditNameKana(profile.name_kana ?? "");
     setEditPosition(profile.position ?? "");
+    setEditBirthDate(profile.birth_date ?? "");
+    setEditGender(profile.gender ?? "");
+    setEditHireDate(profile.hire_date ?? "");
+    setEditPhone(profile.phone ?? "");
+    setEditRegisteredAddress(profile.registered_address ?? "");
+    setEditCurrentAddress(profile.current_address ?? "");
     setEditDeptIds([...assignedDeptIds]);
     setEditTab("basic");
     setEditing(true);
@@ -88,7 +129,14 @@ export default function ProfileSettingsPage() {
       .from("profiles")
       .update({
         display_name: editName.trim() || null,
+        name_kana: editNameKana.trim() || null,
         position: editPosition.trim() || null,
+        birth_date: editBirthDate || null,
+        gender: editGender || null,
+        hire_date: editHireDate || null,
+        phone: editPhone.trim() || null,
+        registered_address: editRegisteredAddress.trim() || null,
+        current_address: editCurrentAddress.trim() || null,
       })
       .eq("id", profile.id);
 
@@ -129,66 +177,119 @@ export default function ProfileSettingsPage() {
       <PageContent>
         <div className="max-w-2xl space-y-4">
           {/* Avatar */}
-          <div className="flex items-center gap-4 rounded-lg bg-white border px-5 py-4">
-            <Avatar className="h-14 w-14">
-              <AvatarFallback className="bg-purple-600 text-white text-xl font-medium">
-                {avatarInitial}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-medium">{displayName}</p>
-              <p className="text-sm text-muted-foreground">{profile.email}</p>
-              <Badge variant="secondary" className="mt-1 text-xs">
-                {roleLabels[profile.role] ?? profile.role}
-              </Badge>
-            </div>
-          </div>
+          <Card>
+            <CardContent className="flex items-center gap-4">
+              <Avatar className="h-14 w-14">
+                <AvatarFallback className="bg-purple-600 text-white text-xl font-medium">
+                  {avatarInitial}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-medium">{displayName}</p>
+                <p className="text-sm text-muted-foreground">{profile.email}</p>
+                <Badge variant="secondary" className="mt-1 text-xs">
+                  {roleLabels[profile.role] ?? profile.role}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Profile details */}
-          <div className="rounded-lg bg-white border">
-            <div className="flex items-center justify-between px-5 pt-4 pb-2">
-              <h2 className="text-sm font-semibold text-muted-foreground">基本情報</h2>
-              <Button variant="outline" size="sm" onClick={startEditing}>
-                編集
-              </Button>
-            </div>
-            <div className="px-5 py-4 space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">名前</span>
-                <span>{profile.display_name ?? "-"}</span>
+          {/* 基本情報 */}
+          <Card>
+            <CardContent>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-muted-foreground">基本情報</h2>
+                <Button variant="outline" size="sm" onClick={startEditing}>
+                  編集
+                </Button>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">メールアドレス</span>
-                <span>{profile.email}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">役職</span>
-                <span>{profile.position ?? "-"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">部署</span>
-                <div className="flex flex-wrap gap-1 justify-end">
-                  {departments.length === 0 ? (
-                    <span>-</span>
-                  ) : (
-                    departments.map((d) => (
-                      <Badge key={d.id} variant="secondary">
-                        {d.name}
-                      </Badge>
-                    ))
-                  )}
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">氏名</span>
+                  <span>{profile.display_name ?? "-"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">氏名（カナ）</span>
+                  <span>{profile.name_kana ?? "-"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">メールアドレス</span>
+                  <span>{profile.email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">役職</span>
+                  <span>{profile.position ?? "-"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">部署</span>
+                  <div className="flex flex-wrap gap-1 justify-end">
+                    {departments.length === 0 ? (
+                      <span>-</span>
+                    ) : (
+                      departments.map((d) => (
+                        <Badge key={d.id} variant="secondary">
+                          {d.name}
+                        </Badge>
+                      ))
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">ロール</span>
+                  <span>{roleLabels[profile.role] ?? profile.role}</span>
                 </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">ロール</span>
-                <span>{roleLabels[profile.role] ?? profile.role}</span>
+            </CardContent>
+          </Card>
+
+          {/* 個人情報 */}
+          <Card>
+            <CardContent>
+              <h2 className="text-sm font-semibold text-muted-foreground mb-3">個人情報</h2>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">生年月日</span>
+                  <span>
+                    {profile.birth_date
+                      ? `${format(new Date(profile.birth_date), "yyyy/MM/dd")}（${calcAge(profile.birth_date)}）`
+                      : "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">性別</span>
+                  <span>
+                    {profile.gender ? (genderLabels[profile.gender] ?? profile.gender) : "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">入社日</span>
+                  <span>
+                    {profile.hire_date
+                      ? `${format(new Date(profile.hire_date), "yyyy/MM/dd")}（勤続${calcTenure(profile.hire_date)}）`
+                      : "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">電話番号</span>
+                  <span>{profile.phone ?? "-"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">住民票住所</span>
+                  <span className="text-right max-w-[60%]">
+                    {profile.registered_address ?? "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">現住所</span>
+                  <span className="text-right max-w-[60%]">{profile.current_address ?? "-"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">登録日</span>
+                  <span>{format(new Date(profile.created_at), "yyyy/MM/dd")}</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">登録日</span>
-                <span>{format(new Date(profile.created_at), "yyyy/MM/dd")}</span>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </PageContent>
 
@@ -205,11 +306,19 @@ export default function ProfileSettingsPage() {
         {editTab === "basic" && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>名前</Label>
+              <Label>氏名</Label>
               <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 placeholder="山田 太郎"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>氏名（カナ）</Label>
+              <Input
+                value={editNameKana}
+                onChange={(e) => setEditNameKana(e.target.value)}
+                placeholder="ヤマダ タロウ"
               />
             </div>
             <div className="space-y-2">
@@ -222,6 +331,67 @@ export default function ProfileSettingsPage() {
                 value={editPosition}
                 onChange={(e) => setEditPosition(e.target.value)}
                 placeholder="エンジニア"
+              />
+            </div>
+          </div>
+        )}
+        {editTab === "personal" && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>生年月日</Label>
+              <Input
+                type="date"
+                value={editBirthDate}
+                onChange={(e) => setEditBirthDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>性別</Label>
+              <Select value={editGender} onValueChange={(v) => v && setEditGender(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="選択してください">
+                    {(v: string) => (v ? (genderLabels[v] ?? v) : "選択してください")}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(genderLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>入社日</Label>
+              <Input
+                type="date"
+                value={editHireDate}
+                onChange={(e) => setEditHireDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>電話番号</Label>
+              <Input
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+                placeholder="090-1234-5678"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>住民票住所</Label>
+              <Input
+                value={editRegisteredAddress}
+                onChange={(e) => setEditRegisteredAddress(e.target.value)}
+                placeholder="東京都渋谷区..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>現住所</Label>
+              <Input
+                value={editCurrentAddress}
+                onChange={(e) => setEditCurrentAddress(e.target.value)}
+                placeholder="東京都渋谷区..."
               />
             </div>
           </div>

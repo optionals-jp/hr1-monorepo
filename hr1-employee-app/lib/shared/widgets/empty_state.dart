@@ -13,7 +13,7 @@ class EmptyState extends StatelessWidget {
   });
 
   /// 表示アイコン
-  final IconData icon;
+  final Widget icon;
 
   /// タイトルテキスト
   final String title;
@@ -34,18 +34,14 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 64,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-            ),
+            icon,
             const SizedBox(height: AppSpacing.lg),
-            Text(title, style: AppTextStyles.subtitle),
+            Text(title, style: AppTextStyles.semiBold16),
             if (description != null) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(
                 description!,
-                style: AppTextStyles.bodySmall.copyWith(
+                style: AppTextStyles.regular12.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,

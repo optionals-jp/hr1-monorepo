@@ -10,27 +10,7 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
   final SupabaseClient _client;
 
   @override
-  List<Application> getApplications(String organizationId) {
-    throw UnimplementedError('Use getApplicationsAsync instead');
-  }
-
-  @override
-  Application? getApplication(String applicationId) {
-    throw UnimplementedError('Use getApplicationAsync instead');
-  }
-
-  @override
-  List<Job> getJobs(String organizationId) {
-    throw UnimplementedError('Use getJobsAsync instead');
-  }
-
-  @override
-  Job? getJob(String jobId) {
-    throw UnimplementedError('Use getJobAsync instead');
-  }
-
-  @override
-  Future<List<Application>> getApplicationsAsync(
+  Future<List<Application>> getApplications(
       String organizationId, String applicantId) async {
     final response = await _client
         .from('applications')
@@ -45,7 +25,7 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
   }
 
   @override
-  Future<Application?> getApplicationAsync(String applicationId) async {
+  Future<Application?> getApplication(String applicationId) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return null;
 
@@ -61,7 +41,7 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
   }
 
   @override
-  Future<Application> applyAsync({
+  Future<Application> apply({
     required String jobId,
     required String applicantId,
     required String organizationId,
@@ -103,11 +83,11 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
     }
 
     // 3. 作成した application を返す
-    return (await getApplicationAsync(appId))!;
+    return (await getApplication(appId))!;
   }
 
   @override
-  Future<void> completeStepAsync(String stepId, String applicationId) async {
+  Future<void> completeStep(String stepId, String applicationId) async {
     // 1. 現在のステップを完了にする
     await _client.from('application_steps').update({
       'status': 'completed',
@@ -153,7 +133,7 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
   }
 
   @override
-  Future<List<Job>> getJobsAsync(String organizationId) async {
+  Future<List<Job>> getJobs(String organizationId) async {
     final response = await _client
         .from('jobs')
         .select('*, job_sections(*), job_steps(*)')
@@ -166,7 +146,7 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
   }
 
   @override
-  Future<Job?> getJobAsync(String jobId) async {
+  Future<Job?> getJob(String jobId) async {
     final response = await _client
         .from('jobs')
         .select('*, job_sections(*), job_steps(*)')

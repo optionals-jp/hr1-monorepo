@@ -18,5 +18,32 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"evaluation\\\\|review\\\\|assessment\\\\|rating\\\\|score\" /Users/takama/hr1/hr1-console/src --include=*.ts --include=*.tsx)",
+      "Bash(find /Users/takama/hr1 -name *.sql -o -name migrations -type d)",
+      "Bash(find .next -name *.html -path *login*)",
+      "Bash(cat .next/static/chunks/*.css)",
+      "Bash(ls -la /Users/takama/hr1/hr1-console/.next/static/chunks/*.css)",
+      "Bash(grep -o '[^{}]*height[^;]*100%[^;]*;' /Users/takama/hr1/hr1-console/.next/static/chunks/*.css)",
+      "Bash(grep -c \"safe-area\\\\|env\\(\" /Users/takama/hr1/hr1-console/.next/static/chunks/*.css)",
+      "Bash(grep -oE '\\\\*,[^{]*\\\\{[^}]*margin[^}]*\\\\}' /Users/takama/hr1/hr1-console/.next/static/chunks/6923834dd2e3541b.css)",
+      "WebFetch(domain:accounts-assets.freee.co.jp)",
+      "Bash(ls /Users/takama/hr1/hr1-console/.next/static/chunks/*.css)",
+      "Bash(for f:*)",
+      "Bash(do sed:*)",
+      "Bash(echo \"Updated: $f\")",
+      "Bash(done)",
+      "Bash(git diff:*)",
+      "Bash(grep -r \"signUp\\\\|register\\\\|password\\\\|forgot\" /Users/takama/hr1/hr1-applicant-app/lib/features/auth --include=*.dart)",
+      "mcp__claude_ai_Supabase__list_edge_functions",
+      "Bash(supabase init:*)",
+      "Bash(supabase link:*)",
+      "Bash(find /Users/takama/hr1 -type f -name *.sql)"
+    ],
+    "additionalDirectories": [
+      "/Users/takama/hr1/hr1-console/src/app/attendance"
+    ]
   }
 }

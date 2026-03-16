@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/home_screen.dart';
@@ -43,7 +43,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     /// 認証ガード
     redirect: (BuildContext context, GoRouterState state) {
       final isAuthenticated =
-          Supabase.instance.client.auth.currentSession != null;
+          ref.read(supabaseClientProvider).auth.currentSession != null;
       final currentPath = state.matchedLocation;
 
       // 公開ルートはそのまま通す
@@ -111,9 +111,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       /// メッセージ詳細（シェル外 → 独自AppBar、BottomNav非表示）
       GoRoute(
         path: '/messages/:threadId',
-        builder: (context, state) => ThreadChatScreen(
-          thread: state.extra as MessageThread,
-        ),
+        builder: (context, state) {
+          final thread = state.extra;
+          if (thread is! MessageThread) {
+            return const SizedBox.shrink();
+          }
+          return ThreadChatScreen(thread: thread);
+        },
       ),
 
       /// メイン画面（ホーム / 応募状況 / メッセージ / マイページ）

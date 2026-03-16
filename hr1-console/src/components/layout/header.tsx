@@ -36,7 +36,7 @@ export function Header() {
 
   return (
     <>
-      <header className="flex h-14 items-center gap-2 sm:gap-4 border-b border-border bg-white px-3 sm:px-4 shrink-0">
+      <header className="sticky top-0 flex h-14 items-center gap-2 sm:gap-4 border-b border-border bg-white px-3 sm:px-4 shrink-0 shadow-sm z-30">
         {/* Mobile menu button */}
         <Button
           variant="ghost"

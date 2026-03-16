@@ -90,24 +90,20 @@ export default function ApplicantsPage() {
     setSaving(true);
 
     try {
-      const id = crypto.randomUUID();
-      const { error: profileError } = await getSupabase()
-        .from("profiles")
-        .insert({
-          id,
+      const { data, error } = await getSupabase().functions.invoke("create-user", {
+        body: {
           email: newEmail,
           display_name: newName || null,
           role: "applicant",
+          organization_id: organization.id,
           hiring_type: newHiringType || null,
-          graduation_year: newHiringType === "new_grad" && newGradYear ? Number(newGradYear) : null,
-        });
-      if (profileError) throw profileError;
-
-      const { error: orgError } = await getSupabase().from("user_organizations").insert({
-        user_id: id,
-        organization_id: organization.id,
+          graduation_year:
+            newHiringType === "new_grad" && newGradYear ? Number(newGradYear) : undefined,
+        },
       });
-      if (orgError) throw orgError;
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       setDialogOpen(false);
       mutate();
@@ -131,60 +127,63 @@ export default function ApplicantsPage() {
   });
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       <PageHeader
         title="応募者一覧"
         description="応募者の管理・招待"
+        sticky={false}
         border={false}
         action={<Button onClick={openAddDialog}>応募者を追加</Button>}
       />
 
-      <SearchBar value={search} onChange={setSearch} />
-      <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
-          <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
-          {filterHiringType !== "all" && (
-            <div className="flex items-center gap-1.5 overflow-x-auto">
-              <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
-                採用区分：
-                {filterHiringType === "new_grad"
-                  ? "新卒"
-                  : filterHiringType === "mid_career"
-                    ? "中途"
-                    : "未設定"}
-                <span
-                  role="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setFilterHiringType("all");
-                  }}
-                  className="ml-0.5 hover:text-foreground"
-                >
-                  <X className="h-3 w-3" />
-                </span>
-              </Badge>
-            </div>
-          )}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-auto py-2">
-          <DropdownMenuItem className="py-2" onClick={() => setFilterHiringType("all")}>
-            <span className={cn(filterHiringType === "all" && "font-medium")}>すべて</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="py-2" onClick={() => setFilterHiringType("new_grad")}>
-            <span className={cn(filterHiringType === "new_grad" && "font-medium")}>新卒</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="py-2" onClick={() => setFilterHiringType("mid_career")}>
-            <span className={cn(filterHiringType === "mid_career" && "font-medium")}>中途</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="py-2" onClick={() => setFilterHiringType("none")}>
-            <span className={cn(filterHiringType === "none" && "font-medium")}>未設定</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="sticky top-14 z-10">
+        <SearchBar value={search} onChange={setSearch} />
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
+            {filterHiringType !== "all" && (
+              <div className="flex items-center gap-1.5 overflow-x-auto">
+                <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                  採用区分：
+                  {filterHiringType === "new_grad"
+                    ? "新卒"
+                    : filterHiringType === "mid_career"
+                      ? "中途"
+                      : "未設定"}
+                  <span
+                    role="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFilterHiringType("all");
+                    }}
+                    className="ml-0.5 hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </span>
+                </Badge>
+              </div>
+            )}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-auto py-2">
+            <DropdownMenuItem className="py-2" onClick={() => setFilterHiringType("all")}>
+              <span className={cn(filterHiringType === "all" && "font-medium")}>すべて</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="py-2" onClick={() => setFilterHiringType("new_grad")}>
+              <span className={cn(filterHiringType === "new_grad" && "font-medium")}>新卒</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="py-2" onClick={() => setFilterHiringType("mid_career")}>
+              <span className={cn(filterHiringType === "mid_career" && "font-medium")}>中途</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="py-2" onClick={() => setFilterHiringType("none")}>
+              <span className={cn(filterHiringType === "none" && "font-medium")}>未設定</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
-      <div className="flex-1 overflow-y-auto bg-white">
+      <div className="bg-white">
         <Table>
           <TableHeader>
             <TableRow>

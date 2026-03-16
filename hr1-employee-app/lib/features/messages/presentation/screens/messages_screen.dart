@@ -1,50 +1,98 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/org_icon.dart';
+import '../../../../shared/widgets/search_box.dart';
+import '../../../../shared/widgets/user_avatar.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/message_thread.dart';
-import '../providers/messages_providers.dart';
-import 'thread_chat_screen.dart';
+import '../controllers/messages_controller.dart';
 
-/// メッセージ画面
-/// 応募者とのメッセージ一覧（社員向け）
+/// メッセージ画面 — Teams チャットリストスタイル
 class MessagesScreen extends ConsumerWidget {
   const MessagesScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final threadsAsync = ref.watch(messageThreadsProvider);
+    final threadsAsync = ref.watch(messagesControllerProvider);
+    final user = ref.watch(appUserProvider);
 
-    return threadsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(
-        child: Text('エラーが発生しました', style: AppTextStyles.body),
+    return Scaffold(
+      appBar: AppBar(
+        titleSpacing: AppSpacing.screenHorizontal,
+        title: Row(
+          children: [
+            OrgIcon(initial: (user?.organizationName ?? 'H').substring(0, 1), size: 32),
+            const SizedBox(width: 10),
+            Text('チャット', style: AppTextStyles.bold24.copyWith(letterSpacing: -0.2)),
+          ],
+        ),
+        centerTitle: false,
+        actions: [
+          GestureDetector(
+            onTap: () => context.push(AppRoutes.profile),
+            child: Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.screenHorizontal),
+              child: UserAvatar(
+                initial: (user?.displayName ?? user?.email ?? 'U').substring(0, 1),
+                size: 32,
+                imageUrl: user?.avatarUrl,
+              ),
+            ),
+          ),
+        ],
       ),
-      data: (threads) {
-        if (threads.isEmpty) {
-          return const EmptyState(
-            icon: Icons.chat_bubble_outline,
-            title: 'メッセージはありません',
-            description: '応募者とのメッセージがここに表示されます',
-          );
-        }
+      body: Column(
+        children: [
+          // 検索バー（Teams チャット画面上部の検索バー）
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenHorizontal,
+              AppSpacing.sm,
+              AppSpacing.screenHorizontal,
+              AppSpacing.sm,
+            ),
+            child: const SearchBox(),
+          ),
 
-        return ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-          itemCount: threads.length,
-          separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
-          itemBuilder: (context, index) {
-            final thread = threads[index];
-            return _ThreadTile(thread: thread);
-          },
-        );
-      },
+          // スレッドリスト
+          Expanded(
+            child: threadsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, _) => Center(child: Text('エラーが発生しました', style: AppTextStyles.regular14)),
+              data: (threads) {
+                if (threads.isEmpty) {
+                  return EmptyState(
+                    icon: AppIcons.svg(AppIcons.directbox, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+                    title: 'メッセージはありません',
+                    description: 'メッセージがここに表示されます',
+                  );
+                }
+
+                return ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount: threads.length,
+                  itemBuilder: (context, index) {
+                    final thread = threads[index];
+                    return _ThreadTile(thread: thread);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
+/// スレッドタイル — Teams チャットリストアイテムスタイル
 class _ThreadTile extends StatelessWidget {
   const _ThreadTile({required this.thread});
 
@@ -53,101 +101,100 @@ class _ThreadTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasUnread = thread.unreadCount > 0;
-    final displayName = thread.applicantName ?? '応募者';
+    final displayName = thread.participantName ?? thread.title ?? '相手';
     final initial = displayName.isNotEmpty ? displayName[0] : '?';
+    final theme = Theme.of(context);
 
-    return ListTile(
-      leading: CircleAvatar(
-        radius: 22,
-        backgroundColor: AppColors.primaryLight.withValues(alpha: 0.1),
-        child: Text(
-          initial,
-          style: AppTextStyles.subtitle.copyWith(
-            color: AppColors.primaryLight,
-          ),
-        ),
-      ),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              displayName,
-              style: AppTextStyles.body.copyWith(
-                fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w500,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (thread.latestMessage != null)
-            Text(
-              _formatDate(thread.latestMessage!.createdAt),
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-        ],
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (thread.jobTitle != null)
-            Text(
-              thread.jobTitle!,
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.textSecondary,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          if (thread.latestMessage != null) ...[
-            const SizedBox(height: 2),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    thread.latestMessage!.content,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: hasUnread
-                          ? AppColors.textPrimary
-                          : AppColors.textSecondary,
-                      fontWeight:
-                          hasUnread ? FontWeight.w500 : FontWeight.w400,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+    return InkWell(
+      onTap: () {
+        context.push(AppRoutes.messageThread, extra: thread);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: 12),
+        child: Row(
+          children: [
+            // アバター（Teams: 40pt circle, 塗りアバター）
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(color: AppColors.brandPrimary, shape: BoxShape.circle),
+              child: Center(
+                child: Text(
+                  initial,
+                  style: AppTextStyles.regular12.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
                 ),
-                if (hasUnread) ...[
-                  const SizedBox(width: AppSpacing.sm),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '${thread.unreadCount}',
-                      style: AppTextStyles.caption.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 14),
+            // コンテンツ
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          displayName,
+                          style: AppTextStyles.regular12.copyWith(
+                            fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
                       ),
-                    ),
+                      if (thread.latestMessage != null) ...[
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(
+                          _formatDate(thread.latestMessage!.createdAt),
+                          style: AppTextStyles.regular11.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
+                  if (thread.latestMessage != null) ...[
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            thread.latestMessage!.content,
+                            style: AppTextStyles.regular11.copyWith(
+                              color: hasUnread
+                                  ? theme.colorScheme.onSurface
+                                  : theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                              fontWeight: hasUnread ? FontWeight.w500 : FontWeight.w400,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (hasUnread) ...[
+                          const SizedBox(width: AppSpacing.sm),
+                          Container(
+                            width: 20,
+                            height: 20,
+                            decoration: const BoxDecoration(color: AppColors.brandPrimary, shape: BoxShape.circle),
+                            child: Center(
+                              child: Text(
+                                '${thread.unreadCount}',
+                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ],
-        ],
+        ),
       ),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 4),
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ThreadChatScreen(thread: thread),
-          ),
-        );
-      },
     );
   }
 

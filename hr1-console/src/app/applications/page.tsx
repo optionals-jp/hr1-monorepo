@@ -102,73 +102,84 @@ export default function ApplicationsPage() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <PageHeader title="応募管理" description="応募の確認・選考ステップの管理" border={false} />
+    <div className="flex flex-col">
+      <PageHeader
+        title="応募管理"
+        description="応募の確認・選考ステップの管理"
+        sticky={false}
+        border={false}
+      />
 
-      <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8 bg-white">
-        {statusTabs.map((tab) => {
-          const count =
-            tab.value === "all"
-              ? applications.length
-              : applications.filter((a) => a.status === tab.value).length;
-          return (
-            <button
-              key={tab.value}
-              type="button"
-              onClick={() => setStatusFilter(tab.value)}
-              className={cn(
-                "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-                statusFilter === tab.value
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {tab.label}
-              <span className="ml-1.5 text-xs text-muted-foreground">{count}</span>
-              {statusFilter === tab.value && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-              )}
-            </button>
-          );
-        })}
-      </div>
-      <SearchBar value={search} onChange={setSearch} />
-      <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
-          <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
-          {filterJobId !== "all" && (
-            <div className="flex items-center gap-1.5 overflow-x-auto">
-              <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
-                求人：{jobs.find((j) => j.id === filterJobId)?.title}
-                <span
-                  role="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setFilterJobId("all");
-                  }}
-                  className="ml-0.5 hover:text-foreground"
-                >
-                  <X className="h-3 w-3" />
-                </span>
-              </Badge>
-            </div>
-          )}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-auto py-2">
-          <DropdownMenuItem className="py-2" onClick={() => setFilterJobId("all")}>
-            <span className={cn(filterJobId === "all" && "font-medium")}>すべて</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          {jobs.map((job) => (
-            <DropdownMenuItem key={job.id} className="py-2" onClick={() => setFilterJobId(job.id)}>
-              <span className={cn(filterJobId === job.id && "font-medium")}>{job.title}</span>
+      <div className="sticky top-14 z-10">
+        <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8 bg-white">
+          {statusTabs.map((tab) => {
+            const count =
+              tab.value === "all"
+                ? applications.length
+                : applications.filter((a) => a.status === tab.value).length;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => setStatusFilter(tab.value)}
+                className={cn(
+                  "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
+                  statusFilter === tab.value
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {tab.label}
+                <span className="ml-1.5 text-xs text-muted-foreground">{count}</span>
+                {statusFilter === tab.value && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <SearchBar value={search} onChange={setSearch} />
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
+            {filterJobId !== "all" && (
+              <div className="flex items-center gap-1.5 overflow-x-auto">
+                <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                  求人：{jobs.find((j) => j.id === filterJobId)?.title}
+                  <span
+                    role="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFilterJobId("all");
+                    }}
+                    className="ml-0.5 hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </span>
+                </Badge>
+              </div>
+            )}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-auto py-2">
+            <DropdownMenuItem className="py-2" onClick={() => setFilterJobId("all")}>
+              <span className={cn(filterJobId === "all" && "font-medium")}>すべて</span>
             </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <DropdownMenuSeparator />
+            {jobs.map((job) => (
+              <DropdownMenuItem
+                key={job.id}
+                className="py-2"
+                onClick={() => setFilterJobId(job.id)}
+              >
+                <span className={cn(filterJobId === job.id && "font-medium")}>{job.title}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
-      <div className="flex-1 overflow-y-auto bg-white">
+      <div className="bg-white">
         <Table>
           <TableHeader>
             <TableRow>

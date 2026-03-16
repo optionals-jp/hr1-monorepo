@@ -1,10 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/utils/date_formatter.dart';
@@ -13,6 +11,7 @@ import '../../../../core/router/app_router.dart';
 import '../../domain/entities/application.dart';
 import '../../domain/entities/application_status.dart';
 import '../../domain/entities/application_step.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../providers/applications_providers.dart';
 import '../../../forms/presentation/screens/form_fill_screen.dart';
 import '../../../interviews/presentation/providers/interviews_providers.dart';
@@ -31,15 +30,17 @@ class ApplicationDetailScreen extends ConsumerStatefulWidget {
 class _ApplicationDetailScreenState
     extends ConsumerState<ApplicationDetailScreen> {
   RealtimeChannel? _channel;
+  late final SupabaseClient _supabaseClient;
 
   @override
   void initState() {
     super.initState();
+    _supabaseClient = ref.read(supabaseClientProvider);
     _subscribeToStepChanges();
   }
 
   void _subscribeToStepChanges() {
-    _channel = Supabase.instance.client
+    _channel = _supabaseClient
         .channel('application_steps:${widget.applicationId}')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
@@ -60,7 +61,7 @@ class _ApplicationDetailScreenState
   @override
   void dispose() {
     if (_channel != null) {
-      Supabase.instance.client.removeChannel(_channel!);
+      _supabaseClient.removeChannel(_channel!);
     }
     super.dispose();
   }

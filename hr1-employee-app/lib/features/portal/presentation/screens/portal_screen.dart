@@ -1,204 +1,199 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/router/app_router.dart';
+import '../../../../shared/widgets/org_icon.dart';
+import '../../../../shared/widgets/search_box.dart';
+import '../../../../shared/widgets/user_avatar.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import 'widgets/action_chip.dart';
+import 'widgets/notice_list_item.dart';
 
-/// 社内ポータル画面
-/// お知らせ、勤怠、各種申請などへのエントリーポイント
+/// 社内ポータル画面 — Teams / Outlook モバイルスタイル
 class PortalScreen extends ConsumerWidget {
   const PortalScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final user = ref.watch(appUserProvider);
+    final theme = Theme.of(context);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 挨拶
-          Text(
-            'こんにちは、${user?.displayName ?? 'ゲスト'}さん',
-            style: AppTextStyles.heading3,
+    return Scaffold(
+      appBar: AppBar(
+        titleSpacing: AppSpacing.screenHorizontal,
+        title: Row(
+          children: [
+            OrgIcon(initial: (user?.organizationName ?? 'H').substring(0, 1), size: 32),
+            const SizedBox(width: 10),
+            Text(user?.organizationName ?? 'HR1', style: AppTextStyles.bold24.copyWith(letterSpacing: -0.2)),
+          ],
+        ),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: AppIcons.svg(AppIcons.notification, color: theme.appBarTheme.foregroundColor, size: 22),
+            onPressed: () {
+              // TODO: 通知画面へ遷移
+            },
           ),
-          if (user?.department != null)
-            Text(
-              '${user!.department} / ${user.position ?? ''}',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          const SizedBox(height: AppSpacing.xl),
-
-          // クイックアクション
-          Text('クイックアクション', style: AppTextStyles.subtitle),
-          const SizedBox(height: AppSpacing.md),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: AppSpacing.md,
-            crossAxisSpacing: AppSpacing.md,
-            childAspectRatio: 1.5,
-            children: [
-              _QuickActionCard(
-                icon: Icons.access_time,
-                label: '勤怠打刻',
-                color: AppColors.primaryLight,
-                onTap: () {
-                  // TODO: 勤怠打刻
-                },
-              ),
-              _QuickActionCard(
-                icon: Icons.description_outlined,
-                label: '各種申請',
-                color: AppColors.accent,
-                onTap: () {
-                  // TODO: 各種申請
-                },
-              ),
-              _QuickActionCard(
-                icon: Icons.calendar_today_outlined,
-                label: 'スケジュール',
-                color: AppColors.success,
-                onTap: () {
-                  // TODO: スケジュール
-                },
-              ),
-              _QuickActionCard(
-                icon: Icons.folder_outlined,
-                label: '社内文書',
-                color: AppColors.warning,
-                onTap: () {
-                  // TODO: 社内文書
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xl),
-
-          // お知らせ
-          Text('お知らせ', style: AppTextStyles.subtitle),
-          const SizedBox(height: AppSpacing.md),
-          Card(
+          GestureDetector(
+            onTap: () => context.push(AppRoutes.profile),
             child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.cardPadding),
-              child: Column(
-                children: [
-                  _NoticeItem(
-                    title: '年末調整のお知らせ',
-                    date: '2026/03/01',
-                    isNew: true,
-                  ),
-                  const Divider(),
-                  _NoticeItem(
-                    title: '社内研修のご案内',
-                    date: '2026/02/25',
-                    isNew: false,
-                  ),
-                  const Divider(),
-                  _NoticeItem(
-                    title: '健康診断の日程について',
-                    date: '2026/02/20',
-                    isNew: false,
-                  ),
-                ],
+              padding: const EdgeInsets.only(right: AppSpacing.screenHorizontal),
+              child: UserAvatar(
+                initial: (user?.displayName ?? user?.email ?? 'U').substring(0, 1),
+                size: 32,
+                imageUrl: user?.avatarUrl,
               ),
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-/// クイックアクションカード
-class _QuickActionCard extends StatelessWidget {
-  const _QuickActionCard({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 32, color: color),
-              const SizedBox(height: AppSpacing.sm),
-              Text(label, style: AppTextStyles.body),
-            ],
+      body: CustomScrollView(
+        slivers: [
+          // 検索バー（Teams / Outlook 共通パターン）
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenHorizontal,
+                AppSpacing.sm,
+                AppSpacing.screenHorizontal,
+                AppSpacing.sm,
+              ),
+              child: const SearchBox(),
+            ),
           ),
-        ),
-      ),
-    );
-  }
-}
 
-/// お知らせアイテム
-class _NoticeItem extends StatelessWidget {
-  const _NoticeItem({
-    required this.title,
-    required this.date,
-    required this.isNew,
-  });
-
-  final String title;
-  final String date;
-  final bool isNew;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      child: Row(
-        children: [
-          if (isNew)
-            Container(
-              margin: const EdgeInsets.only(right: AppSpacing.sm),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: 2,
+          // 挨拶 + 部署
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenHorizontal,
+                AppSpacing.lg,
+                AppSpacing.screenHorizontal,
+                0,
               ),
-              decoration: BoxDecoration(
-                color: AppColors.error,
-                borderRadius: BorderRadius.circular(4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('こんにちは、${user?.displayName ?? 'ゲスト'}さん', style: AppTextStyles.bold24),
+                  if (user?.department != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        '${user!.department} / ${user.position ?? ''}',
+                        style: AppTextStyles.regular12.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              child: Text(
-                'NEW',
-                style: AppTextStyles.caption.copyWith(
-                  color: theme.colorScheme.surface,
-                  fontWeight: FontWeight.w600,
+            ),
+          ),
+
+          // 横スクロール アクションチップ（Teams スタイル）
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.xl),
+              child: SingleChildScrollView(
+                clipBehavior: Clip.none,
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: 4),
+                child: IntrinsicHeight(
+                  child: Row(
+                    children: [
+                      PortalActionChip(
+                        icon: AppIcons.svg(AppIcons.clock, size: 24, color: AppColors.brandPrimary),
+                        label: '勤怠打刻',
+                        color: AppColors.brandPrimary,
+                        onTap: () => context.push(AppRoutes.attendance),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      PortalActionChip(
+                        icon: AppIcons.svg(AppIcons.doc, size: 24, color: AppColors.warning),
+                        label: '各種申請',
+                        color: AppColors.warning,
+                        onTap: () {},
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      PortalActionChip(
+                        icon: AppIcons.svg(AppIcons.calendar, size: 24, color: AppColors.success),
+                        label: 'スケジュール',
+                        color: AppColors.success,
+                        onTap: () {},
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      PortalActionChip(
+                        icon: AppIcons.svg(AppIcons.folder, size: 24, color: AppColors.brandSecondary),
+                        label: '社内文書',
+                        color: AppColors.brandSecondary,
+                        onTap: () {},
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      PortalActionChip(
+                        icon: AppIcons.svg(AppIcons.teacher, size: 24, color: const Color(0xFF8764B8)),
+                        label: '研修',
+                        color: const Color(0xFF8764B8),
+                        onTap: () {},
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          Expanded(
-            child: Text(title, style: AppTextStyles.body),
           ),
-          Text(
-            date,
-            style: AppTextStyles.caption.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+
+          // セクションヘッダー: お知らせ
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenHorizontal,
+                AppSpacing.xxl,
+                AppSpacing.screenHorizontal,
+                AppSpacing.xs,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'お知らせ',
+                      style: AppTextStyles.regular11.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      'すべて表示',
+                      style: AppTextStyles.regular11.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ),
+
+          // お知らせリスト（フルワイド リストアイテム — Teams スタイル）
+          SliverList(
+            delegate: SliverChildListDelegate([
+              NoticeListItem(title: '年末調整のお知らせ', subtitle: '人事部より', date: '3/1', isNew: true),
+              NoticeListItem(title: '社内研修のご案内', subtitle: '総務部より', date: '2/25', isNew: false),
+              NoticeListItem(title: '健康診断の日程について', subtitle: '人事部より', date: '2/20', isNew: false),
+              const SizedBox(height: AppSpacing.xxl),
+            ]),
           ),
         ],
       ),

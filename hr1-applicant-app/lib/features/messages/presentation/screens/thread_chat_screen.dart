@@ -40,6 +40,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
   // Edit state
   String? _editingMessageId;
   final _editController = TextEditingController();
+  late final SupabaseClient _supabaseClient;
 
   String get _currentUserId =>
       ref.read(appUserProvider)?.id ?? '';
@@ -47,6 +48,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
   @override
   void initState() {
     super.initState();
+    _supabaseClient = ref.read(supabaseClientProvider);
     _loadMessages();
     _subscribeRealtime();
     _setupPresence();
@@ -61,10 +63,10 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     _scrollController.dispose();
     _typingDebounceTimer?.cancel();
     if (_channel != null) {
-      Supabase.instance.client.removeChannel(_channel!);
+      _supabaseClient.removeChannel(_channel!);
     }
     if (_presenceChannel != null) {
-      Supabase.instance.client.removeChannel(_presenceChannel!);
+      _supabaseClient.removeChannel(_presenceChannel!);
     }
     super.dispose();
   }
@@ -100,7 +102,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
   }
 
   void _setupPresence() {
-    _presenceChannel = Supabase.instance.client
+    _presenceChannel = _supabaseClient
         .channel('typing:${widget.thread.id}')
         .onPresenceSync((payload) {
           if (!mounted) return;
@@ -187,7 +189,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
   }
 
   void _subscribeRealtime() {
-    _channel = Supabase.instance.client
+    _channel = _supabaseClient
         .channel('messages:${widget.thread.id}')
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
@@ -203,7 +205,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
             if (newMsg.isEmpty) return;
 
             // 送信者情報を取得
-            final senderResponse = await Supabase.instance.client
+            final senderResponse = await _supabaseClient
                 .from('profiles')
                 .select('id, display_name, role')
                 .eq('id', newMsg['sender_id'] as String)
@@ -244,7 +246,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
             if (updated.isEmpty) return;
 
             // 送信者情報を取得
-            final senderResponse = await Supabase.instance.client
+            final senderResponse = await _supabaseClient
                 .from('profiles')
                 .select('id, display_name, role')
                 .eq('id', updated['sender_id'] as String)

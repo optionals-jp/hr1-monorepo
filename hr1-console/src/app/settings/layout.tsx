@@ -19,6 +19,8 @@ const settingsSections: SettingsSection[] = [
     label: "企業の設定",
     items: [
       { href: "/settings/organization", label: "組織情報" },
+      { href: "/settings/skills", label: "スキルマスタ" },
+      { href: "/settings/certifications", label: "資格マスタ" },
       { href: "/settings/home-design", label: "アプリのホームデザイン" },
     ],
   },

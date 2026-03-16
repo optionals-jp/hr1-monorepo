@@ -81,6 +81,86 @@ export const interviewScheduleStatusColors: Record<string, BadgeVariant> = {
   cancelled: "destructive",
 };
 
+// --- 評価スコアタイプ ---
+export const scoreTypeLabels: Record<string, string> = {
+  five_star: "5段階評価",
+  ten_point: "10点評価",
+  text: "テキスト",
+  select: "選択式",
+};
+
+// --- 評価ステータス ---
+export const evaluationStatusLabels: Record<string, string> = {
+  draft: "下書き",
+  submitted: "提出済み",
+};
+
+export const evaluationStatusColors: Record<string, BadgeVariant> = {
+  draft: "outline",
+  submitted: "default",
+};
+
+// --- 評価タイプ ---
+export const evaluationTypeLabels: Record<string, string> = {
+  single: "単独評価",
+  multi_rater: "多面評価 (360度)",
+};
+
+// --- 匿名設定 ---
+export const anonymityModeLabels: Record<string, string> = {
+  none: "なし（全員実名）",
+  peer_only: "同僚・部下のみ匿名",
+  full: "完全匿名",
+};
+
+// --- 評価者タイプ ---
+export const raterTypeLabels: Record<string, string> = {
+  supervisor: "上司",
+  peer: "同僚",
+  subordinate: "部下",
+  self: "自己",
+  external: "外部",
+};
+
+// --- 評価サイクルステータス ---
+export const cycleStatusLabels: Record<string, string> = {
+  draft: "準備中",
+  active: "実施中",
+  closed: "締切済み",
+  calibrating: "調整中",
+  finalized: "確定",
+};
+
+export const cycleStatusColors: Record<string, BadgeVariant> = {
+  draft: "outline",
+  active: "default",
+  closed: "secondary",
+  calibrating: "outline",
+  finalized: "secondary",
+};
+
+// --- アサインメントステータス ---
+export const assignmentStatusLabels: Record<string, string> = {
+  pending: "未着手",
+  in_progress: "進行中",
+  submitted: "提出済み",
+  skipped: "スキップ",
+};
+
+// --- 性別 ---
+export const genderLabels: Record<string, string> = {
+  male: "男性",
+  female: "女性",
+  other: "その他",
+};
+
+// --- フォーム対象 ---
+export const formTargetLabels: Record<string, string> = {
+  applicant: "応募者向け",
+  employee: "社内向け",
+  both: "両方",
+};
+
 // --- フォームフィールド種別 ---
 export const fieldTypeLabels: Record<string, string> = {
   shortText: "短文テキスト",
@@ -106,10 +186,135 @@ export const jobChangeTypeLabels: Record<string, string> = {
 export const formChangeTypeLabels: Record<string, string> = {
   created: "作成",
   title_updated: "タイトル変更",
+  target_updated: "対象変更",
   description_updated: "説明変更",
   field_added: "フィールド追加",
   field_updated: "フィールド変更",
   field_deleted: "フィールド削除",
+};
+
+// --- プロジェクトステータス ---
+export const projectStatusLabels: Record<string, string> = {
+  active: "進行中",
+  completed: "完了",
+  archived: "アーカイブ",
+};
+
+export const projectStatusColors: Record<string, BadgeVariant> = {
+  active: "default",
+  completed: "secondary",
+  archived: "outline",
+};
+
+// --- チームメンバー役割 ---
+export const teamMemberRoleLabels: Record<string, string> = {
+  leader: "リーダー",
+  member: "メンバー",
+};
+
+// --- 勤怠ステータス ---
+export const attendanceStatusLabels: Record<string, string> = {
+  present: "出勤",
+  absent: "欠勤",
+  late: "遅刻",
+  early_leave: "早退",
+  paid_leave: "有休",
+  half_day_am: "午前半休",
+  half_day_pm: "午後半休",
+  holiday: "休日",
+  sick_leave: "病欠",
+  special_leave: "特別休暇",
+};
+
+export const attendanceStatusColors: Record<string, BadgeVariant> = {
+  present: "default",
+  absent: "destructive",
+  late: "outline",
+  early_leave: "outline",
+  paid_leave: "secondary",
+  half_day_am: "secondary",
+  half_day_pm: "secondary",
+  holiday: "secondary",
+  sick_leave: "destructive",
+  special_leave: "secondary",
+};
+
+// --- 打刻種別 ---
+export const punchTypeLabels: Record<string, string> = {
+  clock_in: "出勤",
+  clock_out: "退勤",
+  break_start: "休憩開始",
+  break_end: "休憩終了",
+};
+
+// --- 修正依頼ステータス ---
+export const correctionStatusLabels: Record<string, string> = {
+  pending: "承認待ち",
+  approved: "承認済み",
+  rejected: "却下",
+};
+
+export const correctionStatusColors: Record<string, BadgeVariant> = {
+  pending: "outline",
+  approved: "default",
+  rejected: "destructive",
+};
+
+// --- タスクステータス ---
+export const taskStatusLabels: Record<string, string> = {
+  open: "未着手",
+  in_progress: "進行中",
+  completed: "完了",
+  cancelled: "キャンセル",
+};
+
+export const taskStatusColors: Record<string, BadgeVariant> = {
+  open: "outline",
+  in_progress: "default",
+  completed: "secondary",
+  cancelled: "destructive",
+};
+
+// --- タスク優先度 ---
+export const taskPriorityLabels: Record<string, string> = {
+  low: "低",
+  medium: "中",
+  high: "高",
+  urgent: "緊急",
+};
+
+export const taskPriorityColors: Record<string, BadgeVariant> = {
+  low: "outline",
+  medium: "secondary",
+  high: "default",
+  urgent: "destructive",
+};
+
+// --- タスクスコープ ---
+export const taskScopeLabels: Record<string, string> = {
+  personal: "個人",
+  organization: "組織全体",
+  project: "プロジェクト",
+  team: "チーム",
+};
+
+// --- タスク担当者ステータス ---
+export const taskAssigneeStatusLabels: Record<string, string> = {
+  pending: "未着手",
+  in_progress: "対応中",
+  completed: "完了",
+};
+
+export const taskAssigneeStatusColors: Record<string, BadgeVariant> = {
+  pending: "outline",
+  in_progress: "default",
+  completed: "secondary",
+};
+
+// --- タスクソース ---
+export const taskSourceLabels: Record<string, string> = {
+  employee: "従業員",
+  console: "管理者",
 };
 
 export const scheduleChangeTypeLabels: Record<string, string> = {

@@ -6,6 +6,7 @@ class AppUser {
     required this.email,
     required this.organizationId,
     required this.organizationName,
+    this.role = 'employee',
     this.displayName,
     this.avatarUrl,
     this.department,
@@ -23,6 +24,9 @@ class AppUser {
 
   /// 所属企業名
   final String organizationName;
+
+  /// ロール（admin / employee / applicant）
+  final String role;
 
   /// 表示名（任意）
   final String? displayName;
@@ -43,6 +47,7 @@ class AppUser {
       email: json['email'] as String,
       organizationId: json['organization_id'] as String,
       organizationName: json['organization_name'] as String,
+      role: json['role'] as String? ?? 'employee',
       displayName: json['display_name'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       department: json['department'] as String?,

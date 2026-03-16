@@ -133,10 +133,11 @@ export default function SchedulingPage() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       <PageHeader
         title="日程調整"
         description="面接の日程管理"
+        sticky={false}
         action={
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger render={<Button />}>面接を作成</DialogTrigger>
@@ -236,7 +237,7 @@ export default function SchedulingPage() {
         }
       />
 
-      <div className="flex-1 overflow-y-auto bg-white">
+      <div className="bg-white">
         <Table>
           <TableHeader>
             <TableRow>

@@ -1,4 +1,4 @@
-/// HR1 余白・サイズ定数
+/// HR1 余白・サイズ定数 — 8pt grid system
 class AppSpacing {
   AppSpacing._();
 
@@ -14,17 +14,17 @@ class AppSpacing {
   /// 通常余白: 16.0
   static const double lg = 16.0;
 
-  /// 大余白: 24.0
-  static const double xl = 24.0;
+  /// 大余白: 20.0
+  static const double xl = 20.0;
 
-  /// 特大余白: 32.0
-  static const double xxl = 32.0;
+  /// 特大余白: 28.0
+  static const double xxl = 28.0;
 
-  /// 最大余白: 48.0
-  static const double xxxl = 48.0;
+  /// 最大余白: 40.0
+  static const double xxxl = 40.0;
 
   /// 画面の水平パディング
-  static const double screenHorizontal = 16.0;
+  static const double screenHorizontal = 20.0;
 
   /// 画面の垂直パディング
   static const double screenVertical = 24.0;
@@ -36,10 +36,10 @@ class AppSpacing {
   static const double cardRadius = 12.0;
 
   /// ボタンの角丸
-  static const double buttonRadius = 8.0;
+  static const double buttonRadius = 10.0;
 
   /// 入力フィールドの角丸
-  static const double inputRadius = 8.0;
+  static const double inputRadius = 10.0;
 
   /// アイコンサイズ（小）
   static const double iconSm = 16.0;
@@ -54,7 +54,7 @@ class AppSpacing {
   static const double avatarSm = 32.0;
 
   /// アバターサイズ（中）
-  static const double avatarMd = 48.0;
+  static const double avatarMd = 44.0;
 
   /// アバターサイズ（大）
   static const double avatarLg = 64.0;

@@ -30,4 +30,7 @@ abstract class MessagesRepository {
 
   /// メッセージを削除
   Future<void> deleteMessage(String messageId);
+
+  /// 送信者プロフィールを取得
+  Future<Map<String, dynamic>> getSenderProfile(String senderId);
 }
