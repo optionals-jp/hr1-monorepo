@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../attendance/domain/entities/attendance_record.dart';
 import '../../domain/entities/calendar_event.dart';
 
 /// Outlook スタイルのデイビュー（時間軸グリッド）
@@ -10,12 +12,14 @@ class DayView extends StatefulWidget {
     super.key,
     required this.date,
     required this.events,
+    this.punches = const [],
     this.onEventTap,
     this.onTimeSlotTap,
   });
 
   final DateTime date;
   final List<CalendarEvent> events;
+  final List<AttendancePunch> punches;
   final ValueChanged<CalendarEvent>? onEventTap;
   final ValueChanged<DateTime>? onTimeSlotTap;
 
@@ -124,6 +128,11 @@ class _DayViewState extends State<DayView> {
                       right: 0,
                       child: _HourRow(hour: h, theme: theme),
                     ),
+                  // 勤怠バー（打刻間の状態を色付きバーで表示）
+                  ..._buildAttendanceBars(theme),
+                  // 勤怠打刻マーカー（左端）
+                  ...widget.punches.map((punch) =>
+                      _buildPunchMarker(punch, theme)),
                   // イベントブロック
                   ...timedEvents.map((event) => _buildEventBlock(
                         event, timedEvents, theme)),
@@ -135,6 +144,89 @@ class _DayViewState extends State<DayView> {
           ),
         ),
       ],
+    );
+  }
+
+  /// 打刻間の状態バーを生成（勤務中=緑、休憩中=黄）
+  List<Widget> _buildAttendanceBars(ThemeData theme) {
+    final punches = widget.punches;
+    if (punches.isEmpty) return [];
+
+    final bars = <Widget>[];
+    for (var i = 0; i < punches.length - 1; i++) {
+      final current = punches[i];
+      final next = punches[i + 1];
+
+      // 勤務中 or 休憩中を判定
+      final isBreak = current.punchType == 'break_start';
+      final color = isBreak ? AppColors.warning : AppColors.success;
+
+      final startMin = _toMinutes(current.punchedAt.toLocal());
+      final endMin = _toMinutes(next.punchedAt.toLocal());
+      final topPos = startMin * _hourHeight / 60;
+      final height = (endMin - startMin) * _hourHeight / 60;
+
+      if (height <= 0) continue;
+
+      bars.add(
+        Positioned(
+          top: topPos,
+          left: _timeColumnWidth - 6,
+          child: Container(
+            width: 3,
+            height: height,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(1.5),
+            ),
+          ),
+        ),
+      );
+    }
+    return bars;
+  }
+
+  double _toMinutes(DateTime local) =>
+      (local.hour * 60 + local.minute).toDouble();
+
+  Widget _buildPunchMarker(AttendancePunch punch, ThemeData theme) {
+    final local = punch.punchedAt.toLocal();
+    final minutes = local.hour * 60 + local.minute;
+    final top = minutes * _hourHeight / 60;
+
+    final (iconAsset, color) = switch (punch.punchType) {
+      'clock_in' => (AppIcons.login, AppColors.success),
+      'clock_out' => (AppIcons.logout, AppColors.error),
+      'break_start' => (AppIcons.coffee, AppColors.warning),
+      'break_end' => (AppIcons.pause, AppColors.brandLight),
+      _ => (AppIcons.clock, theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+    };
+
+    return Positioned(
+      top: top - 10,
+      left: _timeColumnWidth - 16,
+      child: Container(
+        width: 22,
+        height: 22,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+              border: Border.all(color: color.withValues(alpha: 0.15), width: 1),
+            ),
+            child: Center(
+              child: AppIcons.svg(iconAsset, size: 10, color: color),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

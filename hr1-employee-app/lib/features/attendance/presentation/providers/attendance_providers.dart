@@ -25,6 +25,13 @@ final todayPunchesProvider = FutureProvider<List<AttendancePunch>>((ref) async {
   return repo.getTodayPunches();
 });
 
+/// 指定日の打刻履歴プロバイダー
+final punchesByDateProvider =
+    FutureProvider.family<List<AttendancePunch>, DateTime>((ref, date) async {
+  final repo = ref.watch(attendanceRepositoryProvider);
+  return repo.getPunchesByDate(date);
+});
+
 /// 勤怠設定プロバイダー
 final attendanceSettingsProvider =
     FutureProvider<AttendanceSettings>((ref) async {

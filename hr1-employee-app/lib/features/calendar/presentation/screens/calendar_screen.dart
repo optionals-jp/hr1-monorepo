@@ -9,6 +9,7 @@ import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/org_icon.dart';
 import '../../../../shared/widgets/user_avatar.dart';
+import '../../../attendance/presentation/providers/attendance_providers.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/calendar_event.dart';
 import '../controllers/calendar_controller.dart';
@@ -316,11 +317,17 @@ class _DayViewWrapper extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eventsAsync = ref.watch(selectedDateEventsProvider);
+    final punchesAsync = ref.watch(punchesByDateProvider(selectedDate));
 
     return eventsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('エラー: $e')),
-      data: (events) => DayView(date: selectedDate, events: events, onEventTap: onEventTap),
+      data: (events) => DayView(
+        date: selectedDate,
+        events: events,
+        punches: punchesAsync.valueOrNull ?? [],
+        onEventTap: onEventTap,
+      ),
     );
   }
 }

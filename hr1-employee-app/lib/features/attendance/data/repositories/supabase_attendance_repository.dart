@@ -87,6 +87,24 @@ class SupabaseAttendanceRepository {
         .toList();
   }
 
+  /// 指定日の打刻履歴を取得
+  Future<List<AttendancePunch>> getPunchesByDate(DateTime date) async {
+    final dayStart = DateTime(date.year, date.month, date.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+
+    final response = await _client
+        .from('attendance_punches')
+        .select()
+        .eq('user_id', _userId)
+        .gte('punched_at', dayStart.toUtc().toIso8601String())
+        .lt('punched_at', dayEnd.toUtc().toIso8601String())
+        .order('punched_at', ascending: true);
+
+    return (response as List)
+        .map((json) => AttendancePunch.fromJson(json))
+        .toList();
+  }
+
   /// 出勤打刻
   Future<AttendanceRecord> clockIn({String? note}) async {
     final now = DateTime.now();
