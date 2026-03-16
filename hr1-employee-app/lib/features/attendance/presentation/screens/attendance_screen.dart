@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_icons.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../domain/entities/attendance_record.dart';
+import '../controllers/attendance_controller.dart';
 import '../providers/attendance_providers.dart';
 
 /// 勤怠打刻画面 — Office モバイルスタイル
@@ -18,40 +20,19 @@ class AttendanceScreen extends ConsumerStatefulWidget {
 }
 
 class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
-  bool _isLoading = false;
-
   Future<void> _handlePunch(String action) async {
-    setState(() => _isLoading = true);
-    try {
-      final repo = ref.read(attendanceRepositoryProvider);
-      switch (action) {
-        case 'clock_in':
-          await repo.clockIn();
-        case 'clock_out':
-          await repo.clockOut();
-        case 'break_start':
-          await repo.breakStart();
-        case 'break_end':
-          await repo.breakEnd();
-      }
-      ref.invalidate(todayRecordProvider);
-      ref.invalidate(todayPunchesProvider);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('エラーが発生しました: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    await ref.read(attendanceControllerProvider.notifier).punch(action);
+    final error = ref.read(attendanceControllerProvider).error;
+    if (error != null && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('エラーが発生しました: $error'), backgroundColor: AppColors.error));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final punchState = ref.watch(attendanceControllerProvider);
     final workState = ref.watch(workStateProvider);
     final todayRecord = ref.watch(todayRecordProvider);
     final todayPunches = ref.watch(todayPunchesProvider);
@@ -65,10 +46,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             onPressed: () => context.push(AppRoutes.correction),
             child: Text(
               '修正依頼',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.brandPrimary,
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppTextStyles.regular12.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
             ),
           ),
           const SizedBox(width: 4),
@@ -76,29 +54,18 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          ref.invalidate(todayRecordProvider);
-          ref.invalidate(todayPunchesProvider);
+          ref.read(attendanceControllerProvider.notifier).refresh();
         },
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenHorizontal,
-            vertical: AppSpacing.md,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: AppSpacing.md),
           children: [
             // 時刻 + ステータス（統合ヒーロー）
-            _TimeStatusHero(
-              workState: workState,
-              record: todayRecord.valueOrNull,
-            ),
+            _TimeStatusHero(workState: workState, record: todayRecord.valueOrNull),
             const SizedBox(height: AppSpacing.xl),
 
             // 打刻ボタン（2x2）
-            _PunchButtons(
-              workState: workState,
-              isLoading: _isLoading,
-              onPunch: _handlePunch,
-            ),
+            _PunchButtons(workState: workState, isLoading: punchState.isLoading, onPunch: _handlePunch),
             const SizedBox(height: AppSpacing.xxl),
 
             // 今日のサマリー
@@ -116,7 +83,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               padding: const EdgeInsets.only(top: AppSpacing.xl, bottom: AppSpacing.sm),
               child: Text(
                 'タイムライン',
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.regular11.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.3,
@@ -130,9 +97,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                       child: Center(
                         child: Text(
                           'まだ打刻がありません',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.45),
+                          style: AppTextStyles.regular12.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                           ),
                         ),
                       ),
@@ -142,15 +108,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         for (var i = 0; i < punches.length; i++)
                           _TimelineItem(
                             punch: punches[i],
+                            nextPunch: i < punches.length - 1 ? punches[i + 1] : null,
                             isLast: i == punches.length - 1,
                           ),
                       ],
                     ),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Padding(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Text('エラー: $e'),
-              ),
+              error: (e, _) => Padding(padding: const EdgeInsets.all(AppSpacing.xl), child: Text('エラー: $e')),
             ),
             const SizedBox(height: AppSpacing.xxl),
           ],
@@ -175,10 +139,7 @@ class _TimeStatusHero extends StatelessWidget {
     final theme = Theme.of(context);
 
     final (statusLabel, statusColor) = switch (workState) {
-      WorkState.notStarted => (
-          '未出勤',
-          theme.colorScheme.onSurface.withValues(alpha: 0.45)
-        ),
+      WorkState.notStarted => ('未出勤', theme.colorScheme.onSurface.withValues(alpha: 0.45)),
       WorkState.working => ('勤務中', AppColors.success),
       WorkState.onBreak => ('休憩中', AppColors.warning),
       WorkState.finished => ('退勤済み', AppColors.brandPrimary),
@@ -189,15 +150,13 @@ class _TimeStatusHero extends StatelessWidget {
         // 日付
         Text(
           dateFormat.format(now),
-          style: AppTextStyles.bodySmall.copyWith(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
-          ),
+          style: AppTextStyles.regular12.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
         ),
         const SizedBox(height: 4),
         // 時刻（大きく表示）
         Text(
           timeFormat.format(now),
-          style: AppTextStyles.numericLarge.copyWith(
+          style: AppTextStyles.extraLight48.copyWith(
             fontSize: 52,
             fontWeight: FontWeight.w200,
             color: theme.colorScheme.onSurface,
@@ -217,18 +176,12 @@ class _TimeStatusHero extends StatelessWidget {
               Container(
                 width: 8,
                 height: 8,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
               ),
               const SizedBox(width: 6),
               Text(
                 statusLabel,
-                style: AppTextStyles.caption.copyWith(
-                  color: statusColor,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AppTextStyles.regular11.copyWith(color: statusColor, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -240,11 +193,7 @@ class _TimeStatusHero extends StatelessWidget {
 
 /// 打刻ボタン群
 class _PunchButtons extends StatelessWidget {
-  const _PunchButtons({
-    required this.workState,
-    required this.isLoading,
-    required this.onPunch,
-  });
+  const _PunchButtons({required this.workState, required this.isLoading, required this.onPunch});
 
   final WorkState workState;
   final bool isLoading;
@@ -259,7 +208,7 @@ class _PunchButtons extends StatelessWidget {
             Expanded(
               child: _PunchButton(
                 label: '出勤',
-                icon: Icons.login_rounded,
+                icon: AppIcons.login,
                 color: AppColors.success,
                 enabled: !isLoading && workState == WorkState.notStarted,
                 onPressed: () => onPunch('clock_in'),
@@ -269,7 +218,7 @@ class _PunchButtons extends StatelessWidget {
             Expanded(
               child: _PunchButton(
                 label: '退勤',
-                icon: Icons.logout_rounded,
+                icon: AppIcons.logout,
                 color: AppColors.error,
                 enabled: !isLoading && workState == WorkState.working,
                 onPressed: () => onPunch('clock_out'),
@@ -283,7 +232,7 @@ class _PunchButtons extends StatelessWidget {
             Expanded(
               child: _PunchButton(
                 label: '休憩開始',
-                icon: Icons.coffee_rounded,
+                icon: AppIcons.coffee,
                 color: AppColors.warning,
                 enabled: !isLoading && workState == WorkState.working,
                 onPressed: () => onPunch('break_start'),
@@ -293,7 +242,7 @@ class _PunchButtons extends StatelessWidget {
             Expanded(
               child: _PunchButton(
                 label: '休憩終了',
-                icon: Icons.restart_alt_rounded,
+                icon: AppIcons.pause,
                 color: AppColors.brandLight,
                 enabled: !isLoading && workState == WorkState.onBreak,
                 onPressed: () => onPunch('break_end'),
@@ -317,7 +266,7 @@ class _PunchButton extends StatelessWidget {
   });
 
   final String label;
-  final IconData icon;
+  final String icon;
   final Color color;
   final bool enabled;
   final VoidCallback onPressed;
@@ -325,6 +274,7 @@ class _PunchButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final iconColor = enabled ? Colors.white : theme.colorScheme.onSurface.withValues(alpha: 0.3);
 
     return SizedBox(
       height: 56,
@@ -339,31 +289,16 @@ class _PunchButton extends StatelessWidget {
                 ? null
                 : BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color:
-                          theme.colorScheme.onSurface.withValues(alpha: 0.12),
-                      width: 1,
-                    ),
+                    border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.12), width: 1),
                   ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  icon,
-                  size: 20,
-                  color: enabled
-                      ? Colors.white
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.3),
-                ),
+                AppIcons.svg(icon, size: 20, color: iconColor),
                 const SizedBox(width: 8),
                 Text(
                   label,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: enabled
-                        ? Colors.white
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.3),
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppTextStyles.regular12.copyWith(color: iconColor, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -390,37 +325,18 @@ class _SummaryRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: isDark
-            ? Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                width: 0.5)
-            : null,
+        border: isDark ? Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2), width: 0.5) : null,
         boxShadow: isDark
             ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
-                ),
-              ],
+            : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 3, offset: const Offset(0, 1))],
       ),
       child: Row(
         children: [
-          _KVItem(
-            label: '勤務',
-            value: record.workDurationFormatted,
-          ),
+          _KVItem(label: '勤務', value: record.workDurationFormatted),
           _Divider(),
-          _KVItem(
-            label: '休憩',
-            value: _fmtMin(record.breakMinutes),
-          ),
+          _KVItem(label: '休憩', value: _fmtMin(record.breakMinutes)),
           _Divider(),
-          _KVItem(
-            label: 'ステータス',
-            value: AttendanceStatus.label(record.status),
-          ),
+          _KVItem(label: 'ステータス', value: AttendanceStatus.label(record.status)),
         ],
       ),
     );
@@ -443,16 +359,11 @@ class _KVItem extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(
-            value,
-            style: AppTextStyles.subtitle,
-          ),
+          Text(value, style: AppTextStyles.semiBold16),
           const SizedBox(height: 2),
           Text(
             label,
-            style: AppTextStyles.label.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
-            ),
+            style: AppTextStyles.medium12.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
           ),
         ],
       ),
@@ -463,88 +374,133 @@ class _KVItem extends StatelessWidget {
 class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 0.5,
-      height: 28,
-      color: Theme.of(context).colorScheme.outlineVariant,
-    );
+    return Container(width: 0.5, height: 28, color: Theme.of(context).colorScheme.outlineVariant);
   }
 }
 
-/// タイムラインアイテム — 縦線でつながるスタイル
+/// タイムラインアイテム — GitHub 履歴風（アイコン + 縦線）
 class _TimelineItem extends StatelessWidget {
-  const _TimelineItem({required this.punch, this.isLast = false});
+  const _TimelineItem({required this.punch, this.nextPunch, this.isLast = false});
 
   final AttendancePunch punch;
+  final AttendancePunch? nextPunch;
   final bool isLast;
+
+  static TextSpan _punchDescription(AttendancePunch punch, TextStyle base) {
+    final time = DateFormat('H時mm分').format(punch.punchedAt.toLocal());
+    final bold = base.copyWith(fontWeight: FontWeight.w600);
+    final (action, suffix) = switch (punch.punchType) {
+      'clock_in' => ('出勤', 'しました'),
+      'clock_out' => ('退勤', 'しました'),
+      'break_start' => ('休憩を開始', 'しました'),
+      'break_end' => ('休憩を終了', 'しました'),
+      _ => ('打刻', 'しました'),
+    };
+    return TextSpan(
+      children: [
+        TextSpan(text: '$timeに'),
+        TextSpan(text: action, style: bold),
+        TextSpan(text: suffix),
+      ],
+    );
+  }
+
+  static String _formatDuration(Duration d) {
+    final h = d.inHours;
+    final m = d.inMinutes % 60;
+    if (h > 0 && m > 0) return '$h時間$m分';
+    if (h > 0) return '$h時間';
+    if (m > 0) return '$m分';
+    return '0分';
+  }
+
+  static String _elapsedLabel(Duration d, String currentType, String nextType) {
+    final dur = _formatDuration(d);
+    // 休憩開始→休憩終了: 休憩しました
+    if (currentType == 'break_start' && nextType == 'break_end') {
+      return '$dur 休憩しました';
+    }
+    // それ以外（出勤→休憩, 休憩終了→退勤 etc）: 勤務しました
+    return '$dur 勤務しました';
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final (_, iconColor) = switch (punch.punchType) {
-      'clock_in' => (Icons.login_rounded, AppColors.success),
-      'clock_out' => (Icons.logout_rounded, AppColors.error),
-      'break_start' => (Icons.coffee_rounded, AppColors.warning),
-      'break_end' => (Icons.restart_alt_rounded, AppColors.brandLight),
-      _ => (Icons.circle, theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+    final (iconAsset, iconColor) = switch (punch.punchType) {
+      'clock_in' => (AppIcons.login, AppColors.success),
+      'clock_out' => (AppIcons.logout, AppColors.error),
+      'break_start' => (AppIcons.coffee, AppColors.warning),
+      'break_end' => (AppIcons.pause, AppColors.brandLight),
+      _ => (AppIcons.clock, theme.colorScheme.onSurface.withValues(alpha: 0.45)),
     };
 
-    return IntrinsicHeight(
-      child: Row(
-        children: [
-          // タイムラインドット + ライン
-          SizedBox(
-            width: 24,
-            child: Column(
-              children: [
-                Container(
-                  width: 10,
-                  height: 10,
+    // 次の打刻までの経過時間
+    final elapsed = nextPunch != null ? nextPunch!.punchedAt.difference(punch.punchedAt) : null;
+
+    return Column(
+      children: [
+        // アイコン + ラベル行
+        Row(
+          spacing: 0,
+          children: [
+            // アイコンバッジ
+            SizedBox(
+              width: 36,
+              child: Center(
+                child: Container(
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
-                    color: iconColor,
+                    color: iconColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
+                    border: Border.all(color: iconColor.withValues(alpha: 0.25), width: 1),
+                  ),
+                  child: Center(child: AppIcons.svg(iconAsset, size: 16, color: iconColor)),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            // コンテンツ
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Text.rich(
+                  _punchDescription(
+                    punch,
+                    AppTextStyles.regular14.copyWith(
+                      fontSize: 14,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
                   ),
                 ),
-                if (!isLast)
-                  Expanded(
-                    child: Container(
-                      width: 1.5,
-                      color: theme.colorScheme.outlineVariant,
-                    ),
+              ),
+            ),
+          ],
+        ),
+        // コネクター: 縦棒 + 経過時間（最後以外）
+        if (!isLast)
+          SizedBox(
+            height: 30,
+            child: Row(
+              children: [
+                // 縦棒
+                SizedBox(
+                  width: 36,
+                  child: Center(child: Container(width: 1.5, height: 36, color: theme.colorScheme.outlineVariant)),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                // 経過時間
+                if (elapsed != null)
+                  Text(
+                    _elapsedLabel(elapsed, punch.punchType, nextPunch!.punchType),
+                    style: AppTextStyles.regular11.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
                   ),
               ],
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
-          // コンテンツ
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      PunchType.label(punch.punchType),
-                      style: AppTextStyles.bodySmall.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    DateFormat('HH:mm').format(punch.punchedAt.toLocal()),
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: theme.colorScheme.onSurface
-                          .withValues(alpha: 0.55),
-                      fontFeatures: [const FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }

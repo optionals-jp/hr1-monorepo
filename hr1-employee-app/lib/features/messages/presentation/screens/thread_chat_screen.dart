@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/message_thread.dart';
-import '../providers/messages_providers.dart';
+import '../controllers/thread_chat_controller.dart';
 
 const _pageSize = 30;
 
@@ -65,8 +66,8 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
   }
 
   Future<void> _loadMessages() async {
-    final repo = ref.read(messagesRepositoryProvider);
-    final messages = await repo.getMessagesPaginated(
+    final controller = ref.read(threadChatControllerProvider.notifier);
+    final messages = await controller.getMessages(
       widget.thread.id,
       limit: _pageSize,
     );
@@ -77,16 +78,16 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
         _hasMore = messages.length >= _pageSize;
       });
       _scrollToBottom();
-      repo.markAsRead(widget.thread.id, _currentUserId);
+      controller.markAsRead(widget.thread.id, _currentUserId);
     }
   }
 
   Future<void> _loadOlderMessages() async {
     if (_loadingMore || !_hasMore || _messages.isEmpty) return;
     setState(() => _loadingMore = true);
-    final repo = ref.read(messagesRepositoryProvider);
+    final controller = ref.read(threadChatControllerProvider.notifier);
     final oldestCreatedAt = _messages.first.createdAt;
-    final olderMessages = await repo.getMessagesPaginated(
+    final olderMessages = await controller.getMessages(
       widget.thread.id,
       before: oldestCreatedAt,
       limit: _pageSize,
@@ -122,11 +123,9 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
           callback: (payload) async {
             final newMsg = payload.newRecord;
             if (newMsg.isEmpty) return;
-            final senderResponse = await Supabase.instance.client
-                .from('profiles')
-                .select('id, display_name, role')
-                .eq('id', newMsg['sender_id'] as String)
-                .single();
+            final senderResponse = await ref
+                .read(threadChatControllerProvider.notifier)
+                .getSenderProfile(newMsg['sender_id'] as String);
             final msg = Message.fromJson({
               ...newMsg,
               'sender': senderResponse,
@@ -140,7 +139,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
               _scrollToBottom();
               if (msg.senderId != _currentUserId) {
                 ref
-                    .read(messagesRepositoryProvider)
+                    .read(threadChatControllerProvider.notifier)
                     .markAsRead(widget.thread.id, _currentUserId);
               }
             }
@@ -265,7 +264,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
       'is_typing': false,
     });
     try {
-      await ref.read(messagesRepositoryProvider).sendMessage(
+      await ref.read(threadChatControllerProvider.notifier).sendMessage(
             threadId: widget.thread.id,
             senderId: _currentUserId,
             content: content,
@@ -304,7 +303,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     final messageId = _editingMessageId!;
     _cancelEditing();
     try {
-      await ref.read(messagesRepositoryProvider).editMessage(messageId, content);
+      await ref.read(threadChatControllerProvider.notifier).editMessage(messageId, content);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -338,7 +337,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     );
     if (confirmed != true) return;
     try {
-      await ref.read(messagesRepositoryProvider).deleteMessage(messageId);
+      await ref.read(threadChatControllerProvider.notifier).deleteMessage(messageId);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -422,7 +421,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            Text(displayName, style: AppTextStyles.subtitle),
+            Text(displayName, style: AppTextStyles.semiBold16),
           ],
         ),
         centerTitle: false,
@@ -437,7 +436,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                     ? Center(
                         child: Text(
                           'メッセージはまだありません',
-                          style: AppTextStyles.body.copyWith(
+                          style: AppTextStyles.regular14.copyWith(
                             color: theme.colorScheme.onSurface
                                 .withValues(alpha: 0.45),
                           ),
@@ -525,8 +524,8 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(left: 14, bottom: 10),
-                          child: Icon(
-                            Icons.chat_bubble_outline_rounded,
+                          child: AppIcons.svg(
+                            AppIcons.directbox,
                             size: 20,
                             color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                           ),
@@ -537,7 +536,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                             controller: _controller,
                             decoration: InputDecoration(
                               hintText: 'メッセージを入力',
-                              hintStyle: AppTextStyles.bodySmall.copyWith(
+                              hintStyle: AppTextStyles.regular12.copyWith(
                                 color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                               ),
                               filled: false,
@@ -547,7 +546,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                               contentPadding: const EdgeInsets.symmetric(vertical: 10),
                               isDense: true,
                             ),
-                            style: AppTextStyles.bodySmall,
+                            style: AppTextStyles.regular12,
                             maxLines: 4,
                             minLines: 1,
                             textInputAction: TextInputAction.send,
@@ -567,8 +566,8 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                     height: 36,
                     child: IconButton(
                       onPressed: _sending ? null : _sendMessage,
-                      icon: Icon(
-                        Icons.send_rounded,
+                      icon: AppIcons.svg(
+                        AppIcons.send,
                         color: _sending
                             ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
                             : AppColors.brandPrimary,
@@ -628,7 +627,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
     final theme = Theme.of(context);
     return Text(
       '${'.' * _dotCount} 入力中',
-      style: AppTextStyles.caption.copyWith(
+      style: AppTextStyles.regular11.copyWith(
         color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
       ),
     );
@@ -675,7 +674,7 @@ class _EditingBubble extends StatelessWidget {
                     autofocus: true,
                     maxLines: 4,
                     minLines: 1,
-                    style: AppTextStyles.bodySmall,
+                    style: AppTextStyles.regular12,
                     decoration: const InputDecoration(
                       isDense: true,
                       border: InputBorder.none,
@@ -698,7 +697,7 @@ class _EditingBubble extends StatelessWidget {
                         ),
                         child: Text(
                           'キャンセル',
-                          style: AppTextStyles.caption.copyWith(
+                          style: AppTextStyles.regular11.copyWith(
                             color: theme.colorScheme.onSurface
                                 .withValues(alpha: 0.6),
                           ),
@@ -715,7 +714,7 @@ class _EditingBubble extends StatelessWidget {
                         ),
                         child: Text(
                           '保存',
-                          style: AppTextStyles.caption.copyWith(
+                          style: AppTextStyles.regular11.copyWith(
                             color: AppColors.brandPrimary,
                             fontWeight: FontWeight.w600,
                           ),
@@ -802,7 +801,7 @@ class _MessageBubble extends StatelessWidget {
                         left: AppSpacing.xs, bottom: 3),
                     child: Text(
                       message.senderName ?? '相手',
-                      style: AppTextStyles.label.copyWith(
+                      style: AppTextStyles.medium12.copyWith(
                         color: theme.colorScheme.onSurface
                             .withValues(alpha: 0.55),
                         fontWeight: FontWeight.w600,
@@ -825,7 +824,7 @@ class _MessageBubble extends StatelessWidget {
                   ),
                   child: Text(
                     message.content,
-                    style: AppTextStyles.bodySmall.copyWith(color: textColor),
+                    style: AppTextStyles.regular12.copyWith(color: textColor),
                   ),
                 ),
                 Padding(
@@ -839,7 +838,7 @@ class _MessageBubble extends StatelessWidget {
                           padding: const EdgeInsets.only(right: 4),
                           child: Text(
                             '編集済み',
-                            style: AppTextStyles.label.copyWith(
+                            style: AppTextStyles.medium12.copyWith(
                               color: metaColor,
                               fontSize: 10,
                             ),
@@ -847,7 +846,7 @@ class _MessageBubble extends StatelessWidget {
                         ),
                       Text(
                         '${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}',
-                        style: AppTextStyles.label.copyWith(
+                        style: AppTextStyles.medium12.copyWith(
                           color: metaColor,
                         ),
                       ),

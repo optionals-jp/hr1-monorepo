@@ -585,7 +585,12 @@ export default function EmployeeDetailPage() {
                     <div className="space-y-3 text-sm">
                       {certifications.map((cert) => (
                         <div key={cert.id} className="flex justify-between">
-                          <span>{cert.name}</span>
+                          <span>
+                            {cert.name}
+                            {cert.score != null && (
+                              <span className="ml-1.5 text-muted-foreground">{cert.score}点</span>
+                            )}
+                          </span>
                           <span className="text-muted-foreground">
                             {cert.acquired_date
                               ? format(new Date(cert.acquired_date), "yyyy/MM")

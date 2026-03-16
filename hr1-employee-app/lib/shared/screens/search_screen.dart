@@ -82,7 +82,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       child: Text(
                         'キャンセル',
-                        style: AppTextStyles.bodySmall.copyWith(
+                        style: AppTextStyles.regular12.copyWith(
                           color: AppColors.brandPrimary,
                           fontWeight: FontWeight.w500,
                         ),
@@ -133,7 +133,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           child: Text(
             'よく連絡する人',
-            style: AppTextStyles.caption.copyWith(
+            style: AppTextStyles.regular11.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
               fontWeight: FontWeight.w600,
             ),
@@ -171,7 +171,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       const SizedBox(height: 6),
                       Text(
                         contact.name.split(' ').first,
-                        style: AppTextStyles.label.copyWith(
+                        style: AppTextStyles.medium12.copyWith(
                           color: theme.colorScheme.onSurface,
                           fontWeight: FontWeight.w600,
                         ),
@@ -181,7 +181,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       Text(
                         '${contact.department} ${contact.position}',
-                        style: AppTextStyles.label.copyWith(
+                        style: AppTextStyles.medium12.copyWith(
                           color: theme.colorScheme.onSurface
                               .withValues(alpha: 0.5),
                           fontSize: 10,
@@ -216,7 +216,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           child: Text(
             '最近の検索',
-            style: AppTextStyles.caption.copyWith(
+            style: AppTextStyles.regular11.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
               fontWeight: FontWeight.w600,
             ),
@@ -242,7 +242,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
-                      child: Text(query, style: AppTextStyles.bodySmall),
+                      child: Text(query, style: AppTextStyles.regular12),
                     ),
                     Icon(
                       Icons.north_west_rounded,

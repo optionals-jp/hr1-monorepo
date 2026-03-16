@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/master_search_bar.dart';
 import '../../domain/entities/employee_skill.dart';
+import '../controllers/skills_controller.dart';
 import '../providers/skills_providers.dart';
 
 /// スキル編集画面
@@ -15,24 +17,14 @@ class SkillsEditScreen extends ConsumerStatefulWidget {
 }
 
 class _SkillsEditScreenState extends ConsumerState<SkillsEditScreen> {
-  final _addController = TextEditingController();
   bool _isAdding = false;
 
-  @override
-  void dispose() {
-    _addController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _addSkill([String? selectedName]) async {
-    final name = (selectedName ?? _addController.text).trim();
+  Future<void> _addSkill(String name) async {
     if (name.isEmpty) return;
 
     setState(() => _isAdding = true);
     try {
-      await ref.read(skillsRepositoryProvider).addSkill(name);
-      _addController.clear();
-      ref.invalidate(mySkillsProvider);
+      await ref.read(skillsControllerProvider.notifier).addSkill(name);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -65,8 +57,7 @@ class _SkillsEditScreenState extends ConsumerState<SkillsEditScreen> {
     if (confirmed != true) return;
 
     try {
-      await ref.read(skillsRepositoryProvider).deleteSkill(skill.id);
-      ref.invalidate(mySkillsProvider);
+      await ref.read(skillsControllerProvider.notifier).deleteSkill(skill.id);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -78,11 +69,12 @@ class _SkillsEditScreenState extends ConsumerState<SkillsEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final skillsAsync = ref.watch(mySkillsProvider);
+    final skillsAsync = ref.watch(skillsControllerProvider);
     final mastersAsync = ref.watch(skillMastersProvider);
     final theme = Theme.of(context);
 
-    final masterNames = mastersAsync.valueOrNull?.map((m) => m.name).toList() ?? [];
+    final masterNames =
+        mastersAsync.valueOrNull?.map((m) => m.name).toList() ?? [];
 
     return Scaffold(
       appBar: AppBar(
@@ -90,121 +82,12 @@ class _SkillsEditScreenState extends ConsumerState<SkillsEditScreen> {
       ),
       body: Column(
         children: [
-          // 追加フォーム
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Autocomplete<String>(
-                    key: ValueKey(masterNames.length),
-                    optionsBuilder: (textEditingValue) {
-                      if (textEditingValue.text.isEmpty) return const [];
-                      final query = textEditingValue.text.toLowerCase();
-                      return masterNames
-                          .where((name) => name.toLowerCase().contains(query));
-                    },
-                    onSelected: (name) => _addSkill(name),
-                    fieldViewBuilder: (ctx, controller, focusNode, onSubmitted) {
-                      _addController.text = controller.text;
-                      controller.addListener(() {
-                        _addController.text = controller.text;
-                      });
-                      return Container(
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: theme.brightness == Brightness.dark
-                              ? theme.colorScheme.surfaceContainerHighest
-                              : const Color(0xFFEFEFEF),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: TextField(
-                          controller: controller,
-                          focusNode: focusNode,
-                          style: AppTextStyles.bodySmall,
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => _addSkill(),
-                          decoration: InputDecoration(
-                            hintText: 'スキルを検索・追加',
-                            hintStyle: AppTextStyles.bodySmall.copyWith(
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.4),
-                            ),
-                            prefixIcon: Icon(
-                              Icons.search_rounded,
-                              size: 20,
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.4),
-                            ),
-                            prefixIconConstraints: const BoxConstraints(
-                              minWidth: 40,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                            isDense: true,
-                          ),
-                        ),
-                      );
-                    },
-                    optionsViewBuilder: (ctx, onSelected, options) {
-                      return Align(
-                        alignment: Alignment.topLeft,
-                        child: Material(
-                          elevation: 4,
-                          borderRadius: BorderRadius.circular(12),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxHeight: 200),
-                            child: ListView.builder(
-                              padding: EdgeInsets.zero,
-                              shrinkWrap: true,
-                              itemCount: options.length,
-                              itemBuilder: (ctx2, index) {
-                                final option = options.elementAt(index);
-                                return InkWell(
-                                  onTap: () => onSelected(option),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 10),
-                                    child: Text(option,
-                                        style: AppTextStyles.bodySmall),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: IconButton(
-                    onPressed: _isAdding ? null : () => _addSkill(),
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.brandPrimary,
-                      foregroundColor: Colors.white,
-                    ),
-                    icon: _isAdding
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child:
-                                CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Icon(Icons.add_rounded, size: 22),
-                  ),
-                ),
-              ],
-            ),
+          MasterSearchBar(
+            masterNames: masterNames,
+            onAdd: _addSkill,
+            hintText: 'スキルを検索・追加',
+            isAdding: _isAdding,
           ),
-
-          // スキル一覧
           Expanded(
             child: skillsAsync.when(
               loading: () =>
@@ -225,7 +108,7 @@ class _SkillsEditScreenState extends ConsumerState<SkillsEditScreen> {
                         const SizedBox(height: AppSpacing.md),
                         Text(
                           'スキルが登録されていません',
-                          style: AppTextStyles.bodySmall.copyWith(
+                          style: AppTextStyles.regular12.copyWith(
                             color: theme.colorScheme.onSurface
                                 .withValues(alpha: 0.45),
                           ),
@@ -297,7 +180,7 @@ class _SkillTile extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(skill.name, style: AppTextStyles.bodySmall),
+            child: Text(skill.name, style: AppTextStyles.regular12),
           ),
           GestureDetector(
             onTap: onDelete,

@@ -117,8 +117,9 @@ class SupabaseSkillsRepository implements SkillsRepository {
   @override
   Future<EmployeeCertification> addCertification(
     String name,
-    DateTime? acquiredDate,
-  ) async {
+    DateTime? acquiredDate, {
+    int? score,
+  }) async {
     final orgId = await _getOrganizationId();
     final maxOrder = await _client
         .from('employee_certifications')
@@ -136,6 +137,7 @@ class SupabaseSkillsRepository implements SkillsRepository {
           'organization_id': orgId,
           'name': name,
           'acquired_date': acquiredDate?.toIso8601String().split('T').first,
+          'score': score,
           'sort_order': nextOrder,
         })
         .select()

@@ -19,6 +19,10 @@ hr1-employee-app（Flutter社員アプリ）のコードレビューを実施し
 - **未使用コード**: importやvariableが使われずに残っていないか
 - **エラーハンドリング**: 適切にエラーが処理されているか（PostgrestException等）
 
+### クリーンアーキテクチャ
+- **Controller層**: ビジネスロジック（リポジトリ呼び出し、状態更新、データ変換）がController（AsyncNotifier/Notifier）に集約されているか。Screen側に直接リポジトリ呼び出しが残っていないか
+- **責務分離**: Screen はUIの構築とユーザー操作のハンドリングのみ。ローカルUIステート（TextEditingController、フォーム状態等）以外のビジネスロジックがScreen側にないか
+
 ### Flutter / Dart 固有
 - **State管理**: Riverpod の Provider が適切に使われているか
 - **ライフサイクル**: `mounted` チェック、`dispose` でのリソース解放

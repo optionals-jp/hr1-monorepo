@@ -143,4 +143,13 @@ class SupabaseMessagesRepository implements MessagesRepository {
   Future<void> deleteMessage(String messageId) async {
     await _client.from('messages').delete().eq('id', messageId);
   }
+
+  @override
+  Future<Map<String, dynamic>> getSenderProfile(String senderId) async {
+    return _client
+        .from('profiles')
+        .select('id, display_name, role')
+        .eq('id', senderId)
+        .single();
+  }
 }

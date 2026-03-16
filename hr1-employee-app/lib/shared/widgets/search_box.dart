@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_icons.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../screens/search_screen.dart';
 
@@ -45,20 +46,20 @@ class SearchBox extends StatelessWidget {
       child: Row(
         children: [
           const SizedBox(width: 14),
-          Icon(Icons.search_rounded, size: 20, color: hintColor),
+          AppIcons.svg(AppIcons.search, size: 20, color: hintColor),
           const SizedBox(width: 10),
           Expanded(
             child: _isEditable
                 ? TextField(
                     controller: controller,
                     focusNode: focusNode,
-                    style: AppTextStyles.bodySmall,
+                    style: AppTextStyles.regular12,
                     textInputAction: TextInputAction.search,
                     onSubmitted: onSubmitted,
                     decoration: InputDecoration(
                       hintText: hintText,
                       hintStyle:
-                          AppTextStyles.bodySmall.copyWith(color: hintColor),
+                          AppTextStyles.regular12.copyWith(color: hintColor),
                       filled: false,
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -69,7 +70,7 @@ class SearchBox extends StatelessWidget {
                   )
                 : Text(
                     hintText,
-                    style: AppTextStyles.bodySmall.copyWith(color: hintColor),
+                    style: AppTextStyles.regular12.copyWith(color: hintColor),
                   ),
           ),
           if (_isEditable)

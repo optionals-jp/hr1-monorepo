@@ -152,7 +152,7 @@ class MiniCalendar extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   '${date.day}',
-                  style: AppTextStyles.caption.copyWith(
+                  style: AppTextStyles.regular11.copyWith(
                     color: textColor,
                     fontWeight:
                         isToday || isSelected ? FontWeight.w600 : null,
@@ -200,7 +200,7 @@ class _WeekdayHeader extends StatelessWidget {
             child: Center(
               child: Text(
                 d,
-                style: AppTextStyles.label.copyWith(
+                style: AppTextStyles.medium12.copyWith(
                   color: isWeekend
                       ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
                       : theme.colorScheme.onSurface.withValues(alpha: 0.55),

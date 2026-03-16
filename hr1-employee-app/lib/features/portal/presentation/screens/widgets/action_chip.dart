@@ -11,7 +11,7 @@ class PortalActionChip extends StatelessWidget {
     required this.onTap,
   });
 
-  final IconData icon;
+  final Widget icon;
   final String label;
   final Color color;
   final VoidCallback onTap;
@@ -34,11 +34,11 @@ class PortalActionChip extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 24, color: color),
+            icon,
             const SizedBox(height: 6),
             Text(
               label,
-              style: AppTextStyles.label.copyWith(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w500),
+              style: AppTextStyles.medium12.copyWith(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w500),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

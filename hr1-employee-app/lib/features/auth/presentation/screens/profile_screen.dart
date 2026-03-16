@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
+import '../controllers/auth_controller.dart';
 import '../providers/auth_providers.dart';
 
 /// マイページ画面 — Teams / Outlook 設定画面スタイル
@@ -20,7 +22,7 @@ class ProfileScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(
           'マイページ',
-          style: AppTextStyles.subtitle.copyWith(letterSpacing: -0.2),
+          style: AppTextStyles.semiBold16.copyWith(letterSpacing: -0.2),
         ),
         centerTitle: false,
       ),
@@ -45,7 +47,7 @@ class ProfileScreen extends ConsumerWidget {
                 child: Center(
                   child: Text(
                     user?.displayName?.substring(0, 1) ?? '?',
-                    style: AppTextStyles.heading2.copyWith(
+                    style: AppTextStyles.bold24.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
@@ -60,12 +62,12 @@ class ProfileScreen extends ConsumerWidget {
                   children: [
                     Text(
                       user?.displayName ?? '未設定',
-                      style: AppTextStyles.subtitle,
+                      style: AppTextStyles.semiBold16,
                     ),
                     const SizedBox(height: 2),
                     Text(
                       user?.email ?? '',
-                      style: AppTextStyles.caption.copyWith(
+                      style: AppTextStyles.regular11.copyWith(
                         color: theme.colorScheme.onSurface
                             .withValues(alpha: 0.55),
                       ),
@@ -74,7 +76,7 @@ class ProfileScreen extends ConsumerWidget {
                       const SizedBox(height: 2),
                       Text(
                         '${user!.department}${user.position != null ? ' / ${user.position}' : ''}',
-                        style: AppTextStyles.caption.copyWith(
+                        style: AppTextStyles.regular11.copyWith(
                           color: theme.colorScheme.onSurface
                               .withValues(alpha: 0.55),
                         ),
@@ -101,8 +103,8 @@ class ProfileScreen extends ConsumerWidget {
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  Icons.business_rounded,
+                child: AppIcons.svg(
+                  AppIcons.briefcase,
                   size: 18,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                 ),
@@ -120,7 +122,7 @@ class ProfileScreen extends ConsumerWidget {
         _GroupedSection(
           children: [
             _MenuRow(
-              icon: Icons.person_outline_rounded,
+              icon: AppIcons.svg(AppIcons.user, size: 22),
               title: 'プロフィール編集',
               showChevron: true,
               onTap: () {
@@ -128,13 +130,13 @@ class ProfileScreen extends ConsumerWidget {
               },
             ),
             _MenuRow(
-              icon: Icons.notifications_outlined,
+              icon: AppIcons.svg(AppIcons.notification, size: 22),
               title: '通知設定',
               showChevron: true,
               onTap: () {},
             ),
             _MenuRow(
-              icon: Icons.palette_outlined,
+              icon: Icon(Icons.palette_outlined, size: 22),
               title: '外観',
               showChevron: true,
               onTap: () {},
@@ -149,13 +151,13 @@ class ProfileScreen extends ConsumerWidget {
         _GroupedSection(
           children: [
             _MenuRow(
-              icon: Icons.help_outline_rounded,
+              icon: Icon(Icons.help_outline_rounded, size: 22),
               title: 'ヘルプ',
               showChevron: true,
               onTap: () {},
             ),
             _MenuRow(
-              icon: Icons.info_outline_rounded,
+              icon: Icon(Icons.info_outline_rounded, size: 22),
               title: 'バージョン情報',
               showChevron: true,
               onTap: () {},
@@ -169,7 +171,7 @@ class ProfileScreen extends ConsumerWidget {
         _GroupedSection(
           children: [
             _MenuRow(
-              icon: Icons.logout_rounded,
+              icon: Icon(Icons.logout_rounded, size: 22, color: AppColors.error),
               title: 'ログアウト',
               isDestructive: true,
               onTap: () async {
@@ -194,9 +196,10 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 );
                 if (confirmed == true) {
-                  await ref.read(authRepositoryProvider).signOut();
-                  ref.read(appUserProvider.notifier).clearUser();
-                  if (context.mounted) {
+                  final success = await ref
+                      .read(authControllerProvider.notifier)
+                      .signOut();
+                  if (success && context.mounted) {
                     context.go(AppRoutes.login);
                   }
                 }
@@ -230,7 +233,7 @@ class _SectionHeader extends StatelessWidget {
       ),
       child: Text(
         title,
-        style: AppTextStyles.caption.copyWith(
+        style: AppTextStyles.regular11.copyWith(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
           fontWeight: FontWeight.w600,
           letterSpacing: 0.3,
@@ -301,7 +304,7 @@ class _MenuRow extends StatelessWidget {
     this.onTap,
   });
 
-  final IconData? icon;
+  final Widget? icon;
   final Widget? leading;
   final String title;
   final String? subtitle;
@@ -326,7 +329,7 @@ class _MenuRow extends StatelessWidget {
               leading!,
               const SizedBox(width: 14),
             ] else if (icon != null) ...[
-              Icon(icon, size: 22, color: textColor),
+              icon!,
               const SizedBox(width: 14),
             ],
             Expanded(
@@ -335,12 +338,12 @@ class _MenuRow extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: AppTextStyles.bodySmall.copyWith(color: textColor),
+                    style: AppTextStyles.regular12.copyWith(color: textColor),
                   ),
                   if (subtitle != null)
                     Text(
                       subtitle!,
-                      style: AppTextStyles.caption.copyWith(
+                      style: AppTextStyles.regular11.copyWith(
                         color: theme.colorScheme.onSurface
                             .withValues(alpha: 0.55),
                       ),

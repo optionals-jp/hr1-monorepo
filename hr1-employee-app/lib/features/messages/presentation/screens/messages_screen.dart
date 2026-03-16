@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/org_icon.dart';
 import '../../../../shared/widgets/search_box.dart';
+import '../../../../shared/widgets/user_avatar.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/message_thread.dart';
-import '../providers/messages_providers.dart';
+import '../controllers/messages_controller.dart';
 
 /// メッセージ画面 — Teams チャットリストスタイル
 class MessagesScreen extends ConsumerWidget {
@@ -16,58 +20,74 @@ class MessagesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final threadsAsync = ref.watch(messageThreadsProvider);
+    final threadsAsync = ref.watch(messagesControllerProvider);
+    final user = ref.watch(appUserProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'チャット',
-          style: AppTextStyles.subtitle.copyWith(letterSpacing: -0.2),
+        titleSpacing: AppSpacing.screenHorizontal,
+        title: Row(
+          children: [
+            OrgIcon(initial: (user?.organizationName ?? 'H').substring(0, 1), size: 32),
+            const SizedBox(width: 10),
+            Text('チャット', style: AppTextStyles.bold24.copyWith(letterSpacing: -0.2)),
+          ],
         ),
         centerTitle: false,
+        actions: [
+          GestureDetector(
+            onTap: () => context.push(AppRoutes.profile),
+            child: Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.screenHorizontal),
+              child: UserAvatar(
+                initial: (user?.displayName ?? user?.email ?? 'U').substring(0, 1),
+                size: 32,
+                imageUrl: user?.avatarUrl,
+              ),
+            ),
+          ),
+        ],
       ),
       body: Column(
-      children: [
-        // 検索バー（Teams チャット画面上部の検索バー）
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenHorizontal,
-            AppSpacing.sm,
-            AppSpacing.screenHorizontal,
-            AppSpacing.sm,
-          ),
-          child: const SearchBox(),
-        ),
-
-        // スレッドリスト
-        Expanded(
-          child: threadsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Center(
-              child: Text('エラーが発生しました', style: AppTextStyles.body),
+        children: [
+          // 検索バー（Teams チャット画面上部の検索バー）
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenHorizontal,
+              AppSpacing.sm,
+              AppSpacing.screenHorizontal,
+              AppSpacing.sm,
             ),
-            data: (threads) {
-              if (threads.isEmpty) {
-                return const EmptyState(
-                  icon: Icons.chat_bubble_outline_rounded,
-                  title: 'メッセージはありません',
-                  description: 'メッセージがここに表示されます',
-                );
-              }
-
-              return ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: threads.length,
-                itemBuilder: (context, index) {
-                  final thread = threads[index];
-                  return _ThreadTile(thread: thread);
-                },
-              );
-            },
+            child: const SearchBox(),
           ),
-        ),
-      ],
-    ),
+
+          // スレッドリスト
+          Expanded(
+            child: threadsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, _) => Center(child: Text('エラーが発生しました', style: AppTextStyles.regular14)),
+              data: (threads) {
+                if (threads.isEmpty) {
+                  return EmptyState(
+                    icon: AppIcons.svg(AppIcons.directbox, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+                    title: 'メッセージはありません',
+                    description: 'メッセージがここに表示されます',
+                  );
+                }
+
+                return ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount: threads.length,
+                  itemBuilder: (context, index) {
+                    final thread = threads[index];
+                    return _ThreadTile(thread: thread);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -90,27 +110,18 @@ class _ThreadTile extends StatelessWidget {
         context.push(AppRoutes.messageThread, extra: thread);
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.screenHorizontal,
-          vertical: 12,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: 12),
         child: Row(
           children: [
             // アバター（Teams: 40pt circle, 塗りアバター）
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.brandPrimary,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: AppColors.brandPrimary, shape: BoxShape.circle),
               child: Center(
                 child: Text(
                   initial,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppTextStyles.regular12.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -125,9 +136,8 @@ class _ThreadTile extends StatelessWidget {
                       Expanded(
                         child: Text(
                           displayName,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            fontWeight:
-                                hasUnread ? FontWeight.w600 : FontWeight.w400,
+                          style: AppTextStyles.regular12.copyWith(
+                            fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
                           ),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
@@ -137,9 +147,8 @@ class _ThreadTile extends StatelessWidget {
                         const SizedBox(width: AppSpacing.sm),
                         Text(
                           _formatDate(thread.latestMessage!.createdAt),
-                          style: AppTextStyles.caption.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.45),
+                          style: AppTextStyles.regular11.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                             fontSize: 12,
                           ),
                         ),
@@ -153,14 +162,11 @@ class _ThreadTile extends StatelessWidget {
                         Expanded(
                           child: Text(
                             thread.latestMessage!.content,
-                            style: AppTextStyles.caption.copyWith(
+                            style: AppTextStyles.regular11.copyWith(
                               color: hasUnread
                                   ? theme.colorScheme.onSurface
-                                  : theme.colorScheme.onSurface
-                                      .withValues(alpha: 0.55),
-                              fontWeight: hasUnread
-                                  ? FontWeight.w500
-                                  : FontWeight.w400,
+                                  : theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                              fontWeight: hasUnread ? FontWeight.w500 : FontWeight.w400,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -171,18 +177,11 @@ class _ThreadTile extends StatelessWidget {
                           Container(
                             width: 20,
                             height: 20,
-                            decoration: const BoxDecoration(
-                              color: AppColors.brandPrimary,
-                              shape: BoxShape.circle,
-                            ),
+                            decoration: const BoxDecoration(color: AppColors.brandPrimary, shape: BoxShape.circle),
                             child: Center(
                               child: Text(
                                 '${thread.unreadCount}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
                               ),
                             ),
                           ),

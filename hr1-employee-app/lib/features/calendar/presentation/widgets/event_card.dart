@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../domain/entities/calendar_event.dart';
@@ -90,7 +91,7 @@ class EventCard extends StatelessWidget {
                             padding: const EdgeInsets.only(bottom: 2),
                             child: Text(
                               '${timeFormat.format(event.startAt.toLocal())} - ${timeFormat.format(event.endAt.toLocal())}',
-                              style: AppTextStyles.caption.copyWith(
+                              style: AppTextStyles.regular11.copyWith(
                                 color: theme.colorScheme.onSurface
                                     .withValues(alpha: 0.55),
                               ),
@@ -101,7 +102,7 @@ class EventCard extends StatelessWidget {
                             padding: const EdgeInsets.only(bottom: 2),
                             child: Text(
                               '終日',
-                              style: AppTextStyles.caption.copyWith(
+                              style: AppTextStyles.regular11.copyWith(
                                 color: _categoryColor,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -110,7 +111,7 @@ class EventCard extends StatelessWidget {
                         // タイトル
                         Text(
                           event.title,
-                          style: AppTextStyles.bodySmall.copyWith(
+                          style: AppTextStyles.regular12.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
                           maxLines: 1,
@@ -123,8 +124,8 @@ class EventCard extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 2),
                             child: Row(
                               children: [
-                                Icon(
-                                  Icons.location_on_outlined,
+                                AppIcons.svg(
+                                  AppIcons.location,
                                   size: 13,
                                   color: theme.colorScheme.onSurface
                                       .withValues(alpha: 0.45),
@@ -133,7 +134,7 @@ class EventCard extends StatelessWidget {
                                 Expanded(
                                   child: Text(
                                     event.location!,
-                                    style: AppTextStyles.label.copyWith(
+                                    style: AppTextStyles.medium12.copyWith(
                                       color: theme.colorScheme.onSurface
                                           .withValues(alpha: 0.45),
                                     ),

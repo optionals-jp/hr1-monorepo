@@ -57,13 +57,13 @@ class HomeScreen extends ConsumerWidget {
               BottomNavigationBarItem(
                 icon: Padding(
                   padding: const EdgeInsets.only(bottom: 2),
-                  child: Icon(Icons.calendar_today_outlined,
-                      color: unselectedColor, size: 22),
+                  child: AppIcons.svg(AppIcons.calendar,
+                      color: unselectedColor, size: 24),
                 ),
                 activeIcon: Padding(
                   padding: const EdgeInsets.only(bottom: 2),
-                  child: Icon(Icons.calendar_today_rounded,
-                      color: selectedColor, size: 22),
+                  child: AppIcons.svg(AppIcons.calendarFill,
+                      color: selectedColor, size: 24),
                 ),
                 label: 'カレンダー',
               ),
@@ -83,13 +83,13 @@ class HomeScreen extends ConsumerWidget {
               BottomNavigationBarItem(
                 icon: Padding(
                   padding: const EdgeInsets.only(bottom: 2),
-                  child: Icon(Icons.check_circle_outline_rounded,
-                      color: unselectedColor, size: 22),
+                  child: AppIcons.svg(AppIcons.tickCircle,
+                      color: unselectedColor, size: 24),
                 ),
                 activeIcon: Padding(
                   padding: const EdgeInsets.only(bottom: 2),
-                  child: Icon(Icons.check_circle_rounded,
-                      color: selectedColor, size: 22),
+                  child: AppIcons.svg(AppIcons.tickCircleFill,
+                      color: selectedColor, size: 24),
                 ),
                 label: 'タスク',
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
@@ -72,7 +73,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           _GroupedSection(
             children: [
               _EditableRow(
-                icon: Icons.person_outline_rounded,
+                icon: AppIcons.svg(AppIcons.user, size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
                 label: '表示名',
                 value: user?.displayName ?? '未設定',
                 onTap: () => _showEditDialog(
@@ -84,12 +85,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 ),
               ),
               _EditableRow(
-                icon: Icons.email_outlined,
+                icon: Icon(Icons.email_outlined, size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
                 label: 'メールアドレス',
                 value: user?.email ?? '未設定',
               ),
               _EditableRow(
-                icon: Icons.business_rounded,
+                icon: AppIcons.svg(AppIcons.briefcase, size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
                 label: '部署',
                 value: user?.department ?? '未設定',
                 onTap: () => _showEditDialog(
@@ -101,7 +102,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 ),
               ),
               _EditableRow(
-                icon: Icons.badge_outlined,
+                icon: Icon(Icons.badge_outlined, size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
                 label: '役職',
                 value: user?.position ?? '未設定',
                 onTap: () => _showEditDialog(
@@ -122,7 +123,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           _GroupedSection(
             children: [
               _EditableRow(
-                icon: Icons.psychology_outlined,
+                icon: Icon(Icons.psychology_outlined, size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
                 label: 'スキル・専門分野',
                 value: '編集する',
                 onTap: () {
@@ -130,7 +131,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 },
               ),
               _EditableRow(
-                icon: Icons.workspace_premium_outlined,
+                icon: AppIcons.svg(AppIcons.award, size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
                 label: '資格・認定',
                 value: '編集する',
                 onTap: () {
@@ -147,7 +148,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           _GroupedSection(
             children: [
               _EditableRow(
-                icon: Icons.work_outline_rounded,
+                icon: AppIcons.svg(AppIcons.briefcase, size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
                 label: 'プロジェクト経歴',
                 value: '編集する',
                 onTap: () {
@@ -155,7 +156,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 },
               ),
               _EditableRow(
-                icon: Icons.swap_horiz_rounded,
+                icon: Icon(Icons.swap_horiz_rounded, size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
                 label: '異動歴',
                 value: '編集する',
                 onTap: () {
@@ -186,10 +187,10 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         content: TextField(
           controller: controller,
           autofocus: true,
-          style: AppTextStyles.bodySmall,
+          style: AppTextStyles.regular12,
           decoration: InputDecoration(
             hintText: '$titleを入力',
-            hintStyle: AppTextStyles.bodySmall.copyWith(
+            hintStyle: AppTextStyles.regular12.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             ),
             filled: true,
@@ -245,7 +246,7 @@ class _SectionHeader extends StatelessWidget {
       ),
       child: Text(
         title,
-        style: AppTextStyles.caption.copyWith(
+        style: AppTextStyles.regular11.copyWith(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
           fontWeight: FontWeight.w600,
           letterSpacing: 0.3,
@@ -306,7 +307,7 @@ class _EditableRow extends StatelessWidget {
     this.onTap,
   });
 
-  final IconData icon;
+  final Widget icon;
   final String label;
   final String value;
   final VoidCallback? onTap;
@@ -323,7 +324,7 @@ class _EditableRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         child: Row(
           children: [
-            Icon(icon, size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+            icon,
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -331,14 +332,14 @@ class _EditableRow extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: AppTextStyles.caption.copyWith(
+                    style: AppTextStyles.regular11.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     value,
-                    style: AppTextStyles.bodySmall.copyWith(
+                    style: AppTextStyles.regular12.copyWith(
                       color: isEditable && value == '編集する'
                           ? AppColors.brandPrimary
                           : theme.colorScheme.onSurface,

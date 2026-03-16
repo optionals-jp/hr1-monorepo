@@ -6,6 +6,7 @@ class EmployeeCertification {
     required this.organizationId,
     required this.name,
     this.acquiredDate,
+    this.score,
     this.sortOrder = 0,
     required this.createdAt,
     required this.updatedAt,
@@ -16,6 +17,7 @@ class EmployeeCertification {
   final String organizationId;
   final String name;
   final DateTime? acquiredDate;
+  final int? score;
   final int sortOrder;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -29,6 +31,7 @@ class EmployeeCertification {
       acquiredDate: json['acquired_date'] != null
           ? DateTime.parse(json['acquired_date'] as String)
           : null,
+      score: json['score'] as int?,
       sortOrder: json['sort_order'] as int? ?? 0,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -38,12 +41,14 @@ class EmployeeCertification {
   Map<String, dynamic> toJson() => {
         'name': name,
         'acquired_date': acquiredDate?.toIso8601String().split('T').first,
+        'score': score,
         'sort_order': sortOrder,
       };
 
   EmployeeCertification copyWith({
     String? name,
     DateTime? acquiredDate,
+    int? score,
     int? sortOrder,
   }) {
     return EmployeeCertification(
@@ -52,6 +57,7 @@ class EmployeeCertification {
       organizationId: organizationId,
       name: name ?? this.name,
       acquiredDate: acquiredDate ?? this.acquiredDate,
+      score: score ?? this.score,
       sortOrder: sortOrder ?? this.sortOrder,
       createdAt: createdAt,
       updatedAt: updatedAt,

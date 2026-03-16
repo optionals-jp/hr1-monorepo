@@ -467,6 +467,7 @@ export interface EmployeeCertification {
   organization_id: string;
   name: string;
   acquired_date: string | null;
+  score: number | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -478,6 +479,7 @@ export interface CertificationMaster {
   organization_id: string | null;
   name: string;
   category: string | null;
+  has_score: boolean;
   created_at: string;
 }
 

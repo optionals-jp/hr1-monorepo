@@ -29,8 +29,9 @@ abstract class SkillsRepository {
   /// 資格を追加
   Future<EmployeeCertification> addCertification(
     String name,
-    DateTime? acquiredDate,
-  );
+    DateTime? acquiredDate, {
+    int? score,
+  });
 
   /// 資格を更新
   Future<void> updateCertification(EmployeeCertification certification);

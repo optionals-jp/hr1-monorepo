@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../domain/entities/attendance_record.dart';
+import '../controllers/attendance_controller.dart';
 import '../providers/attendance_providers.dart';
 
 /// 勤怠修正依頼画面
@@ -22,7 +23,6 @@ class _CorrectionRequestScreenState
   TimeOfDay? _requestedClockIn;
   TimeOfDay? _requestedClockOut;
   final _reasonController = TextEditingController();
-  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -80,19 +80,30 @@ class _CorrectionRequestScreenState
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    final resolvedClockIn =
+        _timeOfDayToDateTime(_requestedClockIn)?.toIso8601String() ??
+            record.clockIn?.toIso8601String();
+    final resolvedClockOut =
+        _timeOfDayToDateTime(_requestedClockOut)?.toIso8601String() ??
+            record.clockOut?.toIso8601String();
+
+    if (resolvedClockIn == null || resolvedClockOut == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('出勤・退勤の記録がないため修正依頼を送信できません'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     try {
-      final repo = ref.read(attendanceRepositoryProvider);
-      await repo.requestCorrection(
+      await ref.read(correctionControllerProvider.notifier).requestCorrection(
         recordId: record.id,
         originalClockIn: record.clockIn?.toIso8601String(),
         originalClockOut: record.clockOut?.toIso8601String(),
-        requestedClockIn:
-            _timeOfDayToDateTime(_requestedClockIn)?.toIso8601String() ??
-                record.clockIn?.toIso8601String(),
-        requestedClockOut:
-            _timeOfDayToDateTime(_requestedClockOut)?.toIso8601String() ??
-                record.clockOut?.toIso8601String(),
+        requestedClockIn: resolvedClockIn,
+        requestedClockOut: resolvedClockOut,
         reason: _reasonController.text.trim(),
       );
 
@@ -114,14 +125,13 @@ class _CorrectionRequestScreenState
           ),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final todayRecord = ref.watch(todayRecordProvider);
+    final isSubmitting = ref.watch(correctionControllerProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -159,12 +169,12 @@ class _CorrectionRequestScreenState
                     const SizedBox(height: AppSpacing.lg),
                     Text(
                       '今日の勤怠記録がありません',
-                      style: AppTextStyles.subtitle,
+                      style: AppTextStyles.semiBold16,
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       '出勤打刻後に修正依頼を送信できます',
-                      style: AppTextStyles.bodySmall.copyWith(
+                      style: AppTextStyles.regular12.copyWith(
                         color: theme.colorScheme.onSurface
                             .withValues(alpha: 0.6),
                       ),
@@ -185,7 +195,7 @@ class _CorrectionRequestScreenState
                 // 現在の記録
                 Text(
                   '現在の記録',
-                  style: AppTextStyles.label.copyWith(
+                  style: AppTextStyles.medium12.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     letterSpacing: 0.3,
                   ),
@@ -223,7 +233,7 @@ class _CorrectionRequestScreenState
                 // 修正内容
                 Text(
                   '修正内容',
-                  style: AppTextStyles.label.copyWith(
+                  style: AppTextStyles.medium12.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     letterSpacing: 0.3,
                   ),
@@ -271,7 +281,7 @@ class _CorrectionRequestScreenState
                 // 修正理由
                 Text(
                   '修正理由',
-                  style: AppTextStyles.label.copyWith(
+                  style: AppTextStyles.medium12.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     letterSpacing: 0.3,
                   ),
@@ -292,8 +302,8 @@ class _CorrectionRequestScreenState
 
                 // 送信ボタン
                 ElevatedButton(
-                  onPressed: _isSubmitting ? null : () => _submit(record),
-                  child: _isSubmitting
+                  onPressed: isSubmitting ? null : () => _submit(record),
+                  child: isSubmitting
                       ? const SizedBox(
                           width: 20,
                           height: 20,
@@ -307,7 +317,7 @@ class _CorrectionRequestScreenState
                 const SizedBox(height: AppSpacing.lg),
                 Text(
                   '承認者が修正を承認すると、勤怠記録が更新されます。',
-                  style: AppTextStyles.caption.copyWith(
+                  style: AppTextStyles.regular11.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                   ),
                   textAlign: TextAlign.center,
@@ -403,11 +413,11 @@ class _InfoTile extends StatelessWidget {
             child: Icon(icon, color: color, size: 18),
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(value, style: AppTextStyles.heading3),
+          Text(value, style: AppTextStyles.semiBold20),
           const SizedBox(height: 2),
           Text(
             label,
-            style: AppTextStyles.caption.copyWith(
+            style: AppTextStyles.regular11.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
@@ -461,13 +471,13 @@ class _CorrectionRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTextStyles.bodySmall),
+                Text(title, style: AppTextStyles.regular12),
                 Text(
                   value,
                   style: isChanged
-                      ? AppTextStyles.subtitle
+                      ? AppTextStyles.semiBold16
                           .copyWith(color: AppColors.brandPrimary)
-                      : AppTextStyles.bodySmall.copyWith(
+                      : AppTextStyles.regular12.copyWith(
                           color: theme.colorScheme.onSurface
                               .withValues(alpha: 0.45),
                         ),

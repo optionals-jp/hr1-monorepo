@@ -63,7 +63,7 @@ class UserAvatar extends StatelessWidget {
           ? Center(
               child: Text(
                 initial,
-                style: AppTextStyles.bodySmall.copyWith(
+                style: AppTextStyles.regular12.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                   fontSize: fontSize,

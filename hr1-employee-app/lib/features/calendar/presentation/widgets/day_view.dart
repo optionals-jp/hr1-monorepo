@@ -98,7 +98,7 @@ class _DayViewState extends State<DayView> {
                     ),
                     child: Text(
                       event.title,
-                      style: AppTextStyles.label.copyWith(
+                      style: AppTextStyles.medium12.copyWith(
                         color: color,
                         fontWeight: FontWeight.w600,
                       ),
@@ -175,7 +175,7 @@ class _DayViewState extends State<DayView> {
             children: [
               Text(
                 event.title,
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.regular11.copyWith(
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.onSurface,
                 ),
@@ -185,7 +185,7 @@ class _DayViewState extends State<DayView> {
               if (height > 36)
                 Text(
                   '${DateFormat('HH:mm').format(startLocal)} - ${DateFormat('HH:mm').format(endLocal)}',
-                  style: AppTextStyles.label.copyWith(
+                  style: AppTextStyles.medium12.copyWith(
                     color: theme.colorScheme.onSurface
                         .withValues(alpha: 0.55),
                   ),
@@ -193,7 +193,7 @@ class _DayViewState extends State<DayView> {
               if (height > 52 && event.location != null)
                 Text(
                   event.location!,
-                  style: AppTextStyles.label.copyWith(
+                  style: AppTextStyles.medium12.copyWith(
                     color: theme.colorScheme.onSurface
                         .withValues(alpha: 0.45),
                   ),
@@ -235,7 +235,7 @@ class _HourRow extends StatelessWidget {
               padding: const EdgeInsets.only(right: 8, top: 0),
               child: Text(
                 '${hour.toString().padLeft(2, '0')}:00',
-                style: AppTextStyles.label.copyWith(
+                style: AppTextStyles.medium12.copyWith(
                   color:
                       theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   fontFeatures: [const FontFeature.tabularFigures()],

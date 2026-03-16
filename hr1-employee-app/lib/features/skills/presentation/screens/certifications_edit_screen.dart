@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/master_search_bar.dart';
+import '../../domain/entities/certification_master.dart';
 import '../../domain/entities/employee_certification.dart';
+import '../controllers/skills_controller.dart';
 import '../providers/skills_providers.dart';
 
 /// 資格・認定 編集画面
@@ -18,22 +22,114 @@ class CertificationsEditScreen extends ConsumerStatefulWidget {
 
 class _CertificationsEditScreenState
     extends ConsumerState<CertificationsEditScreen> {
-  Future<void> _addCertification() async {
-    final result = await _showAddDialog();
-    if (result == null) return;
+  bool _isAdding = false;
 
+  Future<void> _addCertification(String name) async {
+    if (name.isEmpty) return;
+
+    // マスタから has_score を判定
+    final masters = ref.read(certificationMastersProvider).valueOrNull ?? [];
+    final master = masters.cast<CertificationMaster?>().firstWhere(
+          (m) => m!.name == name,
+          orElse: () => null,
+        );
+    final hasScore = master?.hasScore ?? false;
+
+    // スコアが必要な資格はダイアログで入力
+    int? score;
+    if (hasScore) {
+      score = await _showScoreDialog(name);
+      // ダイアログがキャンセルされた場合は追加しない
+      if (score == null && mounted) return;
+    }
+
+    // 取得年月を選択
+    final acquiredDate = await _pickAcquiredDate();
+
+    setState(() => _isAdding = true);
     try {
       await ref
-          .read(skillsRepositoryProvider)
-          .addCertification(result.name, result.acquiredDate);
-      ref.invalidate(myCertificationsProvider);
+          .read(certificationsControllerProvider.notifier)
+          .addCertification(name, acquiredDate, score: score);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('エラー: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+              content: Text('エラー: $e'), backgroundColor: AppColors.error),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isAdding = false);
     }
+  }
+
+  Future<int?> _showScoreDialog(String certName) async {
+    final scoreController = TextEditingController();
+    final theme = Theme.of(context);
+
+    return showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('$certName のスコア'),
+        content: TextField(
+          controller: scoreController,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          style: AppTextStyles.regular12,
+          decoration: InputDecoration(
+            hintText: '例: 850',
+            hintStyle: AppTextStyles.regular12.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
+            suffixText: '点',
+            filled: true,
+            fillColor: theme.brightness == Brightness.dark
+                ? theme.colorScheme.surfaceContainerHighest
+                : const Color(0xFFEFEFEF),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () {
+              final text = scoreController.text.trim();
+              final value = int.tryParse(text);
+              if (value != null && value > 0) {
+                Navigator.pop(ctx, value);
+              }
+            },
+            child: Text(
+              '決定',
+              style: TextStyle(
+                color: AppColors.brandPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<DateTime?> _pickAcquiredDate() async {
+    return showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1970),
+      lastDate: DateTime.now(),
+      helpText: '取得年月を選択（任意）',
+      cancelText: 'スキップ',
+      confirmText: '選択',
+    );
   }
 
   Future<void> _deleteCertification(EmployeeCertification cert) async {
@@ -58,242 +154,89 @@ class _CertificationsEditScreenState
 
     try {
       await ref
-          .read(skillsRepositoryProvider)
+          .read(certificationsControllerProvider.notifier)
           .deleteCertification(cert.id);
-      ref.invalidate(myCertificationsProvider);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('エラー: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+              content: Text('エラー: $e'), backgroundColor: AppColors.error),
         );
       }
     }
   }
 
-  Future<_CertInput?> _showAddDialog() async {
-    final nameController = TextEditingController();
-    DateTime? selectedDate;
-    final theme = Theme.of(context);
-
-    // マスタから資格名リストを取得
-    final mastersAsync = ref.read(certificationMastersProvider);
-    final masterNames = mastersAsync.valueOrNull?.map((m) => m.name).toList() ?? [];
-
-    return showDialog<_CertInput>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('資格・認定を追加'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Autocomplete<String>(
-                optionsBuilder: (textEditingValue) {
-                  if (textEditingValue.text.isEmpty) return masterNames;
-                  final query = textEditingValue.text.toLowerCase();
-                  return masterNames
-                      .where((name) => name.toLowerCase().contains(query));
-                },
-                fieldViewBuilder: (ctx2, controller, focusNode, onSubmitted) {
-                  nameController.text = controller.text;
-                  controller.addListener(() {
-                    nameController.text = controller.text;
-                  });
-                  return TextField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    autofocus: true,
-                    style: AppTextStyles.bodySmall,
-                    decoration: InputDecoration(
-                      hintText: '資格名を入力または選択',
-                      hintStyle: AppTextStyles.bodySmall.copyWith(
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.4),
-                      ),
-                      filled: true,
-                      fillColor: theme.brightness == Brightness.dark
-                          ? theme.colorScheme.surfaceContainerHighest
-                          : const Color(0xFFEFEFEF),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
-                    ),
-                  );
-                },
-                optionsViewBuilder: (ctx2, onSelected, options) {
-                  return Align(
-                    alignment: Alignment.topLeft,
-                    child: Material(
-                      elevation: 4,
-                      borderRadius: BorderRadius.circular(10),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 200),
-                        child: ListView.builder(
-                          padding: EdgeInsets.zero,
-                          shrinkWrap: true,
-                          itemCount: options.length,
-                          itemBuilder: (ctx3, index) {
-                            final option = options.elementAt(index);
-                            return InkWell(
-                              onTap: () => onSelected(option),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 10),
-                                child: Text(option,
-                                    style: AppTextStyles.bodySmall),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: AppSpacing.md),
-              GestureDetector(
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: ctx,
-                    initialDate: selectedDate ?? DateTime.now(),
-                    firstDate: DateTime(1970),
-                    lastDate: DateTime.now(),
-                  );
-                  if (picked != null) {
-                    setDialogState(() => selectedDate = picked);
-                  }
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: theme.brightness == Brightness.dark
-                        ? theme.colorScheme.surfaceContainerHighest
-                        : const Color(0xFFEFEFEF),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today_rounded,
-                        size: 16,
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.5),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        selectedDate != null
-                            ? DateFormat('yyyy/MM').format(selectedDate!)
-                            : '取得年月（任意）',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: selectedDate != null
-                              ? theme.colorScheme.onSurface
-                              : theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.4),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('キャンセル'),
-            ),
-            TextButton(
-              onPressed: () {
-                final name = nameController.text.trim();
-                if (name.isEmpty) return;
-                Navigator.pop(
-                    ctx, _CertInput(name: name, acquiredDate: selectedDate));
-              },
-              child: Text(
-                '追加',
-                style: TextStyle(
-                  color: AppColors.brandPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final certsAsync = ref.watch(myCertificationsProvider);
-    ref.watch(certificationMastersProvider); // マスタをプリフェッチ
+    final certsAsync = ref.watch(certificationsControllerProvider);
+    final mastersAsync = ref.watch(certificationMastersProvider);
     final theme = Theme.of(context);
+
+    final masterNames =
+        mastersAsync.valueOrNull?.map((m) => m.name).toList() ?? [];
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('資格・認定'),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addCertification,
-        backgroundColor: AppColors.brandPrimary,
-        foregroundColor: Colors.white,
-        elevation: 2,
-        child: const Icon(Icons.add_rounded),
-      ),
-      body: certsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('エラー: $e')),
-        data: (certs) {
-          if (certs.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.workspace_premium_outlined,
-                    size: 48,
-                    color: theme.colorScheme.onSurface
-                        .withValues(alpha: 0.25),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    '資格が登録されていません',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: theme.colorScheme.onSurface
-                          .withValues(alpha: 0.45),
+      body: Column(
+        children: [
+          MasterSearchBar(
+            masterNames: masterNames,
+            onAdd: _addCertification,
+            hintText: '資格を検索・追加',
+            isAdding: _isAdding,
+          ),
+          Expanded(
+            child: certsAsync.when(
+              loading: () =>
+                  const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('エラー: $e')),
+              data: (certs) {
+                if (certs.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppIcons.svg(
+                          AppIcons.award,
+                          size: 48,
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.25),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          '資格が登録されていません',
+                          style: AppTextStyles.regular12.copyWith(
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.45),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            );
-          }
+                  );
+                }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
-            itemCount: certs.length,
-            itemBuilder: (context, index) {
-              final cert = certs[index];
-              return _CertTile(
-                certification: cert,
-                onDelete: () => _deleteCertification(cert),
-              );
-            },
-          );
-        },
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenHorizontal,
+                  ),
+                  itemCount: certs.length,
+                  itemBuilder: (context, index) {
+                    final cert = certs[index];
+                    return _CertTile(
+                      certification: cert,
+                      onDelete: () => _deleteCertification(cert),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
-}
-
-class _CertInput {
-  const _CertInput({required this.name, this.acquiredDate});
-  final String name;
-  final DateTime? acquiredDate;
 }
 
 class _CertTile extends StatelessWidget {
@@ -329,8 +272,8 @@ class _CertTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.workspace_premium_outlined,
+          AppIcons.svg(
+            AppIcons.award,
             size: 20,
             color: AppColors.brandPrimary.withValues(alpha: 0.7),
           ),
@@ -339,11 +282,16 @@ class _CertTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(certification.name, style: AppTextStyles.bodySmall),
+                Text(
+                  certification.score != null
+                      ? '${certification.name} ${certification.score}点'
+                      : certification.name,
+                  style: AppTextStyles.regular12,
+                ),
                 if (certification.acquiredDate != null)
                   Text(
                     DateFormat('yyyy/MM').format(certification.acquiredDate!),
-                    style: AppTextStyles.caption.copyWith(
+                    style: AppTextStyles.regular11.copyWith(
                       color: theme.colorScheme.onSurface
                           .withValues(alpha: 0.55),
                     ),
