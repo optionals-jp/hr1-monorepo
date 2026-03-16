@@ -31,8 +31,8 @@ class AppColors {
   // ライトモード — Fluent 2 webLightTheme 準拠
   // ---------------------------------------------------------------------------
 
-  /// colorNeutralBackground3 — ページ背景
-  static const Color lightBackground = Color(0xFFF5F5F5);
+  /// ページ背景 — サーフェスと統一（白基調）
+  static const Color lightBackground = Color(0xFFFFFFFF);
 
   /// colorNeutralBackground1 — サーフェス/カード
   static const Color lightSurface = Color(0xFFFFFFFF);
@@ -59,8 +59,8 @@ class AppColors {
   // ダークモード — Fluent 2 webDarkTheme 準拠
   // ---------------------------------------------------------------------------
 
-  /// colorNeutralBackground3 — ページ背景
-  static const Color darkBackground = Color(0xFF141414);
+  /// ページ背景 — サーフェスと統一（濃いグレー基調）
+  static const Color darkBackground = Color(0xFF292929);
 
   /// colorNeutralBackground1 — サーフェス/カード
   static const Color darkSurface = Color(0xFF292929);

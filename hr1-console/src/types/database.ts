@@ -449,3 +449,42 @@ export interface TaskAssignee {
   created_at: string;
   profiles?: Profile;
 }
+
+export interface EmployeeSkill {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  name: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  profiles?: Profile;
+}
+
+export interface EmployeeCertification {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  name: string;
+  acquired_date: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  profiles?: Profile;
+}
+
+export interface CertificationMaster {
+  id: string;
+  organization_id: string | null;
+  name: string;
+  category: string | null;
+  created_at: string;
+}
+
+export interface SkillMaster {
+  id: string;
+  organization_id: string | null;
+  name: string;
+  category: string | null;
+  created_at: string;
+}

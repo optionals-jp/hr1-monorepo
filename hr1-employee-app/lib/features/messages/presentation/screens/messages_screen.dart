@@ -6,6 +6,7 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/search_box.dart';
 import '../../domain/entities/message_thread.dart';
 import '../providers/messages_providers.dart';
 
@@ -16,9 +17,16 @@ class MessagesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final threadsAsync = ref.watch(messageThreadsProvider);
-    final theme = Theme.of(context);
 
-    return Column(
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'チャット',
+          style: AppTextStyles.subtitle.copyWith(letterSpacing: -0.2),
+        ),
+        centerTitle: false,
+      ),
+      body: Column(
       children: [
         // 検索バー（Teams チャット画面上部の検索バー）
         Padding(
@@ -28,38 +36,7 @@ class MessagesScreen extends ConsumerWidget {
             AppSpacing.screenHorizontal,
             AppSpacing.sm,
           ),
-          child: GestureDetector(
-            onTap: () {
-              // TODO: 検索
-            },
-            child: Container(
-              height: 40,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: theme.brightness == Brightness.dark
-                    ? theme.colorScheme.surfaceContainerHighest
-                    : const Color(0xFFEFEFEF),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.search_rounded,
-                    size: 20,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    '検索',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color:
-                          theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          child: const SearchBox(),
         ),
 
         // スレッドリスト
@@ -90,6 +67,7 @@ class MessagesScreen extends ConsumerWidget {
           ),
         ),
       ],
+    ),
     );
   }
 }

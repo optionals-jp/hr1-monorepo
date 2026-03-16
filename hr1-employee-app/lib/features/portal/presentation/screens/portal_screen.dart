@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../shared/widgets/search_box.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import 'widgets/action_chip.dart';
+import 'widgets/notice_list_item.dart';
 
 /// 社内ポータル画面 — Teams / Outlook モバイルスタイル
 class PortalScreen extends ConsumerWidget {
@@ -16,49 +20,39 @@ class PortalScreen extends ConsumerWidget {
     final user = ref.watch(appUserProvider);
     final theme = Theme.of(context);
 
-    return CustomScrollView(
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          user?.organizationName ?? 'HR1',
+          style: AppTextStyles.subtitle.copyWith(letterSpacing: -0.2),
+        ),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: AppIcons.svg(
+              AppIcons.notification,
+              color: theme.appBarTheme.foregroundColor,
+              size: 22,
+            ),
+            onPressed: () {
+              // TODO: 通知画面へ遷移
+            },
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
+      body: CustomScrollView(
       slivers: [
         // 検索バー（Teams / Outlook 共通パターン）
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.screenHorizontal,
-              AppSpacing.md,
+              AppSpacing.sm,
               AppSpacing.screenHorizontal,
               AppSpacing.sm,
             ),
-            child: GestureDetector(
-              onTap: () {
-                // TODO: 検索画面へ遷移
-              },
-              child: Container(
-                height: 40,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: theme.brightness == Brightness.dark
-                      ? theme.colorScheme.surfaceContainerHighest
-                      : const Color(0xFFEFEFEF),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.search_rounded,
-                      size: 20,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      '検索',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            child: const SearchBox(),
           ),
         ),
 
@@ -74,18 +68,14 @@ class PortalScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'こんにちは、${user?.displayName ?? 'ゲスト'}さん',
-                  style: AppTextStyles.heading2,
-                ),
+                Text('こんにちは、${user?.displayName ?? 'ゲスト'}さん', style: AppTextStyles.heading2),
                 if (user?.department != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
                       '${user!.department} / ${user.position ?? ''}',
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.55),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                       ),
                     ),
                   ),
@@ -98,48 +88,52 @@ class PortalScreen extends ConsumerWidget {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.only(top: AppSpacing.xl),
-            child: SizedBox(
-              height: 88,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenHorizontal),
-                children: [
-                  _ActionChip(
-                    icon: Icons.access_time_rounded,
-                    label: '勤怠打刻',
-                    color: AppColors.brandPrimary,
-                    onTap: () => context.push(AppRoutes.attendance),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  _ActionChip(
-                    icon: Icons.description_outlined,
-                    label: '各種申請',
-                    color: AppColors.warning,
-                    onTap: () {},
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  _ActionChip(
-                    icon: Icons.calendar_today_rounded,
-                    label: 'スケジュール',
-                    color: AppColors.success,
-                    onTap: () {},
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  _ActionChip(
-                    icon: Icons.folder_outlined,
-                    label: '社内文書',
-                    color: AppColors.brandSecondary,
-                    onTap: () {},
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  _ActionChip(
-                    icon: Icons.school_outlined,
-                    label: '研修',
-                    color: const Color(0xFF8764B8),
-                    onTap: () {},
-                  ),
-                ],
+            child: SingleChildScrollView(
+              clipBehavior: Clip.none,
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenHorizontal,
+                vertical: 4,
+              ),
+              child: IntrinsicHeight(
+                child: Row(
+                  children: [
+                    PortalActionChip(
+                      icon: Icons.access_time_rounded,
+                      label: '勤怠打刻',
+                      color: AppColors.brandPrimary,
+                      onTap: () => context.push(AppRoutes.attendance),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    PortalActionChip(
+                      icon: Icons.description_outlined,
+                      label: '各種申請',
+                      color: AppColors.warning,
+                      onTap: () {},
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    PortalActionChip(
+                      icon: Icons.calendar_today_rounded,
+                      label: 'スケジュール',
+                      color: AppColors.success,
+                      onTap: () {},
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    PortalActionChip(
+                      icon: Icons.folder_outlined,
+                      label: '社内文書',
+                      color: AppColors.brandSecondary,
+                      onTap: () {},
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    PortalActionChip(
+                      icon: Icons.school_outlined,
+                      label: '研修',
+                      color: const Color(0xFF8764B8),
+                      onTap: () {},
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -160,8 +154,7 @@ class PortalScreen extends ConsumerWidget {
                   child: Text(
                     'お知らせ',
                     style: AppTextStyles.caption.copyWith(
-                      color: theme.colorScheme.onSurface
-                          .withValues(alpha: 0.55),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.3,
                     ),
@@ -176,10 +169,7 @@ class PortalScreen extends ConsumerWidget {
                   ),
                   child: Text(
                     'すべて表示',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.brandPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTextStyles.caption.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -190,183 +180,14 @@ class PortalScreen extends ConsumerWidget {
         // お知らせリスト（フルワイド リストアイテム — Teams スタイル）
         SliverList(
           delegate: SliverChildListDelegate([
-            _NoticeListItem(
-              title: '年末調整のお知らせ',
-              subtitle: '人事部より',
-              date: '3/1',
-              isNew: true,
-            ),
-            _NoticeListItem(
-              title: '社内研修のご案内',
-              subtitle: '総務部より',
-              date: '2/25',
-              isNew: false,
-            ),
-            _NoticeListItem(
-              title: '健康診断の日程について',
-              subtitle: '人事部より',
-              date: '2/20',
-              isNew: false,
-            ),
+            NoticeListItem(title: '年末調整のお知らせ', subtitle: '人事部より', date: '3/1', isNew: true),
+            NoticeListItem(title: '社内研修のご案内', subtitle: '総務部より', date: '2/25', isNew: false),
+            NoticeListItem(title: '健康診断の日程について', subtitle: '人事部より', date: '2/20', isNew: false),
             const SizedBox(height: AppSpacing.xxl),
           ]),
         ),
       ],
-    );
-  }
-}
-
-/// 横スクロール アクションチップ — Teams モバイルの提案アクション風
-class _ActionChip extends StatelessWidget {
-  const _ActionChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: 80,
-        child: Column(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(icon, size: 24, color: color),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: AppTextStyles.label.copyWith(
-                color: theme.colorScheme.onSurface,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// お知らせリストアイテム — Teams アクティビティフィードスタイル
-class _NoticeListItem extends StatelessWidget {
-  const _NoticeListItem({
-    required this.title,
-    required this.subtitle,
-    required this.date,
-    required this.isNew,
-  });
-
-  final String title;
-  final String subtitle;
-  final String date;
-  final bool isNew;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return InkWell(
-      onTap: () {},
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.screenHorizontal,
-          vertical: 14,
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // アイコン（Teams のアクティビティアイコン風）
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: isNew
-                    ? AppColors.brandPrimary.withValues(alpha: 0.1)
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.06),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.campaign_outlined,
-                size: 20,
-                color: isNew
-                    ? AppColors.brandPrimary
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.45),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            // コンテンツ
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            fontWeight:
-                                isNew ? FontWeight.w600 : FontWeight.w400,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text(
-                        date,
-                        style: AppTextStyles.caption.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.45),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: AppTextStyles.caption.copyWith(
-                      color:
-                          theme.colorScheme.onSurface.withValues(alpha: 0.55),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // 未読ドット
-            if (isNew)
-              Container(
-                margin: const EdgeInsets.only(left: AppSpacing.sm, top: 6),
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: AppColors.brandPrimary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-          ],
-        ),
-      ),
+    ),
     );
   }
 }

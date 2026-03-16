@@ -16,7 +16,15 @@ class ProfileScreen extends ConsumerWidget {
     final user = ref.watch(appUserProvider);
     final theme = Theme.of(context);
 
-    return ListView(
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'マイページ',
+          style: AppTextStyles.subtitle.copyWith(letterSpacing: -0.2),
+        ),
+        centerTitle: false,
+      ),
+      body: ListView(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
       children: [
         // プロフィールヘッダー（Teams プロフィール風）
@@ -115,7 +123,9 @@ class ProfileScreen extends ConsumerWidget {
               icon: Icons.person_outline_rounded,
               title: 'プロフィール編集',
               showChevron: true,
-              onTap: () {},
+              onTap: () {
+                context.push(AppRoutes.profileEdit);
+              },
             ),
             _MenuRow(
               icon: Icons.notifications_outlined,
@@ -197,6 +207,7 @@ class ProfileScreen extends ConsumerWidget {
 
         const SizedBox(height: AppSpacing.xxxl),
       ],
+    ),
     );
   }
 }

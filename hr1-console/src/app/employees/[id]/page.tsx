@@ -28,7 +28,7 @@ import {
   projectStatusColors,
   teamMemberRoleLabels,
 } from "@/lib/constants";
-import type { Profile, Department } from "@/types/database";
+import type { Profile, Department, EmployeeSkill, EmployeeCertification } from "@/types/database";
 import { useRouter } from "next/navigation";
 import { FolderKanban, Users, LogIn, LogOut } from "lucide-react";
 
@@ -45,6 +45,7 @@ interface MembershipRecord {
 const pageTabs = [
   { value: "profile", label: "プロフィール" },
   { value: "projects", label: "プロジェクト" },
+  { value: "skills", label: "スキル" },
   { value: "evaluations", label: "評価" },
 ];
 
@@ -80,6 +81,8 @@ export default function EmployeeDetailPage() {
   const [assignedDeptIds, setAssignedDeptIds] = useState<string[]>([]);
   const [allDepartments, setAllDepartments] = useState<Department[]>([]);
   const [memberships, setMemberships] = useState<MembershipRecord[]>([]);
+  const [skills, setSkills] = useState<EmployeeSkill[]>([]);
+  const [certifications, setCertifications] = useState<EmployeeCertification[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("profile");
 
@@ -177,6 +180,18 @@ export default function EmployeeDetailPage() {
       };
     });
     setMemberships(records);
+
+    // スキル・資格を取得
+    const [{ data: skillsData }, { data: certsData }] = await Promise.all([
+      getSupabase().from("employee_skills").select("*").eq("user_id", id).order("sort_order"),
+      getSupabase()
+        .from("employee_certifications")
+        .select("*")
+        .eq("user_id", id)
+        .order("sort_order"),
+    ]);
+    setSkills((skillsData as EmployeeSkill[]) ?? []);
+    setCertifications((certsData as EmployeeCertification[]) ?? []);
 
     setLoading(false);
   };
@@ -534,6 +549,53 @@ export default function EmployeeDetailPage() {
                     })()}
                   </div>
                 </div>
+              )}
+            </section>
+          </div>
+        </PageContent>
+      )}
+
+      {activeTab === "skills" && (
+        <PageContent>
+          <div className="max-w-2xl space-y-6">
+            {/* スキル */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground mb-3">スキル</h2>
+              {skills.length === 0 ? (
+                <p className="text-sm text-muted-foreground">スキルが登録されていません</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {skills.map((skill) => (
+                    <Badge key={skill.id} variant="secondary" className="text-sm py-1 px-3">
+                      {skill.name}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* 資格・認定 */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground mb-3">資格・認定</h2>
+              {certifications.length === 0 ? (
+                <p className="text-sm text-muted-foreground">資格が登録されていません</p>
+              ) : (
+                <Card>
+                  <CardContent>
+                    <div className="space-y-3 text-sm">
+                      {certifications.map((cert) => (
+                        <div key={cert.id} className="flex justify-between">
+                          <span>{cert.name}</span>
+                          <span className="text-muted-foreground">
+                            {cert.acquired_date
+                              ? format(new Date(cert.acquired_date), "yyyy/MM")
+                              : "-"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </section>
           </div>

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_icons.dart';
-import '../../../../core/constants/app_text_styles.dart';
-import '../providers/auth_providers.dart';
 
 /// ホーム画面（BottomNavigationBar付きのシェル）— Teams モバイルスタイル
 class HomeScreen extends ConsumerWidget {
@@ -13,30 +11,9 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(appUserProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          user?.organizationName ?? 'HR1',
-          style: AppTextStyles.subtitle.copyWith(letterSpacing: -0.2),
-        ),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: AppIcons.svg(
-              AppIcons.notification,
-              color: theme.appBarTheme.foregroundColor,
-              size: 22,
-            ),
-            onPressed: () {
-              // TODO: 通知画面へ遷移
-            },
-          ),
-          const SizedBox(width: 4),
-        ],
-      ),
       body: navigationShell,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

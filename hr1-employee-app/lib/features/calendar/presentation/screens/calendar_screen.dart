@@ -21,14 +21,6 @@ class CalendarScreen extends ConsumerStatefulWidget {
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   bool _isCalendarExpanded = false;
 
-  void _goToToday() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    ref.read(selectedDateProvider.notifier).state = today;
-    ref.read(focusedMonthProvider.notifier).state =
-        DateTime(now.year, now.month);
-  }
-
   void _navigateToEventForm({CalendarEvent? event}) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -49,93 +41,75 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final monthLabel = DateFormat('yyyy年M月', 'ja').format(focusedMonth);
 
     return Scaffold(
-      body: Column(
-        children: [
-          // ヘッダー: 月表示 + Today + ビュー切替
-          Container(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screenHorizontal,
-              AppSpacing.sm,
-              AppSpacing.sm,
-              0,
+      appBar: AppBar(
+        title: GestureDetector(
+          onTap: () {
+            // TODO: 月ピッカー
+          },
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                monthLabel,
+                style: AppTextStyles.subtitle
+                    .copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 20,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ],
+          ),
+        ),
+        centerTitle: false,
+        actions: [
+          TextButton(
+            onPressed: () {
+              final now = DateTime.now();
+              final today = DateTime(now.year, now.month, now.day);
+              ref.read(selectedDateProvider.notifier).state = today;
+              ref.read(focusedMonthProvider.notifier).state =
+                  DateTime(now.year, now.month);
+            },
+            style: TextButton.styleFrom(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: Row(
-              children: [
-                // 月表示（タップで月ピッカー）
-                GestureDetector(
-                  onTap: () {
-                    // 月の前後を左右矢印で切り替え
-                  },
-                  child: Row(
-                    children: [
-                      Text(
-                        monthLabel,
-                        style: AppTextStyles.subtitle.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 20,
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.5),
-                      ),
-                    ],
-                  ),
-                ),
-                const Spacer(),
-                // Today ボタン
-                TextButton(
-                  onPressed: _goToToday,
-                  style: TextButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    '今日',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.brandPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                // ビュー切替
-                PopupMenuButton<CalendarViewMode>(
-                  icon: Icon(
-                    Icons.view_agenda_outlined,
-                    size: 20,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                  onSelected: (mode) {
-                    ref.read(calendarViewModeProvider.notifier).state = mode;
-                  },
-                  itemBuilder: (_) => [
-                    _viewMenuItem(
-                      CalendarViewMode.agenda,
-                      'アジェンダ',
-                      Icons.view_agenda_outlined,
-                      viewMode,
-                    ),
-                    _viewMenuItem(
-                      CalendarViewMode.day,
-                      '日',
-                      Icons.view_day_outlined,
-                      viewMode,
-                    ),
-                    _viewMenuItem(
-                      CalendarViewMode.threeDay,
-                      '3日',
-                      Icons.view_column_outlined,
-                      viewMode,
-                    ),
-                  ],
-                ),
-              ],
+            child: Text(
+              '今日',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.brandPrimary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
+          PopupMenuButton<CalendarViewMode>(
+            icon: Icon(
+              Icons.view_agenda_outlined,
+              size: 20,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+            onSelected: (mode) {
+              ref.read(calendarViewModeProvider.notifier).state = mode;
+            },
+            itemBuilder: (_) => [
+              _viewMenuItem(CalendarViewMode.agenda, 'アジェンダ',
+                  Icons.view_agenda_outlined, viewMode),
+              _viewMenuItem(CalendarViewMode.day, '日',
+                  Icons.view_day_outlined, viewMode),
+              _viewMenuItem(CalendarViewMode.threeDay, '3日',
+                  Icons.view_column_outlined, viewMode),
+            ],
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
+      body: Column(
+        children: [
           // ミニカレンダー
           Padding(
             padding: const EdgeInsets.symmetric(

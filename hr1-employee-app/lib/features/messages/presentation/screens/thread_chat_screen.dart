@@ -499,11 +499,11 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
               child: _TypingIndicator(),
             ),
 
-          // 入力エリア — Teams スタイル（角丸テキストフィールド + 送信ボタン）
+          // 入力エリア — SearchBox と同じピル型デザイン
           Container(
             color: theme.colorScheme.surface,
             padding: EdgeInsets.fromLTRB(
-              AppSpacing.md,
+              AppSpacing.screenHorizontal,
               AppSpacing.sm,
               AppSpacing.sm,
               MediaQuery.of(context).padding.bottom + AppSpacing.sm,
@@ -517,29 +517,45 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                     decoration: BoxDecoration(
                       color: theme.brightness == Brightness.dark
                           ? theme.colorScheme.surfaceContainerHighest
-                          : const Color(0xFFF5F5F5),
+                          : const Color(0xFFEFEFEF),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: TextField(
-                      controller: _controller,
-                      decoration: InputDecoration(
-                        hintText: 'メッセージを入力',
-                        hintStyle: AppTextStyles.bodySmall.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 14, bottom: 10),
+                          child: Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            size: 20,
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                          ),
                         ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: _controller,
+                            decoration: InputDecoration(
+                              hintText: 'メッセージを入力',
+                              hintStyle: AppTextStyles.bodySmall.copyWith(
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                              ),
+                              filled: false,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                              isDense: true,
+                            ),
+                            style: AppTextStyles.bodySmall,
+                            maxLines: 4,
+                            minLines: 1,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) => _sendMessage(),
+                          ),
                         ),
-                        isDense: true,
-                      ),
-                      style: AppTextStyles.bodySmall,
-                      maxLines: 4,
-                      minLines: 1,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _sendMessage(),
+                        const SizedBox(width: 14),
+                      ],
                     ),
                   ),
                 ),
@@ -554,8 +570,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                       icon: Icon(
                         Icons.send_rounded,
                         color: _sending
-                            ? theme.colorScheme.onSurface
-                                .withValues(alpha: 0.3)
+                            ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
                             : AppColors.brandPrimary,
                         size: 22,
                       ),

@@ -98,6 +98,13 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     final tasksAsync = ref.watch(filteredTasksProvider);
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'タスク',
+          style: AppTextStyles.subtitle.copyWith(letterSpacing: -0.2),
+        ),
+        centerTitle: false,
+      ),
       body: Column(
         children: [
           // フィルタタブ（横スクロール）
