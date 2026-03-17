@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../applications/presentation/providers/applications_providers.dart';
 import '../../domain/entities/form_field_item.dart';
@@ -100,7 +101,7 @@ class _FormFillScreenState extends ConsumerState<FormFillScreen> {
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingIndicator(),
         error: (e, _) => const Center(child: Text('エラーが発生しました')),
       ),
     );

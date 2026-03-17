@@ -327,3 +327,48 @@ export const scheduleChangeTypeLabels: Record<string, string> = {
   slot_updated: "候補日時変更",
   slot_deleted: "候補日時削除",
 };
+
+// --- パルスサーベイステータス ---
+export const surveyStatusLabels: Record<string, string> = {
+  draft: "下書き",
+  active: "実施中",
+  closed: "終了",
+};
+
+export const surveyStatusColors: Record<string, BadgeVariant> = {
+  draft: "outline",
+  active: "default",
+  closed: "secondary",
+};
+
+// --- パルスサーベイ対象 ---
+export const surveyTargetLabels: Record<string, string> = {
+  applicant: "応募者向け",
+  employee: "社員向け",
+  both: "両方",
+};
+
+// --- パルスサーベイ質問タイプ ---
+export const surveyQuestionTypeLabels: Record<string, string> = {
+  rating: "5段階評価",
+  text: "自由記述",
+  single_choice: "単一選択",
+  multiple_choice: "複数選択",
+};
+
+// --- FAQ カテゴリ ---
+export const faqCategoryLabels: Record<string, string> = {
+  general: "一般",
+  recruitment: "採用",
+  benefits: "福利厚生",
+  work_style: "働き方",
+  culture: "社風・文化",
+  other: "その他",
+};
+
+// --- FAQ 対象 ---
+export const faqTargetLabels: Record<string, string> = {
+  applicant: "応募者向け",
+  employee: "社内向け",
+  both: "両方",
+};

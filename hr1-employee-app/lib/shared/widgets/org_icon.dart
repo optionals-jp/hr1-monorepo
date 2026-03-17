@@ -31,7 +31,7 @@ class OrgIcon extends StatelessWidget {
       child: Center(
         child: Text(
           initial,
-          style: AppTextStyles.regular12.copyWith(
+          style: AppTextStyles.caption1.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.w700,
             fontSize: fontSize,

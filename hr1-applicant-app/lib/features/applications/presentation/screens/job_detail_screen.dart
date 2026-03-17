@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/providers/organization_context_provider.dart';
 import '../../../company/presentation/widgets/section_renderers.dart';
@@ -80,7 +81,7 @@ class JobDetailScreen extends ConsumerWidget {
       },
       loading: () => Scaffold(
         appBar: AppBar(title: const Text('求人詳細')),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const LoadingIndicator(),
       ),
       error: (e, _) => Scaffold(
         appBar: AppBar(title: const Text('求人詳細')),

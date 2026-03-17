@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../applications/presentation/providers/applications_providers.dart';
 import '../../domain/entities/interview.dart';
@@ -111,7 +112,7 @@ class InterviewScheduleScreen extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingIndicator(),
         error: (e, _) => const Center(child: Text('エラーが発生しました')),
       ),
     );

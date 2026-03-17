@@ -12,6 +12,9 @@ import '../../../../shared/widgets/user_avatar.dart';
 import '../../../attendance/presentation/providers/attendance_providers.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/calendar_event.dart';
+import '../../../../shared/widgets/common_dialog.dart';
+import '../../../../shared/widgets/common_snackbar.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../controllers/calendar_controller.dart';
 import '../providers/calendar_providers.dart';
 import '../widgets/day_view.dart';
@@ -73,7 +76,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         ),
                         Text(
                           '$selectedYear年',
-                          style: AppTextStyles.semiBold16,
+                          style: AppTextStyles.headline,
                         ),
                         IconButton(
                           icon: const Icon(Icons.chevron_right_rounded),
@@ -120,7 +123,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             ),
                             child: Text(
                               '$month月',
-                              style: AppTextStyles.regular14.copyWith(
+                              style: AppTextStyles.body2.copyWith(
                                 color: isCurrent
                                     ? AppColors.brandPrimary
                                     : theme.colorScheme.onSurface,
@@ -187,7 +190,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(monthLabel, style: AppTextStyles.bold24.copyWith(fontWeight: FontWeight.w600)),
+                  Text(monthLabel, style: AppTextStyles.title1.copyWith(fontWeight: FontWeight.w600)),
                   const SizedBox(width: 4),
                   Icon(
                     Icons.keyboard_arrow_down_rounded,
@@ -210,7 +213,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             ),
             child: Text(
               '今日',
-              style: AppTextStyles.regular11.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
+              style: AppTextStyles.caption2.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
             ),
           ),
           PopupMenuButton<CalendarViewMode>(
@@ -225,7 +228,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             ],
           ),
           GestureDetector(
-            onTap: () => context.push(AppRoutes.profile),
+            onTap: () => context.push(AppRoutes.profileFullscreen),
             child: Padding(
               padding: const EdgeInsets.only(right: AppSpacing.screenHorizontal),
               child: UserAvatar(
@@ -311,7 +314,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           const SizedBox(width: 12),
           Text(
             label,
-            style: AppTextStyles.regular12.copyWith(
+            style: AppTextStyles.caption1.copyWith(
               color: mode == current ? AppColors.brandPrimary : null,
               fontWeight: mode == current ? FontWeight.w600 : null,
             ),
@@ -339,11 +342,11 @@ class _DayEventListView extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppIcons.svg(AppIcons.calendar, size: 48, color: theme.colorScheme.onSurface.withValues(alpha: 0.25)),
+            AppIcons.calendar(size: 48, color: theme.colorScheme.onSurface.withValues(alpha: 0.25)),
             const SizedBox(height: AppSpacing.md),
             Text(
               '予定はありません',
-              style: AppTextStyles.regular12.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+              style: AppTextStyles.caption1.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
             ),
           ],
         ),
@@ -419,7 +422,7 @@ class _DateHeader extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: AppTextStyles.regular11.copyWith(
+        style: AppTextStyles.caption2.copyWith(
           color: isToday ? AppColors.brandPrimary : theme.colorScheme.onSurface.withValues(alpha: 0.55),
           fontWeight: FontWeight.w600,
         ),
@@ -477,7 +480,7 @@ class _ThreeDayViewWrapper extends ConsumerWidget {
                 child: Center(
                   child: Text(
                     DateFormat('d日（E）', 'ja').format(date),
-                    style: AppTextStyles.medium12.copyWith(
+                    style: AppTextStyles.caption1.copyWith(
                       fontWeight: FontWeight.w600,
                       color: _isToday(date) ? AppColors.brandPrimary : theme.colorScheme.onSurface,
                     ),
@@ -614,32 +617,21 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
 
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('エラーが発生しました: $e'), backgroundColor: AppColors.error));
-      }
+      CommonSnackBar.error(context, 'エラーが発生しました: $e');
     }
   }
 
   Future<void> _delete() async {
     if (!_isEditing) return;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await CommonDialog.confirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('予定の削除'),
-        content: const Text('この予定を削除しますか？'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('キャンセル')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('削除', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
-      ),
+      title: '予定の削除',
+      message: 'この予定を削除しますか？',
+      confirmLabel: '削除',
+      isDestructive: true,
     );
 
-    if (confirmed == true) {
+    if (confirmed) {
       await ref.read(eventFormControllerProvider.notifier).deleteEvent(widget.event!.id);
       if (mounted) Navigator.of(context).pop();
     }
@@ -656,14 +648,14 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
         title: Text(_isEditing ? '予定の編集' : '新しい予定'),
         leading: IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.of(context).pop()),
         actions: [
-          if (_isEditing) IconButton(icon: AppIcons.svg(AppIcons.trash, size: 24), onPressed: _delete),
+          if (_isEditing) IconButton(icon: AppIcons.trash(size: 24), onPressed: _delete),
           TextButton(
             onPressed: isSaving ? null : _save,
             child: isSaving
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(width: 16, height: 16, child: LoadingIndicator(size: 16))
                 : Text(
                     '保存',
-                    style: AppTextStyles.regular12.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
+                    style: AppTextStyles.caption1.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
                   ),
           ),
           const SizedBox(width: 4),
@@ -675,10 +667,10 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
           // タイトル
           TextField(
             controller: _titleController,
-            style: AppTextStyles.semiBold20,
+            style: AppTextStyles.title3,
             decoration: InputDecoration(
               hintText: 'タイトルを追加',
-              hintStyle: AppTextStyles.semiBold20.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.35)),
+              hintStyle: AppTextStyles.title3.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.35)),
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,
             ),
@@ -688,9 +680,9 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
           // 終日スイッチ
           Row(
             children: [
-              AppIcons.svg(AppIcons.clock, size: 20, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+              AppIcons.clock(size: 20, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
               const SizedBox(width: 14),
-              Text('終日', style: AppTextStyles.regular12),
+              Text('終日', style: AppTextStyles.caption1),
               const Spacer(),
               Switch.adaptive(
                 value: _isAllDay,
@@ -723,15 +715,15 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
           // 場所
           Row(
             children: [
-              AppIcons.svg(AppIcons.location, size: 20, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+              AppIcons.location(size: 20, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
               const SizedBox(width: 14),
               Expanded(
                 child: TextField(
                   controller: _locationController,
-                  style: AppTextStyles.regular12,
+                  style: AppTextStyles.caption1,
                   decoration: InputDecoration(
                     hintText: '場所を追加',
-                    hintStyle: AppTextStyles.regular12.copyWith(
+                    hintStyle: AppTextStyles.caption1.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
                     ),
                     border: InputBorder.none,
@@ -749,7 +741,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
             children: [
               Icon(Icons.circle, size: 20, color: _parseColor(_categoryColor)),
               const SizedBox(width: 14),
-              Text('カテゴリ', style: AppTextStyles.regular12),
+              Text('カテゴリ', style: AppTextStyles.caption1),
               const Spacer(),
               _ColorPicker(selected: _categoryColor, onChanged: (c) => setState(() => _categoryColor = c)),
             ],
@@ -763,18 +755,18 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
             children: [
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: AppIcons.svg(AppIcons.doc, size: 20, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                child: AppIcons.doc(size: 20, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: TextField(
                   controller: _descriptionController,
-                  style: AppTextStyles.regular12,
+                  style: AppTextStyles.caption1,
                   maxLines: 5,
                   minLines: 2,
                   decoration: InputDecoration(
                     hintText: '説明を追加',
-                    hintStyle: AppTextStyles.regular12.copyWith(
+                    hintStyle: AppTextStyles.caption1.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
                     ),
                     border: InputBorder.none,
@@ -819,7 +811,7 @@ class _DateTimeRow extends StatelessWidget {
             width: 34,
             child: Text(
               label,
-              style: AppTextStyles.regular11.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+              style: AppTextStyles.caption2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
             ),
           ),
           GestureDetector(
@@ -830,7 +822,7 @@ class _DateTimeRow extends StatelessWidget {
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(date, style: AppTextStyles.regular12),
+              child: Text(date, style: AppTextStyles.caption1),
             ),
           ),
           if (time != null) ...[
@@ -843,7 +835,7 @@ class _DateTimeRow extends StatelessWidget {
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(time!, style: AppTextStyles.regular12),
+                child: Text(time!, style: AppTextStyles.caption1),
               ),
             ),
           ],

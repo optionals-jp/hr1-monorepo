@@ -172,7 +172,12 @@ export default function ProfileSettingsPage() {
 
   return (
     <>
-      <PageHeader title="個人情報" description="あなたのアカウント情報を管理します" />
+      <PageHeader
+        title="個人情報"
+        description="あなたのアカウント情報を管理します"
+        sticky={false}
+        border={false}
+      />
 
       <PageContent>
         <div className="max-w-2xl space-y-4">

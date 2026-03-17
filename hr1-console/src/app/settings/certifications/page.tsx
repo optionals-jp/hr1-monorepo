@@ -89,7 +89,12 @@ export default function CertificationsSettingsPage() {
 
   return (
     <>
-      <PageHeader title="資格マスタ" description="社員が選択できる資格・認定の一覧を管理します" />
+      <PageHeader
+        title="資格マスタ"
+        description="社員が選択できる資格・認定の一覧を管理します"
+        sticky={false}
+        border={false}
+      />
 
       <PageContent>
         <div className="max-w-2xl space-y-6">

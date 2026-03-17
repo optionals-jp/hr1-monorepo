@@ -91,7 +91,7 @@ class EventCard extends StatelessWidget {
                             padding: const EdgeInsets.only(bottom: 2),
                             child: Text(
                               '${timeFormat.format(event.startAt.toLocal())} - ${timeFormat.format(event.endAt.toLocal())}',
-                              style: AppTextStyles.regular11.copyWith(
+                              style: AppTextStyles.caption2.copyWith(
                                 color: theme.colorScheme.onSurface
                                     .withValues(alpha: 0.55),
                               ),
@@ -102,7 +102,7 @@ class EventCard extends StatelessWidget {
                             padding: const EdgeInsets.only(bottom: 2),
                             child: Text(
                               '終日',
-                              style: AppTextStyles.regular11.copyWith(
+                              style: AppTextStyles.caption2.copyWith(
                                 color: _categoryColor,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -111,7 +111,7 @@ class EventCard extends StatelessWidget {
                         // タイトル
                         Text(
                           event.title,
-                          style: AppTextStyles.regular12.copyWith(
+                          style: AppTextStyles.caption1.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
                           maxLines: 1,
@@ -124,8 +124,7 @@ class EventCard extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 2),
                             child: Row(
                               children: [
-                                AppIcons.svg(
-                                  AppIcons.location,
+                                AppIcons.location(
                                   size: 13,
                                   color: theme.colorScheme.onSurface
                                       .withValues(alpha: 0.45),
@@ -134,7 +133,7 @@ class EventCard extends StatelessWidget {
                                 Expanded(
                                   child: Text(
                                     event.location!,
-                                    style: AppTextStyles.medium12.copyWith(
+                                    style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
                                       color: theme.colorScheme.onSurface
                                           .withValues(alpha: 0.45),
                                     ),

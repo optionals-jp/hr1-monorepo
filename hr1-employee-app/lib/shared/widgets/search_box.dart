@@ -46,20 +46,20 @@ class SearchBox extends StatelessWidget {
       child: Row(
         children: [
           const SizedBox(width: 14),
-          AppIcons.svg(AppIcons.search, size: 20, color: hintColor),
+          AppIcons.search(size: 20, color: hintColor),
           const SizedBox(width: 10),
           Expanded(
             child: _isEditable
                 ? TextField(
                     controller: controller,
                     focusNode: focusNode,
-                    style: AppTextStyles.regular12,
+                    style: AppTextStyles.caption1,
                     textInputAction: TextInputAction.search,
                     onSubmitted: onSubmitted,
                     decoration: InputDecoration(
                       hintText: hintText,
                       hintStyle:
-                          AppTextStyles.regular12.copyWith(color: hintColor),
+                          AppTextStyles.caption1.copyWith(color: hintColor),
                       filled: false,
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -70,7 +70,7 @@ class SearchBox extends StatelessWidget {
                   )
                 : Text(
                     hintText,
-                    style: AppTextStyles.regular12.copyWith(color: hintColor),
+                    style: AppTextStyles.caption1.copyWith(color: hintColor),
                   ),
           ),
           if (_isEditable)

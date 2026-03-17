@@ -6,6 +6,8 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/validators.dart';
+import '../../../../shared/widgets/common_button.dart';
+import '../../../../shared/widgets/common_snackbar.dart';
 import '../controllers/auth_controller.dart';
 
 /// ログイン画面（OTP認証）
@@ -40,20 +42,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (success) {
       setState(() => _otpSent = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('認証コードを送信しました。メールをご確認ください。'),
-          backgroundColor: AppColors.success,
-        ),
-      );
+      CommonSnackBar.show(context, '認証コードを送信しました。メールをご確認ください。');
     } else {
       final error = ref.read(authControllerProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error ?? 'エラーが発生しました'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      CommonSnackBar.error(context, error ?? 'エラーが発生しました');
     }
   }
 
@@ -71,12 +63,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       context.go(AppRoutes.portal);
     } else {
       final error = ref.read(authControllerProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error ?? 'エラーが発生しました'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      CommonSnackBar.error(context, error ?? 'エラーが発生しました');
     }
   }
 
@@ -133,7 +120,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Center(
                     child: Text(
                       _otpSent ? '認証コードを入力' : 'ログイン',
-                      style: AppTextStyles.bold24,
+                      style: AppTextStyles.title1,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -142,7 +129,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       _otpSent
                           ? '${_emailController.text.trim()} に送信された\n6桁のコードを入力してください'
                           : 'メールアドレスを入力してください',
-                      style: AppTextStyles.regular12.copyWith(
+                      style: AppTextStyles.caption1.copyWith(
                         color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                       textAlign: TextAlign.center,
@@ -162,18 +149,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: AppSpacing.xl),
 
-                    ElevatedButton(
-                      onPressed: isLoading ? null : _sendOtp,
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('認証コードを送信'),
+                    CommonButton(
+                      onPressed: _sendOtp,
+                      loading: isLoading,
+                      child: const Text('認証コードを送信'),
                     ),
                   ] else ...[
                     TextFormField(
@@ -194,18 +173,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: AppSpacing.xl),
 
-                    ElevatedButton(
-                      onPressed: isLoading ? null : _verifyOtp,
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('ログイン'),
+                    CommonButton(
+                      onPressed: _verifyOtp,
+                      loading: isLoading,
+                      child: const Text('ログイン'),
                     ),
                     const SizedBox(height: AppSpacing.lg),
 

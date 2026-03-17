@@ -9,6 +9,8 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../domain/entities/attendance_record.dart';
 import '../controllers/attendance_controller.dart';
+import '../../../../shared/widgets/common_snackbar.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../providers/attendance_providers.dart';
 
 /// 勤怠打刻画面 — Office モバイルスタイル
@@ -24,9 +26,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     await ref.read(attendanceControllerProvider.notifier).punch(action);
     final error = ref.read(attendanceControllerProvider).error;
     if (error != null && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('エラーが発生しました: $error'), backgroundColor: AppColors.error));
+      CommonSnackBar.error(context, 'エラーが発生しました: $error');
     }
   }
 
@@ -46,7 +46,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             onPressed: () => context.push(AppRoutes.correction),
             child: Text(
               '修正依頼',
-              style: AppTextStyles.regular12.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
+              style: AppTextStyles.caption1.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
             ),
           ),
           const SizedBox(width: 4),
@@ -83,7 +83,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               padding: const EdgeInsets.only(top: AppSpacing.xl, bottom: AppSpacing.sm),
               child: Text(
                 'タイムライン',
-                style: AppTextStyles.regular11.copyWith(
+                style: AppTextStyles.caption2.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.3,
@@ -97,7 +97,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                       child: Center(
                         child: Text(
                           'まだ打刻がありません',
-                          style: AppTextStyles.regular12.copyWith(
+                          style: AppTextStyles.caption1.copyWith(
                             color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                           ),
                         ),
@@ -113,7 +113,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                           ),
                       ],
                     ),
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const LoadingIndicator(),
               error: (e, _) => Padding(padding: const EdgeInsets.all(AppSpacing.xl), child: Text('エラー: $e')),
             ),
             const SizedBox(height: AppSpacing.xxl),
@@ -150,13 +150,13 @@ class _TimeStatusHero extends StatelessWidget {
         // 日付
         Text(
           dateFormat.format(now),
-          style: AppTextStyles.regular12.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+          style: AppTextStyles.caption1.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
         ),
         const SizedBox(height: 4),
         // 時刻（大きく表示）
         Text(
           timeFormat.format(now),
-          style: AppTextStyles.extraLight48.copyWith(
+          style: AppTextStyles.display.copyWith(
             fontSize: 52,
             fontWeight: FontWeight.w200,
             color: theme.colorScheme.onSurface,
@@ -181,7 +181,7 @@ class _TimeStatusHero extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 statusLabel,
-                style: AppTextStyles.regular11.copyWith(color: statusColor, fontWeight: FontWeight.w600),
+                style: AppTextStyles.caption2.copyWith(color: statusColor, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -208,7 +208,7 @@ class _PunchButtons extends StatelessWidget {
             Expanded(
               child: _PunchButton(
                 label: '出勤',
-                icon: AppIcons.login,
+                iconBuilder: AppIcons.login,
                 color: AppColors.success,
                 enabled: !isLoading && workState == WorkState.notStarted,
                 onPressed: () => onPunch('clock_in'),
@@ -218,7 +218,7 @@ class _PunchButtons extends StatelessWidget {
             Expanded(
               child: _PunchButton(
                 label: '退勤',
-                icon: AppIcons.logout,
+                iconBuilder: AppIcons.logout,
                 color: AppColors.error,
                 enabled: !isLoading && workState == WorkState.working,
                 onPressed: () => onPunch('clock_out'),
@@ -232,7 +232,7 @@ class _PunchButtons extends StatelessWidget {
             Expanded(
               child: _PunchButton(
                 label: '休憩開始',
-                icon: AppIcons.coffee,
+                iconBuilder: AppIcons.coffee,
                 color: AppColors.warning,
                 enabled: !isLoading && workState == WorkState.working,
                 onPressed: () => onPunch('break_start'),
@@ -242,7 +242,7 @@ class _PunchButtons extends StatelessWidget {
             Expanded(
               child: _PunchButton(
                 label: '休憩終了',
-                icon: AppIcons.pause,
+                iconBuilder: AppIcons.pause,
                 color: AppColors.brandLight,
                 enabled: !isLoading && workState == WorkState.onBreak,
                 onPressed: () => onPunch('break_end'),
@@ -259,14 +259,14 @@ class _PunchButtons extends StatelessWidget {
 class _PunchButton extends StatelessWidget {
   const _PunchButton({
     required this.label,
-    required this.icon,
+    required this.iconBuilder,
     required this.color,
     required this.enabled,
     required this.onPressed,
   });
 
   final String label;
-  final String icon;
+  final Widget Function({double size, Color? color}) iconBuilder;
   final Color color;
   final bool enabled;
   final VoidCallback onPressed;
@@ -275,44 +275,50 @@ class _PunchButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final iconColor = enabled ? Colors.white : theme.colorScheme.onSurface.withValues(alpha: 0.3);
+    final iconColor = enabled ? color : theme.colorScheme.onSurface.withValues(alpha: 0.3);
 
     return SizedBox(
       height: 56,
-      child: Material(
-        color: enabled ? color : theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: enabled ? onPressed : null,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: enabled
-                  ? null
-                  : Border.all(
-                      color: isDark
-                          ? theme.colorScheme.outline.withValues(alpha: 0.35)
-                          : theme.colorScheme.outlineVariant,
-                    ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.06),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.06),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AppIcons.svg(icon, size: 20, color: iconColor),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: AppTextStyles.regular12.copyWith(color: iconColor, fontWeight: FontWeight.w600),
+          ],
+        ),
+        child: Material(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            onTap: enabled ? onPressed : null,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              decoration: BoxDecoration(
+                color: enabled ? color.withValues(alpha: 0.15) : Colors.transparent,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: enabled
+                      ? color.withValues(alpha: 0.15)
+                      : (isDark
+                          ? theme.colorScheme.outline.withValues(alpha: 0.5)
+                          : theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
                 ),
-              ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  iconBuilder(size: 20, color: iconColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: AppTextStyles.caption1.copyWith(color: iconColor, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -355,21 +361,21 @@ class _SummaryRow extends StatelessWidget {
           _KVItem(
             label: '勤務',
             value: record.workDurationFormatted,
-            iconAsset: AppIcons.briefcase,
+            iconBuilder: AppIcons.briefcase,
             iconColor: AppColors.success,
           ),
           _Divider(),
           _KVItem(
             label: '休憩',
             value: _fmtMin(record.breakMinutes),
-            iconAsset: AppIcons.coffee,
+            iconBuilder: AppIcons.coffee,
             iconColor: AppColors.warning,
           ),
           _Divider(),
           _KVItem(
             label: '残業',
             value: _fmtMin(record.overtimeMinutes),
-            iconAsset: AppIcons.clock,
+            iconBuilder: AppIcons.clock,
             iconColor: AppColors.error,
           ),
         ],
@@ -387,12 +393,12 @@ class _KVItem extends StatelessWidget {
   const _KVItem({
     required this.label,
     required this.value,
-    required this.iconAsset,
+    required this.iconBuilder,
     required this.iconColor,
   });
   final String label;
   final String value;
-  final String iconAsset;
+  final Widget Function({double size, Color? color}) iconBuilder;
   final Color iconColor;
 
   @override
@@ -401,13 +407,13 @@ class _KVItem extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          AppIcons.svg(iconAsset, size: 18, color: iconColor),
+          iconBuilder(size: 18, color: iconColor),
           const SizedBox(height: 6),
-          Text(value, style: AppTextStyles.semiBold16),
+          Text(value, style: AppTextStyles.headline),
           const SizedBox(height: 2),
           Text(
             label,
-            style: AppTextStyles.medium12.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+            style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
           ),
         ],
       ),
@@ -472,7 +478,7 @@ class _TimelineItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final (iconAsset, iconColor) = switch (punch.punchType) {
+    final (iconBuilder, iconColor) = switch (punch.punchType) {
       'clock_in' => (AppIcons.login, AppColors.success),
       'clock_out' => (AppIcons.logout, AppColors.error),
       'break_start' => (AppIcons.coffee, AppColors.warning),
@@ -501,7 +507,7 @@ class _TimelineItem extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: iconColor.withValues(alpha: 0.25), width: 1),
                   ),
-                  child: Center(child: AppIcons.svg(iconAsset, size: 16, color: iconColor)),
+                  child: Center(child: iconBuilder(size: 16, color: iconColor)),
                 ),
               ),
             ),
@@ -513,7 +519,7 @@ class _TimelineItem extends StatelessWidget {
                 child: Text.rich(
                   _punchDescription(
                     punch,
-                    AppTextStyles.regular14.copyWith(
+                    AppTextStyles.body2.copyWith(
                       fontSize: 14,
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
@@ -539,7 +545,7 @@ class _TimelineItem extends StatelessWidget {
                 if (elapsed != null)
                   Text(
                     _elapsedLabel(elapsed, punch.punchType, nextPunch!.punchType),
-                    style: AppTextStyles.regular11.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
+                    style: AppTextStyles.caption2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
                   ),
               ],
             ),

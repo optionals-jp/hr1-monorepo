@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../shared/widgets/loading_indicator.dart';
 import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
@@ -16,6 +17,11 @@ import '../../features/messages/presentation/screens/messages_screen.dart';
 import '../../features/messages/presentation/screens/thread_chat_screen.dart';
 import '../../features/messages/domain/entities/message_thread.dart';
 import '../../features/auth/presentation/screens/profile_screen.dart';
+import '../../features/faq/presentation/screens/faq_screen.dart';
+import '../../features/surveys/presentation/screens/survey_list_screen.dart';
+import '../../features/surveys/presentation/screens/survey_answer_screen.dart';
+import '../../features/surveys/presentation/providers/survey_providers.dart';
+import '../../features/surveys/domain/entities/pulse_survey.dart';
 
 /// ルートパス定数
 class AppRoutes {
@@ -29,6 +35,8 @@ class AppRoutes {
   static const String messages = '/messages';
   static const String messageThread = '/messages/:threadId';
   static const String profile = '/profile';
+  static const String faq = '/faq';
+  static const String surveys = '/surveys';
 }
 
 /// 認証不要なルート
@@ -108,6 +116,32 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
+      /// FAQ画面（シェル外 → BottomNav非表示）
+      GoRoute(
+        path: AppRoutes.faq,
+        builder: (context, state) => const FaqScreen(),
+      ),
+
+      /// パルスサーベイ一覧画面（シェル外 → BottomNav非表示）
+      GoRoute(
+        path: AppRoutes.surveys,
+        builder: (context, state) => const SurveyListScreen(),
+        routes: [
+          GoRoute(
+            path: ':surveyId',
+            builder: (context, state) {
+              final survey = state.extra as PulseSurvey?;
+              if (survey != null) {
+                return SurveyAnswerScreen(survey: survey);
+              }
+              // ディープリンク: extraがない場合はIDから取得
+              final surveyId = state.pathParameters['surveyId']!;
+              return _SurveyLoaderScreen(surveyId: surveyId);
+            },
+          ),
+        ],
+      ),
+
       /// メッセージ詳細（シェル外 → 独自AppBar、BottomNav非表示）
       GoRoute(
         path: '/messages/:threadId',
@@ -167,3 +201,32 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// ディープリンク用サーベイローダー画面
+class _SurveyLoaderScreen extends ConsumerWidget {
+  const _SurveyLoaderScreen({required this.surveyId});
+
+  final String surveyId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final surveyAsync = ref.watch(surveyByIdProvider(surveyId));
+
+    return surveyAsync.when(
+      loading: () => const Scaffold(body: LoadingIndicator()),
+      error: (_, __) => Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: Text('サーベイの読み込みに失敗しました')),
+      ),
+      data: (survey) {
+        if (survey == null) {
+          return Scaffold(
+            appBar: AppBar(),
+            body: const Center(child: Text('サーベイが見つかりません')),
+          );
+        }
+        return SurveyAnswerScreen(survey: survey);
+      },
+    );
+  }
+}

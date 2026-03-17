@@ -7,6 +7,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../core/router/app_router.dart';
 import '../../domain/entities/application.dart';
 import '../../domain/entities/application_status.dart';
@@ -81,7 +82,7 @@ class _ApplicationDetailScreenState
 
           return _ApplicationDetailBody(application: application);
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingIndicator(),
         error: (e, _) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

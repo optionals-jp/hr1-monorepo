@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../domain/entities/message_thread.dart';
 import '../providers/messages_providers.dart';
@@ -19,7 +20,7 @@ class MessagesScreen extends ConsumerWidget {
     final threadsAsync = ref.watch(messageThreadsProvider);
 
     return threadsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const LoadingIndicator(),
       error: (error, _) => Center(
         child: Text('エラーが発生しました', style: AppTextStyles.body),
       ),

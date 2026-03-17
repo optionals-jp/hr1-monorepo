@@ -102,7 +102,7 @@ class _DayViewState extends State<DayView> {
                     ),
                     child: Text(
                       event.title,
-                      style: AppTextStyles.medium12.copyWith(
+                      style: AppTextStyles.caption1.copyWith(
                         color: color,
                         fontWeight: FontWeight.w600,
                       ),
@@ -194,7 +194,7 @@ class _DayViewState extends State<DayView> {
     final minutes = local.hour * 60 + local.minute;
     final top = minutes * _hourHeight / 60;
 
-    final (iconAsset, color) = switch (punch.punchType) {
+    final (iconBuilder, color) = switch (punch.punchType) {
       'clock_in' => (AppIcons.login, AppColors.success),
       'clock_out' => (AppIcons.logout, AppColors.error),
       'break_start' => (AppIcons.coffee, AppColors.warning),
@@ -222,7 +222,7 @@ class _DayViewState extends State<DayView> {
               border: Border.all(color: color.withValues(alpha: 0.15), width: 1),
             ),
             child: Center(
-              child: AppIcons.svg(iconAsset, size: 10, color: color),
+              child: iconBuilder(size: 10, color: color),
             ),
           ),
         ),
@@ -267,7 +267,7 @@ class _DayViewState extends State<DayView> {
             children: [
               Text(
                 event.title,
-                style: AppTextStyles.regular11.copyWith(
+                style: AppTextStyles.caption2.copyWith(
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.onSurface,
                 ),
@@ -277,7 +277,7 @@ class _DayViewState extends State<DayView> {
               if (height > 36)
                 Text(
                   '${DateFormat('HH:mm').format(startLocal)} - ${DateFormat('HH:mm').format(endLocal)}',
-                  style: AppTextStyles.medium12.copyWith(
+                  style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
                     color: theme.colorScheme.onSurface
                         .withValues(alpha: 0.55),
                   ),
@@ -285,7 +285,7 @@ class _DayViewState extends State<DayView> {
               if (height > 52 && event.location != null)
                 Text(
                   event.location!,
-                  style: AppTextStyles.medium12.copyWith(
+                  style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
                     color: theme.colorScheme.onSurface
                         .withValues(alpha: 0.45),
                   ),
@@ -327,7 +327,7 @@ class _HourRow extends StatelessWidget {
               padding: const EdgeInsets.only(right: 8, top: 0),
               child: Text(
                 '${hour.toString().padLeft(2, '0')}:00',
-                style: AppTextStyles.medium12.copyWith(
+                style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
                   color:
                       theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   fontFeatures: [const FontFeature.tabularFigures()],

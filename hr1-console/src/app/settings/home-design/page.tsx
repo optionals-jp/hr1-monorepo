@@ -420,6 +420,8 @@ export default function HomeDesignPage() {
       <PageHeader
         title="アプリのホームデザイン"
         description="応募者アプリのホーム画面に表示するタブとコンテンツを設定します"
+        sticky={false}
+        border={false}
       />
 
       {errorMsg && (

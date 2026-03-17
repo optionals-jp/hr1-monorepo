@@ -1,0 +1,215 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
+import '../../domain/entities/faq_item.dart';
+import '../providers/faq_providers.dart';
+
+/// FAQ一覧画面（応募者向け）
+class FaqScreen extends ConsumerWidget {
+  const FaqScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final faqsAsync = ref.watch(applicantFaqsProvider);
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('よくある質問'),
+      ),
+      body: faqsAsync.when(
+        data: (faqs) {
+          if (faqs.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.help_outline_rounded,
+                      size: 48,
+                      color: theme.colorScheme.onSurface
+                          .withValues(alpha: 0.3)),
+                  const SizedBox(height: AppSpacing.md),
+                  Text('FAQはまだありません',
+                      style: AppTextStyles.body.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      )),
+                ],
+              ),
+            );
+          }
+
+          // カテゴリ別にグループ化
+          final grouped = <String, List<FaqItem>>{};
+          for (final faq in faqs) {
+            grouped.putIfAbsent(faq.category, () => []).add(faq);
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+            itemCount: grouped.length,
+            itemBuilder: (context, index) {
+              final category = grouped.keys.elementAt(index);
+              final items = grouped[category]!;
+              return _FaqCategorySection(
+                category: category,
+                items: items,
+              );
+            },
+          );
+        },
+        loading: () => const LoadingIndicator(),
+        error: (e, _) => Center(child: Text('エラー: $e')),
+      ),
+    );
+  }
+}
+
+class _FaqCategorySection extends StatelessWidget {
+  const _FaqCategorySection({
+    required this.category,
+    required this.items,
+  });
+
+  final String category;
+  final List<FaqItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(
+            top: AppSpacing.lg,
+            bottom: AppSpacing.sm,
+          ),
+          child: Text(
+            FaqCategory.label(category),
+            style: AppTextStyles.caption.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ),
+        ...items.map((faq) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: _FaqTile(faq: faq),
+            )),
+      ],
+    );
+  }
+}
+
+class _FaqTile extends StatefulWidget {
+  const _FaqTile({required this.faq});
+  final FaqItem faq;
+
+  @override
+  State<_FaqTile> createState() => _FaqTileState();
+}
+
+class _FaqTileState extends State<_FaqTile> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(color: theme.dividerColor),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
+              child: Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Q',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryLight,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Text(
+                      widget.faq.question,
+                      style: AppTextStyles.body
+                          .copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(Icons.expand_more,
+                        color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.cardPadding + 24 + AppSpacing.md,
+                0,
+                AppSpacing.cardPadding,
+                AppSpacing.cardPadding,
+              ),
+              child: MarkdownBody(
+                data: widget.faq.answer,
+                styleSheet: MarkdownStyleSheet(
+                  p: AppTextStyles.body.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    height: 1.6,
+                  ),
+                  h1: AppTextStyles.heading3,
+                  h2: AppTextStyles.subtitle,
+                  h3: AppTextStyles.subtitle.copyWith(fontSize: 14),
+                  listBullet: AppTextStyles.body.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  code: AppTextStyles.bodySmall.copyWith(
+                    backgroundColor:
+                        theme.colorScheme.surfaceContainerHighest,
+                  ),
+                ),
+                shrinkWrap: true,
+              ),
+            ),
+            crossFadeState: _expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
+        ],
+      ),
+    );
+  }
+}

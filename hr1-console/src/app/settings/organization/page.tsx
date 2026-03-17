@@ -103,7 +103,12 @@ export default function OrganizationSettingsPage() {
 
   return (
     <>
-      <PageHeader title="組織情報" description="企業の基本情報を管理します" />
+      <PageHeader
+        title="組織情報"
+        description="企業の基本情報を管理します"
+        sticky={false}
+        border={false}
+      />
 
       <PageContent>
         <div className="max-w-2xl space-y-4">
