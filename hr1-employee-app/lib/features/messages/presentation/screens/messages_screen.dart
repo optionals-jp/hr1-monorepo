@@ -36,7 +36,7 @@ class MessagesScreen extends ConsumerWidget {
         centerTitle: false,
         actions: [
           GestureDetector(
-            onTap: () => context.push(AppRoutes.profile),
+            onTap: () => context.push(AppRoutes.profileFullscreen),
             child: Padding(
               padding: const EdgeInsets.only(right: AppSpacing.screenHorizontal),
               child: UserAvatar(
@@ -69,7 +69,7 @@ class MessagesScreen extends ConsumerWidget {
               data: (threads) {
                 if (threads.isEmpty) {
                   return EmptyState(
-                    icon: AppIcons.svg(AppIcons.directbox, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+                    icon: AppIcons.directbox(size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
                     title: 'メッセージはありません',
                     description: 'メッセージがここに表示されます',
                   );

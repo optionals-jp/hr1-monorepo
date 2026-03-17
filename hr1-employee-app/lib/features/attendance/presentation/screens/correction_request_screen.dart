@@ -382,7 +382,7 @@ class _CorrectionRequestScreenState
               _SummaryItem(
                 label: '勤務',
                 value: fmtMin(durations.work),
-                iconAsset: AppIcons.briefcase,
+                iconBuilder: AppIcons.briefcase,
                 iconColor: AppColors.success,
               ),
               Container(
@@ -393,7 +393,7 @@ class _CorrectionRequestScreenState
               _SummaryItem(
                 label: '休憩',
                 value: fmtMin(durations.breakMin),
-                iconAsset: AppIcons.coffee,
+                iconBuilder: AppIcons.coffee,
                 iconColor: AppColors.warning,
               ),
               Container(
@@ -404,7 +404,7 @@ class _CorrectionRequestScreenState
               _SummaryItem(
                 label: '残業',
                 value: fmtMin(durations.overtime),
-                iconAsset: AppIcons.clock,
+                iconBuilder: AppIcons.clock,
                 iconColor: AppColors.error,
               ),
             ],
@@ -499,7 +499,7 @@ class _PunchCorrectionRow extends StatelessWidget {
 
   bool get isChanged => correctedTime != null;
 
-  (String, Color) get _iconInfo {
+  (Widget Function({double size, Color? color}), Color) get _iconInfo {
     return switch (punch.punchType) {
       PunchType.clockIn => (AppIcons.login, AppColors.success),
       PunchType.clockOut => (AppIcons.logout, AppColors.error),
@@ -528,7 +528,7 @@ class _PunchCorrectionRow extends StatelessWidget {
       child: Row(
         children: [
           Builder(builder: (_) {
-            final (iconAsset, iconColor) = _iconInfo;
+            final (iconBuilder, iconColor) = _iconInfo;
             return Container(
               width: 32,
               height: 32,
@@ -537,7 +537,7 @@ class _PunchCorrectionRow extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: iconColor.withValues(alpha: 0.25), width: 1),
               ),
-              child: Center(child: AppIcons.svg(iconAsset, size: 16, color: iconColor)),
+              child: Center(child: iconBuilder(size: 16, color: iconColor)),
             );
           },
           ),
@@ -603,13 +603,13 @@ class _SummaryItem extends StatelessWidget {
   const _SummaryItem({
     required this.label,
     required this.value,
-    required this.iconAsset,
+    required this.iconBuilder,
     required this.iconColor,
   });
 
   final String label;
   final String value;
-  final String iconAsset;
+  final Widget Function({double size, Color? color}) iconBuilder;
   final Color iconColor;
 
   @override
@@ -618,7 +618,7 @@ class _SummaryItem extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          AppIcons.svg(iconAsset, size: 18, color: iconColor),
+          iconBuilder(size: 18, color: iconColor),
           const SizedBox(height: 6),
           Text(value, style: AppTextStyles.semiBold16),
           const SizedBox(height: 2),

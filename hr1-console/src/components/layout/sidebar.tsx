@@ -20,6 +20,8 @@ import {
   ChevronDown,
   Star,
   ListTodo,
+  CircleHelp,
+  HeartPulse,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +61,8 @@ const navSections: NavSection[] = [
       { href: "/calendar", label: "カレンダー", icon: CalendarDays },
       { href: "/forms", label: "フォーム管理", icon: FileText },
       { href: "/evaluations", label: "評価管理", icon: Star },
+      { href: "/surveys", label: "パルスサーベイ", icon: HeartPulse },
+      { href: "/faqs", label: "FAQ管理", icon: CircleHelp },
     ],
   },
 ];

@@ -46,7 +46,7 @@ class SearchBox extends StatelessWidget {
       child: Row(
         children: [
           const SizedBox(width: 14),
-          AppIcons.svg(AppIcons.search, size: 20, color: hintColor),
+          AppIcons.search(size: 20, color: hintColor),
           const SizedBox(width: 10),
           Expanded(
             child: _isEditable

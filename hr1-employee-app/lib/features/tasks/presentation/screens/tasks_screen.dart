@@ -84,7 +84,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
         centerTitle: false,
         actions: [
           GestureDetector(
-            onTap: () => context.push(AppRoutes.profile),
+            onTap: () => context.push(AppRoutes.profileFullscreen),
             child: Padding(
               padding: const EdgeInsets.only(right: AppSpacing.screenHorizontal),
               child: UserAvatar(
@@ -298,7 +298,7 @@ class _TaskItem extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         color: AppColors.error,
-        child: AppIcons.svg(AppIcons.trashFill, size: 24, color: Colors.white),
+        child: AppIcons.trashFill(size: 24, color: Colors.white),
       ),
       onDismissed: (_) => onDismissed(),
       child: InkWell(
@@ -403,8 +403,7 @@ class _MetadataRow extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppIcons.svg(
-              AppIcons.calendar,
+            AppIcons.calendar(
               size: 12,
               color: isOverdue ? AppColors.error : theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
@@ -566,7 +565,7 @@ class _AddTaskBar extends StatelessWidget {
                   onPressed: onCancel,
                 ),
                 IconButton(
-                  icon: AppIcons.svg(AppIcons.sendFill, size: 20, color: AppColors.brandPrimary),
+                  icon: AppIcons.sendFill(size: 20, color: AppColors.brandPrimary),
                   onPressed: onSubmit,
                 ),
               ],
@@ -607,8 +606,8 @@ class _EmptyTaskState extends StatelessWidget {
     final (icon, title, subtitle) = switch (filter) {
       TaskFilter.myDay => (Icon(Icons.wb_sunny_outlined, size: 48, color: emptyColor) as Widget, '今日のタスクはありません', 'タスクを追加して今日の集中ポイントを設定しましょう'),
       TaskFilter.important => (Icon(Icons.star_outline_rounded, size: 48, color: emptyColor) as Widget, '重要なタスクはありません', 'スターを付けたタスクがここに表示されます'),
-      TaskFilter.planned => (AppIcons.svg(AppIcons.calendar, size: 48, color: emptyColor), '計画済みのタスクはありません', '期限付きのタスクがここに表示されます'),
-      TaskFilter.all => (AppIcons.svg(AppIcons.tickCircle, size: 48, color: emptyColor), 'タスクはありません', '下の「+ タスクを追加」から始めましょう'),
+      TaskFilter.planned => (AppIcons.calendar(size: 48, color: emptyColor), '計画済みのタスクはありません', '期限付きのタスクがここに表示されます'),
+      TaskFilter.all => (AppIcons.tickCircle(size: 48, color: emptyColor), 'タスクはありません', '下の「+ タスクを追加」から始めましょう'),
     };
 
     return Center(
@@ -812,7 +811,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
 
           // 期限
           _DetailActionRow(
-            icon: AppIcons.svg(AppIcons.calendar, size: 20, color: _dueDate != null ? AppColors.brandPrimary : theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+            icon: AppIcons.calendar(size: 20, color: _dueDate != null ? AppColors.brandPrimary : theme.colorScheme.onSurface.withValues(alpha: 0.5)),
             label: _dueDate != null ? '期限: ${DateFormat('M/d').format(_dueDate!)}' : '期限日を追加',
             isActive: _dueDate != null,
             onTap: _pickDueDate,
@@ -835,7 +834,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
             children: [
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: AppIcons.svg(AppIcons.doc, size: 20, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                child: AppIcons.doc(size: 20, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
               ),
               const SizedBox(width: 14),
               Expanded(

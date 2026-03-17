@@ -124,8 +124,7 @@ class EventCard extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 2),
                             child: Row(
                               children: [
-                                AppIcons.svg(
-                                  AppIcons.location,
+                                AppIcons.location(
                                   size: 13,
                                   color: theme.colorScheme.onSurface
                                       .withValues(alpha: 0.45),

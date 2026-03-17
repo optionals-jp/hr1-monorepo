@@ -524,8 +524,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(left: 14, bottom: 10),
-                          child: AppIcons.svg(
-                            AppIcons.directbox,
+                          child: AppIcons.directbox(
                             size: 20,
                             color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                           ),
@@ -566,8 +565,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                     height: 36,
                     child: IconButton(
                       onPressed: _sending ? null : _sendMessage,
-                      icon: AppIcons.svg(
-                        AppIcons.send,
+                      icon: AppIcons.send(
                         color: _sending
                             ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
                             : AppColors.brandPrimary,

@@ -194,7 +194,7 @@ class _DayViewState extends State<DayView> {
     final minutes = local.hour * 60 + local.minute;
     final top = minutes * _hourHeight / 60;
 
-    final (iconAsset, color) = switch (punch.punchType) {
+    final (iconBuilder, color) = switch (punch.punchType) {
       'clock_in' => (AppIcons.login, AppColors.success),
       'clock_out' => (AppIcons.logout, AppColors.error),
       'break_start' => (AppIcons.coffee, AppColors.warning),
@@ -222,7 +222,7 @@ class _DayViewState extends State<DayView> {
               border: Border.all(color: color.withValues(alpha: 0.15), width: 1),
             ),
             child: Center(
-              child: AppIcons.svg(iconAsset, size: 10, color: color),
+              child: iconBuilder(size: 10, color: color),
             ),
           ),
         ),

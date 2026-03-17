@@ -44,12 +44,12 @@ class HomeScreen extends ConsumerWidget {
               BottomNavigationBarItem(
                 icon: Padding(
                   padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.svg(AppIcons.home,
+                  child: AppIcons.home(
                       color: unselectedColor, size: 24),
                 ),
                 activeIcon: Padding(
                   padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.svg(AppIcons.homeFill,
+                  child: AppIcons.homeFill(
                       color: selectedColor, size: 24),
                 ),
                 label: 'ホーム',
@@ -57,12 +57,12 @@ class HomeScreen extends ConsumerWidget {
               BottomNavigationBarItem(
                 icon: Padding(
                   padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.svg(AppIcons.calendar,
+                  child: AppIcons.calendar(
                       color: unselectedColor, size: 24),
                 ),
                 activeIcon: Padding(
                   padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.svg(AppIcons.calendarFill,
+                  child: AppIcons.calendarFill(
                       color: selectedColor, size: 24),
                 ),
                 label: 'カレンダー',
@@ -70,12 +70,12 @@ class HomeScreen extends ConsumerWidget {
               BottomNavigationBarItem(
                 icon: Padding(
                   padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.svg(AppIcons.note,
+                  child: AppIcons.note(
                       color: unselectedColor, size: 24),
                 ),
                 activeIcon: Padding(
                   padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.svg(AppIcons.noteFill,
+                  child: AppIcons.noteFill(
                       color: selectedColor, size: 24),
                 ),
                 label: 'チャット',
@@ -83,12 +83,12 @@ class HomeScreen extends ConsumerWidget {
               BottomNavigationBarItem(
                 icon: Padding(
                   padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.svg(AppIcons.tickCircle,
+                  child: AppIcons.tickCircle(
                       color: unselectedColor, size: 24),
                 ),
                 activeIcon: Padding(
                   padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.svg(AppIcons.tickCircleFill,
+                  child: AppIcons.tickCircleFill(
                       color: selectedColor, size: 24),
                 ),
                 label: 'タスク',
@@ -96,12 +96,12 @@ class HomeScreen extends ConsumerWidget {
               BottomNavigationBarItem(
                 icon: Padding(
                   padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.svg(AppIcons.user,
+                  child: AppIcons.user(
                       color: unselectedColor, size: 24),
                 ),
                 activeIcon: Padding(
                   padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.svg(AppIcons.userFill,
+                  child: AppIcons.userFill(
                       color: selectedColor, size: 24),
                 ),
                 label: 'その他',

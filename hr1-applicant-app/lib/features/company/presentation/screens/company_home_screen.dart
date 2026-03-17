@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../auth/domain/entities/organization.dart';
 import '../../../auth/presentation/providers/organization_context_provider.dart';
 import '../../../applications/presentation/providers/applications_providers.dart';
@@ -244,6 +246,47 @@ class _ProfileHeader extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.lg),
                   // 統計バー
                   _StatsBar(org: org),
+                  const SizedBox(height: AppSpacing.md),
+                  // FAQ & サーベイ ボタン
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.push(AppRoutes.faq),
+                          icon: const Icon(Icons.help_outline_rounded, size: 18),
+                          label: const Text('FAQ'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primaryLight,
+                            side: BorderSide(
+                              color: AppColors.primaryLight.withValues(alpha: 0.3),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.push(AppRoutes.surveys),
+                          icon: const Icon(Icons.poll_outlined, size: 18),
+                          label: const Text('サーベイ'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primaryLight,
+                            side: BorderSide(
+                              color: AppColors.primaryLight.withValues(alpha: 0.3),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

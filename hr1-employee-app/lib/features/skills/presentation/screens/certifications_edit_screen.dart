@@ -198,8 +198,7 @@ class _CertificationsEditScreenState
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        AppIcons.svg(
-                          AppIcons.award,
+                        AppIcons.award(
                           size: 48,
                           color: theme.colorScheme.onSurface
                               .withValues(alpha: 0.25),
@@ -272,8 +271,7 @@ class _CertTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          AppIcons.svg(
-            AppIcons.award,
+          AppIcons.award(
             size: 20,
             color: AppColors.brandPrimary.withValues(alpha: 0.7),
           ),

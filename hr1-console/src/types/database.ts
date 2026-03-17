@@ -498,3 +498,61 @@ export interface SkillMaster {
   category: string | null;
   created_at: string;
 }
+
+export interface Faq {
+  id: string;
+  organization_id: string;
+  question: string;
+  answer: string;
+  category: string;
+  target: "employee" | "applicant" | "both";
+  sort_order: number;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PulseSurvey {
+  id: string;
+  organization_id: string;
+  title: string;
+  description: string | null;
+  target: "applicant" | "employee" | "both";
+  status: "draft" | "active" | "closed";
+  deadline: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  pulse_survey_questions?: PulseSurveyQuestion[];
+}
+
+export interface PulseSurveyQuestion {
+  id: string;
+  survey_id: string;
+  type: "rating" | "text" | "single_choice" | "multiple_choice";
+  label: string;
+  description: string | null;
+  is_required: boolean;
+  options: string[] | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface PulseSurveyResponse {
+  id: string;
+  survey_id: string;
+  organization_id: string;
+  user_id: string;
+  completed_at: string | null;
+  created_at: string;
+  profiles?: Profile;
+  pulse_survey_answers?: PulseSurveyAnswer[];
+}
+
+export interface PulseSurveyAnswer {
+  id: string;
+  response_id: string;
+  question_id: string;
+  value: string | null;
+  created_at: string;
+}

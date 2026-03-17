@@ -19,6 +19,11 @@ import '../../features/employees/domain/entities/employee_contact.dart';
 import '../../features/employees/presentation/screens/employee_detail_screen.dart';
 import '../../features/skills/presentation/screens/certifications_edit_screen.dart';
 import '../../features/skills/presentation/screens/skills_edit_screen.dart';
+import '../../features/faq/presentation/screens/faq_screen.dart';
+import '../../features/surveys/presentation/screens/survey_list_screen.dart';
+import '../../features/surveys/presentation/screens/survey_answer_screen.dart';
+import '../../features/surveys/presentation/providers/survey_providers.dart';
+import '../../features/surveys/domain/entities/pulse_survey.dart';
 import '../../shared/screens/search_screen.dart';
 
 /// 開発モードフラグ（trueの場合、認証ガードをスキップ）
@@ -47,8 +52,13 @@ class AppRoutes {
   static const String _chat = 'chat';
   static const String _skillsEdit = 'skills-edit';
   static const String _certificationsEdit = 'certifications-edit';
-
+  static const String _profileFullscreen = 'profile-fullscreen';
+  static const String _faq = 'faq';
+  static const String _surveys = 'surveys';
   // フルパス（画面遷移用）
+  static const String faq = '/$_faq';
+  static const String surveys = '/$_surveys';
+  static const String profileFullscreen = '/$_profileFullscreen';
   static const String attendance = '/$_attendance';
   static const String employeeDetail = '/$_employeeDetail';
   static const String correction = '/$_attendance/$_correction';
@@ -177,6 +187,42 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ProfileEditScreen(),
       ),
 
+      /// FAQ画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.faq,
+        builder: (context, state) => const FaqScreen(),
+      ),
+
+      /// パルスサーベイ一覧画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.surveys,
+        builder: (context, state) => const SurveyListScreen(),
+        routes: [
+          GoRoute(
+            parentNavigatorKey: _rootNavigatorKey,
+            path: ':surveyId',
+            builder: (context, state) {
+              final survey = state.extra as PulseSurvey?;
+              if (survey != null) {
+                return SurveyAnswerScreen(survey: survey);
+              }
+              // ディープリンク: extraがない場合はIDから取得
+              final surveyId = state.pathParameters['surveyId']!;
+              return _SurveyLoaderScreen(surveyId: surveyId);
+            },
+          ),
+        ],
+      ),
+
+      /// プロフィール画面（フルスクリーン — ヘッダーアイコンから遷移）
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.profileFullscreen,
+        builder: (context, state) => const ProfileScreen(),
+      ),
+
       /// メイン画面（ホーム / カレンダー / チャット / タスク / その他）
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -240,3 +286,32 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// ディープリンク用サーベイローダー画面
+class _SurveyLoaderScreen extends ConsumerWidget {
+  const _SurveyLoaderScreen({required this.surveyId});
+
+  final String surveyId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final surveyAsync = ref.watch(surveyByIdProvider(surveyId));
+
+    return surveyAsync.when(
+      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (_, __) => Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: Text('サーベイの読み込みに失敗しました')),
+      ),
+      data: (survey) {
+        if (survey == null) {
+          return Scaffold(
+            appBar: AppBar(),
+            body: const Center(child: Text('サーベイが見つかりません')),
+          );
+        }
+        return SurveyAnswerScreen(survey: survey);
+      },
+    );
+  }
+}

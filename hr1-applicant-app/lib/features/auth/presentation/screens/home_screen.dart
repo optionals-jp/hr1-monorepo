@@ -30,7 +30,7 @@ class HomeScreen extends ConsumerWidget {
         actions: currentOrg != null
             ? [
                 IconButton(
-                  icon: AppIcons.svg(AppIcons.notification,
+                  icon: AppIcons.notification(
                       color: Theme.of(context).appBarTheme.foregroundColor),
                   onPressed: () {
                     // TODO: 通知画面へ遷移
@@ -57,9 +57,8 @@ class HomeScreen extends ConsumerWidget {
           iconSize: 24,
           items: [
             BottomNavigationBarItem(
-              icon: AppIcons.svg(AppIcons.home, color: unselectedColor),
-              activeIcon:
-                  AppIcons.svg(AppIcons.homeFill, color: selectedColor),
+              icon: AppIcons.home(color: unselectedColor),
+              activeIcon: AppIcons.homeFill(color: selectedColor),
               label: 'ホーム',
             ),
             BottomNavigationBarItem(
@@ -68,15 +67,13 @@ class HomeScreen extends ConsumerWidget {
               label: '応募状況',
             ),
             BottomNavigationBarItem(
-              icon: AppIcons.svg(AppIcons.note, color: unselectedColor),
-              activeIcon:
-                  AppIcons.svg(AppIcons.noteFill, color: selectedColor),
+              icon: AppIcons.note(color: unselectedColor),
+              activeIcon: AppIcons.noteFill(color: selectedColor),
               label: 'メッセージ',
             ),
             BottomNavigationBarItem(
-              icon: AppIcons.svg(AppIcons.user, color: unselectedColor),
-              activeIcon:
-                  AppIcons.svg(AppIcons.userFill, color: selectedColor),
+              icon: AppIcons.user(color: unselectedColor),
+              activeIcon: AppIcons.userFill(color: selectedColor),
               label: 'マイページ',
             ),
           ],

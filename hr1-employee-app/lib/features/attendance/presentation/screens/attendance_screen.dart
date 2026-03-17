@@ -208,7 +208,7 @@ class _PunchButtons extends StatelessWidget {
             Expanded(
               child: _PunchButton(
                 label: '出勤',
-                icon: AppIcons.login,
+                iconBuilder: AppIcons.login,
                 color: AppColors.success,
                 enabled: !isLoading && workState == WorkState.notStarted,
                 onPressed: () => onPunch('clock_in'),
@@ -218,7 +218,7 @@ class _PunchButtons extends StatelessWidget {
             Expanded(
               child: _PunchButton(
                 label: '退勤',
-                icon: AppIcons.logout,
+                iconBuilder: AppIcons.logout,
                 color: AppColors.error,
                 enabled: !isLoading && workState == WorkState.working,
                 onPressed: () => onPunch('clock_out'),
@@ -232,7 +232,7 @@ class _PunchButtons extends StatelessWidget {
             Expanded(
               child: _PunchButton(
                 label: '休憩開始',
-                icon: AppIcons.coffee,
+                iconBuilder: AppIcons.coffee,
                 color: AppColors.warning,
                 enabled: !isLoading && workState == WorkState.working,
                 onPressed: () => onPunch('break_start'),
@@ -242,7 +242,7 @@ class _PunchButtons extends StatelessWidget {
             Expanded(
               child: _PunchButton(
                 label: '休憩終了',
-                icon: AppIcons.pause,
+                iconBuilder: AppIcons.pause,
                 color: AppColors.brandLight,
                 enabled: !isLoading && workState == WorkState.onBreak,
                 onPressed: () => onPunch('break_end'),
@@ -259,14 +259,14 @@ class _PunchButtons extends StatelessWidget {
 class _PunchButton extends StatelessWidget {
   const _PunchButton({
     required this.label,
-    required this.icon,
+    required this.iconBuilder,
     required this.color,
     required this.enabled,
     required this.onPressed,
   });
 
   final String label;
-  final String icon;
+  final Widget Function({double size, Color? color}) iconBuilder;
   final Color color;
   final bool enabled;
   final VoidCallback onPressed;
@@ -275,44 +275,50 @@ class _PunchButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final iconColor = enabled ? Colors.white : theme.colorScheme.onSurface.withValues(alpha: 0.3);
+    final iconColor = enabled ? color : theme.colorScheme.onSurface.withValues(alpha: 0.3);
 
     return SizedBox(
       height: 56,
-      child: Material(
-        color: enabled ? color : theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: enabled ? onPressed : null,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: enabled
-                  ? null
-                  : Border.all(
-                      color: isDark
-                          ? theme.colorScheme.outline.withValues(alpha: 0.35)
-                          : theme.colorScheme.outlineVariant,
-                    ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.06),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.06),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AppIcons.svg(icon, size: 20, color: iconColor),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: AppTextStyles.regular12.copyWith(color: iconColor, fontWeight: FontWeight.w600),
+          ],
+        ),
+        child: Material(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            onTap: enabled ? onPressed : null,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              decoration: BoxDecoration(
+                color: enabled ? color.withValues(alpha: 0.15) : Colors.transparent,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: enabled
+                      ? color.withValues(alpha: 0.15)
+                      : (isDark
+                          ? theme.colorScheme.outline.withValues(alpha: 0.5)
+                          : theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
                 ),
-              ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  iconBuilder(size: 20, color: iconColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: AppTextStyles.regular12.copyWith(color: iconColor, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -355,21 +361,21 @@ class _SummaryRow extends StatelessWidget {
           _KVItem(
             label: '勤務',
             value: record.workDurationFormatted,
-            iconAsset: AppIcons.briefcase,
+            iconBuilder: AppIcons.briefcase,
             iconColor: AppColors.success,
           ),
           _Divider(),
           _KVItem(
             label: '休憩',
             value: _fmtMin(record.breakMinutes),
-            iconAsset: AppIcons.coffee,
+            iconBuilder: AppIcons.coffee,
             iconColor: AppColors.warning,
           ),
           _Divider(),
           _KVItem(
             label: '残業',
             value: _fmtMin(record.overtimeMinutes),
-            iconAsset: AppIcons.clock,
+            iconBuilder: AppIcons.clock,
             iconColor: AppColors.error,
           ),
         ],
@@ -387,12 +393,12 @@ class _KVItem extends StatelessWidget {
   const _KVItem({
     required this.label,
     required this.value,
-    required this.iconAsset,
+    required this.iconBuilder,
     required this.iconColor,
   });
   final String label;
   final String value;
-  final String iconAsset;
+  final Widget Function({double size, Color? color}) iconBuilder;
   final Color iconColor;
 
   @override
@@ -401,7 +407,7 @@ class _KVItem extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          AppIcons.svg(iconAsset, size: 18, color: iconColor),
+          iconBuilder(size: 18, color: iconColor),
           const SizedBox(height: 6),
           Text(value, style: AppTextStyles.semiBold16),
           const SizedBox(height: 2),
@@ -472,7 +478,7 @@ class _TimelineItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final (iconAsset, iconColor) = switch (punch.punchType) {
+    final (iconBuilder, iconColor) = switch (punch.punchType) {
       'clock_in' => (AppIcons.login, AppColors.success),
       'clock_out' => (AppIcons.logout, AppColors.error),
       'break_start' => (AppIcons.coffee, AppColors.warning),
@@ -501,7 +507,7 @@ class _TimelineItem extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: iconColor.withValues(alpha: 0.25), width: 1),
                   ),
-                  child: Center(child: AppIcons.svg(iconAsset, size: 16, color: iconColor)),
+                  child: Center(child: iconBuilder(size: 16, color: iconColor)),
                 ),
               ),
             ),

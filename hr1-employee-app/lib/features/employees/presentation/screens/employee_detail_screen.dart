@@ -114,7 +114,7 @@ class _ProfileHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _ActionButton(
-                icon: AppIcons.svg(AppIcons.directbox, size: 22, color: AppColors.brandPrimary),
+                icon: AppIcons.directbox(size: 22, color: AppColors.brandPrimary),
                 label: 'チャット',
                 color: AppColors.brandPrimary,
                 onTap: () {
@@ -132,7 +132,7 @@ class _ProfileHeader extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.xxl),
               _ActionButton(
-                icon: AppIcons.svg(AppIcons.call, size: 22, color: AppColors.success),
+                icon: AppIcons.call(size: 22, color: AppColors.success),
                 label: '電話',
                 color: AppColors.success,
                 onTap: () {},
@@ -196,7 +196,7 @@ class _ContactTab extends StatelessWidget {
         _InfoSection(
           title: '基本情報',
           children: [
-            _InfoRow(icon: AppIcons.svg(AppIcons.briefcase, size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)), label: '部署', value: contact.department),
+            _InfoRow(icon: AppIcons.briefcase(size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)), label: '部署', value: contact.department),
             _InfoRow(icon: Icon(Icons.badge_outlined, size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)), label: '役職', value: contact.position),
           ],
         ),
@@ -372,7 +372,7 @@ class _SkillsTab extends ConsumerWidget {
             }
             return _InfoSection(
               children: certs.map((c) => _InfoRow(
-                icon: AppIcons.svg(AppIcons.award, size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+                icon: AppIcons.award(size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
                 label: c.acquiredDate != null
                     ? DateFormat('yyyy/MM').format(c.acquiredDate!)
                     : '-',
@@ -594,7 +594,7 @@ class _ProjectCard extends StatelessWidget {
           const SizedBox(height: 6),
           Row(
             children: [
-              AppIcons.svg(AppIcons.user, size: 14, color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+              AppIcons.user(size: 14, color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
               const SizedBox(width: 4),
               Text(
                 project.role,
@@ -604,7 +604,7 @@ class _ProjectCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
-              AppIcons.svg(AppIcons.calendar, size: 12, color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+              AppIcons.calendar(size: 12, color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
               const SizedBox(width: 4),
               Text(
                 project.period,

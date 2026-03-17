@@ -35,13 +35,13 @@ class PortalScreen extends ConsumerWidget {
         centerTitle: false,
         actions: [
           IconButton(
-            icon: AppIcons.svg(AppIcons.notification, color: theme.appBarTheme.foregroundColor, size: 22),
+            icon: AppIcons.notification(color: theme.appBarTheme.foregroundColor, size: 22),
             onPressed: () {
               // TODO: 通知画面へ遷移
             },
           ),
           GestureDetector(
-            onTap: () => context.push(AppRoutes.profile),
+            onTap: () => context.push(AppRoutes.profileFullscreen),
             child: Padding(
               padding: const EdgeInsets.only(right: AppSpacing.screenHorizontal),
               child: UserAvatar(
@@ -108,35 +108,49 @@ class PortalScreen extends ConsumerWidget {
                   child: Row(
                     children: [
                       PortalActionChip(
-                        icon: AppIcons.svg(AppIcons.clock, size: 24, color: AppColors.brandPrimary),
+                        icon: AppIcons.clock(size: 24, color: AppColors.brandPrimary),
                         label: '勤怠打刻',
                         color: AppColors.brandPrimary,
                         onTap: () => context.push(AppRoutes.attendance),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: AppIcons.svg(AppIcons.doc, size: 24, color: AppColors.warning),
+                        icon: AppIcons.doc(size: 24, color: AppColors.warning),
                         label: '各種申請',
                         color: AppColors.warning,
                         onTap: () {},
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: AppIcons.svg(AppIcons.calendar, size: 24, color: AppColors.success),
+                        icon: Icon(Icons.help_outline_rounded, size: 24, color: AppColors.brandLight),
+                        label: 'FAQ',
+                        color: AppColors.brandLight,
+                        onTap: () => context.push(AppRoutes.faq),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      PortalActionChip(
+                        icon: AppIcons.calendar(size: 24, color: AppColors.success),
                         label: 'スケジュール',
                         color: AppColors.success,
                         onTap: () {},
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: AppIcons.svg(AppIcons.folder, size: 24, color: AppColors.brandSecondary),
+                        icon: const Icon(Icons.poll_outlined, size: 24, color: Color(0xFF8764B8)),
+                        label: 'サーベイ',
+                        color: const Color(0xFF8764B8),
+                        onTap: () => context.push(AppRoutes.surveys),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      PortalActionChip(
+                        icon: AppIcons.folder(size: 24, color: AppColors.brandSecondary),
                         label: '社内文書',
                         color: AppColors.brandSecondary,
                         onTap: () {},
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: AppIcons.svg(AppIcons.teacher, size: 24, color: const Color(0xFF8764B8)),
+                        icon: AppIcons.teacher(size: 24, color: const Color(0xFF8764B8)),
                         label: '研修',
                         color: const Color(0xFF8764B8),
                         onTap: () {},

@@ -29,15 +29,22 @@ class SupabaseAttendanceRepository {
     return userOrg['organization_id'] as String;
   }
 
-  /// ローカル日付文字列（yyyy-MM-dd）を取得
-  String _localToday() {
-    final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  /// サーバ側の現在時刻を取得
+  Future<DateTime> _serverNow() async {
+    final response = await _client.rpc('get_server_now');
+    return DateTime.parse(response as String);
+  }
+
+  /// サーバ時刻ベースのローカル日付文字列（yyyy-MM-dd）を取得
+  Future<String> _serverToday() async {
+    final now = await _serverNow();
+    final local = now.toLocal();
+    return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
   }
 
   /// 今日の勤怠レコードを取得
   Future<AttendanceRecord?> getTodayRecord() async {
-    final today = _localToday();
+    final today = await _serverToday();
     final response = await _client
         .from('attendance_records')
         .select()
@@ -69,8 +76,8 @@ class SupabaseAttendanceRepository {
 
   /// 今日の打刻履歴を取得
   Future<List<AttendancePunch>> getTodayPunches() async {
-    // ローカルタイムゾーンの今日の開始・終了をUTCに変換してクエリ
-    final now = DateTime.now();
+    // サーバ時刻ベースの今日の開始・終了をUTCに変換してクエリ
+    final now = (await _serverNow()).toLocal();
     final todayStart = DateTime(now.year, now.month, now.day);
     final tomorrowStart = todayStart.add(const Duration(days: 1));
 
@@ -107,8 +114,8 @@ class SupabaseAttendanceRepository {
 
   /// 出勤打刻
   Future<AttendanceRecord> clockIn({String? note}) async {
-    final now = DateTime.now();
-    final today = _localToday();
+    final now = await _serverNow();
+    final today = await _serverToday();
     final nowUtc = now.toUtc().toIso8601String();
     final orgId = await _getOrganizationId();
 
@@ -141,8 +148,8 @@ class SupabaseAttendanceRepository {
 
   /// 退勤打刻
   Future<AttendanceRecord> clockOut({String? note}) async {
-    final now = DateTime.now();
-    final today = _localToday();
+    final now = await _serverNow();
+    final today = await _serverToday();
     final nowUtc = now.toUtc().toIso8601String();
     final orgId = await _getOrganizationId();
 
@@ -160,7 +167,7 @@ class SupabaseAttendanceRepository {
       throw StateError('出勤打刻がありません');
     }
     final clockInTime = DateTime.parse(clockInRaw).toLocal();
-    final clockOutTime = now;
+    final clockOutTime = now.toLocal();
     final breakMins = currentRecord['break_minutes'] as int? ?? 0;
 
     final overtime = _calcOvertimeMinutes(
@@ -273,8 +280,8 @@ class SupabaseAttendanceRepository {
 
   /// 休憩開始打刻
   Future<void> breakStart() async {
-    final now = DateTime.now();
-    final today = _localToday();
+    final now = await _serverNow();
+    final today = await _serverToday();
     final nowUtc = now.toUtc().toIso8601String();
     final orgId = await _getOrganizationId();
 
@@ -297,8 +304,8 @@ class SupabaseAttendanceRepository {
 
   /// 休憩終了打刻
   Future<void> breakEnd() async {
-    final now = DateTime.now();
-    final today = _localToday();
+    final now = await _serverNow();
+    final today = await _serverToday();
     final nowUtc = now.toUtc().toIso8601String();
     final orgId = await _getOrganizationId();
 
@@ -321,7 +328,7 @@ class SupabaseAttendanceRepository {
 
     final breakStartTime =
         DateTime.parse(breakStartPunch['punched_at'] as String);
-    // 両方UTCで統一して差分を計算
+    // 両方UTCで統一して差分を計算（nowは既にサーバ時刻）
     final breakDuration = now.toUtc().difference(breakStartTime.toUtc()).inMinutes;
 
     // 休憩時間を加算

@@ -30,7 +30,8 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "bg-white px-4 pt-4 sm:px-6 md:px-8 md:pt-6",
+        "bg-white px-4 sm:px-6 md:px-8",
+        sticky ? "pt-4 md:pt-6" : "pt-2 md:pt-3",
         sticky && "sticky top-14 z-10",
         sticky && border && "border-b"
       )}
