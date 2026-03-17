@@ -7,6 +7,7 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/domain/entities/page_section.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../applications/domain/entities/job.dart';
 import '../../../applications/presentation/providers/applications_providers.dart';
 
@@ -141,7 +142,7 @@ class _JobListSection extends ConsumerWidget {
           ],
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const LoadingIndicator(),
       error: (e, _) => const Center(child: Text('エラーが発生しました')),
     );
   }

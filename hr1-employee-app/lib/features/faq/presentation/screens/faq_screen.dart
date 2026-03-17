@@ -6,6 +6,7 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../shared/widgets/search_box.dart';
 import '../../domain/entities/faq_item.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../providers/faq_providers.dart';
 
 /// FAQ一覧画面
@@ -75,7 +76,7 @@ class _FaqScreenState extends ConsumerState<FaqScreen> {
                           .withValues(alpha: 0.3)),
                   const SizedBox(height: AppSpacing.md),
                   Text('FAQはまだありません',
-                      style: AppTextStyles.regular14.copyWith(
+                      style: AppTextStyles.body2.copyWith(
                         color: theme.colorScheme.onSurface
                             .withValues(alpha: 0.5),
                       )),
@@ -115,7 +116,7 @@ class _FaqScreenState extends ConsumerState<FaqScreen> {
                     ? Center(
                         child: Text(
                           '「$query」に一致するFAQはありません',
-                          style: AppTextStyles.regular14.copyWith(
+                          style: AppTextStyles.body2.copyWith(
                             color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                           ),
                         ),
@@ -139,13 +140,13 @@ class _FaqScreenState extends ConsumerState<FaqScreen> {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingIndicator(),
         error: (e, _) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text('読み込みに失敗しました',
-                  style: AppTextStyles.regular14.copyWith(
+                  style: AppTextStyles.body2.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                   )),
               const SizedBox(height: AppSpacing.md),
@@ -185,7 +186,7 @@ class _FaqCategorySection extends StatelessWidget {
           ),
           child: Text(
             FaqCategory.label(category),
-            style: AppTextStyles.medium12.copyWith(
+            style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               letterSpacing: 0.3,
             ),
@@ -266,7 +267,7 @@ class _FaqTileState extends State<_FaqTile> {
                     child: _buildHighlightedText(
                       widget.faq.question,
                       widget.highlightQuery,
-                      AppTextStyles.regular14.copyWith(fontWeight: FontWeight.w600),
+                      AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                   AnimatedRotation(
@@ -299,17 +300,17 @@ class _FaqTileState extends State<_FaqTile> {
                 child: MarkdownBody(
                   data: widget.faq.answer,
                   styleSheet: MarkdownStyleSheet(
-                    p: AppTextStyles.regular14.copyWith(
+                    p: AppTextStyles.body2.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                       height: 1.6,
                     ),
-                    h1: AppTextStyles.semiBold16,
-                    h2: AppTextStyles.semiBold16.copyWith(fontSize: 15),
-                    h3: AppTextStyles.medium12.copyWith(fontSize: 14),
-                    listBullet: AppTextStyles.regular14.copyWith(
+                    h1: AppTextStyles.headline,
+                    h2: AppTextStyles.headline.copyWith(fontSize: 15),
+                    h3: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,fontSize: 14),
+                    listBullet: AppTextStyles.body2.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
-                    code: AppTextStyles.regular12.copyWith(
+                    code: AppTextStyles.caption1.copyWith(
                       backgroundColor:
                           theme.colorScheme.surfaceContainerHighest,
                     ),

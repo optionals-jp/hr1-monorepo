@@ -6,6 +6,7 @@ import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../shared/widgets/common_dialog.dart';
 import '../../../../shared/widgets/grouped_section.dart';
 import '../../../../shared/widgets/menu_row.dart';
 import '../../../../shared/widgets/user_avatar.dart';
@@ -22,7 +23,7 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('マイページ', style: AppTextStyles.semiBold16.copyWith(letterSpacing: -0.2)),
+        title: Text('マイページ', style: AppTextStyles.headline.copyWith(letterSpacing: -0.2)),
         centerTitle: false,
       ),
       body: ListView(
@@ -87,21 +88,14 @@ class ProfileScreen extends ConsumerWidget {
                 title: 'ログアウト',
                 isDestructive: true,
                 onTap: () async {
-                  final confirmed = await showDialog<bool>(
+                  final confirmed = await CommonDialog.confirm(
                     context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text('ログアウト'),
-                      content: const Text('ログアウトしますか？'),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('キャンセル')),
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          child: Text('ログアウト', style: TextStyle(color: AppColors.error)),
-                        ),
-                      ],
-                    ),
+                    title: 'ログアウト',
+                    message: 'ログアウトしますか？',
+                    confirmLabel: 'ログアウト',
+                    isDestructive: true,
                   );
-                  if (confirmed == true) {
+                  if (confirmed) {
                     final success = await ref.read(authControllerProvider.notifier).signOut();
                     if (success && context.mounted) {
                       context.go(AppRoutes.login);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
+import 'loading_indicator.dart';
 import 'search_box.dart';
 
 /// マスタデータから検索・選択・自由入力が可能な検索バーコンポーネント
@@ -98,7 +99,7 @@ class _MasterSearchBarState extends State<MasterSearchBar> {
                             onTap: () => onSelected(option),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              child: Text(option, style: AppTextStyles.regular12),
+                              child: Text(option, style: AppTextStyles.caption1),
                             ),
                           );
                         },
@@ -120,7 +121,7 @@ class _MasterSearchBarState extends State<MasterSearchBar> {
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: LoadingIndicator(size: 18),
                     )
                   : const Icon(Icons.add_rounded, size: 22),
             ),

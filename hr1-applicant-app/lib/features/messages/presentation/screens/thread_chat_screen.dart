@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/message_thread.dart';
 import '../providers/messages_providers.dart';
@@ -486,7 +487,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
           // メッセージ一覧
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? const LoadingIndicator()
                 : _messages.isEmpty
                     ? Center(
                         child: Text(
@@ -510,8 +511,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                                 child: SizedBox(
                                   width: 24,
                                   height: 24,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2),
+                                  child: LoadingIndicator(size: 24),
                                 ),
                               ),
                             );

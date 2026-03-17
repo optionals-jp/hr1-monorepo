@@ -8,6 +8,9 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../domain/entities/attendance_record.dart';
 import '../controllers/attendance_controller.dart';
+import '../../../../shared/widgets/common_button.dart';
+import '../../../../shared/widgets/common_snackbar.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../providers/attendance_providers.dart';
 
 /// 勤怠修正依頼画面
@@ -119,21 +122,11 @@ class _CorrectionRequestScreenState
 
   Future<void> _submit(AttendanceRecord record, List<AttendancePunch> punches) async {
     if (_correctedTimes.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('修正する打刻時刻を選択してください'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      CommonSnackBar.error(context, '修正する打刻時刻を選択してください');
       return;
     }
     if (_reasonController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('修正理由を入力してください'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      CommonSnackBar.error(context, '修正理由を入力してください');
       return;
     }
 
@@ -178,24 +171,12 @@ class _CorrectionRequestScreenState
         reason: _reasonController.text.trim(),
       );
 
+      CommonSnackBar.show(context, '修正依頼を送信しました');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('修正依頼を送信しました'),
-            backgroundColor: AppColors.success,
-          ),
-        );
         context.pop();
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('エラーが発生しました: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
+      CommonSnackBar.error(context, 'エラーが発生しました: $e');
     }
   }
 
@@ -240,7 +221,7 @@ class _CorrectionRequestScreenState
                 // 打刻履歴と修正
                 Text(
                   '打刻時刻の修正',
-                  style: AppTextStyles.medium12.copyWith(
+                  style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     letterSpacing: 0.3,
                   ),
@@ -248,7 +229,7 @@ class _CorrectionRequestScreenState
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   '修正が必要な打刻の「変更」ボタンを押してください',
-                  style: AppTextStyles.regular11.copyWith(
+                  style: AppTextStyles.caption2.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                   ),
                 ),
@@ -281,7 +262,7 @@ class _CorrectionRequestScreenState
                 // 修正理由
                 Text(
                   '修正理由',
-                  style: AppTextStyles.medium12.copyWith(
+                  style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     letterSpacing: 0.3,
                   ),
@@ -301,24 +282,15 @@ class _CorrectionRequestScreenState
                 const SizedBox(height: AppSpacing.xxl),
 
                 // 送信ボタン
-                ElevatedButton(
-                  onPressed:
-                      isSubmitting ? null : () => _submit(record, punches),
-                  child: isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('修正依頼を送信'),
+                CommonButton(
+                  onPressed: () => _submit(record, punches),
+                  loading: isSubmitting,
+                  child: const Text('修正依頼を送信'),
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Text(
                   '承認者が修正を承認すると、勤怠記録が更新されます。',
-                  style: AppTextStyles.regular11.copyWith(
+                  style: AppTextStyles.caption2.copyWith(
                     color:
                         theme.colorScheme.onSurface.withValues(alpha: 0.45),
                   ),
@@ -329,7 +301,7 @@ class _CorrectionRequestScreenState
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingIndicator(),
         error: (e, _) => Center(child: Text('エラー: $e')),
       ),
     );
@@ -352,7 +324,7 @@ class _CorrectionRequestScreenState
       children: [
         Text(
           '時間サマリー${_correctedTimes.isNotEmpty ? '（修正後）' : ''}',
-          style: AppTextStyles.medium12.copyWith(
+          style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
             color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             letterSpacing: 0.3,
           ),
@@ -438,12 +410,12 @@ class _CorrectionRequestScreenState
             const SizedBox(height: AppSpacing.lg),
             Text(
               '今日の打刻記録がありません',
-              style: AppTextStyles.semiBold16,
+              style: AppTextStyles.headline,
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               '出勤打刻後に修正依頼を送信できます',
-              style: AppTextStyles.regular12.copyWith(
+              style: AppTextStyles.caption1.copyWith(
                 color:
                     theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
@@ -546,13 +518,13 @@ class _PunchCorrectionRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: AppTextStyles.regular12),
+                Text(label, style: AppTextStyles.caption1),
                 if (isChanged)
                   Row(
                     children: [
                       Text(
                         originalTime,
-                        style: AppTextStyles.regular12.copyWith(
+                        style: AppTextStyles.caption1.copyWith(
                           color: theme.colorScheme.onSurface
                               .withValues(alpha: 0.4),
                           decoration: TextDecoration.lineThrough,
@@ -569,7 +541,7 @@ class _PunchCorrectionRow extends StatelessWidget {
                       ),
                       Text(
                         _correctedTimeText,
-                        style: AppTextStyles.semiBold16
+                        style: AppTextStyles.headline
                             .copyWith(color: AppColors.brandPrimary),
                       ),
                     ],
@@ -577,7 +549,7 @@ class _PunchCorrectionRow extends StatelessWidget {
                 else
                   Text(
                     originalTime,
-                    style: AppTextStyles.semiBold16,
+                    style: AppTextStyles.headline,
                   ),
               ],
             ),
@@ -620,11 +592,11 @@ class _SummaryItem extends StatelessWidget {
         children: [
           iconBuilder(size: 18, color: iconColor),
           const SizedBox(height: 6),
-          Text(value, style: AppTextStyles.semiBold16),
+          Text(value, style: AppTextStyles.headline),
           const SizedBox(height: 2),
           Text(
             label,
-            style: AppTextStyles.medium12.copyWith(
+            style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
             ),
           ),

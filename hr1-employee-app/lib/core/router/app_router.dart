@@ -25,6 +25,7 @@ import '../../features/surveys/presentation/screens/survey_answer_screen.dart';
 import '../../features/surveys/presentation/providers/survey_providers.dart';
 import '../../features/surveys/domain/entities/pulse_survey.dart';
 import '../../shared/screens/search_screen.dart';
+import '../../shared/widgets/loading_indicator.dart';
 
 /// 開発モードフラグ（trueの場合、認証ガードをスキップ）
 const bool kDevMode = false;
@@ -298,7 +299,7 @@ class _SurveyLoaderScreen extends ConsumerWidget {
     final surveyAsync = ref.watch(surveyByIdProvider(surveyId));
 
     return surveyAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => const Scaffold(body: LoadingIndicator()),
       error: (_, __) => Scaffold(
         appBar: AppBar(),
         body: const Center(child: Text('サーベイの読み込みに失敗しました')),

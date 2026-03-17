@@ -7,6 +7,7 @@ import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/user_avatar.dart';
 import '../../../messages/domain/entities/message_thread.dart';
 import '../../../skills/presentation/providers/skills_providers.dart';
@@ -53,8 +54,8 @@ class EmployeeDetailScreen extends StatelessWidget {
                       Tab(text: '経歴'),
                       Tab(text: 'スキル'),
                     ],
-                    labelStyle: AppTextStyles.regular12.copyWith(fontWeight: FontWeight.w600),
-                    unselectedLabelStyle: AppTextStyles.regular12,
+                    labelStyle: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w600),
+                    unselectedLabelStyle: AppTextStyles.caption1,
                     indicatorColor: AppColors.brandPrimary,
                     labelColor: AppColors.brandPrimary,
                     unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
@@ -99,11 +100,11 @@ class _ProfileHeader extends StatelessWidget {
             presence: _toPresence(contact.workStatus),
           ),
           const SizedBox(height: AppSpacing.lg),
-          Text(contact.name, style: AppTextStyles.bold24),
+          Text(contact.name, style: AppTextStyles.title1),
           const SizedBox(height: 4),
           Text(
             '${contact.department} / ${contact.position}',
-            style: AppTextStyles.regular12.copyWith(
+            style: AppTextStyles.caption1.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
             ),
           ),
@@ -302,7 +303,7 @@ class _SkillsTab extends ConsumerWidget {
         skillsAsync.when(
           loading: () => const Padding(
             padding: EdgeInsets.all(AppSpacing.xl),
-            child: Center(child: CircularProgressIndicator()),
+            child: LoadingIndicator(),
           ),
           error: (e, _) => Padding(
             padding: const EdgeInsets.all(AppSpacing.xl),
@@ -315,7 +316,7 @@ class _SkillsTab extends ConsumerWidget {
                 child: Center(
                   child: Text(
                     'スキルが登録されていません',
-                    style: AppTextStyles.regular12.copyWith(
+                    style: AppTextStyles.caption1.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                     ),
                   ),
@@ -331,9 +332,8 @@ class _SkillsTab extends ConsumerWidget {
                   return Chip(
                     label: Text(
                       skill.name,
-                      style: AppTextStyles.medium12.copyWith(
+                      style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
                         color: theme.colorScheme.onSurface,
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     backgroundColor: AppColors.brandPrimary.withValues(alpha: 0.08),
@@ -350,7 +350,7 @@ class _SkillsTab extends ConsumerWidget {
         certsAsync.when(
           loading: () => const Padding(
             padding: EdgeInsets.all(AppSpacing.xl),
-            child: Center(child: CircularProgressIndicator()),
+            child: LoadingIndicator(),
           ),
           error: (e, _) => Padding(
             padding: const EdgeInsets.all(AppSpacing.xl),
@@ -363,7 +363,7 @@ class _SkillsTab extends ConsumerWidget {
                 child: Center(
                   child: Text(
                     '資格が登録されていません',
-                    style: AppTextStyles.regular12.copyWith(
+                    style: AppTextStyles.caption1.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                     ),
                   ),
@@ -409,7 +409,7 @@ class _SectionHeader extends StatelessWidget {
       ),
       child: Text(
         title,
-        style: AppTextStyles.regular11.copyWith(
+        style: AppTextStyles.caption2.copyWith(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
           fontWeight: FontWeight.w600,
           letterSpacing: 0.3,
@@ -490,12 +490,12 @@ class _InfoRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: AppTextStyles.regular11.copyWith(
+                  style: AppTextStyles.caption2.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(value, style: AppTextStyles.regular12),
+                Text(value, style: AppTextStyles.caption1),
               ],
             ),
           ),
@@ -538,9 +538,8 @@ class _ActionButton extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             label,
-            style: AppTextStyles.medium12.copyWith(
+            style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -589,7 +588,7 @@ class _ProjectCard extends StatelessWidget {
         children: [
           Text(
             project.title,
-            style: AppTextStyles.regular12.copyWith(fontWeight: FontWeight.w600),
+            style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           Row(
@@ -598,7 +597,7 @@ class _ProjectCard extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 project.role,
-                style: AppTextStyles.regular11.copyWith(
+                style: AppTextStyles.caption2.copyWith(
                   color: AppColors.brandPrimary,
                   fontWeight: FontWeight.w500,
                 ),
@@ -608,7 +607,7 @@ class _ProjectCard extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 project.period,
-                style: AppTextStyles.regular11.copyWith(
+                style: AppTextStyles.caption2.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                 ),
               ),
@@ -618,7 +617,7 @@ class _ProjectCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               project.description!,
-              style: AppTextStyles.regular11.copyWith(
+              style: AppTextStyles.caption2.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 height: 1.5,
               ),
@@ -657,11 +656,11 @@ class _CareerRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(career.title, style: AppTextStyles.regular12),
+                Text(career.title, style: AppTextStyles.caption1),
                 const SizedBox(height: 2),
                 Text(
                   career.period,
-                  style: AppTextStyles.regular11.copyWith(
+                  style: AppTextStyles.caption2.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                   ),
                 ),
@@ -731,7 +730,7 @@ class _WorkStatusBadge extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             label,
-            style: AppTextStyles.medium12.copyWith(
+            style: AppTextStyles.caption1.copyWith(
               color: color,
               fontWeight: FontWeight.w600,
               fontSize: 11,

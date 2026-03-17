@@ -29,7 +29,7 @@ class PortalScreen extends ConsumerWidget {
           children: [
             OrgIcon(initial: (user?.organizationName ?? 'H').substring(0, 1), size: 32),
             const SizedBox(width: 10),
-            Text(user?.organizationName ?? 'HR1', style: AppTextStyles.bold24.copyWith(letterSpacing: -0.2)),
+            Text(user?.organizationName ?? 'HR1', style: AppTextStyles.title1.copyWith(letterSpacing: -0.2)),
           ],
         ),
         centerTitle: false,
@@ -80,13 +80,13 @@ class PortalScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('こんにちは、${user?.displayName ?? 'ゲスト'}さん', style: AppTextStyles.bold24),
+                  Text('こんにちは、${user?.displayName ?? 'ゲスト'}さん', style: AppTextStyles.title1),
                   if (user?.department != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
                         '${user!.department} / ${user.position ?? ''}',
-                        style: AppTextStyles.regular12.copyWith(
+                        style: AppTextStyles.caption1.copyWith(
                           color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                         ),
                       ),
@@ -176,7 +176,7 @@ class PortalScreen extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       'お知らせ',
-                      style: AppTextStyles.regular11.copyWith(
+                      style: AppTextStyles.caption2.copyWith(
                         color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.3,
@@ -192,7 +192,7 @@ class PortalScreen extends ConsumerWidget {
                     ),
                     child: Text(
                       'すべて表示',
-                      style: AppTextStyles.regular11.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
+                      style: AppTextStyles.caption2.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],

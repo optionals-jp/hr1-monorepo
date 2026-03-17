@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../auth/presentation/providers/organization_context_provider.dart';
 import '../../domain/entities/application.dart';
 import '../../domain/entities/application_status.dart';
@@ -26,7 +27,7 @@ class ApplicationsScreen extends ConsumerWidget {
               data: (applications) => applications.isEmpty
                   ? _EmptyState(organizationName: currentOrg.name)
                   : _ApplicationsList(applications: applications),
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const LoadingIndicator(),
               error: (e, _) => const Center(child: Text('エラーが発生しました')),
             ),
       floatingActionButton: currentOrg != null

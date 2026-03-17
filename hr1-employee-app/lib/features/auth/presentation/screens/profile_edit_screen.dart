@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../shared/widgets/common_dialog.dart';
 import '../../../../shared/widgets/grouped_section.dart';
 import '../../../../shared/widgets/menu_row.dart';
 import '../../../../shared/widgets/user_avatar.dart';
@@ -169,43 +169,15 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     );
   }
 
-  void _showEditDialog({required String title, required String initialValue, required ValueChanged<String> onSave}) {
-    final controller = TextEditingController(text: initialValue);
-    final theme = Theme.of(context);
-
-    showDialog(
+  Future<void> _showEditDialog({required String title, required String initialValue, required ValueChanged<String> onSave}) async {
+    final value = await CommonDialog.input(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: AppTextStyles.regular12,
-          decoration: InputDecoration(
-            hintText: '$titleを入力',
-            hintStyle: AppTextStyles.regular12.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
-            filled: true,
-            fillColor: theme.brightness == Brightness.dark
-                ? theme.colorScheme.surfaceContainerHighest
-                : const Color(0xFFEFEFEF),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル')),
-          TextButton(
-            onPressed: () {
-              onSave(controller.text.trim());
-              Navigator.pop(ctx);
-            },
-            child: Text(
-              '保存',
-              style: TextStyle(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
+      title: title,
+      hintText: '$titleを入力',
+      initialValue: initialValue,
     );
+    if (value != null && value.isNotEmpty) {
+      onSave(value);
+    }
   }
 }

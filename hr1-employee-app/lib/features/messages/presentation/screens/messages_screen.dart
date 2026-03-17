@@ -8,6 +8,7 @@ import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/org_icon.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/search_box.dart';
 import '../../../../shared/widgets/user_avatar.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -30,7 +31,7 @@ class MessagesScreen extends ConsumerWidget {
           children: [
             OrgIcon(initial: (user?.organizationName ?? 'H').substring(0, 1), size: 32),
             const SizedBox(width: 10),
-            Text('チャット', style: AppTextStyles.bold24.copyWith(letterSpacing: -0.2)),
+            Text('チャット', style: AppTextStyles.title1.copyWith(letterSpacing: -0.2)),
           ],
         ),
         centerTitle: false,
@@ -64,8 +65,8 @@ class MessagesScreen extends ConsumerWidget {
           // スレッドリスト
           Expanded(
             child: threadsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Center(child: Text('エラーが発生しました', style: AppTextStyles.regular14)),
+              loading: () => const LoadingIndicator(),
+              error: (error, _) => Center(child: Text('エラーが発生しました', style: AppTextStyles.body2)),
               data: (threads) {
                 if (threads.isEmpty) {
                   return EmptyState(
@@ -121,7 +122,7 @@ class _ThreadTile extends StatelessWidget {
               child: Center(
                 child: Text(
                   initial,
-                  style: AppTextStyles.regular12.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+                  style: AppTextStyles.caption1.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -136,7 +137,7 @@ class _ThreadTile extends StatelessWidget {
                       Expanded(
                         child: Text(
                           displayName,
-                          style: AppTextStyles.regular12.copyWith(
+                          style: AppTextStyles.caption1.copyWith(
                             fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -147,7 +148,7 @@ class _ThreadTile extends StatelessWidget {
                         const SizedBox(width: AppSpacing.sm),
                         Text(
                           _formatDate(thread.latestMessage!.createdAt),
-                          style: AppTextStyles.regular11.copyWith(
+                          style: AppTextStyles.caption2.copyWith(
                             color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                             fontSize: 12,
                           ),
@@ -162,7 +163,7 @@ class _ThreadTile extends StatelessWidget {
                         Expanded(
                           child: Text(
                             thread.latestMessage!.content,
-                            style: AppTextStyles.regular11.copyWith(
+                            style: AppTextStyles.caption2.copyWith(
                               color: hasUnread
                                   ? theme.colorScheme.onSurface
                                   : theme.colorScheme.onSurface.withValues(alpha: 0.55),

@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../providers/survey_providers.dart';
 
 /// パルスサーベイ一覧画面（応募者向け）
@@ -24,7 +25,7 @@ class SurveyListScreen extends ConsumerWidget {
         centerTitle: true,
       ),
       body: surveysAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingIndicator(),
         error: (e, _) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

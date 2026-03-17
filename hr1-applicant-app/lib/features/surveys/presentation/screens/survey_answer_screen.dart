@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/common_button.dart';
 import '../../domain/entities/pulse_survey.dart';
 import '../providers/survey_providers.dart';
 
@@ -53,22 +54,15 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
 
     setState(() => _submitting = true);
     try {
-      await ref.read(surveyRepositoryProvider).submitResponse(
-            surveyId: survey.id,
-            answers: _answers,
-          );
+      await ref.read(surveyRepositoryProvider).submitResponse(surveyId: survey.id, answers: _answers);
       ref.invalidate(completedSurveyIdsProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('回答を送信しました')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('回答を送信しました')));
         context.pop();
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('送信に失敗しました。しばらくしてから再度お試しください。')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('送信に失敗しました。しばらくしてから再度お試しください。')));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -81,21 +75,18 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
 
     if (survey.questions.isEmpty) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text(survey.title, style: AppTextStyles.subtitle),
-          centerTitle: true,
-        ),
+        appBar: AppBar(title: Text(survey.title, style: AppTextStyles.subtitle), centerTitle: true),
         body: Center(
-          child: Text('質問が設定されていません', style: AppTextStyles.body.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55))),
+          child: Text(
+            '質問が設定されていません',
+            style: AppTextStyles.body.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+          ),
         ),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(survey.title, style: AppTextStyles.subtitle),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text(survey.title, style: AppTextStyles.subtitle), centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
         children: [
@@ -110,11 +101,10 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
           const SizedBox(height: AppSpacing.xxl),
           SizedBox(
             height: 48,
-            child: FilledButton(
-              onPressed: _canSubmit && !_submitting ? _submit : null,
-              child: _submitting
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('回答を送信'),
+            child: CommonButton(
+              onPressed: _canSubmit ? _submit : null,
+              loading: _submitting,
+              child: const Text('回答を送信'),
             ),
           ),
           const SizedBox(height: AppSpacing.xxxl),
@@ -131,16 +121,16 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text(q.label, style: AppTextStyles.subtitle.copyWith(fontSize: 14)),
-              ),
-              if (q.isRequired)
-                Text('必須', style: AppTextStyles.caption.copyWith(color: AppColors.error)),
+              Expanded(child: Text(q.label, style: AppTextStyles.subtitle.copyWith(fontSize: 14))),
+              if (q.isRequired) Text('必須', style: AppTextStyles.caption.copyWith(color: AppColors.error)),
             ],
           ),
           if (q.description != null) ...[
             const SizedBox(height: 2),
-            Text(q.description!, style: AppTextStyles.caption.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55))),
+            Text(
+              q.description!,
+              style: AppTextStyles.caption.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+            ),
           ],
           const SizedBox(height: AppSpacing.sm),
           _buildInput(q, theme),
@@ -180,9 +170,7 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.primaryLight.withValues(alpha: 0.15) : theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: isSelected ? AppColors.primaryLight : theme.colorScheme.outlineVariant,
-                ),
+                border: Border.all(color: isSelected ? AppColors.primaryLight : theme.colorScheme.outlineVariant),
               ),
               child: Center(
                 child: Text(
@@ -203,10 +191,7 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
   Widget _buildTextField(PulseSurveyQuestion q) {
     return TextField(
       maxLines: 3,
-      decoration: const InputDecoration(
-        hintText: '回答を入力',
-        border: OutlineInputBorder(),
-      ),
+      decoration: const InputDecoration(hintText: '回答を入力', border: OutlineInputBorder()),
       onChanged: (v) => setState(() => _answers[q.id] = v),
     );
   }

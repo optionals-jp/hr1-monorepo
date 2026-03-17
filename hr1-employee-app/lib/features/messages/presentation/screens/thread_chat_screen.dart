@@ -8,6 +8,9 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/message_thread.dart';
+import '../../../../shared/widgets/common_dialog.dart';
+import '../../../../shared/widgets/common_snackbar.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../controllers/thread_chat_controller.dart';
 
 const _pageSize = 30;
@@ -272,12 +275,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     } catch (e) {
       if (mounted) {
         _controller.text = content;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('メッセージの送信に失敗しました'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        CommonSnackBar.error(context, 'メッセージの送信に失敗しました');
       }
     }
     if (mounted) setState(() => _sending = false);
@@ -305,48 +303,23 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     try {
       await ref.read(threadChatControllerProvider.notifier).editMessage(messageId, content);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('メッセージの編集に失敗しました'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
+      CommonSnackBar.error(context, 'メッセージの編集に失敗しました');
     }
   }
 
   Future<void> _deleteMessage(String messageId) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await CommonDialog.confirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('メッセージの削除'),
-        content: const Text('このメッセージを削除しますか？この操作は取り消せません。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('削除'),
-          ),
-        ],
-      ),
+      title: 'メッセージの削除',
+      message: 'このメッセージを削除しますか？この操作は取り消せません。',
+      confirmLabel: '削除',
+      isDestructive: true,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     try {
       await ref.read(threadChatControllerProvider.notifier).deleteMessage(messageId);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('メッセージの削除に失敗しました'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
+      CommonSnackBar.error(context, 'メッセージの削除に失敗しました');
     }
   }
 
@@ -421,7 +394,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            Text(displayName, style: AppTextStyles.semiBold16),
+            Text(displayName, style: AppTextStyles.headline),
           ],
         ),
         centerTitle: false,
@@ -431,12 +404,12 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
           // メッセージリスト
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? const LoadingIndicator()
                 : _messages.isEmpty
                     ? Center(
                         child: Text(
                           'メッセージはまだありません',
-                          style: AppTextStyles.regular14.copyWith(
+                          style: AppTextStyles.body2.copyWith(
                             color: theme.colorScheme.onSurface
                                 .withValues(alpha: 0.45),
                           ),
@@ -458,8 +431,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                                 child: SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2),
+                                  child: LoadingIndicator(size: 20),
                                 ),
                               ),
                             );
@@ -535,7 +507,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                             controller: _controller,
                             decoration: InputDecoration(
                               hintText: 'メッセージを入力',
-                              hintStyle: AppTextStyles.regular12.copyWith(
+                              hintStyle: AppTextStyles.caption1.copyWith(
                                 color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                               ),
                               filled: false,
@@ -545,7 +517,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                               contentPadding: const EdgeInsets.symmetric(vertical: 10),
                               isDense: true,
                             ),
-                            style: AppTextStyles.regular12,
+                            style: AppTextStyles.caption1,
                             maxLines: 4,
                             minLines: 1,
                             textInputAction: TextInputAction.send,
@@ -625,7 +597,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
     final theme = Theme.of(context);
     return Text(
       '${'.' * _dotCount} 入力中',
-      style: AppTextStyles.regular11.copyWith(
+      style: AppTextStyles.caption2.copyWith(
         color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
       ),
     );
@@ -672,7 +644,7 @@ class _EditingBubble extends StatelessWidget {
                     autofocus: true,
                     maxLines: 4,
                     minLines: 1,
-                    style: AppTextStyles.regular12,
+                    style: AppTextStyles.caption1,
                     decoration: const InputDecoration(
                       isDense: true,
                       border: InputBorder.none,
@@ -695,7 +667,7 @@ class _EditingBubble extends StatelessWidget {
                         ),
                         child: Text(
                           'キャンセル',
-                          style: AppTextStyles.regular11.copyWith(
+                          style: AppTextStyles.caption2.copyWith(
                             color: theme.colorScheme.onSurface
                                 .withValues(alpha: 0.6),
                           ),
@@ -712,7 +684,7 @@ class _EditingBubble extends StatelessWidget {
                         ),
                         child: Text(
                           '保存',
-                          style: AppTextStyles.regular11.copyWith(
+                          style: AppTextStyles.caption2.copyWith(
                             color: AppColors.brandPrimary,
                             fontWeight: FontWeight.w600,
                           ),
@@ -799,7 +771,7 @@ class _MessageBubble extends StatelessWidget {
                         left: AppSpacing.xs, bottom: 3),
                     child: Text(
                       message.senderName ?? '相手',
-                      style: AppTextStyles.medium12.copyWith(
+                      style: AppTextStyles.caption1.copyWith(
                         color: theme.colorScheme.onSurface
                             .withValues(alpha: 0.55),
                         fontWeight: FontWeight.w600,
@@ -822,7 +794,7 @@ class _MessageBubble extends StatelessWidget {
                   ),
                   child: Text(
                     message.content,
-                    style: AppTextStyles.regular12.copyWith(color: textColor),
+                    style: AppTextStyles.caption1.copyWith(color: textColor),
                   ),
                 ),
                 Padding(
@@ -836,7 +808,7 @@ class _MessageBubble extends StatelessWidget {
                           padding: const EdgeInsets.only(right: 4),
                           child: Text(
                             '編集済み',
-                            style: AppTextStyles.medium12.copyWith(
+                            style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
                               color: metaColor,
                               fontSize: 10,
                             ),
@@ -844,7 +816,7 @@ class _MessageBubble extends StatelessWidget {
                         ),
                       Text(
                         '${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}',
-                        style: AppTextStyles.medium12.copyWith(
+                        style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
                           color: metaColor,
                         ),
                       ),

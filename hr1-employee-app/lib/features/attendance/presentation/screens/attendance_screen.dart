@@ -9,6 +9,8 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../domain/entities/attendance_record.dart';
 import '../controllers/attendance_controller.dart';
+import '../../../../shared/widgets/common_snackbar.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../providers/attendance_providers.dart';
 
 /// 勤怠打刻画面 — Office モバイルスタイル
@@ -24,9 +26,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     await ref.read(attendanceControllerProvider.notifier).punch(action);
     final error = ref.read(attendanceControllerProvider).error;
     if (error != null && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('エラーが発生しました: $error'), backgroundColor: AppColors.error));
+      CommonSnackBar.error(context, 'エラーが発生しました: $error');
     }
   }
 
@@ -46,7 +46,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             onPressed: () => context.push(AppRoutes.correction),
             child: Text(
               '修正依頼',
-              style: AppTextStyles.regular12.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
+              style: AppTextStyles.caption1.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
             ),
           ),
           const SizedBox(width: 4),
@@ -83,7 +83,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               padding: const EdgeInsets.only(top: AppSpacing.xl, bottom: AppSpacing.sm),
               child: Text(
                 'タイムライン',
-                style: AppTextStyles.regular11.copyWith(
+                style: AppTextStyles.caption2.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.3,
@@ -97,7 +97,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                       child: Center(
                         child: Text(
                           'まだ打刻がありません',
-                          style: AppTextStyles.regular12.copyWith(
+                          style: AppTextStyles.caption1.copyWith(
                             color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                           ),
                         ),
@@ -113,7 +113,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                           ),
                       ],
                     ),
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const LoadingIndicator(),
               error: (e, _) => Padding(padding: const EdgeInsets.all(AppSpacing.xl), child: Text('エラー: $e')),
             ),
             const SizedBox(height: AppSpacing.xxl),
@@ -150,13 +150,13 @@ class _TimeStatusHero extends StatelessWidget {
         // 日付
         Text(
           dateFormat.format(now),
-          style: AppTextStyles.regular12.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+          style: AppTextStyles.caption1.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
         ),
         const SizedBox(height: 4),
         // 時刻（大きく表示）
         Text(
           timeFormat.format(now),
-          style: AppTextStyles.extraLight48.copyWith(
+          style: AppTextStyles.display.copyWith(
             fontSize: 52,
             fontWeight: FontWeight.w200,
             color: theme.colorScheme.onSurface,
@@ -181,7 +181,7 @@ class _TimeStatusHero extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 statusLabel,
-                style: AppTextStyles.regular11.copyWith(color: statusColor, fontWeight: FontWeight.w600),
+                style: AppTextStyles.caption2.copyWith(color: statusColor, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -315,7 +315,7 @@ class _PunchButton extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     label,
-                    style: AppTextStyles.regular12.copyWith(color: iconColor, fontWeight: FontWeight.w600),
+                    style: AppTextStyles.caption1.copyWith(color: iconColor, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -409,11 +409,11 @@ class _KVItem extends StatelessWidget {
         children: [
           iconBuilder(size: 18, color: iconColor),
           const SizedBox(height: 6),
-          Text(value, style: AppTextStyles.semiBold16),
+          Text(value, style: AppTextStyles.headline),
           const SizedBox(height: 2),
           Text(
             label,
-            style: AppTextStyles.medium12.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+            style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
           ),
         ],
       ),
@@ -519,7 +519,7 @@ class _TimelineItem extends StatelessWidget {
                 child: Text.rich(
                   _punchDescription(
                     punch,
-                    AppTextStyles.regular14.copyWith(
+                    AppTextStyles.body2.copyWith(
                       fontSize: 14,
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
@@ -545,7 +545,7 @@ class _TimelineItem extends StatelessWidget {
                 if (elapsed != null)
                   Text(
                     _elapsedLabel(elapsed, punch.punchType, nextPunch!.punchType),
-                    style: AppTextStyles.regular11.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
+                    style: AppTextStyles.caption2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
                   ),
               ],
             ),

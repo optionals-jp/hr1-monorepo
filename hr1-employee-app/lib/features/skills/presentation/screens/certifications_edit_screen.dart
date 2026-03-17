@@ -5,10 +5,13 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/common_dialog.dart';
 import '../../../../shared/widgets/master_search_bar.dart';
 import '../../domain/entities/certification_master.dart';
 import '../../domain/entities/employee_certification.dart';
 import '../controllers/skills_controller.dart';
+import '../../../../shared/widgets/common_snackbar.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../providers/skills_providers.dart';
 
 /// 資格・認定 編集画面
@@ -52,72 +55,23 @@ class _CertificationsEditScreenState
           .read(certificationsControllerProvider.notifier)
           .addCertification(name, acquiredDate, score: score);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('エラー: $e'), backgroundColor: AppColors.error),
-        );
-      }
+      CommonSnackBar.error(context, 'エラー: $e');
     } finally {
       if (mounted) setState(() => _isAdding = false);
     }
   }
 
   Future<int?> _showScoreDialog(String certName) async {
-    final scoreController = TextEditingController();
-    final theme = Theme.of(context);
-
-    return showDialog<int>(
+    final scoreText = await CommonDialog.input(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('$certName のスコア'),
-        content: TextField(
-          controller: scoreController,
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          style: AppTextStyles.regular12,
-          decoration: InputDecoration(
-            hintText: '例: 850',
-            hintStyle: AppTextStyles.regular12.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-            ),
-            suffixText: '点',
-            filled: true,
-            fillColor: theme.brightness == Brightness.dark
-                ? theme.colorScheme.surfaceContainerHighest
-                : const Color(0xFFEFEFEF),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () {
-              final text = scoreController.text.trim();
-              final value = int.tryParse(text);
-              if (value != null && value > 0) {
-                Navigator.pop(ctx, value);
-              }
-            },
-            child: Text(
-              '決定',
-              style: TextStyle(
-                color: AppColors.brandPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: '$certName のスコア',
+      hintText: '例: 850',
+      suffixText: '点',
+      keyboardType: TextInputType.number,
+      confirmLabel: '保存',
     );
+    if (scoreText == null || scoreText.isEmpty) return null;
+    return int.tryParse(scoreText);
   }
 
   Future<DateTime?> _pickAcquiredDate() async {
@@ -133,36 +87,21 @@ class _CertificationsEditScreenState
   }
 
   Future<void> _deleteCertification(EmployeeCertification cert) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await CommonDialog.confirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('資格の削除'),
-        content: Text('「${cert.name}」を削除しますか？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('削除', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
-      ),
+      title: '資格の削除',
+      message: '「${cert.name}」を削除しますか？',
+      confirmLabel: '削除',
+      isDestructive: true,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     try {
       await ref
           .read(certificationsControllerProvider.notifier)
           .deleteCertification(cert.id);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('エラー: $e'), backgroundColor: AppColors.error),
-        );
-      }
+      CommonSnackBar.error(context, 'エラー: $e');
     }
   }
 
@@ -190,7 +129,7 @@ class _CertificationsEditScreenState
           Expanded(
             child: certsAsync.when(
               loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+                  const LoadingIndicator(),
               error: (e, _) => Center(child: Text('エラー: $e')),
               data: (certs) {
                 if (certs.isEmpty) {
@@ -206,7 +145,7 @@ class _CertificationsEditScreenState
                         const SizedBox(height: AppSpacing.md),
                         Text(
                           '資格が登録されていません',
-                          style: AppTextStyles.regular12.copyWith(
+                          style: AppTextStyles.caption1.copyWith(
                             color: theme.colorScheme.onSurface
                                 .withValues(alpha: 0.45),
                           ),
@@ -284,12 +223,12 @@ class _CertTile extends StatelessWidget {
                   certification.score != null
                       ? '${certification.name} ${certification.score}点'
                       : certification.name,
-                  style: AppTextStyles.regular12,
+                  style: AppTextStyles.caption1,
                 ),
                 if (certification.acquiredDate != null)
                   Text(
                     DateFormat('yyyy/MM').format(certification.acquiredDate!),
-                    style: AppTextStyles.regular11.copyWith(
+                    style: AppTextStyles.caption2.copyWith(
                       color: theme.colorScheme.onSurface
                           .withValues(alpha: 0.55),
                     ),

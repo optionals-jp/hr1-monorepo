@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../core/result/result.dart';
 import '../../../../core/router/app_router.dart';
 import '../providers/auth_providers.dart';
@@ -96,10 +97,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             const SizedBox(
               width: 24,
               height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
+              child: LoadingIndicator(size: 24),
             ),
           ],
         ),

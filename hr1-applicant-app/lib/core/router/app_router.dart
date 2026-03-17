@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../shared/widgets/loading_indicator.dart';
 import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
@@ -212,7 +213,7 @@ class _SurveyLoaderScreen extends ConsumerWidget {
     final surveyAsync = ref.watch(surveyByIdProvider(surveyId));
 
     return surveyAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => const Scaffold(body: LoadingIndicator()),
       error: (_, __) => Scaffold(
         appBar: AppBar(),
         body: const Center(child: Text('サーベイの読み込みに失敗しました')),

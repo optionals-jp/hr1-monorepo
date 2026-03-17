@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/router/app_router.dart';
 import '../../domain/entities/app_user.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../providers/auth_providers.dart';
 
 /// スプラッシュ画面
@@ -163,15 +164,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 ),
               ),
               const SizedBox(height: 48),
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 1.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                      Colors.white.withValues(alpha: 0.8)),
-                ),
-              ),
+              const LoadingIndicator(size: 20),
             ],
           ),
         ),

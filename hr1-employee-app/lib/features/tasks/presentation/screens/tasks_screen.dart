@@ -12,6 +12,8 @@ import '../../../../shared/widgets/user_avatar.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/task.dart';
 import '../controllers/task_controller.dart';
+import '../../../../shared/widgets/common_snackbar.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../providers/task_providers.dart';
 
 /// タスク画面 — Microsoft To Do スタイル
@@ -78,7 +80,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
           children: [
             OrgIcon(initial: (user?.organizationName ?? 'H').substring(0, 1), size: 32),
             const SizedBox(width: 10),
-            Text('タスク', style: AppTextStyles.bold24.copyWith(letterSpacing: -0.2)),
+            Text('タスク', style: AppTextStyles.title1.copyWith(letterSpacing: -0.2)),
           ],
         ),
         centerTitle: false,
@@ -110,7 +112,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
           // タスクリスト
           Expanded(
             child: tasksAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const LoadingIndicator(),
               error: (e, _) => Center(child: Text('エラー: $e')),
               data: (tasks) {
                 final incomplete = tasks.where((t) => !t.isCompleted).toList();
@@ -208,7 +210,7 @@ class _FilterTabs extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         f.label,
-                        style: AppTextStyles.regular11.copyWith(
+                        style: AppTextStyles.caption2.copyWith(
                           color: isActive ? color : theme.colorScheme.onSurface.withValues(alpha: 0.7),
                           fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                         ),
@@ -257,11 +259,11 @@ class _FilterHeader extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: AppTextStyles.bold24),
+              Text(title, style: AppTextStyles.title1),
               if (subtitle != null)
                 Text(
                   subtitle,
-                  style: AppTextStyles.regular11.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+                  style: AppTextStyles.caption2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
                 ),
             ],
           ),
@@ -336,7 +338,7 @@ class _TaskItem extends StatelessWidget {
                   children: [
                     Text(
                       task.title,
-                      style: AppTextStyles.regular12.copyWith(
+                      style: AppTextStyles.caption1.copyWith(
                         decoration: task.isCompleted ? TextDecoration.lineThrough : null,
                         color: task.isCompleted ? theme.colorScheme.onSurface.withValues(alpha: 0.4) : null,
                       ),
@@ -389,7 +391,7 @@ class _MetadataRow extends StatelessWidget {
             const SizedBox(width: 3),
             Text(
               'My Day',
-              style: AppTextStyles.medium12.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+              style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
             ),
           ],
         ),
@@ -410,7 +412,7 @@ class _MetadataRow extends StatelessWidget {
             const SizedBox(width: 3),
             Text(
               label,
-              style: AppTextStyles.medium12.copyWith(
+              style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
                 color: isOverdue ? AppColors.error : theme.colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ),
@@ -424,7 +426,7 @@ class _MetadataRow extends StatelessWidget {
       items.add(
         Text(
           '$done/${task.steps!.length}',
-          style: AppTextStyles.medium12.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+          style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
         ),
       );
     }
@@ -480,7 +482,7 @@ class _CompletedSectionState extends State<_CompletedSection> {
                 const SizedBox(width: 8),
                 Text(
                   '完了済み (${widget.tasks.length})',
-                  style: AppTextStyles.regular11.copyWith(
+                  style: AppTextStyles.caption2.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                     fontWeight: FontWeight.w600,
                   ),
@@ -548,11 +550,11 @@ class _AddTaskBar extends StatelessWidget {
                   child: TextField(
                     controller: controller,
                     focusNode: focusNode,
-                    style: AppTextStyles.regular12,
+                    style: AppTextStyles.caption1,
                     onSubmitted: (_) => onSubmit(),
                     decoration: InputDecoration(
                       hintText: 'タスクを追加',
-                      hintStyle: AppTextStyles.regular12.copyWith(
+                      hintStyle: AppTextStyles.caption1.copyWith(
                         color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                       ),
                       border: InputBorder.none,
@@ -581,7 +583,7 @@ class _AddTaskBar extends StatelessWidget {
                     const SizedBox(width: 12),
                     Text(
                       'タスクを追加',
-                      style: AppTextStyles.regular12.copyWith(
+                      style: AppTextStyles.caption1.copyWith(
                         color: AppColors.brandPrimary,
                         fontWeight: FontWeight.w500,
                       ),
@@ -618,11 +620,11 @@ class _EmptyTaskState extends StatelessWidget {
           children: [
             icon,
             const SizedBox(height: AppSpacing.lg),
-            Text(title, style: AppTextStyles.semiBold16, textAlign: TextAlign.center),
+            Text(title, style: AppTextStyles.headline, textAlign: TextAlign.center),
             const SizedBox(height: AppSpacing.sm),
             Text(
               subtitle,
-              style: AppTextStyles.regular11.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+              style: AppTextStyles.caption2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
               textAlign: TextAlign.center,
             ),
           ],
@@ -688,11 +690,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
       );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('エラー: $e'), backgroundColor: AppColors.error));
-      }
+      CommonSnackBar.error(context, 'エラー: $e');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -733,10 +731,10 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
           TextButton(
             onPressed: _isSaving ? null : _save,
             child: _isSaving
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(width: 16, height: 16, child: LoadingIndicator(size: 16))
                 : Text(
                     '保存',
-                    style: AppTextStyles.regular12.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
+                    style: AppTextStyles.caption1.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
                   ),
           ),
           const SizedBox(width: 4),
@@ -748,12 +746,12 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
           // タイトル
           TextField(
             controller: _titleController,
-            style: AppTextStyles.semiBold20,
+            style: AppTextStyles.title3,
             decoration: InputDecoration(
               hintText: 'タスク名',
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,
-              hintStyle: AppTextStyles.semiBold20.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.35)),
+              hintStyle: AppTextStyles.title3.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.35)),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -785,11 +783,11 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
               Expanded(
                 child: TextField(
                   controller: _stepController,
-                  style: AppTextStyles.regular12,
+                  style: AppTextStyles.caption1,
                   onSubmitted: (_) => _addStep(),
                   decoration: InputDecoration(
                     hintText: 'ステップを追加',
-                    hintStyle: AppTextStyles.regular12.copyWith(
+                    hintStyle: AppTextStyles.caption1.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
                     ),
                     border: InputBorder.none,
@@ -840,12 +838,12 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
               Expanded(
                 child: TextField(
                   controller: _noteController,
-                  style: AppTextStyles.regular12,
+                  style: AppTextStyles.caption1,
                   maxLines: 6,
                   minLines: 3,
                   decoration: InputDecoration(
                     hintText: 'メモを追加',
-                    hintStyle: AppTextStyles.regular12.copyWith(
+                    hintStyle: AppTextStyles.caption1.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
                     ),
                     border: InputBorder.none,
@@ -896,7 +894,7 @@ class _StepRow extends StatelessWidget {
           Expanded(
             child: Text(
               step.title,
-              style: AppTextStyles.regular12.copyWith(
+              style: AppTextStyles.caption1.copyWith(
                 decoration: step.isCompleted ? TextDecoration.lineThrough : null,
                 color: step.isCompleted ? theme.colorScheme.onSurface.withValues(alpha: 0.4) : null,
               ),
@@ -942,7 +940,7 @@ class _DetailActionRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: AppTextStyles.regular12.copyWith(
+                style: AppTextStyles.caption1.copyWith(
                   color: isActive ? AppColors.brandPrimary : theme.colorScheme.onSurface,
                 ),
               ),

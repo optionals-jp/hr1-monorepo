@@ -77,14 +77,14 @@ class MenuRow extends StatelessWidget {
                   if (hasLabel) ...[
                     Text(
                       label!,
-                      style: AppTextStyles.regular11.copyWith(
+                      style: AppTextStyles.caption2.copyWith(
                         color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       title,
-                      style: AppTextStyles.regular12.copyWith(
+                      style: AppTextStyles.caption1.copyWith(
                         color: isEditable && title == '編集する'
                             ? AppColors.brandPrimary
                             : textColor,
@@ -94,12 +94,12 @@ class MenuRow extends StatelessWidget {
                     // タイトル型: title（メイン）→ subtitle（サブ）
                     Text(
                       title,
-                      style: AppTextStyles.regular12.copyWith(color: textColor),
+                      style: AppTextStyles.caption1.copyWith(color: textColor),
                     ),
                     if (subtitle != null)
                       Text(
                         subtitle!,
-                        style: AppTextStyles.regular11.copyWith(
+                        style: AppTextStyles.caption2.copyWith(
                           color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                         ),
                       ),

@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../providers/survey_providers.dart';
 
 /// パルスサーベイ一覧画面
@@ -20,16 +21,16 @@ class SurveyListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('パルスサーベイ', style: AppTextStyles.semiBold16.copyWith(letterSpacing: -0.2)),
+        title: Text('パルスサーベイ', style: AppTextStyles.headline.copyWith(letterSpacing: -0.2)),
         centerTitle: false,
       ),
       body: surveysAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingIndicator(),
         error: (e, _) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('読み込みに失敗しました', style: AppTextStyles.regular14.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55))),
+              Text('読み込みに失敗しました', style: AppTextStyles.body2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55))),
               const SizedBox(height: AppSpacing.md),
               FilledButton.tonal(
                 onPressed: () {
@@ -51,7 +52,7 @@ class SurveyListScreen extends ConsumerWidget {
                 children: [
                   Icon(Icons.poll_outlined, size: 48, color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
                   const SizedBox(height: AppSpacing.md),
-                  Text('サーベイはありません', style: AppTextStyles.regular14.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55))),
+                  Text('サーベイはありません', style: AppTextStyles.body2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55))),
                 ],
               ),
             );
@@ -89,7 +90,7 @@ class SurveyListScreen extends ConsumerWidget {
                           Row(
                             children: [
                               Expanded(
-                                child: Text(survey.title, style: AppTextStyles.semiBold16),
+                                child: Text(survey.title, style: AppTextStyles.headline),
                               ),
                               if (isCompleted)
                                 Container(
@@ -98,7 +99,7 @@ class SurveyListScreen extends ConsumerWidget {
                                     color: AppColors.success.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  child: Text('回答済み', style: AppTextStyles.regular11.copyWith(color: AppColors.success, fontWeight: FontWeight.w600)),
+                                  child: Text('回答済み', style: AppTextStyles.caption2.copyWith(color: AppColors.success, fontWeight: FontWeight.w600)),
                                 )
                               else
                                 Container(
@@ -107,7 +108,7 @@ class SurveyListScreen extends ConsumerWidget {
                                     color: AppColors.brandPrimary.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  child: Text('未回答', style: AppTextStyles.regular11.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600)),
+                                  child: Text('未回答', style: AppTextStyles.caption2.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600)),
                                 ),
                             ],
                           ),
@@ -115,7 +116,7 @@ class SurveyListScreen extends ConsumerWidget {
                             const SizedBox(height: AppSpacing.xs),
                             Text(
                               survey.description!,
-                              style: AppTextStyles.regular12.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+                              style: AppTextStyles.caption1.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -125,13 +126,13 @@ class SurveyListScreen extends ConsumerWidget {
                             children: [
                               Text(
                                 '${survey.questions.length}問',
-                                style: AppTextStyles.regular11.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+                                style: AppTextStyles.caption2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
                               ),
                               if (survey.deadline != null) ...[
                                 const SizedBox(width: AppSpacing.md),
                                 Text(
                                   '締切: ${DateFormat('yyyy/MM/dd').format(survey.deadline!.toLocal())}',
-                                  style: AppTextStyles.regular11.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+                                  style: AppTextStyles.caption2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
                                 ),
                               ],
                             ],

@@ -7,6 +7,7 @@ import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/result/result.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/validators.dart';
+import '../../../../shared/widgets/common_button.dart';
 import '../providers/auth_providers.dart';
 
 /// ログイン画面（OTP認証）
@@ -182,15 +183,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: AppSpacing.xl),
 
                     // OTP送信ボタン
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _sendOtp,
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('認証コードを送信'),
+                    CommonButton(
+                      onPressed: _sendOtp,
+                      loading: _isLoading,
+                      child: const Text('認証コードを送信'),
                     ),
                   ] else ...[
                     // OTP入力
@@ -213,15 +209,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: AppSpacing.xl),
 
                     // ログインボタン
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _verifyOtp,
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('ログイン'),
+                    CommonButton(
+                      onPressed: _verifyOtp,
+                      loading: _isLoading,
+                      child: const Text('ログイン'),
                     ),
                     const SizedBox(height: AppSpacing.md),
 

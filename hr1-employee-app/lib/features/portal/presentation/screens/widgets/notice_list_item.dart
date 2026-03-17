@@ -50,7 +50,7 @@ class NoticeListItem extends StatelessWidget {
                       Expanded(
                         child: Text(
                           title,
-                          style: AppTextStyles.regular12.copyWith(
+                          style: AppTextStyles.caption1.copyWith(
                             fontWeight: isNew ? FontWeight.w600 : FontWeight.w400,
                           ),
                           maxLines: 1,
@@ -60,7 +60,7 @@ class NoticeListItem extends StatelessWidget {
                       const SizedBox(width: AppSpacing.sm),
                       Text(
                         date,
-                        style: AppTextStyles.regular11.copyWith(
+                        style: AppTextStyles.caption2.copyWith(
                           color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                         ),
                       ),
@@ -69,7 +69,7 @@ class NoticeListItem extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: AppTextStyles.regular11.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+                    style: AppTextStyles.caption2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
                   ),
                 ],
               ),

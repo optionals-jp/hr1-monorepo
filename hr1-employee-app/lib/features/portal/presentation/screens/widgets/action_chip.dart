@@ -38,7 +38,7 @@ class PortalActionChip extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               label,
-              style: AppTextStyles.medium12.copyWith(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w500),
+              style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
