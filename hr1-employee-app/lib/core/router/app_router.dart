@@ -14,6 +14,7 @@ import '../../features/messages/domain/entities/message_thread.dart';
 import '../../features/tasks/presentation/screens/tasks_screen.dart';
 import '../../features/auth/presentation/screens/profile_screen.dart';
 import '../../features/attendance/presentation/screens/attendance_screen.dart';
+import '../../features/attendance/presentation/screens/attendance_detail_screen.dart';
 import '../../features/attendance/presentation/screens/correction_request_screen.dart';
 import '../../features/employees/domain/entities/employee_contact.dart';
 import '../../features/employees/presentation/screens/employee_detail_screen.dart';
@@ -65,7 +66,9 @@ class AppRoutes {
   static const String profileFullscreen = '/$_profileFullscreen';
   static const String attendance = '/$_attendance';
   static const String employeeDetail = '/$_employeeDetail';
+  static const String _attendanceDetail = 'detail';
   static const String correction = '/$_attendance/$_correction';
+  static const String attendanceDetail = '/$_attendance/$_attendanceDetail';
   static const String messageThread = '$messages/$_thread';
   static const String search = '/$_search';
   static const String profileEdit = '/$_profileEdit';
@@ -122,6 +125,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             parentNavigatorKey: rootNavigatorKey,
             path: AppRoutes._correction,
             builder: (context, state) => const CorrectionRequestScreen(),
+          ),
+          GoRoute(
+            parentNavigatorKey: rootNavigatorKey,
+            path: AppRoutes._attendanceDetail,
+            builder: (context, state) => const AttendanceDetailScreen(),
           ),
         ],
       ),

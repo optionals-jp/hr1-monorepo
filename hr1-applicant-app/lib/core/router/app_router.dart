@@ -42,9 +42,13 @@ class AppRoutes {
 /// 認証不要なルート
 const _publicRoutes = [AppRoutes.splash, AppRoutes.login];
 
+/// ルートナビゲーターキー
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 /// GoRouter プロバイダー
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
 

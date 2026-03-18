@@ -106,7 +106,7 @@ class PushNotificationService {
       }
     });
 
-    // 既にログイン済みで、まだ onAuthStateChange が発火していない場合に備える
+    // 既にログイン済みの場合
     if (Supabase.instance.client.auth.currentUser != null) {
       await _registerToken();
     }
@@ -130,7 +130,7 @@ class PushNotificationService {
       await Supabase.instance.client.rpc('upsert_push_token', params: {
         'p_token': token,
         'p_platform': Platform.isIOS ? 'ios' : 'android',
-        'p_app_type': 'employee',
+        'p_app_type': 'applicant',
       });
       debugPrint('FCM トークン登録完了: ${token.substring(0, 20)}...');
     } catch (e) {

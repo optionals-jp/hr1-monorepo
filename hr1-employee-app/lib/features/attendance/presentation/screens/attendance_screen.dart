@@ -43,6 +43,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         title: const Text('勤怠'),
         actions: [
           TextButton(
+            onPressed: () => context.push(AppRoutes.attendanceDetail),
+            child: Text(
+              '明細',
+              style: AppTextStyles.caption1.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
+            ),
+          ),
+          TextButton(
             onPressed: () => context.push(AppRoutes.correction),
             child: Text(
               '修正依頼',
