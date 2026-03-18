@@ -94,7 +94,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (BuildContext context, GoRouterState state) {
       final session = Supabase.instance.client.auth.currentSession;
       final isLoggedIn = session != null;
-      final isAuthRoute = state.matchedLocation == AppRoutes.splash ||
+      final isAuthRoute =
+          state.matchedLocation == AppRoutes.splash ||
           state.matchedLocation == AppRoutes.login;
 
       // 未認証で認証不要ページ以外 → ログインへ
@@ -153,7 +154,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const SearchScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(
-              opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOut,
+              ),
               child: child,
             );
           },

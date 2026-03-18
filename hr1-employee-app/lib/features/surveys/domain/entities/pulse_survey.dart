@@ -31,9 +31,13 @@ class PulseSurvey {
       description: json['description'] as String?,
       target: json['target'] as String? ?? 'employee',
       status: json['status'] as String? ?? 'draft',
-      deadline: json['deadline'] != null ? DateTime.parse(json['deadline'] as String) : null,
+      deadline: json['deadline'] != null
+          ? DateTime.parse(json['deadline'] as String)
+          : null,
       createdAt: DateTime.parse(json['created_at'] as String),
-      questions: questionsJson?.map((q) => PulseSurveyQuestion.fromJson(q)).toList() ?? [],
+      questions:
+          questionsJson?.map((q) => PulseSurveyQuestion.fromJson(q)).toList() ??
+          [],
     );
   }
 }

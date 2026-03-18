@@ -20,9 +20,7 @@ class JobsScreen extends ConsumerWidget {
     final asyncJobs = ref.watch(jobsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('${currentOrg?.name ?? ''}の求人'),
-      ),
+      appBar: AppBar(title: Text('${currentOrg?.name ?? ''}の求人')),
       body: asyncJobs.when(
         data: (jobs) => jobs.isEmpty
             ? Center(
@@ -111,8 +109,11 @@ class _JobCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios,
-                    size: 14, color: AppColors.primaryLight),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: AppColors.primaryLight,
+                ),
               ],
             ),
           ],
@@ -138,9 +139,12 @@ class _Tag extends StatelessWidget {
         color: theme.scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(text, style: AppTextStyles.caption.copyWith(
-        color: theme.colorScheme.onSurfaceVariant,
-      )),
+      child: Text(
+        text,
+        style: AppTextStyles.caption.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
     );
   }
 }

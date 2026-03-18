@@ -61,9 +61,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
 
   void _showTaskDetail(Task task) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => _TaskDetailSheet(task: task),
-      ),
+      MaterialPageRoute<void>(builder: (_) => _TaskDetailSheet(task: task)),
     );
   }
 
@@ -78,9 +76,15 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
         titleSpacing: AppSpacing.screenHorizontal,
         title: Row(
           children: [
-            OrgIcon(initial: (user?.organizationName ?? 'H').substring(0, 1), size: 32),
+            OrgIcon(
+              initial: (user?.organizationName ?? 'H').substring(0, 1),
+              size: 32,
+            ),
             const SizedBox(width: 10),
-            Text('タスク', style: AppTextStyles.title1.copyWith(letterSpacing: -0.2)),
+            Text(
+              'タスク',
+              style: AppTextStyles.title1.copyWith(letterSpacing: -0.2),
+            ),
           ],
         ),
         centerTitle: false,
@@ -88,9 +92,14 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
           GestureDetector(
             onTap: () => context.push(AppRoutes.profileFullscreen),
             child: Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.screenHorizontal),
+              padding: const EdgeInsets.only(
+                right: AppSpacing.screenHorizontal,
+              ),
               child: UserAvatar(
-                initial: (user?.displayName ?? user?.email ?? 'U').substring(0, 1),
+                initial: (user?.displayName ?? user?.email ?? 'U').substring(
+                  0,
+                  1,
+                ),
                 size: 32,
                 imageUrl: user?.avatarUrl,
               ),
@@ -136,7 +145,11 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                       ),
                     // 完了セクション
                     if (completed.isNotEmpty)
-                      _CompletedSection(tasks: completed, onToggleComplete: _toggleComplete, onTap: _showTaskDetail),
+                      _CompletedSection(
+                        tasks: completed,
+                        onToggleComplete: _toggleComplete,
+                        onTap: _showTaskDetail,
+                      ),
                   ],
                 );
               },
@@ -180,39 +193,63 @@ class _FilterTabs extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+        ),
         children: TaskFilter.values.map((f) {
           final isActive = f == selected;
           final (icon, color) = switch (f) {
-            TaskFilter.myDay => (Icons.wb_sunny_outlined, const Color(0xFFE8912D)),
-            TaskFilter.important => (Icons.star_outline_rounded, AppColors.error),
-            TaskFilter.planned => (Icons.calendar_today_rounded, AppColors.success),
+            TaskFilter.myDay => (
+              Icons.wb_sunny_outlined,
+              const Color(0xFFE8912D),
+            ),
+            TaskFilter.important => (
+              Icons.star_outline_rounded,
+              AppColors.error,
+            ),
+            TaskFilter.planned => (
+              Icons.calendar_today_rounded,
+              AppColors.success,
+            ),
             TaskFilter.all => (Icons.list_rounded, AppColors.brandPrimary),
           };
 
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: Material(
-              color: isActive ? color.withValues(alpha: 0.12) : theme.colorScheme.onSurface.withValues(alpha: 0.05),
+              color: isActive
+                  ? color.withValues(alpha: 0.12)
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(20),
               child: InkWell(
                 onTap: () => onSelected(f),
                 borderRadius: BorderRadius.circular(20),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 4,
+                  ),
                   child: Row(
                     children: [
                       Icon(
                         icon,
                         size: 16,
-                        color: isActive ? color : AppColors.textSecondary(theme.brightness),
+                        color: isActive
+                            ? color
+                            : AppColors.textSecondary(theme.brightness),
                       ),
                       const SizedBox(width: 6),
                       Text(
                         f.label,
                         style: AppTextStyles.caption2.copyWith(
-                          color: isActive ? color : theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                          fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                          color: isActive
+                              ? color
+                              : theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.7,
+                                ),
+                          fontWeight: isActive
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                         ),
                       ),
                     ],
@@ -236,7 +273,10 @@ class _FilterHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final (title, subtitle) = switch (filter) {
-      TaskFilter.myDay => ('My Day', DateFormat('M月d日（E）', 'ja').format(DateTime.now())),
+      TaskFilter.myDay => (
+        'My Day',
+        DateFormat('M月d日（E）', 'ja').format(DateTime.now()),
+      ),
       TaskFilter.important => ('重要', null),
       TaskFilter.planned => ('計画済み', null),
       TaskFilter.all => ('すべてのタスク', null),
@@ -254,7 +294,11 @@ class _FilterHeader extends StatelessWidget {
           if (filter == TaskFilter.myDay)
             Padding(
               padding: const EdgeInsets.only(right: 10),
-              child: Icon(Icons.wb_sunny_rounded, size: 24, color: const Color(0xFFE8912D)),
+              child: Icon(
+                Icons.wb_sunny_rounded,
+                size: 24,
+                color: const Color(0xFFE8912D),
+              ),
             ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,7 +307,9 @@ class _FilterHeader extends StatelessWidget {
               if (subtitle != null)
                 Text(
                   subtitle,
-                  style: AppTextStyles.caption2.copyWith(color: AppColors.textSecondary(theme.brightness)),
+                  style: AppTextStyles.caption2.copyWith(
+                    color: AppColors.textSecondary(theme.brightness),
+                  ),
                 ),
             ],
           ),
@@ -306,7 +352,10 @@ class _TaskItem extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: 10),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenHorizontal,
+            vertical: 10,
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -325,9 +374,17 @@ class _TaskItem extends StatelessWidget {
                           : theme.colorScheme.onSurface.withValues(alpha: 0.35),
                       width: 1.5,
                     ),
-                    color: task.isCompleted ? AppColors.brandPrimary : Colors.transparent,
+                    color: task.isCompleted
+                        ? AppColors.brandPrimary
+                        : Colors.transparent,
                   ),
-                  child: task.isCompleted ? const Icon(Icons.check_rounded, size: 14, color: Colors.white) : null,
+                  child: task.isCompleted
+                      ? const Icon(
+                          Icons.check_rounded,
+                          size: 14,
+                          color: Colors.white,
+                        )
+                      : null,
                 ),
               ),
               const SizedBox(width: 14),
@@ -339,14 +396,21 @@ class _TaskItem extends StatelessWidget {
                     Text(
                       task.title,
                       style: AppTextStyles.caption1.copyWith(
-                        decoration: task.isCompleted ? TextDecoration.lineThrough : null,
-                        color: task.isCompleted ? theme.colorScheme.onSurface.withValues(alpha: 0.4) : null,
+                        decoration: task.isCompleted
+                            ? TextDecoration.lineThrough
+                            : null,
+                        color: task.isCompleted
+                            ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
+                            : null,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     // メタデータ行
-                    if (_hasMetadata) ...[const SizedBox(height: 3), _MetadataRow(task: task)],
+                    if (_hasMetadata) ...[
+                      const SizedBox(height: 3),
+                      _MetadataRow(task: task),
+                    ],
                   ],
                 ),
               ),
@@ -356,9 +420,13 @@ class _TaskItem extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.only(left: 8, top: 1),
                   child: Icon(
-                    task.isImportant ? Icons.star_rounded : Icons.star_outline_rounded,
+                    task.isImportant
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
                     size: 22,
-                    color: task.isImportant ? AppColors.error : theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                    color: task.isImportant
+                        ? AppColors.error
+                        : theme.colorScheme.onSurface.withValues(alpha: 0.3),
                   ),
                 ),
               ),
@@ -369,7 +437,8 @@ class _TaskItem extends StatelessWidget {
     );
   }
 
-  bool get _hasMetadata => task.dueDate != null || task.isActiveMyDay || task.steps != null;
+  bool get _hasMetadata =>
+      task.dueDate != null || task.isActiveMyDay || task.steps != null;
 }
 
 /// メタデータ行（期限、My Day、ステップ数）
@@ -387,11 +456,18 @@ class _MetadataRow extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.wb_sunny_outlined, size: 12, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+            Icon(
+              Icons.wb_sunny_outlined,
+              size: 12,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
             const SizedBox(width: 3),
             Text(
               'My Day',
-              style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+              style: AppTextStyles.caption1.copyWith(
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
             ),
           ],
         ),
@@ -407,13 +483,18 @@ class _MetadataRow extends StatelessWidget {
           children: [
             AppIcons.calendar(
               size: 12,
-              color: isOverdue ? AppColors.error : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              color: isOverdue
+                  ? AppColors.error
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
             const SizedBox(width: 3),
             Text(
               label,
-              style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
-                color: isOverdue ? AppColors.error : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              style: AppTextStyles.caption1.copyWith(
+                fontWeight: FontWeight.w500,
+                color: isOverdue
+                    ? AppColors.error
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ),
           ],
@@ -426,7 +507,10 @@ class _MetadataRow extends StatelessWidget {
       items.add(
         Text(
           '$done/${task.steps!.length}',
-          style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+          style: AppTextStyles.caption1.copyWith(
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
         ),
       );
     }
@@ -449,7 +533,11 @@ class _MetadataRow extends StatelessWidget {
 
 /// 完了セクション（折りたたみ可能）
 class _CompletedSection extends StatefulWidget {
-  const _CompletedSection({required this.tasks, required this.onToggleComplete, required this.onTap});
+  const _CompletedSection({
+    required this.tasks,
+    required this.onToggleComplete,
+    required this.onTap,
+  });
 
   final List<Task> tasks;
   final ValueChanged<Task> onToggleComplete;
@@ -471,11 +559,16 @@ class _CompletedSectionState extends State<_CompletedSection> {
         InkWell(
           onTap: () => setState(() => _isExpanded = !_isExpanded),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: AppSpacing.md),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.screenHorizontal,
+              vertical: AppSpacing.md,
+            ),
             child: Row(
               children: [
                 Icon(
-                  _isExpanded ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_right_rounded,
+                  _isExpanded
+                      ? Icons.keyboard_arrow_down_rounded
+                      : Icons.keyboard_arrow_right_rounded,
                   size: 20,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
@@ -538,10 +631,18 @@ class _AddTaskBar extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant, width: 0.5)),
+        border: Border(
+          top: BorderSide(color: theme.colorScheme.outlineVariant, width: 0.5),
+        ),
         boxShadow: isDark
             ? null
-            : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, -1))],
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, -1),
+                ),
+              ],
       ),
       child: showField
           ? Row(
@@ -555,7 +656,9 @@ class _AddTaskBar extends StatelessWidget {
                     decoration: InputDecoration(
                       hintText: 'タスクを追加',
                       hintStyle: AppTextStyles.caption1.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.4,
+                        ),
                       ),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
@@ -563,11 +666,18 @@ class _AddTaskBar extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.close_rounded, size: 20, color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 20,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                  ),
                   onPressed: onCancel,
                 ),
                 IconButton(
-                  icon: AppIcons.sendFill(size: 20, color: AppColors.brandPrimary),
+                  icon: AppIcons.sendFill(
+                    size: 20,
+                    color: AppColors.brandPrimary,
+                  ),
                   onPressed: onSubmit,
                 ),
               ],
@@ -579,7 +689,11 @@ class _AddTaskBar extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Row(
                   children: [
-                    Icon(Icons.add_rounded, size: 22, color: AppColors.brandPrimary),
+                    Icon(
+                      Icons.add_rounded,
+                      size: 22,
+                      color: AppColors.brandPrimary,
+                    ),
                     const SizedBox(width: 12),
                     Text(
                       'タスクを追加',
@@ -606,10 +720,26 @@ class _EmptyTaskState extends StatelessWidget {
     final theme = Theme.of(context);
     final emptyColor = theme.colorScheme.onSurface.withValues(alpha: 0.2);
     final (icon, title, subtitle) = switch (filter) {
-      TaskFilter.myDay => (Icon(Icons.wb_sunny_outlined, size: 48, color: emptyColor) as Widget, '今日のタスクはありません', 'タスクを追加して今日の集中ポイントを設定しましょう'),
-      TaskFilter.important => (Icon(Icons.star_outline_rounded, size: 48, color: emptyColor) as Widget, '重要なタスクはありません', 'スターを付けたタスクがここに表示されます'),
-      TaskFilter.planned => (AppIcons.calendar(size: 48, color: emptyColor), '計画済みのタスクはありません', '期限付きのタスクがここに表示されます'),
-      TaskFilter.all => (AppIcons.tickCircle(size: 48, color: emptyColor), 'タスクはありません', '下の「+ タスクを追加」から始めましょう'),
+      TaskFilter.myDay => (
+        Icon(Icons.wb_sunny_outlined, size: 48, color: emptyColor) as Widget,
+        '今日のタスクはありません',
+        'タスクを追加して今日の集中ポイントを設定しましょう',
+      ),
+      TaskFilter.important => (
+        Icon(Icons.star_outline_rounded, size: 48, color: emptyColor) as Widget,
+        '重要なタスクはありません',
+        'スターを付けたタスクがここに表示されます',
+      ),
+      TaskFilter.planned => (
+        AppIcons.calendar(size: 48, color: emptyColor),
+        '計画済みのタスクはありません',
+        '期限付きのタスクがここに表示されます',
+      ),
+      TaskFilter.all => (
+        AppIcons.tickCircle(size: 48, color: emptyColor),
+        'タスクはありません',
+        '下の「+ タスクを追加」から始めましょう',
+      ),
     };
 
     return Center(
@@ -620,11 +750,17 @@ class _EmptyTaskState extends StatelessWidget {
           children: [
             icon,
             const SizedBox(height: AppSpacing.lg),
-            Text(title, style: AppTextStyles.headline, textAlign: TextAlign.center),
+            Text(
+              title,
+              style: AppTextStyles.headline,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               subtitle,
-              style: AppTextStyles.caption2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+              style: AppTextStyles.caption2.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -679,15 +815,19 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
       final todayStr =
           '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
-      await ref.read(taskDetailControllerProvider(widget.task.id).notifier).updateTask(
-        widget.task.copyWith(
-          title: title,
-          note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
-          isMyDay: _isMyDay,
-          myDayDate: _isMyDay ? DateTime.parse(todayStr) : null,
-          dueDate: _dueDate,
-        ),
-      );
+      await ref
+          .read(taskDetailControllerProvider(widget.task.id).notifier)
+          .updateTask(
+            widget.task.copyWith(
+              title: title,
+              note: _noteController.text.trim().isEmpty
+                  ? null
+                  : _noteController.text.trim(),
+              isMyDay: _isMyDay,
+              myDayDate: _isMyDay ? DateTime.parse(todayStr) : null,
+              dueDate: _dueDate,
+            ),
+          );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       CommonSnackBar.error(context, 'エラー: $e');
@@ -726,15 +866,25 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('タスクの詳細'),
-        leading: IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.of(context).pop()),
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _save,
             child: _isSaving
-                ? const SizedBox(width: 16, height: 16, child: LoadingIndicator(size: 16))
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: LoadingIndicator(size: 16),
+                  )
                 : Text(
                     '保存',
-                    style: AppTextStyles.caption1.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
+                    style: AppTextStyles.caption1.copyWith(
+                      color: AppColors.brandPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
           ),
           const SizedBox(width: 4),
@@ -751,7 +901,9 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
               hintText: 'タスク名',
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,
-              hintStyle: AppTextStyles.title3.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.35)),
+              hintStyle: AppTextStyles.title3.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -766,10 +918,14 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                   _StepRow(
                     step: step,
                     onToggle: () => ref
-                        .read(taskDetailControllerProvider(widget.task.id).notifier)
+                        .read(
+                          taskDetailControllerProvider(widget.task.id).notifier,
+                        )
                         .toggleStepComplete(step.id, step.isCompleted),
                     onDelete: () => ref
-                        .read(taskDetailControllerProvider(widget.task.id).notifier)
+                        .read(
+                          taskDetailControllerProvider(widget.task.id).notifier,
+                        )
                         .deleteStep(step.id),
                   ),
               ],
@@ -778,7 +934,11 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
           // ステップ追加
           Row(
             children: [
-              Icon(Icons.add_rounded, size: 18, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
+              Icon(
+                Icons.add_rounded,
+                size: 18,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: TextField(
@@ -788,7 +948,9 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                   decoration: InputDecoration(
                     hintText: 'ステップを追加',
                     hintStyle: AppTextStyles.caption1.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.35,
+                      ),
                     ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
@@ -801,7 +963,13 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
 
           // My Day
           _DetailActionRow(
-            icon: Icon(Icons.wb_sunny_outlined, size: 20, color: _isMyDay ? AppColors.brandPrimary : theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+            icon: Icon(
+              Icons.wb_sunny_outlined,
+              size: 20,
+              color: _isMyDay
+                  ? AppColors.brandPrimary
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
             label: 'My Day に追加',
             isActive: _isMyDay,
             onTap: () => setState(() => _isMyDay = !_isMyDay),
@@ -809,8 +977,15 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
 
           // 期限
           _DetailActionRow(
-            icon: AppIcons.calendar(size: 20, color: _dueDate != null ? AppColors.brandPrimary : theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-            label: _dueDate != null ? '期限: ${DateFormat('M/d').format(_dueDate!)}' : '期限日を追加',
+            icon: AppIcons.calendar(
+              size: 20,
+              color: _dueDate != null
+                  ? AppColors.brandPrimary
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            label: _dueDate != null
+                ? '期限: ${DateFormat('M/d').format(_dueDate!)}'
+                : '期限日を追加',
             isActive: _dueDate != null,
             onTap: _pickDueDate,
             trailing: _dueDate != null
@@ -832,7 +1007,10 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
             children: [
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: AppIcons.doc(size: 20, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                child: AppIcons.doc(
+                  size: 20,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -844,7 +1022,9 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                   decoration: InputDecoration(
                     hintText: 'メモを追加',
                     hintStyle: AppTextStyles.caption1.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.35,
+                      ),
                     ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
@@ -861,7 +1041,11 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
 
 /// ステップ行
 class _StepRow extends StatelessWidget {
-  const _StepRow({required this.step, required this.onToggle, required this.onDelete});
+  const _StepRow({
+    required this.step,
+    required this.onToggle,
+    required this.onDelete,
+  });
 
   final TaskStep step;
   final VoidCallback onToggle;
@@ -882,12 +1066,22 @@ class _StepRow extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: step.isCompleted ? AppColors.brandPrimary : theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                  color: step.isCompleted
+                      ? AppColors.brandPrimary
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.3),
                   width: 1.5,
                 ),
-                color: step.isCompleted ? AppColors.brandPrimary : Colors.transparent,
+                color: step.isCompleted
+                    ? AppColors.brandPrimary
+                    : Colors.transparent,
               ),
-              child: step.isCompleted ? const Icon(Icons.check_rounded, size: 12, color: Colors.white) : null,
+              child: step.isCompleted
+                  ? const Icon(
+                      Icons.check_rounded,
+                      size: 12,
+                      color: Colors.white,
+                    )
+                  : null,
             ),
           ),
           const SizedBox(width: 10),
@@ -895,14 +1089,22 @@ class _StepRow extends StatelessWidget {
             child: Text(
               step.title,
               style: AppTextStyles.caption1.copyWith(
-                decoration: step.isCompleted ? TextDecoration.lineThrough : null,
-                color: step.isCompleted ? theme.colorScheme.onSurface.withValues(alpha: 0.4) : null,
+                decoration: step.isCompleted
+                    ? TextDecoration.lineThrough
+                    : null,
+                color: step.isCompleted
+                    ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
+                    : null,
               ),
             ),
           ),
           GestureDetector(
             onTap: onDelete,
-            child: Icon(Icons.close_rounded, size: 16, color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
+            child: Icon(
+              Icons.close_rounded,
+              size: 16,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+            ),
           ),
         ],
       ),
@@ -941,7 +1143,9 @@ class _DetailActionRow extends StatelessWidget {
               child: Text(
                 label,
                 style: AppTextStyles.caption1.copyWith(
-                  color: isActive ? AppColors.brandPrimary : theme.colorScheme.onSurface,
+                  color: isActive
+                      ? AppColors.brandPrimary
+                      : theme.colorScheme.onSurface,
                 ),
               ),
             ),

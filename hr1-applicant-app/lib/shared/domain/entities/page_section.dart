@@ -66,7 +66,8 @@ class PageSection {
       ),
       title: json['title'] as String? ?? '',
       content: json['content'] as String?,
-      items: (json['items'] as List<dynamic>?)
+      items:
+          (json['items'] as List<dynamic>?)
               ?.map((e) => Map<String, dynamic>.from(e as Map))
               .toList() ??
           [],

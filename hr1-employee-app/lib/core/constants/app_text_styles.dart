@@ -57,7 +57,6 @@ class AppTextStyles {
     fontSize: 17,
     fontWeight: FontWeight.w600,
     height: 1.29,
-    letterSpacing: -0.41,
   );
 
   /// 17pt Regular — Body 1
@@ -65,7 +64,6 @@ class AppTextStyles {
     fontSize: 17,
     fontWeight: FontWeight.w400,
     height: 1.29,
-    letterSpacing: -0.41,
   );
 
   /// 16pt Regular — Callout
@@ -81,7 +79,6 @@ class AppTextStyles {
     fontSize: 15,
     fontWeight: FontWeight.w400,
     height: 1.33,
-    letterSpacing: -0.23,
   );
 
   // ─── Caption ───────────────────────────────────────────────────

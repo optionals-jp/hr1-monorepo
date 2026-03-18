@@ -129,10 +129,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
             final senderResponse = await ref
                 .read(threadChatControllerProvider.notifier)
                 .getSenderProfile(newMsg['sender_id'] as String);
-            final msg = Message.fromJson({
-              ...newMsg,
-              'sender': senderResponse,
-            });
+            final msg = Message.fromJson({...newMsg, 'sender': senderResponse});
             if (mounted) {
               setState(() {
                 if (!_messages.any((m) => m.id == msg.id)) {
@@ -199,37 +196,35 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     _presenceChannel = Supabase.instance.client
         .channel('typing:${widget.thread.id}')
         .onPresenceSync((payload) {
-      if (!mounted) return;
-      final presences = _presenceChannel!.presenceState();
-      bool otherTyping = false;
-      for (final state in presences) {
-        for (final presence in state.presences) {
-          if (presence.payload['user_id'] != _currentUserId &&
-              presence.payload['is_typing'] == true) {
-            otherTyping = true;
-            break;
+          if (!mounted) return;
+          final presences = _presenceChannel!.presenceState();
+          bool otherTyping = false;
+          for (final state in presences) {
+            for (final presence in state.presences) {
+              if (presence.payload['user_id'] != _currentUserId &&
+                  presence.payload['is_typing'] == true) {
+                otherTyping = true;
+                break;
+              }
+            }
+            if (otherTyping) break;
           }
-        }
-        if (otherTyping) break;
-      }
-      setState(() => _otherUserTyping = otherTyping);
-    }).subscribe((status, [error]) async {
-      if (status == RealtimeSubscribeStatus.subscribed) {
-        await _presenceChannel!.track({
-          'user_id': _currentUserId,
-          'is_typing': false,
+          setState(() => _otherUserTyping = otherTyping);
+        })
+        .subscribe((status, [error]) async {
+          if (status == RealtimeSubscribeStatus.subscribed) {
+            await _presenceChannel!.track({
+              'user_id': _currentUserId,
+              'is_typing': false,
+            });
+          }
         });
-      }
-    });
   }
 
   void _onTextChanged() {
     if (_controller.text.isNotEmpty && !_isTyping) {
       _isTyping = true;
-      _presenceChannel?.track({
-        'user_id': _currentUserId,
-        'is_typing': true,
-      });
+      _presenceChannel?.track({'user_id': _currentUserId, 'is_typing': true});
     }
     _typingDebounceTimer?.cancel();
     _typingDebounceTimer = Timer(const Duration(seconds: 2), () {
@@ -262,12 +257,11 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     _controller.clear();
     _isTyping = false;
     _typingDebounceTimer?.cancel();
-    _presenceChannel?.track({
-      'user_id': _currentUserId,
-      'is_typing': false,
-    });
+    _presenceChannel?.track({'user_id': _currentUserId, 'is_typing': false});
     try {
-      await ref.read(threadChatControllerProvider.notifier).sendMessage(
+      await ref
+          .read(threadChatControllerProvider.notifier)
+          .sendMessage(
             threadId: widget.thread.id,
             senderId: _currentUserId,
             content: content,
@@ -301,7 +295,9 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     final messageId = _editingMessageId!;
     _cancelEditing();
     try {
-      await ref.read(threadChatControllerProvider.notifier).editMessage(messageId, content);
+      await ref
+          .read(threadChatControllerProvider.notifier)
+          .editMessage(messageId, content);
     } catch (e) {
       CommonSnackBar.error(context, 'メッセージの編集に失敗しました');
     }
@@ -317,7 +313,9 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     );
     if (!confirmed) return;
     try {
-      await ref.read(threadChatControllerProvider.notifier).deleteMessage(messageId);
+      await ref
+          .read(threadChatControllerProvider.notifier)
+          .deleteMessage(messageId);
     } catch (e) {
       CommonSnackBar.error(context, 'メッセージの削除に失敗しました');
     }
@@ -350,9 +348,15 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.delete_outline,
-                  color: AppColors.error, size: 22),
-              title: Text('削除', style: AppTextStyles.body1.copyWith(color: AppColors.error)),
+              leading: Icon(
+                Icons.delete_outline,
+                color: AppColors.error,
+                size: 22,
+              ),
+              title: Text(
+                '削除',
+                style: AppTextStyles.body1.copyWith(color: AppColors.error),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 _deleteMessage(message.id);
@@ -405,57 +409,57 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
             child: _loading
                 ? const LoadingIndicator()
                 : _messages.isEmpty
-                    ? Center(
-                        child: Text(
-                          'メッセージはまだありません',
-                          style: AppTextStyles.body2.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.45),
-                          ),
+                ? Center(
+                    child: Text(
+                      'メッセージはまだありません',
+                      style: AppTextStyles.body2.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.45,
                         ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                          vertical: AppSpacing.sm,
-                        ),
-                        itemCount: _messages.length + (_loadingMore ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (_loadingMore && index == 0) {
-                            return const Padding(
-                              padding:
-                                  EdgeInsets.symmetric(vertical: AppSpacing.md),
-                              child: Center(
-                                child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: LoadingIndicator(size: 20),
-                                ),
-                              ),
-                            );
-                          }
-                          final msgIndex = _loadingMore ? index - 1 : index;
-                          final msg = _messages[msgIndex];
-                          final isMe = msg.senderId == _currentUserId;
-                          final isEditing = _editingMessageId == msg.id;
-
-                          return GestureDetector(
-                            onLongPress:
-                                isMe ? () => _showMessageActions(msg) : null,
-                            child: isEditing
-                                ? _EditingBubble(
-                                    controller: _editController,
-                                    onSave: _saveEdit,
-                                    onCancel: _cancelEditing,
-                                  )
-                                : _MessageBubble(
-                                    message: msg,
-                                    isMe: isMe,
-                                  ),
-                          );
-                        },
                       ),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.sm,
+                    ),
+                    itemCount: _messages.length + (_loadingMore ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (_loadingMore && index == 0) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: AppSpacing.md,
+                          ),
+                          child: Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: LoadingIndicator(size: 20),
+                            ),
+                          ),
+                        );
+                      }
+                      final msgIndex = _loadingMore ? index - 1 : index;
+                      final msg = _messages[msgIndex];
+                      final isMe = msg.senderId == _currentUserId;
+                      final isEditing = _editingMessageId == msg.id;
+
+                      return GestureDetector(
+                        onLongPress: isMe
+                            ? () => _showMessageActions(msg)
+                            : null,
+                        child: isEditing
+                            ? _EditingBubble(
+                                controller: _editController,
+                                onSave: _saveEdit,
+                                onCancel: _cancelEditing,
+                              )
+                            : _MessageBubble(message: msg, isMe: isMe),
+                      );
+                    },
+                  ),
           ),
 
           // タイピングインジケーター
@@ -497,7 +501,9 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                           padding: const EdgeInsets.only(left: 14, bottom: 10),
                           child: AppIcons.directbox(
                             size: 20,
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.4,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -507,13 +513,17 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                             decoration: InputDecoration(
                               hintText: 'メッセージを入力',
                               hintStyle: AppTextStyles.caption1.copyWith(
-                                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.5,
+                                ),
                               ),
                               filled: false,
                               border: InputBorder.none,
                               enabledBorder: InputBorder.none,
                               focusedBorder: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 10,
+                              ),
                               isDense: true,
                             ),
                             style: AppTextStyles.caption1,
@@ -633,7 +643,8 @@ class _EditingBubble extends StatelessWidget {
                 color: AppColors.brandPrimary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                    color: AppColors.brandPrimary.withValues(alpha: 0.3)),
+                  color: AppColors.brandPrimary.withValues(alpha: 0.3),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -660,15 +671,17 @@ class _EditingBubble extends StatelessWidget {
                         onPressed: onCancel,
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.sm),
+                            horizontal: AppSpacing.sm,
+                          ),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         child: Text(
                           'キャンセル',
                           style: AppTextStyles.caption2.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.6),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.6,
+                            ),
                           ),
                         ),
                       ),
@@ -677,7 +690,8 @@ class _EditingBubble extends StatelessWidget {
                         onPressed: onSave,
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.sm),
+                            horizontal: AppSpacing.sm,
+                          ),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
@@ -706,10 +720,7 @@ class _EditingBubble extends StatelessWidget {
 // =============================================================================
 
 class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({
-    required this.message,
-    required this.isMe,
-  });
+  const _MessageBubble({required this.message, required this.isMe});
 
   final Message message;
   final bool isMe;
@@ -722,10 +733,9 @@ class _MessageBubble extends StatelessWidget {
     final bubbleColor = isMe
         ? AppColors.brandPrimary
         : (theme.brightness == Brightness.dark
-            ? theme.colorScheme.surfaceContainerHighest
-            : const Color(0xFFF0F0F0));
-    final textColor =
-        isMe ? Colors.white : theme.colorScheme.onSurface;
+              ? theme.colorScheme.surfaceContainerHighest
+              : const Color(0xFFF0F0F0));
+    final textColor = isMe ? Colors.white : theme.colorScheme.onSurface;
     final metaColor = isMe
         ? Colors.white.withValues(alpha: 0.7)
         : theme.colorScheme.onSurface.withValues(alpha: 0.45);
@@ -733,8 +743,9 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
       child: Row(
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
@@ -760,18 +771,22 @@ class _MessageBubble extends StatelessWidget {
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment:
-                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isMe
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 if (!isMe)
                   Padding(
                     padding: const EdgeInsets.only(
-                        left: AppSpacing.xs, bottom: 3),
+                      left: AppSpacing.xs,
+                      bottom: 3,
+                    ),
                     child: Text(
                       message.senderName ?? '相手',
                       style: AppTextStyles.caption1.copyWith(
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.55),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.55,
+                        ),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -796,8 +811,7 @@ class _MessageBubble extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding:
-                      const EdgeInsets.only(top: 3, left: 4, right: 4),
+                  padding: const EdgeInsets.only(top: 3, left: 4, right: 4),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -806,7 +820,8 @@ class _MessageBubble extends StatelessWidget {
                           padding: const EdgeInsets.only(right: 4),
                           child: Text(
                             '編集済み',
-                            style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
+                            style: AppTextStyles.caption1.copyWith(
+                              fontWeight: FontWeight.w500,
                               color: metaColor,
                               fontSize: 10,
                             ),
@@ -814,7 +829,8 @@ class _MessageBubble extends StatelessWidget {
                         ),
                       Text(
                         '${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}',
-                        style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
+                        style: AppTextStyles.caption1.copyWith(
+                          fontWeight: FontWeight.w500,
                           color: metaColor,
                         ),
                       ),

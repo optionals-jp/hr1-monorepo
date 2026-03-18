@@ -30,4 +30,7 @@ abstract class MessagesRepository {
 
   /// スレッド内の未読メッセージを既読にする
   Future<void> markAsRead(String threadId, String userId);
+
+  /// 送信者プロフィールを取得
+  Future<Map<String, dynamic>> getSenderProfile(String senderId);
 }

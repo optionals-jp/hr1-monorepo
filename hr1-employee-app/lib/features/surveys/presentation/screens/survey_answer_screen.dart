@@ -51,7 +51,9 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
 
     setState(() => _submitting = true);
     try {
-      await ref.read(surveyRepositoryProvider).submitResponse(surveyId: survey.id, answers: _answers);
+      await ref
+          .read(surveyRepositoryProvider)
+          .submitResponse(surveyId: survey.id, answers: _answers);
       ref.invalidate(completedSurveyIdsProvider);
       CommonSnackBar.show(context, '回答を送信しました');
       if (mounted) {
@@ -70,11 +72,15 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
 
     if (survey.questions.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: Text(survey.title, style: AppTextStyles.headline)),
+        appBar: AppBar(
+          title: Text(survey.title, style: AppTextStyles.headline),
+        ),
         body: Center(
           child: Text(
             '質問が設定されていません',
-            style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary(theme.brightness)),
+            style: AppTextStyles.body2.copyWith(
+              color: AppColors.textSecondary(theme.brightness),
+            ),
           ),
         ),
       );
@@ -88,7 +94,9 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
           if (survey.description != null) ...[
             Text(
               survey.description!,
-              style: AppTextStyles.caption1.copyWith(color: AppColors.textSecondary(theme.brightness)),
+              style: AppTextStyles.caption1.copyWith(
+                color: AppColors.textSecondary(theme.brightness),
+              ),
             ),
             const SizedBox(height: AppSpacing.xl),
           ],
@@ -119,15 +127,28 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
           Row(
             children: [
               Expanded(
-                child: Text(q.label, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600)),
+                child: Text(
+                  q.label,
+                  style: AppTextStyles.body1.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-              if (q.isRequired) Text('必須', style: AppTextStyles.caption2.copyWith(color: AppColors.error)),
+              if (q.isRequired)
+                Text(
+                  '必須',
+                  style: AppTextStyles.caption2.copyWith(
+                    color: AppColors.error,
+                  ),
+                ),
             ],
           ),
           if (q.description != null) ...[
             Text(
               q.description!,
-              style: AppTextStyles.caption2.copyWith(color: AppColors.textSecondary(theme.brightness)),
+              style: AppTextStyles.caption2.copyWith(
+                color: AppColors.textSecondary(theme.brightness),
+              ),
             ),
             const SizedBox(height: 2),
           ],
@@ -167,16 +188,24 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.brandPrimary.withValues(alpha: 0.15) : theme.colorScheme.surface,
+                color: isSelected
+                    ? AppColors.brandPrimary.withValues(alpha: 0.15)
+                    : theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: isSelected ? AppColors.brandPrimary : theme.colorScheme.outlineVariant),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.brandPrimary
+                      : theme.colorScheme.outlineVariant,
+                ),
               ),
               child: Center(
                 child: Text(
                   '$value',
                   style: AppTextStyles.body2.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: isSelected ? AppColors.brandPrimary : AppColors.textSecondary(theme.brightness),
+                    color: isSelected
+                        ? AppColors.brandPrimary
+                        : AppColors.textSecondary(theme.brightness),
                   ),
                 ),
               ),
@@ -190,7 +219,10 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
   Widget _buildTextField(PulseSurveyQuestion q) {
     return TextField(
       maxLines: 3,
-      decoration: const InputDecoration(hintText: '回答を入力', border: OutlineInputBorder()),
+      decoration: const InputDecoration(
+        hintText: '回答を入力',
+        border: OutlineInputBorder(),
+      ),
       onChanged: (v) => setState(() => _answers[q.id] = v),
     );
   }

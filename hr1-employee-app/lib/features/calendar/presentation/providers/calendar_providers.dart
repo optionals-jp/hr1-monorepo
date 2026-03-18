@@ -24,12 +24,15 @@ final focusedMonthProvider = StateProvider<DateTime>((ref) {
 /// カレンダービューモード
 enum CalendarViewMode { agenda, day, threeDay }
 
-final calendarViewModeProvider =
-    StateProvider<CalendarViewMode>((ref) => CalendarViewMode.agenda);
+final calendarViewModeProvider = StateProvider<CalendarViewMode>(
+  (ref) => CalendarViewMode.agenda,
+);
 
 /// 指定日のイベント取得（PageView用）
-final dayEventsProvider =
-    FutureProvider.family<List<CalendarEvent>, DateTime>((ref, date) async {
+final dayEventsProvider = FutureProvider.family<List<CalendarEvent>, DateTime>((
+  ref,
+  date,
+) async {
   final repo = ref.watch(calendarRepositoryProvider);
   final start = DateTime(date.year, date.month, date.day);
   final end = DateTime(date.year, date.month, date.day, 23, 59, 59);
@@ -37,8 +40,10 @@ final dayEventsProvider =
 });
 
 /// 月のイベント日付セット（カレンダードット表示用）
-final eventDatesProvider =
-    FutureProvider.family<Set<DateTime>, DateTime>((ref, month) async {
+final eventDatesProvider = FutureProvider.family<Set<DateTime>, DateTime>((
+  ref,
+  month,
+) async {
   final repo = ref.watch(calendarRepositoryProvider);
   final start = DateTime(month.year, month.month, 1);
   final end = DateTime(month.year, month.month + 1, 0, 23, 59, 59);

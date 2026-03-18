@@ -25,7 +25,10 @@ final completedSurveyIdsProvider = FutureProvider<Set<String>>((ref) async {
 });
 
 /// サーベイID指定取得プロバイダー（ディープリンク用）
-final surveyByIdProvider = FutureProvider.family<PulseSurvey?, String>((ref, surveyId) async {
+final surveyByIdProvider = FutureProvider.family<PulseSurvey?, String>((
+  ref,
+  surveyId,
+) async {
   final repo = ref.watch(surveyRepositoryProvider);
   return repo.getSurveyById(surveyId);
 });

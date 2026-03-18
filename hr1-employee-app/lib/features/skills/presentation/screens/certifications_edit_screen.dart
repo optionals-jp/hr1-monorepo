@@ -33,9 +33,9 @@ class _CertificationsEditScreenState
     // マスタから has_score を判定
     final masters = ref.read(certificationMastersProvider).valueOrNull ?? [];
     final master = masters.cast<CertificationMaster?>().firstWhere(
-          (m) => m!.name == name,
-          orElse: () => null,
-        );
+      (m) => m!.name == name,
+      orElse: () => null,
+    );
     final hasScore = master?.hasScore ?? false;
 
     // スコアが必要な資格はダイアログで入力
@@ -115,9 +115,7 @@ class _CertificationsEditScreenState
         mastersAsync.valueOrNull?.map((m) => m.name).toList() ?? [];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('資格・認定'),
-      ),
+      appBar: AppBar(title: const Text('資格・認定')),
       body: Column(
         children: [
           MasterSearchBar(
@@ -128,8 +126,7 @@ class _CertificationsEditScreenState
           ),
           Expanded(
             child: certsAsync.when(
-              loading: () =>
-                  const LoadingIndicator(),
+              loading: () => const LoadingIndicator(),
               error: (e, _) => Center(child: Text('エラー: $e')),
               data: (certs) {
                 if (certs.isEmpty) {
@@ -139,15 +136,17 @@ class _CertificationsEditScreenState
                       children: [
                         AppIcons.award(
                           size: 48,
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.25),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.25,
+                          ),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         Text(
                           '資格が登録されていません',
                           style: AppTextStyles.caption1.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.45),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.45,
+                            ),
                           ),
                         ),
                       ],
@@ -196,7 +195,8 @@ class _CertTile extends StatelessWidget {
         border: theme.brightness == Brightness.dark
             ? Border.all(
                 color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                width: 0.5)
+                width: 0.5,
+              )
             : null,
         boxShadow: theme.brightness == Brightness.dark
             ? null
@@ -229,8 +229,9 @@ class _CertTile extends StatelessWidget {
                   Text(
                     DateFormat('yyyy/MM').format(certification.acquiredDate!),
                     style: AppTextStyles.caption2.copyWith(
-                      color: theme.colorScheme.onSurface
-                          .withValues(alpha: 0.55),
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.55,
+                      ),
                     ),
                   ),
               ],

@@ -21,9 +21,8 @@ class MessagesScreen extends ConsumerWidget {
 
     return threadsAsync.when(
       loading: () => const LoadingIndicator(),
-      error: (error, _) => Center(
-        child: Text('エラーが発生しました', style: AppTextStyles.body),
-      ),
+      error: (error, _) =>
+          Center(child: Text('エラーが発生しました', style: AppTextStyles.body)),
       data: (threads) {
         if (threads.isEmpty) {
           return const EmptyState(
@@ -64,9 +63,7 @@ class _ThreadTile extends StatelessWidget {
         backgroundColor: AppColors.primaryLight.withValues(alpha: 0.1),
         child: Text(
           initial,
-          style: AppTextStyles.subtitle.copyWith(
-            color: AppColors.primaryLight,
-          ),
+          style: AppTextStyles.subtitle.copyWith(color: AppColors.primaryLight),
         ),
       ),
       title: Row(
@@ -111,8 +108,7 @@ class _ThreadTile extends StatelessWidget {
                       color: hasUnread
                           ? AppColors.textPrimary
                           : AppColors.textSecondary,
-                      fontWeight:
-                          hasUnread ? FontWeight.w500 : FontWeight.w400,
+                      fontWeight: hasUnread ? FontWeight.w500 : FontWeight.w400,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -122,7 +118,9 @@ class _ThreadTile extends StatelessWidget {
                   const SizedBox(width: AppSpacing.sm),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primaryLight,
                       borderRadius: BorderRadius.circular(10),
@@ -141,12 +139,13 @@ class _ThreadTile extends StatelessWidget {
           ],
         ],
       ),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: 4,
+      ),
       onTap: () {
         context.push('/messages/${thread.id}', extra: thread);
       },
     );
   }
-
 }

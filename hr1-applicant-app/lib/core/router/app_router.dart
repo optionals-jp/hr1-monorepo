@@ -5,6 +5,7 @@ import '../../shared/widgets/loading_indicator.dart';
 import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/organization_select_screen.dart';
 import '../../features/auth/presentation/screens/home_screen.dart';
 import '../../features/company/presentation/screens/company_home_screen.dart';
 import '../../features/applications/presentation/screens/applications_screen.dart';
@@ -37,10 +38,15 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String faq = '/faq';
   static const String surveys = '/surveys';
+  static const String organizationSelect = '/organization-select';
 }
 
 /// 認証不要なルート
-const _publicRoutes = [AppRoutes.splash, AppRoutes.login];
+const _publicRoutes = [
+  AppRoutes.splash,
+  AppRoutes.login,
+  AppRoutes.organizationSelect,
+];
 
 /// ルートナビゲーターキー
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -80,6 +86,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const LoginScreen(),
       ),
 
+      /// 企業選択画面（フッターなし）
+      GoRoute(
+        path: AppRoutes.organizationSelect,
+        builder: (context, state) => const OrganizationSelectScreen(),
+      ),
+
       /// 求人一覧画面
       GoRoute(
         path: AppRoutes.jobs,
@@ -87,9 +99,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: ':jobId',
-            builder: (context, state) => JobDetailScreen(
-              jobId: state.pathParameters['jobId']!,
-            ),
+            builder: (context, state) =>
+                JobDetailScreen(jobId: state.pathParameters['jobId']!),
           ),
         ],
       ),

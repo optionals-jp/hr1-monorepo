@@ -48,7 +48,8 @@ class AppUser {
       id: json['id'] as String,
       email: json['email'] as String,
       role: UserRole.values.byName(json['role'] as String),
-      organizations: (json['organizations'] as List<dynamic>?)
+      organizations:
+          (json['organizations'] as List<dynamic>?)
               ?.map((e) => Organization.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],

@@ -20,8 +20,17 @@ hr1-employee-app（Flutter社員アプリ）のコードレビューを実施し
 - **エラーハンドリング**: 適切にエラーが処理されているか（PostgrestException等）
 
 ### クリーンアーキテクチャ
-- **Controller層**: ビジネスロジック（リポジトリ呼び出し、状態更新、データ変換）がController（AsyncNotifier/Notifier）に集約されているか。Screen側に直接リポジトリ呼び出しが残っていないか
+- **Controller層**: ビジネスロジック（リポジトリ呼び出し、状態更新、データ変換）がController（AsyncNotifier/Notifier）に集約されているか。Screen側に直接リポジトリ呼び出しやSupabase直接アクセスが残っていないか
 - **責務分離**: Screen はUIの構築とユーザー操作のハンドリングのみ。ローカルUIステート（TextEditingController、フォーム状態等）以外のビジネスロジックがScreen側にないか
+- **Provider配置**: Provider が画面ファイルではなく presentation/providers/ に配置されているか
+
+### デザイントークン・共通コンポーネント
+- **テキストスタイル**: `TextStyle()` を直接使わず `AppTextStyles` トークンを使用しているか。`copyWith(fontSize:)` でサイズを上書きしていないか
+- **カラー**: セカンダリテキストに `AppColors.textSecondary(theme.brightness)` を使用しているか。`theme.colorScheme.onSurface.withValues(alpha:)` を直接使っていないか
+- **ボタン**: 画面下部のアクションに `CommonButton` を使用しているか。`FilledButton` / `ElevatedButton` を直接使っていないか
+- **ローディング**: `LoadingIndicator` を使用しているか。`CircularProgressIndicator` を直接使っていないか
+- **エラー表示**: `ErrorState` を使用しているか
+- **スケルトン**: ローディング時に `SkeletonContainer` + `SkeletonBone` を使用しているか
 
 ### Flutter / Dart 固有
 - **State管理**: Riverpod の Provider が適切に使われているか

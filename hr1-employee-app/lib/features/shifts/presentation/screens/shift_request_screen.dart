@@ -6,6 +6,8 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../shared/widgets/common_button.dart';
 import '../../../../shared/widgets/common_snackbar.dart';
+import '../../../../shared/widgets/error_state.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/fluent_chip.dart';
 import '../../domain/entities/shift_type.dart';
 import '../controllers/shift_request_controller.dart';
@@ -16,8 +18,7 @@ class ShiftRequestScreen extends ConsumerStatefulWidget {
   const ShiftRequestScreen({super.key});
 
   @override
-  ConsumerState<ShiftRequestScreen> createState() =>
-      _ShiftRequestScreenState();
+  ConsumerState<ShiftRequestScreen> createState() => _ShiftRequestScreenState();
 }
 
 class _ShiftRequestScreenState extends ConsumerState<ShiftRequestScreen> {
@@ -59,7 +60,8 @@ class _ShiftRequestScreenState extends ConsumerState<ShiftRequestScreen> {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -99,11 +101,9 @@ class _ShiftRequestScreenState extends ConsumerState<ShiftRequestScreen> {
   }
 
   Future<void> _submit() async {
-    await ref.read(shiftRequestControllerProvider.notifier).submit(
-          year: _year,
-          month: _month,
-          edits: _edits,
-        );
+    await ref
+        .read(shiftRequestControllerProvider.notifier)
+        .submit(year: _year, month: _month, edits: _edits);
 
     final state = ref.read(shiftRequestControllerProvider);
     if (!mounted) return;
@@ -122,8 +122,9 @@ class _ShiftRequestScreenState extends ConsumerState<ShiftRequestScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final requestsAsync =
-        ref.watch(shiftRequestsProvider((year: _year, month: _month)));
+    final requestsAsync = ref.watch(
+      shiftRequestsProvider((year: _year, month: _month)),
+    );
     final controllerState = ref.watch(shiftRequestControllerProvider);
     final lastDay = DateTime(_year, _month + 1, 0).day;
 
@@ -136,8 +137,11 @@ class _ShiftRequestScreenState extends ConsumerState<ShiftRequestScreen> {
             children: [
               Text('$_year年$_month月', style: AppTextStyles.headline),
               const SizedBox(width: AppSpacing.xs),
-              Icon(Icons.keyboard_arrow_down,
-                  size: 20, color: theme.colorScheme.onSurface),
+              Icon(
+                Icons.keyboard_arrow_down,
+                size: 20,
+                color: theme.colorScheme.onSurface,
+              ),
             ],
           ),
         ),
@@ -152,7 +156,8 @@ class _ShiftRequestScreenState extends ConsumerState<ShiftRequestScreen> {
               if (_hasExistingSubmission)
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.screenHorizontal),
+                    horizontal: AppSpacing.screenHorizontal,
+                  ),
                   child: Container(
                     padding: const EdgeInsets.all(AppSpacing.sm),
                     decoration: BoxDecoration(
@@ -161,12 +166,18 @@ class _ShiftRequestScreenState extends ConsumerState<ShiftRequestScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.check_circle,
-                            size: 16, color: AppColors.success),
+                        const Icon(
+                          Icons.check_circle,
+                          size: 16,
+                          color: AppColors.success,
+                        ),
                         const SizedBox(width: AppSpacing.sm),
-                        Text('提出済み — 再編集して再提出できます',
-                            style: AppTextStyles.caption1
-                                .copyWith(color: AppColors.success)),
+                        Text(
+                          '提出済み — 再編集して再提出できます',
+                          style: AppTextStyles.caption1.copyWith(
+                            color: AppColors.success,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -174,13 +185,18 @@ class _ShiftRequestScreenState extends ConsumerState<ShiftRequestScreen> {
 
               // サマリー
               _ShiftSummaryBar(
-                  year: _year, month: _month, edits: _edits, theme: theme),
+                year: _year,
+                month: _month,
+                edits: _edits,
+                theme: theme,
+              ),
 
               // 日別リスト
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.screenHorizontal),
+                    horizontal: AppSpacing.screenHorizontal,
+                  ),
                   itemCount: lastDay,
                   itemBuilder: (context, index) {
                     final day = index + 1;
@@ -207,19 +223,18 @@ class _ShiftRequestScreenState extends ConsumerState<ShiftRequestScreen> {
                     onPressed: _submit,
                     loading: controllerState.isSubmitting,
                     enabled: !controllerState.isSubmitting,
-                    child:
-                        Text(_hasExistingSubmission ? '再提出' : '提出'),
+                    child: Text(_hasExistingSubmission ? '再提出' : '提出'),
                   ),
                 ),
               ),
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Text('読み込みに失敗しました',
-              style: AppTextStyles.body2
-                  .copyWith(color: theme.colorScheme.error)),
+        loading: () => const LoadingIndicator(),
+        error: (e, _) => ErrorState(
+          onRetry: () => ref.invalidate(
+            shiftRequestsProvider((year: _year, month: _month)),
+          ),
         ),
       ),
     );
@@ -252,8 +267,8 @@ class _ShiftSummaryBar extends StatelessWidget {
 
     for (var d = 1; d <= lastDay; d++) {
       final date = DateTime(year, month, d);
-      final shift = edits[formatDateStr(year, month, d)] ??
-          defaultShiftForDate(date);
+      final shift =
+          edits[formatDateStr(year, month, d)] ?? defaultShiftForDate(date);
 
       switch (shift.type) {
         case ShiftType.work:
@@ -272,11 +287,13 @@ class _ShiftSummaryBar extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.screenHorizontal),
+        horizontal: AppSpacing.screenHorizontal,
+      ),
       child: Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenHorizontal,
-            vertical: AppSpacing.sm),
+          horizontal: AppSpacing.screenHorizontal,
+          vertical: AppSpacing.sm,
+        ),
         decoration: BoxDecoration(
           color: isDark
               ? AppColors.darkSurfaceSecondary
@@ -286,20 +303,23 @@ class _ShiftSummaryBar extends StatelessWidget {
         child: Row(
           children: [
             _SummaryItem(
-                icon: Icons.work_outline,
-                label: '出勤 $workDays日',
-                color: AppColors.success),
+              icon: Icons.work_outline,
+              label: '出勤 $workDays日',
+              color: AppColors.success,
+            ),
             const SizedBox(width: AppSpacing.sm),
             _SummaryItem(
-                icon: Icons.weekend_outlined,
-                label: '休み $offDays日',
-                color: AppColors.textSecondary(theme.brightness)),
+              icon: Icons.weekend_outlined,
+              label: '休み $offDays日',
+              color: AppColors.textSecondary(theme.brightness),
+            ),
             if (leaveDays > 0) ...[
               const SizedBox(width: AppSpacing.sm),
               _SummaryItem(
-                  icon: Icons.event_busy_outlined,
-                  label: '休暇 $leaveDays日',
-                  color: AppColors.brandPrimary),
+                icon: Icons.event_busy_outlined,
+                label: '休暇 $leaveDays日',
+                color: AppColors.brandPrimary,
+              ),
             ],
           ],
         ),
@@ -326,9 +346,13 @@ class _SummaryItem extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: color),
         const SizedBox(width: AppSpacing.xs),
-        Text(label,
-            style: AppTextStyles.body2
-                .copyWith(color: color, fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: AppTextStyles.body2.copyWith(
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
@@ -358,11 +382,16 @@ class _DayShiftTile extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
         border: Border(
-            bottom: BorderSide(
-                color: AppColors.divider(theme.brightness), width: 0.5)),
+          bottom: BorderSide(
+            color: AppColors.divider(theme.brightness),
+            width: 0.5,
+          ),
+        ),
       ),
       child: Row(
         children: [
@@ -375,8 +404,9 @@ class _DayShiftTile extends StatelessWidget {
                 color: isWeekend
                     ? AppColors.error.withValues(alpha: 0.7)
                     : theme.colorScheme.onSurface,
-                fontWeight:
-                    date.weekday == DateTime.sunday ? FontWeight.w600 : null,
+                fontWeight: date.weekday == DateTime.sunday
+                    ? FontWeight.w600
+                    : null,
               ),
             ),
           ),
@@ -398,33 +428,47 @@ class _DayShiftTile extends StatelessWidget {
                       _TimeButton(
                         time: dayShift.startTime ?? '09:00',
                         onTap: () async {
-                          final picked =
-                              await _pickTime(context, dayShift.startTime);
+                          final picked = await _pickTime(
+                            context,
+                            dayShift.startTime,
+                          );
                           if (picked != null) {
-                            onChanged(DayShift(
+                            onChanged(
+                              DayShift(
                                 type: dayShift.type,
                                 startTime: picked,
-                                endTime: dayShift.endTime));
+                                endTime: dayShift.endTime,
+                              ),
+                            );
                           }
                         },
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.xs),
-                        child: Text('~',
-                            style: AppTextStyles.body2.copyWith(
-                                color: theme.colorScheme.onSurface)),
+                          horizontal: AppSpacing.xs,
+                        ),
+                        child: Text(
+                          '~',
+                          style: AppTextStyles.body2.copyWith(
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
                       ),
                       _TimeButton(
                         time: dayShift.endTime ?? '18:00',
                         onTap: () async {
-                          final picked =
-                              await _pickTime(context, dayShift.endTime);
+                          final picked = await _pickTime(
+                            context,
+                            dayShift.endTime,
+                          );
                           if (picked != null) {
-                            onChanged(DayShift(
+                            onChanged(
+                              DayShift(
                                 type: dayShift.type,
                                 startTime: dayShift.startTime,
-                                endTime: picked));
+                                endTime: picked,
+                              ),
+                            );
                           }
                         },
                       ),
@@ -442,7 +486,8 @@ class _DayShiftTile extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -451,23 +496,27 @@ class _DayShiftTile extends StatelessWidget {
             ...ShiftType.values.map((t) {
               final selected = dayShift.type == t;
               return ListTile(
-                leading: Icon(t.icon,
-                    color: selected
-                        ? AppColors.brandPrimary
-                        : AppColors.textSecondary(theme.brightness)),
+                leading: Icon(
+                  t.icon,
+                  color: selected
+                      ? AppColors.brandPrimary
+                      : AppColors.textSecondary(theme.brightness),
+                ),
                 title: Text(t.label, style: AppTextStyles.body1),
                 trailing: selected
                     ? const Icon(Icons.check, color: AppColors.brandPrimary)
                     : null,
                 onTap: () {
                   Navigator.pop(ctx);
-                  onChanged(DayShift(
-                    type: t,
-                    startTime:
-                        t.hasTime ? (dayShift.startTime ?? '09:00') : null,
-                    endTime:
-                        t.hasTime ? (dayShift.endTime ?? '18:00') : null,
-                  ));
+                  onChanged(
+                    DayShift(
+                      type: t,
+                      startTime: t.hasTime
+                          ? (dayShift.startTime ?? '09:00')
+                          : null,
+                      endTime: t.hasTime ? (dayShift.endTime ?? '18:00') : null,
+                    ),
+                  );
                 },
               );
             }),
@@ -480,17 +529,19 @@ class _DayShiftTile extends StatelessWidget {
 
   Future<String?> _pickTime(BuildContext context, String? current) async {
     final parts = (current ?? '09:00').split(':');
-    final initial =
-        TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    final initial = TimeOfDay(
+      hour: int.parse(parts[0]),
+      minute: int.parse(parts[1]),
+    );
 
     final picked = await showTimePicker(
       context: context,
       initialTime: initial,
       builder: (context, child) {
         return MediaQuery(
-            data:
-                MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-            child: child!);
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child!,
+        );
       },
     );
 
@@ -519,13 +570,16 @@ class _TimeButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           border: Border.all(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.2)),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+          ),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
           time,
           style: AppTextStyles.body2.copyWith(
-              color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
+            color: AppColors.brandPrimary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );

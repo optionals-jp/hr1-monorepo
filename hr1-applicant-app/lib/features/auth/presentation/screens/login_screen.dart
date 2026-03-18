@@ -8,6 +8,7 @@ import '../../../../core/result/result.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/common_button.dart';
+import '../../../../shared/widgets/common_snackbar.dart';
 import '../providers/auth_providers.dart';
 
 /// ログイン画面（OTP認証）
@@ -39,28 +40,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final result = await ref.read(authRepositoryProvider).sendOtp(
-            email: _emailController.text.trim(),
-          );
+      final result = await ref
+          .read(authRepositoryProvider)
+          .sendOtp(email: _emailController.text.trim());
 
       if (!mounted) return;
 
       switch (result) {
         case Success():
           setState(() => _otpSent = true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('認証コードを送信しました。メールをご確認ください。'),
-              backgroundColor: AppColors.success,
-            ),
-          );
+          CommonSnackBar.show(context, '認証コードを送信しました。メールをご確認ください。');
         case Failure(message: final message):
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(message),
-              backgroundColor: AppColors.error,
-            ),
-          );
+          CommonSnackBar.error(context, message);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -75,10 +66,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final result = await ref.read(authRepositoryProvider).verifyOtp(
-            email: _emailController.text.trim(),
-            token: otp,
-          );
+      final result = await ref
+          .read(authRepositoryProvider)
+          .verifyOtp(email: _emailController.text.trim(), token: otp);
 
       if (!mounted) return;
 
@@ -87,12 +77,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ref.read(appUserProvider.notifier).setUser(user);
           context.go(AppRoutes.companyHome);
         case Failure(message: final message):
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(message),
-              backgroundColor: AppColors.error,
-            ),
-          );
+          CommonSnackBar.error(context, message);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -134,11 +119,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
                           'HR1',
-                          style: TextStyle(
-                            fontSize: 20,
+                          style: AppTextStyles.heading3.copyWith(
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                           ),
@@ -194,11 +178,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       controller: _otpController,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        letterSpacing: 8,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AppTextStyles.heading2.copyWith(letterSpacing: 8),
                       maxLength: 6,
                       decoration: const InputDecoration(
                         labelText: '認証コード',

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../shared/widgets/error_state.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../domain/entities/attendance_record.dart';
 import '../providers/attendance_providers.dart';
@@ -62,8 +64,9 @@ class _AttendanceDetailScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final records =
-        ref.watch(monthlyRecordsProvider((year: _year, month: _month)));
+    final records = ref.watch(
+      monthlyRecordsProvider((year: _year, month: _month)),
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('勤怠明細')),
@@ -82,12 +85,11 @@ class _AttendanceDetailScreenState
           Expanded(
             child: records.when(
               data: (list) => _buildContent(list, isDark, theme),
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Text('読み込みに失敗しました',
-                    style: AppTextStyles.body2
-                        .copyWith(color: theme.colorScheme.error)),
+              loading: () => const LoadingIndicator(),
+              error: (e, _) => ErrorState(
+                onRetry: () => ref.invalidate(
+                  monthlyRecordsProvider((year: _year, month: _month)),
+                ),
               ),
             ),
           ),
@@ -97,7 +99,10 @@ class _AttendanceDetailScreenState
   }
 
   Widget _buildContent(
-      List<AttendanceRecord> records, bool isDark, ThemeData theme) {
+    List<AttendanceRecord> records,
+    bool isDark,
+    ThemeData theme,
+  ) {
     final summary = _calcSummary(records);
     final days = _buildDayList(records);
 
@@ -114,20 +119,23 @@ class _AttendanceDetailScreenState
         // 日別一覧ヘッダー
         Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-          child: Text('日別明細',
-              style: AppTextStyles.headline
-                  .copyWith(color: theme.colorScheme.onSurface)),
+          child: Text(
+            '日別明細',
+            style: AppTextStyles.headline.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
         ),
 
         // 日別一覧
-        ...days.map((day) => _DayTile(
-              day: day,
-              isDark: isDark,
-              theme: theme,
-              onTap: day.record != null
-                  ? () => _showDayDetail(day, theme)
-                  : null,
-            )),
+        ...days.map(
+          (day) => _DayTile(
+            day: day,
+            isDark: isDark,
+            theme: theme,
+            onTap: day.record != null ? () => _showDayDetail(day, theme) : null,
+          ),
+        ),
       ],
     );
   }
@@ -147,12 +155,14 @@ class _AttendanceDetailScreenState
       final record = recordMap[dateStr];
       final isWeekend =
           date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
-      days.add(_DayData(
-        date: date,
-        dateStr: dateStr,
-        record: record,
-        isWeekend: isWeekend,
-      ));
+      days.add(
+        _DayData(
+          date: date,
+          dateStr: dateStr,
+          record: record,
+          isWeekend: isWeekend,
+        ),
+      );
     }
     return days;
   }
@@ -210,12 +220,18 @@ class _AttendanceDetailScreenState
                 // ヘッダー
                 Row(
                   children: [
-                    Text(dateLabel,
-                        style: AppTextStyles.headline
-                            .copyWith(color: theme.colorScheme.onSurface)),
+                    Text(
+                      dateLabel,
+                      style: AppTextStyles.headline.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
                     const SizedBox(width: AppSpacing.sm),
                     _StatusBadge(
-                        status: record.status, isDark: isDark, small: false),
+                      status: record.status,
+                      isDark: isDark,
+                      small: false,
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -266,10 +282,12 @@ class _AttendanceDetailScreenState
                 ),
                 if (record.note != null && record.note!.isNotEmpty) ...[
                   const Divider(height: AppSpacing.xl),
-                  Text('備考',
-                      style: AppTextStyles.caption1.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.5))),
+                  Text(
+                    '備考',
+                    style: AppTextStyles.caption1.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(record.note!, style: AppTextStyles.body2),
                 ],
@@ -342,18 +360,18 @@ class _MonthSelector extends StatelessWidget {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.screenHorizontal, vertical: AppSpacing.sm),
+        horizontal: AppSpacing.screenHorizontal,
+        vertical: AppSpacing.sm,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            onPressed: onPrev,
-            icon: const Icon(Icons.chevron_left),
-          ),
+          IconButton(onPressed: onPrev, icon: const Icon(Icons.chevron_left)),
           Text(
             '$year年$month月',
-            style: AppTextStyles.headline
-                .copyWith(color: theme.colorScheme.onSurface),
+            style: AppTextStyles.headline.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           IconButton(
             onPressed: isCurrentMonth ? null : onNext,
@@ -521,7 +539,9 @@ class _DayTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.md),
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.md,
+        ),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
@@ -535,19 +555,20 @@ class _DayTile extends StatelessWidget {
             // 日付
             SizedBox(
               width: 64,
-              child: Text(dateLabel,
-                  style: AppTextStyles.body2.copyWith(
-                    color: textColor,
-                    fontWeight: day.date.weekday == DateTime.sunday
-                        ? FontWeight.w600
-                        : null,
-                  )),
+              child: Text(
+                dateLabel,
+                style: AppTextStyles.body2.copyWith(
+                  color: textColor,
+                  fontWeight: day.date.weekday == DateTime.sunday
+                      ? FontWeight.w600
+                      : null,
+                ),
+              ),
             ),
 
             // ステータスバッジ
             if (record != null) ...[
-              _StatusBadge(
-                  status: record.status, isDark: isDark, small: true),
+              _StatusBadge(status: record.status, isDark: isDark, small: true),
               const SizedBox(width: AppSpacing.sm),
             ],
 
@@ -563,8 +584,10 @@ class _DayTile extends StatelessWidget {
                   : Text(
                       day.isWeekend ? '休日' : '-',
                       style: AppTextStyles.body2.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.3)),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.3,
+                        ),
+                      ),
                     ),
             ),
 
@@ -579,9 +602,11 @@ class _DayTile extends StatelessWidget {
 
             // 矢印
             if (record != null)
-              Icon(Icons.chevron_right,
-                  size: 16,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
+              Icon(
+                Icons.chevron_right,
+                size: 16,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+              ),
           ],
         ),
       ),
@@ -665,15 +690,19 @@ class _DetailRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: AppTextStyles.body2.copyWith(
-                  color:
-                      theme.colorScheme.onSurface.withValues(alpha: 0.6))),
-          Text(value,
-              style: AppTextStyles.body2.copyWith(
-                color: valueColor ?? theme.colorScheme.onSurface,
-                fontWeight: FontWeight.w600,
-              )),
+          Text(
+            label,
+            style: AppTextStyles.body2.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+          Text(
+            value,
+            style: AppTextStyles.body2.copyWith(
+              color: valueColor ?? theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );

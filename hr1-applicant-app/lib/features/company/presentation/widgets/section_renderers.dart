@@ -59,7 +59,7 @@ class _MarkdownSection extends StatelessWidget {
       selectable: true,
       styleSheet: MarkdownStyleSheet(
         h2: AppTextStyles.heading3,
-        h3: AppTextStyles.subtitle.copyWith(fontSize: 17),
+        h3: AppTextStyles.subtitle,
         p: AppTextStyles.body.copyWith(height: 1.7),
         listBullet: AppTextStyles.body,
         blockquoteDecoration: BoxDecoration(
@@ -67,10 +67,11 @@ class _MarkdownSection extends StatelessWidget {
             left: BorderSide(color: AppColors.primaryLight, width: 3),
           ),
         ),
-        blockquotePadding:
-            const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 4),
-        blockquote:
-            AppTextStyles.body.copyWith(color: AppColors.primaryLight),
+        blockquotePadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: 4,
+        ),
+        blockquote: AppTextStyles.body.copyWith(color: AppColors.primaryLight),
         strong: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700),
         horizontalRuleDecoration: BoxDecoration(
           border: Border(
@@ -112,10 +113,12 @@ class _JobListSection extends ConsumerWidget {
               borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
             ),
             child: Center(
-              child: Text('現在募集中のポジションはありません',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  )),
+              child: Text(
+                '現在募集中のポジションはありません',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
           );
         }
@@ -132,8 +135,9 @@ class _JobListSection extends ConsumerWidget {
                   foregroundColor: AppColors.primaryLight,
                   side: const BorderSide(color: AppColors.primaryLight),
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppSpacing.buttonRadius),
+                    borderRadius: BorderRadius.circular(
+                      AppSpacing.buttonRadius,
+                    ),
                   ),
                 ),
                 child: const Text('すべての求人を見る'),
@@ -229,7 +233,7 @@ class _BenefitListSection extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Text(icon, style: const TextStyle(fontSize: 18)),
+                Text(icon, style: AppTextStyles.subtitle),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(child: Text(text, style: AppTextStyles.body)),
               ],
@@ -288,8 +292,7 @@ class _ValueListSection extends StatelessWidget {
                   child: Center(
                     child: Text(
                       '${index + 1}',
-                      style: TextStyle(
-                        fontSize: 16,
+                      style: AppTextStyles.subtitle.copyWith(
                         fontWeight: FontWeight.w700,
                         color: color,
                       ),
@@ -303,8 +306,9 @@ class _ValueListSection extends StatelessWidget {
                     children: [
                       Text(
                         item['title'] as String? ?? '',
-                        style: AppTextStyles.body
-                            .copyWith(fontWeight: FontWeight.w600),
+                        style: AppTextStyles.body.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       if (item['description'] != null) ...[
                         const SizedBox(height: AppSpacing.xs),
@@ -357,7 +361,6 @@ class _StatsSection extends StatelessWidget {
                 Text(
                   item['value'] as String? ?? '-',
                   style: AppTextStyles.subtitle.copyWith(
-                    fontSize: 18,
                     color: theme.colorScheme.primary,
                   ),
                 ),
@@ -404,10 +407,12 @@ class _MembersSection extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  backgroundColor: theme.colorScheme.primary.withValues(
+                    alpha: 0.1,
+                  ),
                   child: Text(
                     (item['name'] as String? ?? '?').characters.first,
-                    style: TextStyle(
+                    style: AppTextStyles.body.copyWith(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.w700,
                     ),
@@ -420,8 +425,9 @@ class _MembersSection extends StatelessWidget {
                     children: [
                       Text(
                         item['name'] as String? ?? '',
-                        style: AppTextStyles.body
-                            .copyWith(fontWeight: FontWeight.w600),
+                        style: AppTextStyles.body.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       if (item['role'] != null)
                         Text(
@@ -455,10 +461,13 @@ class _GallerySection extends StatelessWidget {
     final theme = Theme.of(context);
     if (items.isEmpty) {
       return Center(
-          child: Text('画像はまだ登録されていません',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              )));
+        child: Text(
+          '画像はまだ登録されていません',
+          style: AppTextStyles.bodySmall.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
     }
 
     return SizedBox(
@@ -481,8 +490,11 @@ class _GallerySection extends StatelessWidget {
                     child: Container(
                       width: double.infinity,
                       color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                      child: Icon(Icons.image_outlined,
-                          size: 40, color: theme.colorScheme.onSurfaceVariant),
+                      child: Icon(
+                        Icons.image_outlined,
+                        size: 40,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                   if (item['caption'] != null)
@@ -571,8 +583,7 @@ class _FaqTileState extends State<_FaqTile> {
                     child: Center(
                       child: Text(
                         'Q',
-                        style: TextStyle(
-                          fontSize: 13,
+                        style: AppTextStyles.bodySmall.copyWith(
                           fontWeight: FontWeight.w700,
                           color: AppColors.primaryLight,
                         ),
@@ -583,15 +594,18 @@ class _FaqTileState extends State<_FaqTile> {
                   Expanded(
                     child: Text(
                       widget.question,
-                      style: AppTextStyles.body
-                          .copyWith(fontWeight: FontWeight.w600),
+                      style: AppTextStyles.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   AnimatedRotation(
                     turns: _expanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 200),
-                    child: Icon(Icons.expand_more,
-                        color: theme.colorScheme.onSurfaceVariant),
+                    child: Icon(
+                      Icons.expand_more,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),

@@ -198,14 +198,14 @@ class _StatusChip extends StatelessWidget {
   }
 
   Color _getColor(BuildContext context) => switch (application.status) {
-        ApplicationStatus.offered => AppColors.success,
-        ApplicationStatus.rejected => AppColors.error,
-        ApplicationStatus.withdrawn =>
-          Theme.of(context).colorScheme.onSurfaceVariant,
-        ApplicationStatus.active => application.requiresAction
-            ? AppColors.warning
-            : AppColors.primaryLight,
-      };
+    ApplicationStatus.offered => AppColors.success,
+    ApplicationStatus.rejected => AppColors.error,
+    ApplicationStatus.withdrawn => Theme.of(
+      context,
+    ).colorScheme.onSurfaceVariant,
+    ApplicationStatus.active =>
+      application.requiresAction ? AppColors.warning : AppColors.primaryLight,
+  };
 }
 
 String _formatDate(DateTime date) {

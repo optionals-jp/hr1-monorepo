@@ -237,8 +237,7 @@ class SupabaseAttendanceRepository {
     // 所定勤務時間
     final scheduledMinutes = workEnd.difference(workStart).inMinutes;
     // 実勤務時間（休憩除く）
-    final actualMinutes =
-        clockOut.difference(clockIn).inMinutes - breakMinutes;
+    final actualMinutes = clockOut.difference(clockIn).inMinutes - breakMinutes;
     // 残業 = 実勤務 - 所定勤務（負の場合は0）
     final overtime = actualMinutes - scheduledMinutes;
     return overtime > 0 ? overtime : 0;
@@ -253,7 +252,12 @@ class SupabaseAttendanceRepository {
     final nextDate = baseDate.add(const Duration(days: 1));
 
     // 深夜帯1: 当日 22:00〜翌5:00
-    final night1Start = DateTime(baseDate.year, baseDate.month, baseDate.day, 22);
+    final night1Start = DateTime(
+      baseDate.year,
+      baseDate.month,
+      baseDate.day,
+      22,
+    );
     final night1End = DateTime(nextDate.year, nextDate.month, nextDate.day, 5);
 
     int total = _overlapMinutes(clockIn, clockOut, night1Start, night1End);
@@ -261,7 +265,12 @@ class SupabaseAttendanceRepository {
     // 深夜帯2: 出勤が5時前の場合 0:00〜5:00
     if (clockIn.hour < 5) {
       final night2Start = baseDate;
-      final night2End = DateTime(baseDate.year, baseDate.month, baseDate.day, 5);
+      final night2End = DateTime(
+        baseDate.year,
+        baseDate.month,
+        baseDate.day,
+        5,
+      );
       total += _overlapMinutes(clockIn, clockOut, night2Start, night2End);
     }
     return total;
@@ -269,7 +278,11 @@ class SupabaseAttendanceRepository {
 
   /// 2つの時間帯の重複（分）を計算
   int _overlapMinutes(
-      DateTime aStart, DateTime aEnd, DateTime bStart, DateTime bEnd) {
+    DateTime aStart,
+    DateTime aEnd,
+    DateTime bStart,
+    DateTime bEnd,
+  ) {
     final start = aStart.isAfter(bStart) ? aStart : bStart;
     final end = aEnd.isBefore(bEnd) ? aEnd : bEnd;
     if (start.isBefore(end)) {
@@ -326,10 +339,14 @@ class SupabaseAttendanceRepository {
         .limit(1)
         .single();
 
-    final breakStartTime =
-        DateTime.parse(breakStartPunch['punched_at'] as String);
+    final breakStartTime = DateTime.parse(
+      breakStartPunch['punched_at'] as String,
+    );
     // 両方UTCで統一して差分を計算（nowは既にサーバ時刻）
-    final breakDuration = now.toUtc().difference(breakStartTime.toUtc()).inMinutes;
+    final breakDuration = now
+        .toUtc()
+        .difference(breakStartTime.toUtc())
+        .inMinutes;
 
     // 休憩時間を加算
     final currentRecord = await _client

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/skeleton.dart';
 import '../../domain/entities/faq_item.dart';
 import '../providers/faq_providers.dart';
 
@@ -18,9 +18,7 @@ class FaqScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('よくある質問'),
-      ),
+      appBar: AppBar(title: const Text('よくある質問')),
       body: faqsAsync.when(
         data: (faqs) {
           if (faqs.isEmpty) {
@@ -28,15 +26,18 @@ class FaqScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.help_outline_rounded,
-                      size: 48,
-                      color: theme.colorScheme.onSurface
-                          .withValues(alpha: 0.3)),
+                  Icon(
+                    Icons.help_outline_rounded,
+                    size: 48,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                  ),
                   const SizedBox(height: AppSpacing.md),
-                  Text('FAQはまだありません',
-                      style: AppTextStyles.body.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      )),
+                  Text(
+                    'FAQはまだありません',
+                    style: AppTextStyles.body.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
             );
@@ -54,14 +55,11 @@ class FaqScreen extends ConsumerWidget {
             itemBuilder: (context, index) {
               final category = grouped.keys.elementAt(index);
               final items = grouped[category]!;
-              return _FaqCategorySection(
-                category: category,
-                items: items,
-              );
+              return _FaqCategorySection(category: category, items: items);
             },
           );
         },
-        loading: () => const LoadingIndicator(),
+        loading: () => const _FaqSkeleton(),
         error: (e, _) => Center(child: Text('エラー: $e')),
       ),
     );
@@ -69,10 +67,7 @@ class FaqScreen extends ConsumerWidget {
 }
 
 class _FaqCategorySection extends StatelessWidget {
-  const _FaqCategorySection({
-    required this.category,
-    required this.items,
-  });
+  const _FaqCategorySection({required this.category, required this.items});
 
   final String category;
   final List<FaqItem> items;
@@ -97,10 +92,12 @@ class _FaqCategorySection extends StatelessWidget {
             ),
           ),
         ),
-        ...items.map((faq) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: _FaqTile(faq: faq),
-            )),
+        ...items.map(
+          (faq) => Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: _FaqTile(faq: faq),
+          ),
+        ),
       ],
     );
   }
@@ -146,8 +143,7 @@ class _FaqTileState extends State<_FaqTile> {
                     child: Center(
                       child: Text(
                         'Q',
-                        style: TextStyle(
-                          fontSize: 13,
+                        style: AppTextStyles.bodySmall.copyWith(
                           fontWeight: FontWeight.w700,
                           color: AppColors.primaryLight,
                         ),
@@ -158,15 +154,18 @@ class _FaqTileState extends State<_FaqTile> {
                   Expanded(
                     child: Text(
                       widget.faq.question,
-                      style: AppTextStyles.body
-                          .copyWith(fontWeight: FontWeight.w600),
+                      style: AppTextStyles.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   AnimatedRotation(
                     turns: _expanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 200),
-                    child: Icon(Icons.expand_more,
-                        color: theme.colorScheme.onSurfaceVariant),
+                    child: Icon(
+                      Icons.expand_more,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -191,13 +190,12 @@ class _FaqTileState extends State<_FaqTile> {
                   ),
                   h1: AppTextStyles.heading3,
                   h2: AppTextStyles.subtitle,
-                  h3: AppTextStyles.subtitle.copyWith(fontSize: 14),
+                  h3: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
                   listBullet: AppTextStyles.body.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                   code: AppTextStyles.bodySmall.copyWith(
-                    backgroundColor:
-                        theme.colorScheme.surfaceContainerHighest,
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
                   ),
                 ),
                 shrinkWrap: true,
@@ -207,6 +205,69 @@ class _FaqTileState extends State<_FaqTile> {
                 ? CrossFadeState.showSecond
                 : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 200),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// FAQスケルトンローディング — 通常時と同じカードレイアウト
+class _FaqSkeleton extends StatelessWidget {
+  const _FaqSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SkeletonContainer(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(
+                top: AppSpacing.lg,
+                bottom: AppSpacing.sm,
+              ),
+              child: SkeletonBone(width: 60, height: 13),
+            ),
+            for (var i = 0; i < 3; i++) ...[
+              _faqCardBone(i),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+            const Padding(
+              padding: EdgeInsets.only(
+                top: AppSpacing.lg,
+                bottom: AppSpacing.sm,
+              ),
+              child: SkeletonBone(width: 48, height: 13),
+            ),
+            for (var i = 0; i < 2; i++) ...[
+              _faqCardBone(i + 3),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _faqCardBone(int index) {
+    final widths = [0.9, 0.7, 0.55, 0.8, 0.65];
+    final fraction = widths[index % widths.length];
+
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      child: Row(
+        children: [
+          const SkeletonBone(width: 24, height: 24, borderRadius: 6),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: fraction,
+              child: const SkeletonBone(height: 15),
+            ),
           ),
         ],
       ),

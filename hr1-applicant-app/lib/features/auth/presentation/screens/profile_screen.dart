@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_icons.dart';
+import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/grouped_section.dart';
@@ -111,7 +112,12 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(ctx, true),
-                        child: Text('ログアウト', style: TextStyle(color: AppColors.error)),
+                        child: Text(
+                          'ログアウト',
+                          style: AppTextStyles.body.copyWith(
+                            color: AppColors.error,
+                          ),
+                        ),
                       ),
                     ],
                   ),

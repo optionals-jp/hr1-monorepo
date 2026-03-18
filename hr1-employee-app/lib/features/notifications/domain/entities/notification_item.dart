@@ -3,12 +3,42 @@ import '../../../../core/constants/app_colors.dart';
 
 /// 通知の種類
 enum NotificationType {
-  surveyRequest('survey_request', 'サーベイ依頼', Icons.poll_outlined, Color(0xFF8764B8)),
-  taskAssigned('task_assigned', 'タスク割り当て', Icons.task_alt_rounded, AppColors.brandPrimary),
-  recruitmentUpdate('recruitment_update', '採用フロー更新', Icons.work_outline_rounded, AppColors.warning),
-  attendanceReminder('attendance_reminder', '勤怠リマインド', Icons.schedule_rounded, AppColors.brandPrimary),
-  messageReceived('message_received', 'メッセージ受信', Icons.chat_bubble_outline_rounded, AppColors.success),
-  announcement('announcement', 'お知らせ', Icons.campaign_outlined, AppColors.brandPrimary),
+  surveyRequest(
+    'survey_request',
+    'サーベイ依頼',
+    Icons.poll_outlined,
+    Color(0xFF8764B8),
+  ),
+  taskAssigned(
+    'task_assigned',
+    'タスク割り当て',
+    Icons.task_alt_rounded,
+    AppColors.brandPrimary,
+  ),
+  recruitmentUpdate(
+    'recruitment_update',
+    '採用フロー更新',
+    Icons.work_outline_rounded,
+    AppColors.warning,
+  ),
+  attendanceReminder(
+    'attendance_reminder',
+    '勤怠リマインド',
+    Icons.schedule_rounded,
+    AppColors.brandPrimary,
+  ),
+  messageReceived(
+    'message_received',
+    'メッセージ受信',
+    Icons.chat_bubble_outline_rounded,
+    AppColors.success,
+  ),
+  announcement(
+    'announcement',
+    'お知らせ',
+    Icons.campaign_outlined,
+    AppColors.brandPrimary,
+  ),
   general('general', 'その他', Icons.notifications_outlined, AppColors.brandLight);
 
   const NotificationType(this.value, this.label, this.icon, this.color);
@@ -64,7 +94,9 @@ class NotificationItem {
       title: json['title'] as String,
       body: json['body'] as String?,
       isRead: json['is_read'] as bool? ?? false,
-      readAt: json['read_at'] != null ? DateTime.parse(json['read_at'] as String) : null,
+      readAt: json['read_at'] != null
+          ? DateTime.parse(json['read_at'] as String)
+          : null,
       actionUrl: json['action_url'] as String?,
       metadata: json['metadata'] as Map<String, dynamic>?,
       createdAt: DateTime.parse(json['created_at'] as String),

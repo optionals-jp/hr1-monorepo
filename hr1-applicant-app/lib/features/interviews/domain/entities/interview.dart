@@ -51,10 +51,9 @@ class Interview {
   final String? notes;
 
   /// 確定した日時スロット
-  InterviewSlot? get confirmedSlot =>
-      confirmedSlotId != null
-          ? slots.where((s) => s.id == confirmedSlotId).firstOrNull
-          : null;
+  InterviewSlot? get confirmedSlot => confirmedSlotId != null
+      ? slots.where((s) => s.id == confirmedSlotId).firstOrNull
+      : null;
 
   factory Interview.fromJson(Map<String, dynamic> json) {
     return Interview(
@@ -64,9 +63,9 @@ class Interview {
         (s) => s.name == json['status'],
         orElse: () => InterviewStatus.scheduling,
       ),
-      slots: (json['slots'] as List<dynamic>?)
-              ?.map(
-                  (e) => InterviewSlot.fromJson(e as Map<String, dynamic>))
+      slots:
+          (json['slots'] as List<dynamic>?)
+              ?.map((e) => InterviewSlot.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
       confirmedSlotId: json['confirmed_slot_id'] as String?,

@@ -20,26 +20,32 @@ class AppIcons {
   static const String _userFill = 'assets/ic-user-fill.svg';
 
   // ── ナビゲーション ──
-  static Widget home({double size = 24, Color? color}) => _svg(_home, size: size, color: color);
-  static Widget homeFill({double size = 24, Color? color}) => _svg(_homeFill, size: size, color: color);
-  static Widget note({double size = 24, Color? color}) => _svg(_note, size: size, color: color);
-  static Widget noteFill({double size = 24, Color? color}) => _svg(_noteFill, size: size, color: color);
-  static Widget notification({double size = 24, Color? color}) => _svg(_notification, size: size, color: color);
-  static Widget notificationFill({double size = 24, Color? color}) => _svg(_notificationFill, size: size, color: color);
-  static Widget setting({double size = 24, Color? color}) => _svg(_setting, size: size, color: color);
-  static Widget settingFill({double size = 24, Color? color}) => _svg(_settingFill, size: size, color: color);
-  static Widget user({double size = 24, Color? color}) => _svg(_user, size: size, color: color);
-  static Widget userFill({double size = 24, Color? color}) => _svg(_userFill, size: size, color: color);
+  static Widget home({double size = 24, Color? color}) =>
+      _svg(_home, size: size, color: color);
+  static Widget homeFill({double size = 24, Color? color}) =>
+      _svg(_homeFill, size: size, color: color);
+  static Widget note({double size = 24, Color? color}) =>
+      _svg(_note, size: size, color: color);
+  static Widget noteFill({double size = 24, Color? color}) =>
+      _svg(_noteFill, size: size, color: color);
+  static Widget notification({double size = 24, Color? color}) =>
+      _svg(_notification, size: size, color: color);
+  static Widget notificationFill({double size = 24, Color? color}) =>
+      _svg(_notificationFill, size: size, color: color);
+  static Widget setting({double size = 24, Color? color}) =>
+      _svg(_setting, size: size, color: color);
+  static Widget settingFill({double size = 24, Color? color}) =>
+      _svg(_settingFill, size: size, color: color);
+  static Widget user({double size = 24, Color? color}) =>
+      _svg(_user, size: size, color: color);
+  static Widget userFill({double size = 24, Color? color}) =>
+      _svg(_userFill, size: size, color: color);
 
   /// アセットパスからSVGウィジェットを生成（内部ヘルパー）
   ///
   /// [color] 未指定時はテーマの `onSurface` を使用
   /// （ライトモード → 黒系、ダークモード → 白系）
-  static Widget _svg(
-    String assetPath, {
-    double size = 24,
-    Color? color,
-  }) {
+  static Widget _svg(String assetPath, {double size = 24, Color? color}) {
     if (color != null) {
       return SvgPicture.asset(
         assetPath,
@@ -62,11 +68,7 @@ class AppIcons {
   }
 
   /// アセットパスからSVGウィジェットを生成（動的パス用）
-  static Widget svg(
-    String assetPath, {
-    double size = 24,
-    Color? color,
-  }) {
+  static Widget svg(String assetPath, {double size = 24, Color? color}) {
     return _svg(assetPath, size: size, color: color);
   }
 }

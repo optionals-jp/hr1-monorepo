@@ -23,9 +23,7 @@ class Loading {
     if (_isVisible) return;
 
     final overlay = Overlay.of(context);
-    _overlayEntry = OverlayEntry(
-      builder: (context) => const _LoadingOverlay(),
-    );
+    _overlayEntry = OverlayEntry(builder: (context) => const _LoadingOverlay());
     overlay.insert(_overlayEntry!);
     _isVisible = true;
   }

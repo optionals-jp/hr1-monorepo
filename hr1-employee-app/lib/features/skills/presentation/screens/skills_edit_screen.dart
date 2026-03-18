@@ -62,9 +62,7 @@ class _SkillsEditScreenState extends ConsumerState<SkillsEditScreen> {
         mastersAsync.valueOrNull?.map((m) => m.name).toList() ?? [];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('スキル・専門分野'),
-      ),
+      appBar: AppBar(title: const Text('スキル・専門分野')),
       body: Column(
         children: [
           MasterSearchBar(
@@ -75,8 +73,7 @@ class _SkillsEditScreenState extends ConsumerState<SkillsEditScreen> {
           ),
           Expanded(
             child: skillsAsync.when(
-              loading: () =>
-                  const LoadingIndicator(),
+              loading: () => const LoadingIndicator(),
               error: (e, _) => Center(child: Text('エラー: $e')),
               data: (skills) {
                 if (skills.isEmpty) {
@@ -87,15 +84,17 @@ class _SkillsEditScreenState extends ConsumerState<SkillsEditScreen> {
                         Icon(
                           Icons.psychology_outlined,
                           size: 48,
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.25),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.25,
+                          ),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         Text(
                           'スキルが登録されていません',
                           style: AppTextStyles.caption1.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.45),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.45,
+                            ),
                           ),
                         ),
                       ],
@@ -144,7 +143,8 @@ class _SkillTile extends StatelessWidget {
         border: theme.brightness == Brightness.dark
             ? Border.all(
                 color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                width: 0.5)
+                width: 0.5,
+              )
             : null,
         boxShadow: theme.brightness == Brightness.dark
             ? null
@@ -164,9 +164,7 @@ class _SkillTile extends StatelessWidget {
             color: AppColors.brandPrimary.withValues(alpha: 0.7),
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: Text(skill.name, style: AppTextStyles.caption1),
-          ),
+          Expanded(child: Text(skill.name, style: AppTextStyles.caption1)),
           GestureDetector(
             onTap: onDelete,
             child: Icon(

@@ -20,37 +20,43 @@ final mySkillsProvider = FutureProvider<List<EmployeeSkill>>((ref) async {
 });
 
 /// 自分の資格一覧
-final myCertificationsProvider =
-    FutureProvider<List<EmployeeCertification>>((ref) async {
+final myCertificationsProvider = FutureProvider<List<EmployeeCertification>>((
+  ref,
+) async {
   final repo = ref.watch(skillsRepositoryProvider);
   final userId = Supabase.instance.client.auth.currentUser!.id;
   return repo.getCertifications(userId);
 });
 
 /// 指定ユーザーのスキル一覧
-final userSkillsProvider =
-    FutureProvider.family<List<EmployeeSkill>, String>((ref, userId) async {
+final userSkillsProvider = FutureProvider.family<List<EmployeeSkill>, String>((
+  ref,
+  userId,
+) async {
   final repo = ref.watch(skillsRepositoryProvider);
   return repo.getSkills(userId);
 });
 
 /// 指定ユーザーの資格一覧
-final userCertificationsProvider = FutureProvider.family<
-    List<EmployeeCertification>, String>((ref, userId) async {
-  final repo = ref.watch(skillsRepositoryProvider);
-  return repo.getCertifications(userId);
-});
+final userCertificationsProvider =
+    FutureProvider.family<List<EmployeeCertification>, String>((
+      ref,
+      userId,
+    ) async {
+      final repo = ref.watch(skillsRepositoryProvider);
+      return repo.getCertifications(userId);
+    });
 
 /// スキルマスタ一覧
-final skillMastersProvider =
-    FutureProvider<List<SkillMaster>>((ref) async {
+final skillMastersProvider = FutureProvider<List<SkillMaster>>((ref) async {
   final repo = ref.watch(skillsRepositoryProvider);
   return repo.getSkillMasters();
 });
 
 /// 資格マスタ一覧
-final certificationMastersProvider =
-    FutureProvider<List<CertificationMaster>>((ref) async {
+final certificationMastersProvider = FutureProvider<List<CertificationMaster>>((
+  ref,
+) async {
   final repo = ref.watch(skillsRepositoryProvider);
   return repo.getCertificationMasters();
 });

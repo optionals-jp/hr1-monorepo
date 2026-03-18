@@ -36,8 +36,7 @@ class Job {
   final List<JobStep> selectionSteps;
 
   /// 募集中かどうか
-  bool get isOpen =>
-      closingAt == null || closingAt!.isAfter(DateTime.now());
+  bool get isOpen => closingAt == null || closingAt!.isAfter(DateTime.now());
 
   factory Job.fromJson(Map<String, dynamic> json) {
     return Job(
@@ -55,15 +54,17 @@ class Job {
       closingAt: json['closing_at'] != null
           ? DateTime.parse(json['closing_at'] as String)
           : null,
-      sections: (json['sections'] as List<dynamic>?)
-              ?.map(
-                  (e) => PageSection.fromJson(e as Map<String, dynamic>))
+      sections:
+          (json['sections'] as List<dynamic>?)
+              ?.map((e) => PageSection.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
       selectionSteps: () {
-        final raw = (json['selection_steps'] as List<dynamic>?)
-            ?.map((e) => JobStep.fromJson(e as Map<String, dynamic>))
-            .toList() ?? [];
+        final raw =
+            (json['selection_steps'] as List<dynamic>?)
+                ?.map((e) => JobStep.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            [];
         raw.sort((a, b) => a.stepOrder.compareTo(b.stepOrder));
         return raw;
       }(),

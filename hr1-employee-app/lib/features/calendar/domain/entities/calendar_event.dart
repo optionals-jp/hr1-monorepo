@@ -98,8 +98,9 @@ class CalendarEvent {
       isAllDay: isAllDay ?? this.isAllDay,
       location: clearLocation ? null : (location ?? this.location),
       categoryColor: categoryColor ?? this.categoryColor,
-      recurrenceRule:
-          clearRecurrenceRule ? null : (recurrenceRule ?? this.recurrenceRule),
+      recurrenceRule: clearRecurrenceRule
+          ? null
+          : (recurrenceRule ?? this.recurrenceRule),
       reminderMinutes: clearReminderMinutes
           ? null
           : (reminderMinutes ?? this.reminderMinutes),

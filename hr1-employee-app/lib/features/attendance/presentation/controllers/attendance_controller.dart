@@ -8,10 +8,7 @@ class PunchState {
   final String? error;
 
   PunchState copyWith({bool? isLoading, String? error}) {
-    return PunchState(
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
-    );
+    return PunchState(isLoading: isLoading ?? this.isLoading, error: error);
   }
 }
 
@@ -54,8 +51,8 @@ class AttendanceController extends AutoDisposeNotifier<PunchState> {
 
 final attendanceControllerProvider =
     AutoDisposeNotifierProvider<AttendanceController, PunchState>(
-  AttendanceController.new,
-);
+      AttendanceController.new,
+    );
 
 /// 勤怠修正依頼コントローラー
 class CorrectionController extends AutoDisposeNotifier<bool> {
@@ -92,5 +89,5 @@ class CorrectionController extends AutoDisposeNotifier<bool> {
 
 final correctionControllerProvider =
     AutoDisposeNotifierProvider<CorrectionController, bool>(
-  CorrectionController.new,
-);
+      CorrectionController.new,
+    );

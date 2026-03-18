@@ -9,23 +9,23 @@ class AppTheme {
 
   /// ライトモードテーマ
   static ThemeData get light => _build(
-        brightness: Brightness.light,
-        background: AppColors.background,
-        surface: AppColors.surface,
-        textPrimary: AppColors.textPrimary,
-        textSecondary: AppColors.textSecondary,
-        border: AppColors.border,
-      );
+    brightness: Brightness.light,
+    background: AppColors.background,
+    surface: AppColors.surface,
+    textPrimary: AppColors.textPrimary,
+    textSecondary: AppColors.textSecondary,
+    border: AppColors.border,
+  );
 
   /// ダークモードテーマ
   static ThemeData get dark => _build(
-        brightness: Brightness.dark,
-        background: AppColors.darkBackground,
-        surface: AppColors.darkSurface,
-        textPrimary: AppColors.darkTextPrimary,
-        textSecondary: AppColors.darkTextSecondary,
-        border: AppColors.darkBorder,
-      );
+    brightness: Brightness.dark,
+    background: AppColors.darkBackground,
+    surface: AppColors.darkSurface,
+    textPrimary: AppColors.darkTextPrimary,
+    textSecondary: AppColors.darkTextSecondary,
+    border: AppColors.darkBorder,
+  );
 
   static ThemeData _build({
     required Brightness brightness,
@@ -141,10 +141,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-          borderSide: const BorderSide(
-            color: AppColors.primaryLight,
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: AppColors.primaryLight, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.inputRadius),

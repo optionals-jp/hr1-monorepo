@@ -77,15 +77,12 @@ class SupabaseSurveyRepository {
     required Map<String, String> answers,
   }) async {
     final answersList = answers.entries
-        .map((e) => {
-              'question_id': e.key,
-              'value': e.value,
-            })
+        .map((e) => {'question_id': e.key, 'value': e.value})
         .toList();
 
-    await _client.rpc('submit_survey_response', params: {
-      'p_survey_id': surveyId,
-      'p_answers': jsonEncode(answersList),
-    });
+    await _client.rpc(
+      'submit_survey_response',
+      params: {'p_survey_id': surveyId, 'p_answers': jsonEncode(answersList)},
+    );
   }
 }

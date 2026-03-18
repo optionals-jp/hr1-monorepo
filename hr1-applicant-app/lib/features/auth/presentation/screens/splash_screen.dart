@@ -41,7 +41,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       switch (result) {
         case Success(data: final user):
           ref.read(appUserProvider.notifier).setUser(user);
-          context.go(AppRoutes.companyHome);
+          if (!mounted) return;
+          if (user.organizations.isEmpty) {
+            context.go(AppRoutes.organizationSelect);
+          } else {
+            context.go(AppRoutes.companyHome);
+          }
         case Failure():
           // プロフィール取得失敗 → ログインへ
           context.go(AppRoutes.login);
@@ -68,11 +73,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
                   'HR1',
-                  style: TextStyle(
-                    fontSize: 24,
+                  style: AppTextStyles.heading2.copyWith(
                     fontWeight: FontWeight.w800,
                     color: AppColors.primary,
                   ),
@@ -82,9 +86,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             const SizedBox(height: 24),
             Text(
               'HR1',
-              style: AppTextStyles.heading1.copyWith(
-                color: Colors.white,
-              ),
+              style: AppTextStyles.heading1.copyWith(color: Colors.white),
             ),
             const SizedBox(height: 8),
             Text(

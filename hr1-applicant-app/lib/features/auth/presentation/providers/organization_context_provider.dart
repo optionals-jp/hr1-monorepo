@@ -1,13 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/organization.dart';
 import 'auth_providers.dart';
+
+/// 全企業一覧プロバイダー（企業選択画面用）
+final allOrganizationsProvider = FutureProvider.autoDispose<List<Organization>>(
+  (ref) async {
+    final client = Supabase.instance.client;
+    final data = await client.from('organizations').select().order('name');
+    return (data as List).map((e) => Organization.fromJson(e)).toList();
+  },
+);
 
 /// 現在選択中の企業を管理するプロバイダー
 /// 応募者が複数企業にエントリーしている場合、表示対象の企業を切り替える
 final currentOrganizationProvider =
     StateNotifierProvider<CurrentOrganizationNotifier, Organization?>((ref) {
-  return CurrentOrganizationNotifier(ref);
-});
+      return CurrentOrganizationNotifier(ref);
+    });
 
 /// 選択中の企業の状態管理
 class CurrentOrganizationNotifier extends StateNotifier<Organization?> {

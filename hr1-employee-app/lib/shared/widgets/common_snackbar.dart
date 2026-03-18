@@ -14,10 +14,7 @@ class CommonSnackBar {
   /// 成功・情報の SnackBar を表示
   static void show(BuildContext context, String message) {
     if (!context.mounted) return;
-    _showOverlay(
-      context,
-      child: Text(message, style: AppTextStyles.body2),
-    );
+    _showOverlay(context, child: Text(message, style: AppTextStyles.body2));
   }
 
   /// エラーの SnackBar を表示（赤系半透明背景 + アイコン）
@@ -28,7 +25,11 @@ class CommonSnackBar {
       backgroundColor: AppColors.error.withValues(alpha: 0.1),
       child: Row(
         children: [
-          const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 20),
+          const Icon(
+            Icons.error_outline_rounded,
+            color: AppColors.error,
+            size: 20,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -83,7 +84,8 @@ class _AnimatedSnackBar extends StatefulWidget {
   State<_AnimatedSnackBar> createState() => _AnimatedSnackBarState();
 }
 
-class _AnimatedSnackBarState extends State<_AnimatedSnackBar> with TickerProviderStateMixin {
+class _AnimatedSnackBarState extends State<_AnimatedSnackBar>
+    with TickerProviderStateMixin {
   late final AnimationController _enterController;
   late final AnimationController _exitController;
   bool _dismissing = false;
@@ -128,16 +130,16 @@ class _AnimatedSnackBarState extends State<_AnimatedSnackBar> with TickerProvide
     final bottomPadding = MediaQuery.of(context).viewPadding.bottom;
 
     // 表示: 下から上にスライド
-    final enterSlide = Tween<Offset>(
-      begin: const Offset(0, 1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _enterController, curve: Curves.easeOutCubic));
+    final enterSlide =
+        Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(
+          CurvedAnimation(parent: _enterController, curve: Curves.easeOutCubic),
+        );
 
     // 非表示: 下に移動 + フェードアウト
-    final exitSlide = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(0, 0.5),
-    ).animate(CurvedAnimation(parent: _exitController, curve: Curves.easeInCubic));
+    final exitSlide =
+        Tween<Offset>(begin: Offset.zero, end: const Offset(0, 0.5)).animate(
+          CurvedAnimation(parent: _exitController, curve: Curves.easeInCubic),
+        );
 
     final exitFade = Tween<double>(
       begin: 1.0,
@@ -156,21 +158,22 @@ class _AnimatedSnackBarState extends State<_AnimatedSnackBar> with TickerProvide
 
           return FractionalTranslation(
             translation: slide,
-            child: Opacity(
-              opacity: opacity.clamp(0.0, 1.0),
-              child: child,
-            ),
+            child: Opacity(opacity: opacity.clamp(0.0, 1.0), child: child),
           );
         },
         child: Material(
           color: widget.backgroundColor ?? theme.colorScheme.inverseSurface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           elevation: 0,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             child: DefaultTextStyle(
               style: AppTextStyles.body2.copyWith(
-                color: widget.backgroundColor != null ? null : theme.colorScheme.onInverseSurface,
+                color: widget.backgroundColor != null
+                    ? null
+                    : theme.colorScheme.onInverseSurface,
               ),
               child: widget.child,
             ),

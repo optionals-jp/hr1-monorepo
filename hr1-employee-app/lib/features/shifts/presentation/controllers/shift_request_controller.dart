@@ -56,5 +56,5 @@ class ShiftRequestController extends AutoDisposeNotifier<ShiftRequestState> {
 
 final shiftRequestControllerProvider =
     AutoDisposeNotifierProvider<ShiftRequestController, ShiftRequestState>(
-  ShiftRequestController.new,
-);
+      ShiftRequestController.new,
+    );

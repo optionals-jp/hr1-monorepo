@@ -2,75 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/common_button.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../core/router/app_router.dart';
 import '../../domain/entities/application.dart';
 import '../../domain/entities/application_status.dart';
 import '../../domain/entities/application_step.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
+import '../controllers/application_detail_controller.dart';
 import '../providers/applications_providers.dart';
 import '../../../forms/presentation/screens/form_fill_screen.dart';
 import '../../../interviews/presentation/providers/interviews_providers.dart';
 
 /// 応募詳細画面
-class ApplicationDetailScreen extends ConsumerStatefulWidget {
+class ApplicationDetailScreen extends ConsumerWidget {
   const ApplicationDetailScreen({super.key, required this.applicationId});
 
   final String applicationId;
 
   @override
-  ConsumerState<ApplicationDetailScreen> createState() =>
-      _ApplicationDetailScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    // コントローラーを watch して Realtime subscription を開始
+    ref.watch(applicationDetailControllerProvider(applicationId));
 
-class _ApplicationDetailScreenState
-    extends ConsumerState<ApplicationDetailScreen> {
-  RealtimeChannel? _channel;
-  late final SupabaseClient _supabaseClient;
-
-  @override
-  void initState() {
-    super.initState();
-    _supabaseClient = ref.read(supabaseClientProvider);
-    _subscribeToStepChanges();
-  }
-
-  void _subscribeToStepChanges() {
-    _channel = _supabaseClient
-        .channel('application_steps:${widget.applicationId}')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'application_steps',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'application_id',
-            value: widget.applicationId,
-          ),
-          callback: (payload) {
-            ref.invalidate(applicationDetailProvider(widget.applicationId));
-          },
-        )
-        .subscribe();
-  }
-
-  @override
-  void dispose() {
-    if (_channel != null) {
-      _supabaseClient.removeChannel(_channel!);
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final asyncApplication =
-        ref.watch(applicationDetailProvider(widget.applicationId));
+    final asyncApplication = ref.watch(
+      applicationDetailProvider(applicationId),
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('応募詳細')),
@@ -90,8 +50,8 @@ class _ApplicationDetailScreenState
               const Text('エラーが発生しました'),
               const SizedBox(height: AppSpacing.md),
               TextButton(
-                onPressed: () => ref.invalidate(
-                    applicationDetailProvider(widget.applicationId)),
+                onPressed: () =>
+                    ref.invalidate(applicationDetailProvider(applicationId)),
                 child: const Text('再試行'),
               ),
             ],
@@ -107,8 +67,7 @@ class _ApplicationDetailBody extends StatefulWidget {
   final Application application;
 
   @override
-  State<_ApplicationDetailBody> createState() =>
-      _ApplicationDetailBodyState();
+  State<_ApplicationDetailBody> createState() => _ApplicationDetailBodyState();
 }
 
 class _ApplicationDetailBodyState extends State<_ApplicationDetailBody>
@@ -280,9 +239,12 @@ class _InfoRow extends StatelessWidget {
           Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Text(text, style: AppTextStyles.bodySmall.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            )),
+            child: Text(
+              text,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
         ],
       ),
@@ -348,20 +310,24 @@ class _StepTimeline extends ConsumerWidget {
                                 step.label,
                                 style: step.status == StepStatus.inProgress
                                     ? AppTextStyles.body.copyWith(
-                                        fontWeight: FontWeight.w600)
+                                        fontWeight: FontWeight.w600,
+                                      )
                                     : AppTextStyles.body.copyWith(
-                                        color: step.status ==
-                                                StepStatus.completed
+                                        color:
+                                            step.status == StepStatus.completed
                                             ? theme.colorScheme.onSurface
-                                            : theme.colorScheme
-                                                .onSurfaceVariant,
+                                            : theme
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
                                       ),
                               ),
                             ),
                             if (step.stepType == StepType.externalTest)
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 1),
+                                  horizontal: 6,
+                                  vertical: 1,
+                                ),
                                 decoration: BoxDecoration(
                                   color: theme.colorScheme.onSurfaceVariant
                                       .withValues(alpha: 0.1),
@@ -370,8 +336,7 @@ class _StepTimeline extends ConsumerWidget {
                                 child: Text(
                                   '外部',
                                   style: AppTextStyles.caption.copyWith(
-                                    color:
-                                        theme.colorScheme.onSurfaceVariant,
+                                    color: theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ),
@@ -391,9 +356,7 @@ class _StepTimeline extends ConsumerWidget {
                         if (step.stepType == StepType.interview &&
                             step.relatedId != null &&
                             step.status != StepStatus.pending)
-                          _InterviewDateLabel(
-                            interviewId: step.relatedId!,
-                          ),
+                          _InterviewDateLabel(interviewId: step.relatedId!),
                       ],
                     ),
                   ),
@@ -418,9 +381,7 @@ class _StepTimeline extends ConsumerWidget {
 
 /// 面接の確定日時を表示するウィジェット
 class _InterviewDateLabel extends ConsumerWidget {
-  const _InterviewDateLabel({
-    required this.interviewId,
-  });
+  const _InterviewDateLabel({required this.interviewId});
   final String interviewId;
 
   @override
@@ -437,9 +398,7 @@ class _InterviewDateLabel extends ConsumerWidget {
             padding: const EdgeInsets.only(top: 2),
             child: Text(
               '日程調整中',
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.warning,
-              ),
+              style: AppTextStyles.caption.copyWith(color: AppColors.warning),
             ),
           );
         }
@@ -488,8 +447,11 @@ class _StepIndicator extends StatelessWidget {
         child = const Icon(Icons.circle, size: 8, color: Colors.white);
       case StepStatus.skipped:
         bgColor = theme.dividerColor;
-        child = Icon(Icons.remove, size: 14,
-            color: theme.colorScheme.onSurfaceVariant);
+        child = Icon(
+          Icons.remove,
+          size: 14,
+          color: theme.colorScheme.onSurfaceVariant,
+        );
       case StepStatus.pending:
         bgColor = theme.dividerColor;
         child = null;
@@ -498,10 +460,7 @@ class _StepIndicator extends StatelessWidget {
     return Container(
       width: 24,
       height: 24,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: bgColor,
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: bgColor),
       child: child,
     );
   }
@@ -525,20 +484,9 @@ class _ActionSection extends StatelessWidget {
       children: actionSteps.map((step) {
         return Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.md),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => _navigateToStep(context, application, step),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryLight,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-                ),
-              ),
-              child: Text(_actionLabel(step)),
-            ),
+          child: CommonButton(
+            onPressed: () => _navigateToStep(context, application, step),
+            child: Text(_actionLabel(step)),
           ),
         );
       }).toList(),
@@ -554,7 +502,10 @@ class _ActionSection extends StatelessWidget {
   }
 
   void _navigateToStep(
-      BuildContext context, Application application, ApplicationStep step) {
+    BuildContext context,
+    Application application,
+    ApplicationStep step,
+  ) {
     if (step.relatedId == null) return;
 
     final basePath = '${AppRoutes.applications}/${application.id}';
@@ -571,8 +522,7 @@ class _ActionSection extends StatelessWidget {
           ),
         );
       case StepType.interview:
-        context.push('$basePath/interview/${step.relatedId}',
-            extra: step.id);
+        context.push('$basePath/interview/${step.relatedId}', extra: step.id);
       default:
         break;
     }
@@ -590,9 +540,7 @@ class _HistoryTab extends StatelessWidget {
     final events = _buildHistoryEvents(application);
 
     if (events.isEmpty) {
-      return Center(
-        child: Text('履歴がありません', style: AppTextStyles.body),
-      );
+      return Center(child: Text('履歴がありません', style: AppTextStyles.body));
     }
 
     return ListView.separated(
@@ -622,13 +570,19 @@ class _HistoryTab extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(event.title, style: AppTextStyles.body.copyWith(
-                      fontWeight: FontWeight.w600,
-                    )),
+                    Text(
+                      event.title,
+                      style: AppTextStyles.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(event.subtitle, style: AppTextStyles.bodySmall.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    )),
+                    Text(
+                      event.subtitle,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -650,44 +604,53 @@ class _HistoryTab extends StatelessWidget {
     final events = <_HistoryEvent>[];
 
     // 応募イベント
-    events.add(_HistoryEvent(
-      title: '応募しました',
-      subtitle: application.job?.title ?? '求人',
-      dateTime: application.appliedAt,
-      icon: Icons.send,
-      color: AppColors.primaryLight,
-    ));
+    events.add(
+      _HistoryEvent(
+        title: '応募しました',
+        subtitle: application.job?.title ?? '求人',
+        dateTime: application.appliedAt,
+        icon: Icons.send,
+        color: AppColors.primaryLight,
+      ),
+    );
 
     // 各ステップのイベント
     for (final step in application.steps) {
       if (step.startedAt != null) {
-        events.add(_HistoryEvent(
-          title: '${step.label} - 開始',
-          subtitle: _stepTypeLabel(step.stepType),
-          dateTime: step.startedAt!,
-          icon: Icons.play_circle_outline,
-          color: AppColors.primaryLight,
-        ));
+        events.add(
+          _HistoryEvent(
+            title: '${step.label} - 開始',
+            subtitle: _stepTypeLabel(step.stepType),
+            dateTime: step.startedAt!,
+            icon: Icons.play_circle_outline,
+            color: AppColors.primaryLight,
+          ),
+        );
       }
 
       if (step.status == StepStatus.completed && step.completedAt != null) {
-        events.add(_HistoryEvent(
-          title: '${step.label} - 完了',
-          subtitle: _stepTypeLabel(step.stepType),
-          dateTime: step.completedAt!,
-          icon: Icons.check_circle_outline,
-          color: AppColors.success,
-        ));
+        events.add(
+          _HistoryEvent(
+            title: '${step.label} - 完了',
+            subtitle: _stepTypeLabel(step.stepType),
+            dateTime: step.completedAt!,
+            icon: Icons.check_circle_outline,
+            color: AppColors.success,
+          ),
+        );
       }
 
       if (step.status == StepStatus.skipped) {
-        events.add(_HistoryEvent(
-          title: '${step.label} - スキップ',
-          subtitle: _stepTypeLabel(step.stepType),
-          dateTime: step.completedAt ?? step.startedAt ?? application.appliedAt,
-          icon: Icons.skip_next,
-          color: Colors.grey,
-        ));
+        events.add(
+          _HistoryEvent(
+            title: '${step.label} - スキップ',
+            subtitle: _stepTypeLabel(step.stepType),
+            dateTime:
+                step.completedAt ?? step.startedAt ?? application.appliedAt,
+            icon: Icons.skip_next,
+            color: Colors.grey,
+          ),
+        );
       }
     }
 
@@ -731,12 +694,12 @@ Color _applicationColor(Application application, BuildContext context) {
   return switch (application.status) {
     ApplicationStatus.offered => AppColors.success,
     ApplicationStatus.rejected => AppColors.error,
-    ApplicationStatus.withdrawn =>
-      Theme.of(context).colorScheme.onSurfaceVariant,
+    ApplicationStatus.withdrawn => Theme.of(
+      context,
+    ).colorScheme.onSurfaceVariant,
     ApplicationStatus.active => () {
-        if (application.requiresAction) return AppColors.warning;
-        return AppColors.primaryLight;
-      }(),
+      if (application.requiresAction) return AppColors.warning;
+      return AppColors.primaryLight;
+    }(),
   };
 }
-

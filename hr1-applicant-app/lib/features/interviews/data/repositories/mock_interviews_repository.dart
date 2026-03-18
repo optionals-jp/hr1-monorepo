@@ -5,6 +5,14 @@ import '../../domain/repositories/interviews_repository.dart';
 /// InterviewsRepository のモック実装
 class MockInterviewsRepository implements InterviewsRepository {
   @override
+  Future<void> confirmSlot({
+    required String slotId,
+    required String applicationId,
+  }) async {
+    // モック: 何もしない
+  }
+
+  @override
   Future<Interview?> getInterview(String interviewId) async {
     return _mockInterviews.where((i) => i.id == interviewId).firstOrNull;
   }

@@ -6,6 +6,7 @@ import '../../core/constants/app_text_styles.dart';
 import '../../features/auth/presentation/providers/organization_context_provider.dart';
 import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/auth/domain/entities/organization.dart';
+import 'org_icon.dart';
 
 /// 企業切り替えウィジェット（AppBar用）
 /// 応募者が複数企業にエントリーしている場合にのみ表示される
@@ -29,7 +30,7 @@ class OrganizationSwitcher extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _OrganizationAvatar(organization: currentOrg),
+          OrgIcon(initial: (currentOrg?.name ?? '?').substring(0, 1), size: 32),
           const SizedBox(width: AppSpacing.sm),
           Flexible(
             child: Column(
@@ -126,7 +127,7 @@ class _OrganizationLabel extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _OrganizationAvatar(organization: organization),
+        OrgIcon(initial: organization.name.substring(0, 1), size: 32),
         const SizedBox(width: AppSpacing.sm),
         Flexible(
           child: Text(
@@ -136,31 +137,6 @@ class _OrganizationLabel extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// 企業アバター（ロゴまたはイニシャル）
-class _OrganizationAvatar extends StatelessWidget {
-  const _OrganizationAvatar({required this.organization});
-
-  final Organization? organization;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return CircleAvatar(
-      radius: 16,
-      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-      child: Text(
-        organization?.name.isNotEmpty == true
-            ? organization!.name.substring(0, 1)
-            : '?',
-        style: AppTextStyles.label.copyWith(
-          color: theme.colorScheme.primary,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
     );
   }
 }
@@ -181,17 +157,13 @@ class _OrganizationListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ListTile(
-      leading: CircleAvatar(
-        radius: 20,
-        backgroundColor: isSelected
+      leading: OrgIcon(
+        initial: organization.name.substring(0, 1),
+        size: 40,
+        borderRadius: 10,
+        color: isSelected
             ? theme.colorScheme.primary
-            : theme.colorScheme.primary.withValues(alpha: 0.1),
-        child: Text(
-          organization.name.substring(0, 1),
-          style: AppTextStyles.subtitle.copyWith(
-            color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
-          ),
-        ),
+            : theme.colorScheme.primary.withValues(alpha: 0.3),
       ),
       title: Text(
         organization.name,
@@ -200,9 +172,12 @@ class _OrganizationListTile extends StatelessWidget {
         ),
       ),
       subtitle: organization.industry != null
-          ? Text(organization.industry!, style: AppTextStyles.caption.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ))
+          ? Text(
+              organization.industry!,
+              style: AppTextStyles.caption.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
           : null,
       trailing: isSelected
           ? Icon(Icons.check_circle, color: theme.colorScheme.primary)

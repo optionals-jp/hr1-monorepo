@@ -10,8 +10,7 @@ final taskRepositoryProvider = Provider<TaskRepository>((ref) {
 });
 
 /// 現在のフィルタ
-final taskFilterProvider =
-    StateProvider<TaskFilter>((ref) => TaskFilter.myDay);
+final taskFilterProvider = StateProvider<TaskFilter>((ref) => TaskFilter.myDay);
 
 /// My Day タスク
 final myDayTasksProvider = FutureProvider<List<Task>>((ref) async {
@@ -59,15 +58,19 @@ final filteredTasksProvider = FutureProvider<List<Task>>((ref) async {
 });
 
 /// タスク詳細
-final taskDetailProvider =
-    FutureProvider.family<Task?, String>((ref, id) async {
+final taskDetailProvider = FutureProvider.family<Task?, String>((
+  ref,
+  id,
+) async {
   final repo = ref.watch(taskRepositoryProvider);
   return repo.getTask(id);
 });
 
 /// タスクステップ
-final taskStepsProvider =
-    FutureProvider.family<List<TaskStep>, String>((ref, taskId) async {
+final taskStepsProvider = FutureProvider.family<List<TaskStep>, String>((
+  ref,
+  taskId,
+) async {
   final repo = ref.watch(taskRepositoryProvider);
   return repo.getSteps(taskId);
 });

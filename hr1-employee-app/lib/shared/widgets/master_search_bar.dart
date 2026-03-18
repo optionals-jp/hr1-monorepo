@@ -56,7 +56,9 @@ class _MasterSearchBarState extends State<MasterSearchBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenHorizontal,
+      ),
       child: Row(
         children: [
           Expanded(
@@ -65,7 +67,9 @@ class _MasterSearchBarState extends State<MasterSearchBar> {
               optionsBuilder: (textEditingValue) {
                 if (textEditingValue.text.isEmpty) return const [];
                 final query = textEditingValue.text.toLowerCase();
-                return widget.masterNames.where((name) => name.toLowerCase().contains(query));
+                return widget.masterNames.where(
+                  (name) => name.toLowerCase().contains(query),
+                );
               },
               onSelected: (name) => _handleAdd(name),
               fieldViewBuilder: (ctx, controller, focusNode, onSubmitted) {
@@ -98,8 +102,14 @@ class _MasterSearchBarState extends State<MasterSearchBar> {
                           return InkWell(
                             onTap: () => onSelected(option),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              child: Text(option, style: AppTextStyles.caption1),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              child: Text(
+                                option,
+                                style: AppTextStyles.caption1,
+                              ),
                             ),
                           );
                         },
@@ -116,7 +126,10 @@ class _MasterSearchBarState extends State<MasterSearchBar> {
             height: 40,
             child: IconButton(
               onPressed: widget.isAdding ? null : () => _handleAdd(),
-              style: IconButton.styleFrom(backgroundColor: AppColors.brandPrimary, foregroundColor: Colors.white),
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.brandPrimary,
+                foregroundColor: Colors.white,
+              ),
               icon: widget.isAdding
                   ? const SizedBox(
                       width: 18,

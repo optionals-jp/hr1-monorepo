@@ -1,47 +1,38 @@
+import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
+import '../../core/constants/app_colors.dart';
 
-/// 共通ローディングインジケーター（インライン表示用）
+/// 共通ローディングインジケーター
 ///
-/// 画面内にローディングを埋め込む場合に使用。
-/// 全画面オーバーレイには [Loading.show()] を使用してください。
+/// - iOS: CupertinoActivityIndicator
+/// - Android: CircularProgressIndicator（brandPrimary）
+///
+/// ```dart
+/// // デフォルト（28px）
+/// LoadingIndicator()
+///
+/// // インライン（ボタン内、リスト末尾等）
+/// LoadingIndicator(size: 20)
+/// ```
 class LoadingIndicator extends StatelessWidget {
-  const LoadingIndicator({super.key, this.size, this.width = 120.0});
+  const LoadingIndicator({super.key, this.size = 20});
 
-  /// インライン用の小さいサイズ（指定時は CircularProgressIndicator を使用）
-  final double? size;
-
-  /// Lottie アニメーションの幅（高さはアスペクト比から自動計算）
-  final double width;
-
-  /// Lottie アニメーションファイルのパス
-  static const String _lottieAsset = 'assets/animations/loading.json';
+  final double size;
 
   @override
   Widget build(BuildContext context) {
-    // size が指定された場合はインライン用の小さいインジケーター
-    if (size != null) {
-      return Center(
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: const CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
-    }
-
     return Center(
-      child: Lottie.asset(
-        _lottieAsset,
-        width: width,
-        errorBuilder: (context, error, stackTrace) {
-          return const SizedBox(
-            width: 32,
-            height: 32,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          );
-        },
-      ),
+      child: Platform.isIOS
+          ? CupertinoActivityIndicator(radius: size / 2)
+          : SizedBox(
+              width: size,
+              height: size,
+              child: CircularProgressIndicator(
+                strokeWidth: 1,
+                color: AppColors.brandPrimary,
+              ),
+            ),
     );
   }
 }

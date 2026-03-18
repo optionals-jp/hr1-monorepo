@@ -61,7 +61,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Stream<bool> watchAuthState() {
     return _datasource.watchAuthState().map(
-          (authState) => authState.session != null,
-        );
+      (authState) => authState.session != null,
+    );
   }
 }

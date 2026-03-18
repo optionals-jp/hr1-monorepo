@@ -69,8 +69,11 @@ class AuthRemoteDatasource {
         .eq('user_id', userId);
 
     final orgs = (userOrgs as List)
-        .map((row) => Organization.fromJson(
-            Map<String, dynamic>.from(row['organizations'])))
+        .map(
+          (row) => Organization.fromJson(
+            Map<String, dynamic>.from(row['organizations']),
+          ),
+        )
         .toList();
 
     return AppUser(

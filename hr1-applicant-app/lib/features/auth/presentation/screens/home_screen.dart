@@ -31,7 +31,8 @@ class HomeScreen extends ConsumerWidget {
             ? [
                 IconButton(
                   icon: AppIcons.notification(
-                      color: Theme.of(context).appBarTheme.foregroundColor),
+                    color: Theme.of(context).appBarTheme.foregroundColor,
+                  ),
                   onPressed: () {
                     // TODO: 通知画面へ遷移
                   },
@@ -40,45 +41,47 @@ class HomeScreen extends ConsumerWidget {
             : null,
       ),
       body: navigationShell,
-      bottomNavigationBar: Builder(builder: (context) {
-        final navTheme = Theme.of(context).bottomNavigationBarTheme;
-        final selectedColor = navTheme.selectedItemColor!;
-        final unselectedColor = navTheme.unselectedItemColor!;
-        return BottomNavigationBar(
-          currentIndex: navigationShell.currentIndex,
-          onTap: (index) {
-            navigationShell.goBranch(
-              index,
-              initialLocation: index == navigationShell.currentIndex,
-            );
-          },
-          selectedFontSize: 11,
-          unselectedFontSize: 11,
-          iconSize: 24,
-          items: [
-            BottomNavigationBarItem(
-              icon: AppIcons.home(color: unselectedColor),
-              activeIcon: AppIcons.homeFill(color: selectedColor),
-              label: 'ホーム',
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.assignment_outlined),
-              activeIcon: const Icon(Icons.assignment),
-              label: '応募状況',
-            ),
-            BottomNavigationBarItem(
-              icon: AppIcons.note(color: unselectedColor),
-              activeIcon: AppIcons.noteFill(color: selectedColor),
-              label: 'メッセージ',
-            ),
-            BottomNavigationBarItem(
-              icon: AppIcons.user(color: unselectedColor),
-              activeIcon: AppIcons.userFill(color: selectedColor),
-              label: 'マイページ',
-            ),
-          ],
-        );
-      }),
+      bottomNavigationBar: Builder(
+        builder: (context) {
+          final navTheme = Theme.of(context).bottomNavigationBarTheme;
+          final selectedColor = navTheme.selectedItemColor!;
+          final unselectedColor = navTheme.unselectedItemColor!;
+          return BottomNavigationBar(
+            currentIndex: navigationShell.currentIndex,
+            onTap: (index) {
+              navigationShell.goBranch(
+                index,
+                initialLocation: index == navigationShell.currentIndex,
+              );
+            },
+            selectedFontSize: 11,
+            unselectedFontSize: 11,
+            iconSize: 24,
+            items: [
+              BottomNavigationBarItem(
+                icon: AppIcons.home(color: unselectedColor),
+                activeIcon: AppIcons.homeFill(color: selectedColor),
+                label: 'ホーム',
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.assignment_outlined),
+                activeIcon: const Icon(Icons.assignment),
+                label: '応募状況',
+              ),
+              BottomNavigationBarItem(
+                icon: AppIcons.note(color: unselectedColor),
+                activeIcon: AppIcons.noteFill(color: selectedColor),
+                label: 'メッセージ',
+              ),
+              BottomNavigationBarItem(
+                icon: AppIcons.user(color: unselectedColor),
+                activeIcon: AppIcons.userFill(color: selectedColor),
+                label: 'マイページ',
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

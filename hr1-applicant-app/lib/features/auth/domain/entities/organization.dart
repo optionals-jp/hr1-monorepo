@@ -64,11 +64,13 @@ class Organization {
       foundedYear: json['founded_year'] as int?,
       location: json['location'] as String?,
       websiteUrl: json['website_url'] as String?,
-      benefits: (json['benefits'] as List<dynamic>?)
+      benefits:
+          (json['benefits'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [],
-      culture: (json['culture'] as List<dynamic>?)
+      culture:
+          (json['culture'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [],

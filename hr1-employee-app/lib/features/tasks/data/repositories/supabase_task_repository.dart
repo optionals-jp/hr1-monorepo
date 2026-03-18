@@ -22,10 +22,7 @@ class SupabaseTaskRepository implements TaskRepository {
 
   @override
   Future<List<Task>> getTasks({bool includeCompleted = false}) async {
-    var query = _client
-        .from('employee_tasks')
-        .select()
-        .eq('user_id', _userId);
+    var query = _client.from('employee_tasks').select().eq('user_id', _userId);
 
     if (!includeCompleted) {
       query = query.eq('is_completed', false);
@@ -137,17 +134,23 @@ class SupabaseTaskRepository implements TaskRepository {
 
   @override
   Future<void> toggleComplete(String id, bool isCompleted) async {
-    await _client.from('employee_tasks').update({
-      'is_completed': isCompleted,
-      'completed_at': isCompleted ? DateTime.now().toIso8601String() : null,
-    }).eq('id', id).eq('user_id', _userId);
+    await _client
+        .from('employee_tasks')
+        .update({
+          'is_completed': isCompleted,
+          'completed_at': isCompleted ? DateTime.now().toIso8601String() : null,
+        })
+        .eq('id', id)
+        .eq('user_id', _userId);
   }
 
   @override
   Future<void> toggleImportant(String id, bool isImportant) async {
-    await _client.from('employee_tasks').update({
-      'is_important': isImportant,
-    }).eq('id', id).eq('user_id', _userId);
+    await _client
+        .from('employee_tasks')
+        .update({'is_important': isImportant})
+        .eq('id', id)
+        .eq('user_id', _userId);
   }
 
   @override
@@ -156,10 +159,14 @@ class SupabaseTaskRepository implements TaskRepository {
     final todayStr =
         '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
-    await _client.from('employee_tasks').update({
-      'is_my_day': isMyDay,
-      'my_day_date': isMyDay ? todayStr : null,
-    }).eq('id', id).eq('user_id', _userId);
+    await _client
+        .from('employee_tasks')
+        .update({
+          'is_my_day': isMyDay,
+          'my_day_date': isMyDay ? todayStr : null,
+        })
+        .eq('id', id)
+        .eq('user_id', _userId);
   }
 
   @override
@@ -187,11 +194,14 @@ class SupabaseTaskRepository implements TaskRepository {
 
   @override
   Future<void> updateStep(TaskStep step) async {
-    await _client.from('employee_task_steps').update({
-      'title': step.title,
-      'is_completed': step.isCompleted,
-      'sort_order': step.sortOrder,
-    }).eq('id', step.id);
+    await _client
+        .from('employee_task_steps')
+        .update({
+          'title': step.title,
+          'is_completed': step.isCompleted,
+          'sort_order': step.sortOrder,
+        })
+        .eq('id', step.id);
   }
 
   @override
@@ -201,8 +211,9 @@ class SupabaseTaskRepository implements TaskRepository {
 
   @override
   Future<void> toggleStepComplete(String id, bool isCompleted) async {
-    await _client.from('employee_task_steps').update({
-      'is_completed': isCompleted,
-    }).eq('id', id);
+    await _client
+        .from('employee_task_steps')
+        .update({'is_completed': isCompleted})
+        .eq('id', id);
   }
 }

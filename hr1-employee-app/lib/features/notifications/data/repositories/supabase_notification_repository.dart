@@ -10,7 +10,10 @@ class SupabaseNotificationRepository {
   String get _userId => _client.auth.currentUser!.id;
 
   /// 通知一覧を取得（ページネーション対応）
-  Future<List<NotificationItem>> getNotifications({int limit = 30, int offset = 0}) async {
+  Future<List<NotificationItem>> getNotifications({
+    int limit = 30,
+    int offset = 0,
+  }) async {
     final data = await _client
         .from('notifications')
         .select()
@@ -47,7 +50,10 @@ class SupabaseNotificationRepository {
   Future<void> markAsRead(String id) async {
     await _client
         .from('notifications')
-        .update({'is_read': true, 'read_at': DateTime.now().toUtc().toIso8601String()})
+        .update({
+          'is_read': true,
+          'read_at': DateTime.now().toUtc().toIso8601String(),
+        })
         .eq('id', id)
         .eq('user_id', _userId);
   }
@@ -59,6 +65,10 @@ class SupabaseNotificationRepository {
 
   /// 通知を削除する
   Future<void> deleteNotification(String id) async {
-    await _client.from('notifications').delete().eq('id', id).eq('user_id', _userId);
+    await _client
+        .from('notifications')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', _userId);
   }
 }

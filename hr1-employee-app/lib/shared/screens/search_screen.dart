@@ -24,11 +24,7 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
-  final _recentSearches = <String>[
-    '有給休暇',
-    '勤怠修正',
-    '社内規定',
-  ];
+  final _recentSearches = <String>['有給休暇', '勤怠修正', '社内規定'];
 
   @override
   void initState() {
@@ -112,13 +108,74 @@ class _SearchScreenState extends State<SearchScreen> {
   /// Fluent 2 iOS Avatar Carousel — よく連絡する人の横スクロール
   Widget _buildAvatarCarousel(ThemeData theme) {
     final contacts = [
-      const EmployeeContact(id: '1', name: '田中 太郎', initial: '田', position: '部長', department: '営業部', color: Color(0xFF0F6CBD), email: 'tanaka@example.com', workStatus: WorkStatus.working),
-      const EmployeeContact(id: '2', name: '佐藤 花子', initial: '佐', position: '課長', department: '人事部', color: Color(0xFF0E7A0B), email: 'sato@example.com', workStatus: WorkStatus.onBreak),
-      const EmployeeContact(id: '3', name: '鈴木 一郎', initial: '鈴', position: '主任', department: '開発部', color: Color(0xFF8764B8), email: 'suzuki@example.com', workStatus: WorkStatus.working),
-      const EmployeeContact(id: '4', name: '高橋 美咲', initial: '高', position: '係長', department: '総務部', color: Color(0xFFBC4B09), email: 'takahashi@example.com'),
-      const EmployeeContact(id: '5', name: '伊藤 健太', initial: '伊', position: '主任', department: '企画部', color: Color(0xFF115EA3), email: 'ito@example.com', workStatus: WorkStatus.working),
-      const EmployeeContact(id: '6', name: '渡辺 真理', initial: '渡', position: '課長', department: '経理部', color: Color(0xFFB10E1C), email: 'watanabe@example.com'),
-      const EmployeeContact(id: '7', name: '山本 翔太', initial: '山', position: '部長', department: '開発部', color: Color(0xFF0E7A0B), email: 'yamamoto@example.com', workStatus: WorkStatus.onBreak),
+      const EmployeeContact(
+        id: '1',
+        name: '田中 太郎',
+        initial: '田',
+        position: '部長',
+        department: '営業部',
+        color: Color(0xFF0F6CBD),
+        email: 'tanaka@example.com',
+        workStatus: WorkStatus.working,
+      ),
+      const EmployeeContact(
+        id: '2',
+        name: '佐藤 花子',
+        initial: '佐',
+        position: '課長',
+        department: '人事部',
+        color: Color(0xFF0E7A0B),
+        email: 'sato@example.com',
+        workStatus: WorkStatus.onBreak,
+      ),
+      const EmployeeContact(
+        id: '3',
+        name: '鈴木 一郎',
+        initial: '鈴',
+        position: '主任',
+        department: '開発部',
+        color: Color(0xFF8764B8),
+        email: 'suzuki@example.com',
+        workStatus: WorkStatus.working,
+      ),
+      const EmployeeContact(
+        id: '4',
+        name: '高橋 美咲',
+        initial: '高',
+        position: '係長',
+        department: '総務部',
+        color: Color(0xFFBC4B09),
+        email: 'takahashi@example.com',
+      ),
+      const EmployeeContact(
+        id: '5',
+        name: '伊藤 健太',
+        initial: '伊',
+        position: '主任',
+        department: '企画部',
+        color: Color(0xFF115EA3),
+        email: 'ito@example.com',
+        workStatus: WorkStatus.working,
+      ),
+      const EmployeeContact(
+        id: '6',
+        name: '渡辺 真理',
+        initial: '渡',
+        position: '課長',
+        department: '経理部',
+        color: Color(0xFFB10E1C),
+        email: 'watanabe@example.com',
+      ),
+      const EmployeeContact(
+        id: '7',
+        name: '山本 翔太',
+        initial: '山',
+        position: '部長',
+        department: '開発部',
+        color: Color(0xFF0E7A0B),
+        email: 'yamamoto@example.com',
+        workStatus: WorkStatus.onBreak,
+      ),
     ];
 
     return Column(
@@ -147,8 +204,7 @@ class _SearchScreenState extends State<SearchScreen> {
               horizontal: AppSpacing.screenHorizontal,
             ),
             itemCount: contacts.length,
-            separatorBuilder: (_, __) =>
-                const SizedBox(width: AppSpacing.lg),
+            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.lg),
             itemBuilder: (context, index) {
               final contact = contacts[index];
               return GestureDetector(
@@ -181,9 +237,11 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       Text(
                         '${contact.department} ${contact.position}',
-                        style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.5),
+                        style: AppTextStyles.caption1.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.5,
+                          ),
                           fontSize: 10,
                         ),
                         maxLines: 1,
@@ -222,38 +280,36 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
         ),
-        ..._recentSearches.map((query) => InkWell(
-              onTap: () {
-                _controller.text = query;
-                _onSearch(query);
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenHorizontal,
-                  vertical: 12,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.history_rounded,
-                      size: 20,
-                      color: theme.colorScheme.onSurface
-                          .withValues(alpha: 0.4),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Text(query, style: AppTextStyles.caption1),
-                    ),
-                    Icon(
-                      Icons.north_west_rounded,
-                      size: 16,
-                      color: theme.colorScheme.onSurface
-                          .withValues(alpha: 0.3),
-                    ),
-                  ],
-                ),
+        ..._recentSearches.map(
+          (query) => InkWell(
+            onTap: () {
+              _controller.text = query;
+              _onSearch(query);
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenHorizontal,
+                vertical: 12,
               ),
-            )),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.history_rounded,
+                    size: 20,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(child: Text(query, style: AppTextStyles.caption1)),
+                  Icon(
+                    Icons.north_west_rounded,
+                    size: 16,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }

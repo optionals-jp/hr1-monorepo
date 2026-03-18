@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../shared/widgets/common_snackbar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/providers/organization_context_provider.dart';
@@ -46,8 +47,7 @@ class JobDetailScreen extends ConsumerWidget {
                         separatorBuilder: (_, __) =>
                             const SizedBox(height: AppSpacing.xl),
                         itemBuilder: (context, index) {
-                          return SectionRenderer(
-                              section: job.sections[index]);
+                          return SectionRenderer(section: job.sections[index]);
                         },
                       )
                     : SliverToBoxAdapter(
@@ -63,15 +63,14 @@ class JobDetailScreen extends ConsumerWidget {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.screenHorizontal),
+                      horizontal: AppSpacing.screenHorizontal,
+                    ),
                     child: _SelectionFlowCard(steps: job.selectionSteps),
                   ),
                 ),
 
               // 下部余白
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 100),
-              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           ),
 
@@ -160,7 +159,9 @@ class _SelectionFlowCard extends StatelessWidget {
                           const SizedBox(width: AppSpacing.sm),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 1),
+                              horizontal: 6,
+                              vertical: 1,
+                            ),
                             decoration: BoxDecoration(
                               color: theme.colorScheme.onSurfaceVariant
                                   .withValues(alpha: 0.1),
@@ -206,10 +207,7 @@ class _JobSliverAppBar extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                AppColors.primary,
-                AppColors.primaryLight,
-              ],
+              colors: [AppColors.primary, AppColors.primaryLight],
             ),
           ),
           child: SafeArea(
@@ -226,9 +224,7 @@ class _JobSliverAppBar extends StatelessWidget {
                 children: [
                   Text(
                     job.title,
-                    style: AppTextStyles.heading2.copyWith(
-                      color: Colors.white,
-                    ),
+                    style: AppTextStyles.heading2.copyWith(color: Colors.white),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -237,10 +233,8 @@ class _JobSliverAppBar extends StatelessWidget {
                     spacing: AppSpacing.sm,
                     runSpacing: AppSpacing.xs,
                     children: [
-                      if (job.department != null)
-                        _HeaderTag(job.department!),
-                      if (job.location != null)
-                        _HeaderTag(job.location!),
+                      if (job.department != null) _HeaderTag(job.department!),
+                      if (job.location != null) _HeaderTag(job.location!),
                       if (job.employmentType != null)
                         _HeaderTag(job.employmentType!),
                     ],
@@ -299,7 +293,8 @@ class _ApplyBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final asyncApplications = ref.watch(applicationsProvider);
-    final alreadyApplied = asyncApplications.whenOrNull(
+    final alreadyApplied =
+        asyncApplications.whenOrNull(
           data: (apps) => apps.any((a) => a.jobId == job.id),
         ) ??
         false;
@@ -325,7 +320,9 @@ class _ApplyBar extends ConsumerWidget {
         width: double.infinity,
         height: 48,
         child: ElevatedButton(
-          onPressed: alreadyApplied ? null : () => _showApplyDialog(context, ref),
+          onPressed: alreadyApplied
+              ? null
+              : () => _showApplyDialog(context, ref),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: theme.colorScheme.onPrimary,
@@ -338,7 +335,7 @@ class _ApplyBar extends ConsumerWidget {
           ),
           child: Text(
             alreadyApplied ? '応募済みです' : 'この求人に応募する',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: AppTextStyles.subtitle,
           ),
         ),
       ),
@@ -373,12 +370,7 @@ class _ApplyBar extends ConsumerWidget {
               ref.invalidate(applicationsProvider);
 
               if (!screenContext.mounted) return;
-              ScaffoldMessenger.of(screenContext).showSnackBar(
-                SnackBar(
-                  content: Text('「${job.title}」に応募しました'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
+              CommonSnackBar.show(screenContext, '「${job.title}」に応募しました');
               screenContext.go(AppRoutes.applications);
             },
             style: ElevatedButton.styleFrom(

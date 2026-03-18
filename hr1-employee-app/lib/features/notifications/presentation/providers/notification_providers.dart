@@ -4,9 +4,11 @@ import '../../data/repositories/supabase_notification_repository.dart';
 import '../../domain/entities/notification_item.dart';
 
 /// リポジトリプロバイダー
-final notificationRepositoryProvider = Provider<SupabaseNotificationRepository>((ref) {
-  return SupabaseNotificationRepository(Supabase.instance.client);
-});
+final notificationRepositoryProvider = Provider<SupabaseNotificationRepository>(
+  (ref) {
+    return SupabaseNotificationRepository(Supabase.instance.client);
+  },
+);
 
 /// 通知一覧（全件）
 final allNotificationsProvider = FutureProvider<List<NotificationItem>>((ref) {
@@ -14,7 +16,9 @@ final allNotificationsProvider = FutureProvider<List<NotificationItem>>((ref) {
 });
 
 /// 最新の未読通知（ポータル表示用：最大3件）
-final latestNotificationsProvider = FutureProvider<List<NotificationItem>>((ref) {
+final latestNotificationsProvider = FutureProvider<List<NotificationItem>>((
+  ref,
+) {
   return ref.watch(notificationRepositoryProvider).getLatestUnread(limit: 3);
 });
 

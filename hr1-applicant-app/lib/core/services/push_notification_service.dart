@@ -24,7 +24,9 @@ class PushNotificationService {
   static StreamSubscription<AuthState>? _authSubscription;
 
   /// 初期化
-  static Future<void> initialize({GlobalKey<NavigatorState>? navigatorKey}) async {
+  static Future<void> initialize({
+    GlobalKey<NavigatorState>? navigatorKey,
+  }) async {
     _navigatorKey = navigatorKey;
 
     // バックグラウンドハンドラ登録
@@ -62,7 +64,9 @@ class PushNotificationService {
 
     // Android 通知チャンネル
     await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(
           const AndroidNotificationChannel(
             'hr1_notifications',
@@ -92,11 +96,15 @@ class PushNotificationService {
     }
 
     // トークンリフレッシュ監視
-    _messaging.onTokenRefresh.listen((newToken) => _registerToken(token: newToken));
+    _messaging.onTokenRefresh.listen(
+      (newToken) => _registerToken(token: newToken),
+    );
 
     // 認証状態の変更を監視（ログイン後にトークン登録）
     _authSubscription?.cancel();
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      data,
+    ) {
       if (data.event == AuthChangeEvent.signedIn) {
         debugPrint('ログイン検知 → FCM トークン登録開始');
         _registerToken();
@@ -127,11 +135,14 @@ class PushNotificationService {
         return;
       }
 
-      await Supabase.instance.client.rpc('upsert_push_token', params: {
-        'p_token': token,
-        'p_platform': Platform.isIOS ? 'ios' : 'android',
-        'p_app_type': 'applicant',
-      });
+      await Supabase.instance.client.rpc(
+        'upsert_push_token',
+        params: {
+          'p_token': token,
+          'p_platform': Platform.isIOS ? 'ios' : 'android',
+          'p_app_type': 'applicant',
+        },
+      );
       debugPrint('FCM トークン登録完了: ${token.substring(0, 20)}...');
     } catch (e) {
       debugPrint('FCM トークン登録エラー: $e');

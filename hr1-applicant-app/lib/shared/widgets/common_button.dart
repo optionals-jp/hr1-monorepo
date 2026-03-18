@@ -60,22 +60,23 @@ class CommonButton extends StatelessWidget {
 
   static const _baseSize = Size(double.infinity, 48);
 
-  static final ButtonStyle _outlineStyle = OutlinedButton.styleFrom(
-    foregroundColor: AppColors.primaryLight,
-    disabledForegroundColor: Colors.grey,
-    minimumSize: _baseSize,
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-    shape: _baseShape,
-    elevation: 0,
-    textStyle: _baseTextStyle,
-  ).copyWith(
-    side: WidgetStateProperty.resolveWith((states) {
-      if (states.contains(WidgetState.disabled)) {
-        return const BorderSide(color: Colors.grey, width: 1);
-      }
-      return const BorderSide(color: AppColors.primaryLight, width: 1);
-    }),
-  );
+  static final ButtonStyle _outlineStyle =
+      OutlinedButton.styleFrom(
+        foregroundColor: AppColors.primaryLight,
+        disabledForegroundColor: Colors.grey,
+        minimumSize: _baseSize,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        shape: _baseShape,
+        elevation: 0,
+        textStyle: _baseTextStyle,
+      ).copyWith(
+        side: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return const BorderSide(color: Colors.grey, width: 1);
+          }
+          return const BorderSide(color: AppColors.primaryLight, width: 1);
+        }),
+      );
 
   static final ButtonStyle _filledStyle = ElevatedButton.styleFrom(
     backgroundColor: AppColors.primaryLight,

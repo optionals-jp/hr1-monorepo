@@ -28,20 +28,20 @@ class TaskListController extends AutoDisposeAsyncNotifier<List<Task>> {
     final todayStr =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
-    await _repo.createTask(Task(
-      id: '',
-      userId: '',
-      organizationId: '',
-      title: title,
-      isMyDay: filter == TaskFilter.myDay,
-      myDayDate:
-          filter == TaskFilter.myDay ? DateTime.parse(todayStr) : null,
-      isImportant: filter == TaskFilter.important,
-      dueDate:
-          filter == TaskFilter.planned ? DateTime.parse(todayStr) : null,
-      createdAt: now,
-      updatedAt: now,
-    ));
+    await _repo.createTask(
+      Task(
+        id: '',
+        userId: '',
+        organizationId: '',
+        title: title,
+        isMyDay: filter == TaskFilter.myDay,
+        myDayDate: filter == TaskFilter.myDay ? DateTime.parse(todayStr) : null,
+        isImportant: filter == TaskFilter.important,
+        dueDate: filter == TaskFilter.planned ? DateTime.parse(todayStr) : null,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
     ref.invalidateSelf();
   }
 
@@ -66,11 +66,12 @@ class TaskListController extends AutoDisposeAsyncNotifier<List<Task>> {
 
 final taskListControllerProvider =
     AutoDisposeAsyncNotifierProvider<TaskListController, List<Task>>(
-  TaskListController.new,
-);
+      TaskListController.new,
+    );
 
 /// タスク詳細管理コントローラー
-class TaskDetailController extends AutoDisposeFamilyAsyncNotifier<Task?, String> {
+class TaskDetailController
+    extends AutoDisposeFamilyAsyncNotifier<Task?, String> {
   TaskRepository get _repo => ref.read(taskRepositoryProvider);
 
   @override
@@ -88,12 +89,9 @@ class TaskDetailController extends AutoDisposeFamilyAsyncNotifier<Task?, String>
 
   /// ステップ追加
   Future<void> addStep(String taskId, String title) async {
-    await _repo.createStep(TaskStep(
-      id: '',
-      taskId: taskId,
-      title: title,
-      createdAt: DateTime.now(),
-    ));
+    await _repo.createStep(
+      TaskStep(id: '', taskId: taskId, title: title, createdAt: DateTime.now()),
+    );
     ref.invalidate(taskStepsProvider(taskId));
   }
 
@@ -110,7 +108,9 @@ class TaskDetailController extends AutoDisposeFamilyAsyncNotifier<Task?, String>
   }
 }
 
-final taskDetailControllerProvider = AutoDisposeAsyncNotifierProvider.family<
-    TaskDetailController, Task?, String>(
-  TaskDetailController.new,
-);
+final taskDetailControllerProvider =
+    AutoDisposeAsyncNotifierProvider.family<
+      TaskDetailController,
+      Task?,
+      String
+    >(TaskDetailController.new);

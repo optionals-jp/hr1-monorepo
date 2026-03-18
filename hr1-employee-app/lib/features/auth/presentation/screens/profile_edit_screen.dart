@@ -53,9 +53,16 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       decoration: BoxDecoration(
                         color: AppColors.brandPrimary,
                         shape: BoxShape.circle,
-                        border: Border.all(color: theme.scaffoldBackgroundColor, width: 3),
+                        border: Border.all(
+                          color: theme.scaffoldBackgroundColor,
+                          width: 3,
+                        ),
                       ),
-                      child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
+                      child: const Icon(
+                        Icons.camera_alt_rounded,
+                        size: 16,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ],
@@ -169,7 +176,11 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     );
   }
 
-  Future<void> _showEditDialog({required String title, required String initialValue, required ValueChanged<String> onSave}) async {
+  Future<void> _showEditDialog({
+    required String title,
+    required String initialValue,
+    required ValueChanged<String> onSave,
+  }) async {
     final value = await CommonDialog.input(
       context: context,
       title: title,

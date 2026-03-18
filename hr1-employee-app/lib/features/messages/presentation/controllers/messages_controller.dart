@@ -4,8 +4,7 @@ import '../../domain/entities/message_thread.dart';
 import '../providers/messages_providers.dart';
 
 /// メッセージスレッド一覧コントローラー
-class MessagesController
-    extends AutoDisposeAsyncNotifier<List<MessageThread>> {
+class MessagesController extends AutoDisposeAsyncNotifier<List<MessageThread>> {
   @override
   Future<List<MessageThread>> build() async {
     final currentUser = ref.watch(appUserProvider);
@@ -20,7 +19,7 @@ class MessagesController
   }
 }
 
-final messagesControllerProvider = AutoDisposeAsyncNotifierProvider<
-    MessagesController, List<MessageThread>>(
-  MessagesController.new,
-);
+final messagesControllerProvider =
+    AutoDisposeAsyncNotifierProvider<MessagesController, List<MessageThread>>(
+      MessagesController.new,
+    );
