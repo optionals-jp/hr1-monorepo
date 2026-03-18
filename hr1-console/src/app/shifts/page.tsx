@@ -80,7 +80,8 @@ function timeShort(t: string | null): string {
 // ---------------------------------------------------------------------------
 
 export default function ShiftsPage() {
-  const { orgId } = useOrg();
+  const { organization } = useOrg();
+  const orgId = organization?.id ?? null;
   const { toast } = useToast();
   const [tab, setTab] = useState<TabValue>("requests");
 
@@ -348,14 +349,14 @@ function RequestsGrid({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="sticky left-0 bg-background z-10 min-w-[140px]">社員</TableHead>
+            <TableHead className="sticky left-0 bg-background z-10 min-w-35">社員</TableHead>
             {Array.from({ length: totalDays }, (_, i) => {
               const d = i + 1;
               const we = isWeekend(year, month, d);
               return (
                 <TableHead
                   key={d}
-                  className={cn("text-center min-w-[60px] text-xs", we && "bg-muted/50")}
+                  className={cn("text-center min-w-15 text-xs", we && "bg-muted/50")}
                 >
                   <div>{d}</div>
                   <div className={cn("text-[10px]", we && "text-red-500")}>
@@ -385,7 +386,7 @@ function RequestsGrid({
                           {(emp.display_name ?? emp.email).slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-sm truncate max-w-[100px]">
+                      <span className="text-sm truncate max-w-25">
                         {emp.display_name ?? emp.email}
                       </span>
                     </div>
@@ -455,14 +456,14 @@ function ScheduleGrid({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="sticky left-0 bg-background z-10 min-w-[140px]">社員</TableHead>
+            <TableHead className="sticky left-0 bg-background z-10 min-w-35">社員</TableHead>
             {Array.from({ length: totalDays }, (_, i) => {
               const d = i + 1;
               const we = isWeekend(year, month, d);
               return (
                 <TableHead
                   key={d}
-                  className={cn("text-center min-w-[60px] text-xs", we && "bg-muted/50")}
+                  className={cn("text-center min-w-15 text-xs", we && "bg-muted/50")}
                 >
                   <div>{d}</div>
                   <div className={cn("text-[10px]", we && "text-red-500")}>
@@ -492,7 +493,7 @@ function ScheduleGrid({
                           {(emp.display_name ?? emp.email).slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-sm truncate max-w-[100px]">
+                      <span className="text-sm truncate max-w-25">
                         {emp.display_name ?? emp.email}
                       </span>
                     </div>
