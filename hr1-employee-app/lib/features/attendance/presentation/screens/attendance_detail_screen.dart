@@ -1,0 +1,692 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/constants/app_text_styles.dart';
+import '../../domain/entities/attendance_record.dart';
+import '../providers/attendance_providers.dart';
+
+/// 勤怠明細画面 — 月次サマリー＋日別一覧
+class AttendanceDetailScreen extends ConsumerStatefulWidget {
+  const AttendanceDetailScreen({super.key});
+
+  @override
+  ConsumerState<AttendanceDetailScreen> createState() =>
+      _AttendanceDetailScreenState();
+}
+
+class _AttendanceDetailScreenState
+    extends ConsumerState<AttendanceDetailScreen> {
+  late int _year;
+  late int _month;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _year = now.year;
+    _month = now.month;
+  }
+
+  void _prevMonth() {
+    setState(() {
+      if (_month == 1) {
+        _year--;
+        _month = 12;
+      } else {
+        _month--;
+      }
+    });
+  }
+
+  void _nextMonth() {
+    final now = DateTime.now();
+    if (_year == now.year && _month == now.month) return;
+    setState(() {
+      if (_month == 12) {
+        _year++;
+        _month = 1;
+      } else {
+        _month++;
+      }
+    });
+  }
+
+  bool get _isCurrentMonth {
+    final now = DateTime.now();
+    return _year == now.year && _month == now.month;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final records =
+        ref.watch(monthlyRecordsProvider((year: _year, month: _month)));
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('勤怠明細')),
+      body: Column(
+        children: [
+          // 月セレクター
+          _MonthSelector(
+            year: _year,
+            month: _month,
+            isCurrentMonth: _isCurrentMonth,
+            onPrev: _prevMonth,
+            onNext: _nextMonth,
+          ),
+
+          // コンテンツ
+          Expanded(
+            child: records.when(
+              data: (list) => _buildContent(list, isDark, theme),
+              loading: () =>
+                  const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(
+                child: Text('読み込みに失敗しました',
+                    style: AppTextStyles.body2
+                        .copyWith(color: theme.colorScheme.error)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent(
+      List<AttendanceRecord> records, bool isDark, ThemeData theme) {
+    final summary = _calcSummary(records);
+    final days = _buildDayList(records);
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenHorizontal,
+        vertical: AppSpacing.md,
+      ),
+      children: [
+        // サマリーカード
+        _SummarySection(summary: summary, isDark: isDark, theme: theme),
+        const SizedBox(height: AppSpacing.xl),
+
+        // 日別一覧ヘッダー
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: Text('日別明細',
+              style: AppTextStyles.headline
+                  .copyWith(color: theme.colorScheme.onSurface)),
+        ),
+
+        // 日別一覧
+        ...days.map((day) => _DayTile(
+              day: day,
+              isDark: isDark,
+              theme: theme,
+              onTap: day.record != null
+                  ? () => _showDayDetail(day, theme)
+                  : null,
+            )),
+      ],
+    );
+  }
+
+  List<_DayData> _buildDayList(List<AttendanceRecord> records) {
+    final lastDay = DateTime(_year, _month + 1, 0).day;
+    final recordMap = <String, AttendanceRecord>{};
+    for (final r in records) {
+      recordMap[r.date] = r;
+    }
+
+    final days = <_DayData>[];
+    for (var d = 1; d <= lastDay; d++) {
+      final date = DateTime(_year, _month, d);
+      final dateStr =
+          '$_year-${_month.toString().padLeft(2, '0')}-${d.toString().padLeft(2, '0')}';
+      final record = recordMap[dateStr];
+      final isWeekend =
+          date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
+      days.add(_DayData(
+        date: date,
+        dateStr: dateStr,
+        record: record,
+        isWeekend: isWeekend,
+      ));
+    }
+    return days;
+  }
+
+  _MonthlySummary _calcSummary(List<AttendanceRecord> records) {
+    int totalWorkMinutes = 0;
+    int totalOvertimeMinutes = 0;
+    int totalLateNightMinutes = 0;
+    int workDayCount = 0;
+    int lateEarlyCount = 0;
+
+    for (final r in records) {
+      totalWorkMinutes += r.workMinutes;
+      totalOvertimeMinutes += r.overtimeMinutes;
+      totalLateNightMinutes += r.lateNightMinutes;
+
+      if (r.status == AttendanceStatus.present ||
+          r.status == AttendanceStatus.late ||
+          r.status == AttendanceStatus.earlyLeave) {
+        workDayCount++;
+      }
+      if (r.status == AttendanceStatus.late ||
+          r.status == AttendanceStatus.earlyLeave) {
+        lateEarlyCount++;
+      }
+    }
+
+    return _MonthlySummary(
+      totalWorkMinutes: totalWorkMinutes,
+      totalOvertimeMinutes: totalOvertimeMinutes,
+      totalLateNightMinutes: totalLateNightMinutes,
+      workDayCount: workDayCount,
+      lateEarlyCount: lateEarlyCount,
+    );
+  }
+
+  void _showDayDetail(_DayData day, ThemeData theme) {
+    final record = day.record!;
+    final isDark = theme.brightness == Brightness.dark;
+    final dateLabel = DateFormat('M月d日（E）', 'ja').format(day.date);
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ヘッダー
+                Row(
+                  children: [
+                    Text(dateLabel,
+                        style: AppTextStyles.headline
+                            .copyWith(color: theme.colorScheme.onSurface)),
+                    const SizedBox(width: AppSpacing.sm),
+                    _StatusBadge(
+                        status: record.status, isDark: isDark, small: false),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // 出退勤時刻
+                _DetailRow(
+                  label: '出勤',
+                  value: record.clockIn != null
+                      ? DateFormat('HH:mm').format(record.clockIn!.toLocal())
+                      : '-',
+                  theme: theme,
+                ),
+                _DetailRow(
+                  label: '退勤',
+                  value: record.clockOut != null
+                      ? DateFormat('HH:mm').format(record.clockOut!.toLocal())
+                      : '-',
+                  theme: theme,
+                ),
+                const Divider(height: AppSpacing.xl),
+
+                // 勤務詳細
+                _DetailRow(
+                  label: '勤務時間',
+                  value: _formatMinutes(record.workMinutes),
+                  theme: theme,
+                ),
+                _DetailRow(
+                  label: '休憩',
+                  value: _formatMinutes(record.breakMinutes),
+                  theme: theme,
+                ),
+                _DetailRow(
+                  label: '残業',
+                  value: _formatMinutes(record.overtimeMinutes),
+                  theme: theme,
+                  valueColor: record.overtimeMinutes > 0
+                      ? AppColors.warning
+                      : null,
+                ),
+                _DetailRow(
+                  label: '深夜',
+                  value: _formatMinutes(record.lateNightMinutes),
+                  theme: theme,
+                  valueColor: record.lateNightMinutes > 0
+                      ? AppColors.brandPrimary
+                      : null,
+                ),
+                if (record.note != null && record.note!.isNotEmpty) ...[
+                  const Divider(height: AppSpacing.xl),
+                  Text('備考',
+                      style: AppTextStyles.caption1.copyWith(
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.5))),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(record.note!, style: AppTextStyles.body2),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// データクラス
+// ---------------------------------------------------------------------------
+
+class _MonthlySummary {
+  const _MonthlySummary({
+    required this.totalWorkMinutes,
+    required this.totalOvertimeMinutes,
+    required this.totalLateNightMinutes,
+    required this.workDayCount,
+    required this.lateEarlyCount,
+  });
+
+  final int totalWorkMinutes;
+  final int totalOvertimeMinutes;
+  final int totalLateNightMinutes;
+  final int workDayCount;
+  final int lateEarlyCount;
+}
+
+class _DayData {
+  const _DayData({
+    required this.date,
+    required this.dateStr,
+    this.record,
+    this.isWeekend = false,
+  });
+
+  final DateTime date;
+  final String dateStr;
+  final AttendanceRecord? record;
+  final bool isWeekend;
+}
+
+// ---------------------------------------------------------------------------
+// ウィジェット
+// ---------------------------------------------------------------------------
+
+/// 月セレクター
+class _MonthSelector extends StatelessWidget {
+  const _MonthSelector({
+    required this.year,
+    required this.month,
+    required this.isCurrentMonth,
+    required this.onPrev,
+    required this.onNext,
+  });
+
+  final int year;
+  final int month;
+  final bool isCurrentMonth;
+  final VoidCallback onPrev;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal, vertical: AppSpacing.sm),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            onPressed: onPrev,
+            icon: const Icon(Icons.chevron_left),
+          ),
+          Text(
+            '$year年$month月',
+            style: AppTextStyles.headline
+                .copyWith(color: theme.colorScheme.onSurface),
+          ),
+          IconButton(
+            onPressed: isCurrentMonth ? null : onNext,
+            icon: Icon(
+              Icons.chevron_right,
+              color: isCurrentMonth
+                  ? theme.colorScheme.onSurface.withValues(alpha: 0.2)
+                  : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// サマリーセクション
+class _SummarySection extends StatelessWidget {
+  const _SummarySection({
+    required this.summary,
+    required this.isDark,
+    required this.theme,
+  });
+
+  final _MonthlySummary summary;
+  final bool isDark;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          width: 0.5,
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+      ),
+      child: Column(
+        children: [
+          // 上段: 勤務時間系
+          Row(
+            children: [
+              _SummaryItem(
+                icon: Icons.schedule,
+                color: AppColors.brandPrimary,
+                label: '総労働時間',
+                value: _formatMinutes(summary.totalWorkMinutes),
+              ),
+              _SummaryItem(
+                icon: Icons.trending_up,
+                color: AppColors.warning,
+                label: '残業時間',
+                value: _formatMinutes(summary.totalOvertimeMinutes),
+              ),
+              _SummaryItem(
+                icon: Icons.nights_stay,
+                color: Colors.indigo,
+                label: '深夜時間',
+                value: _formatMinutes(summary.totalLateNightMinutes),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          // 下段: 日数系
+          Row(
+            children: [
+              _SummaryItem(
+                icon: Icons.calendar_today,
+                color: AppColors.success,
+                label: '出勤日数',
+                value: '${summary.workDayCount}日',
+              ),
+              _SummaryItem(
+                icon: Icons.warning_amber_rounded,
+                color: AppColors.error,
+                label: '遅刻/早退',
+                value: '${summary.lateEarlyCount}回',
+              ),
+              const Expanded(child: SizedBox()),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// サマリー項目
+class _SummaryItem extends StatelessWidget {
+  const _SummaryItem({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            value,
+            style: AppTextStyles.headline.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: AppTextStyles.caption2.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 日別タイル
+class _DayTile extends StatelessWidget {
+  const _DayTile({
+    required this.day,
+    required this.isDark,
+    required this.theme,
+    this.onTap,
+  });
+
+  final _DayData day;
+  final bool isDark;
+  final ThemeData theme;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final dateLabel = DateFormat('d（E）', 'ja').format(day.date);
+    final record = day.record;
+    final textColor = day.isWeekend && record == null
+        ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
+        : theme.colorScheme.onSurface;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.md),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: isDark ? AppColors.darkDivider : AppColors.lightDivider,
+              width: 0.5,
+            ),
+          ),
+        ),
+        child: Row(
+          children: [
+            // 日付
+            SizedBox(
+              width: 64,
+              child: Text(dateLabel,
+                  style: AppTextStyles.body2.copyWith(
+                    color: textColor,
+                    fontWeight: day.date.weekday == DateTime.sunday
+                        ? FontWeight.w600
+                        : null,
+                  )),
+            ),
+
+            // ステータスバッジ
+            if (record != null) ...[
+              _StatusBadge(
+                  status: record.status, isDark: isDark, small: true),
+              const SizedBox(width: AppSpacing.sm),
+            ],
+
+            // 出退勤時刻
+            Expanded(
+              child: record != null
+                  ? Text(
+                      '${record.clockIn != null ? DateFormat('HH:mm').format(record.clockIn!.toLocal()) : '-'}'
+                      ' ~ '
+                      '${record.clockOut != null ? DateFormat('HH:mm').format(record.clockOut!.toLocal()) : '-'}',
+                      style: AppTextStyles.body2.copyWith(color: textColor),
+                    )
+                  : Text(
+                      day.isWeekend ? '休日' : '-',
+                      style: AppTextStyles.body2.copyWith(
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.3)),
+                    ),
+            ),
+
+            // 勤務時間
+            if (record != null && record.workMinutes > 0)
+              Text(
+                record.workDurationFormatted,
+                style: AppTextStyles.body2.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+
+            // 矢印
+            if (record != null)
+              Icon(Icons.chevron_right,
+                  size: 16,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// ステータスバッジ
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({
+    required this.status,
+    required this.isDark,
+    this.small = false,
+  });
+
+  final String status;
+  final bool isDark;
+  final bool small;
+
+  Color get _color {
+    switch (status) {
+      case AttendanceStatus.present:
+        return AppColors.success;
+      case AttendanceStatus.late:
+      case AttendanceStatus.earlyLeave:
+        return AppColors.warning;
+      case AttendanceStatus.absent:
+        return AppColors.error;
+      case AttendanceStatus.paidLeave:
+      case AttendanceStatus.halfDayAm:
+      case AttendanceStatus.halfDayPm:
+      case AttendanceStatus.specialLeave:
+        return AppColors.brandPrimary;
+      case AttendanceStatus.sickLeave:
+        return Colors.purple;
+      case AttendanceStatus.holiday:
+        return Colors.grey;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: small ? 6 : 8,
+        vertical: small ? 2 : 4,
+      ),
+      decoration: BoxDecoration(
+        color: _color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        AttendanceStatus.label(status),
+        style: (small ? AppTextStyles.caption2 : AppTextStyles.caption1)
+            .copyWith(color: _color, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+}
+
+/// 詳細行
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.label,
+    required this.value,
+    required this.theme,
+    this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final ThemeData theme;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: AppTextStyles.body2.copyWith(
+                  color:
+                      theme.colorScheme.onSurface.withValues(alpha: 0.6))),
+          Text(value,
+              style: AppTextStyles.body2.copyWith(
+                color: valueColor ?? theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              )),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ヘルパー
+// ---------------------------------------------------------------------------
+
+String _formatMinutes(int minutes) {
+  if (minutes <= 0) return '0:00';
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  return '$h:${m.toString().padLeft(2, '0')}';
+}

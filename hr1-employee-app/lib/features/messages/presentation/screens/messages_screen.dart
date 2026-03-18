@@ -70,7 +70,10 @@ class MessagesScreen extends ConsumerWidget {
               data: (threads) {
                 if (threads.isEmpty) {
                   return EmptyState(
-                    icon: AppIcons.directbox(size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+                    icon: AppIcons.directbox(
+                      size: 64,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    ),
                     title: 'メッセージはありません',
                     description: 'メッセージがここに表示されます',
                   );
@@ -130,6 +133,7 @@ class _ThreadTile extends StatelessWidget {
             // コンテンツ
             Expanded(
               child: Column(
+                spacing: 4,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
@@ -137,9 +141,7 @@ class _ThreadTile extends StatelessWidget {
                       Expanded(
                         child: Text(
                           displayName,
-                          style: AppTextStyles.caption1.copyWith(
-                            fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
-                          ),
+                          style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                         ),
@@ -148,25 +150,23 @@ class _ThreadTile extends StatelessWidget {
                         const SizedBox(width: AppSpacing.sm),
                         Text(
                           _formatDate(thread.latestMessage!.createdAt),
-                          style: AppTextStyles.caption2.copyWith(
+                          style: AppTextStyles.body2.copyWith(
                             color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
-                            fontSize: 12,
                           ),
                         ),
                       ],
                     ],
                   ),
                   if (thread.latestMessage != null) ...[
-                    const SizedBox(height: 3),
                     Row(
                       children: [
                         Expanded(
                           child: Text(
                             thread.latestMessage!.content,
-                            style: AppTextStyles.caption2.copyWith(
+                            style: AppTextStyles.body2.copyWith(
                               color: hasUnread
                                   ? theme.colorScheme.onSurface
-                                  : theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                                  : AppColors.textSecondary(theme.brightness),
                               fontWeight: hasUnread ? FontWeight.w500 : FontWeight.w400,
                             ),
                             maxLines: 1,
@@ -182,7 +182,7 @@ class _ThreadTile extends StatelessWidget {
                             child: Center(
                               child: Text(
                                 '${thread.unreadCount}',
-                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                                style: AppTextStyles.body2.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
                               ),
                             ),
                           ),

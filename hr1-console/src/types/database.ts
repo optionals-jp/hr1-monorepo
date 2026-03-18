@@ -556,3 +556,35 @@ export interface PulseSurveyAnswer {
   value: string | null;
   created_at: string;
 }
+
+export interface ShiftRequest {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  target_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  is_available: boolean;
+  note: string | null;
+  submitted_at: string | null;
+  created_at: string;
+  updated_at: string;
+  profiles?: Profile;
+}
+
+export interface ShiftSchedule {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  target_date: string;
+  start_time: string;
+  end_time: string;
+  position_label: string | null;
+  note: string | null;
+  status: "draft" | "published";
+  published_at: string | null;
+  published_by: string | null;
+  created_at: string;
+  updated_at: string;
+  profiles?: Profile;
+}

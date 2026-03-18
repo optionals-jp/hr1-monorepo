@@ -14,12 +14,15 @@ import '../../features/messages/domain/entities/message_thread.dart';
 import '../../features/tasks/presentation/screens/tasks_screen.dart';
 import '../../features/auth/presentation/screens/profile_screen.dart';
 import '../../features/attendance/presentation/screens/attendance_screen.dart';
+import '../../features/attendance/presentation/screens/attendance_detail_screen.dart';
+import '../../features/shifts/presentation/screens/shift_request_screen.dart';
 import '../../features/attendance/presentation/screens/correction_request_screen.dart';
 import '../../features/employees/domain/entities/employee_contact.dart';
 import '../../features/employees/presentation/screens/employee_detail_screen.dart';
 import '../../features/skills/presentation/screens/certifications_edit_screen.dart';
 import '../../features/skills/presentation/screens/skills_edit_screen.dart';
 import '../../features/faq/presentation/screens/faq_screen.dart';
+import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/surveys/presentation/screens/survey_list_screen.dart';
 import '../../features/surveys/presentation/screens/survey_answer_screen.dart';
 import '../../features/surveys/presentation/providers/survey_providers.dart';
@@ -56,13 +59,19 @@ class AppRoutes {
   static const String _profileFullscreen = 'profile-fullscreen';
   static const String _faq = 'faq';
   static const String _surveys = 'surveys';
+  static const String _notifications = 'notifications';
   // フルパス（画面遷移用）
   static const String faq = '/$_faq';
   static const String surveys = '/$_surveys';
+  static const String notifications = '/$_notifications';
   static const String profileFullscreen = '/$_profileFullscreen';
   static const String attendance = '/$_attendance';
   static const String employeeDetail = '/$_employeeDetail';
+  static const String _attendanceDetail = 'detail';
   static const String correction = '/$_attendance/$_correction';
+  static const String attendanceDetail = '/$_attendance/$_attendanceDetail';
+  static const String _shiftRequest = 'shift-request';
+  static const String shiftRequest = '/$_shiftRequest';
   static const String messageThread = '$messages/$_thread';
   static const String search = '/$_search';
   static const String profileEdit = '/$_profileEdit';
@@ -71,13 +80,13 @@ class AppRoutes {
   static const String certificationsEdit = '/$_certificationsEdit';
 }
 
-/// ルートナビゲーターキー（フルスクリーン遷移用）
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
+/// ルートナビゲーターキー（フルスクリーン遷移用 + プッシュ通知からの遷移用）
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 /// GoRouter プロバイダー
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    navigatorKey: _rootNavigatorKey,
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
 
@@ -111,21 +120,33 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       /// 勤怠打刻画面（フルスクリーン）
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.attendance,
         builder: (context, state) => const AttendanceScreen(),
         routes: [
           GoRoute(
-            parentNavigatorKey: _rootNavigatorKey,
+            parentNavigatorKey: rootNavigatorKey,
             path: AppRoutes._correction,
             builder: (context, state) => const CorrectionRequestScreen(),
+          ),
+          GoRoute(
+            parentNavigatorKey: rootNavigatorKey,
+            path: AppRoutes._attendanceDetail,
+            builder: (context, state) => const AttendanceDetailScreen(),
           ),
         ],
       ),
 
+      /// シフト希望提出画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.shiftRequest,
+        builder: (context, state) => const ShiftRequestScreen(),
+      ),
+
       /// 検索画面（フルスクリーン・フェードトランジション）
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.search,
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
@@ -143,7 +164,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       /// 社員プロフィール詳細画面（フルスクリーン）
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.employeeDetail,
         builder: (context, state) {
           final contact = state.extra as EmployeeContact?;
@@ -156,7 +177,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       /// チャット画面（フルスクリーン — 社員詳細などから遷移）
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.chat,
         builder: (context, state) {
           final thread = state.extra as MessageThread?;
@@ -169,40 +190,47 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       /// スキル編集画面（フルスクリーン）
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.skillsEdit,
         builder: (context, state) => const SkillsEditScreen(),
       ),
 
       /// 資格編集画面（フルスクリーン）
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.certificationsEdit,
         builder: (context, state) => const CertificationsEditScreen(),
       ),
 
       /// プロフィール編集画面（フルスクリーン）
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.profileEdit,
         builder: (context, state) => const ProfileEditScreen(),
       ),
 
+      /// 通知画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.notifications,
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+
       /// FAQ画面（フルスクリーン）
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.faq,
         builder: (context, state) => const FaqScreen(),
       ),
 
       /// パルスサーベイ一覧画面（フルスクリーン）
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.surveys,
         builder: (context, state) => const SurveyListScreen(),
         routes: [
           GoRoute(
-            parentNavigatorKey: _rootNavigatorKey,
+            parentNavigatorKey: rootNavigatorKey,
             path: ':surveyId',
             builder: (context, state) {
               final survey = state.extra as PulseSurvey?;
@@ -219,7 +247,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       /// プロフィール画面（フルスクリーン — ヘッダーアイコンから遷移）
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.profileFullscreen,
         builder: (context, state) => const ProfileScreen(),
       ),

@@ -12,6 +12,7 @@ import {
   ClipboardList,
   Calendar,
   CalendarDays,
+  CalendarRange,
   Building2,
   FolderKanban,
   Clock,
@@ -51,6 +52,7 @@ const navSections: NavSection[] = [
       { href: "/departments", label: "部署管理", icon: Building2 },
       { href: "/projects", label: "プロジェクト", icon: FolderKanban },
       { href: "/attendance", label: "勤怠管理", icon: Clock },
+      { href: "/shifts", label: "シフト管理", icon: CalendarRange },
     ],
   },
   {

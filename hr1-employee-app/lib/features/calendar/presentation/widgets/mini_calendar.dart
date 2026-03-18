@@ -265,7 +265,7 @@ class _WeekdayHeader extends StatelessWidget {
                 style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
                   color: isWeekend
                       ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                      : AppColors.textSecondary(theme.brightness),
                 ),
               ),
             ),

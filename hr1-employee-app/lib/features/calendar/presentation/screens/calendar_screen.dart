@@ -423,7 +423,7 @@ class _DateHeader extends StatelessWidget {
       child: Text(
         label,
         style: AppTextStyles.caption2.copyWith(
-          color: isToday ? AppColors.brandPrimary : theme.colorScheme.onSurface.withValues(alpha: 0.55),
+          color: isToday ? AppColors.brandPrimary : AppColors.textSecondary(theme.brightness),
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -811,7 +811,7 @@ class _DateTimeRow extends StatelessWidget {
             width: 34,
             child: Text(
               label,
-              style: AppTextStyles.caption2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+              style: AppTextStyles.caption2.copyWith(color: AppColors.textSecondary(theme.brightness)),
             ),
           ),
           GestureDetector(

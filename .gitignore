@@ -23,6 +23,7 @@ Thumbs.db
 **/ios/.symlinks/
 **/ios/Flutter/.last_build_id
 **/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/Env.xcconfig
 
 # Android
 **/android/.gradle/

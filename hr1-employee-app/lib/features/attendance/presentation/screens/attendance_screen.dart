@@ -43,6 +43,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         title: const Text('勤怠'),
         actions: [
           TextButton(
+            onPressed: () => context.push(AppRoutes.attendanceDetail),
+            child: Text(
+              '明細',
+              style: AppTextStyles.caption1.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
+            ),
+          ),
+          TextButton(
             onPressed: () => context.push(AppRoutes.correction),
             child: Text(
               '修正依頼',
@@ -84,7 +91,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               child: Text(
                 'タイムライン',
                 style: AppTextStyles.caption2.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                  color: AppColors.textSecondary(theme.brightness),
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.3,
                 ),
@@ -150,7 +157,7 @@ class _TimeStatusHero extends StatelessWidget {
         // 日付
         Text(
           dateFormat.format(now),
-          style: AppTextStyles.caption1.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+          style: AppTextStyles.caption1.copyWith(color: AppColors.textSecondary(theme.brightness)),
         ),
         const SizedBox(height: 4),
         // 時刻（大きく表示）

@@ -356,6 +356,17 @@ export const surveyQuestionTypeLabels: Record<string, string> = {
   multiple_choice: "複数選択",
 };
 
+// --- シフトスケジュールステータス ---
+export const shiftScheduleStatusLabels: Record<string, string> = {
+  draft: "下書き",
+  published: "公開済み",
+};
+
+export const shiftScheduleStatusColors: Record<string, BadgeVariant> = {
+  draft: "outline",
+  published: "default",
+};
+
 // --- FAQ カテゴリ ---
 export const faqCategoryLabels: Record<string, string> = {
   general: "一般",

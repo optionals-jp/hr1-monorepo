@@ -31,6 +31,14 @@ Backend: Supabase (Auth, Database, Edge Functions)
 - **UI text and comments** are in Japanese where appropriate.
 - Use `@supabase/ssr` (`createBrowserClient` / `createServerClient`) for Supabase clients — not `@supabase/supabase-js` directly.
 
+## Flutter UI Guidelines
+
+### 共通コンポーネント
+- **ボタン**: 画面下部の主要アクション・フォーム送信には `CommonButton` を使用する。セカンダリアクション（再試行等）には `CommonButton.outline` を使用する。`FilledButton` / `ElevatedButton` を直接使わない。
+- **テキストスタイル**: `AppTextStyles`（Noto Sans JP）のトークンを使用する。`TextStyle()` を直接使わない。
+- **カラー**: セカンダリテキストには `AppColors.textSecondary(theme.brightness)` を使用する。`theme.colorScheme.onSurface.withValues(alpha: ...)` を直接使わない。
+- **ローディング**: 全画面ローディングには `LoadingIndicator()` を使用する。インラインには `LoadingIndicator(size: 20)` を使用する。
+
 ## CI Pipeline (GitHub Actions)
 
 `hr1-console` only:

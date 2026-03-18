@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/pulse_survey.dart';
 
@@ -85,7 +84,7 @@ class SupabaseSurveyRepository {
 
     await _client.rpc('submit_survey_response', params: {
       'p_survey_id': surveyId,
-      'p_answers': jsonEncode(answersList),
+      'p_answers': answersList,
     });
   }
 }

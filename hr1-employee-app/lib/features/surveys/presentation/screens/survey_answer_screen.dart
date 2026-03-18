@@ -70,31 +70,25 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
 
     if (survey.questions.isEmpty) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text(survey.title, style: AppTextStyles.headline.copyWith(letterSpacing: -0.2)),
-          centerTitle: false,
-        ),
+        appBar: AppBar(title: Text(survey.title, style: AppTextStyles.headline)),
         body: Center(
           child: Text(
             '質問が設定されていません',
-            style: AppTextStyles.body2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+            style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary(theme.brightness)),
           ),
         ),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(survey.title, style: AppTextStyles.headline.copyWith(letterSpacing: -0.2)),
-        centerTitle: false,
-      ),
+      appBar: AppBar(title: Text(survey.title, style: AppTextStyles.headline)),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
         children: [
           if (survey.description != null) ...[
             Text(
               survey.description!,
-              style: AppTextStyles.caption1.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+              style: AppTextStyles.caption1.copyWith(color: AppColors.textSecondary(theme.brightness)),
             ),
             const SizedBox(height: AppSpacing.xl),
           ],
@@ -119,20 +113,23 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       child: Column(
+        spacing: 6,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(child: Text(q.label, style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600))),
+              Expanded(
+                child: Text(q.label, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600)),
+              ),
               if (q.isRequired) Text('必須', style: AppTextStyles.caption2.copyWith(color: AppColors.error)),
             ],
           ),
           if (q.description != null) ...[
-            const SizedBox(height: 2),
             Text(
               q.description!,
-              style: AppTextStyles.caption2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+              style: AppTextStyles.caption2.copyWith(color: AppColors.textSecondary(theme.brightness)),
             ),
+            const SizedBox(height: 2),
           ],
           const SizedBox(height: AppSpacing.sm),
           _buildInput(q, theme),
@@ -179,7 +176,7 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
                   '$value',
                   style: AppTextStyles.body2.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: isSelected ? AppColors.brandPrimary : theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                    color: isSelected ? AppColors.brandPrimary : AppColors.textSecondary(theme.brightness),
                   ),
                 ),
               ),
