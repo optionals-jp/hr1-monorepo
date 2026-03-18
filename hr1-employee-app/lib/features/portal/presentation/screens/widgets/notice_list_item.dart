@@ -69,7 +69,7 @@ class NoticeListItem extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: AppTextStyles.caption2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+                    style: AppTextStyles.caption2.copyWith(color: AppColors.textSecondary(theme.brightness)),
                   ),
                 ],
               ),

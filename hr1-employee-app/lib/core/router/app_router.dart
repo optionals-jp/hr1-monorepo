@@ -15,6 +15,7 @@ import '../../features/tasks/presentation/screens/tasks_screen.dart';
 import '../../features/auth/presentation/screens/profile_screen.dart';
 import '../../features/attendance/presentation/screens/attendance_screen.dart';
 import '../../features/attendance/presentation/screens/attendance_detail_screen.dart';
+import '../../features/shifts/presentation/screens/shift_request_screen.dart';
 import '../../features/attendance/presentation/screens/correction_request_screen.dart';
 import '../../features/employees/domain/entities/employee_contact.dart';
 import '../../features/employees/presentation/screens/employee_detail_screen.dart';
@@ -69,6 +70,8 @@ class AppRoutes {
   static const String _attendanceDetail = 'detail';
   static const String correction = '/$_attendance/$_correction';
   static const String attendanceDetail = '/$_attendance/$_attendanceDetail';
+  static const String _shiftRequest = 'shift-request';
+  static const String shiftRequest = '/$_shiftRequest';
   static const String messageThread = '$messages/$_thread';
   static const String search = '/$_search';
   static const String profileEdit = '/$_profileEdit';
@@ -132,6 +135,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const AttendanceDetailScreen(),
           ),
         ],
+      ),
+
+      /// シフト希望提出画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.shiftRequest,
+        builder: (context, state) => const ShiftRequestScreen(),
       ),
 
       /// 検索画面（フルスクリーン・フェードトランジション）

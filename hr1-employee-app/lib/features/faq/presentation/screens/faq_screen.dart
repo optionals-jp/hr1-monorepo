@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/common_button.dart';
 import '../../../../shared/widgets/search_box.dart';
 import '../../domain/entities/faq_item.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
@@ -147,10 +148,10 @@ class _FaqScreenState extends ConsumerState<FaqScreen> {
             children: [
               Text('読み込みに失敗しました',
                   style: AppTextStyles.body2.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                    color: AppColors.textSecondary(theme.brightness),
                   )),
               const SizedBox(height: AppSpacing.md),
-              FilledButton.tonal(
+              CommonButton.outline(
                 onPressed: () => ref.invalidate(employeeFaqsProvider),
                 child: const Text('再試行'),
               ),
@@ -251,11 +252,10 @@ class _FaqTileState extends State<_FaqTile> {
                       color: AppColors.brandPrimary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
                         'Q',
-                        style: TextStyle(
-                          fontSize: 13,
+                        style: AppTextStyles.caption1.copyWith(
                           fontWeight: FontWeight.w700,
                           color: AppColors.brandPrimary,
                         ),

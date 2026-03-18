@@ -58,7 +58,7 @@ class EmployeeDetailScreen extends StatelessWidget {
                     unselectedLabelStyle: AppTextStyles.caption1,
                     indicatorColor: AppColors.brandPrimary,
                     labelColor: AppColors.brandPrimary,
-                    unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+                    unselectedLabelColor: AppColors.textSecondary(Theme.of(context).brightness),
                     dividerHeight: 0.5,
                   ),
                 ),
@@ -105,7 +105,7 @@ class _ProfileHeader extends StatelessWidget {
           Text(
             '${contact.department} / ${contact.position}',
             style: AppTextStyles.caption1.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+              color: AppColors.textSecondary(theme.brightness),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -197,8 +197,8 @@ class _ContactTab extends StatelessWidget {
         _InfoSection(
           title: '基本情報',
           children: [
-            _InfoRow(icon: AppIcons.briefcase(size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)), label: '部署', value: contact.department),
-            _InfoRow(icon: Icon(Icons.badge_outlined, size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)), label: '役職', value: contact.position),
+            _InfoRow(icon: AppIcons.briefcase(size: 22, color: AppColors.textSecondary(theme.brightness)), label: '部署', value: contact.department),
+            _InfoRow(icon: Icon(Icons.badge_outlined, size: 22, color: AppColors.textSecondary(theme.brightness)), label: '役職', value: contact.position),
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -206,9 +206,9 @@ class _ContactTab extends StatelessWidget {
           title: '連絡先',
           children: [
             if (contact.email != null)
-              _InfoRow(icon: Icon(Icons.email_outlined, size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)), label: 'メール', value: contact.email!),
+              _InfoRow(icon: Icon(Icons.email_outlined, size: 22, color: AppColors.textSecondary(theme.brightness)), label: 'メール', value: contact.email!),
             if (contact.phone != null)
-              _InfoRow(icon: Icon(Icons.phone_outlined, size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)), label: '電話番号', value: contact.phone!),
+              _InfoRow(icon: Icon(Icons.phone_outlined, size: 22, color: AppColors.textSecondary(theme.brightness)), label: '電話番号', value: contact.phone!),
           ],
         ),
       ],
@@ -372,7 +372,7 @@ class _SkillsTab extends ConsumerWidget {
             }
             return _InfoSection(
               children: certs.map((c) => _InfoRow(
-                icon: AppIcons.award(size: 22, color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+                icon: AppIcons.award(size: 22, color: AppColors.textSecondary(theme.brightness)),
                 label: c.acquiredDate != null
                     ? DateFormat('yyyy/MM').format(c.acquiredDate!)
                     : '-',
@@ -410,7 +410,7 @@ class _SectionHeader extends StatelessWidget {
       child: Text(
         title,
         style: AppTextStyles.caption2.copyWith(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+          color: AppColors.textSecondary(theme.brightness),
           fontWeight: FontWeight.w600,
           letterSpacing: 0.3,
         ),
@@ -491,7 +491,7 @@ class _InfoRow extends StatelessWidget {
                 Text(
                   label,
                   style: AppTextStyles.caption2.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                    color: AppColors.textSecondary(theme.brightness),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -608,7 +608,7 @@ class _ProjectCard extends StatelessWidget {
               Text(
                 project.period,
                 style: AppTextStyles.caption2.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                  color: AppColors.textSecondary(theme.brightness),
                 ),
               ),
             ],
@@ -661,7 +661,7 @@ class _CareerRow extends StatelessWidget {
                 Text(
                   career.period,
                   style: AppTextStyles.caption2.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                    color: AppColors.textSecondary(theme.brightness),
                   ),
                 ),
               ],

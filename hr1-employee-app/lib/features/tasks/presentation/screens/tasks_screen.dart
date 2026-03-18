@@ -205,7 +205,7 @@ class _FilterTabs extends StatelessWidget {
                       Icon(
                         icon,
                         size: 16,
-                        color: isActive ? color : theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                        color: isActive ? color : AppColors.textSecondary(theme.brightness),
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -263,7 +263,7 @@ class _FilterHeader extends StatelessWidget {
               if (subtitle != null)
                 Text(
                   subtitle,
-                  style: AppTextStyles.caption2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+                  style: AppTextStyles.caption2.copyWith(color: AppColors.textSecondary(theme.brightness)),
                 ),
             ],
           ),
@@ -483,7 +483,7 @@ class _CompletedSectionState extends State<_CompletedSection> {
                 Text(
                   '完了済み (${widget.tasks.length})',
                   style: AppTextStyles.caption2.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                    color: AppColors.textSecondary(theme.brightness),
                     fontWeight: FontWeight.w600,
                   ),
                 ),

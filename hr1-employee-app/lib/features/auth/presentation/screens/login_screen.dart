@@ -101,11 +101,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: AppColors.brandPrimary,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
                           'HR1',
-                          style: TextStyle(
-                            fontSize: 18,
+                          style: AppTextStyles.headline.copyWith(
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                             letterSpacing: -0.3,
@@ -159,8 +158,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       controller: _otpController,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 24,
+                      style: AppTextStyles.title2.copyWith(
                         letterSpacing: 8,
                         fontWeight: FontWeight.w600,
                       ),

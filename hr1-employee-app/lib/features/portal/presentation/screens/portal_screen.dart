@@ -55,7 +55,7 @@ class PortalScreen extends ConsumerWidget {
                           child: Center(
                             child: Text(
                               count > 99 ? '99+' : '$count',
-                              style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
+                              style: AppTextStyles.caption2.copyWith(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
                             ),
                           ),
                         ),
@@ -113,7 +113,7 @@ class PortalScreen extends ConsumerWidget {
                       child: Text(
                         '${user!.department} / ${user.position ?? ''}',
                         style: AppTextStyles.caption1.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                          color: AppColors.textSecondary(theme.brightness),
                         ),
                       ),
                     ),
@@ -156,9 +156,9 @@ class PortalScreen extends ConsumerWidget {
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
                         icon: AppIcons.calendar(size: 24, color: AppColors.success),
-                        label: 'スケジュール',
+                        label: '希望シフト',
                         color: AppColors.success,
-                        onTap: () {},
+                        onTap: () => context.push(AppRoutes.shiftRequest),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
@@ -203,7 +203,7 @@ class PortalScreen extends ConsumerWidget {
                     child: Text(
                       'お知らせ',
                       style: AppTextStyles.caption2.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                        color: AppColors.textSecondary(theme.brightness),
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.3,
                       ),
@@ -314,7 +314,7 @@ class _NotificationPreviewTile extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       item.body!,
-                      style: AppTextStyles.caption2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+                      style: AppTextStyles.caption2.copyWith(color: AppColors.textSecondary(theme.brightness)),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

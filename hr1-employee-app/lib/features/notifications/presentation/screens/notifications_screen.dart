@@ -46,7 +46,7 @@ class NotificationsScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('読み込みに失敗しました', style: AppTextStyles.body2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55))),
+              Text('読み込みに失敗しました', style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary(theme.brightness))),
               const SizedBox(height: AppSpacing.md),
               TextButton(
                 onPressed: () => ref.invalidate(notificationControllerProvider),
@@ -170,7 +170,7 @@ class _NotificationTile extends StatelessWidget {
                       Text(
                         item.body!,
                         style: AppTextStyles.caption2.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                          color: AppColors.textSecondary(theme.brightness),
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,

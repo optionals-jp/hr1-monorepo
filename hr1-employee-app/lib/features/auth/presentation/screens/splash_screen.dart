@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
 import '../../domain/entities/app_user.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
@@ -131,11 +132,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
                     'HR1',
-                    style: TextStyle(
-                      fontSize: 22,
+                    style: AppTextStyles.title2.copyWith(
                       fontWeight: FontWeight.w800,
                       color: AppColors.brandPrimary,
                       letterSpacing: -0.5,
@@ -144,11 +144,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'HR1',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
+                style: AppTextStyles.title1.copyWith(
                   color: Colors.white,
                   letterSpacing: -0.5,
                 ),
@@ -156,9 +154,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               const SizedBox(height: 6),
               Text(
                 'AI-Native HR SaaS',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
+                style: AppTextStyles.caption1.copyWith(
                   color: Colors.white.withValues(alpha: 0.7),
                   letterSpacing: 0.5,
                 ),

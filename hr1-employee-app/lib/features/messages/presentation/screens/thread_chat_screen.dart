@@ -352,7 +352,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
             ListTile(
               leading: Icon(Icons.delete_outline,
                   color: AppColors.error, size: 22),
-              title: Text('削除', style: TextStyle(color: AppColors.error)),
+              title: Text('削除', style: AppTextStyles.body1.copyWith(color: AppColors.error)),
               onTap: () {
                 Navigator.pop(ctx);
                 _deleteMessage(message.id);
@@ -385,9 +385,8 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
               child: Center(
                 child: Text(
                   displayName.isNotEmpty ? displayName[0] : '?',
-                  style: const TextStyle(
+                  style: AppTextStyles.caption1.copyWith(
                     color: Colors.white,
-                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -750,9 +749,8 @@ class _MessageBubble extends StatelessWidget {
               child: Center(
                 child: Text(
                   (message.senderName ?? '?')[0],
-                  style: const TextStyle(
+                  style: AppTextStyles.caption1.copyWith(
                     color: Colors.white,
-                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

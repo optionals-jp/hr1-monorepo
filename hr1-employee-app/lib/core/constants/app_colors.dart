@@ -87,6 +87,30 @@ class AppColors {
   // MaterialColor（互換用）
   // ---------------------------------------------------------------------------
 
+  // ---------------------------------------------------------------------------
+  // テーマ対応ヘルパー（BuildContext 拡張で使用）
+  // ---------------------------------------------------------------------------
+
+  /// セカンダリテキスト（ライト: #616161 / ダーク: #D6D6D6）
+  static Color textSecondary(Brightness brightness) =>
+      brightness == Brightness.dark ? darkTextSecondary : lightTextSecondary;
+
+  /// ターシャリテキスト（ライト: #707070 / ダーク: #ADADAD）
+  static Color textTertiary(Brightness brightness) =>
+      brightness == Brightness.dark ? darkTextTertiary : lightTextTertiary;
+
+  /// ボーダー
+  static Color border(Brightness brightness) =>
+      brightness == Brightness.dark ? darkBorder : lightBorder;
+
+  /// ディバイダー
+  static Color divider(Brightness brightness) =>
+      brightness == Brightness.dark ? darkDivider : lightDivider;
+
+  // ---------------------------------------------------------------------------
+  // MaterialColor（互換用）
+  // ---------------------------------------------------------------------------
+
   static const MaterialColor primarySwatch = MaterialColor(
     0xFF0F6CBD,
     <int, Color>{
