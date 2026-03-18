@@ -10,8 +10,9 @@ import '../../../../shared/widgets/org_icon.dart';
 import '../../../../shared/widgets/search_box.dart';
 import '../../../../shared/widgets/user_avatar.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../notifications/domain/entities/notification_item.dart';
+import '../../../notifications/presentation/providers/notification_providers.dart';
 import 'widgets/action_chip.dart';
-import 'widgets/notice_list_item.dart';
 
 /// 社内ポータル画面 — Teams / Outlook モバイルスタイル
 class PortalScreen extends ConsumerWidget {
@@ -35,10 +36,35 @@ class PortalScreen extends ConsumerWidget {
         centerTitle: false,
         actions: [
           IconButton(
-            icon: AppIcons.notification(color: theme.appBarTheme.foregroundColor, size: 22),
-            onPressed: () {
-              // TODO: 通知画面へ遷移
-            },
+            icon: Consumer(
+              builder: (context, ref, _) {
+                final countAsync = ref.watch(unreadNotificationCountProvider);
+                final count = countAsync.valueOrNull ?? 0;
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    AppIcons.notification(color: theme.appBarTheme.foregroundColor, size: 22),
+                    if (count > 0)
+                      Positioned(
+                        right: -6,
+                        top: -4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          decoration: const BoxDecoration(color: AppColors.error, shape: BoxShape.circle),
+                          constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                          child: Center(
+                            child: Text(
+                              count > 99 ? '99+' : '$count',
+                              style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+            onPressed: () => context.push(AppRoutes.notifications),
           ),
           GestureDetector(
             onTap: () => context.push(AppRoutes.profileFullscreen),
@@ -184,7 +210,7 @@ class PortalScreen extends ConsumerWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () => context.push(AppRoutes.notifications),
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
                       minimumSize: Size.zero,
@@ -200,17 +226,113 @@ class PortalScreen extends ConsumerWidget {
             ),
           ),
 
-          // お知らせリスト（フルワイド リストアイテム — Teams スタイル）
-          SliverList(
-            delegate: SliverChildListDelegate([
-              NoticeListItem(title: '年末調整のお知らせ', subtitle: '人事部より', date: '3/1', isNew: true),
-              NoticeListItem(title: '社内研修のご案内', subtitle: '総務部より', date: '2/25', isNew: false),
-              NoticeListItem(title: '健康診断の日程について', subtitle: '人事部より', date: '2/20', isNew: false),
-              const SizedBox(height: AppSpacing.xxl),
-            ]),
+          // お知らせリスト（ライブ通知データ）
+          Consumer(
+            builder: (context, ref, _) {
+              final notificationsAsync = ref.watch(latestNotificationsProvider);
+              return notificationsAsync.when(
+                loading: () => const SliverToBoxAdapter(child: SizedBox(height: 60, child: Center(child: CircularProgressIndicator(strokeWidth: 2)))),
+                error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                data: (notifications) {
+                  if (notifications.isEmpty) {
+                    return SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: AppSpacing.xl),
+                        child: Text(
+                          '新しい通知はありません',
+                          style: AppTextStyles.caption1.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+                        ),
+                      ),
+                    );
+                  }
+                  return SliverList(
+                    delegate: SliverChildListDelegate([
+                      ...notifications.map((n) => _NotificationPreviewTile(item: n)),
+                      const SizedBox(height: AppSpacing.xxl),
+                    ]),
+                  );
+                },
+              );
+            },
           ),
         ],
       ),
     );
   }
+}
+
+class _NotificationPreviewTile extends ConsumerWidget {
+  const _NotificationPreviewTile({required this.item});
+
+  final NotificationItem item;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final iconData = item.type.icon;
+    final iconColor = item.type.color;
+
+    return InkWell(
+      onTap: () {
+        if (!item.isRead) {
+          ref.read(notificationRepositoryProvider).markAsRead(item.id);
+          ref.invalidate(latestNotificationsProvider);
+          ref.invalidate(unreadNotificationCountProvider);
+        }
+        if (item.actionUrl != null && item.actionUrl!.startsWith('/')) {
+          context.push(item.actionUrl!);
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: !item.isRead
+                    ? iconColor.withValues(alpha: 0.1)
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.06),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(iconData, size: 20, color: !item.isRead ? iconColor : theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: AppTextStyles.caption1.copyWith(fontWeight: !item.isRead ? FontWeight.w600 : FontWeight.w400),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (item.body != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      item.body!,
+                      style: AppTextStyles.caption2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (!item.isRead)
+              Container(
+                margin: const EdgeInsets.only(left: AppSpacing.sm, top: 6),
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(color: AppColors.brandPrimary, shape: BoxShape.circle),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
 }

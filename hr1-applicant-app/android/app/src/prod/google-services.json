@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "615770272532",
+    "project_id": "hr1-dev",
+    "storage_bucket": "hr1-dev.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:615770272532:android:8f0c4c0cc1681fe9e44801",
+        "android_client_info": {
+          "package_name": "jp.hr1_applicant.prod"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "615770272532-0i3o3e8tiol5l45bjfmoa5r8knqo027u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUB2zq_0OCzpei6ME4WLXbaxQQ-pQ1mUk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "615770272532-0i3o3e8tiol5l45bjfmoa5r8knqo027u.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "615770272532-aoja00mv671uo8af704mp1or40e5tqcl.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "jp.hr1.dev"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:615770272532:android:7703dfc741a4e91be44801",
+        "android_client_info": {
+          "package_name": "jp.hr1_employee.prod"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "615770272532-0i3o3e8tiol5l45bjfmoa5r8knqo027u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUB2zq_0OCzpei6ME4WLXbaxQQ-pQ1mUk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "615770272532-0i3o3e8tiol5l45bjfmoa5r8knqo027u.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "615770272532-aoja00mv671uo8af704mp1or40e5tqcl.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "jp.hr1.dev"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
