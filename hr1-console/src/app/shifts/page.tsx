@@ -13,7 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
@@ -82,7 +81,7 @@ function timeShort(t: string | null): string {
 export default function ShiftsPage() {
   const { organization } = useOrg();
   const orgId = organization?.id ?? null;
-  const { toast } = useToast();
+  const { showToast } = useToast();
   const [tab, setTab] = useState<TabValue>("requests");
 
   const now = new Date();
@@ -197,7 +196,7 @@ export default function ShiftsPage() {
       }));
 
     if (upserts.length === 0) {
-      toast({ title: "反映するデータがありません", variant: "destructive" });
+      showToast("反映するデータがありません", "error");
       return;
     }
 
@@ -206,12 +205,12 @@ export default function ShiftsPage() {
       .upsert(upserts, { onConflict: "user_id,organization_id,target_date" });
 
     if (error) {
-      toast({ title: "反映に失敗しました", description: error.message, variant: "destructive" });
+      showToast(`反映に失敗しました: ${error.message}`, "error");
     } else {
-      toast({ title: `${upserts.length}件のシフトを反映しました` });
+      showToast(`${upserts.length}件のシフトを反映しました`);
       mutateSch();
     }
-  }, [orgId, requests, toast, mutateSch]);
+  }, [orgId, requests, showToast, mutateSch]);
 
   // 公開
   const handlePublish = useCallback(async () => {
@@ -234,12 +233,12 @@ export default function ShiftsPage() {
 
     setPublishing(false);
     if (error) {
-      toast({ title: "公開に失敗しました", description: error.message, variant: "destructive" });
+      showToast(`公開に失敗しました: ${error.message}`, "error");
     } else {
-      toast({ title: "シフトを公開しました" });
+      showToast("シフトを公開しました");
       mutateSch();
     }
-  }, [orgId, ym, totalDays, toast, mutateSch]);
+  }, [orgId, ym, totalDays, showToast, mutateSch]);
 
   const draftCount = (schedules ?? []).filter((s) => s.status === "draft").length;
 
@@ -371,7 +370,9 @@ function RequestsGrid({
           {submittedEmployees.length === 0 ? (
             <TableRow>
               <TableCell colSpan={totalDays + 1}>
-                <TableEmptyState message="提出済みのシフト希望がありません" />
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  提出済みのシフト希望がありません
+                </p>
               </TableCell>
             </TableRow>
           ) : (
@@ -478,7 +479,9 @@ function ScheduleGrid({
           {relevantEmployees.length === 0 ? (
             <TableRow>
               <TableCell colSpan={totalDays + 1}>
-                <TableEmptyState message="シフトデータがありません。「希望から反映」でシフト希望を取り込めます" />
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  シフトデータがありません。「希望から反映」でシフト希望を取り込めます
+                </p>
               </TableCell>
             </TableRow>
           ) : (
