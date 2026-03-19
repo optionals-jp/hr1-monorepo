@@ -5,7 +5,13 @@ import '../../../../../core/constants/app_text_styles.dart';
 
 /// お知らせリストアイテム — Teams アクティビティフィードスタイル
 class NoticeListItem extends StatelessWidget {
-  const NoticeListItem({super.key, required this.title, required this.subtitle, required this.date, required this.isNew});
+  const NoticeListItem({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.date,
+    required this.isNew,
+  });
 
   final String title;
   final String subtitle;
@@ -19,7 +25,10 @@ class NoticeListItem extends StatelessWidget {
     return InkWell(
       onTap: () {},
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: 14),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+          vertical: 14,
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -36,7 +45,9 @@ class NoticeListItem extends StatelessWidget {
               child: Icon(
                 Icons.campaign_outlined,
                 size: 20,
-                color: isNew ? AppColors.brandPrimary : theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                color: isNew
+                    ? AppColors.brandPrimary
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.45),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -51,7 +62,9 @@ class NoticeListItem extends StatelessWidget {
                         child: Text(
                           title,
                           style: AppTextStyles.caption1.copyWith(
-                            fontWeight: isNew ? FontWeight.w600 : FontWeight.w400,
+                            fontWeight: isNew
+                                ? FontWeight.w600
+                                : FontWeight.w400,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -61,7 +74,9 @@ class NoticeListItem extends StatelessWidget {
                       Text(
                         date,
                         style: AppTextStyles.caption2.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.45,
+                          ),
                         ),
                       ),
                     ],
@@ -69,7 +84,9 @@ class NoticeListItem extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: AppTextStyles.caption2.copyWith(color: AppColors.textSecondary(theme.brightness)),
+                    style: AppTextStyles.caption2.copyWith(
+                      color: AppColors.textSecondary(theme.brightness),
+                    ),
                   ),
                 ],
               ),
@@ -80,7 +97,10 @@ class NoticeListItem extends StatelessWidget {
                 margin: const EdgeInsets.only(left: AppSpacing.sm, top: 6),
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(color: AppColors.brandPrimary, shape: BoxShape.circle),
+                decoration: const BoxDecoration(
+                  color: AppColors.brandPrimary,
+                  shape: BoxShape.circle,
+                ),
               ),
           ],
         ),

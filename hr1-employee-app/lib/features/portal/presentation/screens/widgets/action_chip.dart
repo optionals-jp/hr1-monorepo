@@ -26,10 +26,19 @@ class PortalActionChip extends StatelessWidget {
         width: 90,
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: Color.alphaBlend(color.withValues(alpha: 0.1), theme.colorScheme.surface),
+          color: Color.alphaBlend(
+            color.withValues(alpha: 0.1),
+            theme.colorScheme.surface,
+          ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color.withValues(alpha: 0.15), width: 0.5),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 1))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -38,7 +47,10 @@ class PortalActionChip extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               label,
-              style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface),
+              style: AppTextStyles.caption1.copyWith(
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.onSurface,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

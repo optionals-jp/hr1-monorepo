@@ -48,8 +48,8 @@ class _MiniCalendarState extends State<MiniCalendar> {
     // 外部から月が変わった時（月ピッカー等）にPageViewを同期
     if (oldWidget.focusedMonth.year != widget.focusedMonth.year ||
         oldWidget.focusedMonth.month != widget.focusedMonth.month) {
-      final targetPage = _pageCenter +
-          _monthDiff(widget.focusedMonth, _baseMonth);
+      final targetPage =
+          _pageCenter + _monthDiff(widget.focusedMonth, _baseMonth);
       if (_pageController.hasClients &&
           _pageController.page?.round() != targetPage) {
         _isSyncing = true;
@@ -134,15 +134,16 @@ class _MiniCalendarState extends State<MiniCalendar> {
     final startDate = firstOfMonth.subtract(Duration(days: startWeekday - 1));
 
     // 選択日がある行を特定
-    final selectedDayOffset =
-        widget.selectedDate.difference(startDate).inDays;
+    final selectedDayOffset = widget.selectedDate.difference(startDate).inDays;
     final selectedRow = selectedDayOffset ~/ 7;
 
     // 折りたたみ時: 選択日の行のみ（1行）を表示
-    final visibleRowStart =
-        widget.isExpanded ? 0 : selectedRow.clamp(0, _fixedRows - 1);
-    final visibleRowEnd =
-        widget.isExpanded ? _fixedRows : (visibleRowStart + 1).clamp(1, _fixedRows);
+    final visibleRowStart = widget.isExpanded
+        ? 0
+        : selectedRow.clamp(0, _fixedRows - 1);
+    final visibleRowEnd = widget.isExpanded
+        ? _fixedRows
+        : (visibleRowStart + 1).clamp(1, _fixedRows);
 
     return Column(
       children: [
@@ -204,8 +205,8 @@ class _MiniCalendarState extends State<MiniCalendar> {
                   color: isToday
                       ? AppColors.brandPrimary
                       : isSelected
-                          ? AppColors.brandPrimary.withValues(alpha: 0.1)
-                          : null,
+                      ? AppColors.brandPrimary.withValues(alpha: 0.1)
+                      : null,
                   shape: BoxShape.circle,
                   border: isSelected && !isToday
                       ? Border.all(color: AppColors.brandPrimary, width: 1.5)
@@ -216,8 +217,7 @@ class _MiniCalendarState extends State<MiniCalendar> {
                   '${date.day}',
                   style: AppTextStyles.caption2.copyWith(
                     color: textColor,
-                    fontWeight:
-                        isToday || isSelected ? FontWeight.w600 : null,
+                    fontWeight: isToday || isSelected ? FontWeight.w600 : null,
                     fontSize: 13,
                   ),
                 ),
@@ -262,7 +262,8 @@ class _WeekdayHeader extends StatelessWidget {
             child: Center(
               child: Text(
                 d,
-                style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
+                style: AppTextStyles.caption1.copyWith(
+                  fontWeight: FontWeight.w500,
                   color: isWeekend
                       ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
                       : AppColors.textSecondary(theme.brightness),

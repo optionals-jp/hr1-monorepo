@@ -10,17 +10,17 @@ final formsRepositoryProvider = Provider<FormsRepository>((ref) {
 });
 
 /// フォームIDからフォーム情報を取得
-final formDetailProvider =
-    FutureProvider.autoDispose.family<CustomForm?, String>((ref, formId) async {
-  final repo = ref.watch(formsRepositoryProvider);
-  return repo.getForm(formId);
-});
+final formDetailProvider = FutureProvider.autoDispose
+    .family<CustomForm?, String>((ref, formId) async {
+      final repo = ref.watch(formsRepositoryProvider);
+      return repo.getForm(formId);
+    });
 
 /// フォーム回答の状態管理
 final formAnswersProvider = StateNotifierProvider.autoDispose
     .family<FormAnswersNotifier, Map<String, dynamic>, String>((ref, formId) {
-  return FormAnswersNotifier();
-});
+      return FormAnswersNotifier();
+    });
 
 class FormAnswersNotifier extends StateNotifier<Map<String, dynamic>> {
   FormAnswersNotifier() : super({});

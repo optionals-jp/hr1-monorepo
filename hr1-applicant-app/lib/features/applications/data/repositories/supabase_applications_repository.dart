@@ -11,7 +11,9 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
 
   @override
   Future<List<Application>> getApplications(
-      String organizationId, String applicantId) async {
+    String organizationId,
+    String applicantId,
+  ) async {
     final response = await _client
         .from('applications')
         .select('*, jobs(*), application_steps(*)')
@@ -74,8 +76,9 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
           'label': s['label'],
           'related_id': s['related_id'],
           'status': entry.key == 0 ? 'in_progress' : 'pending',
-          'started_at':
-              entry.key == 0 ? DateTime.now().toIso8601String() : null,
+          'started_at': entry.key == 0
+              ? DateTime.now().toIso8601String()
+              : null,
         };
       }).toList();
 
@@ -89,10 +92,13 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
   @override
   Future<void> completeStep(String stepId, String applicationId) async {
     // 1. 現在のステップを完了にする
-    await _client.from('application_steps').update({
-      'status': 'completed',
-      'completed_at': DateTime.now().toIso8601String(),
-    }).eq('id', stepId);
+    await _client
+        .from('application_steps')
+        .update({
+          'status': 'completed',
+          'completed_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', stepId);
 
     // 2. このアプリケーションの全ステップを取得
     final allSteps = await _client
@@ -102,8 +108,9 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
         .order('step_order');
 
     // 3. 完了したステップの次のpendingステップを in_progress にする
-    final completedStep =
-        (allSteps as List).firstWhere((s) => s['id'] == stepId);
+    final completedStep = (allSteps as List).firstWhere(
+      (s) => s['id'] == stepId,
+    );
     final completedOrder = completedStep['step_order'] as int;
 
     final nextStep = allSteps.cast<Map<String, dynamic>>().where((s) {
@@ -112,10 +119,13 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
     }).firstOrNull;
 
     if (nextStep != null) {
-      await _client.from('application_steps').update({
-        'status': 'in_progress',
-        'started_at': DateTime.now().toIso8601String(),
-      }).eq('id', nextStep['id']);
+      await _client
+          .from('application_steps')
+          .update({
+            'status': 'in_progress',
+            'started_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', nextStep['id']);
     }
   }
 
@@ -159,12 +169,13 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
 
   Job _mapJob(Map<String, dynamic> map) {
     final rawSections = (map['job_sections'] as List?) ?? [];
-    map['sections'] = rawSections.map((s) {
-      final sMap = Map<String, dynamic>.from(s);
-      sMap['order'] = sMap['sort_order'];
-      return sMap;
-    }).toList()
-      ..sort((a, b) => (a['order'] as int).compareTo(b['order'] as int));
+    map['sections'] =
+        rawSections.map((s) {
+            final sMap = Map<String, dynamic>.from(s);
+            sMap['order'] = sMap['sort_order'];
+            return sMap;
+          }).toList()
+          ..sort((a, b) => (a['order'] as int).compareTo(b['order'] as int));
     map.remove('job_sections');
 
     // job_steps → selection_steps にマッピング

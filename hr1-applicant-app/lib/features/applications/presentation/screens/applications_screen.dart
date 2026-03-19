@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../auth/presentation/providers/organization_context_provider.dart';
 import '../../domain/entities/application.dart';
@@ -28,7 +29,9 @@ class ApplicationsScreen extends ConsumerWidget {
                   ? _EmptyState(organizationName: currentOrg.name)
                   : _ApplicationsList(applications: applications),
               loading: () => const LoadingIndicator(),
-              error: (e, _) => const Center(child: Text('エラーが発生しました')),
+              error: (e, _) => ErrorState(
+                onRetry: () => ref.invalidate(applicationsProvider),
+              ),
             ),
       floatingActionButton: currentOrg != null
           ? FloatingActionButton.extended(
@@ -62,11 +65,11 @@ class _EmptyState extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: AppSpacing.lg),
-            Text('応募はまだありません', style: AppTextStyles.heading3),
+            Text('応募はまだありません', style: AppTextStyles.title3),
             const SizedBox(height: AppSpacing.sm),
             Text(
               '$organizationNameの求人を探して応募しましょう',
-              style: AppTextStyles.bodySmall.copyWith(
+              style: AppTextStyles.caption1.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
@@ -122,7 +125,7 @@ class _ApplicationCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     application.job?.title ?? '求人情報なし',
-                    style: AppTextStyles.subtitle,
+                    style: AppTextStyles.callout,
                   ),
                 ),
                 _StatusChip(application: application),
@@ -132,7 +135,7 @@ class _ApplicationCard extends StatelessWidget {
               const SizedBox(height: AppSpacing.xs),
               Text(
                 application.job!.department!,
-                style: AppTextStyles.bodySmall.copyWith(
+                style: AppTextStyles.caption1.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -142,7 +145,7 @@ class _ApplicationCard extends StatelessWidget {
               children: [
                 Text(
                   '応募日: ${_formatDate(application.appliedAt)}',
-                  style: AppTextStyles.caption.copyWith(
+                  style: AppTextStyles.caption2.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -159,7 +162,7 @@ class _ApplicationCard extends StatelessWidget {
                     ),
                     child: Text(
                       '対応が必要',
-                      style: AppTextStyles.caption.copyWith(
+                      style: AppTextStyles.caption2.copyWith(
                         color: AppColors.warning,
                         fontWeight: FontWeight.w600,
                       ),
@@ -189,7 +192,7 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         application.currentStepLabel,
-        style: AppTextStyles.caption.copyWith(
+        style: AppTextStyles.caption2.copyWith(
           color: chipColor,
           fontWeight: FontWeight.w600,
         ),
@@ -198,14 +201,14 @@ class _StatusChip extends StatelessWidget {
   }
 
   Color _getColor(BuildContext context) => switch (application.status) {
-        ApplicationStatus.offered => AppColors.success,
-        ApplicationStatus.rejected => AppColors.error,
-        ApplicationStatus.withdrawn =>
-          Theme.of(context).colorScheme.onSurfaceVariant,
-        ApplicationStatus.active => application.requiresAction
-            ? AppColors.warning
-            : AppColors.primaryLight,
-      };
+    ApplicationStatus.offered => AppColors.success,
+    ApplicationStatus.rejected => AppColors.error,
+    ApplicationStatus.withdrawn => Theme.of(
+      context,
+    ).colorScheme.onSurfaceVariant,
+    ApplicationStatus.active =>
+      application.requiresAction ? AppColors.warning : AppColors.primaryLight,
+  };
 }
 
 String _formatDate(DateTime date) {

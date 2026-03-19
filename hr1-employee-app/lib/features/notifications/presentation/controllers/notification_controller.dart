@@ -3,7 +3,8 @@ import '../../domain/entities/notification_item.dart';
 import '../providers/notification_providers.dart';
 
 /// 通知コントローラー
-class NotificationController extends AutoDisposeAsyncNotifier<List<NotificationItem>> {
+class NotificationController
+    extends AutoDisposeAsyncNotifier<List<NotificationItem>> {
   @override
   Future<List<NotificationItem>> build() {
     return ref.watch(notificationRepositoryProvider).getNotifications();
@@ -35,6 +36,7 @@ class NotificationController extends AutoDisposeAsyncNotifier<List<NotificationI
 }
 
 final notificationControllerProvider =
-    AutoDisposeAsyncNotifierProvider<NotificationController, List<NotificationItem>>(
-  NotificationController.new,
-);
+    AutoDisposeAsyncNotifierProvider<
+      NotificationController,
+      List<NotificationItem>
+    >(NotificationController.new);

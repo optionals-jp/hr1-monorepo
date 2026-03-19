@@ -31,10 +31,12 @@ class CompanyHomeScreen extends ConsumerWidget {
       data: (config) {
         if (config == null || config.tabs.isEmpty) {
           return Center(
-            child: Text('ページが設定されていません',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                )),
+            child: Text(
+              'ページが設定されていません',
+              style: AppTextStyles.caption1.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
           );
         }
 
@@ -93,9 +95,7 @@ class _CompanyPageBodyState extends ConsumerState<_CompanyPageBody>
       headerSliverBuilder: (context, innerBoxIsScrolled) {
         return [
           // プロフィールヘッダー
-          SliverToBoxAdapter(
-            child: _ProfileHeader(org: widget.org),
-          ),
+          SliverToBoxAdapter(child: _ProfileHeader(org: widget.org)),
           // タブバー
           SliverPersistentHeader(
             pinned: true,
@@ -160,10 +160,7 @@ class _ProfileHeader extends ConsumerWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  AppColors.primary,
-                  AppColors.primaryLight,
-                ],
+                colors: [AppColors.primary, AppColors.primaryLight],
               ),
             ),
           ),
@@ -184,8 +181,10 @@ class _ProfileHeader extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
-                      border:
-                          Border.all(color: theme.colorScheme.surface, width: 3),
+                      border: Border.all(
+                        color: theme.colorScheme.surface,
+                        width: 3,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.08),
@@ -197,12 +196,13 @@ class _ProfileHeader extends ConsumerWidget {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(13),
                       child: Container(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                        color: theme.colorScheme.primary.withValues(
+                          alpha: 0.08,
+                        ),
                         child: Center(
                           child: Text(
                             org.name.characters.first,
-                            style: TextStyle(
-                              fontSize: 28,
+                            style: AppTextStyles.title1.copyWith(
                               fontWeight: FontWeight.w800,
                               color: theme.colorScheme.primary,
                             ),
@@ -212,7 +212,7 @@ class _ProfileHeader extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  Text(org.name, style: AppTextStyles.heading3),
+                  Text(org.name, style: AppTextStyles.title3),
                   const SizedBox(height: AppSpacing.xs),
                   // 業種 + 所在地
                   Row(
@@ -225,13 +225,18 @@ class _ProfileHeader extends ConsumerWidget {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.location_on_outlined,
-                                size: 14, color: theme.colorScheme.onSurfaceVariant),
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 14,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                             const SizedBox(width: 2),
-                            Text(org.location!,
-                                style: AppTextStyles.caption.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                )),
+                            Text(
+                              org.location!,
+                              style: AppTextStyles.caption2.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
                           ],
                         ),
                     ],
@@ -241,7 +246,7 @@ class _ProfileHeader extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.md),
                     Text(
                       org.mission!,
-                      style: AppTextStyles.body.copyWith(height: 1.5),
+                      style: AppTextStyles.body2.copyWith(height: 1.5),
                     ),
                   ],
                   const SizedBox(height: AppSpacing.lg),
@@ -254,12 +259,17 @@ class _ProfileHeader extends ConsumerWidget {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () => context.push(AppRoutes.faq),
-                          icon: const Icon(Icons.help_outline_rounded, size: 18),
+                          icon: const Icon(
+                            Icons.help_outline_rounded,
+                            size: 18,
+                          ),
                           label: const Text('FAQ'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.primaryLight,
                             side: BorderSide(
-                              color: AppColors.primaryLight.withValues(alpha: 0.3),
+                              color: AppColors.primaryLight.withValues(
+                                alpha: 0.3,
+                              ),
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -277,7 +287,9 @@ class _ProfileHeader extends ConsumerWidget {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.primaryLight,
                             side: BorderSide(
-                              color: AppColors.primaryLight.withValues(alpha: 0.3),
+                              color: AppColors.primaryLight.withValues(
+                                alpha: 0.3,
+                              ),
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -312,7 +324,7 @@ class _InlineTag extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: AppTextStyles.caption.copyWith(
+        style: AppTextStyles.caption2.copyWith(
           color: AppColors.primaryLight,
           fontWeight: FontWeight.w600,
         ),
@@ -330,20 +342,11 @@ class _StatsBar extends ConsumerWidget {
     final jobCount = ref.watch(jobsProvider).valueOrNull?.length ?? 0;
     return Row(
       children: [
-        _StatCell(
-          value: org.foundedYear?.toString() ?? '-',
-          label: '設立',
-        ),
+        _StatCell(value: org.foundedYear?.toString() ?? '-', label: '設立'),
         _Divider(),
-        _StatCell(
-          value: org.employeeCount ?? '-',
-          label: '従業員',
-        ),
+        _StatCell(value: org.employeeCount ?? '-', label: '従業員'),
         _Divider(),
-        _StatCell(
-          value: '$jobCount件',
-          label: '募集中',
-        ),
+        _StatCell(value: '$jobCount件', label: '募集中'),
       ],
     );
   }
@@ -362,15 +365,18 @@ class _StatCell extends StatelessWidget {
         children: [
           Text(
             value,
-            style: AppTextStyles.subtitle.copyWith(
-              fontSize: 15,
+            style: AppTextStyles.body2.copyWith(
+              fontWeight: FontWeight.w600,
               color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 2),
-          Text(label, style: AppTextStyles.caption.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          )),
+          Text(
+            label,
+            style: AppTextStyles.caption2.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );
@@ -380,7 +386,11 @@ class _StatCell extends StatelessWidget {
 class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(width: 1, height: 28, color: Theme.of(context).dividerColor);
+    return Container(
+      width: 1,
+      height: 28,
+      color: Theme.of(context).dividerColor,
+    );
   }
 }
 
@@ -389,10 +399,7 @@ class _Divider extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _TabBarDelegate extends SliverPersistentHeaderDelegate {
-  const _TabBarDelegate({
-    required this.tabController,
-    required this.tabs,
-  });
+  const _TabBarDelegate({required this.tabController, required this.tabs});
 
   final TabController tabController;
   final List<String> tabs;
@@ -405,7 +412,10 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     final theme = Theme.of(context);
     return Container(
       color: theme.colorScheme.surface,
@@ -415,8 +425,10 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
             controller: tabController,
             labelColor: theme.colorScheme.primary,
             unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-            labelStyle: AppTextStyles.subtitle.copyWith(fontSize: 14),
-            unselectedLabelStyle: AppTextStyles.body.copyWith(fontSize: 14),
+            labelStyle: AppTextStyles.body2.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelStyle: AppTextStyles.body2,
             indicatorColor: theme.colorScheme.primary,
             indicatorWeight: 2.5,
             indicatorSize: TabBarIndicatorSize.label,

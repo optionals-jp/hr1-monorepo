@@ -37,9 +37,5 @@ void main() async {
     debugPrint('プッシュ通知初期化エラー: $e');
   }
 
-  runApp(
-    const ProviderScope(
-      child: HR1App(),
-    ),
-  );
+  runApp(const ProviderScope(child: HR1App()));
 }

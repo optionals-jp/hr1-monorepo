@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../auth/presentation/providers/organization_context_provider.dart';
 import '../../domain/entities/job.dart';
@@ -20,15 +21,13 @@ class JobsScreen extends ConsumerWidget {
     final asyncJobs = ref.watch(jobsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('${currentOrg?.name ?? ''}の求人'),
-      ),
+      appBar: AppBar(title: Text('${currentOrg?.name ?? ''}の求人')),
       body: asyncJobs.when(
         data: (jobs) => jobs.isEmpty
             ? Center(
                 child: Text(
                   '現在募集中の求人はありません',
-                  style: AppTextStyles.body.copyWith(
+                  style: AppTextStyles.body2.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -43,7 +42,8 @@ class JobsScreen extends ConsumerWidget {
                 },
               ),
         loading: () => const LoadingIndicator(),
-        error: (e, _) => const Center(child: Text('エラーが発生しました')),
+        error: (e, _) =>
+            ErrorState(onRetry: () => ref.invalidate(jobsProvider)),
       ),
     );
   }
@@ -69,11 +69,11 @@ class _JobCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(job.title, style: AppTextStyles.subtitle),
+            Text(job.title, style: AppTextStyles.callout),
             const SizedBox(height: AppSpacing.sm),
             Text(
               job.description,
-              style: AppTextStyles.bodySmall.copyWith(
+              style: AppTextStyles.caption1.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               maxLines: 2,
@@ -93,7 +93,7 @@ class _JobCard extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 job.salaryRange!,
-                style: AppTextStyles.body.copyWith(
+                style: AppTextStyles.body2.copyWith(
                   color: AppColors.primaryLight,
                   fontWeight: FontWeight.w600,
                 ),
@@ -105,14 +105,17 @@ class _JobCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     '詳細を見る',
-                    style: AppTextStyles.body.copyWith(
+                    style: AppTextStyles.body2.copyWith(
                       color: AppColors.primaryLight,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios,
-                    size: 14, color: AppColors.primaryLight),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: AppColors.primaryLight,
+                ),
               ],
             ),
           ],
@@ -138,9 +141,12 @@ class _Tag extends StatelessWidget {
         color: theme.scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(text, style: AppTextStyles.caption.copyWith(
-        color: theme.colorScheme.onSurfaceVariant,
-      )),
+      child: Text(
+        text,
+        style: AppTextStyles.caption2.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
     );
   }
 }

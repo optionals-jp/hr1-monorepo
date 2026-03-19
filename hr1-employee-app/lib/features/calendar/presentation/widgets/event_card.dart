@@ -7,11 +7,7 @@ import '../../domain/entities/calendar_event.dart';
 
 /// Outlook スタイルのイベントカード（左カラーバー付き）
 class EventCard extends StatelessWidget {
-  const EventCard({
-    super.key,
-    required this.event,
-    this.onTap,
-  });
+  const EventCard({super.key, required this.event, this.onTap});
 
   final CalendarEvent event;
   final VoidCallback? onTap;
@@ -92,8 +88,9 @@ class EventCard extends StatelessWidget {
                             child: Text(
                               '${timeFormat.format(event.startAt.toLocal())} - ${timeFormat.format(event.endAt.toLocal())}',
                               style: AppTextStyles.caption2.copyWith(
-                                color: theme.colorScheme.onSurface
-                                    .withValues(alpha: 0.55),
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.55,
+                                ),
                               ),
                             ),
                           )
@@ -126,14 +123,16 @@ class EventCard extends StatelessWidget {
                               children: [
                                 AppIcons.location(
                                   size: 13,
-                                  color: theme.colorScheme.onSurface
-                                      .withValues(alpha: 0.45),
+                                  color: theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.45,
+                                  ),
                                 ),
                                 const SizedBox(width: 3),
                                 Expanded(
                                   child: Text(
                                     event.location!,
-                                    style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
+                                    style: AppTextStyles.caption1.copyWith(
+                                      fontWeight: FontWeight.w500,
                                       color: theme.colorScheme.onSurface
                                           .withValues(alpha: 0.45),
                                     ),

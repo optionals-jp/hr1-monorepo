@@ -4,7 +4,12 @@ import '../../core/constants/app_text_styles.dart';
 
 /// iOS / Teams スタイルのグループ化セクション（ヘッダー付き）
 class GroupedSection extends StatelessWidget {
-  const GroupedSection({super.key, this.title, required this.children, this.dividerIndent = 52});
+  const GroupedSection({
+    super.key,
+    this.title,
+    required this.children,
+    this.dividerIndent = 52,
+  });
 
   final String? title;
   final List<Widget> children;
@@ -39,7 +44,11 @@ class GroupedSection extends StatelessWidget {
             for (var i = 0; i < children.length; i++) ...[
               children[i],
               if (i < children.length - 1)
-                Divider(height: 0.5, indent: dividerIndent, color: theme.colorScheme.outlineVariant),
+                Divider(
+                  height: 0.5,
+                  indent: dividerIndent,
+                  color: theme.colorScheme.outlineVariant,
+                ),
             ],
           ],
         ),

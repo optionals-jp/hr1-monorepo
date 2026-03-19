@@ -15,6 +15,7 @@ class SearchBox extends StatelessWidget {
     this.controller,
     this.focusNode,
     this.onSubmitted,
+    this.onChanged,
     this.onClear,
   });
 
@@ -26,6 +27,7 @@ class SearchBox extends StatelessWidget {
   final TextEditingController? controller;
   final FocusNode? focusNode;
   final ValueChanged<String>? onSubmitted;
+  final ValueChanged<String>? onChanged;
   final VoidCallback? onClear;
 
   bool get _isEditable => controller != null;
@@ -53,13 +55,13 @@ class SearchBox extends StatelessWidget {
                 ? TextField(
                     controller: controller,
                     focusNode: focusNode,
-                    style: AppTextStyles.caption1,
+                    style: AppTextStyles.body2,
                     textInputAction: TextInputAction.search,
                     onSubmitted: onSubmitted,
+                    onChanged: onChanged,
                     decoration: InputDecoration(
                       hintText: hintText,
-                      hintStyle:
-                          AppTextStyles.caption1.copyWith(color: hintColor),
+                      hintStyle: AppTextStyles.body2.copyWith(color: hintColor),
                       filled: false,
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -70,7 +72,7 @@ class SearchBox extends StatelessWidget {
                   )
                 : Text(
                     hintText,
-                    style: AppTextStyles.caption1.copyWith(color: hintColor),
+                    style: AppTextStyles.body2.copyWith(color: hintColor),
                   ),
           ),
           if (_isEditable)
@@ -90,8 +92,7 @@ class SearchBox extends StatelessWidget {
                     child: Icon(
                       Icons.cancel_rounded,
                       size: 18,
-                      color: theme.colorScheme.onSurface
-                          .withValues(alpha: 0.4),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                     ),
                   ),
                 );

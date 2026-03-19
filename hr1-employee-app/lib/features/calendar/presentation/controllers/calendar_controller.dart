@@ -36,8 +36,10 @@ class CalendarController extends AutoDisposeNotifier<void> {
   void goToToday() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    ref.read(focusedMonthProvider.notifier).state =
-        DateTime(now.year, now.month);
+    ref.read(focusedMonthProvider.notifier).state = DateTime(
+      now.year,
+      now.month,
+    );
     ref.read(selectedDateProvider.notifier).state = today;
   }
 
@@ -45,8 +47,10 @@ class CalendarController extends AutoDisposeNotifier<void> {
   void selectDate(DateTime date) {
     final focusedMonth = ref.read(focusedMonthProvider);
     if (date.month != focusedMonth.month || date.year != focusedMonth.year) {
-      ref.read(focusedMonthProvider.notifier).state =
-          DateTime(date.year, date.month);
+      ref.read(focusedMonthProvider.notifier).state = DateTime(
+        date.year,
+        date.month,
+      );
     }
     ref.read(selectedDateProvider.notifier).state = date;
   }
@@ -71,8 +75,8 @@ class CalendarController extends AutoDisposeNotifier<void> {
 
 final calendarControllerProvider =
     AutoDisposeNotifierProvider<CalendarController, void>(
-  CalendarController.new,
-);
+      CalendarController.new,
+    );
 
 /// イベントフォーム保存状態コントローラー
 class EventFormController extends AutoDisposeNotifier<bool> {
@@ -97,12 +101,22 @@ class EventFormController extends AutoDisposeNotifier<bool> {
   }) async {
     final startAt = isAllDay
         ? DateTime(startDate.year, startDate.month, startDate.day)
-        : DateTime(startDate.year, startDate.month, startDate.day,
-            startTime.hour, startTime.minute);
+        : DateTime(
+            startDate.year,
+            startDate.month,
+            startDate.day,
+            startTime.hour,
+            startTime.minute,
+          );
     final endAt = isAllDay
         ? DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59)
         : DateTime(
-            endDate.year, endDate.month, endDate.day, endTime.hour, endTime.minute);
+            endDate.year,
+            endDate.month,
+            endDate.day,
+            endTime.hour,
+            endTime.minute,
+          );
 
     final trimmedDesc = description.trim();
     final trimmedLocation = location.trim();
@@ -159,5 +173,5 @@ class EventFormController extends AutoDisposeNotifier<bool> {
 
 final eventFormControllerProvider =
     AutoDisposeNotifierProvider<EventFormController, bool>(
-  EventFormController.new,
-);
+      EventFormController.new,
+    );

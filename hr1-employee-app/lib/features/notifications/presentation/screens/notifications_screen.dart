@@ -7,6 +7,7 @@ import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../shared/widgets/common_snackbar.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../domain/entities/notification_item.dart';
 import '../controllers/notification_controller.dart';
@@ -27,14 +28,19 @@ class NotificationsScreen extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               try {
-                await ref.read(notificationControllerProvider.notifier).markAllAsRead();
+                await ref
+                    .read(notificationControllerProvider.notifier)
+                    .markAllAsRead();
               } catch (_) {
                 CommonSnackBar.error(context, 'エラーが発生しました');
               }
             },
             child: Text(
               'すべて既読',
-              style: AppTextStyles.caption1.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
+              style: AppTextStyles.caption1.copyWith(
+                color: AppColors.brandPrimary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           const SizedBox(width: 4),
@@ -42,18 +48,8 @@ class NotificationsScreen extends ConsumerWidget {
       ),
       body: state.when(
         loading: () => const LoadingIndicator(),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('読み込みに失敗しました', style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary(theme.brightness))),
-              const SizedBox(height: AppSpacing.md),
-              TextButton(
-                onPressed: () => ref.invalidate(notificationControllerProvider),
-                child: const Text('再読み込み'),
-              ),
-            ],
-          ),
+        error: (e, _) => ErrorState(
+          onRetry: () => ref.invalidate(notificationControllerProvider),
         ),
         data: (notifications) {
           if (notifications.isEmpty) {
@@ -61,11 +57,18 @@ class NotificationsScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  AppIcons.notification(size: 48, color: theme.colorScheme.onSurface.withValues(alpha: 0.25)),
+                  AppIcons.notification(
+                    size: 48,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.25),
+                  ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     '通知はありません',
-                    style: AppTextStyles.body2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+                    style: AppTextStyles.body2.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.45,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -73,7 +76,8 @@ class NotificationsScreen extends ConsumerWidget {
           }
 
           return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(notificationControllerProvider),
+            onRefresh: () async =>
+                ref.invalidate(notificationControllerProvider),
             child: ListView.builder(
               itemCount: notifications.length,
               itemBuilder: (context, index) {
@@ -81,13 +85,18 @@ class NotificationsScreen extends ConsumerWidget {
                 return _NotificationTile(
                   item: item,
                   onTap: () {
-                    ref.read(notificationControllerProvider.notifier).markAsRead(item.id);
-                    if (item.actionUrl != null && item.actionUrl!.startsWith('/')) {
+                    ref
+                        .read(notificationControllerProvider.notifier)
+                        .markAsRead(item.id);
+                    if (item.actionUrl != null &&
+                        item.actionUrl!.startsWith('/')) {
                       context.push(item.actionUrl!);
                     }
                   },
                   onDismissed: () {
-                    ref.read(notificationControllerProvider.notifier).deleteNotification(item.id);
+                    ref
+                        .read(notificationControllerProvider.notifier)
+                        .deleteNotification(item.id);
                   },
                 );
               },
@@ -100,7 +109,11 @@ class NotificationsScreen extends ConsumerWidget {
 }
 
 class _NotificationTile extends StatelessWidget {
-  const _NotificationTile({required this.item, required this.onTap, required this.onDismissed});
+  const _NotificationTile({
+    required this.item,
+    required this.onTap,
+    required this.onDismissed,
+  });
 
   final NotificationItem item;
   final VoidCallback onTap;
@@ -125,8 +138,13 @@ class _NotificationTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          color: item.isRead ? null : AppColors.brandPrimary.withValues(alpha: 0.03),
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: 14),
+          color: item.isRead
+              ? null
+              : AppColors.brandPrimary.withValues(alpha: 0.03),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenHorizontal,
+            vertical: 14,
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -150,7 +168,9 @@ class _NotificationTile extends StatelessWidget {
                           child: Text(
                             item.title,
                             style: AppTextStyles.caption1.copyWith(
-                              fontWeight: item.isRead ? FontWeight.w400 : FontWeight.w600,
+                              fontWeight: item.isRead
+                                  ? FontWeight.w400
+                                  : FontWeight.w600,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -160,7 +180,9 @@ class _NotificationTile extends StatelessWidget {
                         Text(
                           _formatDate(item.createdAt),
                           style: AppTextStyles.caption2.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.45,
+                            ),
                           ),
                         ),
                       ],
@@ -184,7 +206,10 @@ class _NotificationTile extends StatelessWidget {
                   margin: const EdgeInsets.only(left: AppSpacing.sm, top: 6),
                   width: 8,
                   height: 8,
-                  decoration: const BoxDecoration(color: AppColors.brandPrimary, shape: BoxShape.circle),
+                  decoration: const BoxDecoration(
+                    color: AppColors.brandPrimary,
+                    shape: BoxShape.circle,
+                  ),
                 ),
             ],
           ),
@@ -202,5 +227,4 @@ class _NotificationTile extends StatelessWidget {
     if (diff.inDays < 7) return '${diff.inDays}日前';
     return DateFormat('M/d').format(date.toLocal());
   }
-
 }

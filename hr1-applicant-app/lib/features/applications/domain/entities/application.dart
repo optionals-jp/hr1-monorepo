@@ -61,10 +61,13 @@ class Application {
           ? Job.fromJson(json['job'] as Map<String, dynamic>)
           : null,
       steps: () {
-        final rawSteps = (json['steps'] as List<dynamic>?)
-            ?.map((e) =>
-                ApplicationStep.fromJson(e as Map<String, dynamic>))
-            .toList() ?? [];
+        final rawSteps =
+            (json['steps'] as List<dynamic>?)
+                ?.map(
+                  (e) => ApplicationStep.fromJson(e as Map<String, dynamic>),
+                )
+                .toList() ??
+            [];
         rawSteps.sort((a, b) => a.stepOrder.compareTo(b.stepOrder));
         return rawSteps;
       }(),

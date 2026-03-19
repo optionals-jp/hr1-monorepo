@@ -5,7 +5,9 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/user_avatar.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../domain/entities/message_thread.dart';
 import '../providers/messages_providers.dart';
@@ -21,9 +23,8 @@ class MessagesScreen extends ConsumerWidget {
 
     return threadsAsync.when(
       loading: () => const LoadingIndicator(),
-      error: (error, _) => Center(
-        child: Text('エラーが発生しました', style: AppTextStyles.body),
-      ),
+      error: (error, _) =>
+          ErrorState(onRetry: () => ref.invalidate(messageThreadsProvider)),
       data: (threads) {
         if (threads.isEmpty) {
           return const EmptyState(
@@ -59,22 +60,17 @@ class _ThreadTile extends StatelessWidget {
     final initial = displayName.isNotEmpty ? displayName[0] : '?';
 
     return ListTile(
-      leading: CircleAvatar(
-        radius: 22,
-        backgroundColor: AppColors.primaryLight.withValues(alpha: 0.1),
-        child: Text(
-          initial,
-          style: AppTextStyles.subtitle.copyWith(
-            color: AppColors.primaryLight,
-          ),
-        ),
+      leading: UserAvatar(
+        initial: initial,
+        color: AppColors.primaryLight,
+        size: 44,
       ),
       title: Row(
         children: [
           Expanded(
             child: Text(
               displayName,
-              style: AppTextStyles.body.copyWith(
+              style: AppTextStyles.body2.copyWith(
                 fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w500,
               ),
               overflow: TextOverflow.ellipsis,
@@ -83,7 +79,7 @@ class _ThreadTile extends StatelessWidget {
           if (thread.latestMessage != null)
             Text(
               DateFormatter.toRelative(thread.latestMessage!.createdAt),
-              style: AppTextStyles.caption.copyWith(
+              style: AppTextStyles.caption2.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
@@ -95,7 +91,7 @@ class _ThreadTile extends StatelessWidget {
           if (thread.jobTitle != null)
             Text(
               thread.jobTitle!,
-              style: AppTextStyles.caption.copyWith(
+              style: AppTextStyles.caption2.copyWith(
                 color: AppColors.textSecondary,
               ),
               overflow: TextOverflow.ellipsis,
@@ -107,12 +103,11 @@ class _ThreadTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     thread.latestMessage!.content,
-                    style: AppTextStyles.bodySmall.copyWith(
+                    style: AppTextStyles.caption1.copyWith(
                       color: hasUnread
                           ? AppColors.textPrimary
                           : AppColors.textSecondary,
-                      fontWeight:
-                          hasUnread ? FontWeight.w500 : FontWeight.w400,
+                      fontWeight: hasUnread ? FontWeight.w500 : FontWeight.w400,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -122,14 +117,16 @@ class _ThreadTile extends StatelessWidget {
                   const SizedBox(width: AppSpacing.sm),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primaryLight,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       '${thread.unreadCount}',
-                      style: AppTextStyles.caption.copyWith(
+                      style: AppTextStyles.caption2.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
                       ),
@@ -141,12 +138,13 @@ class _ThreadTile extends StatelessWidget {
           ],
         ],
       ),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: 4,
+      ),
       onTap: () {
         context.push('/messages/${thread.id}', extra: thread);
       },
     );
   }
-
 }

@@ -46,14 +46,20 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             onPressed: () => context.push(AppRoutes.attendanceDetail),
             child: Text(
               '明細',
-              style: AppTextStyles.caption1.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
+              style: AppTextStyles.caption1.copyWith(
+                color: AppColors.brandPrimary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           TextButton(
             onPressed: () => context.push(AppRoutes.correction),
             child: Text(
               '修正依頼',
-              style: AppTextStyles.caption1.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
+              style: AppTextStyles.caption1.copyWith(
+                color: AppColors.brandPrimary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           const SizedBox(width: 4),
@@ -65,14 +71,24 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         },
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: AppSpacing.md),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenHorizontal,
+            vertical: AppSpacing.md,
+          ),
           children: [
             // 時刻 + ステータス（統合ヒーロー）
-            _TimeStatusHero(workState: workState, record: todayRecord.valueOrNull),
+            _TimeStatusHero(
+              workState: workState,
+              record: todayRecord.valueOrNull,
+            ),
             const SizedBox(height: AppSpacing.xl),
 
             // 打刻ボタン（2x2）
-            _PunchButtons(workState: workState, isLoading: punchState.isLoading, onPunch: _handlePunch),
+            _PunchButtons(
+              workState: workState,
+              isLoading: punchState.isLoading,
+              onPunch: _handlePunch,
+            ),
             const SizedBox(height: AppSpacing.xxl),
 
             // 今日のサマリー
@@ -87,7 +103,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
 
             // 打刻履歴セクション
             Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.xl, bottom: AppSpacing.sm),
+              padding: const EdgeInsets.only(
+                top: AppSpacing.xl,
+                bottom: AppSpacing.sm,
+              ),
               child: Text(
                 'タイムライン',
                 style: AppTextStyles.caption2.copyWith(
@@ -100,12 +119,16 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             todayPunches.when(
               data: (punches) => punches.isEmpty
                   ? Padding(
-                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.xxl,
+                      ),
                       child: Center(
                         child: Text(
                           'まだ打刻がありません',
                           style: AppTextStyles.caption1.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.45,
+                            ),
                           ),
                         ),
                       ),
@@ -115,13 +138,18 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         for (var i = 0; i < punches.length; i++)
                           _TimelineItem(
                             punch: punches[i],
-                            nextPunch: i < punches.length - 1 ? punches[i + 1] : null,
+                            nextPunch: i < punches.length - 1
+                                ? punches[i + 1]
+                                : null,
                             isLast: i == punches.length - 1,
                           ),
                       ],
                     ),
               loading: () => const LoadingIndicator(),
-              error: (e, _) => Padding(padding: const EdgeInsets.all(AppSpacing.xl), child: Text('エラー: $e')),
+              error: (e, _) => Padding(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Text('エラー: $e'),
+              ),
             ),
             const SizedBox(height: AppSpacing.xxl),
           ],
@@ -146,7 +174,10 @@ class _TimeStatusHero extends StatelessWidget {
     final theme = Theme.of(context);
 
     final (statusLabel, statusColor) = switch (workState) {
-      WorkState.notStarted => ('未出勤', theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+      WorkState.notStarted => (
+        '未出勤',
+        theme.colorScheme.onSurface.withValues(alpha: 0.45),
+      ),
       WorkState.working => ('勤務中', AppColors.success),
       WorkState.onBreak => ('休憩中', AppColors.warning),
       WorkState.finished => ('退勤済み', AppColors.brandPrimary),
@@ -157,7 +188,9 @@ class _TimeStatusHero extends StatelessWidget {
         // 日付
         Text(
           dateFormat.format(now),
-          style: AppTextStyles.caption1.copyWith(color: AppColors.textSecondary(theme.brightness)),
+          style: AppTextStyles.caption1.copyWith(
+            color: AppColors.textSecondary(theme.brightness),
+          ),
         ),
         const SizedBox(height: 4),
         // 時刻（大きく表示）
@@ -183,12 +216,18 @@ class _TimeStatusHero extends StatelessWidget {
               Container(
                 width: 8,
                 height: 8,
-                decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  shape: BoxShape.circle,
+                ),
               ),
               const SizedBox(width: 6),
               Text(
                 statusLabel,
-                style: AppTextStyles.caption2.copyWith(color: statusColor, fontWeight: FontWeight.w600),
+                style: AppTextStyles.caption2.copyWith(
+                  color: statusColor,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -200,7 +239,11 @@ class _TimeStatusHero extends StatelessWidget {
 
 /// 打刻ボタン群
 class _PunchButtons extends StatelessWidget {
-  const _PunchButtons({required this.workState, required this.isLoading, required this.onPunch});
+  const _PunchButtons({
+    required this.workState,
+    required this.isLoading,
+    required this.onPunch,
+  });
 
   final WorkState workState;
   final bool isLoading;
@@ -282,7 +325,9 @@ class _PunchButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final iconColor = enabled ? color : theme.colorScheme.onSurface.withValues(alpha: 0.3);
+    final iconColor = enabled
+        ? color
+        : theme.colorScheme.onSurface.withValues(alpha: 0.3);
 
     return SizedBox(
       height: 56,
@@ -305,14 +350,18 @@ class _PunchButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             child: Container(
               decoration: BoxDecoration(
-                color: enabled ? color.withValues(alpha: 0.15) : Colors.transparent,
+                color: enabled
+                    ? color.withValues(alpha: 0.15)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: enabled
                       ? color.withValues(alpha: 0.15)
                       : (isDark
-                          ? theme.colorScheme.outline.withValues(alpha: 0.5)
-                          : theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                            ? theme.colorScheme.outline.withValues(alpha: 0.5)
+                            : theme.colorScheme.outlineVariant.withValues(
+                                alpha: 0.5,
+                              )),
                 ),
               ),
               child: Row(
@@ -322,7 +371,10 @@ class _PunchButton extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     label,
-                    style: AppTextStyles.caption1.copyWith(color: iconColor, fontWeight: FontWeight.w600),
+                    style: AppTextStyles.caption1.copyWith(
+                      color: iconColor,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -420,7 +472,10 @@ class _KVItem extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+            style: AppTextStyles.caption1.copyWith(
+              fontWeight: FontWeight.w500,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+            ),
           ),
         ],
       ),
@@ -431,13 +486,21 @@ class _KVItem extends StatelessWidget {
 class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(width: 0.5, height: 28, color: Theme.of(context).colorScheme.outlineVariant);
+    return Container(
+      width: 0.5,
+      height: 28,
+      color: Theme.of(context).colorScheme.outlineVariant,
+    );
   }
 }
 
 /// タイムラインアイテム — GitHub 履歴風（アイコン + 縦線）
 class _TimelineItem extends StatelessWidget {
-  const _TimelineItem({required this.punch, this.nextPunch, this.isLast = false});
+  const _TimelineItem({
+    required this.punch,
+    this.nextPunch,
+    this.isLast = false,
+  });
 
   final AttendancePunch punch;
   final AttendancePunch? nextPunch;
@@ -490,11 +553,14 @@ class _TimelineItem extends StatelessWidget {
       'clock_out' => (AppIcons.logout, AppColors.error),
       'break_start' => (AppIcons.coffee, AppColors.warning),
       'break_end' => (AppIcons.pause, AppColors.brandLight),
-      _ => (AppIcons.clock, theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+      _ => (
+        AppIcons.clock,
+        theme.colorScheme.onSurface.withValues(alpha: 0.45),
+      ),
     };
 
     // 次の打刻までの経過時間
-    final elapsed = nextPunch != null ? nextPunch!.punchedAt.difference(punch.punchedAt) : null;
+    final elapsed = nextPunch?.punchedAt.difference(punch.punchedAt);
 
     return Column(
       children: [
@@ -512,7 +578,10 @@ class _TimelineItem extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: iconColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
-                    border: Border.all(color: iconColor.withValues(alpha: 0.25), width: 1),
+                    border: Border.all(
+                      color: iconColor.withValues(alpha: 0.25),
+                      width: 1,
+                    ),
                   ),
                   child: Center(child: iconBuilder(size: 16, color: iconColor)),
                 ),
@@ -545,14 +614,26 @@ class _TimelineItem extends StatelessWidget {
                 // 縦棒
                 SizedBox(
                   width: 36,
-                  child: Center(child: Container(width: 1.5, height: 36, color: theme.colorScheme.outlineVariant)),
+                  child: Center(
+                    child: Container(
+                      width: 1.5,
+                      height: 36,
+                      color: theme.colorScheme.outlineVariant,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 // 経過時間
                 if (elapsed != null)
                   Text(
-                    _elapsedLabel(elapsed, punch.punchType, nextPunch!.punchType),
-                    style: AppTextStyles.caption2.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
+                    _elapsedLabel(
+                      elapsed,
+                      punch.punchType,
+                      nextPunch!.punchType,
+                    ),
+                    style: AppTextStyles.caption2.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                    ),
                   ),
               ],
             ),

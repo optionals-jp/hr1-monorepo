@@ -17,8 +17,6 @@ class SupabaseFaqRepository {
         .inFilter('target', ['applicant', 'both'])
         .order('sort_order', ascending: true);
 
-    return (response as List)
-        .map((json) => FaqItem.fromJson(json))
-        .toList();
+    return (response as List).map((json) => FaqItem.fromJson(json)).toList();
   }
 }

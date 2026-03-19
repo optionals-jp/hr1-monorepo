@@ -22,33 +22,32 @@ class AuthController extends AutoDisposeNotifier<AuthState> {
     final result = await ref.read(authRepositoryProvider).sendOtp(email: email);
     return switch (result) {
       Success() => () {
-          state = const AuthState();
-          return true;
-        }(),
+        state = const AuthState();
+        return true;
+      }(),
       Failure(message: final msg) => () {
-          state = AuthState(error: msg);
-          return false;
-        }(),
+        state = AuthState(error: msg);
+        return false;
+      }(),
     };
   }
 
   /// OTP検証 → ログイン
   Future<bool> verifyOtp(String email, String token) async {
     state = const AuthState(isLoading: true);
-    final result = await ref.read(authRepositoryProvider).verifyOtp(
-          email: email,
-          token: token,
-        );
+    final result = await ref
+        .read(authRepositoryProvider)
+        .verifyOtp(email: email, token: token);
     return switch (result) {
       Success(data: final user) => () {
-          ref.read(appUserProvider.notifier).setUser(user);
-          state = const AuthState();
-          return true;
-        }(),
+        ref.read(appUserProvider.notifier).setUser(user);
+        state = const AuthState();
+        return true;
+      }(),
       Failure(message: final msg) => () {
-          state = AuthState(error: msg);
-          return false;
-        }(),
+        state = AuthState(error: msg);
+        return false;
+      }(),
     };
   }
 
@@ -58,19 +57,17 @@ class AuthController extends AutoDisposeNotifier<AuthState> {
     final result = await ref.read(authRepositoryProvider).signOut();
     return switch (result) {
       Success() => () {
-          ref.read(appUserProvider.notifier).clearUser();
-          state = const AuthState();
-          return true;
-        }(),
+        ref.read(appUserProvider.notifier).clearUser();
+        state = const AuthState();
+        return true;
+      }(),
       Failure(message: final msg) => () {
-          state = AuthState(error: msg);
-          return false;
-        }(),
+        state = AuthState(error: msg);
+        return false;
+      }(),
     };
   }
 }
 
 final authControllerProvider =
-    AutoDisposeNotifierProvider<AuthController, AuthState>(
-  AuthController.new,
-);
+    AutoDisposeNotifierProvider<AuthController, AuthState>(AuthController.new);

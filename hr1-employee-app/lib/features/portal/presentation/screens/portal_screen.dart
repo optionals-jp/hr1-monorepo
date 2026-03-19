@@ -6,6 +6,8 @@ import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../shared/widgets/error_state.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/org_icon.dart';
 import '../../../../shared/widgets/search_box.dart';
 import '../../../../shared/widgets/user_avatar.dart';
@@ -28,9 +30,15 @@ class PortalScreen extends ConsumerWidget {
         titleSpacing: AppSpacing.screenHorizontal,
         title: Row(
           children: [
-            OrgIcon(initial: (user?.organizationName ?? 'H').substring(0, 1), size: 32),
+            OrgIcon(
+              initial: (user?.organizationName ?? 'H').substring(0, 1),
+              size: 32,
+            ),
             const SizedBox(width: 10),
-            Text(user?.organizationName ?? 'HR1', style: AppTextStyles.title1.copyWith(letterSpacing: -0.2)),
+            Text(
+              user?.organizationName ?? 'HR1',
+              style: AppTextStyles.title1.copyWith(letterSpacing: -0.2),
+            ),
           ],
         ),
         centerTitle: false,
@@ -43,19 +51,35 @@ class PortalScreen extends ConsumerWidget {
                 return Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    AppIcons.notification(color: theme.appBarTheme.foregroundColor, size: 22),
+                    AppIcons.notification(
+                      color: theme.appBarTheme.foregroundColor,
+                      size: 22,
+                    ),
                     if (count > 0)
                       Positioned(
                         right: -6,
                         top: -4,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                          decoration: const BoxDecoration(color: AppColors.error, shape: BoxShape.circle),
-                          constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 1,
+                          ),
+                          decoration: const BoxDecoration(
+                            color: AppColors.error,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
                           child: Center(
                             child: Text(
                               count > 99 ? '99+' : '$count',
-                              style: AppTextStyles.caption2.copyWith(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
+                              style: AppTextStyles.caption2.copyWith(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ),
@@ -69,9 +93,14 @@ class PortalScreen extends ConsumerWidget {
           GestureDetector(
             onTap: () => context.push(AppRoutes.profileFullscreen),
             child: Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.screenHorizontal),
+              padding: const EdgeInsets.only(
+                right: AppSpacing.screenHorizontal,
+              ),
               child: UserAvatar(
-                initial: (user?.displayName ?? user?.email ?? 'U').substring(0, 1),
+                initial: (user?.displayName ?? user?.email ?? 'U').substring(
+                  0,
+                  1,
+                ),
                 size: 32,
                 imageUrl: user?.avatarUrl,
               ),
@@ -106,7 +135,10 @@ class PortalScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('こんにちは、${user?.displayName ?? 'ゲスト'}さん', style: AppTextStyles.title1),
+                  Text(
+                    'こんにちは、${user?.displayName ?? 'ゲスト'}さん',
+                    style: AppTextStyles.title1,
+                  ),
                   if (user?.department != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
@@ -129,12 +161,18 @@ class PortalScreen extends ConsumerWidget {
               child: SingleChildScrollView(
                 clipBehavior: Clip.none,
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenHorizontal,
+                  vertical: 4,
+                ),
                 child: IntrinsicHeight(
                   child: Row(
                     children: [
                       PortalActionChip(
-                        icon: AppIcons.clock(size: 24, color: AppColors.brandPrimary),
+                        icon: AppIcons.clock(
+                          size: 24,
+                          color: AppColors.brandPrimary,
+                        ),
                         label: '勤怠打刻',
                         color: AppColors.brandPrimary,
                         onTap: () => context.push(AppRoutes.attendance),
@@ -148,35 +186,52 @@ class PortalScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: Icon(Icons.help_outline_rounded, size: 24, color: AppColors.brandLight),
+                        icon: Icon(
+                          Icons.help_outline_rounded,
+                          size: 24,
+                          color: AppColors.brandLight,
+                        ),
                         label: 'FAQ',
                         color: AppColors.brandLight,
                         onTap: () => context.push(AppRoutes.faq),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: AppIcons.calendar(size: 24, color: AppColors.success),
+                        icon: AppIcons.calendar(
+                          size: 24,
+                          color: AppColors.success,
+                        ),
                         label: '希望シフト',
                         color: AppColors.success,
                         onTap: () => context.push(AppRoutes.shiftRequest),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: const Icon(Icons.poll_outlined, size: 24, color: Color(0xFF8764B8)),
+                        icon: const Icon(
+                          Icons.poll_outlined,
+                          size: 24,
+                          color: Color(0xFF8764B8),
+                        ),
                         label: 'サーベイ',
                         color: const Color(0xFF8764B8),
                         onTap: () => context.push(AppRoutes.surveys),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: AppIcons.folder(size: 24, color: AppColors.brandSecondary),
+                        icon: AppIcons.folder(
+                          size: 24,
+                          color: AppColors.brandSecondary,
+                        ),
                         label: '社内文書',
                         color: AppColors.brandSecondary,
                         onTap: () {},
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: AppIcons.teacher(size: 24, color: const Color(0xFF8764B8)),
+                        icon: AppIcons.teacher(
+                          size: 24,
+                          color: const Color(0xFF8764B8),
+                        ),
                         label: '研修',
                         color: const Color(0xFF8764B8),
                         onTap: () {},
@@ -218,7 +273,10 @@ class PortalScreen extends ConsumerWidget {
                     ),
                     child: Text(
                       'すべて表示',
-                      style: AppTextStyles.caption2.copyWith(color: AppColors.brandPrimary, fontWeight: FontWeight.w600),
+                      style: AppTextStyles.caption2.copyWith(
+                        color: AppColors.brandPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -231,23 +289,38 @@ class PortalScreen extends ConsumerWidget {
             builder: (context, ref, _) {
               final notificationsAsync = ref.watch(latestNotificationsProvider);
               return notificationsAsync.when(
-                loading: () => const SliverToBoxAdapter(child: SizedBox(height: 60, child: Center(child: CircularProgressIndicator(strokeWidth: 2)))),
-                error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                loading: () => const SliverToBoxAdapter(
+                  child: SizedBox(height: 60, child: LoadingIndicator()),
+                ),
+                error: (_, __) => SliverToBoxAdapter(
+                  child: ErrorState(
+                    onRetry: () => ref.invalidate(latestNotificationsProvider),
+                  ),
+                ),
                 data: (notifications) {
                   if (notifications.isEmpty) {
                     return SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: AppSpacing.xl),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.screenHorizontal,
+                          vertical: AppSpacing.xl,
+                        ),
                         child: Text(
                           '新しい通知はありません',
-                          style: AppTextStyles.caption1.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+                          style: AppTextStyles.caption1.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.45,
+                            ),
+                          ),
                         ),
                       ),
                     );
                   }
                   return SliverList(
                     delegate: SliverChildListDelegate([
-                      ...notifications.map((n) => _NotificationPreviewTile(item: n)),
+                      ...notifications.map(
+                        (n) => _NotificationPreviewTile(item: n),
+                      ),
                       const SizedBox(height: AppSpacing.xxl),
                     ]),
                   );
@@ -284,7 +357,10 @@ class _NotificationPreviewTile extends ConsumerWidget {
         }
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: 14),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+          vertical: 14,
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -297,7 +373,13 @@ class _NotificationPreviewTile extends ConsumerWidget {
                     : theme.colorScheme.onSurface.withValues(alpha: 0.06),
                 shape: BoxShape.circle,
               ),
-              child: Icon(iconData, size: 20, color: !item.isRead ? iconColor : theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+              child: Icon(
+                iconData,
+                size: 20,
+                color: !item.isRead
+                    ? iconColor
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.45),
+              ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -306,7 +388,11 @@ class _NotificationPreviewTile extends ConsumerWidget {
                 children: [
                   Text(
                     item.title,
-                    style: AppTextStyles.caption1.copyWith(fontWeight: !item.isRead ? FontWeight.w600 : FontWeight.w400),
+                    style: AppTextStyles.caption1.copyWith(
+                      fontWeight: !item.isRead
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -314,7 +400,9 @@ class _NotificationPreviewTile extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       item.body!,
-                      style: AppTextStyles.caption2.copyWith(color: AppColors.textSecondary(theme.brightness)),
+                      style: AppTextStyles.caption2.copyWith(
+                        color: AppColors.textSecondary(theme.brightness),
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -327,12 +415,14 @@ class _NotificationPreviewTile extends ConsumerWidget {
                 margin: const EdgeInsets.only(left: AppSpacing.sm, top: 6),
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(color: AppColors.brandPrimary, shape: BoxShape.circle),
+                decoration: const BoxDecoration(
+                  color: AppColors.brandPrimary,
+                  shape: BoxShape.circle,
+                ),
               ),
           ],
         ),
       ),
     );
   }
-
 }

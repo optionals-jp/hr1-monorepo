@@ -10,6 +10,17 @@ class SupabaseInterviewsRepository implements InterviewsRepository {
   final SupabaseClient _client;
 
   @override
+  Future<void> confirmSlot({
+    required String slotId,
+    required String applicationId,
+  }) async {
+    await _client
+        .from('interview_slots')
+        .update({'is_selected': true, 'application_id': applicationId})
+        .eq('id', slotId);
+  }
+
+  @override
   Future<Interview?> getInterview(String interviewId) async {
     try {
       final response = await _client

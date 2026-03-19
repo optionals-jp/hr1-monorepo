@@ -16,11 +16,9 @@ class ThreadChatController extends AutoDisposeNotifier<void> {
     required String senderId,
     required String content,
   }) async {
-    await ref.read(messagesRepositoryProvider).sendMessage(
-          threadId: threadId,
-          senderId: senderId,
-          content: content,
-        );
+    await ref
+        .read(messagesRepositoryProvider)
+        .sendMessage(threadId: threadId, senderId: senderId, content: content);
   }
 
   /// メッセージ編集
@@ -39,11 +37,9 @@ class ThreadChatController extends AutoDisposeNotifier<void> {
     DateTime? before,
     int limit = 30,
   }) async {
-    return ref.read(messagesRepositoryProvider).getMessagesPaginated(
-          threadId,
-          before: before,
-          limit: limit,
-        );
+    return ref
+        .read(messagesRepositoryProvider)
+        .getMessagesPaginated(threadId, before: before, limit: limit);
   }
 
   /// 既読にする
@@ -59,5 +55,5 @@ class ThreadChatController extends AutoDisposeNotifier<void> {
 
 final threadChatControllerProvider =
     AutoDisposeNotifierProvider<ThreadChatController, void>(
-  ThreadChatController.new,
-);
+      ThreadChatController.new,
+    );

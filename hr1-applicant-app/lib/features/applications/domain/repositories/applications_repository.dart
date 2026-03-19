@@ -5,7 +5,9 @@ import '../entities/job.dart';
 abstract class ApplicationsRepository {
   /// 企業IDと応募者IDに紐づく応募一覧を取得
   Future<List<Application>> getApplications(
-      String organizationId, String applicantId);
+    String organizationId,
+    String applicantId,
+  );
 
   /// 応募IDから応募情報を取得
   Future<Application?> getApplication(String applicationId);

@@ -37,10 +37,7 @@ class MessageThread {
     );
   }
 
-  MessageThread copyWith({
-    Message? latestMessage,
-    int? unreadCount,
-  }) {
+  MessageThread copyWith({Message? latestMessage, int? unreadCount}) {
     return MessageThread(
       id: id,
       organizationId: organizationId,
@@ -102,10 +99,7 @@ class Message {
     );
   }
 
-  Message copyWith({
-    String? content,
-    DateTime? editedAt,
-  }) {
+  Message copyWith({String? content, DateTime? editedAt}) {
     return Message(
       id: id,
       threadId: threadId,

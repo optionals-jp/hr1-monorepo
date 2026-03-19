@@ -3,14 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/common_button.dart';
+import '../../../../shared/widgets/common_dialog.dart';
+import '../../../../shared/widgets/common_snackbar.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../../applications/presentation/providers/applications_providers.dart';
 import '../../domain/entities/form_field_item.dart';
+import '../controllers/form_fill_controller.dart';
 import '../providers/forms_providers.dart';
 
 /// フォーム回答画面（Google Forms風）
-class FormFillScreen extends ConsumerStatefulWidget {
+class FormFillScreen extends ConsumerWidget {
   const FormFillScreen({
     super.key,
     required this.formId,
@@ -22,21 +25,44 @@ class FormFillScreen extends ConsumerStatefulWidget {
   final String applicationId;
   final String? stepId;
 
-  @override
-  ConsumerState<FormFillScreen> createState() => _FormFillScreenState();
-}
-
-class _FormFillScreenState extends ConsumerState<FormFillScreen> {
-  final _formKey = GlobalKey<FormState>();
+  ({String formId, String applicationId, String? stepId}) get _controllerArg =>
+      (formId: formId, applicationId: applicationId, stepId: stepId);
 
   @override
-  Widget build(BuildContext context) {
-    final asyncForm = ref.watch(formDetailProvider(widget.formId));
+  Widget build(BuildContext context, WidgetRef ref) {
+    final formKey = GlobalKey<FormState>();
+    final asyncForm = ref.watch(formDetailProvider(formId));
+    final controllerState = ref.watch(
+      formFillControllerProvider(_controllerArg),
+    );
+
+    // 送信成功時の処理
+    ref.listen(formFillControllerProvider(_controllerArg), (prev, next) {
+      if (next.submitted && !(prev?.submitted ?? false)) {
+        Navigator.pop(context);
+        CommonSnackBar.show(context, '回答を送信しました');
+      }
+      if (next.error != null && prev?.error == null) {
+        CommonSnackBar.show(context, next.error!);
+      }
+    });
+
+    Future<void> submit() async {
+      if (!(formKey.currentState?.validate() ?? false)) return;
+
+      final confirmed = await CommonDialog.confirm(
+        context: context,
+        title: '送信確認',
+        message: '回答を送信しますか？送信後の変更はできません。',
+        confirmLabel: '送信する',
+      );
+      if (!confirmed) return;
+
+      ref.read(formFillControllerProvider(_controllerArg).notifier).submit();
+    }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(asyncForm.valueOrNull?.title ?? 'フォーム'),
-      ),
+      appBar: AppBar(title: Text(asyncForm.valueOrNull?.title ?? 'フォーム')),
       body: asyncForm.when(
         data: (form) {
           if (form == null) {
@@ -44,7 +70,7 @@ class _FormFillScreenState extends ConsumerState<FormFillScreen> {
           }
 
           return Form(
-            key: _formKey,
+            key: formKey,
             child: ListView(
               padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
               children: [
@@ -55,46 +81,33 @@ class _FormFillScreenState extends ConsumerState<FormFillScreen> {
                     padding: const EdgeInsets.all(AppSpacing.cardPadding),
                     decoration: BoxDecoration(
                       color: AppColors.primaryLight.withValues(alpha: 0.05),
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.cardRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.cardRadius,
+                      ),
                       border: Border.all(
                         color: AppColors.primaryLight.withValues(alpha: 0.2),
                       ),
                     ),
-                    child: Text(form.description!,
-                        style: AppTextStyles.body),
+                    child: Text(form.description!, style: AppTextStyles.body2),
                   ),
                   const SizedBox(height: AppSpacing.xl),
                 ],
 
                 // フィールド一覧
-                ...form.fields.map((field) => Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-                      child: _FormFieldWidget(
-                        field: field,
-                        formId: widget.formId,
-                      ),
-                    )),
+                ...form.fields.map(
+                  (field) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                    child: _FormFieldWidget(field: field, formId: formId),
+                  ),
+                ),
 
                 const SizedBox(height: AppSpacing.lg),
 
                 // 送信ボタン
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryLight,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                      padding:
-                          const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                      shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.buttonRadius),
-                      ),
-                    ),
-                    child: const Text('回答を送信'),
-                  ),
+                CommonButton(
+                  onPressed: submit,
+                  loading: controllerState.isSubmitting,
+                  child: const Text('回答を送信'),
                 ),
                 const SizedBox(height: AppSpacing.xxl),
               ],
@@ -102,98 +115,16 @@ class _FormFillScreenState extends ConsumerState<FormFillScreen> {
           );
         },
         loading: () => const LoadingIndicator(),
-        error: (e, _) => const Center(child: Text('エラーが発生しました')),
+        error: (e, _) => ErrorState(
+          onRetry: () => ref.invalidate(formDetailProvider(formId)),
+        ),
       ),
     );
-  }
-
-  void _submit() {
-    if (_formKey.currentState?.validate() ?? false) {
-      // 画面のcontextとrefを保持
-      final screenContext = context;
-      final screenRef = ref;
-
-      showDialog(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('送信確認'),
-          content: const Text('回答を送信しますか？送信後の変更はできません。'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('キャンセル'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(dialogContext);
-
-                // 回答をDBに保存
-                final answers =
-                    screenRef.read(formAnswersProvider(widget.formId));
-                final client = screenRef.read(supabaseClientProvider);
-                final userId = client.auth.currentUser?.id;
-                if (userId != null && answers.isNotEmpty) {
-                  final now = DateTime.now().toIso8601String();
-                  final rows = answers.entries
-                      .where((e) => e.value != null)
-                      .map((e) {
-                        dynamic value = e.value;
-                        if (value is DateTime) {
-                          value = value.toIso8601String();
-                        }
-                        return {
-                          'form_id': widget.formId,
-                          'field_id': e.key,
-                          'applicant_id': userId,
-                          'value': value,
-                          'submitted_at': now,
-                        };
-                      })
-                      .toList();
-                  await client
-                      .from('form_responses')
-                      .insert(rows);
-                }
-
-                // ステップを完了に更新し、次のステップを自動開始
-                if (widget.stepId != null) {
-                  final repo = screenRef.read(applicationsRepositoryProvider);
-                  await repo.completeStep(
-                      widget.stepId!, widget.applicationId);
-                }
-
-                screenRef.invalidate(formAnswersProvider(widget.formId));
-                screenRef.invalidate(applicationsProvider);
-                screenRef.invalidate(
-                    applicationDetailProvider(widget.applicationId));
-
-                if (!screenContext.mounted) return;
-                Navigator.pop(screenContext);
-                ScaffoldMessenger.of(screenContext).showSnackBar(
-                  const SnackBar(
-                    content: Text('回答を送信しました'),
-                    backgroundColor: AppColors.success,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryLight,
-                foregroundColor: Theme.of(dialogContext).colorScheme.onPrimary,
-              ),
-              child: const Text('送信する'),
-            ),
-          ],
-        ),
-      );
-    }
   }
 }
 
 class _FormFieldWidget extends ConsumerWidget {
-  const _FormFieldWidget({
-    required this.field,
-    required this.formId,
-  });
+  const _FormFieldWidget({required this.field, required this.formId});
 
   final FormFieldItem field;
   final String formId;
@@ -217,9 +148,7 @@ class _FormFieldWidget extends ConsumerWidget {
           // ラベル
           Row(
             children: [
-              Expanded(
-                child: Text(field.label, style: AppTextStyles.subtitle),
-              ),
+              Expanded(child: Text(field.label, style: AppTextStyles.callout)),
               if (field.isRequired)
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -232,7 +161,7 @@ class _FormFieldWidget extends ConsumerWidget {
                   ),
                   child: Text(
                     '必須',
-                    style: AppTextStyles.caption.copyWith(
+                    style: AppTextStyles.caption2.copyWith(
                       color: AppColors.error,
                       fontWeight: FontWeight.w600,
                     ),
@@ -244,9 +173,12 @@ class _FormFieldWidget extends ConsumerWidget {
           // 説明
           if (field.description != null) ...[
             const SizedBox(height: AppSpacing.xs),
-            Text(field.description!, style: AppTextStyles.bodySmall.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            )),
+            Text(
+              field.description!,
+              style: AppTextStyles.caption1.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
 
           const SizedBox(height: AppSpacing.md),
@@ -290,14 +222,16 @@ class _FormFieldWidget extends ConsumerWidget {
         );
 
       case FormFieldType.radio:
-        final selected = answers[field.id] is String ? answers[field.id] as String : null;
+        final selected = answers[field.id] is String
+            ? answers[field.id] as String
+            : null;
         return RadioGroup<String>(
           groupValue: selected ?? '',
           onChanged: (v) => notifier.setAnswer(field.id, v),
           child: Column(
             children: (field.options ?? []).map((option) {
               return RadioListTile<String>(
-                title: Text(option, style: AppTextStyles.body),
+                title: Text(option, style: AppTextStyles.body2),
                 value: option,
                 contentPadding: EdgeInsets.zero,
                 activeColor: AppColors.primaryLight,
@@ -312,7 +246,7 @@ class _FormFieldWidget extends ConsumerWidget {
         return Column(
           children: (field.options ?? []).map((option) {
             return CheckboxListTile(
-              title: Text(option, style: AppTextStyles.body),
+              title: Text(option, style: AppTextStyles.body2),
               value: selected.contains(option),
               onChanged: (checked) {
                 final updated = List<String>.from(selected);
@@ -331,12 +265,12 @@ class _FormFieldWidget extends ConsumerWidget {
         );
 
       case FormFieldType.dropdown:
-        final selected = answers[field.id] is String ? answers[field.id] as String : null;
+        final selected = answers[field.id] is String
+            ? answers[field.id] as String
+            : null;
         return DropdownButtonFormField<String>(
           initialValue: selected,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-          ),
+          decoration: const InputDecoration(border: OutlineInputBorder()),
           hint: const Text('選択してください'),
           items: (field.options ?? []).map((option) {
             return DropdownMenuItem(value: option, child: Text(option));
@@ -348,11 +282,7 @@ class _FormFieldWidget extends ConsumerWidget {
         );
 
       case FormFieldType.date:
-        return _DateField(
-          field: field,
-          answers: answers,
-          notifier: notifier,
-        );
+        return _DateField(field: field, answers: answers, notifier: notifier);
 
       case FormFieldType.fileUpload:
         return OutlinedButton.icon(
@@ -379,7 +309,9 @@ class _DateField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selected = answers[field.id] is DateTime ? answers[field.id] as DateTime : null;
+    final selected = answers[field.id] is DateTime
+        ? answers[field.id] as DateTime
+        : null;
 
     return InkWell(
       onTap: () async {

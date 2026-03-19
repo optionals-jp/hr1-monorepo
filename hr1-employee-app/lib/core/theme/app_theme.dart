@@ -10,27 +10,27 @@ class AppTheme {
 
   /// ライトモードテーマ
   static ThemeData get light => _build(
-        brightness: Brightness.light,
-        background: AppColors.lightBackground,
-        surface: AppColors.lightSurface,
-        surfaceSecondary: AppColors.lightSurfaceSecondary,
-        textPrimary: AppColors.lightTextPrimary,
-        textSecondary: AppColors.lightTextSecondary,
-        border: AppColors.lightBorder,
-        divider: AppColors.lightDivider,
-      );
+    brightness: Brightness.light,
+    background: AppColors.lightBackground,
+    surface: AppColors.lightSurface,
+    surfaceSecondary: AppColors.lightSurfaceSecondary,
+    textPrimary: AppColors.lightTextPrimary,
+    textSecondary: AppColors.lightTextSecondary,
+    border: AppColors.lightBorder,
+    divider: AppColors.lightDivider,
+  );
 
   /// ダークモードテーマ
   static ThemeData get dark => _build(
-        brightness: Brightness.dark,
-        background: AppColors.darkBackground,
-        surface: AppColors.darkSurface,
-        surfaceSecondary: AppColors.darkSurfaceSecondary,
-        textPrimary: AppColors.darkTextPrimary,
-        textSecondary: AppColors.darkTextSecondary,
-        border: AppColors.darkBorder,
-        divider: AppColors.darkDivider,
-      );
+    brightness: Brightness.dark,
+    background: AppColors.darkBackground,
+    surface: AppColors.darkSurface,
+    surfaceSecondary: AppColors.darkSurfaceSecondary,
+    textPrimary: AppColors.darkTextPrimary,
+    textSecondary: AppColors.darkTextSecondary,
+    border: AppColors.darkBorder,
+    divider: AppColors.darkDivider,
+  );
 
   static ThemeData _build({
     required Brightness brightness,
@@ -89,10 +89,7 @@ class AppTheme {
           color: textPrimary,
           letterSpacing: -0.1,
         ),
-        iconTheme: IconThemeData(
-          color: textPrimary,
-          size: 22,
-        ),
+        iconTheme: IconThemeData(color: textPrimary, size: 22),
       ),
 
       // ElevatedButton テーマ — ピル型
@@ -223,9 +220,7 @@ class AppTheme {
 
       // Dialog テーマ
       dialogTheme: DialogThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         titleTextStyle: GoogleFonts.notoSansJp(
           fontSize: 17,
           fontWeight: FontWeight.w600,

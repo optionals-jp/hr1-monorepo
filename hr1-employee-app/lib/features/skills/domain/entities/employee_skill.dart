@@ -30,10 +30,7 @@ class EmployeeSkill {
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'name': name,
-        'sort_order': sortOrder,
-      };
+  Map<String, dynamic> toJson() => {'name': name, 'sort_order': sortOrder};
 
   EmployeeSkill copyWith({String? name, int? sortOrder}) {
     return EmployeeSkill(

@@ -34,17 +34,14 @@ class UserAvatar extends StatelessWidget {
         color: color,
         shape: BoxShape.circle,
         image: imageUrl != null
-            ? DecorationImage(
-                image: NetworkImage(imageUrl!),
-                fit: BoxFit.cover,
-              )
+            ? DecorationImage(image: NetworkImage(imageUrl!), fit: BoxFit.cover)
             : null,
       ),
       child: imageUrl == null
           ? Center(
               child: Text(
                 initial,
-                style: AppTextStyles.bodySmall.copyWith(
+                style: AppTextStyles.caption1.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                   fontSize: fontSize,

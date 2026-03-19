@@ -24,91 +24,92 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
         ),
-        child: Builder(builder: (context) {
-          final navTheme = theme.bottomNavigationBarTheme;
-          final selectedColor = navTheme.selectedItemColor!;
-          final unselectedColor = navTheme.unselectedItemColor!;
-          return BottomNavigationBar(
-            currentIndex: navigationShell.currentIndex,
-            onTap: (index) {
-              navigationShell.goBranch(
-                index,
-                initialLocation: index == navigationShell.currentIndex,
-              );
-            },
-            selectedFontSize: 10,
-            unselectedFontSize: 10,
-            iconSize: 24,
-            type: BottomNavigationBarType.fixed,
-            items: [
-              BottomNavigationBarItem(
-                icon: Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.home(
-                      color: unselectedColor, size: 24),
+        child: Builder(
+          builder: (context) {
+            final navTheme = theme.bottomNavigationBarTheme;
+            final selectedColor = navTheme.selectedItemColor!;
+            final unselectedColor = navTheme.unselectedItemColor!;
+            return BottomNavigationBar(
+              currentIndex: navigationShell.currentIndex,
+              onTap: (index) {
+                navigationShell.goBranch(
+                  index,
+                  initialLocation: index == navigationShell.currentIndex,
+                );
+              },
+              selectedFontSize: 10,
+              unselectedFontSize: 10,
+              iconSize: 24,
+              type: BottomNavigationBarType.fixed,
+              items: [
+                BottomNavigationBarItem(
+                  icon: Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: AppIcons.home(color: unselectedColor, size: 24),
+                  ),
+                  activeIcon: Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: AppIcons.homeFill(color: selectedColor, size: 24),
+                  ),
+                  label: 'ホーム',
                 ),
-                activeIcon: Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.homeFill(
-                      color: selectedColor, size: 24),
+                BottomNavigationBarItem(
+                  icon: Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: AppIcons.calendar(color: unselectedColor, size: 24),
+                  ),
+                  activeIcon: Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: AppIcons.calendarFill(
+                      color: selectedColor,
+                      size: 24,
+                    ),
+                  ),
+                  label: 'カレンダー',
                 ),
-                label: 'ホーム',
-              ),
-              BottomNavigationBarItem(
-                icon: Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.calendar(
-                      color: unselectedColor, size: 24),
+                BottomNavigationBarItem(
+                  icon: Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: AppIcons.send(color: unselectedColor, size: 24),
+                  ),
+                  activeIcon: Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: AppIcons.sendFill(color: selectedColor, size: 24),
+                  ),
+                  label: 'チャット',
                 ),
-                activeIcon: Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.calendarFill(
-                      color: selectedColor, size: 24),
+                BottomNavigationBarItem(
+                  icon: Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: AppIcons.tickCircle(
+                      color: unselectedColor,
+                      size: 24,
+                    ),
+                  ),
+                  activeIcon: Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: AppIcons.tickCircleFill(
+                      color: selectedColor,
+                      size: 24,
+                    ),
+                  ),
+                  label: 'タスク',
                 ),
-                label: 'カレンダー',
-              ),
-              BottomNavigationBarItem(
-                icon: Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.note(
-                      color: unselectedColor, size: 24),
+                BottomNavigationBarItem(
+                  icon: Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: AppIcons.user(color: unselectedColor, size: 24),
+                  ),
+                  activeIcon: Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: AppIcons.userFill(color: selectedColor, size: 24),
+                  ),
+                  label: 'その他',
                 ),
-                activeIcon: Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.noteFill(
-                      color: selectedColor, size: 24),
-                ),
-                label: 'チャット',
-              ),
-              BottomNavigationBarItem(
-                icon: Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.tickCircle(
-                      color: unselectedColor, size: 24),
-                ),
-                activeIcon: Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.tickCircleFill(
-                      color: selectedColor, size: 24),
-                ),
-                label: 'タスク',
-              ),
-              BottomNavigationBarItem(
-                icon: Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.user(
-                      color: unselectedColor, size: 24),
-                ),
-                activeIcon: Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: AppIcons.userFill(
-                      color: selectedColor, size: 24),
-                ),
-                label: 'その他',
-              ),
-            ],
-          );
-        }),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

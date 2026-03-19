@@ -13,15 +13,21 @@ final shiftRepositoryProvider = Provider<SupabaseShiftRepository>((ref) {
 });
 
 /// シフト希望プロバイダー（月単位）
-final shiftRequestsProvider = FutureProvider.family<List<ShiftRequest>,
-    ({int year, int month})>((ref, params) async {
-  final repo = ref.watch(shiftRepositoryProvider);
-  return repo.getMyRequests(params.year, params.month);
-});
+final shiftRequestsProvider =
+    FutureProvider.family<List<ShiftRequest>, ({int year, int month})>((
+      ref,
+      params,
+    ) async {
+      final repo = ref.watch(shiftRepositoryProvider);
+      return repo.getMyRequests(params.year, params.month);
+    });
 
 /// 確定シフトプロバイダー（月単位）
-final shiftSchedulesProvider = FutureProvider.family<List<ShiftSchedule>,
-    ({int year, int month})>((ref, params) async {
-  final repo = ref.watch(shiftRepositoryProvider);
-  return repo.getMySchedules(params.year, params.month);
-});
+final shiftSchedulesProvider =
+    FutureProvider.family<List<ShiftSchedule>, ({int year, int month})>((
+      ref,
+      params,
+    ) async {
+      final repo = ref.watch(shiftRepositoryProvider);
+      return repo.getMySchedules(params.year, params.month);
+    });

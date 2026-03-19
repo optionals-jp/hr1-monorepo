@@ -3,10 +3,7 @@ import '../../../../shared/domain/entities/page_section.dart';
 /// 企業ページ全体の構成設定
 /// 企業ごとにタブ構成・セクション配置をカスタマイズ可能
 class CompanyPageConfig {
-  const CompanyPageConfig({
-    required this.organizationId,
-    required this.tabs,
-  });
+  const CompanyPageConfig({required this.organizationId, required this.tabs});
 
   final String organizationId;
 
@@ -26,10 +23,7 @@ class CompanyPageConfig {
 
 /// タブ1つ分の定義
 class PageTab {
-  const PageTab({
-    required this.label,
-    required this.sections,
-  });
+  const PageTab({required this.label, required this.sections});
 
   final String label;
   final List<PageSection> sections;
@@ -37,10 +31,11 @@ class PageTab {
   factory PageTab.fromJson(Map<String, dynamic> json) {
     return PageTab(
       label: json['label'] as String,
-      sections: (json['sections'] as List<dynamic>)
-          .map((e) => PageSection.fromJson(e as Map<String, dynamic>))
-          .toList()
-        ..sort((a, b) => a.order.compareTo(b.order)),
+      sections:
+          (json['sections'] as List<dynamic>)
+              .map((e) => PageSection.fromJson(e as Map<String, dynamic>))
+              .toList()
+            ..sort((a, b) => a.order.compareTo(b.order)),
     );
   }
 }

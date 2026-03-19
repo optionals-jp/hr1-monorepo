@@ -15,8 +15,8 @@ final companyRepositoryProvider = Provider<CompanyRepository>((ref) {
 /// ホームタブに戻るたびに最新データを取得する
 final companyPageConfigProvider =
     FutureProvider.autoDispose<CompanyPageConfig?>((ref) async {
-  final org = ref.watch(currentOrganizationProvider);
-  if (org == null) return null;
-  final repo = ref.watch(companyRepositoryProvider);
-  return repo.getPageConfig(org.id);
-});
+      final org = ref.watch(currentOrganizationProvider);
+      if (org == null) return null;
+      final repo = ref.watch(companyRepositoryProvider);
+      return repo.getPageConfig(org.id);
+    });

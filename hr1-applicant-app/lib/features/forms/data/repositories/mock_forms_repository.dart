@@ -8,6 +8,15 @@ class MockFormsRepository implements FormsRepository {
   Future<CustomForm?> getForm(String formId) async {
     return _mockForms.where((f) => f.id == formId).firstOrNull;
   }
+
+  @override
+  Future<void> submitResponses({
+    required String formId,
+    required String applicantId,
+    required Map<String, dynamic> answers,
+  }) async {
+    // モック: 何もしない
+  }
 }
 
 // --- モックデータ ---

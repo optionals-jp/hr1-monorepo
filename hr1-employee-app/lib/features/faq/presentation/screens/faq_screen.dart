@@ -1,164 +1,132 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
-import '../../../../shared/widgets/common_button.dart';
+import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/search_box.dart';
 import '../../domain/entities/faq_item.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
 import '../providers/faq_providers.dart';
 
 /// FAQ一覧画面
-class FaqScreen extends ConsumerStatefulWidget {
+class FaqScreen extends HookConsumerWidget {
   const FaqScreen({super.key});
 
   @override
-  ConsumerState<FaqScreen> createState() => _FaqScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final searchController = useTextEditingController();
+    final focusNode = useFocusNode();
+    final query = useValueListenable(searchController).text.trim();
+    final faqsAsync = ref.watch(employeeFaqsProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('よくある質問')),
+      body: faqsAsync.when(
+        data: (faqs) => _Body(
+          faqs: faqs,
+          query: query,
+          controller: searchController,
+          focusNode: focusNode,
+        ),
+        loading: () => const LoadingIndicator(),
+        error: (e, _) =>
+            ErrorState(onRetry: () => ref.invalidate(employeeFaqsProvider)),
+      ),
+    );
+  }
 }
 
-class _FaqScreenState extends ConsumerState<FaqScreen> {
-  final _searchController = TextEditingController();
-  final _focusNode = FocusNode();
+class _Body extends StatelessWidget {
+  const _Body({
+    required this.faqs,
+    required this.query,
+    required this.controller,
+    required this.focusNode,
+  });
 
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(_onSearchChanged);
-  }
-
-  @override
-  void dispose() {
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  void _onSearchChanged() {
-    setState(() {});
-  }
+  final List<FaqItem> faqs;
+  final String query;
+  final TextEditingController controller;
+  final FocusNode focusNode;
 
   List<FaqItem> _filterFaqs(List<FaqItem> faqs) {
-    final query = _searchController.text.trim().toLowerCase();
-    if (query.isEmpty) return faqs;
+    final q = query.toLowerCase();
+    if (q.isEmpty) return faqs;
     return faqs.where((faq) {
-      return faq.question.toLowerCase().contains(query) ||
-          faq.answer.toLowerCase().contains(query);
+      return faq.question.toLowerCase().contains(q) ||
+          faq.answer.toLowerCase().contains(q);
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final faqsAsync = ref.watch(employeeFaqsProvider);
-    final theme = Theme.of(context);
-    final query = _searchController.text.trim();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('よくある質問'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(0.5),
-          child:
-              Container(height: 0.5, color: theme.colorScheme.outlineVariant),
-        ),
-      ),
-      body: faqsAsync.when(
-        data: (faqs) {
-          if (faqs.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.help_outline_rounded,
-                      size: 48,
-                      color: theme.colorScheme.onSurface
-                          .withValues(alpha: 0.3)),
-                  const SizedBox(height: AppSpacing.md),
-                  Text('FAQはまだありません',
-                      style: AppTextStyles.body2.copyWith(
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.5),
-                      )),
-                ],
-              ),
-            );
-          }
-
-          final filtered = _filterFaqs(faqs);
-
-          // カテゴリ別にグループ化
-          final grouped = <String, List<FaqItem>>{};
-          for (final faq in filtered) {
-            grouped.putIfAbsent(faq.category, () => []).add(faq);
-          }
-
-          return Column(
-            children: [
-              // 検索バー
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.screenHorizontal,
-                  AppSpacing.md,
-                  AppSpacing.screenHorizontal,
-                  AppSpacing.xs,
-                ),
-                child: SearchBox(
-                  controller: _searchController,
-                  focusNode: _focusNode,
-                  hintText: 'キーワードで検索',
-                  onClear: () => setState(() {}),
-                ),
-              ),
-              // 検索結果
-              Expanded(
-                child: filtered.isEmpty
-                    ? Center(
-                        child: Text(
-                          '「$query」に一致するFAQはありません',
-                          style: AppTextStyles.body2.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.screenHorizontal,
-                        ),
-                        itemCount: grouped.length,
-                        itemBuilder: (context, index) {
-                          final category = grouped.keys.elementAt(index);
-                          final items = grouped[category]!;
-                          return _FaqCategorySection(
-                            category: category,
-                            items: items,
-                            highlightQuery: query,
-                          );
-                        },
-                      ),
-              ),
-            ],
-          );
-        },
-        loading: () => const LoadingIndicator(),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('読み込みに失敗しました',
-                  style: AppTextStyles.body2.copyWith(
-                    color: AppColors.textSecondary(theme.brightness),
-                  )),
-              const SizedBox(height: AppSpacing.md),
-              CommonButton.outline(
-                onPressed: () => ref.invalidate(employeeFaqsProvider),
-                child: const Text('再試行'),
-              ),
-            ],
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screenHorizontal,
+            AppSpacing.md,
+            AppSpacing.screenHorizontal,
+            AppSpacing.xs,
+          ),
+          child: SearchBox(
+            controller: controller,
+            focusNode: focusNode,
+            hintText: 'キーワードで検索',
           ),
         ),
+        Expanded(child: _content(context)),
+      ],
+    );
+  }
+
+  Widget _content(BuildContext context) {
+    if (faqs.isEmpty) {
+      return EmptyState(
+        icon: Icon(
+          Icons.help_outline_rounded,
+          size: 48,
+          color: AppColors.textTertiary(Theme.of(context).brightness),
+        ),
+        title: 'FAQはまだありません',
+      );
+    }
+
+    final filtered = _filterFaqs(faqs);
+    if (filtered.isEmpty) {
+      return EmptyState(
+        icon: Icon(
+          Icons.search_off_rounded,
+          size: 48,
+          color: AppColors.textTertiary(Theme.of(context).brightness),
+        ),
+        title: '「$query」に一致するFAQはありません',
+      );
+    }
+
+    final grouped = <String, List<FaqItem>>{};
+    for (final faq in filtered) {
+      grouped.putIfAbsent(faq.category, () => []).add(faq);
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenHorizontal,
       ),
+      itemCount: grouped.length,
+      itemBuilder: (context, index) {
+        final category = grouped.keys.elementAt(index);
+        final items = grouped[category]!;
+        return _FaqCategorySection(
+          category: category,
+          items: items,
+          highlightQuery: query,
+        );
+      },
     );
   }
 }
@@ -187,16 +155,19 @@ class _FaqCategorySection extends StatelessWidget {
           ),
           child: Text(
             FaqCategory.label(category),
-            style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            style: AppTextStyles.caption1.copyWith(
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary(theme.brightness),
               letterSpacing: 0.3,
             ),
           ),
         ),
-        ...items.map((faq) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: _FaqTile(faq: faq, highlightQuery: highlightQuery),
-            )),
+        ...items.map(
+          (faq) => Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: _FaqTile(faq: faq, highlightQuery: highlightQuery),
+          ),
+        ),
       ],
     );
   }
@@ -305,8 +276,12 @@ class _FaqTileState extends State<_FaqTile> {
                       height: 1.6,
                     ),
                     h1: AppTextStyles.headline,
-                    h2: AppTextStyles.headline.copyWith(fontSize: 15),
-                    h3: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,fontSize: 14),
+                    h2: AppTextStyles.body2.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    h3: AppTextStyles.body2.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                     listBullet: AppTextStyles.body2.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -342,13 +317,15 @@ class _FaqTileState extends State<_FaqTile> {
       if (idx > start) {
         spans.add(TextSpan(text: text.substring(start, idx)));
       }
-      spans.add(TextSpan(
-        text: text.substring(idx, idx + query.length),
-        style: baseStyle.copyWith(
-          backgroundColor: AppColors.brandPrimary.withValues(alpha: 0.15),
-          color: AppColors.brandPrimary,
+      spans.add(
+        TextSpan(
+          text: text.substring(idx, idx + query.length),
+          style: baseStyle.copyWith(
+            backgroundColor: AppColors.brandPrimary.withValues(alpha: 0.15),
+            color: AppColors.brandPrimary,
+          ),
         ),
-      ));
+      );
       start = idx + query.length;
     }
 

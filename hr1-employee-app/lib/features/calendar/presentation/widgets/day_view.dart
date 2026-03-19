@@ -64,10 +64,8 @@ class _DayViewState extends State<DayView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final allDayEvents =
-        widget.events.where((e) => e.isAllDay).toList();
-    final timedEvents =
-        widget.events.where((e) => !e.isAllDay).toList();
+    final allDayEvents = widget.events.where((e) => e.isAllDay).toList();
+    final timedEvents = widget.events.where((e) => !e.isAllDay).toList();
 
     return Column(
       children: [
@@ -75,9 +73,7 @@ class _DayViewState extends State<DayView> {
         if (allDayEvents.isNotEmpty)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(
-              _timeColumnWidth + 8, 4, 8, 4,
-            ),
+            padding: const EdgeInsets.fromLTRB(_timeColumnWidth + 8, 4, 8, 4),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
@@ -95,7 +91,9 @@ class _DayViewState extends State<DayView> {
                   onTap: () => widget.onEventTap?.call(event),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),
@@ -131,11 +129,13 @@ class _DayViewState extends State<DayView> {
                   // 勤怠バー（打刻間の状態を色付きバーで表示）
                   ..._buildAttendanceBars(theme),
                   // 勤怠打刻マーカー（左端）
-                  ...widget.punches.map((punch) =>
-                      _buildPunchMarker(punch, theme)),
+                  ...widget.punches.map(
+                    (punch) => _buildPunchMarker(punch, theme),
+                  ),
                   // イベントブロック
-                  ...timedEvents.map((event) => _buildEventBlock(
-                        event, timedEvents, theme)),
+                  ...timedEvents.map(
+                    (event) => _buildEventBlock(event, timedEvents, theme),
+                  ),
                   // 現在時刻インジケーター
                   if (_isToday) _CurrentTimeIndicator(theme: theme),
                 ],
@@ -199,7 +199,10 @@ class _DayViewState extends State<DayView> {
       'clock_out' => (AppIcons.logout, AppColors.error),
       'break_start' => (AppIcons.coffee, AppColors.warning),
       'break_end' => (AppIcons.pause, AppColors.brandLight),
-      _ => (AppIcons.clock, theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+      _ => (
+        AppIcons.clock,
+        theme.colorScheme.onSurface.withValues(alpha: 0.45),
+      ),
     };
 
     return Positioned(
@@ -219,11 +222,12 @@ class _DayViewState extends State<DayView> {
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.15),
               shape: BoxShape.circle,
-              border: Border.all(color: color.withValues(alpha: 0.15), width: 1),
+              border: Border.all(
+                color: color.withValues(alpha: 0.15),
+                width: 1,
+              ),
             ),
-            child: Center(
-              child: iconBuilder(size: 10, color: color),
-            ),
+            child: Center(child: iconBuilder(size: 10, color: color)),
           ),
         ),
       ),
@@ -258,9 +262,7 @@ class _DayViewState extends State<DayView> {
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(6),
-            border: Border(
-              left: BorderSide(color: color, width: 3),
-            ),
+            border: Border(left: BorderSide(color: color, width: 3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,17 +279,17 @@ class _DayViewState extends State<DayView> {
               if (height > 36)
                 Text(
                   '${DateFormat('HH:mm').format(startLocal)} - ${DateFormat('HH:mm').format(endLocal)}',
-                  style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurface
-                        .withValues(alpha: 0.55),
+                  style: AppTextStyles.caption1.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                   ),
                 ),
               if (height > 52 && event.location != null)
                 Text(
                   event.location!,
-                  style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurface
-                        .withValues(alpha: 0.45),
+                  style: AppTextStyles.caption1.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -327,9 +329,9 @@ class _HourRow extends StatelessWidget {
               padding: const EdgeInsets.only(right: 8, top: 0),
               child: Text(
                 '${hour.toString().padLeft(2, '0')}:00',
-                style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
-                  color:
-                      theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                style: AppTextStyles.caption1.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   fontFeatures: [const FontFeature.tabularFigures()],
                 ),
                 textAlign: TextAlign.right,
@@ -379,12 +381,7 @@ class _CurrentTimeIndicator extends StatelessWidget {
               shape: BoxShape.circle,
             ),
           ),
-          Expanded(
-            child: Container(
-              height: 1.5,
-              color: AppColors.error,
-            ),
-          ),
+          Expanded(child: Container(height: 1.5, color: AppColors.error)),
         ],
       ),
     );

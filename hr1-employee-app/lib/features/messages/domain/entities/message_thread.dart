@@ -35,15 +35,13 @@ class MessageThread {
       title: json['title'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      participantName: participant?['display_name'] as String? ??
+      participantName:
+          participant?['display_name'] as String? ??
           participant?['email'] as String?,
     );
   }
 
-  MessageThread copyWith({
-    Message? latestMessage,
-    int? unreadCount,
-  }) {
+  MessageThread copyWith({Message? latestMessage, int? unreadCount}) {
     return MessageThread(
       id: id,
       organizationId: organizationId,
@@ -105,10 +103,7 @@ class Message {
     );
   }
 
-  Message copyWith({
-    String? content,
-    DateTime? editedAt,
-  }) {
+  Message copyWith({String? content, DateTime? editedAt}) {
     return Message(
       id: id,
       threadId: threadId,

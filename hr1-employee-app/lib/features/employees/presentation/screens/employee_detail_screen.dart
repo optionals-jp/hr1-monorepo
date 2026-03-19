@@ -36,15 +36,11 @@ class EmployeeDetailScreen extends StatelessWidget {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('プロフィール'),
-        ),
+        appBar: AppBar(title: const Text('プロフィール')),
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
-              SliverToBoxAdapter(
-                child: _ProfileHeader(contact: contact),
-              ),
+              SliverToBoxAdapter(child: _ProfileHeader(contact: contact)),
               SliverPersistentHeader(
                 pinned: true,
                 delegate: _TabBarDelegate(
@@ -54,11 +50,15 @@ class EmployeeDetailScreen extends StatelessWidget {
                       Tab(text: '経歴'),
                       Tab(text: 'スキル'),
                     ],
-                    labelStyle: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w600),
+                    labelStyle: AppTextStyles.caption1.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                     unselectedLabelStyle: AppTextStyles.caption1,
                     indicatorColor: AppColors.brandPrimary,
                     labelColor: AppColors.brandPrimary,
-                    unselectedLabelColor: AppColors.textSecondary(Theme.of(context).brightness),
+                    unselectedLabelColor: AppColors.textSecondary(
+                      Theme.of(context).brightness,
+                    ),
                     dividerHeight: 0.5,
                   ),
                 ),
@@ -115,7 +115,10 @@ class _ProfileHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _ActionButton(
-                icon: AppIcons.directbox(size: 22, color: AppColors.brandPrimary),
+                icon: AppIcons.directbox(
+                  size: 22,
+                  color: AppColors.brandPrimary,
+                ),
                 label: 'チャット',
                 color: AppColors.brandPrimary,
                 onTap: () {
@@ -140,7 +143,11 @@ class _ProfileHeader extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.xxl),
               _ActionButton(
-                icon: Icon(Icons.email_outlined, size: 22, color: AppColors.warning),
+                icon: Icon(
+                  Icons.email_outlined,
+                  size: 22,
+                  color: AppColors.warning,
+                ),
                 label: 'メール',
                 color: AppColors.warning,
                 onTap: () {},
@@ -166,12 +173,13 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => tabBar.preferredSize.height;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     final theme = Theme.of(context);
-    return Container(
-      color: theme.scaffoldBackgroundColor,
-      child: tabBar,
-    );
+    return Container(color: theme.scaffoldBackgroundColor, child: tabBar);
   }
 
   @override
@@ -197,8 +205,23 @@ class _ContactTab extends StatelessWidget {
         _InfoSection(
           title: '基本情報',
           children: [
-            _InfoRow(icon: AppIcons.briefcase(size: 22, color: AppColors.textSecondary(theme.brightness)), label: '部署', value: contact.department),
-            _InfoRow(icon: Icon(Icons.badge_outlined, size: 22, color: AppColors.textSecondary(theme.brightness)), label: '役職', value: contact.position),
+            _InfoRow(
+              icon: AppIcons.briefcase(
+                size: 22,
+                color: AppColors.textSecondary(theme.brightness),
+              ),
+              label: '部署',
+              value: contact.department,
+            ),
+            _InfoRow(
+              icon: Icon(
+                Icons.badge_outlined,
+                size: 22,
+                color: AppColors.textSecondary(theme.brightness),
+              ),
+              label: '役職',
+              value: contact.position,
+            ),
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -206,9 +229,25 @@ class _ContactTab extends StatelessWidget {
           title: '連絡先',
           children: [
             if (contact.email != null)
-              _InfoRow(icon: Icon(Icons.email_outlined, size: 22, color: AppColors.textSecondary(theme.brightness)), label: 'メール', value: contact.email!),
+              _InfoRow(
+                icon: Icon(
+                  Icons.email_outlined,
+                  size: 22,
+                  color: AppColors.textSecondary(theme.brightness),
+                ),
+                label: 'メール',
+                value: contact.email!,
+              ),
             if (contact.phone != null)
-              _InfoRow(icon: Icon(Icons.phone_outlined, size: 22, color: AppColors.textSecondary(theme.brightness)), label: '電話番号', value: contact.phone!),
+              _InfoRow(
+                icon: Icon(
+                  Icons.phone_outlined,
+                  size: 22,
+                  color: AppColors.textSecondary(theme.brightness),
+                ),
+                label: '電話番号',
+                value: contact.phone!,
+              ),
           ],
         ),
       ],
@@ -248,22 +287,10 @@ class _CareerTab extends StatelessWidget {
     ];
 
     final careers = [
-      _CareerHistory(
-        title: '営業部 部長',
-        period: '2024/04 〜 現在',
-      ),
-      _CareerHistory(
-        title: '営業部 課長',
-        period: '2022/04 〜 2024/03',
-      ),
-      _CareerHistory(
-        title: '企画部 主任',
-        period: '2019/04 〜 2022/03',
-      ),
-      _CareerHistory(
-        title: '企画部 一般社員',
-        period: '2016/04 〜 2019/03',
-      ),
+      _CareerHistory(title: '営業部 部長', period: '2024/04 〜 現在'),
+      _CareerHistory(title: '営業部 課長', period: '2022/04 〜 2024/03'),
+      _CareerHistory(title: '企画部 主任', period: '2019/04 〜 2022/03'),
+      _CareerHistory(title: '企画部 一般社員', period: '2016/04 〜 2019/03'),
     ];
 
     return ListView(
@@ -317,14 +344,18 @@ class _SkillsTab extends ConsumerWidget {
                   child: Text(
                     'スキルが登録されていません',
                     style: AppTextStyles.caption1.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.45,
+                      ),
                     ),
                   ),
                 ),
               );
             }
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenHorizontal,
+              ),
               child: Wrap(
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.sm,
@@ -332,13 +363,21 @@ class _SkillsTab extends ConsumerWidget {
                   return Chip(
                     label: Text(
                       skill.name,
-                      style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
+                      style: AppTextStyles.caption1.copyWith(
+                        fontWeight: FontWeight.w500,
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    backgroundColor: AppColors.brandPrimary.withValues(alpha: 0.08),
-                    side: BorderSide(color: AppColors.brandPrimary.withValues(alpha: 0.2), width: 0.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    backgroundColor: AppColors.brandPrimary.withValues(
+                      alpha: 0.08,
+                    ),
+                    side: BorderSide(
+                      color: AppColors.brandPrimary.withValues(alpha: 0.2),
+                      width: 0.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                   );
                 }).toList(),
               ),
@@ -364,22 +403,29 @@ class _SkillsTab extends ConsumerWidget {
                   child: Text(
                     '資格が登録されていません',
                     style: AppTextStyles.caption1.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.45,
+                      ),
                     ),
                   ),
                 ),
               );
             }
             return _InfoSection(
-              children: certs.map((c) => _InfoRow(
-                icon: AppIcons.award(size: 22, color: AppColors.textSecondary(theme.brightness)),
-                label: c.acquiredDate != null
-                    ? DateFormat('yyyy/MM').format(c.acquiredDate!)
-                    : '-',
-                value: c.score != null
-                    ? '${c.name} ${c.score}点'
-                    : c.name,
-              )).toList(),
+              children: certs
+                  .map(
+                    (c) => _InfoRow(
+                      icon: AppIcons.award(
+                        size: 22,
+                        color: AppColors.textSecondary(theme.brightness),
+                      ),
+                      label: c.acquiredDate != null
+                          ? DateFormat('yyyy/MM').format(c.acquiredDate!)
+                          : '-',
+                      value: c.score != null ? '${c.name} ${c.score}点' : c.name,
+                    ),
+                  )
+                  .toList(),
             );
           },
         ),
@@ -435,12 +481,17 @@ class _InfoSection extends StatelessWidget {
       children: [
         if (title != null) _SectionHeader(title: title!),
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
+          margin: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenHorizontal,
+          ),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: isDark
-                ? Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2), width: 0.5)
+                ? Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                    width: 0.5,
+                  )
                 : null,
             boxShadow: isDark
                 ? null
@@ -457,7 +508,11 @@ class _InfoSection extends StatelessWidget {
               for (var i = 0; i < children.length; i++) ...[
                 children[i],
                 if (i < children.length - 1)
-                  Divider(height: 0.5, indent: 52, color: theme.colorScheme.outlineVariant),
+                  Divider(
+                    height: 0.5,
+                    indent: 52,
+                    color: theme.colorScheme.outlineVariant,
+                  ),
               ],
             ],
           ),
@@ -468,7 +523,11 @@ class _InfoSection extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   final Widget icon;
   final String label;
@@ -538,7 +597,8 @@ class _ActionButton extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             label,
-            style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
+            style: AppTextStyles.caption1.copyWith(
+              fontWeight: FontWeight.w500,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
@@ -571,7 +631,10 @@ class _ProjectCard extends StatelessWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: isDark
-            ? Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2), width: 0.5)
+            ? Border.all(
+                color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                width: 0.5,
+              )
             : null,
         boxShadow: isDark
             ? null
@@ -593,7 +656,10 @@ class _ProjectCard extends StatelessWidget {
           const SizedBox(height: 6),
           Row(
             children: [
-              AppIcons.user(size: 14, color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+              AppIcons.user(
+                size: 14,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+              ),
               const SizedBox(width: 4),
               Text(
                 project.role,
@@ -603,7 +669,10 @@ class _ProjectCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
-              AppIcons.calendar(size: 12, color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+              AppIcons.calendar(
+                size: 12,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+              ),
               const SizedBox(width: 4),
               Text(
                 project.period,

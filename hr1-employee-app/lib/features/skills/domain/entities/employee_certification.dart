@@ -39,11 +39,11 @@ class EmployeeCertification {
   }
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'acquired_date': acquiredDate?.toIso8601String().split('T').first,
-        'score': score,
-        'sort_order': sortOrder,
-      };
+    'name': name,
+    'acquired_date': acquiredDate?.toIso8601String().split('T').first,
+    'score': score,
+    'sort_order': sortOrder,
+  };
 
   EmployeeCertification copyWith({
     String? name,

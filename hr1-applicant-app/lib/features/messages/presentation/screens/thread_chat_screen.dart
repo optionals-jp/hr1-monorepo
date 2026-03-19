@@ -5,12 +5,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/common_dialog.dart';
+import '../../../../shared/widgets/user_avatar.dart';
+import '../../../../shared/widgets/common_snackbar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/message_thread.dart';
-import '../providers/messages_providers.dart';
-
-const _pageSize = 30;
+import '../controllers/thread_chat_controller.dart';
 
 /// スレッドチャット画面
 class ThreadChatScreen extends ConsumerStatefulWidget {
@@ -25,11 +26,6 @@ class ThreadChatScreen extends ConsumerStatefulWidget {
 class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
-  List<Message> _messages = [];
-  bool _loading = true;
-  bool _sending = false;
-  bool _loadingMore = false;
-  bool _hasMore = true;
   RealtimeChannel? _channel;
   RealtimeChannel? _presenceChannel;
 
@@ -43,14 +39,16 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
   final _editController = TextEditingController();
   late final SupabaseClient _supabaseClient;
 
-  String get _currentUserId =>
-      ref.read(appUserProvider)?.id ?? '';
+  String get _currentUserId => ref.read(appUserProvider)?.id ?? '';
+
+  ThreadChatController get _chatController =>
+      ref.read(threadChatControllerProvider(widget.thread.id).notifier);
 
   @override
   void initState() {
     super.initState();
     _supabaseClient = ref.read(supabaseClientProvider);
-    _loadMessages();
+    _chatController.loadMessages(_currentUserId);
     _subscribeRealtime();
     _setupPresence();
     _scrollController.addListener(_onScroll);
@@ -75,8 +73,10 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
   void _onScroll() {
     if (_scrollController.position.pixels <=
             _scrollController.position.minScrollExtent + 50 &&
-        !_loadingMore &&
-        _hasMore) {
+        !ref
+            .read(threadChatControllerProvider(widget.thread.id))
+            .isLoadingMore &&
+        ref.read(threadChatControllerProvider(widget.thread.id)).hasMore) {
       _loadOlderMessages();
     }
   }
@@ -96,10 +96,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
   }
 
   void _broadcastTyping(bool isTyping) {
-    _presenceChannel?.track({
-      'user_id': _currentUserId,
-      'typing': isTyping,
-    });
+    _presenceChannel?.track({'user_id': _currentUserId, 'typing': isTyping});
   }
 
   void _setupPresence() {
@@ -136,48 +133,13 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
         });
   }
 
-  Future<void> _loadMessages() async {
-    final repo = ref.read(messagesRepositoryProvider);
-    final messages = await repo.getMessagesPaginated(
-      widget.thread.id,
-      limit: _pageSize,
-    );
-    if (mounted) {
-      setState(() {
-        _messages = messages;
-        _loading = false;
-        _hasMore = messages.length >= _pageSize;
-      });
-      _scrollToBottom();
-      // 未読を既読にする
-      repo.markAsRead(widget.thread.id, _currentUserId);
-    }
-  }
-
   Future<void> _loadOlderMessages() async {
-    if (_messages.isEmpty || _loadingMore || !_hasMore) return;
-
-    setState(() => _loadingMore = true);
-
-    final repo = ref.read(messagesRepositoryProvider);
-    final oldestCreatedAt = _messages.first.createdAt;
-
     // スクロール位置を保持するために現在の位置を記録
     final scrollBefore = _scrollController.position.maxScrollExtent;
 
-    final olderMessages = await repo.getMessagesPaginated(
-      widget.thread.id,
-      before: oldestCreatedAt,
-      limit: _pageSize,
-    );
+    await _chatController.loadOlderMessages();
 
     if (mounted) {
-      setState(() {
-        _messages = [...olderMessages, ..._messages];
-        _loadingMore = false;
-        _hasMore = olderMessages.length >= _pageSize;
-      });
-
       // スクロール位置を復元
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
@@ -205,30 +167,15 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
             final newMsg = payload.newRecord;
             if (newMsg.isEmpty) return;
 
-            // 送信者情報を取得
-            final senderResponse = await _supabaseClient
-                .from('profiles')
-                .select('id, display_name, role')
-                .eq('id', newMsg['sender_id'] as String)
-                .single();
-
-            final msg = Message.fromJson({
-              ...newMsg,
-              'sender': senderResponse,
-            });
+            final msg = await _chatController.buildMessageWithSender(newMsg);
 
             if (mounted) {
-              setState(() {
-                if (!_messages.any((m) => m.id == msg.id)) {
-                  _messages = [..._messages, msg];
-                }
-              });
+              _chatController.addRealtimeMessage(msg);
               _scrollToBottom();
 
               // 自分以外のメッセージを自動既読
               if (msg.senderId != _currentUserId) {
-                final repo = ref.read(messagesRepositoryProvider);
-                repo.markAsRead(widget.thread.id, _currentUserId);
+                _chatController.markAsRead(_currentUserId);
               }
             }
           },
@@ -246,24 +193,10 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
             final updated = payload.newRecord;
             if (updated.isEmpty) return;
 
-            // 送信者情報を取得
-            final senderResponse = await _supabaseClient
-                .from('profiles')
-                .select('id, display_name, role')
-                .eq('id', updated['sender_id'] as String)
-                .single();
-
-            final msg = Message.fromJson({
-              ...updated,
-              'sender': senderResponse,
-            });
+            final msg = await _chatController.buildMessageWithSender(updated);
 
             if (mounted) {
-              setState(() {
-                _messages = _messages.map((m) {
-                  return m.id == msg.id ? msg : m;
-                }).toList();
-              });
+              _chatController.updateRealtimeMessage(msg);
             }
           },
         )
@@ -284,11 +217,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
             if (deletedId == null) return;
 
             if (mounted) {
-              setState(() {
-                _messages = _messages
-                    .where((m) => m.id != deletedId)
-                    .toList();
-              });
+              _chatController.removeRealtimeMessage(deletedId);
             }
           },
         )
@@ -309,9 +238,8 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
 
   Future<void> _sendMessage() async {
     final content = _controller.text.trim();
-    if (content.isEmpty || _sending || content.length > 5000) return;
+    if (content.isEmpty || content.length > 5000) return;
 
-    setState(() => _sending = true);
     _controller.clear();
 
     // タイピング状態をリセット
@@ -319,28 +247,15 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     _typingDebounceTimer?.cancel();
     _broadcastTyping(false);
 
-    try {
-      final repo = ref.read(messagesRepositoryProvider);
-      await repo.sendMessage(
-        threadId: widget.thread.id,
-        senderId: _currentUserId,
-        content: content,
-      );
-    } catch (e) {
-      // 送信失敗時は入力内容を復元
-      if (mounted) {
-        _controller.text = content;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('メッセージの送信に失敗しました'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+    final success = await _chatController.sendMessage(
+      senderId: _currentUserId,
+      content: content,
+    );
 
-    if (mounted) {
-      setState(() => _sending = false);
+    if (!success && mounted) {
+      // 送信失敗時は入力内容を復元
+      _controller.text = content;
+      CommonSnackBar.error(context, 'メッセージの送信に失敗しました');
     }
   }
 
@@ -361,7 +276,10 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('削除', style: TextStyle(color: Colors.red)),
+              title: Text(
+                '削除',
+                style: AppTextStyles.body2.copyWith(color: Colors.red),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _confirmDelete(message);
@@ -394,86 +312,68 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
       return;
     }
 
-    try {
-      final repo = ref.read(messagesRepositoryProvider);
-      final updated = await repo.editMessage(message.id, newContent);
-      if (mounted) {
-        setState(() {
-          _messages = _messages.map((m) {
-            return m.id == updated.id ? updated : m;
-          }).toList();
-          _editingMessageId = null;
-          _editController.clear();
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('メッセージの編集に失敗しました'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    final success = await _chatController.editMessage(message.id, newContent);
+    if (success && mounted) {
+      setState(() {
+        _editingMessageId = null;
+        _editController.clear();
+      });
+    } else if (!success && mounted) {
+      CommonSnackBar.error(context, 'メッセージの編集に失敗しました');
     }
   }
 
   Future<void> _confirmDelete(Message message) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await CommonDialog.confirm(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('メッセージを削除'),
-        content: const Text('このメッセージを削除しますか？この操作は取り消せません。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('削除'),
-          ),
-        ],
-      ),
+      title: 'メッセージを削除',
+      message: 'このメッセージを削除しますか？この操作は取り消せません。',
+      confirmLabel: '削除',
+      isDestructive: true,
     );
 
-    if (confirmed == true) {
-      try {
-        final repo = ref.read(messagesRepositoryProvider);
-        await repo.deleteMessage(message.id);
-        if (mounted) {
-          setState(() {
-            _messages = _messages.where((m) => m.id != message.id).toList();
-          });
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('メッセージの削除に失敗しました'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+    if (confirmed) {
+      final success = await _chatController.deleteMessage(message.id);
+      if (!success && mounted) {
+        CommonSnackBar.error(context, 'メッセージの削除に失敗しました');
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final chatState = ref.watch(threadChatControllerProvider(widget.thread.id));
     final displayName = widget.thread.organizationName ?? '企業';
+
+    // エラー表示
+    if (chatState.error != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          CommonSnackBar.error(context, chatState.error!);
+          _chatController.clearError();
+        }
+      });
+    }
+
+    // 初回読み込み完了時にスクロール
+    ref.listen(threadChatControllerProvider(widget.thread.id), (prev, next) {
+      if (prev?.isLoading == true &&
+          !next.isLoading &&
+          next.messages.isNotEmpty) {
+        _scrollToBottom();
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(displayName, style: AppTextStyles.subtitle),
+            Text(displayName, style: AppTextStyles.callout),
             if (widget.thread.jobTitle != null)
               Text(
                 widget.thread.jobTitle!,
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.caption2.copyWith(
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -486,57 +386,62 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
         children: [
           // メッセージ一覧
           Expanded(
-            child: _loading
+            child: chatState.isLoading
                 ? const LoadingIndicator()
-                : _messages.isEmpty
-                    ? Center(
-                        child: Text(
-                          'メッセージはまだありません',
-                          style: AppTextStyles.body.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        itemCount: _messages.length + (_loadingMore ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          // ローディングインジケータ（先頭）
-                          if (_loadingMore && index == 0) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(
-                                  vertical: AppSpacing.md),
-                              child: Center(
-                                child: SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: LoadingIndicator(size: 24),
-                                ),
-                              ),
-                            );
-                          }
-
-                          final msgIndex =
-                              _loadingMore ? index - 1 : index;
-                          final msg = _messages[msgIndex];
-                          final isMe = msg.senderId == _currentUserId;
-                          final isEditing = _editingMessageId == msg.id;
-
-                          return GestureDetector(
-                            onLongPress:
-                                isMe ? () => _showMessageActions(msg) : null,
-                            child: _MessageBubble(
-                              message: msg,
-                              isMe: isMe,
-                              isEditing: isEditing,
-                              editController: _editController,
-                              onSaveEdit: () => _saveEdit(msg),
-                              onCancelEdit: _cancelEditing,
-                            ),
-                          );
-                        },
+                : chatState.messages.isEmpty
+                ? Center(
+                    child: Text(
+                      'メッセージはまだありません',
+                      style: AppTextStyles.body2.copyWith(
+                        color: AppColors.textSecondary,
                       ),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    itemCount:
+                        chatState.messages.length +
+                        (chatState.isLoadingMore ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      // ローディングインジケータ（先頭）
+                      if (chatState.isLoadingMore && index == 0) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: AppSpacing.md,
+                          ),
+                          child: Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: LoadingIndicator(size: 24),
+                            ),
+                          ),
+                        );
+                      }
+
+                      final msgIndex = chatState.isLoadingMore
+                          ? index - 1
+                          : index;
+                      final msg = chatState.messages[msgIndex];
+                      final isMe = msg.senderId == _currentUserId;
+                      final isEditing = _editingMessageId == msg.id;
+
+                      return GestureDetector(
+                        onLongPress: isMe
+                            ? () => _showMessageActions(msg)
+                            : null,
+                        child: _MessageBubble(
+                          message: msg,
+                          isMe: isMe,
+                          isEditing: isEditing,
+                          editController: _editController,
+                          onSaveEdit: () => _saveEdit(msg),
+                          onCancelEdit: _cancelEditing,
+                        ),
+                      );
+                    },
+                  ),
           ),
 
           // タイピングインジケータ
@@ -571,12 +476,13 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                     controller: _controller,
                     decoration: InputDecoration(
                       hintText: 'メッセージを入力...',
-                      hintStyle: AppTextStyles.body.copyWith(
+                      hintStyle: AppTextStyles.body2.copyWith(
                         color: AppColors.textSecondary,
                       ),
                       border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.buttonRadius),
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.buttonRadius,
+                        ),
                         borderSide: BorderSide(color: AppColors.border),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
@@ -585,7 +491,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                       ),
                       isDense: true,
                     ),
-                    style: AppTextStyles.body,
+                    style: AppTextStyles.body2,
                     maxLines: 4,
                     minLines: 1,
                     textInputAction: TextInputAction.send,
@@ -594,10 +500,10 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 IconButton(
-                  onPressed: _sending ? null : _sendMessage,
+                  onPressed: chatState.isSending ? null : _sendMessage,
                   icon: Icon(
                     Icons.send_rounded,
-                    color: _sending
+                    color: chatState.isSending
                         ? AppColors.textSecondary
                         : AppColors.primaryLight,
                   ),
@@ -633,36 +539,34 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Row(
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
-            CircleAvatar(
-              radius: 14,
-              backgroundColor: AppColors.primaryLight.withValues(alpha: 0.1),
-              child: Text(
-                (message.senderName ?? '?')[0],
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.primaryLight,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+            UserAvatar(
+              initial: (message.senderName ?? '?')[0],
+              color: AppColors.primaryLight,
+              size: 28,
             ),
             const SizedBox(width: AppSpacing.sm),
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment:
-                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isMe
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 if (!isMe)
                   Padding(
                     padding: const EdgeInsets.only(
-                        left: AppSpacing.xs, bottom: 2),
+                      left: AppSpacing.xs,
+                      bottom: 2,
+                    ),
                     child: Text(
                       message.senderName ?? '担当者',
-                      style: AppTextStyles.caption.copyWith(
+                      style: AppTextStyles.caption2.copyWith(
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -675,8 +579,8 @@ class _MessageBubble extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isEditing
                         ? (isMe
-                            ? AppColors.primaryLight.withValues(alpha: 0.8)
-                            : Colors.white)
+                              ? AppColors.primaryLight.withValues(alpha: 0.8)
+                              : Colors.white)
                         : (isMe ? AppColors.primaryLight : Colors.white),
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(16),
@@ -698,9 +602,8 @@ class _MessageBubble extends StatelessWidget {
                       ? _buildEditingContent(context)
                       : Text(
                           message.content,
-                          style: AppTextStyles.body.copyWith(
-                            color:
-                                isMe ? Colors.white : AppColors.textPrimary,
+                          style: AppTextStyles.body2.copyWith(
+                            color: isMe ? Colors.white : AppColors.textPrimary,
                           ),
                         ),
                 ),
@@ -711,7 +614,7 @@ class _MessageBubble extends StatelessWidget {
                     children: [
                       Text(
                         '${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}',
-                        style: AppTextStyles.caption.copyWith(
+                        style: AppTextStyles.caption2.copyWith(
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -719,9 +622,8 @@ class _MessageBubble extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           '(編集済み)',
-                          style: AppTextStyles.caption.copyWith(
+                          style: AppTextStyles.caption2.copyWith(
                             color: AppColors.textSecondary,
-                            fontSize: 10,
                           ),
                         ),
                       ],
@@ -746,7 +648,7 @@ class _MessageBubble extends StatelessWidget {
           controller: editController,
           autofocus: true,
           maxLines: null,
-          style: AppTextStyles.body.copyWith(
+          style: AppTextStyles.body2.copyWith(
             color: isMe ? Colors.white : AppColors.textPrimary,
           ),
           decoration: InputDecoration(
@@ -754,7 +656,7 @@ class _MessageBubble extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             border: InputBorder.none,
             hintText: 'メッセージを編集...',
-            hintStyle: AppTextStyles.body.copyWith(
+            hintStyle: AppTextStyles.body2.copyWith(
               color: isMe
                   ? Colors.white.withValues(alpha: 0.6)
                   : AppColors.textSecondary,
@@ -769,7 +671,7 @@ class _MessageBubble extends StatelessWidget {
               onTap: onCancelEdit,
               child: Text(
                 'キャンセル',
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.caption2.copyWith(
                   color: isMe
                       ? Colors.white.withValues(alpha: 0.8)
                       : AppColors.textSecondary,
@@ -782,7 +684,7 @@ class _MessageBubble extends StatelessWidget {
               onTap: onSaveEdit,
               child: Text(
                 '保存',
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.caption2.copyWith(
                   color: isMe ? Colors.white : AppColors.primaryLight,
                   fontWeight: FontWeight.w600,
                 ),
@@ -831,7 +733,7 @@ class _TypingIndicatorState extends State<_TypingIndicator> {
       children: [
         Text(
           '入力中$dots',
-          style: AppTextStyles.caption.copyWith(
+          style: AppTextStyles.caption2.copyWith(
             color: AppColors.textSecondary,
           ),
         ),

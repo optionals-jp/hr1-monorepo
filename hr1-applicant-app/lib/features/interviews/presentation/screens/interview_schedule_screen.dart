@@ -4,11 +4,13 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/common_button.dart';
+import '../../../../shared/widgets/common_dialog.dart';
+import '../../../../shared/widgets/common_snackbar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../../applications/presentation/providers/applications_providers.dart';
 import '../../domain/entities/interview.dart';
 import '../../domain/entities/interview_slot.dart';
+import '../controllers/interview_controller.dart';
 import '../providers/interviews_providers.dart';
 
 /// 面接日程調整画面
@@ -27,6 +29,18 @@ class InterviewScheduleScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncInterview = ref.watch(interviewDetailProvider(interviewId));
+    final controllerState = ref.watch(interviewControllerProvider(interviewId));
+
+    // 確定成功時の処理
+    ref.listen(interviewControllerProvider(interviewId), (prev, next) {
+      if (next.confirmed && prev?.confirmed != true) {
+        Navigator.pop(context);
+        CommonSnackBar.show(context, '面接日程を確定しました');
+      }
+      if (next.error != null && prev?.error == null) {
+        CommonSnackBar.show(context, next.error!);
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(title: const Text('面接日程の選択')),
@@ -49,12 +63,11 @@ class InterviewScheduleScreen extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.xl),
 
                     // 候補日時セクション
-                    Text('候補日時を選択してください',
-                        style: AppTextStyles.subtitle),
+                    Text('候補日時を選択してください', style: AppTextStyles.callout),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       'ご都合の良い日時を1つ選択してください',
-                      style: AppTextStyles.bodySmall.copyWith(
+                      style: AppTextStyles.caption1.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -63,20 +76,27 @@ class InterviewScheduleScreen extends ConsumerWidget {
                     // スロット一覧（未予約のスロットのみ表示）
                     ...interview.slots
                         .where((slot) => !slot.isBooked)
-                        .map((slot) => Padding(
-                          padding:
-                              const EdgeInsets.only(bottom: AppSpacing.md),
-                          child: _SlotCard(
-                            slot: slot,
-                            isSelected: selectedSlotId == slot.id,
-                            onTap: () {
-                              ref
-                                  .read(selectedSlotProvider(interviewId)
-                                      .notifier)
-                                  .state = slot.id;
-                            },
+                        .map(
+                          (slot) => Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: AppSpacing.md,
+                            ),
+                            child: _SlotCard(
+                              slot: slot,
+                              isSelected: selectedSlotId == slot.id,
+                              onTap: () {
+                                ref
+                                        .read(
+                                          selectedSlotProvider(
+                                            interviewId,
+                                          ).notifier,
+                                        )
+                                        .state =
+                                    slot.id;
+                              },
+                            ),
                           ),
-                        )),
+                        ),
                   ],
                 ),
               ),
@@ -85,27 +105,14 @@ class InterviewScheduleScreen extends ConsumerWidget {
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: selectedSlotId != null
-                          ? () => _confirm(context, ref, interview,
-                              selectedSlotId)
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryLight,
-                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                        disabledBackgroundColor:
-                            Theme.of(context).dividerColor,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.md),
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.buttonRadius),
-                        ),
-                      ),
-                      child: const Text('この日程で確定する'),
-                    ),
+                  child: CommonButton(
+                    onPressed: selectedSlotId != null
+                        ? () =>
+                              _confirm(context, ref, interview, selectedSlotId)
+                        : null,
+                    loading: controllerState.isSubmitting,
+                    enabled: !controllerState.isSubmitting,
+                    child: const Text('この日程で確定する'),
                   ),
                 ),
               ),
@@ -118,70 +125,33 @@ class InterviewScheduleScreen extends ConsumerWidget {
     );
   }
 
-  void _confirm(BuildContext screenContext, WidgetRef ref,
-      Interview interview, String slotId) {
-    final slot =
-        interview.slots.where((s) => s.id == slotId).firstOrNull;
+  Future<void> _confirm(
+    BuildContext screenContext,
+    WidgetRef ref,
+    Interview interview,
+    String slotId,
+  ) async {
+    final slot = interview.slots.where((s) => s.id == slotId).firstOrNull;
     if (slot == null) return;
 
     final dateFormat = DateFormat('M月d日(E) HH:mm', 'ja');
 
-    showDialog(
+    final confirmed = await CommonDialog.confirm(
       context: screenContext,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('日程確定'),
-        content: Text(
+      title: '日程確定',
+      message:
           '${dateFormat.format(slot.startAt)} 〜 ${DateFormat('HH:mm').format(slot.endAt)}\n\nこの日程で確定しますか？',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('キャンセル'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-
-              final client = ref.read(supabaseClientProvider);
-
-              // Supabase: スロットを予約（application_id をセットして二重予約を防止）
-              await client
-                  .from('interview_slots')
-                  .update({
-                    'is_selected': true,
-                    'application_id': applicationId,
-                  })
-                  .eq('id', slotId);
-
-              // ステップを完了に更新し、次のステップを自動開始
-              if (stepId != null) {
-                final repo = ref.read(applicationsRepositoryProvider);
-                await repo.completeStep(stepId!, applicationId);
-              }
-
-              ref.invalidate(selectedSlotProvider(interviewId));
-              ref.invalidate(interviewDetailProvider(interviewId));
-              ref.invalidate(applicationsProvider);
-              ref.invalidate(applicationDetailProvider(applicationId));
-
-              if (!screenContext.mounted) return;
-              Navigator.pop(screenContext);
-              ScaffoldMessenger.of(screenContext).showSnackBar(
-                const SnackBar(
-                  content: Text('面接日程を確定しました'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryLight,
-              foregroundColor: Theme.of(dialogContext).colorScheme.onPrimary,
-            ),
-            child: const Text('確定する'),
-          ),
-        ],
-      ),
+      confirmLabel: '確定する',
     );
+    if (!confirmed) return;
+
+    ref
+        .read(interviewControllerProvider(interviewId).notifier)
+        .confirmSlot(
+          slotId: slotId,
+          applicationId: applicationId,
+          stepId: stepId,
+        );
   }
 }
 
@@ -206,25 +176,32 @@ class _InterviewInfoCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.videocam_outlined,
-                  size: 20, color: AppColors.primaryLight),
+              Icon(
+                Icons.videocam_outlined,
+                size: 20,
+                color: AppColors.primaryLight,
+              ),
               const SizedBox(width: AppSpacing.sm),
-              Text('面接情報', style: AppTextStyles.subtitle),
+              Text('面接情報', style: AppTextStyles.callout),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
           if (interview.location != null) ...[
-            Text('場所: ${interview.location!}',
-                style: AppTextStyles.body),
+            Text('場所: ${interview.location!}', style: AppTextStyles.body2),
             const SizedBox(height: AppSpacing.xs),
           ],
-          Text('所要時間: 約${interview.slots.firstOrNull?.durationMinutes ?? 60}分',
-              style: AppTextStyles.body),
+          Text(
+            '所要時間: 約${interview.slots.firstOrNull?.durationMinutes ?? 60}分',
+            style: AppTextStyles.body2,
+          ),
           if (interview.notes != null) ...[
             const SizedBox(height: AppSpacing.md),
-            Text(interview.notes!, style: AppTextStyles.bodySmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            )),
+            Text(
+              interview.notes!,
+              style: AppTextStyles.caption1.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ],
       ),
@@ -260,9 +237,7 @@ class _SlotCard extends StatelessWidget {
               : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
           border: Border.all(
-            color: isSelected
-                ? AppColors.primaryLight
-                : theme.dividerColor,
+            color: isSelected ? AppColors.primaryLight : theme.dividerColor,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -279,9 +254,7 @@ class _SlotCard extends StatelessWidget {
                       : theme.dividerColor,
                   width: 2,
                 ),
-                color: isSelected
-                    ? AppColors.primaryLight
-                    : Colors.transparent,
+                color: isSelected ? AppColors.primaryLight : Colors.transparent,
               ),
               child: isSelected
                   ? const Icon(Icons.check, size: 14, color: Colors.white)
@@ -294,12 +267,12 @@ class _SlotCard extends StatelessWidget {
                 children: [
                   Text(
                     dateFormat.format(slot.startAt),
-                    style: AppTextStyles.subtitle,
+                    style: AppTextStyles.callout,
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     '${timeFormat.format(slot.startAt)} 〜 ${timeFormat.format(slot.endAt)}',
-                    style: AppTextStyles.body.copyWith(
+                    style: AppTextStyles.body2.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),

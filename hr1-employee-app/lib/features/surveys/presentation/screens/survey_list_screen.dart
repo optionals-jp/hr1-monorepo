@@ -6,7 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/common_button.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../domain/entities/pulse_survey.dart';
 import '../providers/survey_providers.dart';
@@ -19,7 +19,8 @@ class SurveyListScreen extends ConsumerStatefulWidget {
   ConsumerState<SurveyListScreen> createState() => _SurveyListScreenState();
 }
 
-class _SurveyListScreenState extends ConsumerState<SurveyListScreen> with SingleTickerProviderStateMixin {
+class _SurveyListScreenState extends ConsumerState<SurveyListScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -38,7 +39,6 @@ class _SurveyListScreenState extends ConsumerState<SurveyListScreen> with Single
   Widget build(BuildContext context) {
     final surveysAsync = ref.watch(activeSurveysProvider);
     final completedAsync = ref.watch(completedSurveyIdsProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -54,29 +54,20 @@ class _SurveyListScreenState extends ConsumerState<SurveyListScreen> with Single
       ),
       body: surveysAsync.when(
         loading: () => const LoadingIndicator(),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '読み込みに失敗しました',
-                style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary(theme.brightness)),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              CommonButton.outline(
-                onPressed: () {
-                  ref.invalidate(activeSurveysProvider);
-                  ref.invalidate(completedSurveyIdsProvider);
-                },
-                child: const Text('再試行'),
-              ),
-            ],
-          ),
+        error: (e, _) => ErrorState(
+          onRetry: () {
+            ref.invalidate(activeSurveysProvider);
+            ref.invalidate(completedSurveyIdsProvider);
+          },
         ),
         data: (surveys) {
           final completedIds = completedAsync.valueOrNull ?? <String>{};
-          final pending = surveys.where((s) => !completedIds.contains(s.id)).toList();
-          final completed = surveys.where((s) => completedIds.contains(s.id)).toList();
+          final pending = surveys
+              .where((s) => !completedIds.contains(s.id))
+              .toList();
+          final completed = surveys
+              .where((s) => completedIds.contains(s.id))
+              .toList();
 
           return TabBarView(
             controller: _tabController,
@@ -124,7 +115,9 @@ class _SurveyListScreenState extends ConsumerState<SurveyListScreen> with Single
   for (final q in survey.questions) {
     typeCounts[q.type] = (typeCounts[q.type] ?? 0) + 1;
   }
-  final dominant = typeCounts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+  final dominant = typeCounts.entries
+      .reduce((a, b) => a.value >= b.value ? a : b)
+      .key;
 
   switch (dominant) {
     case 'rating':
@@ -132,7 +125,10 @@ class _SurveyListScreenState extends ConsumerState<SurveyListScreen> with Single
     case 'text':
       return (icon: Icons.edit_note_rounded, color: AppColors.brandPrimary);
     case 'single_choice':
-      return (icon: Icons.radio_button_checked_rounded, color: AppColors.success);
+      return (
+        icon: Icons.radio_button_checked_rounded,
+        color: AppColors.success,
+      );
     case 'multiple_choice':
       return (icon: Icons.checklist_rounded, color: const Color(0xFF8764B8));
     default:
@@ -169,9 +165,18 @@ class _SurveyList extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(emptyIcon, size: 48, color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
+            Icon(
+              emptyIcon,
+              size: 48,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+            ),
             const SizedBox(height: AppSpacing.md),
-            Text(emptyMessage, style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary(theme.brightness))),
+            Text(
+              emptyMessage,
+              style: AppTextStyles.body2.copyWith(
+                color: AppColors.textSecondary(theme.brightness),
+              ),
+            ),
           ],
         ),
       );
@@ -191,11 +196,17 @@ class _SurveyList extends ConsumerWidget {
             onTap: isCompleted
                 ? null
                 : () async {
-                    await context.push('${AppRoutes.surveys}/${survey.id}', extra: survey);
+                    await context.push(
+                      '${AppRoutes.surveys}/${survey.id}',
+                      extra: survey,
+                    );
                     ref.invalidate(completedSurveyIdsProvider);
                   },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -207,7 +218,10 @@ class _SurveyList extends ConsumerWidget {
                           width: 6,
                           height: 6,
                           margin: const EdgeInsets.only(right: AppSpacing.sm),
-                          decoration: const BoxDecoration(color: AppColors.brandPrimary, shape: BoxShape.circle),
+                          decoration: const BoxDecoration(
+                            color: AppColors.brandPrimary,
+                            shape: BoxShape.circle,
+                          ),
                         ),
 
                       // アイコン
@@ -218,7 +232,11 @@ class _SurveyList extends ConsumerWidget {
                           color: typeIcon.color.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(typeIcon.icon, size: 20, color: typeIcon.color),
+                        child: Icon(
+                          typeIcon.icon,
+                          size: 20,
+                          color: typeIcon.color,
+                        ),
                       ),
                     ],
                   ),
@@ -237,7 +255,9 @@ class _SurveyList extends ConsumerWidget {
                               child: Text(
                                 survey.title,
                                 style: AppTextStyles.body1.copyWith(
-                                  fontWeight: isCompleted ? FontWeight.w400 : FontWeight.w600,
+                                  fontWeight: isCompleted
+                                      ? FontWeight.w400
+                                      : FontWeight.w600,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -246,7 +266,11 @@ class _SurveyList extends ConsumerWidget {
                             // 日付
                             Text(
                               _formatDate(survey.createdAt),
-                              style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary(theme.brightness)),
+                              style: AppTextStyles.body2.copyWith(
+                                color: AppColors.textSecondary(
+                                  theme.brightness,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -256,7 +280,9 @@ class _SurveyList extends ConsumerWidget {
                         if (survey.description != null) ...[
                           Text(
                             survey.description!,
-                            style: AppTextStyles.body2.copyWith(color: AppColors.textTertiary(theme.brightness)),
+                            style: AppTextStyles.body2.copyWith(
+                              color: AppColors.textTertiary(theme.brightness),
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -266,7 +292,9 @@ class _SurveyList extends ConsumerWidget {
                         // メタ情報（問数 + 種別）
                         Text(
                           _surveyMeta(survey),
-                          style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary(theme.brightness)),
+                          style: AppTextStyles.body2.copyWith(
+                            color: AppColors.textSecondary(theme.brightness),
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -290,7 +318,9 @@ class _SurveyList extends ConsumerWidget {
 String _formatDate(DateTime dt) {
   final now = DateTime.now();
   final local = dt.toLocal();
-  if (local.year == now.year && local.month == now.month && local.day == now.day) {
+  if (local.year == now.year &&
+      local.month == now.month &&
+      local.day == now.day) {
     return DateFormat('HH:mm').format(local);
   }
   if (local.year == now.year) {

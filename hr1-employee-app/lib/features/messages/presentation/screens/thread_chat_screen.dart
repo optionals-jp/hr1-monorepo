@@ -1,7 +1,5 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
@@ -12,8 +10,7 @@ import '../../../../shared/widgets/common_dialog.dart';
 import '../../../../shared/widgets/common_snackbar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../controllers/thread_chat_controller.dart';
-
-const _pageSize = 30;
+import '../controllers/thread_realtime_controller.dart';
 
 /// スレッドチャット画面 — Teams チャットスタイル
 class ThreadChatScreen extends ConsumerStatefulWidget {
@@ -28,27 +25,18 @@ class ThreadChatScreen extends ConsumerStatefulWidget {
 class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
-  List<Message> _messages = [];
-  bool _loading = true;
   bool _sending = false;
-  bool _loadingMore = false;
-  bool _hasMore = true;
-  RealtimeChannel? _channel;
-  RealtimeChannel? _presenceChannel;
   String? _editingMessageId;
   final _editController = TextEditingController();
-  bool _otherUserTyping = false;
-  Timer? _typingDebounceTimer;
-  bool _isTyping = false;
 
   String get _currentUserId => ref.read(appUserProvider)?.id ?? '';
+
+  ({String threadId, String currentUserId}) get _realtimeArg =>
+      (threadId: widget.thread.id, currentUserId: _currentUserId);
 
   @override
   void initState() {
     super.initState();
-    _loadMessages();
-    _subscribeRealtime();
-    _setupPresence();
     _scrollController.addListener(_onScroll);
     _controller.addListener(_onTextChanged);
   }
@@ -58,189 +46,22 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     _controller.dispose();
     _editController.dispose();
     _scrollController.dispose();
-    _typingDebounceTimer?.cancel();
-    if (_channel != null) {
-      Supabase.instance.client.removeChannel(_channel!);
-    }
-    if (_presenceChannel != null) {
-      Supabase.instance.client.removeChannel(_presenceChannel!);
-    }
     super.dispose();
-  }
-
-  Future<void> _loadMessages() async {
-    final controller = ref.read(threadChatControllerProvider.notifier);
-    final messages = await controller.getMessages(
-      widget.thread.id,
-      limit: _pageSize,
-    );
-    if (mounted) {
-      setState(() {
-        _messages = messages;
-        _loading = false;
-        _hasMore = messages.length >= _pageSize;
-      });
-      _scrollToBottom();
-      controller.markAsRead(widget.thread.id, _currentUserId);
-    }
-  }
-
-  Future<void> _loadOlderMessages() async {
-    if (_loadingMore || !_hasMore || _messages.isEmpty) return;
-    setState(() => _loadingMore = true);
-    final controller = ref.read(threadChatControllerProvider.notifier);
-    final oldestCreatedAt = _messages.first.createdAt;
-    final olderMessages = await controller.getMessages(
-      widget.thread.id,
-      before: oldestCreatedAt,
-      limit: _pageSize,
-    );
-    if (mounted) {
-      setState(() {
-        _messages = [...olderMessages, ..._messages];
-        _loadingMore = false;
-        _hasMore = olderMessages.length >= _pageSize;
-      });
-    }
   }
 
   void _onScroll() {
     if (_scrollController.position.pixels <=
         _scrollController.position.minScrollExtent + 50) {
-      _loadOlderMessages();
+      ref
+          .read(threadRealtimeControllerProvider(_realtimeArg).notifier)
+          .loadOlderMessages();
     }
-  }
-
-  void _subscribeRealtime() {
-    _channel = Supabase.instance.client
-        .channel('messages:${widget.thread.id}')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'thread_id',
-            value: widget.thread.id,
-          ),
-          callback: (payload) async {
-            final newMsg = payload.newRecord;
-            if (newMsg.isEmpty) return;
-            final senderResponse = await ref
-                .read(threadChatControllerProvider.notifier)
-                .getSenderProfile(newMsg['sender_id'] as String);
-            final msg = Message.fromJson({
-              ...newMsg,
-              'sender': senderResponse,
-            });
-            if (mounted) {
-              setState(() {
-                if (!_messages.any((m) => m.id == msg.id)) {
-                  _messages = [..._messages, msg];
-                }
-              });
-              _scrollToBottom();
-              if (msg.senderId != _currentUserId) {
-                ref
-                    .read(threadChatControllerProvider.notifier)
-                    .markAsRead(widget.thread.id, _currentUserId);
-              }
-            }
-          },
-        )
-        .onPostgresChanges(
-          event: PostgresChangeEvent.update,
-          schema: 'public',
-          table: 'messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'thread_id',
-            value: widget.thread.id,
-          ),
-          callback: (payload) {
-            final updated = payload.newRecord;
-            if (updated.isEmpty || !mounted) return;
-            setState(() {
-              _messages = _messages.map((m) {
-                if (m.id == updated['id']) {
-                  return m.copyWith(
-                    content: updated['content'] as String?,
-                    editedAt: updated['edited_at'] != null
-                        ? DateTime.parse(updated['edited_at'] as String)
-                        : null,
-                  );
-                }
-                return m;
-              }).toList();
-            });
-          },
-        )
-        .onPostgresChanges(
-          event: PostgresChangeEvent.delete,
-          schema: 'public',
-          table: 'messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'thread_id',
-            value: widget.thread.id,
-          ),
-          callback: (payload) {
-            final old = payload.oldRecord;
-            if (old.isEmpty || !mounted) return;
-            setState(() {
-              _messages = _messages.where((m) => m.id != old['id']).toList();
-            });
-          },
-        )
-        .subscribe();
-  }
-
-  void _setupPresence() {
-    _presenceChannel = Supabase.instance.client
-        .channel('typing:${widget.thread.id}')
-        .onPresenceSync((payload) {
-      if (!mounted) return;
-      final presences = _presenceChannel!.presenceState();
-      bool otherTyping = false;
-      for (final state in presences) {
-        for (final presence in state.presences) {
-          if (presence.payload['user_id'] != _currentUserId &&
-              presence.payload['is_typing'] == true) {
-            otherTyping = true;
-            break;
-          }
-        }
-        if (otherTyping) break;
-      }
-      setState(() => _otherUserTyping = otherTyping);
-    }).subscribe((status, [error]) async {
-      if (status == RealtimeSubscribeStatus.subscribed) {
-        await _presenceChannel!.track({
-          'user_id': _currentUserId,
-          'is_typing': false,
-        });
-      }
-    });
   }
 
   void _onTextChanged() {
-    if (_controller.text.isNotEmpty && !_isTyping) {
-      _isTyping = true;
-      _presenceChannel?.track({
-        'user_id': _currentUserId,
-        'is_typing': true,
-      });
-    }
-    _typingDebounceTimer?.cancel();
-    _typingDebounceTimer = Timer(const Duration(seconds: 2), () {
-      if (_isTyping) {
-        _isTyping = false;
-        _presenceChannel?.track({
-          'user_id': _currentUserId,
-          'is_typing': false,
-        });
-      }
-    });
+    ref
+        .read(threadRealtimeControllerProvider(_realtimeArg).notifier)
+        .onTextChanged(_controller.text);
   }
 
   void _scrollToBottom() {
@@ -260,14 +81,13 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     if (content.isEmpty || _sending || content.length > 5000) return;
     setState(() => _sending = true);
     _controller.clear();
-    _isTyping = false;
-    _typingDebounceTimer?.cancel();
-    _presenceChannel?.track({
-      'user_id': _currentUserId,
-      'is_typing': false,
-    });
+    ref
+        .read(threadRealtimeControllerProvider(_realtimeArg).notifier)
+        .resetTyping();
     try {
-      await ref.read(threadChatControllerProvider.notifier).sendMessage(
+      await ref
+          .read(threadChatControllerProvider.notifier)
+          .sendMessage(
             threadId: widget.thread.id,
             senderId: _currentUserId,
             content: content,
@@ -301,7 +121,9 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     final messageId = _editingMessageId!;
     _cancelEditing();
     try {
-      await ref.read(threadChatControllerProvider.notifier).editMessage(messageId, content);
+      await ref
+          .read(threadChatControllerProvider.notifier)
+          .editMessage(messageId, content);
     } catch (e) {
       CommonSnackBar.error(context, 'メッセージの編集に失敗しました');
     }
@@ -317,7 +139,9 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     );
     if (!confirmed) return;
     try {
-      await ref.read(threadChatControllerProvider.notifier).deleteMessage(messageId);
+      await ref
+          .read(threadChatControllerProvider.notifier)
+          .deleteMessage(messageId);
     } catch (e) {
       CommonSnackBar.error(context, 'メッセージの削除に失敗しました');
     }
@@ -350,9 +174,15 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.delete_outline,
-                  color: AppColors.error, size: 22),
-              title: Text('削除', style: AppTextStyles.body1.copyWith(color: AppColors.error)),
+              leading: Icon(
+                Icons.delete_outline,
+                color: AppColors.error,
+                size: 22,
+              ),
+              title: Text(
+                '削除',
+                style: AppTextStyles.body1.copyWith(color: AppColors.error),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 _deleteMessage(message.id);
@@ -369,6 +199,23 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     final displayName =
         widget.thread.participantName ?? widget.thread.title ?? '相手';
     final theme = Theme.of(context);
+    final realtimeState = ref.watch(
+      threadRealtimeControllerProvider(_realtimeArg),
+    );
+
+    // 新しいメッセージが追加されたらスクロール
+    ref.listen(threadRealtimeControllerProvider(_realtimeArg), (prev, next) {
+      if (prev != null &&
+          next.messages.length > prev.messages.length &&
+          !next.loading) {
+        _scrollToBottom();
+      }
+    });
+
+    final messages = realtimeState.messages;
+    final loading = realtimeState.loading;
+    final loadingMore = realtimeState.loadingMore;
+    final otherUserTyping = realtimeState.otherUserTyping;
 
     return Scaffold(
       appBar: AppBar(
@@ -402,64 +249,64 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
         children: [
           // メッセージリスト
           Expanded(
-            child: _loading
+            child: loading
                 ? const LoadingIndicator()
-                : _messages.isEmpty
-                    ? Center(
-                        child: Text(
-                          'メッセージはまだありません',
-                          style: AppTextStyles.body2.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.45),
-                          ),
+                : messages.isEmpty
+                ? Center(
+                    child: Text(
+                      'メッセージはまだありません',
+                      style: AppTextStyles.body2.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.45,
                         ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                          vertical: AppSpacing.sm,
-                        ),
-                        itemCount: _messages.length + (_loadingMore ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (_loadingMore && index == 0) {
-                            return const Padding(
-                              padding:
-                                  EdgeInsets.symmetric(vertical: AppSpacing.md),
-                              child: Center(
-                                child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: LoadingIndicator(size: 20),
-                                ),
-                              ),
-                            );
-                          }
-                          final msgIndex = _loadingMore ? index - 1 : index;
-                          final msg = _messages[msgIndex];
-                          final isMe = msg.senderId == _currentUserId;
-                          final isEditing = _editingMessageId == msg.id;
-
-                          return GestureDetector(
-                            onLongPress:
-                                isMe ? () => _showMessageActions(msg) : null,
-                            child: isEditing
-                                ? _EditingBubble(
-                                    controller: _editController,
-                                    onSave: _saveEdit,
-                                    onCancel: _cancelEditing,
-                                  )
-                                : _MessageBubble(
-                                    message: msg,
-                                    isMe: isMe,
-                                  ),
-                          );
-                        },
                       ),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.sm,
+                    ),
+                    itemCount: messages.length + (loadingMore ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (loadingMore && index == 0) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: AppSpacing.md,
+                          ),
+                          child: Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: LoadingIndicator(size: 20),
+                            ),
+                          ),
+                        );
+                      }
+                      final msgIndex = loadingMore ? index - 1 : index;
+                      final msg = messages[msgIndex];
+                      final isMe = msg.senderId == _currentUserId;
+                      final isEditing = _editingMessageId == msg.id;
+
+                      return GestureDetector(
+                        onLongPress: isMe
+                            ? () => _showMessageActions(msg)
+                            : null,
+                        child: isEditing
+                            ? _EditingBubble(
+                                controller: _editController,
+                                onSave: _saveEdit,
+                                onCancel: _cancelEditing,
+                              )
+                            : _MessageBubble(message: msg, isMe: isMe),
+                      );
+                    },
+                  ),
           ),
 
           // タイピングインジケーター
-          if (_otherUserTyping)
+          if (otherUserTyping)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(
@@ -497,7 +344,9 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                           padding: const EdgeInsets.only(left: 14, bottom: 10),
                           child: AppIcons.directbox(
                             size: 20,
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.4,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -507,13 +356,17 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                             decoration: InputDecoration(
                               hintText: 'メッセージを入力',
                               hintStyle: AppTextStyles.caption1.copyWith(
-                                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.5,
+                                ),
                               ),
                               filled: false,
                               border: InputBorder.none,
                               enabledBorder: InputBorder.none,
                               focusedBorder: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 10,
+                              ),
                               isDense: true,
                             ),
                             style: AppTextStyles.caption1,
@@ -633,7 +486,8 @@ class _EditingBubble extends StatelessWidget {
                 color: AppColors.brandPrimary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                    color: AppColors.brandPrimary.withValues(alpha: 0.3)),
+                  color: AppColors.brandPrimary.withValues(alpha: 0.3),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -660,15 +514,17 @@ class _EditingBubble extends StatelessWidget {
                         onPressed: onCancel,
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.sm),
+                            horizontal: AppSpacing.sm,
+                          ),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         child: Text(
                           'キャンセル',
                           style: AppTextStyles.caption2.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.6),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.6,
+                            ),
                           ),
                         ),
                       ),
@@ -677,7 +533,8 @@ class _EditingBubble extends StatelessWidget {
                         onPressed: onSave,
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.sm),
+                            horizontal: AppSpacing.sm,
+                          ),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
@@ -706,10 +563,7 @@ class _EditingBubble extends StatelessWidget {
 // =============================================================================
 
 class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({
-    required this.message,
-    required this.isMe,
-  });
+  const _MessageBubble({required this.message, required this.isMe});
 
   final Message message;
   final bool isMe;
@@ -722,10 +576,9 @@ class _MessageBubble extends StatelessWidget {
     final bubbleColor = isMe
         ? AppColors.brandPrimary
         : (theme.brightness == Brightness.dark
-            ? theme.colorScheme.surfaceContainerHighest
-            : const Color(0xFFF0F0F0));
-    final textColor =
-        isMe ? Colors.white : theme.colorScheme.onSurface;
+              ? theme.colorScheme.surfaceContainerHighest
+              : const Color(0xFFF0F0F0));
+    final textColor = isMe ? Colors.white : theme.colorScheme.onSurface;
     final metaColor = isMe
         ? Colors.white.withValues(alpha: 0.7)
         : theme.colorScheme.onSurface.withValues(alpha: 0.45);
@@ -733,8 +586,9 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
       child: Row(
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
@@ -760,18 +614,22 @@ class _MessageBubble extends StatelessWidget {
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment:
-                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isMe
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 if (!isMe)
                   Padding(
                     padding: const EdgeInsets.only(
-                        left: AppSpacing.xs, bottom: 3),
+                      left: AppSpacing.xs,
+                      bottom: 3,
+                    ),
                     child: Text(
                       message.senderName ?? '相手',
                       style: AppTextStyles.caption1.copyWith(
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.55),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.55,
+                        ),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -796,8 +654,7 @@ class _MessageBubble extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding:
-                      const EdgeInsets.only(top: 3, left: 4, right: 4),
+                  padding: const EdgeInsets.only(top: 3, left: 4, right: 4),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -806,7 +663,8 @@ class _MessageBubble extends StatelessWidget {
                           padding: const EdgeInsets.only(right: 4),
                           child: Text(
                             '編集済み',
-                            style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
+                            style: AppTextStyles.caption1.copyWith(
+                              fontWeight: FontWeight.w500,
                               color: metaColor,
                               fontSize: 10,
                             ),
@@ -814,7 +672,8 @@ class _MessageBubble extends StatelessWidget {
                         ),
                       Text(
                         '${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}',
-                        style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500,
+                        style: AppTextStyles.caption1.copyWith(
+                          fontWeight: FontWeight.w500,
                           color: metaColor,
                         ),
                       ),

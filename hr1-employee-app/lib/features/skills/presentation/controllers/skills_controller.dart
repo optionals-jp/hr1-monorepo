@@ -30,8 +30,8 @@ class SkillsController extends AutoDisposeAsyncNotifier<List<EmployeeSkill>> {
 
 final skillsControllerProvider =
     AutoDisposeAsyncNotifierProvider<SkillsController, List<EmployeeSkill>>(
-  SkillsController.new,
-);
+      SkillsController.new,
+    );
 
 /// 資格管理コントローラー
 class CertificationsController
@@ -62,7 +62,8 @@ class CertificationsController
   }
 }
 
-final certificationsControllerProvider = AutoDisposeAsyncNotifierProvider<
-    CertificationsController, List<EmployeeCertification>>(
-  CertificationsController.new,
-);
+final certificationsControllerProvider =
+    AutoDisposeAsyncNotifierProvider<
+      CertificationsController,
+      List<EmployeeCertification>
+    >(CertificationsController.new);

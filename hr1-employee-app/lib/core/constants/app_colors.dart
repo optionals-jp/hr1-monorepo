@@ -111,19 +111,17 @@ class AppColors {
   // MaterialColor（互換用）
   // ---------------------------------------------------------------------------
 
-  static const MaterialColor primarySwatch = MaterialColor(
-    0xFF0F6CBD,
-    <int, Color>{
-      50: Color(0xFFE8F4FD),
-      100: Color(0xFFC5E3FA),
-      200: Color(0xFF9FD1F6),
-      300: Color(0xFF78BFF2),
-      400: Color(0xFF5BB1EF),
-      500: Color(0xFF0F6CBD),
-      600: Color(0xFF115EA3),
-      700: Color(0xFF0E4F88),
-      800: Color(0xFF0B406E),
-      900: Color(0xFF083254),
-    },
-  );
+  static const MaterialColor primarySwatch =
+      MaterialColor(0xFF0F6CBD, <int, Color>{
+        50: Color(0xFFE8F4FD),
+        100: Color(0xFFC5E3FA),
+        200: Color(0xFF9FD1F6),
+        300: Color(0xFF78BFF2),
+        400: Color(0xFF5BB1EF),
+        500: Color(0xFF0F6CBD),
+        600: Color(0xFF115EA3),
+        700: Color(0xFF0E4F88),
+        800: Color(0xFF0B406E),
+        900: Color(0xFF083254),
+      });
 }

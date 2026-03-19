@@ -22,31 +22,60 @@ class ProfileScreen extends ConsumerWidget {
     final user = ref.watch(appUserProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('マイページ', style: AppTextStyles.headline.copyWith(letterSpacing: -0.2)),
-        centerTitle: false,
-      ),
+      appBar: AppBar(title: Text('マイページ', style: AppTextStyles.headline)),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
         children: [
           // プロフィールヘッダー
           GroupedSection(
             children: [
-              MenuRow(
-                leading: UserAvatar(
-                  initial: user?.displayName?.substring(0, 1) ?? '?',
-                  color: AppColors.brandPrimary,
-                  size: 48,
-                  imageUrl: user?.avatarUrl,
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenHorizontal,
                 ),
-                title: user?.displayName ?? '未設定',
-                subtitle:
-                    '${user?.email ?? ''}${user?.department != null ? ' · ${user!.department}${user.position != null ? ' / ${user.position}' : ''}' : ''}',
+                child: Row(
+                  children: [
+                    UserAvatar(
+                      initial: user?.displayName?.substring(0, 1) ?? '?',
+                      color: AppColors.brandPrimary,
+                      size: 64,
+                      imageUrl: user?.avatarUrl,
+                    ),
+                    const SizedBox(width: AppSpacing.lg),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.displayName ?? '未設定',
+                            style: AppTextStyles.headline,
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            user?.email ?? '',
+                            style: AppTextStyles.body2.copyWith(
+                              color: AppColors.textSecondary(
+                                Theme.of(context).brightness,
+                              ),
+                            ),
+                          ),
+                          if (user?.department != null)
+                            Text(
+                              '${user!.department}${user.position != null ? ' / ${user.position}' : ''}',
+                              style: AppTextStyles.body2.copyWith(
+                                color: AppColors.textSecondary(
+                                  Theme.of(context).brightness,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-
-          const SizedBox(height: AppSpacing.xxl),
 
           const SizedBox(height: AppSpacing.xxl),
 
@@ -62,8 +91,18 @@ class ProfileScreen extends ConsumerWidget {
                   context.push(AppRoutes.profileEdit);
                 },
               ),
-              MenuRow(icon: AppIcons.notification(), title: '通知設定', showChevron: true, onTap: () {}),
-              MenuRow(icon: Icon(Icons.palette_outlined), title: '外観', showChevron: true, onTap: () {}),
+              MenuRow(
+                icon: AppIcons.notification(),
+                title: '通知設定',
+                showChevron: true,
+                onTap: () {},
+              ),
+              MenuRow(
+                icon: Icon(Icons.palette_outlined),
+                title: '外観',
+                showChevron: true,
+                onTap: () {},
+              ),
             ],
           ),
 
@@ -73,8 +112,18 @@ class ProfileScreen extends ConsumerWidget {
           GroupedSection(
             title: 'サポート',
             children: [
-              MenuRow(icon: Icon(Icons.help_outline_rounded), title: 'ヘルプ', showChevron: true, onTap: () {}),
-              MenuRow(icon: Icon(Icons.info_outline_rounded), title: 'バージョン情報', showChevron: true, onTap: () {}),
+              MenuRow(
+                icon: Icon(Icons.help_outline_rounded),
+                title: 'ヘルプ',
+                showChevron: true,
+                onTap: () {},
+              ),
+              MenuRow(
+                icon: Icon(Icons.info_outline_rounded),
+                title: 'バージョン情報',
+                showChevron: true,
+                onTap: () {},
+              ),
             ],
           ),
 
@@ -96,7 +145,9 @@ class ProfileScreen extends ConsumerWidget {
                     isDestructive: true,
                   );
                   if (confirmed) {
-                    final success = await ref.read(authControllerProvider.notifier).signOut();
+                    final success = await ref
+                        .read(authControllerProvider.notifier)
+                        .signOut();
                     if (success && context.mounted) {
                       context.go(AppRoutes.login);
                     }

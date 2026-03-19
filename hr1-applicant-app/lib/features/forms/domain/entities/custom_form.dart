@@ -23,10 +23,11 @@ class CustomForm {
       id: json['id'] as String,
       title: json['title'] as String,
       description: json['description'] as String?,
-      fields: (json['fields'] as List<dynamic>)
-          .map((e) => FormFieldItem.fromJson(e as Map<String, dynamic>))
-          .toList()
-        ..sort((a, b) => a.order.compareTo(b.order)),
+      fields:
+          (json['fields'] as List<dynamic>)
+              .map((e) => FormFieldItem.fromJson(e as Map<String, dynamic>))
+              .toList()
+            ..sort((a, b) => a.order.compareTo(b.order)),
       applicationId: json['application_id'] as String?,
     );
   }

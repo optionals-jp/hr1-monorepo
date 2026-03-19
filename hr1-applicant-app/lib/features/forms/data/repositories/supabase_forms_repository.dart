@@ -10,6 +10,31 @@ class SupabaseFormsRepository implements FormsRepository {
   final SupabaseClient _client;
 
   @override
+  Future<void> submitResponses({
+    required String formId,
+    required String applicantId,
+    required Map<String, dynamic> answers,
+  }) async {
+    final now = DateTime.now().toIso8601String();
+    final rows = answers.entries.where((e) => e.value != null).map((e) {
+      dynamic value = e.value;
+      if (value is DateTime) {
+        value = value.toIso8601String();
+      }
+      return {
+        'form_id': formId,
+        'field_id': e.key,
+        'applicant_id': applicantId,
+        'value': value,
+        'submitted_at': now,
+      };
+    }).toList();
+    if (rows.isNotEmpty) {
+      await _client.from('form_responses').insert(rows);
+    }
+  }
+
+  @override
   Future<CustomForm?> getForm(String formId) async {
     try {
       final response = await _client
