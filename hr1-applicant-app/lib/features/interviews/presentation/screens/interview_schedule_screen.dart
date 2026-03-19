@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../shared/widgets/common_button.dart';
+import '../../../../shared/widgets/common_dialog.dart';
 import '../../../../shared/widgets/common_snackbar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../domain/entities/interview.dart';
@@ -62,11 +63,11 @@ class InterviewScheduleScreen extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.xl),
 
                     // 候補日時セクション
-                    Text('候補日時を選択してください', style: AppTextStyles.subtitle),
+                    Text('候補日時を選択してください', style: AppTextStyles.callout),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       'ご都合の良い日時を1つ選択してください',
-                      style: AppTextStyles.bodySmall.copyWith(
+                      style: AppTextStyles.caption1.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -124,49 +125,33 @@ class InterviewScheduleScreen extends ConsumerWidget {
     );
   }
 
-  void _confirm(
+  Future<void> _confirm(
     BuildContext screenContext,
     WidgetRef ref,
     Interview interview,
     String slotId,
-  ) {
+  ) async {
     final slot = interview.slots.where((s) => s.id == slotId).firstOrNull;
     if (slot == null) return;
 
     final dateFormat = DateFormat('M月d日(E) HH:mm', 'ja');
 
-    showDialog(
+    final confirmed = await CommonDialog.confirm(
       context: screenContext,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('日程確定'),
-        content: Text(
+      title: '日程確定',
+      message:
           '${dateFormat.format(slot.startAt)} 〜 ${DateFormat('HH:mm').format(slot.endAt)}\n\nこの日程で確定しますか？',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('キャンセル'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              ref
-                  .read(interviewControllerProvider(interviewId).notifier)
-                  .confirmSlot(
-                    slotId: slotId,
-                    applicationId: applicationId,
-                    stepId: stepId,
-                  );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryLight,
-              foregroundColor: Theme.of(dialogContext).colorScheme.onPrimary,
-            ),
-            child: const Text('確定する'),
-          ),
-        ],
-      ),
+      confirmLabel: '確定する',
     );
+    if (!confirmed) return;
+
+    ref
+        .read(interviewControllerProvider(interviewId).notifier)
+        .confirmSlot(
+          slotId: slotId,
+          applicationId: applicationId,
+          stepId: stepId,
+        );
   }
 }
 
@@ -197,23 +182,23 @@ class _InterviewInfoCard extends StatelessWidget {
                 color: AppColors.primaryLight,
               ),
               const SizedBox(width: AppSpacing.sm),
-              Text('面接情報', style: AppTextStyles.subtitle),
+              Text('面接情報', style: AppTextStyles.callout),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
           if (interview.location != null) ...[
-            Text('場所: ${interview.location!}', style: AppTextStyles.body),
+            Text('場所: ${interview.location!}', style: AppTextStyles.body2),
             const SizedBox(height: AppSpacing.xs),
           ],
           Text(
             '所要時間: 約${interview.slots.firstOrNull?.durationMinutes ?? 60}分',
-            style: AppTextStyles.body,
+            style: AppTextStyles.body2,
           ),
           if (interview.notes != null) ...[
             const SizedBox(height: AppSpacing.md),
             Text(
               interview.notes!,
-              style: AppTextStyles.bodySmall.copyWith(
+              style: AppTextStyles.caption1.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
@@ -282,12 +267,12 @@ class _SlotCard extends StatelessWidget {
                 children: [
                   Text(
                     dateFormat.format(slot.startAt),
-                    style: AppTextStyles.subtitle,
+                    style: AppTextStyles.callout,
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     '${timeFormat.format(slot.startAt)} 〜 ${timeFormat.format(slot.endAt)}',
-                    style: AppTextStyles.body.copyWith(
+                    style: AppTextStyles.body2.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
 
@@ -32,8 +33,8 @@ class GroupedSection extends StatelessWidget {
             ),
             child: Text(
               title!,
-              style: AppTextStyles.caption.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+              style: AppTextStyles.caption2.copyWith(
+                color: AppColors.textSecondary,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.3,
               ),

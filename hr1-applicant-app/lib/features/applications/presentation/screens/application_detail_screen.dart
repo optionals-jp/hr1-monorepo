@@ -173,7 +173,7 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: AppTextStyles.label.copyWith(
+        style: AppTextStyles.caption1.copyWith(
           color: color,
           fontWeight: FontWeight.w600,
         ),
@@ -201,7 +201,7 @@ class _JobInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(job.title, style: AppTextStyles.subtitle),
+          Text(job.title, style: AppTextStyles.callout),
           const SizedBox(height: AppSpacing.sm),
           if (job.department != null)
             _InfoRow(icon: Icons.business, text: job.department!),
@@ -214,7 +214,7 @@ class _JobInfoCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             '応募日: ${DateFormatter.toShortDate(application.appliedAt)}',
-            style: AppTextStyles.caption.copyWith(
+            style: AppTextStyles.caption2.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
@@ -241,7 +241,7 @@ class _InfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: AppTextStyles.bodySmall.copyWith(
+              style: AppTextStyles.caption1.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
@@ -274,7 +274,7 @@ class _StepTimeline extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('選考ステップ', style: AppTextStyles.subtitle),
+          Text('選考ステップ', style: AppTextStyles.callout),
           const SizedBox(height: AppSpacing.lg),
           ...List.generate(steps.length, (index) {
             final step = steps[index];
@@ -309,10 +309,10 @@ class _StepTimeline extends ConsumerWidget {
                               child: Text(
                                 step.label,
                                 style: step.status == StepStatus.inProgress
-                                    ? AppTextStyles.body.copyWith(
+                                    ? AppTextStyles.body2.copyWith(
                                         fontWeight: FontWeight.w600,
                                       )
-                                    : AppTextStyles.body.copyWith(
+                                    : AppTextStyles.body2.copyWith(
                                         color:
                                             step.status == StepStatus.completed
                                             ? theme.colorScheme.onSurface
@@ -335,7 +335,7 @@ class _StepTimeline extends ConsumerWidget {
                                 ),
                                 child: Text(
                                   '外部',
-                                  style: AppTextStyles.caption.copyWith(
+                                  style: AppTextStyles.caption2.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
@@ -346,7 +346,7 @@ class _StepTimeline extends ConsumerWidget {
                           const SizedBox(height: 2),
                           Text(
                             '対応が必要です',
-                            style: AppTextStyles.caption.copyWith(
+                            style: AppTextStyles.caption2.copyWith(
                               color: AppColors.warning,
                               fontWeight: FontWeight.w600,
                             ),
@@ -398,7 +398,7 @@ class _InterviewDateLabel extends ConsumerWidget {
             padding: const EdgeInsets.only(top: 2),
             child: Text(
               '日程調整中',
-              style: AppTextStyles.caption.copyWith(color: AppColors.warning),
+              style: AppTextStyles.caption2.copyWith(color: AppColors.warning),
             ),
           );
         }
@@ -412,7 +412,7 @@ class _InterviewDateLabel extends ConsumerWidget {
               const SizedBox(width: 4),
               Text(
                 '${dateFormat.format(confirmedSlot.startAt)} 〜 ${timeFormat.format(confirmedSlot.endAt)}',
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.caption2.copyWith(
                   color: AppColors.success,
                   fontWeight: FontWeight.w600,
                 ),
@@ -540,7 +540,7 @@ class _HistoryTab extends StatelessWidget {
     final events = _buildHistoryEvents(application);
 
     if (events.isEmpty) {
-      return Center(child: Text('履歴がありません', style: AppTextStyles.body));
+      return Center(child: Text('履歴がありません', style: AppTextStyles.body2));
     }
 
     return ListView.separated(
@@ -572,14 +572,14 @@ class _HistoryTab extends StatelessWidget {
                   children: [
                     Text(
                       event.title,
-                      style: AppTextStyles.body.copyWith(
+                      style: AppTextStyles.body2.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       event.subtitle,
-                      style: AppTextStyles.bodySmall.copyWith(
+                      style: AppTextStyles.caption1.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -589,7 +589,7 @@ class _HistoryTab extends StatelessWidget {
               // 日時
               Text(
                 _formatDateTime(event.dateTime),
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.caption2.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),

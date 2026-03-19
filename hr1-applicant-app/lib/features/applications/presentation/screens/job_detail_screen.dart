@@ -5,6 +5,8 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../shared/widgets/common_button.dart';
+import '../../../../shared/widgets/common_dialog.dart';
 import '../../../../shared/widgets/common_snackbar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -53,7 +55,7 @@ class JobDetailScreen extends ConsumerWidget {
                     : SliverToBoxAdapter(
                         child: Text(
                           job.description,
-                          style: AppTextStyles.body.copyWith(height: 1.7),
+                          style: AppTextStyles.body2.copyWith(height: 1.7),
                         ),
                       ),
               ),
@@ -112,7 +114,7 @@ class _SelectionFlowCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('選考フロー', style: AppTextStyles.subtitle),
+          Text('選考フロー', style: AppTextStyles.callout),
           const SizedBox(height: AppSpacing.md),
           ...List.generate(steps.length, (index) {
             final step = steps[index];
@@ -133,7 +135,7 @@ class _SelectionFlowCard extends StatelessWidget {
                       child: Center(
                         child: Text(
                           '${index + 1}',
-                          style: AppTextStyles.caption.copyWith(
+                          style: AppTextStyles.caption2.copyWith(
                             color: AppColors.primaryLight,
                             fontWeight: FontWeight.w700,
                           ),
@@ -154,7 +156,7 @@ class _SelectionFlowCard extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 4),
                     child: Row(
                       children: [
-                        Text(step.label, style: AppTextStyles.body),
+                        Text(step.label, style: AppTextStyles.body2),
                         if (step.stepType == 'external_test') ...[
                           const SizedBox(width: AppSpacing.sm),
                           Container(
@@ -169,7 +171,7 @@ class _SelectionFlowCard extends StatelessWidget {
                             ),
                             child: Text(
                               '外部',
-                              style: AppTextStyles.caption.copyWith(
+                              style: AppTextStyles.caption2.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
@@ -224,7 +226,7 @@ class _JobSliverAppBar extends StatelessWidget {
                 children: [
                   Text(
                     job.title,
-                    style: AppTextStyles.heading2.copyWith(color: Colors.white),
+                    style: AppTextStyles.title2.copyWith(color: Colors.white),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -243,7 +245,7 @@ class _JobSliverAppBar extends StatelessWidget {
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       job.salaryRange!,
-                      style: AppTextStyles.body.copyWith(
+                      style: AppTextStyles.body2.copyWith(
                         color: Colors.white.withValues(alpha: 0.9),
                         fontWeight: FontWeight.w600,
                       ),
@@ -273,7 +275,7 @@ class _HeaderTag extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: AppTextStyles.caption.copyWith(
+        style: AppTextStyles.caption2.copyWith(
           color: Colors.white.withValues(alpha: 0.9),
         ),
       ),
@@ -316,71 +318,40 @@ class _ApplyBar extends ConsumerWidget {
           ),
         ],
       ),
-      child: SizedBox(
-        width: double.infinity,
-        height: 48,
-        child: ElevatedButton(
-          onPressed: alreadyApplied
-              ? null
-              : () => _showApplyDialog(context, ref),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: theme.colorScheme.onPrimary,
-            disabledBackgroundColor: theme.dividerColor,
-            disabledForegroundColor: theme.colorScheme.onSurfaceVariant,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-            ),
-          ),
-          child: Text(
-            alreadyApplied ? '応募済みです' : 'この求人に応募する',
-            style: AppTextStyles.subtitle,
-          ),
-        ),
+      child: CommonButton(
+        onPressed: alreadyApplied ? null : () => _showApplyDialog(context, ref),
+        enabled: !alreadyApplied,
+        child: Text(alreadyApplied ? '応募済みです' : 'この求人に応募する'),
       ),
     );
   }
 
-  void _showApplyDialog(BuildContext screenContext, WidgetRef ref) {
-    showDialog(
+  Future<void> _showApplyDialog(
+    BuildContext screenContext,
+    WidgetRef ref,
+  ) async {
+    final confirmed = await CommonDialog.confirm(
       context: screenContext,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('応募確認'),
-        content: Text('「${job.title}」に応募しますか？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('キャンセル'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-
-              final org = ref.read(currentOrganizationProvider);
-              if (org == null) return;
-
-              final repo = ref.read(applicationsRepositoryProvider);
-              await repo.apply(
-                jobId: job.id,
-                applicantId: ref.read(appUserProvider)!.id,
-                organizationId: org.id,
-              );
-
-              ref.invalidate(applicationsProvider);
-
-              if (!screenContext.mounted) return;
-              CommonSnackBar.show(screenContext, '「${job.title}」に応募しました');
-              screenContext.go(AppRoutes.applications);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Theme.of(dialogContext).colorScheme.onPrimary,
-            ),
-            child: const Text('応募する'),
-          ),
-        ],
-      ),
+      title: '応募確認',
+      message: '「${job.title}」に応募しますか？',
+      confirmLabel: '応募する',
     );
+    if (!confirmed) return;
+
+    final org = ref.read(currentOrganizationProvider);
+    if (org == null) return;
+
+    final repo = ref.read(applicationsRepositoryProvider);
+    await repo.apply(
+      jobId: job.id,
+      applicantId: ref.read(appUserProvider)!.id,
+      organizationId: org.id,
+    );
+
+    ref.invalidate(applicationsProvider);
+
+    if (!screenContext.mounted) return;
+    CommonSnackBar.show(screenContext, '「${job.title}」に応募しました');
+    screenContext.go(AppRoutes.applications);
   }
 }

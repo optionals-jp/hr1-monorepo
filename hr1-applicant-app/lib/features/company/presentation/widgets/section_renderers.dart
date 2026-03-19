@@ -22,7 +22,7 @@ class SectionRenderer extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (section.title.isNotEmpty) ...[
-          Text(section.title, style: AppTextStyles.subtitle),
+          Text(section.title, style: AppTextStyles.callout),
           const SizedBox(height: AppSpacing.lg),
         ],
         _buildBody(context),
@@ -58,10 +58,10 @@ class _MarkdownSection extends StatelessWidget {
       data: content,
       selectable: true,
       styleSheet: MarkdownStyleSheet(
-        h2: AppTextStyles.heading3,
-        h3: AppTextStyles.subtitle,
-        p: AppTextStyles.body.copyWith(height: 1.7),
-        listBullet: AppTextStyles.body,
+        h2: AppTextStyles.title3,
+        h3: AppTextStyles.callout,
+        p: AppTextStyles.body2.copyWith(height: 1.7),
+        listBullet: AppTextStyles.body2,
         blockquoteDecoration: BoxDecoration(
           border: Border(
             left: BorderSide(color: AppColors.primaryLight, width: 3),
@@ -71,14 +71,14 @@ class _MarkdownSection extends StatelessWidget {
           horizontal: AppSpacing.lg,
           vertical: 4,
         ),
-        blockquote: AppTextStyles.body.copyWith(color: AppColors.primaryLight),
-        strong: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700),
+        blockquote: AppTextStyles.body2.copyWith(color: AppColors.primaryLight),
+        strong: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w700),
         horizontalRuleDecoration: BoxDecoration(
           border: Border(
             top: BorderSide(color: Theme.of(context).dividerColor, width: 1),
           ),
         ),
-        code: AppTextStyles.bodySmall.copyWith(
+        code: AppTextStyles.caption1.copyWith(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           fontFamily: 'monospace',
         ),
@@ -115,7 +115,7 @@ class _JobListSection extends ConsumerWidget {
             child: Center(
               child: Text(
                 '現在募集中のポジションはありません',
-                style: AppTextStyles.bodySmall.copyWith(
+                style: AppTextStyles.caption1.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -175,7 +175,7 @@ class _JobCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(job.title, style: AppTextStyles.subtitle),
+              Text(job.title, style: AppTextStyles.callout),
               const SizedBox(height: AppSpacing.sm),
               Wrap(
                 spacing: AppSpacing.sm,
@@ -190,7 +190,7 @@ class _JobCard extends StatelessWidget {
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   job.salaryRange!,
-                  style: AppTextStyles.body.copyWith(
+                  style: AppTextStyles.body2.copyWith(
                     color: AppColors.primaryLight,
                     fontWeight: FontWeight.w600,
                   ),
@@ -233,9 +233,9 @@ class _BenefitListSection extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Text(icon, style: AppTextStyles.subtitle),
+                Text(icon, style: AppTextStyles.callout),
                 const SizedBox(width: AppSpacing.md),
-                Expanded(child: Text(text, style: AppTextStyles.body)),
+                Expanded(child: Text(text, style: AppTextStyles.body2)),
               ],
             ),
           ),
@@ -292,7 +292,7 @@ class _ValueListSection extends StatelessWidget {
                   child: Center(
                     child: Text(
                       '${index + 1}',
-                      style: AppTextStyles.subtitle.copyWith(
+                      style: AppTextStyles.callout.copyWith(
                         fontWeight: FontWeight.w700,
                         color: color,
                       ),
@@ -306,7 +306,7 @@ class _ValueListSection extends StatelessWidget {
                     children: [
                       Text(
                         item['title'] as String? ?? '',
-                        style: AppTextStyles.body.copyWith(
+                        style: AppTextStyles.body2.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -314,7 +314,7 @@ class _ValueListSection extends StatelessWidget {
                         const SizedBox(height: AppSpacing.xs),
                         Text(
                           item['description'] as String? ?? '',
-                          style: AppTextStyles.bodySmall.copyWith(
+                          style: AppTextStyles.caption1.copyWith(
                             height: 1.5,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -360,14 +360,14 @@ class _StatsSection extends StatelessWidget {
               children: [
                 Text(
                   item['value'] as String? ?? '-',
-                  style: AppTextStyles.subtitle.copyWith(
+                  style: AppTextStyles.callout.copyWith(
                     color: theme.colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   item['label'] as String? ?? '',
-                  style: AppTextStyles.caption.copyWith(
+                  style: AppTextStyles.caption2.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -412,7 +412,7 @@ class _MembersSection extends StatelessWidget {
                   ),
                   child: Text(
                     (item['name'] as String? ?? '?').characters.first,
-                    style: AppTextStyles.body.copyWith(
+                    style: AppTextStyles.body2.copyWith(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.w700,
                     ),
@@ -425,14 +425,14 @@ class _MembersSection extends StatelessWidget {
                     children: [
                       Text(
                         item['name'] as String? ?? '',
-                        style: AppTextStyles.body.copyWith(
+                        style: AppTextStyles.body2.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       if (item['role'] != null)
                         Text(
                           item['role'] as String? ?? '',
-                          style: AppTextStyles.caption.copyWith(
+                          style: AppTextStyles.caption2.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
@@ -463,7 +463,7 @@ class _GallerySection extends StatelessWidget {
       return Center(
         child: Text(
           '画像はまだ登録されていません',
-          style: AppTextStyles.bodySmall.copyWith(
+          style: AppTextStyles.caption1.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
@@ -502,7 +502,7 @@ class _GallerySection extends StatelessWidget {
                       padding: const EdgeInsets.all(AppSpacing.sm),
                       child: Text(
                         item['caption'] as String? ?? '',
-                        style: AppTextStyles.caption.copyWith(
+                        style: AppTextStyles.caption2.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                         maxLines: 1,
@@ -583,7 +583,7 @@ class _FaqTileState extends State<_FaqTile> {
                     child: Center(
                       child: Text(
                         'Q',
-                        style: AppTextStyles.bodySmall.copyWith(
+                        style: AppTextStyles.caption1.copyWith(
                           fontWeight: FontWeight.w700,
                           color: AppColors.primaryLight,
                         ),
@@ -594,7 +594,7 @@ class _FaqTileState extends State<_FaqTile> {
                   Expanded(
                     child: Text(
                       widget.question,
-                      style: AppTextStyles.body.copyWith(
+                      style: AppTextStyles.body2.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -623,7 +623,7 @@ class _FaqTileState extends State<_FaqTile> {
               ),
               child: Text(
                 widget.answer,
-                style: AppTextStyles.body.copyWith(
+                style: AppTextStyles.body2.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                   height: 1.6,
                 ),
@@ -658,7 +658,7 @@ class _Tag extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: AppTextStyles.caption.copyWith(
+        style: AppTextStyles.caption2.copyWith(
           color: AppColors.primaryLight,
           fontWeight: FontWeight.w600,
         ),

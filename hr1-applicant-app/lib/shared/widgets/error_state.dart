@@ -52,7 +52,7 @@ class ErrorState extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Text(
               message,
-              style: AppTextStyles.body.copyWith(
+              style: AppTextStyles.body2.copyWith(
                 color: AppColors.textSecondary,
               ),
               textAlign: TextAlign.center,

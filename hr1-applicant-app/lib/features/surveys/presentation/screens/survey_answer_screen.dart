@@ -1,107 +1,91 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../shared/widgets/common_button.dart';
+import '../../../../shared/widgets/common_dialog.dart';
 import '../../../../shared/widgets/common_snackbar.dart';
 import '../../domain/entities/pulse_survey.dart';
-import '../providers/survey_providers.dart';
+import '../controllers/survey_answer_controller.dart';
 
 /// パルスサーベイ回答画面（応募者向け）
-class SurveyAnswerScreen extends ConsumerStatefulWidget {
+class SurveyAnswerScreen extends HookConsumerWidget {
   const SurveyAnswerScreen({super.key, required this.survey});
 
   final PulseSurvey survey;
 
   @override
-  ConsumerState<SurveyAnswerScreen> createState() => _SurveyAnswerScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final answers = useRef(<String, String>{});
+    final revision = useState(0);
+    final controllerState = ref.watch(surveyAnswerControllerProvider);
+    final theme = Theme.of(context);
 
-class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
-  final Map<String, String> _answers = {};
-  bool _submitting = false;
-
-  PulseSurvey get survey => widget.survey;
-
-  bool get _canSubmit {
-    for (final q in survey.questions) {
-      if (q.isRequired && (_answers[q.id]?.isEmpty ?? true)) {
-        return false;
-      }
+    void updateAnswer(String questionId, String value) {
+      answers.value[questionId] = value;
+      revision.value++;
     }
-    return true;
-  }
 
-  Future<void> _submit() async {
-    if (!_canSubmit || _submitting) return;
+    bool canSubmit() {
+      for (final q in survey.questions) {
+        if (q.isRequired && (answers.value[q.id]?.isEmpty ?? true)) {
+          return false;
+        }
+      }
+      return true;
+    }
 
-    // 送信確認ダイアログ
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('回答を送信'),
-        content: const Text('回答を送信しますか？送信後は変更できません。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('キャンセル'),
-          ),
-          CommonButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('送信'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
+    Future<void> submit() async {
+      if (!canSubmit() || controllerState.isSubmitting) return;
 
-    setState(() => _submitting = true);
-    try {
+      final confirmed = await CommonDialog.confirm(
+        context: context,
+        title: '回答を送信',
+        message: '回答を送信しますか？送信後は変更できません。',
+        confirmLabel: '送信',
+      );
+      if (!confirmed) return;
+
       await ref
-          .read(surveyRepositoryProvider)
-          .submitResponse(surveyId: survey.id, answers: _answers);
-      ref.invalidate(completedSurveyIdsProvider);
-      if (mounted) {
+          .read(surveyAnswerControllerProvider.notifier)
+          .submit(surveyId: survey.id, answers: Map.of(answers.value));
+
+      final state = ref.read(surveyAnswerControllerProvider);
+      if (!context.mounted) return;
+      if (state.submitted) {
         CommonSnackBar.show(context, '回答を送信しました');
         context.pop();
+      } else if (state.error != null) {
+        CommonSnackBar.error(context, state.error!);
       }
-    } catch (_) {
-      if (mounted) {
-        CommonSnackBar.error(context, '送信に失敗しました。しばらくしてから再度お試しください。');
-      }
-    } finally {
-      if (mounted) setState(() => _submitting = false);
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
 
     if (survey.questions.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: Text(survey.title, style: AppTextStyles.subtitle),
+          title: Text(survey.title, style: AppTextStyles.callout),
           centerTitle: true,
         ),
         body: Center(
           child: Text(
             '質問が設定されていません',
-            style: AppTextStyles.body.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
-            ),
+            style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary),
           ),
         ),
       );
     }
 
+    // revision.value を参照してリビルドを確実にする
+    final _ = revision.value;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(survey.title, style: AppTextStyles.subtitle),
+        title: Text(survey.title, style: AppTextStyles.callout),
         centerTitle: true,
       ),
       body: ListView(
@@ -110,19 +94,26 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
           if (survey.description != null) ...[
             Text(
               survey.description!,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+              style: AppTextStyles.caption1.copyWith(
+                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
           ],
-          ...survey.questions.map((q) => _buildQuestion(q, theme)),
+          ...survey.questions.map(
+            (q) => _QuestionWidget(
+              question: q,
+              currentAnswer: answers.value[q.id],
+              onChanged: (value) => updateAnswer(q.id, value),
+              theme: theme,
+            ),
+          ),
           const SizedBox(height: AppSpacing.xxl),
           SizedBox(
             height: 48,
             child: CommonButton(
-              onPressed: _canSubmit ? _submit : null,
-              loading: _submitting,
+              onPressed: canSubmit() ? submit : null,
+              loading: controllerState.isSubmitting,
               child: const Text('回答を送信'),
             ),
           ),
@@ -131,8 +122,27 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
       ),
     );
   }
+}
 
-  Widget _buildQuestion(PulseSurveyQuestion q, ThemeData theme) {
+// ---------------------------------------------------------------------------
+// 質問ウィジェット
+// ---------------------------------------------------------------------------
+
+class _QuestionWidget extends StatelessWidget {
+  const _QuestionWidget({
+    required this.question,
+    required this.currentAnswer,
+    required this.onChanged,
+    required this.theme,
+  });
+
+  final PulseSurveyQuestion question;
+  final String? currentAnswer;
+  final ValueChanged<String> onChanged;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       child: Column(
@@ -142,52 +152,54 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
             children: [
               Expanded(
                 child: Text(
-                  q.label,
-                  style: AppTextStyles.body.copyWith(
+                  question.label,
+                  style: AppTextStyles.body2.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              if (q.isRequired)
+              if (question.isRequired)
                 Text(
                   '必須',
-                  style: AppTextStyles.caption.copyWith(color: AppColors.error),
+                  style: AppTextStyles.caption2.copyWith(
+                    color: AppColors.error,
+                  ),
                 ),
             ],
           ),
-          if (q.description != null) ...[
+          if (question.description != null) ...[
             const SizedBox(height: 2),
             Text(
-              q.description!,
-              style: AppTextStyles.caption.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+              question.description!,
+              style: AppTextStyles.caption2.copyWith(
+                color: AppColors.textSecondary,
               ),
             ),
           ],
           const SizedBox(height: AppSpacing.sm),
-          _buildInput(q, theme),
+          _buildInput(),
         ],
       ),
     );
   }
 
-  Widget _buildInput(PulseSurveyQuestion q, ThemeData theme) {
-    switch (q.type) {
+  Widget _buildInput() {
+    switch (question.type) {
       case 'rating':
-        return _buildRating(q, theme);
+        return _buildRating();
       case 'text':
-        return _buildTextField(q);
+        return _buildTextField();
       case 'single_choice':
-        return _buildSingleChoice(q, theme);
+        return _buildSingleChoice();
       case 'multiple_choice':
-        return _buildMultipleChoice(q, theme);
+        return _buildMultipleChoice();
       default:
-        return _buildTextField(q);
+        return _buildTextField();
     }
   }
 
-  Widget _buildRating(PulseSurveyQuestion q, ThemeData theme) {
-    final currentValue = int.tryParse(_answers[q.id] ?? '') ?? 0;
+  Widget _buildRating() {
+    final currentValue = int.tryParse(currentAnswer ?? '') ?? 0;
     return Row(
       children: List.generate(5, (i) {
         final value = i + 1;
@@ -195,7 +207,7 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
         return Padding(
           padding: const EdgeInsets.only(right: 8),
           child: GestureDetector(
-            onTap: () => setState(() => _answers[q.id] = value.toString()),
+            onTap: () => onChanged(value.toString()),
             child: Container(
               width: 44,
               height: 44,
@@ -213,11 +225,11 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
               child: Center(
                 child: Text(
                   '$value',
-                  style: AppTextStyles.body.copyWith(
+                  style: AppTextStyles.body2.copyWith(
                     fontWeight: FontWeight.w600,
                     color: isSelected
                         ? AppColors.primaryLight
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                        : AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -228,40 +240,38 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
     );
   }
 
-  Widget _buildTextField(PulseSurveyQuestion q) {
+  Widget _buildTextField() {
     return TextField(
       maxLines: 3,
       decoration: const InputDecoration(
         hintText: '回答を入力',
         border: OutlineInputBorder(),
       ),
-      onChanged: (v) => setState(() => _answers[q.id] = v),
+      onChanged: onChanged,
     );
   }
 
-  Widget _buildSingleChoice(PulseSurveyQuestion q, ThemeData theme) {
-    final options = q.options ?? [];
-    final selected = _answers[q.id];
+  Widget _buildSingleChoice() {
+    final options = question.options ?? [];
     return Column(
       children: options.map((option) {
         return RadioListTile<String>(
-          title: Text(option, style: AppTextStyles.body),
+          title: Text(option, style: AppTextStyles.body2),
           value: option,
-          groupValue: selected,
+          groupValue: currentAnswer,
           contentPadding: EdgeInsets.zero,
-          onChanged: (v) => setState(() => _answers[q.id] = v ?? ''),
+          onChanged: (v) => onChanged(v ?? ''),
         );
       }).toList(),
     );
   }
 
-  Widget _buildMultipleChoice(PulseSurveyQuestion q, ThemeData theme) {
-    final options = q.options ?? [];
-    final raw = _answers[q.id];
+  Widget _buildMultipleChoice() {
+    final options = question.options ?? [];
     Set<String> selected = {};
-    if (raw != null && raw.isNotEmpty) {
+    if (currentAnswer != null && currentAnswer!.isNotEmpty) {
       try {
-        selected = (jsonDecode(raw) as List).cast<String>().toSet();
+        selected = (jsonDecode(currentAnswer!) as List).cast<String>().toSet();
       } catch (_) {
         selected = {};
       }
@@ -270,18 +280,16 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
       children: options.map((option) {
         final isChecked = selected.contains(option);
         return CheckboxListTile(
-          title: Text(option, style: AppTextStyles.body),
+          title: Text(option, style: AppTextStyles.body2),
           value: isChecked,
           contentPadding: EdgeInsets.zero,
           onChanged: (v) {
-            setState(() {
-              if (v == true) {
-                selected.add(option);
-              } else {
-                selected.remove(option);
-              }
-              _answers[q.id] = jsonEncode(selected.toList());
-            });
+            if (v == true) {
+              selected.add(option);
+            } else {
+              selected.remove(option);
+            }
+            onChanged(jsonEncode(selected.toList()));
           },
         );
       }).toList(),

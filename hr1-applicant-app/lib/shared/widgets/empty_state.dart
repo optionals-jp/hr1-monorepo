@@ -40,12 +40,12 @@ class EmptyState extends StatelessWidget {
               ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: AppSpacing.lg),
-            Text(title, style: AppTextStyles.subtitle),
+            Text(title, style: AppTextStyles.callout),
             if (description != null) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(
                 description!,
-                style: AppTextStyles.bodySmall.copyWith(
+                style: AppTextStyles.caption1.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,

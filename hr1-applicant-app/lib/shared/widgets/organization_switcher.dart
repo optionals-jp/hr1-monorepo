@@ -33,23 +33,10 @@ class OrganizationSwitcher extends ConsumerWidget {
           OrgIcon(initial: (currentOrg?.name ?? '?').substring(0, 1), size: 32),
           const SizedBox(width: AppSpacing.sm),
           Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  currentOrg?.name ?? '',
-                  style: AppTextStyles.subtitle.copyWith(fontSize: 14),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  '切り替え',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.primaryLight,
-                    fontSize: 10,
-                  ),
-                ),
-              ],
+            child: Text(
+              currentOrg?.name ?? '',
+              style: AppTextStyles.title3,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: AppSpacing.xs),
@@ -89,7 +76,7 @@ class OrganizationSwitcher extends ConsumerWidget {
                   AppSpacing.lg,
                   AppSpacing.sm,
                 ),
-                child: Text('応募先企業を選択', style: AppTextStyles.subtitle),
+                child: Text('応募先企業を選択', style: AppTextStyles.callout),
               ),
               const Divider(),
 
@@ -132,7 +119,7 @@ class _OrganizationLabel extends StatelessWidget {
         Flexible(
           child: Text(
             organization.name,
-            style: AppTextStyles.subtitle.copyWith(fontSize: 14),
+            style: AppTextStyles.body2,
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -167,14 +154,14 @@ class _OrganizationListTile extends StatelessWidget {
       ),
       title: Text(
         organization.name,
-        style: AppTextStyles.body.copyWith(
+        style: AppTextStyles.body2.copyWith(
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
         ),
       ),
       subtitle: organization.industry != null
           ? Text(
               organization.industry!,
-              style: AppTextStyles.caption.copyWith(
+              style: AppTextStyles.caption2.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             )

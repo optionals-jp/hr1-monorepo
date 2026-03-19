@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
@@ -17,65 +18,56 @@ import '../providers/auth_providers.dart';
 import '../providers/organization_context_provider.dart';
 
 /// 企業選択画面
-class OrganizationSelectScreen extends ConsumerStatefulWidget {
+class OrganizationSelectScreen extends HookConsumerWidget {
   const OrganizationSelectScreen({super.key});
 
   @override
-  ConsumerState<OrganizationSelectScreen> createState() =>
-      _OrganizationSelectScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedIds = useState(<String>{});
+    final searchController = useTextEditingController();
 
-class _OrganizationSelectScreenState
-    extends ConsumerState<OrganizationSelectScreen> {
-  final Set<String> _selectedIds = {};
-  final _searchController = TextEditingController();
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    await ref
-        .read(organizationSelectControllerProvider.notifier)
-        .submit(_selectedIds);
-
-    final state = ref.read(organizationSelectControllerProvider);
-    if (!mounted) return;
-    if (state.submitted) {
-      CommonSnackBar.show(context, '企業に登録しました');
-      context.go(AppRoutes.companyHome);
-    } else if (state.error != null) {
-      CommonSnackBar.error(context, '登録に失敗しました: ${state.error}');
-    }
-  }
-
-  bool get _canSubmit =>
-      _selectedIds.isNotEmpty && ref.read(allOrganizationsProvider).hasValue;
-
-  @override
-  Widget build(BuildContext context) {
     final orgsAsync = ref.watch(allOrganizationsProvider);
     final controllerState = ref.watch(organizationSelectControllerProvider);
+
+    Future<void> submit() async {
+      await ref
+          .read(organizationSelectControllerProvider.notifier)
+          .submit(selectedIds.value);
+
+      final state = ref.read(organizationSelectControllerProvider);
+      if (!context.mounted) return;
+      if (state.submitted) {
+        CommonSnackBar.show(context, '企業に登録しました');
+        context.go(AppRoutes.companyHome);
+      } else if (state.error != null) {
+        CommonSnackBar.error(context, '登録に失敗しました: ${state.error}');
+      }
+    }
+
+    bool canSubmit() =>
+        selectedIds.value.isNotEmpty &&
+        ref.read(allOrganizationsProvider).hasValue;
 
     return Scaffold(
       appBar: AppBar(title: const Text('おすすめ企業')),
       body: orgsAsync.when(
         data: (orgs) => _Body(
           orgs: orgs,
-          selectedIds: _selectedIds,
-          searchController: _searchController,
+          selectedIds: selectedIds.value,
+          searchController: searchController,
           onToggle: (id) {
-            setState(() {
-              if (_selectedIds.contains(id)) {
-                _selectedIds.remove(id);
-              } else {
-                _selectedIds.add(id);
-              }
-            });
+            final updated = Set<String>.from(selectedIds.value);
+            if (updated.contains(id)) {
+              updated.remove(id);
+            } else {
+              updated.add(id);
+            }
+            selectedIds.value = updated;
           },
-          onSearchChanged: () => setState(() {}),
+          onSearchChanged: () {
+            // Force rebuild by setting value to a new Set
+            selectedIds.value = Set<String>.from(selectedIds.value);
+          },
         ),
         loading: () => const LoadingIndicator(),
         error: (e, _) =>
@@ -90,9 +82,9 @@ class _OrganizationSelectScreenState
             AppSpacing.md,
           ),
           child: CommonButton(
-            onPressed: _canSubmit ? _submit : null,
+            onPressed: canSubmit() ? submit : null,
             loading: controllerState.isSubmitting,
-            enabled: _canSubmit && !controllerState.isSubmitting,
+            enabled: canSubmit() && !controllerState.isSubmitting,
             child: const Text('次へ'),
           ),
         ),
@@ -151,7 +143,7 @@ class _Body extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
             Text(
               'すべての企業に登録済みです',
-              style: AppTextStyles.body.copyWith(
+              style: AppTextStyles.body2.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
@@ -253,7 +245,7 @@ class _OrganizationRow extends StatelessWidget {
                 children: [
                   Text(
                     organization.name,
-                    style: AppTextStyles.body.copyWith(
+                    style: AppTextStyles.body2.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
@@ -262,7 +254,7 @@ class _OrganizationRow extends StatelessWidget {
                   if (organization.industry != null)
                     Text(
                       organization.industry!,
-                      style: AppTextStyles.caption.copyWith(
+                      style: AppTextStyles.caption2.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 1,

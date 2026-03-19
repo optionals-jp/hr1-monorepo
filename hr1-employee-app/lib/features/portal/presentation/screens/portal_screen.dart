@@ -6,6 +6,7 @@ import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/org_icon.dart';
 import '../../../../shared/widgets/search_box.dart';
@@ -291,8 +292,11 @@ class PortalScreen extends ConsumerWidget {
                 loading: () => const SliverToBoxAdapter(
                   child: SizedBox(height: 60, child: LoadingIndicator()),
                 ),
-                error: (_, __) =>
-                    const SliverToBoxAdapter(child: SizedBox.shrink()),
+                error: (_, __) => SliverToBoxAdapter(
+                  child: ErrorState(
+                    onRetry: () => ref.invalidate(latestNotificationsProvider),
+                  ),
+                ),
                 data: (notifications) {
                   if (notifications.isEmpty) {
                     return SliverToBoxAdapter(

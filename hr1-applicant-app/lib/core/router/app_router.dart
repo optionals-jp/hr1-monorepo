@@ -18,6 +18,9 @@ import '../../features/messages/presentation/screens/messages_screen.dart';
 import '../../features/messages/presentation/screens/thread_chat_screen.dart';
 import '../../features/messages/domain/entities/message_thread.dart';
 import '../../features/auth/presentation/screens/profile_screen.dart';
+import '../../features/todos/presentation/screens/todos_screen.dart';
+import '../../features/todos/presentation/screens/todo_detail_screen.dart';
+import '../../features/todos/domain/entities/todo.dart';
 import '../../features/faq/presentation/screens/faq_screen.dart';
 import '../../features/surveys/presentation/screens/survey_list_screen.dart';
 import '../../features/surveys/presentation/screens/survey_answer_screen.dart';
@@ -38,6 +41,8 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String faq = '/faq';
   static const String surveys = '/surveys';
+  static const String todos = '/todos';
+  static const String todoDetail = '/todo-detail';
   static const String organizationSelect = '/organization-select';
 }
 
@@ -90,6 +95,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.organizationSelect,
         builder: (context, state) => const OrganizationSelectScreen(),
+      ),
+
+      /// やること詳細画面（フルスクリーン）
+      GoRoute(
+        path: AppRoutes.todoDetail,
+        builder: (context, state) {
+          final todo = state.extra as Todo;
+          return TodoDetailScreen(todo: todo);
+        },
       ),
 
       /// 求人一覧画面
@@ -199,6 +213,15 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.messages,
                 builder: (context, state) => const MessagesScreen(),
+              ),
+            ],
+          ),
+          // やること
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.todos,
+                builder: (context, state) => const TodosScreen(),
               ),
             ],
           ),

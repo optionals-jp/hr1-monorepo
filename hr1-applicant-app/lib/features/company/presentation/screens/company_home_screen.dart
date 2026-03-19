@@ -33,7 +33,7 @@ class CompanyHomeScreen extends ConsumerWidget {
           return Center(
             child: Text(
               'ページが設定されていません',
-              style: AppTextStyles.bodySmall.copyWith(
+              style: AppTextStyles.caption1.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
@@ -202,7 +202,7 @@ class _ProfileHeader extends ConsumerWidget {
                         child: Center(
                           child: Text(
                             org.name.characters.first,
-                            style: AppTextStyles.heading1.copyWith(
+                            style: AppTextStyles.title1.copyWith(
                               fontWeight: FontWeight.w800,
                               color: theme.colorScheme.primary,
                             ),
@@ -212,7 +212,7 @@ class _ProfileHeader extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  Text(org.name, style: AppTextStyles.heading3),
+                  Text(org.name, style: AppTextStyles.title3),
                   const SizedBox(height: AppSpacing.xs),
                   // 業種 + 所在地
                   Row(
@@ -233,7 +233,7 @@ class _ProfileHeader extends ConsumerWidget {
                             const SizedBox(width: 2),
                             Text(
                               org.location!,
-                              style: AppTextStyles.caption.copyWith(
+                              style: AppTextStyles.caption2.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
@@ -246,7 +246,7 @@ class _ProfileHeader extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.md),
                     Text(
                       org.mission!,
-                      style: AppTextStyles.body.copyWith(height: 1.5),
+                      style: AppTextStyles.body2.copyWith(height: 1.5),
                     ),
                   ],
                   const SizedBox(height: AppSpacing.lg),
@@ -324,7 +324,7 @@ class _InlineTag extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: AppTextStyles.caption.copyWith(
+        style: AppTextStyles.caption2.copyWith(
           color: AppColors.primaryLight,
           fontWeight: FontWeight.w600,
         ),
@@ -365,7 +365,7 @@ class _StatCell extends StatelessWidget {
         children: [
           Text(
             value,
-            style: AppTextStyles.body.copyWith(
+            style: AppTextStyles.body2.copyWith(
               fontWeight: FontWeight.w600,
               color: theme.colorScheme.onSurface,
             ),
@@ -373,7 +373,7 @@ class _StatCell extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: AppTextStyles.caption.copyWith(
+            style: AppTextStyles.caption2.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
@@ -425,8 +425,10 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
             controller: tabController,
             labelColor: theme.colorScheme.primary,
             unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-            labelStyle: AppTextStyles.button,
-            unselectedLabelStyle: AppTextStyles.body,
+            labelStyle: AppTextStyles.body2.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelStyle: AppTextStyles.body2,
             indicatorColor: theme.colorScheme.primary,
             indicatorWeight: 2.5,
             indicatorSize: TabBarIndicatorSize.label,

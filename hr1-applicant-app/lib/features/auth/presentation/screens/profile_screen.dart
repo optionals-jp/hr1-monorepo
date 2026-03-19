@@ -114,7 +114,7 @@ class ProfileScreen extends ConsumerWidget {
                         onPressed: () => Navigator.pop(ctx, true),
                         child: Text(
                           'ログアウト',
-                          style: AppTextStyles.body.copyWith(
+                          style: AppTextStyles.body2.copyWith(
                             color: AppColors.error,
                           ),
                         ),

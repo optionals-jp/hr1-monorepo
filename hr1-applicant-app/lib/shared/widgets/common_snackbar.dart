@@ -15,7 +15,7 @@ class CommonSnackBar {
   /// 成功・情報の SnackBar を表示
   static void show(BuildContext context, String message) {
     if (!context.mounted) return;
-    _showOverlay(context, child: Text(message, style: AppTextStyles.body));
+    _showOverlay(context, child: Text(message, style: AppTextStyles.body2));
   }
 
   /// エラーの SnackBar を表示（赤系半透明背景 + アイコン）
@@ -35,7 +35,7 @@ class CommonSnackBar {
           Expanded(
             child: Text(
               message,
-              style: AppTextStyles.body.copyWith(color: AppColors.error),
+              style: AppTextStyles.body2.copyWith(color: AppColors.error),
             ),
           ),
         ],
@@ -175,7 +175,7 @@ class _AnimatedSnackBarState extends State<_AnimatedSnackBar>
                 ),
               ),
               child: DefaultTextStyle(
-                style: AppTextStyles.body.copyWith(
+                style: AppTextStyles.body2.copyWith(
                   color: widget.backgroundColor != null ? null : Colors.white,
                 ),
                 child: widget.child,

@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/common_dialog.dart';
+import '../../../../shared/widgets/user_avatar.dart';
 import '../../../../shared/widgets/common_snackbar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -276,7 +278,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
               leading: const Icon(Icons.delete_outline, color: Colors.red),
               title: Text(
                 '削除',
-                style: AppTextStyles.body.copyWith(color: Colors.red),
+                style: AppTextStyles.body2.copyWith(color: Colors.red),
               ),
               onTap: () {
                 Navigator.pop(context);
@@ -322,26 +324,15 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
   }
 
   Future<void> _confirmDelete(Message message) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await CommonDialog.confirm(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('メッセージを削除'),
-        content: const Text('このメッセージを削除しますか？この操作は取り消せません。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('削除'),
-          ),
-        ],
-      ),
+      title: 'メッセージを削除',
+      message: 'このメッセージを削除しますか？この操作は取り消せません。',
+      confirmLabel: '削除',
+      isDestructive: true,
     );
 
-    if (confirmed == true) {
+    if (confirmed) {
       final success = await _chatController.deleteMessage(message.id);
       if (!success && mounted) {
         CommonSnackBar.error(context, 'メッセージの削除に失敗しました');
@@ -378,11 +369,11 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(displayName, style: AppTextStyles.subtitle),
+            Text(displayName, style: AppTextStyles.callout),
             if (widget.thread.jobTitle != null)
               Text(
                 widget.thread.jobTitle!,
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.caption2.copyWith(
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -401,7 +392,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                 ? Center(
                     child: Text(
                       'メッセージはまだありません',
-                      style: AppTextStyles.body.copyWith(
+                      style: AppTextStyles.body2.copyWith(
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -485,7 +476,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                     controller: _controller,
                     decoration: InputDecoration(
                       hintText: 'メッセージを入力...',
-                      hintStyle: AppTextStyles.body.copyWith(
+                      hintStyle: AppTextStyles.body2.copyWith(
                         color: AppColors.textSecondary,
                       ),
                       border: OutlineInputBorder(
@@ -500,7 +491,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                       ),
                       isDense: true,
                     ),
-                    style: AppTextStyles.body,
+                    style: AppTextStyles.body2,
                     maxLines: 4,
                     minLines: 1,
                     textInputAction: TextInputAction.send,
@@ -554,16 +545,10 @@ class _MessageBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
-            CircleAvatar(
-              radius: 14,
-              backgroundColor: AppColors.primaryLight.withValues(alpha: 0.1),
-              child: Text(
-                (message.senderName ?? '?')[0],
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.primaryLight,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+            UserAvatar(
+              initial: (message.senderName ?? '?')[0],
+              color: AppColors.primaryLight,
+              size: 28,
             ),
             const SizedBox(width: AppSpacing.sm),
           ],
@@ -581,7 +566,7 @@ class _MessageBubble extends StatelessWidget {
                     ),
                     child: Text(
                       message.senderName ?? '担当者',
-                      style: AppTextStyles.caption.copyWith(
+                      style: AppTextStyles.caption2.copyWith(
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -617,7 +602,7 @@ class _MessageBubble extends StatelessWidget {
                       ? _buildEditingContent(context)
                       : Text(
                           message.content,
-                          style: AppTextStyles.body.copyWith(
+                          style: AppTextStyles.body2.copyWith(
                             color: isMe ? Colors.white : AppColors.textPrimary,
                           ),
                         ),
@@ -629,7 +614,7 @@ class _MessageBubble extends StatelessWidget {
                     children: [
                       Text(
                         '${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}',
-                        style: AppTextStyles.caption.copyWith(
+                        style: AppTextStyles.caption2.copyWith(
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -637,7 +622,7 @@ class _MessageBubble extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           '(編集済み)',
-                          style: AppTextStyles.caption.copyWith(
+                          style: AppTextStyles.caption2.copyWith(
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -663,7 +648,7 @@ class _MessageBubble extends StatelessWidget {
           controller: editController,
           autofocus: true,
           maxLines: null,
-          style: AppTextStyles.body.copyWith(
+          style: AppTextStyles.body2.copyWith(
             color: isMe ? Colors.white : AppColors.textPrimary,
           ),
           decoration: InputDecoration(
@@ -671,7 +656,7 @@ class _MessageBubble extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             border: InputBorder.none,
             hintText: 'メッセージを編集...',
-            hintStyle: AppTextStyles.body.copyWith(
+            hintStyle: AppTextStyles.body2.copyWith(
               color: isMe
                   ? Colors.white.withValues(alpha: 0.6)
                   : AppColors.textSecondary,
@@ -686,7 +671,7 @@ class _MessageBubble extends StatelessWidget {
               onTap: onCancelEdit,
               child: Text(
                 'キャンセル',
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.caption2.copyWith(
                   color: isMe
                       ? Colors.white.withValues(alpha: 0.8)
                       : AppColors.textSecondary,
@@ -699,7 +684,7 @@ class _MessageBubble extends StatelessWidget {
               onTap: onSaveEdit,
               child: Text(
                 '保存',
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.caption2.copyWith(
                   color: isMe ? Colors.white : AppColors.primaryLight,
                   fontWeight: FontWeight.w600,
                 ),
@@ -748,7 +733,9 @@ class _TypingIndicatorState extends State<_TypingIndicator> {
       children: [
         Text(
           '入力中$dots',
-          style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+          style: AppTextStyles.caption2.copyWith(
+            color: AppColors.textSecondary,
+          ),
         ),
       ],
     );

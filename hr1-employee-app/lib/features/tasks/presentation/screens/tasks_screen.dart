@@ -13,6 +13,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/task.dart';
 import '../controllers/task_controller.dart';
 import '../../../../shared/widgets/common_snackbar.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../providers/task_providers.dart';
 
@@ -122,7 +123,9 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
           Expanded(
             child: tasksAsync.when(
               loading: () => const LoadingIndicator(),
-              error: (e, _) => Center(child: Text('エラー: $e')),
+              error: (e, _) => ErrorState(
+                onRetry: () => ref.invalidate(taskListControllerProvider),
+              ),
               data: (tasks) {
                 final incomplete = tasks.where((t) => !t.isCompleted).toList();
                 final completed = tasks.where((t) => t.isCompleted).toList();

@@ -50,13 +50,13 @@ class SearchBox extends StatelessWidget {
                 ? TextField(
                     controller: controller,
                     focusNode: focusNode,
-                    style: AppTextStyles.body,
+                    style: AppTextStyles.body2,
                     textInputAction: TextInputAction.search,
                     onSubmitted: onSubmitted,
                     onChanged: onChanged,
                     decoration: InputDecoration(
                       hintText: hintText,
-                      hintStyle: AppTextStyles.body.copyWith(color: hintColor),
+                      hintStyle: AppTextStyles.body2.copyWith(color: hintColor),
                       filled: false,
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -67,7 +67,7 @@ class SearchBox extends StatelessWidget {
                   )
                 : Text(
                     hintText,
-                    style: AppTextStyles.body.copyWith(color: hintColor),
+                    style: AppTextStyles.body2.copyWith(color: hintColor),
                   ),
           ),
           if (_isEditable)

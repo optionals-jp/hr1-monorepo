@@ -34,7 +34,7 @@ class FaqScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     'FAQはまだありません',
-                    style: AppTextStyles.body.copyWith(
+                    style: AppTextStyles.body2.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -85,7 +85,7 @@ class _FaqCategorySection extends StatelessWidget {
           ),
           child: Text(
             FaqCategory.label(category),
-            style: AppTextStyles.caption.copyWith(
+            style: AppTextStyles.caption2.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.3,
@@ -143,7 +143,7 @@ class _FaqTileState extends State<_FaqTile> {
                     child: Center(
                       child: Text(
                         'Q',
-                        style: AppTextStyles.bodySmall.copyWith(
+                        style: AppTextStyles.caption1.copyWith(
                           fontWeight: FontWeight.w700,
                           color: AppColors.primaryLight,
                         ),
@@ -154,7 +154,7 @@ class _FaqTileState extends State<_FaqTile> {
                   Expanded(
                     child: Text(
                       widget.faq.question,
-                      style: AppTextStyles.body.copyWith(
+                      style: AppTextStyles.body2.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -184,17 +184,17 @@ class _FaqTileState extends State<_FaqTile> {
               child: MarkdownBody(
                 data: widget.faq.answer,
                 styleSheet: MarkdownStyleSheet(
-                  p: AppTextStyles.body.copyWith(
+                  p: AppTextStyles.body2.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                     height: 1.6,
                   ),
-                  h1: AppTextStyles.heading3,
-                  h2: AppTextStyles.subtitle,
-                  h3: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
-                  listBullet: AppTextStyles.body.copyWith(
+                  h1: AppTextStyles.title3,
+                  h2: AppTextStyles.callout,
+                  h3: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600),
+                  listBullet: AppTextStyles.body2.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
-                  code: AppTextStyles.bodySmall.copyWith(
+                  code: AppTextStyles.caption1.copyWith(
                     backgroundColor: theme.colorScheme.surfaceContainerHighest,
                   ),
                 ),

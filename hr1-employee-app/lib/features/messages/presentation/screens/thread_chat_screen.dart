@@ -1,7 +1,5 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_spacing.dart';
@@ -12,8 +10,7 @@ import '../../../../shared/widgets/common_dialog.dart';
 import '../../../../shared/widgets/common_snackbar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../controllers/thread_chat_controller.dart';
-
-const _pageSize = 30;
+import '../controllers/thread_realtime_controller.dart';
 
 /// スレッドチャット画面 — Teams チャットスタイル
 class ThreadChatScreen extends ConsumerStatefulWidget {
@@ -28,27 +25,18 @@ class ThreadChatScreen extends ConsumerStatefulWidget {
 class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
-  List<Message> _messages = [];
-  bool _loading = true;
   bool _sending = false;
-  bool _loadingMore = false;
-  bool _hasMore = true;
-  RealtimeChannel? _channel;
-  RealtimeChannel? _presenceChannel;
   String? _editingMessageId;
   final _editController = TextEditingController();
-  bool _otherUserTyping = false;
-  Timer? _typingDebounceTimer;
-  bool _isTyping = false;
 
   String get _currentUserId => ref.read(appUserProvider)?.id ?? '';
+
+  ({String threadId, String currentUserId}) get _realtimeArg =>
+      (threadId: widget.thread.id, currentUserId: _currentUserId);
 
   @override
   void initState() {
     super.initState();
-    _loadMessages();
-    _subscribeRealtime();
-    _setupPresence();
     _scrollController.addListener(_onScroll);
     _controller.addListener(_onTextChanged);
   }
@@ -58,184 +46,22 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     _controller.dispose();
     _editController.dispose();
     _scrollController.dispose();
-    _typingDebounceTimer?.cancel();
-    if (_channel != null) {
-      Supabase.instance.client.removeChannel(_channel!);
-    }
-    if (_presenceChannel != null) {
-      Supabase.instance.client.removeChannel(_presenceChannel!);
-    }
     super.dispose();
-  }
-
-  Future<void> _loadMessages() async {
-    final controller = ref.read(threadChatControllerProvider.notifier);
-    final messages = await controller.getMessages(
-      widget.thread.id,
-      limit: _pageSize,
-    );
-    if (mounted) {
-      setState(() {
-        _messages = messages;
-        _loading = false;
-        _hasMore = messages.length >= _pageSize;
-      });
-      _scrollToBottom();
-      controller.markAsRead(widget.thread.id, _currentUserId);
-    }
-  }
-
-  Future<void> _loadOlderMessages() async {
-    if (_loadingMore || !_hasMore || _messages.isEmpty) return;
-    setState(() => _loadingMore = true);
-    final controller = ref.read(threadChatControllerProvider.notifier);
-    final oldestCreatedAt = _messages.first.createdAt;
-    final olderMessages = await controller.getMessages(
-      widget.thread.id,
-      before: oldestCreatedAt,
-      limit: _pageSize,
-    );
-    if (mounted) {
-      setState(() {
-        _messages = [...olderMessages, ..._messages];
-        _loadingMore = false;
-        _hasMore = olderMessages.length >= _pageSize;
-      });
-    }
   }
 
   void _onScroll() {
     if (_scrollController.position.pixels <=
         _scrollController.position.minScrollExtent + 50) {
-      _loadOlderMessages();
+      ref
+          .read(threadRealtimeControllerProvider(_realtimeArg).notifier)
+          .loadOlderMessages();
     }
-  }
-
-  void _subscribeRealtime() {
-    _channel = Supabase.instance.client
-        .channel('messages:${widget.thread.id}')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'thread_id',
-            value: widget.thread.id,
-          ),
-          callback: (payload) async {
-            final newMsg = payload.newRecord;
-            if (newMsg.isEmpty) return;
-            final senderResponse = await ref
-                .read(threadChatControllerProvider.notifier)
-                .getSenderProfile(newMsg['sender_id'] as String);
-            final msg = Message.fromJson({...newMsg, 'sender': senderResponse});
-            if (mounted) {
-              setState(() {
-                if (!_messages.any((m) => m.id == msg.id)) {
-                  _messages = [..._messages, msg];
-                }
-              });
-              _scrollToBottom();
-              if (msg.senderId != _currentUserId) {
-                ref
-                    .read(threadChatControllerProvider.notifier)
-                    .markAsRead(widget.thread.id, _currentUserId);
-              }
-            }
-          },
-        )
-        .onPostgresChanges(
-          event: PostgresChangeEvent.update,
-          schema: 'public',
-          table: 'messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'thread_id',
-            value: widget.thread.id,
-          ),
-          callback: (payload) {
-            final updated = payload.newRecord;
-            if (updated.isEmpty || !mounted) return;
-            setState(() {
-              _messages = _messages.map((m) {
-                if (m.id == updated['id']) {
-                  return m.copyWith(
-                    content: updated['content'] as String?,
-                    editedAt: updated['edited_at'] != null
-                        ? DateTime.parse(updated['edited_at'] as String)
-                        : null,
-                  );
-                }
-                return m;
-              }).toList();
-            });
-          },
-        )
-        .onPostgresChanges(
-          event: PostgresChangeEvent.delete,
-          schema: 'public',
-          table: 'messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'thread_id',
-            value: widget.thread.id,
-          ),
-          callback: (payload) {
-            final old = payload.oldRecord;
-            if (old.isEmpty || !mounted) return;
-            setState(() {
-              _messages = _messages.where((m) => m.id != old['id']).toList();
-            });
-          },
-        )
-        .subscribe();
-  }
-
-  void _setupPresence() {
-    _presenceChannel = Supabase.instance.client
-        .channel('typing:${widget.thread.id}')
-        .onPresenceSync((payload) {
-          if (!mounted) return;
-          final presences = _presenceChannel!.presenceState();
-          bool otherTyping = false;
-          for (final state in presences) {
-            for (final presence in state.presences) {
-              if (presence.payload['user_id'] != _currentUserId &&
-                  presence.payload['is_typing'] == true) {
-                otherTyping = true;
-                break;
-              }
-            }
-            if (otherTyping) break;
-          }
-          setState(() => _otherUserTyping = otherTyping);
-        })
-        .subscribe((status, [error]) async {
-          if (status == RealtimeSubscribeStatus.subscribed) {
-            await _presenceChannel!.track({
-              'user_id': _currentUserId,
-              'is_typing': false,
-            });
-          }
-        });
   }
 
   void _onTextChanged() {
-    if (_controller.text.isNotEmpty && !_isTyping) {
-      _isTyping = true;
-      _presenceChannel?.track({'user_id': _currentUserId, 'is_typing': true});
-    }
-    _typingDebounceTimer?.cancel();
-    _typingDebounceTimer = Timer(const Duration(seconds: 2), () {
-      if (_isTyping) {
-        _isTyping = false;
-        _presenceChannel?.track({
-          'user_id': _currentUserId,
-          'is_typing': false,
-        });
-      }
-    });
+    ref
+        .read(threadRealtimeControllerProvider(_realtimeArg).notifier)
+        .onTextChanged(_controller.text);
   }
 
   void _scrollToBottom() {
@@ -255,9 +81,9 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     if (content.isEmpty || _sending || content.length > 5000) return;
     setState(() => _sending = true);
     _controller.clear();
-    _isTyping = false;
-    _typingDebounceTimer?.cancel();
-    _presenceChannel?.track({'user_id': _currentUserId, 'is_typing': false});
+    ref
+        .read(threadRealtimeControllerProvider(_realtimeArg).notifier)
+        .resetTyping();
     try {
       await ref
           .read(threadChatControllerProvider.notifier)
@@ -373,6 +199,23 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     final displayName =
         widget.thread.participantName ?? widget.thread.title ?? '相手';
     final theme = Theme.of(context);
+    final realtimeState = ref.watch(
+      threadRealtimeControllerProvider(_realtimeArg),
+    );
+
+    // 新しいメッセージが追加されたらスクロール
+    ref.listen(threadRealtimeControllerProvider(_realtimeArg), (prev, next) {
+      if (prev != null &&
+          next.messages.length > prev.messages.length &&
+          !next.loading) {
+        _scrollToBottom();
+      }
+    });
+
+    final messages = realtimeState.messages;
+    final loading = realtimeState.loading;
+    final loadingMore = realtimeState.loadingMore;
+    final otherUserTyping = realtimeState.otherUserTyping;
 
     return Scaffold(
       appBar: AppBar(
@@ -406,9 +249,9 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
         children: [
           // メッセージリスト
           Expanded(
-            child: _loading
+            child: loading
                 ? const LoadingIndicator()
-                : _messages.isEmpty
+                : messages.isEmpty
                 ? Center(
                     child: Text(
                       'メッセージはまだありません',
@@ -425,9 +268,9 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                       horizontal: AppSpacing.lg,
                       vertical: AppSpacing.sm,
                     ),
-                    itemCount: _messages.length + (_loadingMore ? 1 : 0),
+                    itemCount: messages.length + (loadingMore ? 1 : 0),
                     itemBuilder: (context, index) {
-                      if (_loadingMore && index == 0) {
+                      if (loadingMore && index == 0) {
                         return const Padding(
                           padding: EdgeInsets.symmetric(
                             vertical: AppSpacing.md,
@@ -441,8 +284,8 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                           ),
                         );
                       }
-                      final msgIndex = _loadingMore ? index - 1 : index;
-                      final msg = _messages[msgIndex];
+                      final msgIndex = loadingMore ? index - 1 : index;
+                      final msg = messages[msgIndex];
                       final isMe = msg.senderId == _currentUserId;
                       final isEditing = _editingMessageId == msg.id;
 
@@ -463,7 +306,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
           ),
 
           // タイピングインジケーター
-          if (_otherUserTyping)
+          if (otherUserTyping)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(

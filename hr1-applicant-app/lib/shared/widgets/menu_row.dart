@@ -67,7 +67,7 @@ class MenuRow extends StatelessWidget {
                   size: 22,
                   color: isDestructive
                       ? AppColors.error
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                      : AppColors.textSecondary,
                 ),
                 child: icon!,
               ),
@@ -80,7 +80,7 @@ class MenuRow extends StatelessWidget {
                   if (hasLabel) ...[
                     Text(
                       label!,
-                      style: AppTextStyles.caption.copyWith(
+                      style: AppTextStyles.caption2.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.55,
                         ),
@@ -89,7 +89,7 @@ class MenuRow extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       title,
-                      style: AppTextStyles.bodySmall.copyWith(
+                      style: AppTextStyles.caption1.copyWith(
                         color: isEditable && title == '編集する'
                             ? AppColors.primaryLight
                             : textColor,
@@ -98,12 +98,12 @@ class MenuRow extends StatelessWidget {
                   ] else ...[
                     Text(
                       title,
-                      style: AppTextStyles.bodySmall.copyWith(color: textColor),
+                      style: AppTextStyles.caption1.copyWith(color: textColor),
                     ),
                     if (subtitle != null)
                       Text(
                         subtitle!,
-                        style: AppTextStyles.caption.copyWith(
+                        style: AppTextStyles.caption2.copyWith(
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.55,
                           ),
@@ -117,7 +117,7 @@ class MenuRow extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: 20,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                color: AppColors.textSecondary,
               ),
           ],
         ),

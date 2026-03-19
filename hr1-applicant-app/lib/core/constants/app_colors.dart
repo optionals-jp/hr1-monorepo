@@ -30,8 +30,8 @@ class AppColors {
   // ライトモード
   // ---------------------------------------------------------------------------
 
-  /// 背景色（ライトグレー）
-  static const Color background = Color(0xFFF8FAFC);
+  /// 背景色（白）
+  static const Color background = Color(0xFFFFFFFF);
 
   /// サーフェス（ホワイト）
   static const Color surface = Color(0xFFFFFFFF);
@@ -45,15 +45,23 @@ class AppColors {
   /// ボーダー（ライトグレー）
   static const Color border = Color(0xFFCBD5E1);
 
+  /// ディバイダー（非常に薄い）
+  static const Color divider = Color(0xFFE2E8F0);
+
+  /// サーフェスセカンダリ
+  static const Color surfaceSecondary = Color(0xFFF1F5F9);
+
   // ---------------------------------------------------------------------------
   // ダークモード
   // ---------------------------------------------------------------------------
 
-  static const Color darkBackground = Color(0xFF0F172A);
-  static const Color darkSurface = Color(0xFF1E293B);
-  static const Color darkTextPrimary = Color(0xFFE2E8F0);
-  static const Color darkTextSecondary = Color(0xFF94A3B8);
-  static const Color darkBorder = Color(0xFF334155);
+  static const Color darkBackground = Color(0xFF292929);
+  static const Color darkSurface = Color(0xFF292929);
+  static const Color darkSurfaceSecondary = Color(0xFF1F1F1F);
+  static const Color darkTextPrimary = Color(0xFFFFFFFF);
+  static const Color darkTextSecondary = Color(0xFFD6D6D6);
+  static const Color darkBorder = Color(0xFF666666);
+  static const Color darkDivider = Color(0xFF525252);
 
   // ---------------------------------------------------------------------------
   // MaterialColor
