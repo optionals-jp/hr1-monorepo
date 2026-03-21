@@ -33,7 +33,8 @@ class SupabaseFaqRepository {
         .eq('organization_id', orgId)
         .eq('is_published', true)
         .inFilter('target', ['employee', 'both'])
-        .order('sort_order', ascending: true);
+        .order('sort_order', ascending: true)
+        .limit(100);
 
     return (response as List).map((json) => FaqItem.fromJson(json)).toList();
   }

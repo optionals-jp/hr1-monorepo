@@ -154,7 +154,7 @@ class PortalScreen extends ConsumerWidget {
             ),
           ),
 
-          // 横スクロール アクションチップ（Teams スタイル）
+          // 横スクロール アクションチップ
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.only(top: AppSpacing.xl),

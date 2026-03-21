@@ -10,7 +10,9 @@ final messagesRepositoryProvider = Provider<SupabaseMessagesRepository>((ref) {
 });
 
 /// スレッド一覧（社員の所属組織）
-final messageThreadsProvider = FutureProvider<List<MessageThread>>((ref) async {
+final messageThreadsProvider = FutureProvider.autoDispose<List<MessageThread>>((
+  ref,
+) async {
   final currentUser = ref.watch(appUserProvider);
   if (currentUser == null) return [];
   final repo = ref.watch(messagesRepositoryProvider);
@@ -18,10 +20,8 @@ final messageThreadsProvider = FutureProvider<List<MessageThread>>((ref) async {
 });
 
 /// スレッドIDからメッセージ一覧を取得
-final threadMessagesProvider = FutureProvider.family<List<Message>, String>((
-  ref,
-  threadId,
-) async {
-  final repo = ref.watch(messagesRepositoryProvider);
-  return repo.getMessages(threadId);
-});
+final threadMessagesProvider = FutureProvider.autoDispose
+    .family<List<Message>, String>((ref, threadId) async {
+      final repo = ref.watch(messagesRepositoryProvider);
+      return repo.getMessages(threadId);
+    });

@@ -7,6 +7,7 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/common_button.dart';
+import '../../../../shared/widgets/common_card.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../providers/survey_providers.dart';
 
@@ -87,107 +88,100 @@ class SurveyListScreen extends ConsumerWidget {
                 final survey = surveys[index];
                 final isCompleted = completedIds.contains(survey.id);
 
-                return Card(
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-                    onTap: isCompleted
-                        ? null
-                        : () async {
-                            await context.push(
-                              '${AppRoutes.surveys}/${survey.id}',
-                              extra: survey,
-                            );
-                            ref.invalidate(completedSurveyIdsProvider);
-                          },
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.cardPadding),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                return CommonCard(
+                  onTap: isCompleted
+                      ? null
+                      : () async {
+                          await context.push(
+                            '${AppRoutes.surveys}/${survey.id}',
+                            extra: survey,
+                          );
+                          ref.invalidate(completedSurveyIdsProvider);
+                        },
+                  margin: EdgeInsets.zero,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  survey.title,
-                                  style: AppTextStyles.callout,
-                                ),
-                              ),
-                              if (isCompleted)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.success.withValues(
-                                      alpha: 0.1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    '回答済み',
-                                    style: AppTextStyles.caption2.copyWith(
-                                      color: AppColors.success,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                )
-                              else
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primaryLight.withValues(
-                                      alpha: 0.1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    '未回答',
-                                    style: AppTextStyles.caption2.copyWith(
-                                      color: AppColors.primaryLight,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          if (survey.description != null) ...[
-                            const SizedBox(height: AppSpacing.xs),
-                            Text(
-                              survey.description!,
-                              style: AppTextStyles.caption1.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                          Expanded(
+                            child: Text(
+                              survey.title,
+                              style: AppTextStyles.callout,
                             ),
-                          ],
-                          const SizedBox(height: AppSpacing.sm),
-                          Row(
-                            children: [
-                              Text(
-                                '${survey.questions.length}問',
+                          ),
+                          if (isCompleted)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.success.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                '回答済み',
                                 style: AppTextStyles.caption2.copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: AppColors.success,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              if (survey.deadline != null) ...[
-                                const SizedBox(width: AppSpacing.md),
-                                Text(
-                                  '締切: ${DateFormat('yyyy/MM/dd').format(survey.deadline!.toLocal())}',
-                                  style: AppTextStyles.caption2.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
+                            )
+                          else
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryLight.withValues(
+                                  alpha: 0.1,
                                 ),
-                              ],
-                            ],
-                          ),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                '未回答',
+                                style: AppTextStyles.caption2.copyWith(
+                                  color: AppColors.primaryLight,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
-                    ),
+                      if (survey.description != null) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          survey.description!,
+                          style: AppTextStyles.caption1.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: [
+                          Text(
+                            '${survey.questions.length}問',
+                            style: AppTextStyles.caption2.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          if (survey.deadline != null) ...[
+                            const SizedBox(width: AppSpacing.md),
+                            Text(
+                              '締切: ${DateFormat('yyyy/MM/dd').format(survey.deadline!.toLocal())}',
+                              style: AppTextStyles.caption2.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
                   ),
                 );
               },

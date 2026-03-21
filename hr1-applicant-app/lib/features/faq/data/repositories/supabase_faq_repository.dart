@@ -15,7 +15,8 @@ class SupabaseFaqRepository {
         .eq('organization_id', organizationId)
         .eq('is_published', true)
         .inFilter('target', ['applicant', 'both'])
-        .order('sort_order', ascending: true);
+        .order('sort_order', ascending: true)
+        .limit(100);
 
     return (response as List).map((json) => FaqItem.fromJson(json)).toList();
   }

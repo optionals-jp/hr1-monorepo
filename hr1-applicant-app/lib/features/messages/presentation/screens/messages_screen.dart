@@ -2,46 +2,71 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
-import '../../../../shared/widgets/user_avatar.dart';
-import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/org_icon.dart';
 import '../../domain/entities/message_thread.dart';
+import '../providers/message_threads_realtime_provider.dart';
 import '../providers/messages_providers.dart';
 
-/// メッセージ画面
-/// 応募先企業とのメッセージ一覧
+/// メッセージ画面 — 企業とのスレッド一覧
 class MessagesScreen extends ConsumerWidget {
   const MessagesScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // リアルタイム購読を開始（新規メッセージ受信時にスレッド一覧を自動更新）
+    ref.watch(messageThreadsRealtimeProvider);
+
     final threadsAsync = ref.watch(messageThreadsProvider);
 
     return threadsAsync.when(
       loading: () => const LoadingIndicator(),
-      error: (error, _) =>
+      error: (e, _) =>
           ErrorState(onRetry: () => ref.invalidate(messageThreadsProvider)),
       data: (threads) {
         if (threads.isEmpty) {
-          return const EmptyState(
-            icon: Icons.chat_bubble_outline,
-            title: 'メッセージはありません',
-            description: '応募先企業からの連絡がここに表示されます',
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xxl),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    size: 48,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.2),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text('メッセージはありません', style: AppTextStyles.callout),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    '気になることがあれば聞いてみましょう！',
+                    style: AppTextStyles.body2.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
           );
         }
 
-        return ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-          itemCount: threads.length,
-          separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
-          itemBuilder: (context, index) {
-            final thread = threads[index];
-            return _ThreadTile(thread: thread);
-          },
+        return RefreshIndicator(
+          onRefresh: () async => ref.invalidate(messageThreadsProvider),
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            itemCount: threads.length,
+            separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
+            itemBuilder: (context, index) =>
+                _ThreadTile(thread: threads[index]),
+          ),
         );
       },
     );
@@ -60,91 +85,83 @@ class _ThreadTile extends StatelessWidget {
     final initial = displayName.isNotEmpty ? displayName[0] : '?';
 
     return ListTile(
-      leading: UserAvatar(
-        initial: initial,
-        color: AppColors.primaryLight,
-        size: 44,
+      leading: OrgIcon(initial: initial, size: 44, borderRadius: 10),
+      title: Text(
+        displayName,
+        style: AppTextStyles.body2.copyWith(
+          fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              displayName,
-              style: AppTextStyles.body2.copyWith(
-                fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w500,
+      subtitle: thread.latestMessage != null
+          ? Text(
+              thread.latestMessage!.content,
+              style: AppTextStyles.caption1.copyWith(
+                color: hasUnread
+                    ? Theme.of(context).colorScheme.onSurface
+                    : AppColors.textSecondary,
               ),
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
+            )
+          : Text(
+              'メッセージはありません',
+              style: AppTextStyles.caption1.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
-          ),
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
           if (thread.latestMessage != null)
             Text(
-              DateFormatter.toRelative(thread.latestMessage!.createdAt),
+              _formatDate(thread.latestMessage!.createdAt),
               style: AppTextStyles.caption2.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
-        ],
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (thread.jobTitle != null)
-            Text(
-              thread.jobTitle!,
-              style: AppTextStyles.caption2.copyWith(
-                color: AppColors.textSecondary,
+          if (hasUnread) ...[
+            const SizedBox(height: 4),
+            Container(
+              width: 20,
+              height: 20,
+              decoration: const BoxDecoration(
+                color: AppColors.primaryLight,
+                shape: BoxShape.circle,
               ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          if (thread.latestMessage != null) ...[
-            const SizedBox(height: 2),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    thread.latestMessage!.content,
-                    style: AppTextStyles.caption1.copyWith(
-                      color: hasUnread
-                          ? AppColors.textPrimary
-                          : AppColors.textSecondary,
-                      fontWeight: hasUnread ? FontWeight.w500 : FontWeight.w400,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+              child: Center(
+                child: Text(
+                  '${thread.unreadCount}',
+                  style: AppTextStyles.caption2.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                if (hasUnread) ...[
-                  const SizedBox(width: AppSpacing.sm),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '${thread.unreadCount}',
-                      style: AppTextStyles.caption2.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+              ),
             ),
           ],
         ],
       ),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: 4,
+      onTap: () => context.push(
+        AppRoutes.messageThread.replaceFirst(':threadId', thread.id),
+        extra: thread,
       ),
-      onTap: () {
-        context.push('/messages/${thread.id}', extra: thread);
-      },
     );
+  }
+
+  String _formatDate(DateTime dt) {
+    final now = DateTime.now();
+    final local = dt.toLocal();
+    if (local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day) {
+      return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+    }
+    if (local.year == now.year) {
+      return '${local.month}/${local.day}';
+    }
+    return '${local.year}/${local.month}/${local.day}';
   }
 }

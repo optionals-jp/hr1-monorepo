@@ -13,37 +13,43 @@ final taskRepositoryProvider = Provider<TaskRepository>((ref) {
 final taskFilterProvider = StateProvider<TaskFilter>((ref) => TaskFilter.myDay);
 
 /// My Day タスク
-final myDayTasksProvider = FutureProvider<List<Task>>((ref) async {
+final myDayTasksProvider = FutureProvider.autoDispose<List<Task>>((ref) async {
   final repo = ref.watch(taskRepositoryProvider);
   return repo.getMyDayTasks();
 });
 
 /// 重要タスク
-final importantTasksProvider = FutureProvider<List<Task>>((ref) async {
+final importantTasksProvider = FutureProvider.autoDispose<List<Task>>((
+  ref,
+) async {
   final repo = ref.watch(taskRepositoryProvider);
   return repo.getImportantTasks();
 });
 
 /// 計画済みタスク
-final plannedTasksProvider = FutureProvider<List<Task>>((ref) async {
+final plannedTasksProvider = FutureProvider.autoDispose<List<Task>>((
+  ref,
+) async {
   final repo = ref.watch(taskRepositoryProvider);
   return repo.getPlannedTasks();
 });
 
 /// すべてのタスク
-final allTasksProvider = FutureProvider<List<Task>>((ref) async {
+final allTasksProvider = FutureProvider.autoDispose<List<Task>>((ref) async {
   final repo = ref.watch(taskRepositoryProvider);
   return repo.getTasks(includeCompleted: true);
 });
 
 /// 完了済みタスク数
-final completedTaskCountProvider = FutureProvider<int>((ref) async {
+final completedTaskCountProvider = FutureProvider.autoDispose<int>((ref) async {
   final tasks = await ref.watch(allTasksProvider.future);
   return tasks.where((t) => t.isCompleted).length;
 });
 
 /// 現在のフィルタに応じたタスクリスト
-final filteredTasksProvider = FutureProvider<List<Task>>((ref) async {
+final filteredTasksProvider = FutureProvider.autoDispose<List<Task>>((
+  ref,
+) async {
   final filter = ref.watch(taskFilterProvider);
   switch (filter) {
     case TaskFilter.myDay:
@@ -58,7 +64,7 @@ final filteredTasksProvider = FutureProvider<List<Task>>((ref) async {
 });
 
 /// タスク詳細
-final taskDetailProvider = FutureProvider.family<Task?, String>((
+final taskDetailProvider = FutureProvider.autoDispose.family<Task?, String>((
   ref,
   id,
 ) async {
@@ -67,10 +73,8 @@ final taskDetailProvider = FutureProvider.family<Task?, String>((
 });
 
 /// タスクステップ
-final taskStepsProvider = FutureProvider.family<List<TaskStep>, String>((
-  ref,
-  taskId,
-) async {
-  final repo = ref.watch(taskRepositoryProvider);
-  return repo.getSteps(taskId);
-});
+final taskStepsProvider = FutureProvider.autoDispose
+    .family<List<TaskStep>, String>((ref, taskId) async {
+      final repo = ref.watch(taskRepositoryProvider);
+      return repo.getSteps(taskId);
+    });

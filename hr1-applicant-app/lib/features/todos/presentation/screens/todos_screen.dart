@@ -10,6 +10,7 @@ import 'package:hr1_applicant_app/shared/widgets/common_button.dart';
 import 'package:hr1_applicant_app/shared/widgets/common_sheet.dart';
 import 'package:hr1_applicant_app/shared/widgets/common_snackbar.dart';
 import 'package:hr1_applicant_app/shared/widgets/loading_indicator.dart';
+import 'package:hr1_applicant_app/shared/widgets/common_date_picker.dart';
 import 'package:hr1_applicant_app/shared/widgets/error_state.dart';
 import '../../domain/entities/todo.dart';
 import '../controllers/todo_controller.dart';
@@ -624,7 +625,7 @@ class _AddTodoFormState extends State<_AddTodoForm> {
   }
 
   Future<void> _pickDueDate() async {
-    final picked = await showDatePicker(
+    final picked = await CommonDatePicker.show(
       context: context,
       initialDate: _dueDate ?? DateTime.now(),
       firstDate: DateTime.now(),

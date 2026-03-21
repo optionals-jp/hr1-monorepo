@@ -29,23 +29,19 @@ final calendarViewModeProvider = StateProvider<CalendarViewMode>(
 );
 
 /// 指定日のイベント取得（PageView用）
-final dayEventsProvider = FutureProvider.family<List<CalendarEvent>, DateTime>((
-  ref,
-  date,
-) async {
-  final repo = ref.watch(calendarRepositoryProvider);
-  final start = DateTime(date.year, date.month, date.day);
-  final end = DateTime(date.year, date.month, date.day, 23, 59, 59);
-  return repo.getEvents(start: start, end: end);
-});
+final dayEventsProvider = FutureProvider.autoDispose
+    .family<List<CalendarEvent>, DateTime>((ref, date) async {
+      final repo = ref.watch(calendarRepositoryProvider);
+      final start = DateTime(date.year, date.month, date.day);
+      final end = DateTime(date.year, date.month, date.day, 23, 59, 59);
+      return repo.getEvents(start: start, end: end);
+    });
 
 /// 月のイベント日付セット（カレンダードット表示用）
-final eventDatesProvider = FutureProvider.family<Set<DateTime>, DateTime>((
-  ref,
-  month,
-) async {
-  final repo = ref.watch(calendarRepositoryProvider);
-  final start = DateTime(month.year, month.month, 1);
-  final end = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
-  return repo.getEventDates(start: start, end: end);
-});
+final eventDatesProvider = FutureProvider.autoDispose
+    .family<Set<DateTime>, DateTime>((ref, month) async {
+      final repo = ref.watch(calendarRepositoryProvider);
+      final start = DateTime(month.year, month.month, 1);
+      final end = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
+      return repo.getEventDates(start: start, end: end);
+    });

@@ -13,50 +13,47 @@ final skillsRepositoryProvider = Provider<SkillsRepository>((ref) {
 });
 
 /// 自分のスキル一覧
-final mySkillsProvider = FutureProvider<List<EmployeeSkill>>((ref) async {
+final mySkillsProvider = FutureProvider.autoDispose<List<EmployeeSkill>>((
+  ref,
+) async {
   final repo = ref.watch(skillsRepositoryProvider);
   final userId = Supabase.instance.client.auth.currentUser!.id;
   return repo.getSkills(userId);
 });
 
 /// 自分の資格一覧
-final myCertificationsProvider = FutureProvider<List<EmployeeCertification>>((
-  ref,
-) async {
-  final repo = ref.watch(skillsRepositoryProvider);
-  final userId = Supabase.instance.client.auth.currentUser!.id;
-  return repo.getCertifications(userId);
-});
+final myCertificationsProvider =
+    FutureProvider.autoDispose<List<EmployeeCertification>>((ref) async {
+      final repo = ref.watch(skillsRepositoryProvider);
+      final userId = Supabase.instance.client.auth.currentUser!.id;
+      return repo.getCertifications(userId);
+    });
 
 /// 指定ユーザーのスキル一覧
-final userSkillsProvider = FutureProvider.family<List<EmployeeSkill>, String>((
-  ref,
-  userId,
-) async {
-  final repo = ref.watch(skillsRepositoryProvider);
-  return repo.getSkills(userId);
-});
+final userSkillsProvider = FutureProvider.autoDispose
+    .family<List<EmployeeSkill>, String>((ref, userId) async {
+      final repo = ref.watch(skillsRepositoryProvider);
+      return repo.getSkills(userId);
+    });
 
 /// 指定ユーザーの資格一覧
-final userCertificationsProvider =
-    FutureProvider.family<List<EmployeeCertification>, String>((
-      ref,
-      userId,
-    ) async {
+final userCertificationsProvider = FutureProvider.autoDispose
+    .family<List<EmployeeCertification>, String>((ref, userId) async {
       final repo = ref.watch(skillsRepositoryProvider);
       return repo.getCertifications(userId);
     });
 
 /// スキルマスタ一覧
-final skillMastersProvider = FutureProvider<List<SkillMaster>>((ref) async {
+final skillMastersProvider = FutureProvider.autoDispose<List<SkillMaster>>((
+  ref,
+) async {
   final repo = ref.watch(skillsRepositoryProvider);
   return repo.getSkillMasters();
 });
 
 /// 資格マスタ一覧
-final certificationMastersProvider = FutureProvider<List<CertificationMaster>>((
-  ref,
-) async {
-  final repo = ref.watch(skillsRepositoryProvider);
-  return repo.getCertificationMasters();
-});
+final certificationMastersProvider =
+    FutureProvider.autoDispose<List<CertificationMaster>>((ref) async {
+      final repo = ref.watch(skillsRepositoryProvider);
+      return repo.getCertificationMasters();
+    });

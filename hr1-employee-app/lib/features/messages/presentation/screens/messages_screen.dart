@@ -15,13 +15,17 @@ import '../../../../shared/widgets/user_avatar.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/message_thread.dart';
 import '../controllers/messages_controller.dart';
+import '../providers/message_threads_realtime_provider.dart';
 
-/// メッセージ画面 — Teams チャットリストスタイル
+/// メッセージ画面
 class MessagesScreen extends ConsumerWidget {
   const MessagesScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // リアルタイム購読を開始（新規メッセージ受信時にスレッド一覧を自動更新）
+    ref.watch(messageThreadsRealtimeProvider);
+
     final threadsAsync = ref.watch(messagesControllerProvider);
     final user = ref.watch(appUserProvider);
 
@@ -63,7 +67,7 @@ class MessagesScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // 検索バー（Teams チャット画面上部の検索バー）
+          // 検索バー
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.screenHorizontal,
@@ -110,7 +114,7 @@ class MessagesScreen extends ConsumerWidget {
   }
 }
 
-/// スレッドタイル — Teams チャットリストアイテムスタイル
+/// スレッドタイル
 class _ThreadTile extends StatelessWidget {
   const _ThreadTile({required this.thread});
 

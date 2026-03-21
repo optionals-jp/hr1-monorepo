@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../shared/widgets/common_card.dart';
 import '../../../../shared/widgets/skeleton.dart';
 import '../../domain/entities/faq_item.dart';
 import '../providers/faq_providers.dart';
@@ -118,17 +119,14 @@ class _FaqTileState extends State<_FaqTile> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: theme.dividerColor),
-      ),
+    return CommonCard(
+      padding: EdgeInsets.zero,
+      margin: EdgeInsets.zero,
       child: Column(
         children: [
           InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
-            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+            borderRadius: BorderRadius.circular(16),
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.cardPadding),
               child: Row(

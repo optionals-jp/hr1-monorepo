@@ -113,6 +113,13 @@ class ProfileScreen extends ConsumerWidget {
             title: 'サポート',
             children: [
               MenuRow(
+                icon: Icon(Icons.support_agent_outlined),
+                title: 'サービスリクエスト',
+                subtitle: 'バグ報告・機能リクエスト',
+                showChevron: true,
+                onTap: () => context.push(AppRoutes.serviceRequests),
+              ),
+              MenuRow(
                 icon: Icon(Icons.help_outline_rounded),
                 title: 'ヘルプ',
                 showChevron: true,

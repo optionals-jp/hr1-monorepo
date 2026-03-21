@@ -28,7 +28,10 @@ class SupabaseTodoRepository implements TodoRepository {
       query = query.eq('is_completed', false);
     }
 
-    final response = await query.order('sort_order').order('created_at');
+    final response = await query
+        .order('sort_order')
+        .order('created_at')
+        .limit(200);
     return response.map((e) => Todo.fromJson(e)).toList();
   }
 
@@ -40,7 +43,8 @@ class SupabaseTodoRepository implements TodoRepository {
         .eq('user_id', _userId)
         .eq('is_completed', false)
         .order('sort_order')
-        .order('created_at');
+        .order('created_at')
+        .limit(200);
 
     return response.map((e) => Todo.fromJson(e)).toList();
   }
@@ -54,7 +58,8 @@ class SupabaseTodoRepository implements TodoRepository {
         .eq('is_important', true)
         .eq('is_completed', false)
         .order('sort_order')
-        .order('created_at');
+        .order('created_at')
+        .limit(200);
 
     return response.map((e) => Todo.fromJson(e)).toList();
   }

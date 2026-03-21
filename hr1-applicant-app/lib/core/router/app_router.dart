@@ -24,6 +24,9 @@ import '../../features/todos/domain/entities/todo.dart';
 import '../../features/faq/presentation/screens/faq_screen.dart';
 import '../../features/surveys/presentation/screens/survey_list_screen.dart';
 import '../../features/surveys/presentation/screens/survey_answer_screen.dart';
+import '../../features/service_requests/domain/entities/service_request.dart';
+import '../../features/service_requests/presentation/screens/service_request_list_screen.dart';
+import '../../features/service_requests/presentation/screens/service_request_create_screen.dart';
 import '../../features/surveys/presentation/providers/survey_providers.dart';
 import '../../features/surveys/domain/entities/pulse_survey.dart';
 
@@ -44,6 +47,8 @@ class AppRoutes {
   static const String todos = '/todos';
   static const String todoDetail = '/todo-detail';
   static const String organizationSelect = '/organization-select';
+  static const String serviceRequests = '/service-requests';
+  static const String serviceRequestCreate = '/service-request-create';
 }
 
 /// 認証不要なルート
@@ -169,6 +174,22 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           ),
         ],
+      ),
+
+      /// サービスリクエスト画面（シェル外 → BottomNav非表示）
+      GoRoute(
+        path: AppRoutes.serviceRequests,
+        builder: (context, state) => const ServiceRequestListScreen(),
+      ),
+
+      /// サービスリクエスト作成画面（シェル外 → BottomNav非表示）
+      GoRoute(
+        path: AppRoutes.serviceRequestCreate,
+        builder: (context, state) {
+          final type =
+              state.extra as ServiceRequestType? ?? ServiceRequestType.bug;
+          return ServiceRequestCreateScreen(type: type);
+        },
       ),
 
       /// メッセージ詳細（シェル外 → 独自AppBar、BottomNav非表示）

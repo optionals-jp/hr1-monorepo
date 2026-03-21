@@ -11,18 +11,20 @@ final notificationRepositoryProvider = Provider<SupabaseNotificationRepository>(
 );
 
 /// 通知一覧（全件）
-final allNotificationsProvider = FutureProvider<List<NotificationItem>>((ref) {
-  return ref.watch(notificationRepositoryProvider).getNotifications();
-});
+final allNotificationsProvider =
+    FutureProvider.autoDispose<List<NotificationItem>>((ref) {
+      return ref.watch(notificationRepositoryProvider).getNotifications();
+    });
 
 /// 最新の未読通知（ポータル表示用：最大3件）
-final latestNotificationsProvider = FutureProvider<List<NotificationItem>>((
-  ref,
-) {
-  return ref.watch(notificationRepositoryProvider).getLatestUnread(limit: 3);
-});
+final latestNotificationsProvider =
+    FutureProvider.autoDispose<List<NotificationItem>>((ref) {
+      return ref
+          .watch(notificationRepositoryProvider)
+          .getLatestUnread(limit: 3);
+    });
 
 /// 未読件数（バッジ表示用）
-final unreadNotificationCountProvider = FutureProvider<int>((ref) {
+final unreadNotificationCountProvider = FutureProvider.autoDispose<int>((ref) {
   return ref.watch(notificationRepositoryProvider).getUnreadCount();
 });

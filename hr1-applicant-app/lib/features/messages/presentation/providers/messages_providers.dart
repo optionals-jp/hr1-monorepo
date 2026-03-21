@@ -19,6 +19,19 @@ final messageThreadsProvider = FutureProvider.autoDispose<List<MessageThread>>((
   return repo.getThreads(currentUser.id);
 });
 
+/// 応募者と企業の1対1スレッドを取得または作成
+final applicantThreadProvider = FutureProvider.autoDispose
+    .family<MessageThread, ({String userId, String organizationId})>((
+      ref,
+      params,
+    ) async {
+      final repo = ref.watch(messagesRepositoryProvider);
+      return repo.getOrCreateThread(
+        userId: params.userId,
+        organizationId: params.organizationId,
+      );
+    });
+
 /// スレッドIDからメッセージ一覧を取得
 final threadMessagesProvider = FutureProvider.autoDispose
     .family<List<Message>, String>((ref, threadId) async {

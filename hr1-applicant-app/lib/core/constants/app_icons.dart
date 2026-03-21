@@ -24,6 +24,8 @@ class AppIcons {
   static const String _tickCircleFill = 'assets/ic-tick-circle-fill.svg';
   static const String _clipboardTick = 'assets/ic-clipboard-tick.svg';
   static const String _clipboardTickFill = 'assets/ic-clipboard-tick-fill.svg';
+  static const String _directbox = 'assets/ic-directbox.svg';
+  static const String _directboxFill = 'assets/ic-directbox-fill.svg';
 
   // ── ナビゲーション ──
   static Widget home({double size = 24, Color? color}) =>
@@ -58,6 +60,10 @@ class AppIcons {
       _svg(_clipboardTick, size: size, color: color);
   static Widget clipboardTickFill({double size = 24, Color? color}) =>
       _svg(_clipboardTickFill, size: size, color: color);
+  static Widget directbox({double size = 24, Color? color}) =>
+      _svg(_directbox, size: size, color: color);
+  static Widget directboxFill({double size = 24, Color? color}) =>
+      _svg(_directboxFill, size: size, color: color);
 
   /// アセットパスからSVGウィジェットを生成（内部ヘルパー）
   ///

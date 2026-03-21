@@ -33,4 +33,10 @@ abstract class MessagesRepository {
 
   /// 送信者プロフィールを取得
   Future<Map<String, dynamic>> getSenderProfile(String senderId);
+
+  /// 企業との1対1スレッドを取得または作成
+  Future<MessageThread> getOrCreateThread({
+    required String userId,
+    required String organizationId,
+  });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hr1_applicant_app/core/constants/app_text_styles.dart';
 import '../../../../core/constants/app_icons.dart';
 import '../../../../shared/widgets/organization_switcher.dart';
 import '../providers/organization_context_provider.dart';
@@ -25,8 +26,12 @@ class HomeScreen extends ConsumerWidget {
         // 企業切り替えはホーム（企業）タブのみ
         title: isCompanyTab
             ? const OrganizationSwitcher()
-            : Text(_tabTitles[navigationShell.currentIndex]),
-        centerTitle: !isCompanyTab,
+            : Text(
+                _tabTitles[navigationShell.currentIndex],
+                style: AppTextStyles.title2,
+              ),
+        // centerTitle: !isCompanyTab,
+        centerTitle: false,
         actions: currentOrg != null
             ? [
                 IconButton(

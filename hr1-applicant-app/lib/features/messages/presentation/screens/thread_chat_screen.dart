@@ -1,7 +1,5 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
@@ -9,6 +7,7 @@ import '../../../../shared/widgets/common_dialog.dart';
 import '../../../../shared/widgets/user_avatar.dart';
 import '../../../../shared/widgets/common_snackbar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/message_input_bar.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/message_thread.dart';
 import '../controllers/thread_chat_controller.dart';
@@ -26,31 +25,17 @@ class ThreadChatScreen extends ConsumerStatefulWidget {
 class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
-  RealtimeChannel? _channel;
-  RealtimeChannel? _presenceChannel;
-
-  // Typing indicator state
-  bool _otherUserTyping = false;
-  Timer? _typingDebounceTimer;
-  bool _iAmTyping = false;
-
-  // Edit state
-  String? _editingMessageId;
   final _editController = TextEditingController();
-  late final SupabaseClient _supabaseClient;
+  String? _editingMessageId;
 
   String get _currentUserId => ref.read(appUserProvider)?.id ?? '';
 
-  ThreadChatController get _chatController =>
-      ref.read(threadChatControllerProvider(widget.thread.id).notifier);
+  ({String threadId, String currentUserId}) get _controllerArg =>
+      (threadId: widget.thread.id, currentUserId: _currentUserId);
 
   @override
   void initState() {
     super.initState();
-    _supabaseClient = ref.read(supabaseClientProvider);
-    _chatController.loadMessages(_currentUserId);
-    _subscribeRealtime();
-    _setupPresence();
     _scrollController.addListener(_onScroll);
     _controller.addListener(_onTextChanged);
   }
@@ -60,200 +45,35 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     _controller.dispose();
     _editController.dispose();
     _scrollController.dispose();
-    _typingDebounceTimer?.cancel();
-    if (_channel != null) {
-      _supabaseClient.removeChannel(_channel!);
-    }
-    if (_presenceChannel != null) {
-      _supabaseClient.removeChannel(_presenceChannel!);
-    }
     super.dispose();
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels <=
-            _scrollController.position.minScrollExtent + 50 &&
-        !ref
-            .read(threadChatControllerProvider(widget.thread.id))
-            .isLoadingMore &&
-        ref.read(threadChatControllerProvider(widget.thread.id)).hasMore) {
-      _loadOlderMessages();
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 50) {
+      ref
+          .read(threadChatControllerProvider(_controllerArg).notifier)
+          .loadOlderMessages();
     }
   }
 
   void _onTextChanged() {
-    if (_controller.text.trim().isNotEmpty && !_iAmTyping) {
-      _iAmTyping = true;
-      _broadcastTyping(true);
-    }
-    _typingDebounceTimer?.cancel();
-    _typingDebounceTimer = Timer(const Duration(seconds: 2), () {
-      if (_iAmTyping) {
-        _iAmTyping = false;
-        _broadcastTyping(false);
-      }
-    });
-  }
-
-  void _broadcastTyping(bool isTyping) {
-    _presenceChannel?.track({'user_id': _currentUserId, 'typing': isTyping});
-  }
-
-  void _setupPresence() {
-    _presenceChannel = _supabaseClient
-        .channel('typing:${widget.thread.id}')
-        .onPresenceSync((payload) {
-          if (!mounted) return;
-          final presences = _presenceChannel?.presenceState();
-          if (presences == null) return;
-
-          bool otherTyping = false;
-          for (final state in presences) {
-            for (final presence in state.presences) {
-              if (presence.payload['user_id'] != _currentUserId &&
-                  presence.payload['typing'] == true) {
-                otherTyping = true;
-                break;
-              }
-            }
-            if (otherTyping) break;
-          }
-
-          if (_otherUserTyping != otherTyping) {
-            setState(() => _otherUserTyping = otherTyping);
-          }
-        })
-        .subscribe((status, [error]) async {
-          if (status == RealtimeSubscribeStatus.subscribed) {
-            await _presenceChannel?.track({
-              'user_id': _currentUserId,
-              'typing': false,
-            });
-          }
-        });
-  }
-
-  Future<void> _loadOlderMessages() async {
-    // スクロール位置を保持するために現在の位置を記録
-    final scrollBefore = _scrollController.position.maxScrollExtent;
-
-    await _chatController.loadOlderMessages();
-
-    if (mounted) {
-      // スクロール位置を復元
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          final scrollAfter = _scrollController.position.maxScrollExtent;
-          final diff = scrollAfter - scrollBefore;
-          _scrollController.jumpTo(_scrollController.offset + diff);
-        }
-      });
-    }
-  }
-
-  void _subscribeRealtime() {
-    _channel = _supabaseClient
-        .channel('messages:${widget.thread.id}')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'thread_id',
-            value: widget.thread.id,
-          ),
-          callback: (payload) async {
-            final newMsg = payload.newRecord;
-            if (newMsg.isEmpty) return;
-
-            final msg = await _chatController.buildMessageWithSender(newMsg);
-
-            if (mounted) {
-              _chatController.addRealtimeMessage(msg);
-              _scrollToBottom();
-
-              // 自分以外のメッセージを自動既読
-              if (msg.senderId != _currentUserId) {
-                _chatController.markAsRead(_currentUserId);
-              }
-            }
-          },
-        )
-        .onPostgresChanges(
-          event: PostgresChangeEvent.update,
-          schema: 'public',
-          table: 'messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'thread_id',
-            value: widget.thread.id,
-          ),
-          callback: (payload) async {
-            final updated = payload.newRecord;
-            if (updated.isEmpty) return;
-
-            final msg = await _chatController.buildMessageWithSender(updated);
-
-            if (mounted) {
-              _chatController.updateRealtimeMessage(msg);
-            }
-          },
-        )
-        .onPostgresChanges(
-          event: PostgresChangeEvent.delete,
-          schema: 'public',
-          table: 'messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'thread_id',
-            value: widget.thread.id,
-          ),
-          callback: (payload) {
-            final oldRecord = payload.oldRecord;
-            if (oldRecord.isEmpty) return;
-
-            final deletedId = oldRecord['id'] as String?;
-            if (deletedId == null) return;
-
-            if (mounted) {
-              _chatController.removeRealtimeMessage(deletedId);
-            }
-          },
-        )
-        .subscribe();
-  }
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
+    ref
+        .read(threadChatControllerProvider(_controllerArg).notifier)
+        .onTextChanged(_controller.text);
   }
 
   Future<void> _sendMessage() async {
     final content = _controller.text.trim();
-    if (content.isEmpty || content.length > 5000) return;
+    if (content.isEmpty) return;
 
     _controller.clear();
 
-    // タイピング状態をリセット
-    _iAmTyping = false;
-    _typingDebounceTimer?.cancel();
-    _broadcastTyping(false);
-
-    final success = await _chatController.sendMessage(
-      senderId: _currentUserId,
-      content: content,
-    );
+    final success = await ref
+        .read(threadChatControllerProvider(_controllerArg).notifier)
+        .sendMessage(content: content);
 
     if (!success && mounted) {
-      // 送信失敗時は入力内容を復元
       _controller.text = content;
       CommonSnackBar.error(context, 'メッセージの送信に失敗しました');
     }
@@ -312,12 +132,12 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
       return;
     }
 
-    final success = await _chatController.editMessage(message.id, newContent);
+    final success = await ref
+        .read(threadChatControllerProvider(_controllerArg).notifier)
+        .editMessage(message.id, newContent);
+
     if (success && mounted) {
-      setState(() {
-        _editingMessageId = null;
-        _editController.clear();
-      });
+      _cancelEditing();
     } else if (!success && mounted) {
       CommonSnackBar.error(context, 'メッセージの編集に失敗しました');
     }
@@ -333,7 +153,9 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     );
 
     if (confirmed) {
-      final success = await _chatController.deleteMessage(message.id);
+      final success = await ref
+          .read(threadChatControllerProvider(_controllerArg).notifier)
+          .deleteMessage(message.id);
       if (!success && mounted) {
         CommonSnackBar.error(context, 'メッセージの削除に失敗しました');
       }
@@ -342,180 +164,228 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final chatState = ref.watch(threadChatControllerProvider(widget.thread.id));
+    final chatState = ref.watch(threadChatControllerProvider(_controllerArg));
     final displayName = widget.thread.organizationName ?? '企業';
 
-    // エラー表示
     if (chatState.error != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           CommonSnackBar.error(context, chatState.error!);
-          _chatController.clearError();
+          ref
+              .read(threadChatControllerProvider(_controllerArg).notifier)
+              .clearError();
         }
       });
     }
 
-    // 初回読み込み完了時にスクロール
-    ref.listen(threadChatControllerProvider(widget.thread.id), (prev, next) {
-      if (prev?.isLoading == true &&
-          !next.isLoading &&
-          next.messages.isNotEmpty) {
-        _scrollToBottom();
-      }
-    });
-
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            Text(displayName, style: AppTextStyles.callout),
-            if (widget.thread.jobTitle != null)
-              Text(
-                widget.thread.jobTitle!,
-                style: AppTextStyles.caption2.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+            UserAvatar(
+              initial: displayName.isNotEmpty ? displayName[0] : '?',
+              color: AppColors.primaryLight,
+              size: 32,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(displayName, style: AppTextStyles.callout),
+                  if (widget.thread.jobTitle != null)
+                    Text(
+                      widget.thread.jobTitle!,
+                      style: AppTextStyles.caption2.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
               ),
+            ),
           ],
         ),
+        centerTitle: false,
         elevation: 0,
-        scrolledUnderElevation: 1,
+        scrolledUnderElevation: 0.5,
       ),
       body: Column(
         children: [
-          // メッセージ一覧
           Expanded(
             child: chatState.isLoading
                 ? const LoadingIndicator()
                 : chatState.messages.isEmpty
                 ? Center(
-                    child: Text(
-                      'メッセージはまだありません',
-                      style: AppTextStyles.body2.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        UserAvatar(
+                          initial: displayName.isNotEmpty
+                              ? displayName[0]
+                              : '?',
+                          color: AppColors.primaryLight,
+                          size: 64,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(displayName, style: AppTextStyles.callout),
+                        const SizedBox(height: 4),
+                        Text(
+                          'メッセージを送ってみましょう',
+                          style: AppTextStyles.caption1.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
                   )
                 : ListView.builder(
+                    reverse: true,
                     controller: _scrollController,
-                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.sm,
+                    ),
                     itemCount:
                         chatState.messages.length +
                         (chatState.isLoadingMore ? 1 : 0),
                     itemBuilder: (context, index) {
-                      // ローディングインジケータ（先頭）
-                      if (chatState.isLoadingMore && index == 0) {
+                      final messages = chatState.messages;
+
+                      if (chatState.isLoadingMore && index == messages.length) {
                         return const Padding(
                           padding: EdgeInsets.symmetric(
                             vertical: AppSpacing.md,
                           ),
-                          child: Center(
-                            child: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: LoadingIndicator(size: 24),
-                            ),
-                          ),
+                          child: Center(child: LoadingIndicator(size: 20)),
                         );
                       }
 
-                      final msgIndex = chatState.isLoadingMore
-                          ? index - 1
-                          : index;
-                      final msg = chatState.messages[msgIndex];
+                      final msgIndex = messages.length - 1 - index;
+                      final msg = messages[msgIndex];
                       final isMe = msg.senderId == _currentUserId;
                       final isEditing = _editingMessageId == msg.id;
 
-                      return GestureDetector(
-                        onLongPress: isMe
-                            ? () => _showMessageActions(msg)
-                            : null,
-                        child: _MessageBubble(
-                          message: msg,
-                          isMe: isMe,
-                          isEditing: isEditing,
-                          editController: _editController,
-                          onSaveEdit: () => _saveEdit(msg),
-                          onCancelEdit: _cancelEditing,
-                        ),
+                      // グルーピング判定
+                      final prevMsg = msgIndex > 0
+                          ? messages[msgIndex - 1]
+                          : null;
+                      final nextMsg = msgIndex < messages.length - 1
+                          ? messages[msgIndex + 1]
+                          : null;
+                      final isFirstInGroup =
+                          prevMsg == null ||
+                          prevMsg.senderId != msg.senderId ||
+                          msg.createdAt
+                                  .difference(prevMsg.createdAt)
+                                  .inMinutes >
+                              5;
+                      final isLastInGroup =
+                          nextMsg == null ||
+                          nextMsg.senderId != msg.senderId ||
+                          nextMsg.createdAt
+                                  .difference(msg.createdAt)
+                                  .inMinutes >
+                              5;
+
+                      Widget? dateSeparator;
+                      if (prevMsg == null ||
+                          prevMsg.createdAt.day != msg.createdAt.day ||
+                          prevMsg.createdAt.month != msg.createdAt.month ||
+                          prevMsg.createdAt.year != msg.createdAt.year) {
+                        dateSeparator = _DateSeparator(date: msg.createdAt);
+                      }
+
+                      return Column(
+                        children: [
+                          if (dateSeparator != null) dateSeparator,
+                          GestureDetector(
+                            onLongPress: isMe
+                                ? () => _showMessageActions(msg)
+                                : null,
+                            child: _MessageBubble(
+                              message: msg,
+                              isMe: isMe,
+                              isEditing: isEditing,
+                              editController: _editController,
+                              onSaveEdit: () => _saveEdit(msg),
+                              onCancelEdit: _cancelEditing,
+                              isFirstInGroup: isFirstInGroup,
+                              isLastInGroup: isLastInGroup,
+                            ),
+                          ),
+                        ],
                       );
                     },
                   ),
           ),
 
-          // タイピングインジケータ
-          if (_otherUserTyping)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.xs,
+          if (chatState.otherUserTyping)
+            Padding(
+              padding: const EdgeInsets.only(
+                left: AppSpacing.lg,
+                bottom: AppSpacing.xs,
               ),
-              alignment: Alignment.centerLeft,
               child: const _TypingIndicator(),
             ),
 
-          // 入力欄
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                top: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
-              ),
-            ),
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.sm,
-              AppSpacing.sm,
-              MediaQuery.of(context).padding.bottom + AppSpacing.sm,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(
-                      hintText: 'メッセージを入力...',
-                      hintStyle: AppTextStyles.body2.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.buttonRadius,
-                        ),
-                        borderSide: BorderSide(color: AppColors.border),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.sm,
-                      ),
-                      isDense: true,
-                    ),
-                    style: AppTextStyles.body2,
-                    maxLines: 4,
-                    minLines: 1,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _sendMessage(),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                IconButton(
-                  onPressed: chatState.isSending ? null : _sendMessage,
-                  icon: Icon(
-                    Icons.send_rounded,
-                    color: chatState.isSending
-                        ? AppColors.textSecondary
-                        : AppColors.primaryLight,
-                  ),
-                ),
-              ],
-            ),
+          MessageInputBar(
+            controller: _controller,
+            onSend: _sendMessage,
+            isSending: chatState.isSending,
           ),
         ],
       ),
     );
   }
 }
+
+// =============================================================================
+// Date Separator
+// =============================================================================
+
+class _DateSeparator extends StatelessWidget {
+  const _DateSeparator({required this.date});
+
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: Text(
+          _format(date.toLocal()),
+          style: AppTextStyles.caption2.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _format(DateTime dt) {
+    final now = DateTime.now();
+    if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
+      return '今日';
+    }
+    final yesterday = now.subtract(const Duration(days: 1));
+    if (dt.year == yesterday.year &&
+        dt.month == yesterday.month &&
+        dt.day == yesterday.day) {
+      return '昨日';
+    }
+    if (dt.year == now.year) {
+      return '${dt.month}月${dt.day}日';
+    }
+    return '${dt.year}年${dt.month}月${dt.day}日';
+  }
+}
+
+// =============================================================================
+// Message Bubble
+// =============================================================================
 
 class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
@@ -525,6 +395,8 @@ class _MessageBubble extends StatelessWidget {
     this.editController,
     this.onSaveEdit,
     this.onCancelEdit,
+    this.isFirstInGroup = true,
+    this.isLastInGroup = true,
   });
 
   final Message message;
@@ -533,11 +405,41 @@ class _MessageBubble extends StatelessWidget {
   final TextEditingController? editController;
   final VoidCallback? onSaveEdit;
   final VoidCallback? onCancelEdit;
+  final bool isFirstInGroup;
+  final bool isLastInGroup;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final bubbleColor = isMe
+        ? AppColors.primaryLight
+        : (isDark
+              ? theme.colorScheme.surfaceContainerHighest
+              : const Color(0xFFEFEFEF));
+    final textColor = isMe ? Colors.white : theme.colorScheme.onSurface;
+
+    final bottomPadding = isLastInGroup ? 12.0 : 2.0;
+
+    const r = Radius.circular(18);
+    const rSmall = Radius.circular(4);
+    final borderRadius = isMe
+        ? BorderRadius.only(
+            topLeft: r,
+            topRight: isFirstInGroup ? r : rSmall,
+            bottomLeft: r,
+            bottomRight: isLastInGroup ? r : rSmall,
+          )
+        : BorderRadius.only(
+            topLeft: isFirstInGroup ? r : rSmall,
+            topRight: r,
+            bottomLeft: isLastInGroup ? r : rSmall,
+            bottomRight: r,
+          );
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: EdgeInsets.only(bottom: bottomPadding),
       child: Row(
         mainAxisAlignment: isMe
             ? MainAxisAlignment.end
@@ -545,98 +447,70 @@ class _MessageBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
-            UserAvatar(
-              initial: (message.senderName ?? '?')[0],
-              color: AppColors.primaryLight,
-              size: 28,
-            ),
-            const SizedBox(width: AppSpacing.sm),
+            if (isLastInGroup)
+              UserAvatar(
+                initial: (message.senderName ?? '?')[0],
+                color: AppColors.primaryLight,
+                size: 24,
+              )
+            else
+              const SizedBox(width: 24),
+            const SizedBox(width: 8),
           ],
           Flexible(
-            child: Column(
-              crossAxisAlignment: isMe
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
-              children: [
-                if (!isMe)
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      left: AppSpacing.xs,
-                      bottom: 2,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.7,
+              ),
+              child: Column(
+                crossAxisAlignment: isMe
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
                     ),
-                    child: Text(
-                      message.senderName ?? '担当者',
-                      style: AppTextStyles.caption2.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                    decoration: BoxDecoration(
+                      color: isEditing
+                          ? bubbleColor.withValues(alpha: 0.7)
+                          : bubbleColor,
+                      borderRadius: borderRadius,
                     ),
-                  ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isEditing
-                        ? (isMe
-                              ? AppColors.primaryLight.withValues(alpha: 0.8)
-                              : Colors.white)
-                        : (isMe ? AppColors.primaryLight : Colors.white),
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(16),
-                      topRight: const Radius.circular(16),
-                      bottomLeft: Radius.circular(isMe ? 16 : 4),
-                      bottomRight: Radius.circular(isMe ? 4 : 16),
-                    ),
-                    boxShadow: isMe
-                        ? null
-                        : [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
+                    child: isEditing
+                        ? _buildEditingContent(context)
+                        : Text(
+                            message.content,
+                            style: AppTextStyles.body1.copyWith(
+                              color: textColor,
                             ),
-                          ],
-                  ),
-                  child: isEditing
-                      ? _buildEditingContent(context)
-                      : Text(
-                          message.content,
-                          style: AppTextStyles.body2.copyWith(
-                            color: isMe ? Colors.white : AppColors.textPrimary,
                           ),
-                        ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 2, left: 4, right: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}',
+                  ),
+                  if (isLastInGroup)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
+                      child: Text(
+                        _formatTime(message),
                         style: AppTextStyles.caption2.copyWith(
                           color: AppColors.textSecondary,
                         ),
                       ),
-                      if (message.isEdited) ...[
-                        const SizedBox(width: 4),
-                        Text(
-                          '(編集済み)',
-                          style: AppTextStyles.caption2.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
+                    ),
+                ],
+              ),
             ),
           ),
-          if (isMe) const SizedBox(width: AppSpacing.sm),
         ],
       ),
     );
+  }
+
+  String _formatTime(Message msg) {
+    final time =
+        '${msg.createdAt.hour.toString().padLeft(2, '0')}:${msg.createdAt.minute.toString().padLeft(2, '0')}';
+    if (msg.isEdited) return '$time · 編集済み';
+    return time;
   }
 
   Widget _buildEditingContent(BuildContext context) {
@@ -648,7 +522,7 @@ class _MessageBubble extends StatelessWidget {
           controller: editController,
           autofocus: true,
           maxLines: null,
-          style: AppTextStyles.body2.copyWith(
+          style: AppTextStyles.body1.copyWith(
             color: isMe ? Colors.white : AppColors.textPrimary,
           ),
           decoration: InputDecoration(
@@ -656,7 +530,7 @@ class _MessageBubble extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             border: InputBorder.none,
             hintText: 'メッセージを編集...',
-            hintStyle: AppTextStyles.body2.copyWith(
+            hintStyle: AppTextStyles.body1.copyWith(
               color: isMe
                   ? Colors.white.withValues(alpha: 0.6)
                   : AppColors.textSecondary,
@@ -697,7 +571,10 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
-/// タイピングインジケータ（アニメーション付きドット）
+// =============================================================================
+// Typing Indicator
+// =============================================================================
+
 class _TypingIndicator extends StatefulWidget {
   const _TypingIndicator();
 
@@ -705,36 +582,70 @@ class _TypingIndicator extends StatefulWidget {
   State<_TypingIndicator> createState() => _TypingIndicatorState();
 }
 
-class _TypingIndicatorState extends State<_TypingIndicator> {
-  int _dotCount = 0;
-  Timer? _timer;
+class _TypingIndicatorState extends State<_TypingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animController;
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 400), (_) {
-      if (mounted) {
-        setState(() => _dotCount = (_dotCount + 1) % 3);
-      }
-    });
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _animController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final dots = '.' * (_dotCount + 1);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text(
-          '入力中$dots',
-          style: AppTextStyles.caption2.copyWith(
-            color: AppColors.textSecondary,
+        const SizedBox(width: 32),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isDark
+                ? theme.colorScheme.surfaceContainerHighest
+                : const Color(0xFFEFEFEF),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: AnimatedBuilder(
+            animation: _animController,
+            builder: (context, _) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(3, (i) {
+                  final delay = i * 0.2;
+                  final t = (_animController.value - delay).clamp(0.0, 1.0);
+                  final scale = 0.5 + 0.5 * (1 - (2 * t - 1).abs());
+                  return Padding(
+                    padding: EdgeInsets.only(right: i < 2 ? 4 : 0),
+                    child: Transform.scale(
+                      scale: scale,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.4,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              );
+            },
           ),
         ),
       ],

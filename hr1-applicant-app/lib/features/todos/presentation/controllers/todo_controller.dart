@@ -57,6 +57,12 @@ class TodoListController extends AutoDisposeAsyncNotifier<List<Todo>> {
     _invalidateAll();
   }
 
+  /// やること更新
+  Future<void> updateTodo(Todo todo) async {
+    await _repo.updateTodo(todo);
+    _invalidateAll();
+  }
+
   /// やること削除
   Future<void> deleteTodo(String id) async {
     await _repo.deleteTodo(id);

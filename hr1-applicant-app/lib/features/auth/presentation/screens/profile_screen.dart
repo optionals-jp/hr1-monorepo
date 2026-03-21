@@ -9,6 +9,7 @@ import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/grouped_section.dart';
 import '../../../../shared/widgets/menu_row.dart';
 import '../../../../shared/widgets/user_avatar.dart';
+import '../controllers/auth_controller.dart';
 import '../providers/auth_providers.dart';
 
 /// マイページ画面 — Teams / Outlook 設定画面スタイル
@@ -76,6 +77,13 @@ class ProfileScreen extends ConsumerWidget {
           title: 'サポート',
           children: [
             MenuRow(
+              icon: Icon(Icons.support_agent_outlined),
+              title: 'サービスリクエスト',
+              subtitle: 'バグ報告・機能リクエスト',
+              showChevron: true,
+              onTap: () => context.push(AppRoutes.serviceRequests),
+            ),
+            MenuRow(
               icon: Icon(Icons.help_outline_rounded),
               title: 'ヘルプ',
               showChevron: true,
@@ -123,10 +131,11 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 );
                 if (confirmed != true) return;
-                await ref.read(authRepositoryProvider).signOut();
-                ref.read(appUserProvider.notifier).clearUser();
+                final success = await ref
+                    .read(authControllerProvider.notifier)
+                    .signOut();
                 if (!context.mounted) return;
-                GoRouter.of(context).go(AppRoutes.login);
+                if (success) GoRouter.of(context).go(AppRoutes.login);
               },
             ),
           ],
