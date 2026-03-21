@@ -84,7 +84,11 @@ class SupabaseMessagesRepository implements MessagesRepository {
   }) async {
     final response = await _client
         .from('messages')
-        .insert({'thread_id': threadId, 'content': content})
+        .insert({
+          'thread_id': threadId,
+          'sender_id': senderId,
+          'content': content,
+        })
         .select('*, sender:sender_id(id, display_name, role)')
         .single();
 

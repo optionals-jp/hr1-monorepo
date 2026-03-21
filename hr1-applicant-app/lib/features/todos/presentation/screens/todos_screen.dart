@@ -11,6 +11,7 @@ import 'package:hr1_applicant_app/shared/widgets/common_sheet.dart';
 import 'package:hr1_applicant_app/shared/widgets/common_snackbar.dart';
 import 'package:hr1_applicant_app/shared/widgets/loading_indicator.dart';
 import 'package:hr1_applicant_app/shared/widgets/common_date_picker.dart';
+import 'package:hr1_applicant_app/shared/widgets/common_dialog.dart';
 import 'package:hr1_applicant_app/shared/widgets/error_state.dart';
 import '../../domain/entities/todo.dart';
 import '../controllers/todo_controller.dart';
@@ -53,6 +54,27 @@ class TodosScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _handleToggleComplete(
+    BuildContext context,
+    TodoListController controller,
+    Todo todo,
+  ) async {
+    // サーベイ紐付きTODOを未完了→完了にする場合は確認ダイアログ
+    if (todo.source == TodoSource.survey && !todo.isCompleted) {
+      final confirmed = await CommonDialog.confirm(
+        context: context,
+        title: 'サーベイが未回答です',
+        message:
+            'このやることはサーベイに紐付いています。'
+            'サーベイに回答すると自動で完了になります。\n\n'
+            'それでも完了にしますか？',
+        confirmLabel: '完了にする',
+      );
+      if (!confirmed) return;
+    }
+    await controller.toggleComplete(todo.id, todo.isCompleted);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(todoFilterProvider);
@@ -90,10 +112,8 @@ class TodosScreen extends ConsumerWidget {
                     for (final todo in incomplete)
                       _TodoItem(
                         todo: todo,
-                        onToggleComplete: () => controller.toggleComplete(
-                          todo.id,
-                          todo.isCompleted,
-                        ),
+                        onToggleComplete: () =>
+                            _handleToggleComplete(context, controller, todo),
                         onToggleImportant: () => controller.toggleImportant(
                           todo.id,
                           todo.isImportant,
@@ -106,10 +126,8 @@ class TodosScreen extends ConsumerWidget {
                     if (completed.isNotEmpty)
                       _CompletedSection(
                         todos: completed,
-                        onToggleComplete: (todo) => controller.toggleComplete(
-                          todo.id,
-                          todo.isCompleted,
-                        ),
+                        onToggleComplete: (todo) =>
+                            _handleToggleComplete(context, controller, todo),
                         onTap: (todo) => _onTodoTap(context, todo),
                       ),
                   ],

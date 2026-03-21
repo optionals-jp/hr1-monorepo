@@ -36,8 +36,8 @@ class MessageInputBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
           color: theme.brightness == Brightness.dark
-              ? theme.colorScheme.surfaceContainerHighest
-              : const Color(0xFFEFEFEF),
+              ? AppColors.darkSurfaceTertiary
+              : AppColors.surfaceTertiary,
           borderRadius: BorderRadius.circular(9999),
         ),
         child: Row(

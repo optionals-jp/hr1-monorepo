@@ -40,6 +40,9 @@ class AppColors {
   /// colorNeutralBackground2 — セカンダリサーフェス
   static const Color lightSurfaceSecondary = Color(0xFFFAFAFA);
 
+  /// colorNeutralBackground3 — ターシャリサーフェス（入力欄背景・受信バブル等）
+  static const Color lightSurfaceTertiary = Color(0xFFEFEFEF);
+
   /// colorNeutralForeground1 — プライマリテキスト
   static const Color lightTextPrimary = Color(0xFF242424);
 
@@ -67,6 +70,9 @@ class AppColors {
 
   /// colorNeutralBackground2 — セカンダリサーフェス
   static const Color darkSurfaceSecondary = Color(0xFF1F1F1F);
+
+  /// colorNeutralBackground3 — ターシャリサーフェス
+  static const Color darkSurfaceTertiary = Color(0xFF3A3A3A);
 
   /// colorNeutralForeground1 — プライマリテキスト
   static const Color darkTextPrimary = Color(0xFFFFFFFF);
@@ -106,6 +112,12 @@ class AppColors {
   /// ディバイダー
   static Color divider(Brightness brightness) =>
       brightness == Brightness.dark ? darkDivider : lightDivider;
+
+  /// ターシャリサーフェス（入力欄背景・受信バブル等）
+  static Color surfaceTertiary(Brightness brightness) =>
+      brightness == Brightness.dark
+          ? darkSurfaceTertiary
+          : lightSurfaceTertiary;
 
   // ---------------------------------------------------------------------------
   // MaterialColor（互換用）

@@ -9,15 +9,23 @@ class SupabaseMessagesRepository implements MessagesRepository {
   final SupabaseClient _client;
 
   @override
-  Future<List<MessageThread>> getThreads(String userId) async {
-    // スレッドと最新メッセージを1回のクエリで取得
-    final response = await _client
+  Future<List<MessageThread>> getThreads(
+    String userId, {
+    String? organizationId,
+  }) async {
+    var query = _client
         .from('message_threads')
         .select(
           '*, organizations:organization_id(name), '
           'messages(*, sender:sender_id(id, display_name, role))',
         )
-        .eq('participant_id', userId)
+        .eq('participant_id', userId);
+
+    if (organizationId != null) {
+      query = query.eq('organization_id', organizationId);
+    }
+
+    final response = await query
         .order('updated_at', ascending: false)
         .order('created_at', referencedTable: 'messages', ascending: false)
         .limit(1, referencedTable: 'messages');
@@ -109,7 +117,11 @@ class SupabaseMessagesRepository implements MessagesRepository {
   }) async {
     final response = await _client
         .from('messages')
-        .insert({'thread_id': threadId, 'content': content})
+        .insert({
+          'thread_id': threadId,
+          'sender_id': senderId,
+          'content': content,
+        })
         .select('*, sender:sender_id(id, display_name, role)')
         .single();
 

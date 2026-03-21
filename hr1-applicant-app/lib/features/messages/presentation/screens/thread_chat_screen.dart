@@ -95,10 +95,10 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              leading: Icon(Icons.delete_outline, color: AppColors.error),
               title: Text(
                 '削除',
-                style: AppTextStyles.body2.copyWith(color: Colors.red),
+                style: AppTextStyles.body2.copyWith(color: AppColors.error),
               ),
               onTap: () {
                 Navigator.pop(context);
@@ -415,9 +415,7 @@ class _MessageBubble extends StatelessWidget {
 
     final bubbleColor = isMe
         ? AppColors.primaryLight
-        : (isDark
-              ? theme.colorScheme.surfaceContainerHighest
-              : const Color(0xFFEFEFEF));
+        : (isDark ? AppColors.darkSurfaceTertiary : AppColors.surfaceTertiary);
     final textColor = isMe ? Colors.white : theme.colorScheme.onSurface;
 
     final bottomPadding = isLastInGroup ? 12.0 : 2.0;
@@ -614,8 +612,8 @@ class _TypingIndicatorState extends State<_TypingIndicator>
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: isDark
-                ? theme.colorScheme.surfaceContainerHighest
-                : const Color(0xFFEFEFEF),
+                ? AppColors.darkSurfaceTertiary
+                : AppColors.surfaceTertiary,
             borderRadius: BorderRadius.circular(18),
           ),
           child: AnimatedBuilder(

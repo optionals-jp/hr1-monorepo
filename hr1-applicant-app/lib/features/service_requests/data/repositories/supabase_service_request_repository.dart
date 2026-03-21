@@ -13,7 +13,8 @@ class SupabaseServiceRequestRepository {
         .from('service_requests')
         .select()
         .eq('user_id', userId)
-        .order('created_at', ascending: false);
+        .order('created_at', ascending: false)
+        .limit(100);
 
     return (response as List)
         .map((e) => ServiceRequest.fromJson(e as Map<String, dynamic>))

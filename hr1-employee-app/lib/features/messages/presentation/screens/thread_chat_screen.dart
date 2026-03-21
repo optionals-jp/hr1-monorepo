@@ -439,7 +439,6 @@ class _TypingIndicatorState extends State<_TypingIndicator>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -448,9 +447,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: isDark
-                ? theme.colorScheme.surfaceContainerHighest
-                : const Color(0xFFEFEFEF),
+            color: AppColors.surfaceTertiary(theme.brightness),
             borderRadius: BorderRadius.circular(18),
           ),
           child: AnimatedBuilder(
@@ -600,14 +597,11 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     // バブルカラー
     final bubbleColor = isMe
         ? AppColors.brandPrimary
-        : (isDark
-              ? theme.colorScheme.surfaceContainerHighest
-              : const Color(0xFFEFEFEF));
+        : AppColors.surfaceTertiary(theme.brightness);
     final textColor = isMe ? Colors.white : theme.colorScheme.onSurface;
 
     // グループ内のスペーシング

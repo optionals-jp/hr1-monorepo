@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icons.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../screens/search_screen.dart';
@@ -40,9 +41,7 @@ class SearchBox extends StatelessWidget {
     final box = Container(
       height: 40,
       decoration: BoxDecoration(
-        color: theme.brightness == Brightness.dark
-            ? theme.colorScheme.surfaceContainerHighest
-            : const Color(0xFFEFEFEF),
+        color: AppColors.surfaceTertiary(theme.brightness),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(

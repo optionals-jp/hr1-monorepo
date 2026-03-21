@@ -61,28 +61,19 @@ class CommonCard extends StatelessWidget {
       child: child,
     );
 
-    if (margin != null || onTap == null) {
-      final wrapped = Padding(
-        padding:
-            margin ??
-            const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenHorizontal,
-              vertical: 4,
-            ),
-        child: card,
-      );
-      if (onTap != null) {
-        return GestureDetector(onTap: onTap, child: wrapped);
-      }
-      return wrapped;
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenHorizontal,
-        vertical: 4,
-      ),
-      child: GestureDetector(onTap: onTap, child: card),
+    final wrapped = Padding(
+      padding:
+          margin ??
+          const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenHorizontal,
+            vertical: 4,
+          ),
+      child: card,
     );
+
+    if (onTap != null) {
+      return GestureDetector(onTap: onTap, child: wrapped);
+    }
+    return wrapped;
   }
 }

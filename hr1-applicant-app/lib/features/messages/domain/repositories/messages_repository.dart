@@ -3,7 +3,10 @@ import '../entities/message_thread.dart';
 /// メッセージリポジトリインターフェース
 abstract class MessagesRepository {
   /// ユーザーのスレッド一覧を取得
-  Future<List<MessageThread>> getThreads(String userId);
+  Future<List<MessageThread>> getThreads(
+    String userId, {
+    String? organizationId,
+  });
 
   /// スレッドのメッセージ一覧を取得
   Future<List<Message>> getMessages(String threadId);

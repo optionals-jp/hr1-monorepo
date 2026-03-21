@@ -137,9 +137,7 @@ class CommonDialog {
               ),
               suffixText: suffixText,
               filled: true,
-              fillColor: theme.brightness == Brightness.dark
-                  ? theme.colorScheme.surfaceContainerHighest
-                  : const Color(0xFFEFEFEF),
+              fillColor: AppColors.surfaceTertiary(theme.brightness),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
