@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hr1_applicant_app/features/auth/data/repositories/profile_repository.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/entities/app_user.dart';
@@ -45,6 +46,11 @@ class AppUserNotifier extends StateNotifier<AppUser?> {
 final userOrganizationsProvider = Provider<List<Organization>>((ref) {
   final user = ref.watch(appUserProvider);
   return user?.organizations ?? [];
+});
+
+/// プロフィールリポジトリプロバイダー
+final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
+  return ProfileRepository(ref.watch(supabaseClientProvider));
 });
 
 /// 認証状態を監視するプロバイダー

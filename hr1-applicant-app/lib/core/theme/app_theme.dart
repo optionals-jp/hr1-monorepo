@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
 
 /// HR1 応募者アプリテーマ定義
@@ -99,9 +100,7 @@ class AppTheme {
           backgroundColor: AppColors.primaryLight,
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 48),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.radius80),
           elevation: 0,
           textStyle: GoogleFonts.notoSansJp(
             fontSize: 15,
@@ -119,9 +118,7 @@ class AppTheme {
             color: (isDark ? AppColors.primaryLight : AppColors.primary)
                 .withValues(alpha: 0.3),
           ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.radius80),
           textStyle: GoogleFonts.notoSansJp(
             fontSize: 15,
             fontWeight: FontWeight.w600,
@@ -149,22 +146,22 @@ class AppTheme {
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+          borderRadius: AppRadius.radius80,
           borderSide: BorderSide(color: border, width: 0.5),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+          borderRadius: AppRadius.radius80,
           borderSide: BorderSide(color: border, width: 0.5),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+          borderRadius: AppRadius.radius80,
           borderSide: const BorderSide(
             color: AppColors.primaryLight,
             width: 1.5,
           ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+          borderRadius: AppRadius.radius80,
           borderSide: const BorderSide(color: AppColors.error, width: 0.5),
         ),
         labelStyle: GoogleFonts.notoSansJp(fontSize: 14, color: textSecondary),
@@ -180,7 +177,7 @@ class AppTheme {
         elevation: isDark ? 0 : 1,
         shadowColor: Colors.black.withValues(alpha: 0.08),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+          borderRadius: AppRadius.radius120,
           side: isDark
               ? BorderSide(color: border.withValues(alpha: 0.3), width: 0.5)
               : BorderSide.none,
@@ -215,14 +212,12 @@ class AppTheme {
       // SnackBar テーマ
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.radius80),
       ),
 
       // Dialog テーマ
       dialogTheme: DialogThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.radius160),
         titleTextStyle: GoogleFonts.notoSansJp(
           fontSize: 17,
           fontWeight: FontWeight.w600,
@@ -233,8 +228,10 @@ class AppTheme {
       // BottomSheet テーマ
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: surface,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.cornerRadius160),
+          ),
         ),
       ),
 

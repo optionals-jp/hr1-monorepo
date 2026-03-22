@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
@@ -130,7 +128,7 @@ class _SurveyListScreenState extends ConsumerState<SurveyListScreen>
         color: AppColors.success,
       );
     case 'multiple_choice':
-      return (icon: Icons.checklist_rounded, color: const Color(0xFF8764B8));
+      return (icon: Icons.checklist_rounded, color: AppColors.purple);
     default:
       return (icon: Icons.poll_outlined, color: AppColors.brandPrimary);
   }
@@ -158,7 +156,6 @@ class _SurveyList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     if (surveys.isEmpty) {
       return Center(

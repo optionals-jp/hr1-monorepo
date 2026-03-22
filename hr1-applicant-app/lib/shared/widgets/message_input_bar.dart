@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_icons.dart';
-import '../../core/constants/app_spacing.dart';
-import '../../core/constants/app_text_styles.dart';
+import '../../core/constants/constants.dart';
 
 /// メッセージ入力バー
 class MessageInputBar extends StatelessWidget {
@@ -38,7 +35,7 @@ class MessageInputBar extends StatelessWidget {
           color: theme.brightness == Brightness.dark
               ? AppColors.darkSurfaceTertiary
               : AppColors.surfaceTertiary,
-          borderRadius: BorderRadius.circular(9999),
+          borderRadius: AppRadius.radiusCircular,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,

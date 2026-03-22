@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_text_styles.dart';
+import '../../core/constants/constants.dart';
 
 /// 共通 SnackBar ユーティリティ
 ///
@@ -156,7 +155,7 @@ class _AnimatedSnackBarState extends State<_AnimatedSnackBar>
           );
         },
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: AppRadius.radiusCircular,
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
@@ -167,7 +166,7 @@ class _AnimatedSnackBarState extends State<_AnimatedSnackBar>
                     (isDark
                         ? Colors.white.withValues(alpha: 0.15)
                         : Colors.black.withValues(alpha: 0.7)),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.radius120,
                 border: Border.all(
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.1)

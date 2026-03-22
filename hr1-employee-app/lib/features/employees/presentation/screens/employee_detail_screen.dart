@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_icons.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/user_avatar.dart';
@@ -799,10 +796,9 @@ class _WorkStatusBadge extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             label,
-            style: AppTextStyles.caption1.copyWith(
+            style: AppTextStyles.caption2.copyWith(
               color: color,
               fontWeight: FontWeight.w600,
-              fontSize: 11,
             ),
           ),
         ],

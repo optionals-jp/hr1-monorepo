@@ -4,12 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
-import '../../../../shared/widgets/common_button.dart';
-import '../../../../shared/widgets/common_dialog.dart';
-import '../../../../shared/widgets/common_snackbar.dart';
+import '../../../../core/constants/constants.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../domain/entities/pulse_survey.dart';
 import '../controllers/survey_answer_controller.dart';
 
@@ -215,7 +211,7 @@ class _QuestionWidget extends StatelessWidget {
                 color: isSelected
                     ? AppColors.primaryLight.withValues(alpha: 0.15)
                     : theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.radius80,
                 border: Border.all(
                   color: isSelected
                       ? AppColors.primaryLight

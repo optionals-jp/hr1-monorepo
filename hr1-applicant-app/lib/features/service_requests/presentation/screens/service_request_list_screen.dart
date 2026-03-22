@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/grouped_section.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
-import '../../../../shared/widgets/menu_row.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../domain/entities/service_request.dart';
 import '../providers/service_request_providers.dart';
 

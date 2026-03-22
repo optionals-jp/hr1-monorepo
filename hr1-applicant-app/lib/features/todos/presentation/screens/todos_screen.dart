@@ -3,16 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/router/app_router.dart';
-import 'package:hr1_applicant_app/core/constants/app_colors.dart';
-import 'package:hr1_applicant_app/core/constants/app_spacing.dart';
-import 'package:hr1_applicant_app/core/constants/app_text_styles.dart';
-import 'package:hr1_applicant_app/shared/widgets/common_button.dart';
-import 'package:hr1_applicant_app/shared/widgets/common_sheet.dart';
-import 'package:hr1_applicant_app/shared/widgets/common_snackbar.dart';
-import 'package:hr1_applicant_app/shared/widgets/loading_indicator.dart';
-import 'package:hr1_applicant_app/shared/widgets/common_date_picker.dart';
-import 'package:hr1_applicant_app/shared/widgets/common_dialog.dart';
-import 'package:hr1_applicant_app/shared/widgets/error_state.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 import '../../domain/entities/todo.dart';
 import '../controllers/todo_controller.dart';
 import '../providers/todo_providers.dart';
@@ -180,10 +172,10 @@ class _FilterTabs extends StatelessWidget {
               color: isActive
                   ? color.withValues(alpha: 0.12)
                   : theme.colorScheme.onSurface.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: AppRadius.radiusCircular,
               child: InkWell(
                 onTap: () => onSelected(f),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: AppRadius.radiusCircular,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
@@ -399,7 +391,7 @@ class _MetadataRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
           decoration: BoxDecoration(
             color: _sourceColor(todo.source).withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: AppRadius.radius40,
           ),
           child: Text(
             todo.source.label,
@@ -565,7 +557,7 @@ class _AddTodoButton extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppRadius.radius80,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Row(
@@ -743,14 +735,14 @@ class _OptionChip extends StatelessWidget {
     final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppRadius.radius80,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isActive
               ? activeColor.withValues(alpha: 0.1)
               : theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppRadius.radius80,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

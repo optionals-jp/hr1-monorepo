@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_icons.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import 'package:hr1_employee_app/core/utils/date_formatter.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
@@ -178,7 +176,9 @@ class _ThreadTile extends StatelessWidget {
                       if (thread.latestMessage != null) ...[
                         const SizedBox(width: AppSpacing.sm),
                         Text(
-                          _formatDate(thread.latestMessage!.createdAt),
+                          DateFormatter.toMessageDate(
+                            thread.latestMessage!.createdAt,
+                          ),
                           style: AppTextStyles.body2.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.45,
@@ -236,16 +236,5 @@ class _ThreadTile extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-    if (diff.inDays == 0) {
-      return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-    }
-    if (diff.inDays == 1) return '昨日';
-    if (diff.inDays < 7) return '${diff.inDays}日前';
-    return '${date.month}/${date.day}';
   }
 }

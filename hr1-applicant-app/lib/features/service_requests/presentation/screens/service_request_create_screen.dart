@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
-import '../../../../shared/widgets/common_button.dart';
-import '../../../../shared/widgets/common_snackbar.dart';
+import '../../../../core/constants/constants.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/service_request.dart';
 import '../controllers/service_request_controller.dart';

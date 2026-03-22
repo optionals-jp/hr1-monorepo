@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/common_button.dart';
-import '../../../../shared/widgets/common_dialog.dart';
-import '../../../../shared/widgets/common_snackbar.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/providers/organization_context_provider.dart';
 import '../../../company/presentation/widgets/section_renderers.dart';
@@ -108,7 +103,7 @@ class _SelectionFlowCard extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        borderRadius: AppRadius.radius120,
         border: Border.all(color: theme.dividerColor),
       ),
       child: Column(
@@ -167,7 +162,7 @@ class _SelectionFlowCard extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: theme.colorScheme.onSurfaceVariant
                                   .withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: AppRadius.radius40,
                             ),
                             child: Text(
                               '外部',
@@ -271,7 +266,7 @@ class _HeaderTag extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadius.radius40,
       ),
       child: Text(
         text,
@@ -310,13 +305,7 @@ class _ApplyBar extends ConsumerWidget {
       ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
+        boxShadow: AppShadows.shadow4,
       ),
       child: CommonButton(
         onPressed: alreadyApplied ? null : () => _showApplyDialog(context, ref),

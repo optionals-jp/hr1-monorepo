@@ -2,14 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/utils/date_formatter.dart';
-import '../../../../core/constants/app_text_styles.dart';
-import '../../../../shared/widgets/common_button.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
-import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/org_icon.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../../../core/router/app_router.dart';
 import '../../domain/entities/application.dart';
 import '../../domain/entities/application_status.dart';
@@ -197,10 +192,7 @@ class _Header extends StatelessWidget {
               const SizedBox(height: 14),
               Row(
                 children: [
-                  _StatusChip(
-                    label: application.currentStepLabel,
-                    color: color,
-                  ),
+                  StatusChip(label: application.currentStepLabel, color: color),
                   const SizedBox(width: 12),
                   Text(
                     '応募日 ${DateFormatter.toShortDate(application.appliedAt)}',
@@ -212,30 +204,6 @@ class _Header extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.label, required this.color});
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.caption2.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -375,7 +343,7 @@ class _StepCard extends StatelessWidget {
                 color: step.status == StepStatus.inProgress
                     ? AppColors.primaryLight.withValues(alpha: 0.05)
                     : theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.radius120,
                 border: Border.all(
                   color: step.status == StepStatus.inProgress
                       ? AppColors.primaryLight.withValues(alpha: 0.2)
@@ -410,7 +378,7 @@ class _StepCard extends StatelessWidget {
                             color: AppColors.textSecondary.withValues(
                               alpha: 0.1,
                             ),
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: AppRadius.radius40,
                           ),
                           child: Text(
                             '外部',

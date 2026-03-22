@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_spacing.dart';
-import '../../core/constants/app_text_styles.dart';
+import '../../core/constants/constants.dart';
 import '../../core/router/app_router.dart';
 import '../../features/employees/domain/entities/employee_contact.dart';
 import '../widgets/search_box.dart';
@@ -134,7 +132,7 @@ class _SearchScreenState extends State<SearchScreen> {
         initial: '鈴',
         position: '主任',
         department: '開発部',
-        color: Color(0xFF8764B8),
+        color: AppColors.purple,
         email: 'suzuki@example.com',
         workStatus: WorkStatus.working,
       ),
@@ -237,12 +235,11 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       Text(
                         '${contact.department} ${contact.position}',
-                        style: AppTextStyles.caption1.copyWith(
+                        style: AppTextStyles.caption2.copyWith(
                           fontWeight: FontWeight.w500,
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.5,
                           ),
-                          fontSize: 10,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

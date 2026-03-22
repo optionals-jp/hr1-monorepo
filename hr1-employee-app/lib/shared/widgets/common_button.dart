@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../core/constants/app_colors.dart';
+import '../../core/constants/constants.dart';
 
 /// 共通ボタンコンポーネント — Fluent 2 iOS スタイル
 ///

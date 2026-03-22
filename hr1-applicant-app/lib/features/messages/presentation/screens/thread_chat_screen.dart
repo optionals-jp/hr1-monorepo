@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
-import '../../../../shared/widgets/common_dialog.dart';
-import '../../../../shared/widgets/user_avatar.dart';
-import '../../../../shared/widgets/common_snackbar.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
-import '../../../../shared/widgets/message_input_bar.dart';
+import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
+import '../../../../core/constants/constants.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/message_thread.dart';
 import '../controllers/thread_chat_controller.dart';
@@ -356,30 +351,13 @@ class _DateSeparator extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Center(
         child: Text(
-          _format(date.toLocal()),
+          DateFormatter.toRelativeDate(date),
           style: AppTextStyles.caption2.copyWith(
             color: AppColors.textSecondary,
           ),
         ),
       ),
     );
-  }
-
-  String _format(DateTime dt) {
-    final now = DateTime.now();
-    if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
-      return '今日';
-    }
-    final yesterday = now.subtract(const Duration(days: 1));
-    if (dt.year == yesterday.year &&
-        dt.month == yesterday.month &&
-        dt.day == yesterday.day) {
-      return '昨日';
-    }
-    if (dt.year == now.year) {
-      return '${dt.month}月${dt.day}日';
-    }
-    return '${dt.year}年${dt.month}月${dt.day}日';
   }
 }
 
@@ -614,7 +592,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
             color: isDark
                 ? AppColors.darkSurfaceTertiary
                 : AppColors.surfaceTertiary,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: AppRadius.radius160,
           ),
           child: AnimatedBuilder(
             animation: _animController,

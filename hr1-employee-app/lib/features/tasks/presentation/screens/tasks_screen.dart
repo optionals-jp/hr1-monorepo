@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_icons.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/org_icon.dart';
 import '../../../../shared/widgets/user_avatar.dart';
@@ -202,10 +199,7 @@ class _FilterTabs extends StatelessWidget {
         children: TaskFilter.values.map((f) {
           final isActive = f == selected;
           final (icon, color) = switch (f) {
-            TaskFilter.myDay => (
-              Icons.wb_sunny_outlined,
-              const Color(0xFFE8912D),
-            ),
+            TaskFilter.myDay => (Icons.wb_sunny_outlined, AppColors.sunOrange),
             TaskFilter.important => (
               Icons.star_outline_rounded,
               AppColors.error,
@@ -300,7 +294,7 @@ class _FilterHeader extends StatelessWidget {
               child: Icon(
                 Icons.wb_sunny_rounded,
                 size: 24,
-                color: const Color(0xFFE8912D),
+                color: AppColors.sunOrange,
               ),
             ),
           Column(

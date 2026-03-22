@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_icons.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
 import '../../domain/entities/attendance_record.dart';
 import '../controllers/attendance_controller.dart';
 import '../../../../shared/widgets/common_snackbar.dart';
@@ -197,7 +194,6 @@ class _TimeStatusHero extends StatelessWidget {
         Text(
           timeFormat.format(now),
           style: AppTextStyles.display.copyWith(
-            fontSize: 52,
             fontWeight: FontWeight.w200,
             color: theme.colorScheme.onSurface,
           ),
@@ -595,8 +591,7 @@ class _TimelineItem extends StatelessWidget {
                 child: Text.rich(
                   _punchDescription(
                     punch,
-                    AppTextStyles.body2.copyWith(
-                      fontSize: 14,
+                    AppTextStyles.footnote.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),

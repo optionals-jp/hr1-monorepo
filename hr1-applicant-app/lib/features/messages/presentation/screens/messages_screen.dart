@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
-import '../../../../shared/widgets/org_icon.dart';
+import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../domain/entities/message_thread.dart';
 import '../providers/message_threads_realtime_provider.dart';
 import '../providers/messages_providers.dart';
@@ -117,29 +114,17 @@ class _ThreadTile extends StatelessWidget {
         children: [
           if (thread.latestMessage != null)
             Text(
-              _formatDate(thread.latestMessage!.createdAt),
+              DateFormatter.toMessageDate(thread.latestMessage!.createdAt),
               style: AppTextStyles.caption2.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
           if (hasUnread) ...[
             const SizedBox(height: 4),
-            Container(
-              width: 20,
-              height: 20,
-              decoration: const BoxDecoration(
-                color: AppColors.primaryLight,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  '${thread.unreadCount}',
-                  style: AppTextStyles.caption2.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+            CountBadge(
+              count: thread.unreadCount,
+              color: AppColors.primaryLight,
+              size: 20,
             ),
           ],
         ],
@@ -149,19 +134,5 @@ class _ThreadTile extends StatelessWidget {
         extra: thread,
       ),
     );
-  }
-
-  String _formatDate(DateTime dt) {
-    final now = DateTime.now();
-    final local = dt.toLocal();
-    if (local.year == now.year &&
-        local.month == now.month &&
-        local.day == now.day) {
-      return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
-    }
-    if (local.year == now.year) {
-      return '${local.month}/${local.day}';
-    }
-    return '${local.year}/${local.month}/${local.day}';
   }
 }

@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_icons.dart';
-import '../../../../core/constants/app_text_styles.dart';
-import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/grouped_section.dart';
-import '../../../../shared/widgets/menu_row.dart';
-import '../../../../shared/widgets/user_avatar.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../controllers/auth_controller.dart';
 import '../providers/auth_providers.dart';
 
@@ -49,9 +44,7 @@ class ProfileScreen extends ConsumerWidget {
               icon: AppIcons.user(),
               title: 'プロフィール編集',
               showChevron: true,
-              onTap: () {
-                // TODO: プロフィール編集
-              },
+              onTap: () => context.push(AppRoutes.profileEdit),
             ),
             MenuRow(
               icon: AppIcons.notification(),

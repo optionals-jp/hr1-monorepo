@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_text_styles.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
 
 /// Fluent 2 iOS Chip のカラーバリアント
 enum FluentChipColor { brand, danger, severe, warning, success, neutral }
@@ -79,7 +79,7 @@ class FluentChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: colors.background,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.radius80,
         border: colors.border != null
             ? Border.all(color: colors.border!, width: 1)
             : null,

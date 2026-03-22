@@ -27,6 +27,12 @@ class AppColors {
   /// エラー（Fluent 2 Danger）
   static const Color error = Color(0xFFB10E1C);
 
+  /// サーベイ・研修用パープル
+  static const Color purple = Color(0xFF8764B8);
+
+  /// My Day / サンアイコン用オレンジ
+  static const Color sunOrange = Color(0xFFE8912D);
+
   // ---------------------------------------------------------------------------
   // ライトモード — Fluent 2 webLightTheme 準拠
   // ---------------------------------------------------------------------------
@@ -116,8 +122,8 @@ class AppColors {
   /// ターシャリサーフェス（入力欄背景・受信バブル等）
   static Color surfaceTertiary(Brightness brightness) =>
       brightness == Brightness.dark
-          ? darkSurfaceTertiary
-          : lightSurfaceTertiary;
+      ? darkSurfaceTertiary
+      : lightSurfaceTertiary;
 
   // ---------------------------------------------------------------------------
   // MaterialColor（互換用）

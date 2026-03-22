@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
-import '../../../../shared/widgets/common_button.dart';
-import '../../../../shared/widgets/common_dialog.dart';
-import '../../../../shared/widgets/common_snackbar.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../core/constants/constants.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../domain/entities/interview.dart';
 import '../../domain/entities/interview_slot.dart';
 import '../controllers/interview_controller.dart';
@@ -166,7 +161,7 @@ class _InterviewInfoCard extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: AppColors.primaryLight.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        borderRadius: AppRadius.radius120,
         border: Border.all(
           color: AppColors.primaryLight.withValues(alpha: 0.2),
         ),
@@ -228,14 +223,14 @@ class _SlotCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+      borderRadius: AppRadius.radius120,
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.cardPadding),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primaryLight.withValues(alpha: 0.08)
               : theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+          borderRadius: AppRadius.radius120,
           border: Border.all(
             color: isSelected ? AppColors.primaryLight : theme.dividerColor,
             width: isSelected ? 2 : 1,

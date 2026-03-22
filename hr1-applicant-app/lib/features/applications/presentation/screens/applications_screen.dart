@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/common_card.dart';
-import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
-import '../../../../shared/widgets/org_icon.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../../auth/presentation/providers/organization_context_provider.dart';
 import '../../domain/entities/application.dart';
 import '../../domain/entities/application_status.dart';
@@ -212,7 +208,7 @@ class _SectionHeader extends StatelessWidget {
             height: 16,
             decoration: BoxDecoration(
               color: color,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: AppRadius.radius40,
             ),
           ),
           const SizedBox(width: 8),
@@ -222,7 +218,7 @@ class _SectionHeader extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppRadius.radius80,
             ),
             child: Text(
               '$count',
@@ -300,7 +296,7 @@ class _ApplicationCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              _StatusChip(
+              StatusChip(
                 label: application.currentStepLabel,
                 color: statusColor,
               ),
@@ -315,7 +311,7 @@ class _ApplicationCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: AppRadius.radius40,
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 4,
@@ -352,7 +348,7 @@ class _ApplicationCard extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                _formatDate(application.appliedAt),
+                DateFormatter.toDateSlash(application.appliedAt),
                 style: AppTextStyles.caption2.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -366,7 +362,7 @@ class _ApplicationCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.warning.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: AppRadius.radius80,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -456,7 +452,7 @@ class _JobCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.radius120,
             ),
             child: Text(
               '詳細',
@@ -467,34 +463,6 @@ class _JobCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// =============================================================================
-// Status Chip
-// =============================================================================
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.label, required this.color});
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.caption2.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
       ),
     );
   }
@@ -512,8 +480,4 @@ Color _statusColor(Application application, BuildContext context) {
     ApplicationStatus.active =>
       application.requiresAction ? AppColors.warning : AppColors.primaryLight,
   };
-}
-
-String _formatDate(DateTime date) {
-  return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
 }

@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_icons.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
@@ -210,10 +207,10 @@ class PortalScreen extends ConsumerWidget {
                         icon: const Icon(
                           Icons.poll_outlined,
                           size: 24,
-                          color: Color(0xFF8764B8),
+                          color: AppColors.purple,
                         ),
                         label: 'サーベイ',
-                        color: const Color(0xFF8764B8),
+                        color: AppColors.purple,
                         onTap: () => context.push(AppRoutes.surveys),
                       ),
                       const SizedBox(width: AppSpacing.md),
@@ -230,10 +227,10 @@ class PortalScreen extends ConsumerWidget {
                       PortalActionChip(
                         icon: AppIcons.teacher(
                           size: 24,
-                          color: const Color(0xFF8764B8),
+                          color: AppColors.purple,
                         ),
                         label: '研修',
-                        color: const Color(0xFF8764B8),
+                        color: AppColors.purple,
                         onTap: () {},
                       ),
                     ],

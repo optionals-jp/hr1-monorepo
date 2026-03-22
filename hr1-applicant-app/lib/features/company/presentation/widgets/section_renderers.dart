@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/domain/entities/page_section.dart';
-import '../../../../shared/widgets/common_card.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../../applications/domain/entities/job.dart';
 import '../../../applications/presentation/providers/applications_providers.dart';
 
@@ -85,7 +82,7 @@ class _MarkdownSection extends StatelessWidget {
         ),
         codeblockDecoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+          borderRadius: AppRadius.radius80,
         ),
       ),
     );
@@ -111,7 +108,7 @@ class _JobListSection extends ConsumerWidget {
             padding: const EdgeInsets.all(AppSpacing.xl),
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+              borderRadius: AppRadius.radius120,
             ),
             child: Center(
               child: Text(
@@ -136,9 +133,7 @@ class _JobListSection extends ConsumerWidget {
                   foregroundColor: AppColors.primaryLight,
                   side: const BorderSide(color: AppColors.primaryLight),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppSpacing.buttonRadius,
-                    ),
+                    borderRadius: AppRadius.radius80,
                   ),
                 ),
                 child: const Text('すべての求人を見る'),
@@ -217,7 +212,7 @@ class _BenefitListSection extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               color: theme.scaffoldBackgroundColor,
-              borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+              borderRadius: AppRadius.radius80,
             ),
             child: Row(
               children: [
@@ -267,7 +262,7 @@ class _ValueListSection extends StatelessWidget {
                 height: 36,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadius.radius80,
                 ),
                 child: Center(
                   child: Text(
@@ -327,7 +322,7 @@ class _StatsSection extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        borderRadius: AppRadius.radius120,
       ),
       child: Wrap(
         alignment: WrapAlignment.spaceEvenly,
@@ -449,7 +444,7 @@ class _GallerySection extends StatelessWidget {
         itemBuilder: (context, index) {
           final item = items[index];
           return ClipRRect(
-            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+            borderRadius: AppRadius.radius120,
             child: Container(
               width: 240,
               color: theme.scaffoldBackgroundColor,
@@ -535,7 +530,7 @@ class _FaqTileState extends State<_FaqTile> {
         children: [
           InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppRadius.radius160,
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.cardPadding),
               child: Row(
@@ -545,7 +540,7 @@ class _FaqTileState extends State<_FaqTile> {
                     height: 24,
                     decoration: BoxDecoration(
                       color: AppColors.primaryLight.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: AppRadius.radius40,
                     ),
                     child: Center(
                       child: Text(
@@ -621,7 +616,7 @@ class _Tag extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: AppColors.primaryLight.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadius.radius40,
       ),
       child: Text(
         text,

@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_icons.dart';
-import '../../core/constants/app_spacing.dart';
-import '../../core/constants/app_text_styles.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
 
 /// メッセージ入力バー
 class MessageInputBar extends StatelessWidget {
@@ -36,7 +33,7 @@ class MessageInputBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
           color: AppColors.surfaceTertiary(theme.brightness),
-          borderRadius: BorderRadius.circular(9999),
+          borderRadius: AppRadius.radiusCircular,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,

@@ -3,12 +3,8 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:hr1_applicant_app/core/constants/app_colors.dart';
-import 'package:hr1_applicant_app/core/constants/app_spacing.dart';
-import 'package:hr1_applicant_app/core/constants/app_text_styles.dart';
-import 'package:hr1_applicant_app/shared/widgets/common_snackbar.dart';
-import 'package:hr1_applicant_app/shared/widgets/common_date_picker.dart';
-import 'package:hr1_applicant_app/shared/widgets/loading_indicator.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 import '../../domain/entities/todo.dart';
 import '../controllers/todo_controller.dart';
 

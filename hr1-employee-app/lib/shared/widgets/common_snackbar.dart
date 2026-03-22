@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_text_styles.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
 
 /// 共通 SnackBar ユーティリティ
 ///
@@ -163,9 +162,7 @@ class _AnimatedSnackBarState extends State<_AnimatedSnackBar>
         },
         child: Material(
           color: widget.backgroundColor ?? theme.colorScheme.inverseSurface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.radius120),
           elevation: 0,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),

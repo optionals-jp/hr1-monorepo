@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-import '../../core/constants/app_spacing.dart';
+import '../../core/constants/constants.dart';
 
 /// スケルトンローディングコンテナ
 ///

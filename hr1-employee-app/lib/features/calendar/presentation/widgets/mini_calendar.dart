@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 
 /// Outlook スタイルの折りたたみ可能ミニカレンダー
 class MiniCalendar extends StatefulWidget {
@@ -215,10 +214,9 @@ class _MiniCalendarState extends State<MiniCalendar> {
                 alignment: Alignment.center,
                 child: Text(
                   '${date.day}',
-                  style: AppTextStyles.caption2.copyWith(
+                  style: AppTextStyles.footnote.copyWith(
                     color: textColor,
                     fontWeight: isToday || isSelected ? FontWeight.w600 : null,
-                    fontSize: 13,
                   ),
                 ),
               ),

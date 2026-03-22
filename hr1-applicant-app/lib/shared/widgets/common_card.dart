@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_spacing.dart';
+import '../../core/constants/constants.dart';
 
 /// 共通カードコンポーネント
 ///
@@ -43,20 +43,14 @@ class CommonCard extends StatelessWidget {
       padding: padding ?? const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.radius160,
         border: highlighted && highlightColor != null
             ? Border.all(
                 color: highlightColor!.withValues(alpha: 0.3),
-                width: 0.5,
+                width: AppStroke.thin,
               )
-            : Border.all(color: theme.dividerColor, width: 0.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+            : Border.all(color: theme.dividerColor, width: AppStroke.thin),
+        boxShadow: AppShadows.shadow4,
       ),
       child: child,
     );
