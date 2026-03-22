@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/result/result.dart';
 import '../../domain/entities/app_user.dart';
@@ -53,6 +55,44 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final user = await _datasource.fetchCurrentUserProfile();
       return Result.success(user);
+    } on Exception catch (e) {
+      return Result.failure(e.toString());
+    }
+  }
+
+  @override
+  Future<Result<void>> updateProfileField(Map<String, dynamic> fields) async {
+    try {
+      final userId = _datasource.currentUserId;
+      if (userId == null) {
+        return Result.failure('ユーザーが認証されていません');
+      }
+      await _datasource.updateProfileField(userId: userId, fields: fields);
+      return Result.success(null);
+    } on Exception catch (e) {
+      return Result.failure(e.toString());
+    }
+  }
+
+  @override
+  Future<Result<String>> uploadAvatar(String filePath) async {
+    try {
+      final userId = _datasource.currentUserId;
+      if (userId == null) {
+        return Result.failure('ユーザーが認証されていません');
+      }
+      final ext = filePath.split('.').last;
+      final file = File(filePath);
+      final publicUrl = await _datasource.uploadAvatar(
+        userId: userId,
+        file: file,
+        extension: ext,
+      );
+      await _datasource.updateProfileField(
+        userId: userId,
+        fields: {'avatar_url': publicUrl},
+      );
+      return Result.success(publicUrl);
     } on Exception catch (e) {
       return Result.failure(e.toString());
     }

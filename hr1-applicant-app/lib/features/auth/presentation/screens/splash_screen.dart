@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../../../core/result/result.dart';
-import '../../../../core/router/app_router.dart';
-import '../providers/auth_providers.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/core/result/result.dart';
+import 'package:hr1_applicant_app/core/router/app_router.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
 
 /// スプラッシュ画面
 /// アプリ起動時に表示し、認証状態に応じてルートを切り替える
@@ -85,6 +86,29 @@ class SplashScreen extends HookConsumerWidget {
         case Success(data: final user):
           ref.read(appUserProvider.notifier).setUser(user);
           if (!context.mounted) return;
+          if (user.isEmployee) {
+            await showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (ctx) => AlertDialog(
+                title: const Text('入社おめでとうございます！'),
+                content: const Text('社員として登録されました。\n今後は社員アプリをご利用ください。'),
+                actions: [
+                  TextButton(
+                    onPressed: () async {
+                      await Supabase.instance.client.auth.signOut();
+                      if (ctx.mounted) {
+                        Navigator.of(ctx).pop();
+                        GoRouter.of(context).go(AppRoutes.login);
+                      }
+                    },
+                    child: const Text('ログアウト'),
+                  ),
+                ],
+              ),
+            );
+            return;
+          }
           if (user.organizations.isEmpty) {
             context.go(AppRoutes.organizationSelect);
           } else {

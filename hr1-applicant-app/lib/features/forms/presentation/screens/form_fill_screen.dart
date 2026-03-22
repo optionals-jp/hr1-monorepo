@@ -55,7 +55,7 @@ class FormFillScreen extends ConsumerWidget {
       ref.read(formFillControllerProvider(_controllerArg).notifier).submit();
     }
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: Text(asyncForm.valueOrNull?.title ?? 'フォーム')),
       body: asyncForm.when(
         data: (form) {

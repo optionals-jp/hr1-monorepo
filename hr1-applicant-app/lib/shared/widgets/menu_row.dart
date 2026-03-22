@@ -80,9 +80,7 @@ class MenuRow extends StatelessWidget {
                     Text(
                       label!,
                       style: AppTextStyles.caption2.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.55,
-                        ),
+                        color: AppColors.textSecondaryOf(theme.brightness),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -103,9 +101,7 @@ class MenuRow extends StatelessWidget {
                       Text(
                         subtitle!,
                         style: AppTextStyles.caption2.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.55,
-                          ),
+                          color: AppColors.textSecondaryOf(theme.brightness),
                         ),
                       ),
                   ],

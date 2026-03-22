@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/service_request.dart';
-import '../providers/service_request_providers.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_applicant_app/features/service_requests/domain/entities/service_request.dart';
+import 'package:hr1_applicant_app/features/service_requests/presentation/providers/service_request_providers.dart';
 
 /// サービスリクエスト作成コントローラー
 final serviceRequestControllerProvider =
@@ -14,16 +15,18 @@ class ServiceRequestController extends AutoDisposeNotifier<AsyncValue<void>> {
 
   /// リクエストを送信
   Future<bool> submit({
-    required String userId,
     required ServiceRequestType type,
     required String title,
     required String description,
   }) async {
+    final user = ref.read(appUserProvider);
+    if (user == null) return false;
+
     state = const AsyncLoading();
     try {
       final repo = ref.read(serviceRequestRepositoryProvider);
       await repo.createRequest(
-        userId: userId,
+        userId: user.id,
         type: type,
         title: title,
         description: description,

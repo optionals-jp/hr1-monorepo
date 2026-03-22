@@ -173,7 +173,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
       });
     }
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         title: Row(
           children: [
@@ -389,11 +389,10 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     final bubbleColor = isMe
         ? AppColors.primaryLight
-        : (isDark ? AppColors.darkSurfaceTertiary : AppColors.surfaceTertiary);
+        : AppColors.surfaceTertiaryOf(theme.brightness);
     final textColor = isMe ? Colors.white : theme.colorScheme.onSurface;
 
     final bottomPadding = isLastInGroup ? 12.0 : 2.0;
@@ -580,7 +579,6 @@ class _TypingIndicatorState extends State<_TypingIndicator>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -589,9 +587,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: isDark
-                ? AppColors.darkSurfaceTertiary
-                : AppColors.surfaceTertiary,
+            color: AppColors.surfaceTertiaryOf(theme.brightness),
             borderRadius: AppRadius.radius160,
           ),
           child: AnimatedBuilder(
@@ -611,9 +607,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.4,
-                          ),
+                          color: AppColors.textSecondaryOf(theme.brightness),
                           shape: BoxShape.circle,
                         ),
                       ),

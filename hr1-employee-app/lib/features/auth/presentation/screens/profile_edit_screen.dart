@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/common_dialog.dart';
-import '../../../../shared/widgets/grouped_section.dart';
-import '../../../../shared/widgets/menu_row.dart';
-import '../../../../shared/widgets/user_avatar.dart';
-import '../providers/auth_providers.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/core/router/app_router.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_employee_app/features/auth/presentation/controllers/profile_edit_controller.dart';
 
-/// プロフィール編集画面 — Teams 設定画面スタイル
 class ProfileEditScreen extends ConsumerStatefulWidget {
   const ProfileEditScreen({super.key});
 
@@ -23,17 +21,14 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     final user = ref.watch(appUserProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('プロフィール編集')),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
         children: [
-          // アバター（タップで変更）
           Center(
             child: GestureDetector(
-              onTap: () {
-                // TODO: アバター画像の変更
-              },
+              onTap: () => _pickAndUploadAvatar(),
               child: Stack(
                 children: [
                   UserAvatar(
@@ -70,7 +65,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
           const SizedBox(height: AppSpacing.xxl),
 
-          // 基本情報セクション
           GroupedSection(
             title: '基本情報',
             children: [
@@ -78,12 +72,11 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 icon: AppIcons.user(),
                 label: '表示名',
                 title: user?.displayName ?? '未設定',
-                onTap: () => _showEditDialog(
+                onTap: () => _editField(
                   title: '表示名',
                   initialValue: user?.displayName ?? '',
-                  onSave: (value) {
-                    // TODO: 表示名の更新
-                  },
+                  fieldKey: 'display_name',
+                  successMessage: '表示名を更新しました',
                 ),
               ),
               MenuRow(
@@ -95,24 +88,22 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 icon: AppIcons.briefcase(),
                 label: '部署',
                 title: user?.department ?? '未設定',
-                onTap: () => _showEditDialog(
+                onTap: () => _editField(
                   title: '部署',
                   initialValue: user?.department ?? '',
-                  onSave: (value) {
-                    // TODO: 部署の更新
-                  },
+                  fieldKey: 'department',
+                  successMessage: '部署を更新しました',
                 ),
               ),
               MenuRow(
                 icon: AppIcons.personalcard(),
                 label: '役職',
                 title: user?.position ?? '未設定',
-                onTap: () => _showEditDialog(
+                onTap: () => _editField(
                   title: '役職',
                   initialValue: user?.position ?? '',
-                  onSave: (value) {
-                    // TODO: 役職の更新
-                  },
+                  fieldKey: 'position',
+                  successMessage: '役職を更新しました',
                 ),
               ),
             ],
@@ -120,7 +111,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
           const SizedBox(height: AppSpacing.xxl),
 
-          // スキルセクション
           GroupedSection(
             title: 'スキル',
             children: [
@@ -145,7 +135,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
           const SizedBox(height: AppSpacing.xxl),
 
-          // 経歴セクション
           GroupedSection(
             title: '経歴',
             children: [
@@ -154,7 +143,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 label: 'プロジェクト経歴',
                 title: '編集する',
                 onTap: () {
-                  // TODO: プロジェクト経歴編集画面
+                  CommonSnackBar.show(context, 'この機能は準備中です');
                 },
               ),
               MenuRow(
@@ -162,7 +151,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 label: '異動歴',
                 title: '編集する',
                 onTap: () {
-                  // TODO: 異動歴編集画面
+                  CommonSnackBar.show(context, 'この機能は準備中です');
                 },
               ),
             ],
@@ -174,10 +163,56 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     );
   }
 
-  Future<void> _showEditDialog({
+  Future<void> _pickAndUploadAvatar() async {
+    final picker = ImagePicker();
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('カメラ'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('ギャラリー'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    final picked = await picker.pickImage(
+      source: source,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 80,
+    );
+    if (picked == null) return;
+
+    final controller = ref.read(profileEditControllerProvider.notifier);
+    final success = await controller.uploadAvatar(picked.path);
+
+    if (mounted) {
+      if (success) {
+        CommonSnackBar.show(context, 'プロフィール画像を更新しました');
+      } else {
+        CommonSnackBar.error(context, '画像のアップロードに失敗しました');
+      }
+    }
+  }
+
+  Future<void> _editField({
     required String title,
     required String initialValue,
-    required ValueChanged<String> onSave,
+    required String fieldKey,
+    required String successMessage,
   }) async {
     final value = await CommonDialog.input(
       context: context,
@@ -185,8 +220,17 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       hintText: '$titleを入力',
       initialValue: initialValue,
     );
-    if (value != null && value.isNotEmpty) {
-      onSave(value);
+    if (value == null || value.isEmpty) return;
+
+    final controller = ref.read(profileEditControllerProvider.notifier);
+    final success = await controller.updateField({fieldKey: value});
+
+    if (mounted) {
+      if (success) {
+        CommonSnackBar.show(context, successMessage);
+      } else {
+        CommonSnackBar.error(context, '更新に失敗しました');
+      }
     }
   }
 }

@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
 import '../../domain/entities/app_user.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../providers/auth_providers.dart';
 
 /// スプラッシュ画面

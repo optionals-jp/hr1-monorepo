@@ -30,14 +30,12 @@ class SearchBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hintColor = theme.colorScheme.onSurface.withValues(alpha: 0.5);
+    final hintColor = AppColors.textSecondaryOf(theme.brightness);
 
     final box = Container(
       height: 40,
       decoration: BoxDecoration(
-        color: theme.brightness == Brightness.dark
-            ? AppColors.darkSurfaceTertiary
-            : AppColors.surfaceTertiary,
+        color: AppColors.surfaceTertiaryOf(theme.brightness),
         borderRadius: AppRadius.radiusCircular,
       ),
       child: Row(
@@ -87,7 +85,7 @@ class SearchBox extends StatelessWidget {
                     child: Icon(
                       Icons.cancel_rounded,
                       size: 18,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                      color: AppColors.textSecondaryOf(theme.brightness),
                     ),
                   ),
                 );

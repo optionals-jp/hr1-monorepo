@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/constants/constants.dart';
-import '../../core/router/app_router.dart';
-import '../../features/employees/domain/entities/employee_contact.dart';
-import '../widgets/search_box.dart';
-import '../widgets/user_avatar.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/core/router/app_router.dart';
+import 'package:hr1_employee_app/features/employees/domain/entities/employee_contact.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 
 /// 全画面検索画面 — Teams / Outlook モバイルスタイル
 class SearchScreen extends StatefulWidget {
@@ -23,6 +23,8 @@ class _SearchScreenState extends State<SearchScreen> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   final _recentSearches = <String>['有給休暇', '勤怠修正', '社内規定'];
+  List<EmployeeContact> _searchResults = [];
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -89,17 +91,82 @@ class _SearchScreenState extends State<SearchScreen> {
 
             // コンテンツ
             Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _buildAvatarCarousel(theme),
-                  _buildRecentSearches(theme),
-                ],
-              ),
+              child: _isSearching
+                  ? const Center(child: CircularProgressIndicator())
+                  : _searchResults.isNotEmpty
+                  ? _buildSearchResults(theme)
+                  : ListView(
+                      padding: EdgeInsets.zero,
+                      children: [
+                        _buildAvatarCarousel(theme),
+                        _buildRecentSearches(theme),
+                      ],
+                    ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSearchResults(ThemeData theme) {
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      itemCount: _searchResults.length,
+      separatorBuilder: (_, __) => Divider(
+        height: 1,
+        indent: AppSpacing.screenHorizontal + 48 + AppSpacing.md,
+        color: theme.dividerColor,
+      ),
+      itemBuilder: (context, index) {
+        final contact = _searchResults[index];
+        return InkWell(
+          onTap: () {
+            context.pushReplacement(AppRoutes.employeeDetail, extra: contact);
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.screenHorizontal,
+              vertical: AppSpacing.sm,
+            ),
+            child: Row(
+              children: [
+                UserAvatar(
+                  initial: contact.initial,
+                  color: contact.color,
+                  size: 48,
+                  imageUrl: contact.avatarUrl,
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        contact.name,
+                        style: AppTextStyles.caption1.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (contact.department.isNotEmpty ||
+                          contact.position.isNotEmpty)
+                        Text(
+                          [
+                            contact.department,
+                            contact.position,
+                          ].where((s) => s.isNotEmpty).join(' / '),
+                          style: AppTextStyles.caption2.copyWith(
+                            color: AppColors.textSecondary(theme.brightness),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -189,7 +256,7 @@ class _SearchScreenState extends State<SearchScreen> {
           child: Text(
             'よく連絡する人',
             style: AppTextStyles.caption2.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+              color: AppColors.textSecondary(theme.brightness),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -237,9 +304,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         '${contact.department} ${contact.position}',
                         style: AppTextStyles.caption2.copyWith(
                           fontWeight: FontWeight.w500,
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.5,
-                          ),
+                          color: AppColors.textSecondary(theme.brightness),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -272,7 +337,7 @@ class _SearchScreenState extends State<SearchScreen> {
           child: Text(
             '最近の検索',
             style: AppTextStyles.caption2.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+              color: AppColors.textSecondary(theme.brightness),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -293,14 +358,14 @@ class _SearchScreenState extends State<SearchScreen> {
                   Icon(
                     Icons.history_rounded,
                     size: 20,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                    color: AppColors.textSecondary(theme.brightness),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(child: Text(query, style: AppTextStyles.caption1)),
                   Icon(
                     Icons.north_west_rounded,
                     size: 16,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                    color: AppColors.textTertiary(theme.brightness),
                   ),
                 ],
               ),
@@ -322,8 +387,67 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  void _onSearch(String query) {
+  static const _avatarColors = [
+    Color(0xFF0F6CBD),
+    Color(0xFF0E7A0B),
+    Color(0xFFBC4B09),
+    Color(0xFF115EA3),
+    Color(0xFFB10E1C),
+  ];
+
+  void _onSearch(String query) async {
     if (query.trim().isEmpty) return;
-    // TODO: 検索処理を実装
+    setState(() => _isSearching = true);
+    try {
+      final client = Supabase.instance.client;
+      final userId = client.auth.currentUser?.id;
+      if (userId == null) return;
+      final orgData = await client
+          .from('user_organizations')
+          .select('organization_id')
+          .eq('user_id', userId)
+          .limit(1)
+          .single();
+      final orgId = orgData['organization_id'] as String;
+
+      final results = await client
+          .from('user_organizations')
+          .select(
+            'user_id, profiles(id, display_name, email, department, position, avatar_url)',
+          )
+          .eq('organization_id', orgId)
+          .or(
+            'profiles.display_name.ilike.%$query%,profiles.department.ilike.%$query%,profiles.position.ilike.%$query%',
+          );
+
+      final contacts = (results as List)
+          .where((r) => r['profiles'] != null)
+          .toList()
+          .asMap()
+          .entries
+          .map((entry) {
+            final p = entry.value['profiles'];
+            final name =
+                p['display_name'] as String? ?? p['email'] as String? ?? '';
+            return EmployeeContact(
+              id: p['id'] as String,
+              name: name,
+              initial: name.isNotEmpty ? name[0] : '?',
+              position: p['position'] as String? ?? '',
+              department: p['department'] as String? ?? '',
+              color: _avatarColors[entry.key % _avatarColors.length],
+              email: p['email'] as String?,
+              avatarUrl: p['avatar_url'] as String?,
+            );
+          })
+          .toList();
+
+      setState(() {
+        _searchResults = contacts;
+        _isSearching = false;
+      });
+    } catch (e) {
+      setState(() => _isSearching = false);
+    }
   }
 }

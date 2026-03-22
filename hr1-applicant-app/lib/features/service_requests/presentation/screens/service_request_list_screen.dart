@@ -15,7 +15,7 @@ class ServiceRequestListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final requestsAsync = ref.watch(serviceRequestsProvider);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: Text('サービスリクエスト', style: AppTextStyles.callout)),
       body: requestsAsync.when(
         loading: () => const LoadingIndicator(),

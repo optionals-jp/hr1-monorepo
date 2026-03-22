@@ -30,8 +30,16 @@ import '../../features/surveys/presentation/screens/survey_list_screen.dart';
 import '../../features/surveys/presentation/screens/survey_answer_screen.dart';
 import '../../features/surveys/presentation/providers/survey_providers.dart';
 import '../../features/surveys/domain/entities/pulse_survey.dart';
+import '../../features/workflow/domain/entities/workflow_request.dart';
+import '../../features/workflow/presentation/screens/workflow_list_screen.dart';
+import '../../features/workflow/presentation/screens/workflow_create_screen.dart';
+import '../../features/workflow/presentation/screens/workflow_detail_screen.dart';
+import '../../features/leave/presentation/screens/leave_balance_screen.dart';
+import '../../features/payslips/domain/entities/payslip.dart';
+import '../../features/payslips/presentation/screens/payslip_list_screen.dart';
+import '../../features/payslips/presentation/screens/payslip_detail_screen.dart';
 import '../../shared/screens/search_screen.dart';
-import '../../shared/widgets/loading_indicator.dart';
+import '../../shared/widgets/widgets.dart';
 
 /// 開発モードフラグ（trueの場合、認証ガードをスキップ）
 const bool kDevMode = false;
@@ -65,6 +73,12 @@ class AppRoutes {
   static const String _faq = 'faq';
   static const String _surveys = 'surveys';
   static const String _notifications = 'notifications';
+  static const String _workflow = 'workflow';
+  static const String _workflowCreate = 'workflow-create';
+  static const String _workflowDetail = 'workflow-detail';
+  static const String _leaveBalance = 'leave-balance';
+  static const String _payslips = 'payslips';
+  static const String _payslipDetail = 'payslip-detail';
   // フルパス（画面遷移用）
   static const String faq = '/$_faq';
   static const String surveys = '/$_surveys';
@@ -85,6 +99,12 @@ class AppRoutes {
   static const String certificationsEdit = '/$_certificationsEdit';
   static const String serviceRequests = '/$_serviceRequests';
   static const String serviceRequestCreate = '/$_serviceRequestCreate';
+  static const String workflow = '/$_workflow';
+  static const String workflowCreate = '/$_workflowCreate';
+  static const String workflowDetail = '/$_workflowDetail';
+  static const String leaveBalance = '/$_leaveBalance';
+  static const String payslips = '/$_payslips';
+  static const String payslipDetail = '/$_payslipDetail';
 }
 
 /// ルートナビゲーターキー（フルスクリーン遷移用 + プッシュ通知からの遷移用）
@@ -271,6 +291,65 @@ final routerProvider = Provider<GoRouter>((ref) {
           final type =
               state.extra as ServiceRequestType? ?? ServiceRequestType.bug;
           return ServiceRequestCreateScreen(type: type);
+        },
+      ),
+
+      /// ワークフロー申請一覧画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.workflow,
+        builder: (context, state) => const WorkflowListScreen(),
+      ),
+
+      /// ワークフロー申請作成画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.workflowCreate,
+        builder: (context, state) {
+          final type =
+              state.extra as WorkflowRequestType? ??
+              WorkflowRequestType.paidLeave;
+          return WorkflowCreateScreen(type: type);
+        },
+      ),
+
+      /// ワークフロー申請詳細画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.workflowDetail,
+        builder: (context, state) {
+          final request = state.extra as WorkflowRequest?;
+          if (request == null) {
+            return const Scaffold(body: Center(child: Text('申請情報が見つかりません')));
+          }
+          return WorkflowDetailScreen(request: request);
+        },
+      ),
+
+      /// 有給・休暇管理画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.leaveBalance,
+        builder: (context, state) => const LeaveBalanceScreen(),
+      ),
+
+      /// 給与明細一覧画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.payslips,
+        builder: (context, state) => const PayslipListScreen(),
+      ),
+
+      /// 給与明細詳細画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.payslipDetail,
+        builder: (context, state) {
+          final payslip = state.extra as Payslip?;
+          if (payslip == null) {
+            return const Scaffold(body: Center(child: Text('給与明細が見つかりません')));
+          }
+          return PayslipDetailScreen(payslip: payslip);
         },
       ),
 

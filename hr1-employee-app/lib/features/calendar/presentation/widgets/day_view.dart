@@ -122,7 +122,7 @@ class _DayViewState extends State<DayView> {
                       top: h * _hourHeight,
                       left: 0,
                       right: 0,
-                      child: _HourRow(hour: h, theme: theme),
+                      child: _HourRow(hour: h),
                     ),
                   // 勤怠バー（打刻間の状態を色付きバーで表示）
                   ..._buildAttendanceBars(theme),
@@ -135,7 +135,7 @@ class _DayViewState extends State<DayView> {
                     (event) => _buildEventBlock(event, timedEvents, theme),
                   ),
                   // 現在時刻インジケーター
-                  if (_isToday) _CurrentTimeIndicator(theme: theme),
+                  if (_isToday) const _CurrentTimeIndicator(),
                 ],
               ),
             ),
@@ -197,10 +197,7 @@ class _DayViewState extends State<DayView> {
       'clock_out' => (AppIcons.logout, AppColors.error),
       'break_start' => (AppIcons.coffee, AppColors.warning),
       'break_end' => (AppIcons.pause, AppColors.brandLight),
-      _ => (
-        AppIcons.clock,
-        theme.colorScheme.onSurface.withValues(alpha: 0.45),
-      ),
+      _ => (AppIcons.clock, AppColors.textSecondary(theme.brightness)),
     };
 
     return Positioned(
@@ -279,7 +276,7 @@ class _DayViewState extends State<DayView> {
                   '${DateFormat('HH:mm').format(startLocal)} - ${DateFormat('HH:mm').format(endLocal)}',
                   style: AppTextStyles.caption1.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                    color: AppColors.textSecondary(theme.brightness),
                   ),
                 ),
               if (height > 52 && event.location != null)
@@ -287,7 +284,7 @@ class _DayViewState extends State<DayView> {
                   event.location!,
                   style: AppTextStyles.caption1.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                    color: AppColors.textSecondary(theme.brightness),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -310,12 +307,12 @@ class _DayViewState extends State<DayView> {
 
 /// 時間行
 class _HourRow extends StatelessWidget {
-  const _HourRow({required this.hour, required this.theme});
+  const _HourRow({required this.hour});
   final int hour;
-  final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return SizedBox(
       height: 60,
       child: Row(
@@ -329,7 +326,7 @@ class _HourRow extends StatelessWidget {
                 '${hour.toString().padLeft(2, '0')}:00',
                 style: AppTextStyles.caption1.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                  color: AppColors.textTertiary(theme.brightness),
                   fontFeatures: [const FontFeature.tabularFigures()],
                 ),
                 textAlign: TextAlign.right,
@@ -356,8 +353,7 @@ class _HourRow extends StatelessWidget {
 
 /// 現在時刻インジケーター（赤い水平線）
 class _CurrentTimeIndicator extends StatelessWidget {
-  const _CurrentTimeIndicator({required this.theme});
-  final ThemeData theme;
+  const _CurrentTimeIndicator();
 
   @override
   Widget build(BuildContext context) {

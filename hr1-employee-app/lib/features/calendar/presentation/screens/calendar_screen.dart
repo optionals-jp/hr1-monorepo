@@ -4,14 +4,10 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/org_icon.dart';
-import '../../../../shared/widgets/user_avatar.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../../attendance/presentation/providers/attendance_providers.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/calendar_event.dart';
-import '../../../../shared/widgets/common_dialog.dart';
-import '../../../../shared/widgets/common_snackbar.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
 import '../controllers/calendar_controller.dart';
 import '../providers/calendar_providers.dart';
 import '../widgets/day_view.dart';
@@ -177,7 +173,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     final user = ref.watch(appUserProvider);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         titleSpacing: AppSpacing.screenHorizontal,
         title: Row(
@@ -202,7 +198,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   Icon(
                     Icons.keyboard_arrow_down_rounded,
                     size: 20,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    color: AppColors.textSecondary(theme.brightness),
                   ),
                 ],
               ),
@@ -391,13 +387,13 @@ class _DayEventListView extends ConsumerWidget {
           children: [
             AppIcons.calendar(
               size: 48,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.25),
+              color: AppColors.textTertiary(theme.brightness),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               '予定はありません',
               style: AppTextStyles.caption1.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                color: AppColors.textSecondary(theme.brightness),
               ),
             ),
           ],
@@ -762,7 +758,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
             decoration: InputDecoration(
               hintText: 'タイトルを追加',
               hintStyle: AppTextStyles.title3.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                color: AppColors.textTertiary(theme.brightness),
               ),
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,
@@ -775,7 +771,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
             children: [
               AppIcons.clock(
                 size: 20,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                color: AppColors.textSecondary(theme.brightness),
               ),
               const SizedBox(width: 14),
               Text('終日', style: AppTextStyles.caption1),
@@ -813,7 +809,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
             children: [
               AppIcons.location(
                 size: 20,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                color: AppColors.textSecondary(theme.brightness),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -823,9 +819,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                   decoration: InputDecoration(
                     hintText: '場所を追加',
                     hintStyle: AppTextStyles.caption1.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.35,
-                      ),
+                      color: AppColors.textTertiary(theme.brightness),
                     ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
@@ -861,7 +855,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                 padding: const EdgeInsets.only(top: 2),
                 child: AppIcons.doc(
                   size: 20,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: AppColors.textSecondary(theme.brightness),
                 ),
               ),
               const SizedBox(width: 14),
@@ -874,9 +868,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                   decoration: InputDecoration(
                     hintText: '説明を追加',
                     hintStyle: AppTextStyles.caption1.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.35,
-                      ),
+                      color: AppColors.textTertiary(theme.brightness),
                     ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
@@ -990,7 +982,10 @@ class _ColorPicker extends StatelessWidget {
               color: color,
               shape: BoxShape.circle,
               border: isSelected
-                  ? Border.all(color: Colors.white, width: AppStroke.strokeWidth20)
+                  ? Border.all(
+                      color: Colors.white,
+                      width: AppStroke.strokeWidth20,
+                    )
                   : null,
               boxShadow: isSelected ? AppShadows.shadow4 : null,
             ),

@@ -6,36 +6,34 @@ import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
 import '../../domain/entities/attendance_record.dart';
 import '../controllers/attendance_controller.dart';
-import '../../../../shared/widgets/common_snackbar.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../providers/attendance_providers.dart';
 
 /// 勤怠打刻画面 — Office モバイルスタイル
-class AttendanceScreen extends ConsumerStatefulWidget {
+class AttendanceScreen extends ConsumerWidget {
   const AttendanceScreen({super.key});
 
-  @override
-  ConsumerState<AttendanceScreen> createState() => _AttendanceScreenState();
-}
-
-class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
-  Future<void> _handlePunch(String action) async {
+  Future<void> _handlePunch(
+    BuildContext context,
+    WidgetRef ref,
+    String action,
+  ) async {
     await ref.read(attendanceControllerProvider.notifier).punch(action);
     final error = ref.read(attendanceControllerProvider).error;
-    if (error != null && mounted) {
+    if (error != null && context.mounted) {
       CommonSnackBar.error(context, 'エラーが発生しました: $error');
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final punchState = ref.watch(attendanceControllerProvider);
     final workState = ref.watch(workStateProvider);
     final todayRecord = ref.watch(todayRecordProvider);
     final todayPunches = ref.watch(todayPunchesProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         title: const Text('勤怠'),
         actions: [
@@ -84,7 +82,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             _PunchButtons(
               workState: workState,
               isLoading: punchState.isLoading,
-              onPunch: _handlePunch,
+              onPunch: (action) => _handlePunch(context, ref, action),
             ),
             const SizedBox(height: AppSpacing.xxl),
 
@@ -123,9 +121,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         child: Text(
                           'まだ打刻がありません',
                           style: AppTextStyles.caption1.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.45,
-                            ),
+                            color: AppColors.textSecondary(theme.brightness),
                           ),
                         ),
                       ),
@@ -173,7 +169,7 @@ class _TimeStatusHero extends StatelessWidget {
     final (statusLabel, statusColor) = switch (workState) {
       WorkState.notStarted => (
         '未出勤',
-        theme.colorScheme.onSurface.withValues(alpha: 0.45),
+        AppColors.textSecondary(theme.brightness),
       ),
       WorkState.working => ('勤務中', AppColors.success),
       WorkState.onBreak => ('休憩中', AppColors.warning),
@@ -320,10 +316,9 @@ class _PunchButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final iconColor = enabled
         ? color
-        : theme.colorScheme.onSurface.withValues(alpha: 0.3);
+        : AppColors.textTertiary(theme.brightness);
 
     return SizedBox(
       height: 56,
@@ -347,11 +342,7 @@ class _PunchButton extends StatelessWidget {
                 border: Border.all(
                   color: enabled
                       ? color.withValues(alpha: 0.15)
-                      : (isDark
-                            ? theme.colorScheme.outline.withValues(alpha: 0.5)
-                            : theme.colorScheme.outlineVariant.withValues(
-                                alpha: 0.5,
-                              )),
+                      : AppColors.border(theme.brightness),
                 ),
               ),
               child: Row(
@@ -385,18 +376,12 @@ class _SummaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: AppRadius.radius120,
-        border: Border.all(
-          color: isDark
-              ? theme.colorScheme.outline.withValues(alpha: 0.35)
-              : theme.colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: AppColors.border(theme.brightness)),
         boxShadow: AppShadows.shadow4,
       ),
       child: Row(
@@ -458,7 +443,7 @@ class _KVItem extends StatelessWidget {
             label,
             style: AppTextStyles.caption1.copyWith(
               fontWeight: FontWeight.w500,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+              color: AppColors.textSecondary(theme.brightness),
             ),
           ),
         ],
@@ -537,10 +522,7 @@ class _TimelineItem extends StatelessWidget {
       'clock_out' => (AppIcons.logout, AppColors.error),
       'break_start' => (AppIcons.coffee, AppColors.warning),
       'break_end' => (AppIcons.pause, AppColors.brandLight),
-      _ => (
-        AppIcons.clock,
-        theme.colorScheme.onSurface.withValues(alpha: 0.45),
-      ),
+      _ => (AppIcons.clock, AppColors.textSecondary(theme.brightness)),
     };
 
     // 次の打刻までの経過時間
@@ -580,7 +562,7 @@ class _TimelineItem extends StatelessWidget {
                   _punchDescription(
                     punch,
                     AppTextStyles.footnote.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      color: AppColors.textSecondary(theme.brightness),
                     ),
                   ),
                 ),
@@ -615,7 +597,7 @@ class _TimelineItem extends StatelessWidget {
                       nextPunch!.punchType,
                     ),
                     style: AppTextStyles.caption2.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                      color: AppColors.textSecondary(theme.brightness),
                     ),
                   ),
               ],

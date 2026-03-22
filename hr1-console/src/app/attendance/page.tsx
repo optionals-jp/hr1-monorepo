@@ -73,7 +73,9 @@ import {
   Building2,
   User,
   FolderKanban,
+  Download,
 } from "lucide-react";
+import { exportToCSV } from "@/lib/export-csv";
 
 type TabValue = "daily" | "monthly" | "approvers" | "corrections" | "settings";
 
@@ -657,6 +659,7 @@ export default function AttendancePage() {
   };
 
   const handleDeleteApprover = async (id: string) => {
+    if (!window.confirm("削除してもよろしいですか？")) return;
     try {
       await getSupabase().from("attendance_approvers").delete().eq("id", id);
       await mutateApprovers();
@@ -1047,6 +1050,34 @@ export default function AttendancePage() {
                 }}
               >
                 今月
+              </Button>
+              <div className="flex-1" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (monthlySummary.length === 0) return;
+                  exportToCSV(
+                    monthlySummary.map((s) => ({
+                      ...s,
+                      totalWorkFormatted: formatMinutes(s.totalWorkMinutes),
+                      totalOvertimeFormatted: formatMinutes(s.totalOvertimeMinutes),
+                    })),
+                    [
+                      { key: "name", label: "社員名" },
+                      { key: "presentDays", label: "出勤日数" },
+                      { key: "lateDays", label: "遅刻" },
+                      { key: "absentDays", label: "欠勤" },
+                      { key: "leaveDays", label: "休暇" },
+                      { key: "totalWorkFormatted", label: "総勤務時間" },
+                      { key: "totalOvertimeFormatted", label: "総残業時間" },
+                    ],
+                    `勤怠レポート_${monthYear}${String(monthMonth).padStart(2, "0")}`
+                  );
+                }}
+              >
+                <Download className="mr-1.5 h-4 w-4" />
+                CSV出力
               </Button>
             </div>
 

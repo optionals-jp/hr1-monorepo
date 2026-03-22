@@ -4,8 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../domain/entities/pulse_survey.dart';
 import '../providers/survey_providers.dart';
 
@@ -38,10 +37,12 @@ class _SurveyListScreenState extends ConsumerState<SurveyListScreen>
     final surveysAsync = ref.watch(activeSurveysProvider);
     final completedAsync = ref.watch(completedSurveyIdsProvider);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         title: Text('パルスサーベイ', style: AppTextStyles.headline),
         bottom: TabBar(
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           controller: _tabController,
           labelStyle: AppTextStyles.body2,
           tabs: const [
@@ -165,7 +166,7 @@ class _SurveyList extends ConsumerWidget {
             Icon(
               emptyIcon,
               size: 48,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+              color: AppColors.textTertiary(theme.brightness),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(

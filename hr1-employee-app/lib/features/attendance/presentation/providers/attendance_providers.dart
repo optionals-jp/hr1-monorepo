@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../shared/utils/month_utils.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/repositories/supabase_attendance_repository.dart';
 import '../../domain/entities/attendance_record.dart';
@@ -58,6 +59,32 @@ final monthlyRecordsProvider = FutureProvider.autoDispose
           '${params.year}-${params.month.toString().padLeft(2, '0')}-$lastDay';
       return repo.getRecords(startDate: startDate, endDate: endDate);
     });
+
+/// 勤怠明細画面の選択月プロバイダー
+final selectedMonthProvider =
+    AutoDisposeNotifierProvider<SelectedMonthNotifier, ({int year, int month})>(
+      SelectedMonthNotifier.new,
+    );
+
+class SelectedMonthNotifier
+    extends AutoDisposeNotifier<({int year, int month})> {
+  @override
+  ({int year, int month}) build() {
+    final now = DateTime.now();
+    return (year: now.year, month: now.month);
+  }
+
+  void prevMonth() {
+    final prev = MonthUtils.prevMonth(state.year, state.month);
+    state = prev;
+  }
+
+  void nextMonth() {
+    if (MonthUtils.isCurrentMonth(state.year, state.month)) return;
+    final next = MonthUtils.nextMonth(state.year, state.month);
+    state = next;
+  }
+}
 
 /// 勤怠状態管理（出勤中・休憩中などの状態を管理）
 enum WorkState { notStarted, working, onBreak, finished }

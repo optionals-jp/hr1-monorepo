@@ -3,10 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/message_thread.dart';
-import '../../../../shared/widgets/common_dialog.dart';
-import '../../../../shared/widgets/common_snackbar.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
-import '../../../../shared/widgets/message_input_bar.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../controllers/thread_chat_controller.dart';
 import '../controllers/thread_realtime_controller.dart';
 
@@ -194,7 +191,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     final loadingMore = realtimeState.loadingMore;
     final otherUserTyping = realtimeState.otherUserTyping;
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         title: Row(
           children: [

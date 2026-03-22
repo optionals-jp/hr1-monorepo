@@ -17,7 +17,7 @@ class JobsScreen extends ConsumerWidget {
     final currentOrg = ref.watch(currentOrganizationProvider);
     final asyncJobs = ref.watch(jobsProvider);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: Text('${currentOrg?.name ?? ''}の求人')),
       body: asyncJobs.when(
         data: (jobs) => jobs.isEmpty

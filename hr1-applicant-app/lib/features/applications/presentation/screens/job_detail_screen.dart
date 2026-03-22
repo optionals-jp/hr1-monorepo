@@ -29,7 +29,7 @@ class JobDetailScreen extends ConsumerWidget {
           );
         }
 
-        return Scaffold(
+        return CommonScaffold(
           body: CustomScrollView(
             slivers: [
               // ヘッダー

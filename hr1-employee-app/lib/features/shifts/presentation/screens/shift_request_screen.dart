@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/constants.dart';
-import '../../../../shared/widgets/common_button.dart';
-import '../../../../shared/widgets/common_snackbar.dart';
-import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
-import '../../../../shared/widgets/fluent_chip.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../domain/entities/shift_type.dart';
 import '../controllers/shift_request_controller.dart';
 import '../providers/shift_providers.dart';
@@ -126,7 +122,7 @@ class _ShiftRequestScreenState extends ConsumerState<ShiftRequestScreen> {
     final controllerState = ref.watch(shiftRequestControllerProvider);
     final lastDay = DateTime(_year, _month + 1, 0).day;
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         title: GestureDetector(
           onTap: () => _selectMonth(context),
@@ -567,9 +563,7 @@ class _TimeButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          border: Border.all(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
-          ),
+          border: Border.all(color: AppColors.border(theme.brightness)),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(

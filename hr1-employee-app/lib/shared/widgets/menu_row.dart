@@ -66,7 +66,7 @@ class MenuRow extends StatelessWidget {
                   size: 22,
                   color: isDestructive
                       ? AppColors.error
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                      : AppColors.textSecondary(theme.brightness),
                 ),
                 child: icon!,
               ),
@@ -81,9 +81,7 @@ class MenuRow extends StatelessWidget {
                     Text(
                       label!,
                       style: AppTextStyles.caption2.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.55,
-                        ),
+                        color: AppColors.textSecondary(theme.brightness),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -105,9 +103,7 @@ class MenuRow extends StatelessWidget {
                       Text(
                         subtitle!,
                         style: AppTextStyles.caption2.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.55,
-                          ),
+                          color: AppColors.textSecondary(theme.brightness),
                         ),
                       ),
                   ],
@@ -118,7 +114,7 @@ class MenuRow extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: 20,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                color: AppColors.textTertiary(theme.brightness),
               ),
           ],
         ),

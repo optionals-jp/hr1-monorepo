@@ -52,7 +52,7 @@ export default function CertificationsSettingsPage() {
   };
 
   const handleDelete = async (master: CertificationMaster) => {
-    if (!confirm(`「${master.name}」を削除しますか？`)) return;
+    if (!window.confirm("削除してもよろしいですか？")) return;
     await getSupabase().from("certification_masters").delete().eq("id", master.id);
     await load();
   };

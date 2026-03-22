@@ -41,7 +41,7 @@ class OrganizationSelectScreen extends HookConsumerWidget {
         selectedIds.value.isNotEmpty &&
         ref.read(allOrganizationsProvider).hasValue;
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('おすすめ企業')),
       body: orgsAsync.when(
         data: (orgs) => _Body(
@@ -131,7 +131,7 @@ class _Body extends ConsumerWidget {
             Icon(
               Icons.business_outlined,
               size: 48,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+              color: AppColors.textTertiaryOf(theme.brightness),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(

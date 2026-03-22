@@ -1,5 +1,6 @@
 export 'common_button.dart';
 export 'common_card.dart';
+export 'common_scaffold.dart';
 export 'detail_row.dart';
 export 'common_dialog.dart';
 export 'common_sheet.dart';

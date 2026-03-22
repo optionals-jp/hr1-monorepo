@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/constants.dart';
-import '../../../../shared/widgets/common_snackbar.dart';
-import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../domain/entities/notification_item.dart';
 import '../controllers/notification_controller.dart';
 
@@ -18,7 +16,7 @@ class NotificationsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final state = ref.watch(notificationControllerProvider);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         title: Text('通知', style: AppTextStyles.headline),
         actions: [
@@ -56,15 +54,13 @@ class NotificationsScreen extends ConsumerWidget {
                 children: [
                   AppIcons.notification(
                     size: 48,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.25),
+                    color: AppColors.textTertiary(theme.brightness),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     '通知はありません',
                     style: AppTextStyles.body2.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.45,
-                      ),
+                      color: AppColors.textSecondary(theme.brightness),
                     ),
                   ),
                 ],
@@ -177,9 +173,7 @@ class _NotificationTile extends StatelessWidget {
                         Text(
                           _formatDate(item.createdAt),
                           style: AppTextStyles.caption2.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.45,
-                            ),
+                            color: AppColors.textSecondary(theme.brightness),
                           ),
                         ),
                       ],

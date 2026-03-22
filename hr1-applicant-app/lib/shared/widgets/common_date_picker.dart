@@ -289,7 +289,7 @@ class _CommonDatePickerState extends State<CommonDatePicker> {
                         color: isSelected
                             ? Colors.white
                             : !selectable
-                            ? theme.colorScheme.onSurface.withValues(alpha: 0.2)
+                            ? AppColors.textTertiaryOf(theme.brightness)
                             : isToday
                             ? AppColors.primaryLight
                             : theme.colorScheme.onSurface,

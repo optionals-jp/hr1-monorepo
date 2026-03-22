@@ -15,7 +15,7 @@ class NotificationsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(notificationControllerProvider);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         title: Text('通知', style: AppTextStyles.headline),
         actions: [

@@ -57,3 +57,11 @@ final certificationMastersProvider =
       final repo = ref.watch(skillsRepositoryProvider);
       return repo.getCertificationMasters();
     });
+
+/// スキル追加中フラグ
+final skillIsAddingProvider = StateProvider.autoDispose<bool>((ref) => false);
+
+/// 資格追加中フラグ
+final certificationIsAddingProvider = StateProvider.autoDispose<bool>(
+  (ref) => false,
+);

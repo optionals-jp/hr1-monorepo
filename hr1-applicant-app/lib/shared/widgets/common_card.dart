@@ -40,10 +40,10 @@ class CommonCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     final card = Container(
-      padding: padding ?? const EdgeInsets.all(16),
+      padding: padding ?? const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: AppRadius.radius160,
+        borderRadius: AppRadius.radius120,
         border: highlighted && highlightColor != null
             ? Border.all(
                 color: highlightColor!.withValues(alpha: 0.3),
@@ -63,7 +63,7 @@ class CommonCard extends StatelessWidget {
           margin ??
           const EdgeInsets.symmetric(
             horizontal: AppSpacing.screenHorizontal,
-            vertical: 4,
+            vertical: AppSpacing.xs,
           ),
       child: card,
     );

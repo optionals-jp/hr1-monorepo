@@ -45,6 +45,9 @@ class AppColors {
   /// テキストセカンダリ（グレー）
   static const Color textSecondary = Color(0xFF64748B);
 
+  /// テキストターシャリ（薄いアイコン・無効テキスト）
+  static const Color textTertiary = Color(0xFF94A3B8);
+
   /// ボーダー（ライトグレー）
   static const Color border = Color(0xFFCBD5E1);
 
@@ -69,6 +72,31 @@ class AppColors {
   static const Color darkTextSecondary = Color(0xFFD6D6D6);
   static const Color darkBorder = Color(0xFF666666);
   static const Color darkDivider = Color(0xFF525252);
+  static const Color darkTextTertiary = Color(0xFFADADAD);
+
+  // ---------------------------------------------------------------------------
+  // テーマ対応ヘルパー
+  // ---------------------------------------------------------------------------
+
+  /// セカンダリテキスト（ライト/ダーク切り替え）
+  static Color textSecondaryOf(Brightness brightness) =>
+      brightness == Brightness.dark ? darkTextSecondary : textSecondary;
+
+  /// ターシャリテキスト（ライト/ダーク切り替え）
+  static Color textTertiaryOf(Brightness brightness) =>
+      brightness == Brightness.dark ? darkTextTertiary : textTertiary;
+
+  /// ボーダー（ライト/ダーク切り替え）
+  static Color borderOf(Brightness brightness) =>
+      brightness == Brightness.dark ? darkBorder : border;
+
+  /// ディバイダー（ライト/ダーク切り替え）
+  static Color dividerOf(Brightness brightness) =>
+      brightness == Brightness.dark ? darkDivider : divider;
+
+  /// ターシャリサーフェス（ライト/ダーク切り替え）
+  static Color surfaceTertiaryOf(Brightness brightness) =>
+      brightness == Brightness.dark ? darkSurfaceTertiary : surfaceTertiary;
 
   // ---------------------------------------------------------------------------
   // MaterialColor

@@ -37,7 +37,7 @@ class InterviewScheduleScreen extends ConsumerWidget {
       }
     });
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('面接日程の選択')),
       body: asyncInterview.when(
         data: (interview) {

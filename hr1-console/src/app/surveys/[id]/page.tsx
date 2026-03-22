@@ -194,7 +194,7 @@ export default function SurveyDetailPage() {
 
   async function handleDeleteQuestion() {
     if (!editQuestion) return;
-    if (!confirm("この質問を削除しますか？")) return;
+    if (!window.confirm("削除してもよろしいですか？")) return;
     setQDeleting(true);
     try {
       const { error } = await getSupabase()
@@ -241,7 +241,7 @@ export default function SurveyDetailPage() {
   // サーベイ削除
   async function handleDeleteSurvey() {
     if (!survey) return;
-    if (!confirm("このサーベイを削除しますか？回答データも削除されます。")) return;
+    if (!window.confirm("削除してもよろしいですか？")) return;
     try {
       const { error } = await getSupabase().from("pulse_surveys").delete().eq("id", survey.id);
       if (error) {

@@ -45,7 +45,7 @@ class MessageInputBar extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: hintText,
                   hintStyle: AppTextStyles.body1.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    color: AppColors.textSecondary(theme.brightness),
                   ),
                   filled: false,
                   border: InputBorder.none,
@@ -78,7 +78,7 @@ class MessageInputBar extends StatelessWidget {
                   child: Center(
                     child: AppIcons.send(
                       color: isSending
-                          ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
+                          ? AppColors.textTertiary(theme.brightness)
                           : Colors.white,
                       size: 22,
                     ),

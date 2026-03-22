@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../shared/widgets/fluent_chip.dart';
+import '../../../../shared/widgets/widgets.dart';
 
 /// シフト種別
 enum ShiftType {

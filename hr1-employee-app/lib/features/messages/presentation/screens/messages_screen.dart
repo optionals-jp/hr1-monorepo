@@ -4,12 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hr1_employee_app/core/utils/date_formatter.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/empty_state.dart';
-import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/org_icon.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
-import '../../../../shared/widgets/search_box.dart';
-import '../../../../shared/widgets/user_avatar.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/message_thread.dart';
 import '../controllers/messages_controller.dart';
@@ -27,7 +22,7 @@ class MessagesScreen extends ConsumerWidget {
     final threadsAsync = ref.watch(messagesControllerProvider);
     final user = ref.watch(appUserProvider);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         titleSpacing: AppSpacing.screenHorizontal,
         title: Row(

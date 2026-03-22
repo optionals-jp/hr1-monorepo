@@ -80,7 +80,7 @@ class LoginScreen extends HookConsumerWidget {
       otpController.clear();
     }
 
-    return Scaffold(
+    return CommonScaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(

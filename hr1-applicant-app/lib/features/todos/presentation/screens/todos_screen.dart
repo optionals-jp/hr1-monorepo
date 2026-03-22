@@ -171,7 +171,7 @@ class _FilterTabs extends StatelessWidget {
             child: Material(
               color: isActive
                   ? color.withValues(alpha: 0.12)
-                  : theme.colorScheme.onSurface.withValues(alpha: 0.05),
+                  : AppColors.surfaceTertiaryOf(theme.brightness),
               borderRadius: AppRadius.radiusCircular,
               child: InkWell(
                 onTap: () => onSelected(f),
@@ -194,9 +194,7 @@ class _FilterTabs extends StatelessWidget {
                         style: AppTextStyles.caption2.copyWith(
                           color: isActive
                               ? color
-                              : theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.7,
-                                ),
+                              : AppColors.textSecondaryOf(theme.brightness),
                           fontWeight: isActive
                               ? FontWeight.w600
                               : FontWeight.w500,
@@ -283,7 +281,7 @@ class _TodoItem extends StatelessWidget {
                   border: Border.all(
                     color: todo.isCompleted
                         ? AppColors.primaryLight
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                        : AppColors.textTertiaryOf(theme.brightness),
                     width: 1.5,
                   ),
                   color: todo.isCompleted
@@ -312,7 +310,7 @@ class _TodoItem extends StatelessWidget {
                           ? TextDecoration.lineThrough
                           : null,
                       color: todo.isCompleted
-                          ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
+                          ? AppColors.textSecondaryOf(theme.brightness)
                           : null,
                     ),
                     maxLines: 2,
@@ -337,7 +335,7 @@ class _TodoItem extends StatelessWidget {
                   size: 22,
                   color: todo.isImportant
                       ? AppColors.error
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                      : AppColors.textTertiaryOf(theme.brightness),
                 ),
               ),
             ),
@@ -778,7 +776,7 @@ class _EmptyTodoState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final emptyColor = theme.colorScheme.onSurface.withValues(alpha: 0.2);
+    final emptyColor = AppColors.textTertiaryOf(theme.brightness);
     final (icon, title, subtitle) = switch (filter) {
       TodoFilter.incomplete => (
         Icon(Icons.checklist_rounded, size: 48, color: emptyColor),
@@ -814,7 +812,7 @@ class _EmptyTodoState extends StatelessWidget {
             Text(
               subtitle,
               style: AppTextStyles.caption1.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                color: AppColors.textSecondaryOf(theme.brightness),
               ),
               textAlign: TextAlign.center,
             ),

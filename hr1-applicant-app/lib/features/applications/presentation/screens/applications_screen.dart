@@ -26,7 +26,7 @@ class ApplicationsScreen extends ConsumerWidget {
       return const Scaffold(body: Center(child: Text('企業が選択されていません')));
     }
 
-    return Scaffold(
+    return CommonScaffold(
       body: asyncApplications.when(
         data: (applications) {
           final jobs = asyncJobs.valueOrNull ?? [];

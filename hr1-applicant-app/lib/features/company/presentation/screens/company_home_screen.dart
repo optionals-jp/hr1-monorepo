@@ -431,27 +431,20 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     final theme = Theme.of(context);
-    return Container(
+    return Material(
       color: theme.colorScheme.surface,
-      child: Column(
-        children: [
-          TabBar(
-            controller: tabController,
-            labelColor: theme.colorScheme.primary,
-            unselectedLabelColor: AppColors.textSecondary,
-            labelStyle: AppTextStyles.body2.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-            unselectedLabelStyle: AppTextStyles.body2,
-            indicatorColor: theme.colorScheme.primary,
-            indicatorWeight: 2.5,
-            indicatorSize: TabBarIndicatorSize.label,
-            dividerHeight: 0,
-            isScrollable: tabs.length > 4,
-            tabs: tabs.map((t) => Tab(text: t, height: 44)).toList(),
-          ),
-          Container(height: 0.5, color: theme.dividerColor),
-        ],
+      child: TabBar(
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
+        controller: tabController,
+        labelColor: theme.colorScheme.primary,
+        unselectedLabelColor: AppColors.textSecondary,
+        labelStyle: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600),
+        unselectedLabelStyle: AppTextStyles.body2,
+        indicatorColor: theme.colorScheme.primary,
+        indicatorWeight: 2.5,
+        indicatorSize: TabBarIndicatorSize.label,
+        tabs: tabs.map((t) => Tab(text: t)).toList(),
       ),
     );
   }

@@ -108,10 +108,10 @@ export interface FormField {
 export interface FormResponse {
   id: string;
   form_id: string;
-  application_id: string;
+  applicant_id: string;
   field_id: string;
   value: string;
-  created_at: string;
+  submitted_at: string;
 }
 
 export interface FormChangeLog {
@@ -584,6 +584,56 @@ export interface ShiftSchedule {
   status: "draft" | "published";
   published_at: string | null;
   published_by: string | null;
+  created_at: string;
+  updated_at: string;
+  profiles?: Profile;
+}
+
+export interface WorkflowRequest {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  request_type: "paid_leave" | "overtime" | "business_trip" | "expense";
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  request_data: Record<string, unknown>;
+  reason: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_comment: string | null;
+  created_at: string;
+  updated_at: string;
+  profiles?: Profile;
+  reviewer?: Profile;
+}
+
+export interface LeaveBalance {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  fiscal_year: number;
+  granted_days: number;
+  used_days: number;
+  carried_over_days: number;
+  expired_days: number;
+  grant_date: string;
+  expiry_date: string;
+  created_at: string;
+  updated_at: string;
+  profiles?: Profile;
+}
+
+export interface Payslip {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  year: number;
+  month: number;
+  base_salary: number;
+  allowances: { label: string; amount: number }[];
+  deductions: { label: string; amount: number }[];
+  gross_pay: number;
+  net_pay: number;
+  note: string | null;
   created_at: string;
   updated_at: string;
   profiles?: Profile;

@@ -74,8 +74,6 @@ class _MiniCalendarState extends State<MiniCalendar> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return GestureDetector(
       onVerticalDragEnd: (details) {
         if (details.primaryVelocity != null) {
@@ -89,7 +87,7 @@ class _MiniCalendarState extends State<MiniCalendar> {
       child: Column(
         children: [
           // 曜日ヘッダー
-          _WeekdayHeader(theme: theme),
+          const _WeekdayHeader(),
           // 日付グリッド（PageView）
           AnimatedSize(
             duration: const Duration(milliseconds: 250),
@@ -115,7 +113,6 @@ class _MiniCalendarState extends State<MiniCalendar> {
           _ExpandHandle(
             isExpanded: widget.isExpanded,
             onTap: widget.onToggleExpand,
-            theme: theme,
           ),
         ],
       ),
@@ -177,13 +174,13 @@ class _MiniCalendarState extends State<MiniCalendar> {
 
     Color textColor;
     if (!isCurrentMonth) {
-      textColor = theme.colorScheme.onSurface.withValues(alpha: 0.3);
+      textColor = AppColors.textTertiary(theme.brightness);
     } else if (isToday) {
       textColor = Colors.white;
     } else if (isSelected) {
       textColor = AppColors.brandPrimary;
     } else if (date.weekday == 6 || date.weekday == 7) {
-      textColor = theme.colorScheme.onSurface.withValues(alpha: 0.5);
+      textColor = AppColors.textSecondary(theme.brightness);
     } else {
       textColor = theme.colorScheme.onSurface;
     }
@@ -244,13 +241,13 @@ class _MiniCalendarState extends State<MiniCalendar> {
 
 /// 曜日ヘッダー
 class _WeekdayHeader extends StatelessWidget {
-  const _WeekdayHeader({required this.theme});
-  final ThemeData theme;
+  const _WeekdayHeader();
 
   static const _weekdays = ['月', '火', '水', '木', '金', '土', '日'];
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
@@ -263,7 +260,7 @@ class _WeekdayHeader extends StatelessWidget {
                 style: AppTextStyles.caption1.copyWith(
                   fontWeight: FontWeight.w500,
                   color: isWeekend
-                      ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
+                      ? AppColors.textTertiary(theme.brightness)
                       : AppColors.textSecondary(theme.brightness),
                 ),
               ),
@@ -277,18 +274,14 @@ class _WeekdayHeader extends StatelessWidget {
 
 /// 展開/折りたたみハンドル
 class _ExpandHandle extends StatelessWidget {
-  const _ExpandHandle({
-    required this.isExpanded,
-    required this.onTap,
-    required this.theme,
-  });
+  const _ExpandHandle({required this.isExpanded, required this.onTap});
 
   final bool isExpanded;
   final VoidCallback onTap;
-  final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -301,7 +294,7 @@ class _ExpandHandle extends StatelessWidget {
                 ? Icons.keyboard_arrow_up_rounded
                 : Icons.keyboard_arrow_down_rounded,
             size: 20,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+            color: AppColors.textTertiary(theme.brightness),
           ),
         ),
       ),

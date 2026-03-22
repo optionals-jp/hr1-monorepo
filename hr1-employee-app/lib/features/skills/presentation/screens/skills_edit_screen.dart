@@ -1,39 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../shared/widgets/common_dialog.dart';
-import '../../../../shared/widgets/master_search_bar.dart';
-import '../../domain/entities/employee_skill.dart';
-import '../controllers/skills_controller.dart';
-import '../../../../shared/widgets/common_snackbar.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
-import '../providers/skills_providers.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/features/skills/domain/entities/employee_skill.dart';
+import 'package:hr1_employee_app/features/skills/presentation/controllers/skills_controller.dart';
+import 'package:hr1_employee_app/features/skills/presentation/providers/skills_providers.dart';
 
 /// スキル編集画面
-class SkillsEditScreen extends ConsumerStatefulWidget {
+class SkillsEditScreen extends ConsumerWidget {
   const SkillsEditScreen({super.key});
 
-  @override
-  ConsumerState<SkillsEditScreen> createState() => _SkillsEditScreenState();
-}
-
-class _SkillsEditScreenState extends ConsumerState<SkillsEditScreen> {
-  bool _isAdding = false;
-
-  Future<void> _addSkill(String name) async {
+  Future<void> _addSkill(
+    BuildContext context,
+    WidgetRef ref,
+    String name,
+  ) async {
     if (name.isEmpty) return;
 
-    setState(() => _isAdding = true);
+    ref.read(skillIsAddingProvider.notifier).state = true;
     try {
       await ref.read(skillsControllerProvider.notifier).addSkill(name);
     } catch (e) {
-      CommonSnackBar.error(context, 'エラー: $e');
+      if (context.mounted) CommonSnackBar.error(context, 'エラー: $e');
     } finally {
-      if (mounted) setState(() => _isAdding = false);
+      ref.read(skillIsAddingProvider.notifier).state = false;
     }
   }
 
-  Future<void> _deleteSkill(EmployeeSkill skill) async {
+  Future<void> _deleteSkill(
+    BuildContext context,
+    WidgetRef ref,
+    EmployeeSkill skill,
+  ) async {
     final confirmed = await CommonDialog.confirm(
       context: context,
       title: 'スキルの削除',
@@ -46,28 +44,29 @@ class _SkillsEditScreenState extends ConsumerState<SkillsEditScreen> {
     try {
       await ref.read(skillsControllerProvider.notifier).deleteSkill(skill.id);
     } catch (e) {
-      CommonSnackBar.error(context, 'エラー: $e');
+      if (context.mounted) CommonSnackBar.error(context, 'エラー: $e');
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final skillsAsync = ref.watch(skillsControllerProvider);
     final mastersAsync = ref.watch(skillMastersProvider);
+    final isAdding = ref.watch(skillIsAddingProvider);
     final theme = Theme.of(context);
 
     final masterNames =
         mastersAsync.valueOrNull?.map((m) => m.name).toList() ?? [];
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('スキル・専門分野')),
       body: Column(
         children: [
           MasterSearchBar(
             masterNames: masterNames,
-            onAdd: _addSkill,
+            onAdd: (name) => _addSkill(context, ref, name),
             hintText: 'スキルを検索・追加',
-            isAdding: _isAdding,
+            isAdding: isAdding,
           ),
           Expanded(
             child: skillsAsync.when(
@@ -82,17 +81,13 @@ class _SkillsEditScreenState extends ConsumerState<SkillsEditScreen> {
                         Icon(
                           Icons.psychology_outlined,
                           size: 48,
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.25,
-                          ),
+                          color: AppColors.textTertiary(theme.brightness),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         Text(
                           'スキルが登録されていません',
                           style: AppTextStyles.caption1.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.45,
-                            ),
+                            color: AppColors.textSecondary(theme.brightness),
                           ),
                         ),
                       ],
@@ -109,7 +104,7 @@ class _SkillsEditScreenState extends ConsumerState<SkillsEditScreen> {
                     final skill = skills[index];
                     return _SkillTile(
                       skill: skill,
-                      onDelete: () => _deleteSkill(skill),
+                      onDelete: () => _deleteSkill(context, ref, skill),
                     );
                   },
                 );
@@ -162,7 +157,7 @@ class _SkillTile extends StatelessWidget {
             child: Icon(
               Icons.close_rounded,
               size: 18,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+              color: AppColors.textTertiary(theme.brightness),
             ),
           ),
         ],

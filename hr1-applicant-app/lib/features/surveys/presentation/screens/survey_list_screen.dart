@@ -16,7 +16,7 @@ class SurveyListScreen extends ConsumerWidget {
     final surveysAsync = ref.watch(activeSurveysProvider);
     final completedAsync = ref.watch(completedSurveyIdsProvider);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         title: Text('サーベイ', style: AppTextStyles.callout),
         centerTitle: true,
@@ -85,15 +85,13 @@ class SurveyListScreen extends ConsumerWidget {
                 final isCompleted = completedIds.contains(survey.id);
 
                 return CommonCard(
-                  onTap: isCompleted
-                      ? null
-                      : () async {
-                          await context.push(
-                            '${AppRoutes.surveys}/${survey.id}',
-                            extra: survey,
-                          );
-                          ref.invalidate(completedSurveyIdsProvider);
-                        },
+                  onTap: () async {
+                    await context.push(
+                      '${AppRoutes.surveys}/${survey.id}',
+                      extra: survey,
+                    );
+                    ref.invalidate(completedSurveyIdsProvider);
+                  },
                   margin: EdgeInsets.zero,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

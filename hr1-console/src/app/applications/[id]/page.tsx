@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
@@ -24,7 +26,15 @@ import type {
   FormField,
   Interview,
 } from "@/types/database";
-import { Check, Circle, SkipForward, FileText, Calendar, ExternalLink } from "lucide-react";
+import {
+  Check,
+  Circle,
+  SkipForward,
+  FileText,
+  Calendar,
+  ExternalLink,
+  UserCheck,
+} from "lucide-react";
 import { format } from "date-fns";
 import {
   applicationStatusLabels as statusLabels,
@@ -61,6 +71,12 @@ export default function ApplicationDetailPage() {
   const [forms, setForms] = useState<CustomForm[]>([]);
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [resourcesLoading, setResourcesLoading] = useState(false);
+
+  // 入社確定ダイアログの状態
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false);
+  const [hireDate, setHireDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [converting, setConverting] = useState(false);
+  const { showToast } = useToast();
 
   const load = async () => {
     if (!organization) return;
@@ -291,6 +307,47 @@ export default function ApplicationDetailPage() {
     setApplication((prev) => (prev ? { ...prev, status: status as Application["status"] } : prev));
   };
 
+  const handleConvertToEmployee = async () => {
+    if (!application || !organization) return;
+    setConverting(true);
+    try {
+      const supabase = getSupabase();
+      const applicantId = application.applicant_id;
+
+      // 1. プロフィールのロールを employee に変更し、入社日を設定
+      await supabase
+        .from("profiles")
+        .update({ role: "employee", hire_date: hireDate })
+        .eq("id", applicantId);
+
+      // 2. user_organizations に登録されていなければ追加
+      await supabase
+        .from("user_organizations")
+        .upsert(
+          { user_id: applicantId, organization_id: organization.id },
+          { onConflict: "user_id,organization_id" }
+        );
+
+      // 3. 通知を作成
+      await supabase.from("notifications").insert({
+        organization_id: organization.id,
+        user_id: applicantId,
+        type: "general",
+        title: "入社が確定しました",
+        body: `${hireDate} 付けで社員として登録されました。社員アプリからログインできます。`,
+        is_read: false,
+      });
+
+      showToast("入社確定しました。応募者が社員として登録されました。");
+      setConvertDialogOpen(false);
+      load();
+    } catch (e) {
+      showToast(`エラーが発生しました: ${String(e)}`, "error");
+    } finally {
+      setConverting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
@@ -419,6 +476,27 @@ export default function ApplicationDetailPage() {
                 </div>
               </div>
             </section>
+
+            {/* 入社確定セクション */}
+            {application?.status === "offered" && (
+              <div className="mt-6 rounded-lg border border-green-200 bg-green-50 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-semibold text-green-900">内定者を社員として登録</h4>
+                    <p className="text-xs text-green-700 mt-1">
+                      この応募者を社員に変換し、社員アプリへのアクセスを許可します
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => setConvertDialogOpen(true)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <UserCheck className="mr-2 h-4 w-4" />
+                    入社確定
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -501,6 +579,41 @@ export default function ApplicationDetailPage() {
         loading={resourcesLoading}
         onSelect={startStepWithResource}
       />
+
+      {/* 入社確定ダイアログ */}
+      <Dialog open={convertDialogOpen} onOpenChange={setConvertDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>入社確定</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            この応募者を社員として登録します。プロフィールのロールが「社員」に変更され、社員アプリからログインできるようになります。
+          </p>
+          <div className="mt-4 space-y-3">
+            <div>
+              <label className="text-sm font-medium">入社日</label>
+              <Input
+                type="date"
+                value={hireDate}
+                onChange={(e) => setHireDate(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setConvertDialogOpen(false)}>
+              キャンセル
+            </Button>
+            <Button
+              onClick={handleConvertToEmployee}
+              disabled={converting}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {converting ? "処理中..." : "入社確定"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

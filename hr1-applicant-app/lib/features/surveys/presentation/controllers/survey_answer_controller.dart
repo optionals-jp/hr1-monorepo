@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../todos/presentation/providers/todo_providers.dart';
 import '../providers/survey_providers.dart';
@@ -34,8 +35,11 @@ class SurveyAnswerController extends AutoDisposeNotifier<SurveySubmitState> {
       ref.invalidate(allTodosProvider);
       ref.invalidate(incompleteTodoCountProvider);
       state = const SurveySubmitState(submitted: true);
-    } catch (e) {
-      state = const SurveySubmitState(error: '送信に失敗しました。しばらくしてから再度お試しください');
+    } catch (e, st) {
+      debugPrint('=== サーベイ送信エラー ===');
+      debugPrint('Error: $e');
+      debugPrint('StackTrace: $st');
+      state = SurveySubmitState(error: '送信に失敗しました: $e');
     }
   }
 }

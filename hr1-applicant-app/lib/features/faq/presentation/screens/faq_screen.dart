@@ -15,7 +15,7 @@ class FaqScreen extends ConsumerWidget {
     final faqsAsync = ref.watch(applicantFaqsProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('よくある質問')),
       body: faqsAsync.when(
         data: (faqs) {
@@ -27,7 +27,7 @@ class FaqScreen extends ConsumerWidget {
                   Icon(
                     Icons.help_outline_rounded,
                     size: 48,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                    color: AppColors.textTertiaryOf(theme.brightness),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
