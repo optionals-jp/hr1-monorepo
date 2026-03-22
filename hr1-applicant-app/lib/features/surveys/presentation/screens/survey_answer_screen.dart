@@ -454,16 +454,18 @@ class _QuestionWidget extends StatelessWidget {
 
   Widget _buildSingleChoice() {
     final options = question.options ?? [];
-    return Column(
-      children: options.map((option) {
-        return RadioListTile<String>(
-          title: Text(option, style: AppTextStyles.body2),
-          value: option,
-          groupValue: currentAnswer,
-          contentPadding: EdgeInsets.zero,
-          onChanged: (v) => onChanged(v ?? ''),
-        );
-      }).toList(),
+    return RadioGroup<String>(
+      groupValue: currentAnswer,
+      onChanged: (v) => onChanged(v ?? ''),
+      child: Column(
+        children: options.map((option) {
+          return RadioListTile<String>(
+            title: Text(option, style: AppTextStyles.body2),
+            value: option,
+            contentPadding: EdgeInsets.zero,
+          );
+        }).toList(),
+      ),
     );
   }
 

@@ -108,7 +108,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
           .read(threadChatControllerProvider.notifier)
           .editMessage(messageId, content);
     } catch (e) {
-      CommonSnackBar.error(context, 'メッセージの編集に失敗しました');
+      if (mounted) CommonSnackBar.error(context, 'メッセージの編集に失敗しました');
     }
   }
 
@@ -126,7 +126,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
           .read(threadChatControllerProvider.notifier)
           .deleteMessage(messageId);
     } catch (e) {
-      CommonSnackBar.error(context, 'メッセージの削除に失敗しました');
+      if (mounted) CommonSnackBar.error(context, 'メッセージの削除に失敗しました');
     }
   }
 

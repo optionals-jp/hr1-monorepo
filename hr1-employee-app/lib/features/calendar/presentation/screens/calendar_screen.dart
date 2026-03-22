@@ -691,7 +691,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
 
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
-      CommonSnackBar.error(context, 'エラーが発生しました: $e');
+      if (mounted) CommonSnackBar.error(context, 'エラーが発生しました: $e');
     }
   }
 

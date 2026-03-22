@@ -37,7 +37,5 @@ class AppConfig {
   );
 
   /// 現在の設定（main_dev.dart / main_prod.dart で設定される）
-  static AppConfig _current = dev;
-  static AppConfig get current => _current;
-  static set current(AppConfig config) => _current = config;
+  static AppConfig current = dev;
 }

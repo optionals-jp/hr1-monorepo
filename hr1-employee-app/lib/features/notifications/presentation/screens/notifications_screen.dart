@@ -27,7 +27,9 @@ class NotificationsScreen extends ConsumerWidget {
                     .read(notificationControllerProvider.notifier)
                     .markAllAsRead();
               } catch (_) {
-                CommonSnackBar.error(context, 'エラーが発生しました');
+                if (context.mounted) {
+                  CommonSnackBar.error(context, 'エラーが発生しました');
+                }
               }
             },
             child: Text(

@@ -815,7 +815,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
           );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
-      CommonSnackBar.error(context, 'エラー: $e');
+      if (mounted) CommonSnackBar.error(context, 'エラー: $e');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

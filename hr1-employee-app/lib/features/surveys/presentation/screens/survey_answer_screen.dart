@@ -224,16 +224,18 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
   Widget _buildSingleChoice(PulseSurveyQuestion q, ThemeData theme) {
     final options = q.options ?? [];
     final selected = _answers[q.id];
-    return Column(
-      children: options.map((option) {
-        return RadioListTile<String>(
-          title: Text(option, style: AppTextStyles.body2),
-          value: option,
-          groupValue: selected,
-          contentPadding: EdgeInsets.zero,
-          onChanged: (v) => setState(() => _answers[q.id] = v ?? ''),
-        );
-      }).toList(),
+    return RadioGroup<String>(
+      groupValue: selected,
+      onChanged: (v) => setState(() => _answers[q.id] = v ?? ''),
+      child: Column(
+        children: options.map((option) {
+          return RadioListTile<String>(
+            title: Text(option, style: AppTextStyles.body2),
+            value: option,
+            contentPadding: EdgeInsets.zero,
+          );
+        }).toList(),
+      ),
     );
   }
 
