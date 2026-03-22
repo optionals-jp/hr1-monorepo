@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../../auth/presentation/providers/organization_context_provider.dart';
-import '../../../company/presentation/widgets/section_renderers.dart';
-import '../../domain/entities/job.dart';
-import '../../domain/entities/job_step.dart';
-import '../providers/applications_providers.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/core/router/app_router.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/company/presentation/widgets/section_renderers.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/job.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/job_step.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/controllers/job_apply_controller.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/providers/applications_providers.dart';
 
 /// 求人詳細画面（企業カスタマイズ対応）
 class JobDetailScreen extends ConsumerWidget {
@@ -327,17 +326,7 @@ class _ApplyBar extends ConsumerWidget {
     );
     if (!confirmed) return;
 
-    final org = ref.read(currentOrganizationProvider);
-    if (org == null) return;
-
-    final repo = ref.read(applicationsRepositoryProvider);
-    await repo.apply(
-      jobId: job.id,
-      applicantId: ref.read(appUserProvider)!.id,
-      organizationId: org.id,
-    );
-
-    ref.invalidate(applicationsProvider);
+    await ref.read(jobApplyControllerProvider.notifier).apply(jobId: job.id);
 
     if (!screenContext.mounted) return;
     CommonSnackBar.show(screenContext, '「${job.title}」に応募しました');

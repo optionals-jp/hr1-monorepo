@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../shared/utils/month_utils.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../domain/entities/attendance_record.dart';
-import '../providers/attendance_providers.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/shared/utils/month_utils.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/features/attendance/domain/entities/attendance_record.dart';
+import 'package:hr1_employee_app/features/attendance/presentation/providers/attendance_providers.dart';
 
 /// 勤怠明細画面 — 月次サマリー＋日別一覧
 class AttendanceDetailScreen extends ConsumerWidget {
@@ -14,9 +14,9 @@ class AttendanceDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(selectedMonthProvider);
-    final records = ref.watch(
-      monthlyRecordsProvider((year: selected.year, month: selected.month)),
-    );
+    final params = (year: selected.year, month: selected.month);
+    final summaryAsync = ref.watch(monthlySummaryProvider(params));
+    final dayListAsync = ref.watch(monthlyDayListProvider(params));
     final isCurrentMonth = MonthUtils.isCurrentMonth(
       selected.year,
       selected.month,
@@ -34,20 +34,17 @@ class AttendanceDetailScreen extends ConsumerWidget {
             onNext: () => ref.read(selectedMonthProvider.notifier).nextMonth(),
           ),
           Expanded(
-            child: records.when(
-              data: (list) => _Body(
-                records: list,
-                year: selected.year,
-                month: selected.month,
+            child: summaryAsync.when(
+              data: (summary) => dayListAsync.when(
+                data: (days) => _Body(summary: summary, days: days),
+                loading: () => const LoadingIndicator(),
+                error: (e, _) => ErrorState(
+                  onRetry: () => ref.invalidate(monthlyRecordsProvider(params)),
+                ),
               ),
               loading: () => const LoadingIndicator(),
               error: (e, _) => ErrorState(
-                onRetry: () => ref.invalidate(
-                  monthlyRecordsProvider((
-                    year: selected.year,
-                    month: selected.month,
-                  )),
-                ),
+                onRetry: () => ref.invalidate(monthlyRecordsProvider(params)),
               ),
             ),
           ),
@@ -58,17 +55,14 @@ class AttendanceDetailScreen extends ConsumerWidget {
 }
 
 class _Body extends StatelessWidget {
-  const _Body({required this.records, required this.year, required this.month});
+  const _Body({required this.summary, required this.days});
 
-  final List<AttendanceRecord> records;
-  final int year;
-  final int month;
+  final MonthlySummary summary;
+  final List<DayData> days;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final summary = _calcSummary(records);
-    final days = _buildDayList();
 
     return ListView(
       padding: const EdgeInsets.symmetric(
@@ -99,66 +93,7 @@ class _Body extends StatelessWidget {
     );
   }
 
-  List<_DayData> _buildDayList() {
-    final lastDay = DateTime(year, month + 1, 0).day;
-    final recordMap = <String, AttendanceRecord>{};
-    for (final r in records) {
-      recordMap[r.date] = r;
-    }
-
-    final days = <_DayData>[];
-    for (var d = 1; d <= lastDay; d++) {
-      final date = DateTime(year, month, d);
-      final dateStr =
-          '$year-${month.toString().padLeft(2, '0')}-${d.toString().padLeft(2, '0')}';
-      final record = recordMap[dateStr];
-      final isWeekend =
-          date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
-      days.add(
-        _DayData(
-          date: date,
-          dateStr: dateStr,
-          record: record,
-          isWeekend: isWeekend,
-        ),
-      );
-    }
-    return days;
-  }
-
-  _MonthlySummary _calcSummary(List<AttendanceRecord> records) {
-    int totalWorkMinutes = 0;
-    int totalOvertimeMinutes = 0;
-    int totalLateNightMinutes = 0;
-    int workDayCount = 0;
-    int lateEarlyCount = 0;
-
-    for (final r in records) {
-      totalWorkMinutes += r.workMinutes;
-      totalOvertimeMinutes += r.overtimeMinutes;
-      totalLateNightMinutes += r.lateNightMinutes;
-
-      if (r.status == AttendanceStatus.present ||
-          r.status == AttendanceStatus.late ||
-          r.status == AttendanceStatus.earlyLeave) {
-        workDayCount++;
-      }
-      if (r.status == AttendanceStatus.late ||
-          r.status == AttendanceStatus.earlyLeave) {
-        lateEarlyCount++;
-      }
-    }
-
-    return _MonthlySummary(
-      totalWorkMinutes: totalWorkMinutes,
-      totalOvertimeMinutes: totalOvertimeMinutes,
-      totalLateNightMinutes: totalLateNightMinutes,
-      workDayCount: workDayCount,
-      lateEarlyCount: lateEarlyCount,
-    );
-  }
-
-  void _showDayDetail(BuildContext context, _DayData day) {
+  void _showDayDetail(BuildContext context, DayData day) {
     final record = day.record!;
     final dateLabel = DateFormat('M月d日（E）', 'ja').format(day.date);
 
@@ -246,40 +181,6 @@ class _Body extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// データクラス
-// ---------------------------------------------------------------------------
-
-class _MonthlySummary {
-  const _MonthlySummary({
-    required this.totalWorkMinutes,
-    required this.totalOvertimeMinutes,
-    required this.totalLateNightMinutes,
-    required this.workDayCount,
-    required this.lateEarlyCount,
-  });
-
-  final int totalWorkMinutes;
-  final int totalOvertimeMinutes;
-  final int totalLateNightMinutes;
-  final int workDayCount;
-  final int lateEarlyCount;
-}
-
-class _DayData {
-  const _DayData({
-    required this.date,
-    required this.dateStr,
-    this.record,
-    this.isWeekend = false,
-  });
-
-  final DateTime date;
-  final String dateStr;
-  final AttendanceRecord? record;
-  final bool isWeekend;
-}
-
-// ---------------------------------------------------------------------------
 // ウィジェット
 // ---------------------------------------------------------------------------
 
@@ -336,7 +237,7 @@ class _MonthSelector extends StatelessWidget {
 class _SummarySection extends StatelessWidget {
   const _SummarySection({required this.summary});
 
-  final _MonthlySummary summary;
+  final MonthlySummary summary;
 
   @override
   Widget build(BuildContext context) {
@@ -445,7 +346,7 @@ class _SummaryItem extends StatelessWidget {
 class _DayTile extends StatelessWidget {
   const _DayTile({required this.day, this.onTap});
 
-  final _DayData day;
+  final DayData day;
   final VoidCallback? onTap;
 
   @override

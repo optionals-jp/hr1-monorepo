@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../domain/entities/app_user.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../providers/auth_providers.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/core/router/app_router.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import '../controllers/auth_controller.dart';
 
 /// スプラッシュ画面
 class SplashScreen extends ConsumerStatefulWidget {
@@ -47,70 +45,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     if (!mounted) return;
 
-    final session = Supabase.instance.client.auth.currentSession;
-    if (session != null) {
-      final loaded = await _loadCurrentUser();
-      if (!mounted) return;
-      if (loaded) {
-        context.go(AppRoutes.portal);
-      } else {
-        context.go(AppRoutes.login);
-      }
-      return;
-    }
+    final loaded = await ref
+        .read(authControllerProvider.notifier)
+        .restoreSession();
+    if (!mounted) return;
 
-    context.go(AppRoutes.login);
-  }
-
-  Future<bool> _loadCurrentUser() async {
-    try {
-      final client = Supabase.instance.client;
-      final currentUser = client.auth.currentUser;
-      if (currentUser == null) return false;
-      final userId = currentUser.id;
-      final email = currentUser.email ?? '';
-
-      final profile = await client
-          .from('profiles')
-          .select()
-          .eq('id', userId)
-          .maybeSingle();
-
-      if (profile == null) {
-        debugPrint('プロフィールが見つかりません: $userId');
-        return false;
-      }
-
-      final userOrg = await client
-          .from('user_organizations')
-          .select('organization_id, organizations(name)')
-          .eq('user_id', userId)
-          .limit(1)
-          .maybeSingle();
-
-      final orgId = userOrg?['organization_id'] as String? ?? '';
-      final orgName =
-          (userOrg?['organizations'] as Map?)?['name'] as String? ?? '';
-
-      final user = AppUser(
-        id: userId,
-        email: email,
-        organizationId: orgId,
-        organizationName: orgName,
-        role: profile['role'] as String? ?? 'employee',
-        displayName: profile['display_name'] as String?,
-        avatarUrl: profile['avatar_url'] as String?,
-        department: profile['department'] as String?,
-        position: profile['position'] as String?,
-      );
-      ref.read(appUserProvider.notifier).setUser(user);
-      return true;
-    } on PostgrestException catch (e) {
-      debugPrint('ユーザー情報の取得に失敗しました: ${e.message}');
-      return false;
-    } catch (e) {
-      debugPrint('ユーザー情報の取得中にエラー: $e');
-      return false;
+    if (loaded) {
+      context.go(AppRoutes.portal);
+    } else {
+      context.go(AppRoutes.login);
     }
   }
 

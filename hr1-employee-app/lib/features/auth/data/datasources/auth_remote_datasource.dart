@@ -97,6 +97,9 @@ class AuthRemoteDatasource {
     return _client.storage.from('avatars').getPublicUrl(path);
   }
 
+  /// 現在のセッションが存在するかを返す
+  bool get hasSession => _client.auth.currentSession != null;
+
   /// 現在の認証ユーザーIDを返す
   String? get currentUserId => _client.auth.currentUser?.id;
 

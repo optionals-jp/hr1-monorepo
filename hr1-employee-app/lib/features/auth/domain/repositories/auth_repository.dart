@@ -25,6 +25,9 @@ abstract class AuthRepository {
   /// アバター画像をアップロードしてプロフィールに反映
   Future<Result<String>> uploadAvatar(String filePath);
 
+  /// 現在のセッションが存在するかを返す
+  bool get hasSession;
+
   /// 認証状態の変更を監視
   Stream<bool> watchAuthState();
 }

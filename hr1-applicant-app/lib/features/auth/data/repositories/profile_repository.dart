@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// プロフィールデータリポジトリ
@@ -14,6 +16,27 @@ class ProfileRepository {
         .eq('id', userId)
         .single();
     return response;
+  }
+
+  /// アバター画像をアップロードし、プロフィールを更新して公開URLを返す
+  Future<String> uploadAvatar(File file, String extension) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw Exception('ユーザーが認証されていません');
+
+    final path = '$userId/${DateTime.now().millisecondsSinceEpoch}.$extension';
+
+    await _client.storage
+        .from('avatars')
+        .upload(path, file, fileOptions: const FileOptions(upsert: true));
+
+    final publicUrl = _client.storage.from('avatars').getPublicUrl(path);
+
+    await _client
+        .from('profiles')
+        .update({'avatar_url': publicUrl})
+        .eq('id', userId);
+
+    return publicUrl;
   }
 
   /// プロフィールを更新

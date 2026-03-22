@@ -6,7 +6,8 @@ import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/widgets.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../notifications/domain/entities/notification_item.dart';
-import '../../../notifications/presentation/providers/notification_providers.dart';
+import 'package:hr1_employee_app/features/notifications/presentation/controllers/notification_controller.dart';
+import 'package:hr1_employee_app/features/notifications/presentation/providers/notification_providers.dart';
 import 'widgets/action_chip.dart';
 
 /// 社内ポータル画面 — Teams / Outlook モバイルスタイル
@@ -341,9 +342,7 @@ class _NotificationPreviewTile extends ConsumerWidget {
     return InkWell(
       onTap: () {
         if (!item.isRead) {
-          ref.read(notificationRepositoryProvider).markAsRead(item.id);
-          ref.invalidate(latestNotificationsProvider);
-          ref.invalidate(unreadNotificationCountProvider);
+          ref.read(notificationControllerProvider.notifier).markAsRead(item.id);
         }
         if (item.actionUrl != null && item.actionUrl!.startsWith('/')) {
           context.push(item.actionUrl!);

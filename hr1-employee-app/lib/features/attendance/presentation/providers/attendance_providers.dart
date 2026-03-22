@@ -86,6 +86,117 @@ class SelectedMonthNotifier
   }
 }
 
+/// 月次勤怠サマリーデータ
+class MonthlySummary {
+  const MonthlySummary({
+    required this.totalWorkMinutes,
+    required this.totalOvertimeMinutes,
+    required this.totalLateNightMinutes,
+    required this.workDayCount,
+    required this.lateEarlyCount,
+  });
+
+  final int totalWorkMinutes;
+  final int totalOvertimeMinutes;
+  final int totalLateNightMinutes;
+  final int workDayCount;
+  final int lateEarlyCount;
+}
+
+/// 日別表示データ
+class DayData {
+  const DayData({
+    required this.date,
+    required this.dateStr,
+    this.record,
+    this.isWeekend = false,
+  });
+
+  final DateTime date;
+  final String dateStr;
+  final AttendanceRecord? record;
+  final bool isWeekend;
+}
+
+/// 月次サマリープロバイダー
+final monthlySummaryProvider = Provider.autoDispose
+    .family<AsyncValue<MonthlySummary>, ({int year, int month})>((ref, params) {
+      return ref.watch(monthlyRecordsProvider(params)).whenData(_calcSummary);
+    });
+
+MonthlySummary _calcSummary(List<AttendanceRecord> records) {
+  int totalWorkMinutes = 0;
+  int totalOvertimeMinutes = 0;
+  int totalLateNightMinutes = 0;
+  int workDayCount = 0;
+  int lateEarlyCount = 0;
+
+  for (final r in records) {
+    totalWorkMinutes += r.workMinutes;
+    totalOvertimeMinutes += r.overtimeMinutes;
+    totalLateNightMinutes += r.lateNightMinutes;
+
+    if (r.status == AttendanceStatus.present ||
+        r.status == AttendanceStatus.late ||
+        r.status == AttendanceStatus.earlyLeave) {
+      workDayCount++;
+    }
+    if (r.status == AttendanceStatus.late ||
+        r.status == AttendanceStatus.earlyLeave) {
+      lateEarlyCount++;
+    }
+  }
+
+  return MonthlySummary(
+    totalWorkMinutes: totalWorkMinutes,
+    totalOvertimeMinutes: totalOvertimeMinutes,
+    totalLateNightMinutes: totalLateNightMinutes,
+    workDayCount: workDayCount,
+    lateEarlyCount: lateEarlyCount,
+  );
+}
+
+/// 日別一覧データプロバイダー
+final monthlyDayListProvider = Provider.autoDispose
+    .family<AsyncValue<List<DayData>>, ({int year, int month})>((ref, params) {
+      return ref
+          .watch(monthlyRecordsProvider(params))
+          .whenData(
+            (records) => _buildDayList(records, params.year, params.month),
+          );
+    });
+
+List<DayData> _buildDayList(
+  List<AttendanceRecord> records,
+  int year,
+  int month,
+) {
+  final lastDay = DateTime(year, month + 1, 0).day;
+  final recordMap = <String, AttendanceRecord>{};
+  for (final r in records) {
+    recordMap[r.date] = r;
+  }
+
+  final days = <DayData>[];
+  for (var d = 1; d <= lastDay; d++) {
+    final date = DateTime(year, month, d);
+    final dateStr =
+        '$year-${month.toString().padLeft(2, '0')}-${d.toString().padLeft(2, '0')}';
+    final record = recordMap[dateStr];
+    final isWeekend =
+        date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
+    days.add(
+      DayData(
+        date: date,
+        dateStr: dateStr,
+        record: record,
+        isWeekend: isWeekend,
+      ),
+    );
+  }
+  return days;
+}
+
 /// 勤怠状態管理（出勤中・休憩中などの状態を管理）
 enum WorkState { notStarted, working, onBreak, finished }
 

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/controllers/profile_edit_controller.dart';
@@ -125,34 +124,18 @@ class ProfileEditScreen extends ConsumerWidget {
     );
     if (picked == null) return;
 
-    try {
-      final client = Supabase.instance.client;
-      final userId = client.auth.currentUser?.id;
-      if (userId == null) return;
+    final file = File(picked.path);
+    final ext = picked.path.split('.').last;
 
-      final file = File(picked.path);
-      final ext = picked.path.split('.').last;
-      final path = '$userId/${DateTime.now().millisecondsSinceEpoch}.$ext';
+    final success = await ref
+        .read(profileEditControllerProvider.notifier)
+        .uploadAvatar(file, ext);
 
-      await client.storage
-          .from('avatars')
-          .upload(path, file, fileOptions: const FileOptions(upsert: true));
-
-      final publicUrl = client.storage.from('avatars').getPublicUrl(path);
-
-      await client
-          .from('profiles')
-          .update({'avatar_url': publicUrl})
-          .eq('id', userId);
-
-      if (context.mounted) {
-        CommonSnackBar.show(context, 'プロフィール画像を更新しました');
-      }
-      ref.invalidate(appUserProvider);
-    } catch (e) {
-      if (context.mounted) {
-        CommonSnackBar.error(context, '画像のアップロードに失敗しました');
-      }
+    if (!context.mounted) return;
+    if (success) {
+      CommonSnackBar.show(context, 'プロフィール画像を更新しました');
+    } else {
+      CommonSnackBar.error(context, '画像のアップロードに失敗しました');
     }
   }
 
