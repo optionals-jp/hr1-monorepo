@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../domain/entities/service_request.dart';
-import '../controllers/service_request_controller.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/features/service_requests/domain/entities/service_request.dart';
+import 'package:hr1_applicant_app/features/service_requests/presentation/controllers/service_request_controller.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 
 /// サービスリクエスト作成画面
 class ServiceRequestCreateScreen extends ConsumerStatefulWidget {
@@ -35,13 +34,9 @@ class _ServiceRequestCreateScreenState
     if (ref.read(serviceRequestControllerProvider) is AsyncLoading) return;
     if (!_formKey.currentState!.validate()) return;
 
-    final user = ref.read(appUserProvider);
-    if (user == null) return;
-
     final success = await ref
         .read(serviceRequestControllerProvider.notifier)
         .submit(
-          userId: user.id,
           type: widget.type,
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
@@ -61,7 +56,7 @@ class _ServiceRequestCreateScreenState
     final controllerState = ref.watch(serviceRequestControllerProvider);
     final isLoading = controllerState is AsyncLoading;
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         title: Text(widget.type.label, style: AppTextStyles.callout),
       ),

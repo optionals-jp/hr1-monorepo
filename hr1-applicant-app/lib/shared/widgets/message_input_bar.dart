@@ -32,9 +32,7 @@ class MessageInputBar extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 48),
         padding: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
-          color: theme.brightness == Brightness.dark
-              ? AppColors.darkSurfaceTertiary
-              : AppColors.surfaceTertiary,
+          color: AppColors.surfaceTertiaryOf(theme.brightness),
           borderRadius: AppRadius.radiusCircular,
         ),
         child: Row(
@@ -47,7 +45,7 @@ class MessageInputBar extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: hintText,
                   hintStyle: AppTextStyles.body1.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    color: AppColors.textSecondaryOf(theme.brightness),
                   ),
                   filled: false,
                   border: InputBorder.none,
@@ -73,14 +71,14 @@ class MessageInputBar extends StatelessWidget {
                   height: 36,
                   decoration: BoxDecoration(
                     color: isSending
-                        ? theme.colorScheme.onSurface.withValues(alpha: 0.1)
+                        ? AppColors.surfaceTertiaryOf(theme.brightness)
                         : AppColors.primaryLight,
                     shape: BoxShape.circle,
                   ),
                   child: Center(
                     child: AppIcons.send(
                       color: isSending
-                          ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
+                          ? AppColors.textTertiaryOf(theme.brightness)
                           : Colors.white,
                       size: 22,
                     ),

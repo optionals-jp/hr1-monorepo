@@ -51,6 +51,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.5.4
 
+  # 画像選択
+  image_picker: ^1.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

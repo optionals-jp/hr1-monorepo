@@ -619,6 +619,7 @@ function ThreadChat({
 
   // --- メッセージ削除 ---
   const handleDelete = async (msgId: string) => {
+    if (!window.confirm("削除してもよろしいですか？")) return;
     setDeletingId(null);
     const { error } = await getSupabase().from("messages").delete().eq("id", msgId);
     if (error) {

@@ -8,8 +8,12 @@ import '../../../../core/constants/constants.dart';
 import '../../../../shared/widgets/widgets.dart';
 import '../../domain/entities/pulse_survey.dart';
 import '../controllers/survey_answer_controller.dart';
+import '../providers/survey_providers.dart';
 
 /// パルスサーベイ回答画面（応募者向け）
+///
+/// 未回答: 編集可能なフォーム + 送信ボタン
+/// 回答済み: 読み取り専用で自分の回答を表示
 class SurveyAnswerScreen extends HookConsumerWidget {
   const SurveyAnswerScreen({super.key, required this.survey});
 
@@ -17,10 +21,93 @@ class SurveyAnswerScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final completedIds =
+        ref.watch(completedSurveyIdsProvider).valueOrNull ?? {};
+    final isCompleted = completedIds.contains(survey.id);
+
+    if (isCompleted) {
+      return _CompletedView(survey: survey);
+    }
+    return _EditView(survey: survey);
+  }
+}
+
+/// 回答済み — 読み取り専用ビュー
+class _CompletedView extends ConsumerWidget {
+  const _CompletedView({required this.survey});
+  final PulseSurvey survey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final answersAsync = ref.watch(myAnswersProvider(survey.id));
+
+    return CommonScaffold(
+      appBar: AppBar(
+        title: Text(survey.title, style: AppTextStyles.callout),
+        centerTitle: true,
+      ),
+      body: answersAsync.when(
+        loading: () => const LoadingIndicator(),
+        error: (e, _) => ErrorState(
+          onRetry: () => ref.invalidate(myAnswersProvider(survey.id)),
+        ),
+        data: (answers) => ListView(
+          padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.1),
+                borderRadius: AppRadius.radius80,
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle, size: 18, color: AppColors.success),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    '回答済み',
+                    style: AppTextStyles.caption1.copyWith(
+                      color: AppColors.success,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (survey.description != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                survey.description!,
+                style: AppTextStyles.caption1.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.xl),
+            ...survey.questions.map(
+              (q) => _ReadOnlyQuestion(question: q, answer: answers[q.id]),
+            ),
+            const SizedBox(height: AppSpacing.xxxl),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 未回答 — 編集可能ビュー
+class _EditView extends HookConsumerWidget {
+  const _EditView({required this.survey});
+  final PulseSurvey survey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final answers = useRef(<String, String>{});
     final revision = useState(0);
     final controllerState = ref.watch(surveyAnswerControllerProvider);
-    final theme = Theme.of(context);
 
     void updateAnswer(String questionId, String value) {
       answers.value[questionId] = value;
@@ -76,10 +163,9 @@ class SurveyAnswerScreen extends HookConsumerWidget {
       );
     }
 
-    // revision.value を参照してリビルドを確実にする
     final _ = revision.value;
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         title: Text(survey.title, style: AppTextStyles.callout),
         centerTitle: true,
@@ -101,7 +187,6 @@ class SurveyAnswerScreen extends HookConsumerWidget {
               question: q,
               currentAnswer: answers.value[q.id],
               onChanged: (value) => updateAnswer(q.id, value),
-              theme: theme,
             ),
           ),
           const SizedBox(height: AppSpacing.xxl),
@@ -120,6 +205,127 @@ class SurveyAnswerScreen extends HookConsumerWidget {
   }
 }
 
+/// 読み取り専用の質問表示
+class _ReadOnlyQuestion extends StatelessWidget {
+  const _ReadOnlyQuestion({required this.question, required this.answer});
+
+  final PulseSurveyQuestion question;
+  final String? answer;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            question.label,
+            style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600),
+          ),
+          if (question.description != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              question.description!,
+              style: AppTextStyles.caption2.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.sm),
+          _buildAnswer(theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnswer(ThemeData theme) {
+    if (answer == null || answer!.isEmpty) {
+      return Text(
+        '未回答',
+        style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary),
+      );
+    }
+
+    switch (question.type) {
+      case 'rating':
+        final value = int.tryParse(answer!) ?? 0;
+        return Row(
+          children: List.generate(5, (i) {
+            final v = i + 1;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: v <= value
+                      ? AppColors.primaryLight.withValues(alpha: 0.15)
+                      : theme.colorScheme.surface,
+                  borderRadius: AppRadius.radius80,
+                  border: Border.all(
+                    color: v <= value
+                        ? AppColors.primaryLight
+                        : theme.colorScheme.outlineVariant,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    '$v',
+                    style: AppTextStyles.body2.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: v <= value
+                          ? AppColors.primaryLight
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        );
+      case 'single_choice':
+        return Text(answer!, style: AppTextStyles.body2);
+      case 'multiple_choice':
+        try {
+          final items = (jsonDecode(answer!) as List).cast<String>();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: items
+                .map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        Icon(Icons.check, size: 16, color: AppColors.success),
+                        const SizedBox(width: 6),
+                        Text(item, style: AppTextStyles.body2),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+          );
+        } catch (_) {
+          return Text(answer!, style: AppTextStyles.body2);
+        }
+      default:
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.3,
+            ),
+            borderRadius: AppRadius.radius80,
+          ),
+          child: Text(answer!, style: AppTextStyles.body2),
+        );
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // 質問ウィジェット
 // ---------------------------------------------------------------------------
@@ -129,16 +335,15 @@ class _QuestionWidget extends StatelessWidget {
     required this.question,
     required this.currentAnswer,
     required this.onChanged,
-    required this.theme,
   });
 
   final PulseSurveyQuestion question;
   final String? currentAnswer;
   final ValueChanged<String> onChanged;
-  final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       child: Column(
@@ -173,16 +378,16 @@ class _QuestionWidget extends StatelessWidget {
             ),
           ],
           const SizedBox(height: AppSpacing.sm),
-          _buildInput(),
+          _buildInput(theme),
         ],
       ),
     );
   }
 
-  Widget _buildInput() {
+  Widget _buildInput(ThemeData theme) {
     switch (question.type) {
       case 'rating':
-        return _buildRating();
+        return _buildRating(theme);
       case 'text':
         return _buildTextField();
       case 'single_choice':
@@ -194,7 +399,7 @@ class _QuestionWidget extends StatelessWidget {
     }
   }
 
-  Widget _buildRating() {
+  Widget _buildRating(ThemeData theme) {
     final currentValue = int.tryParse(currentAnswer ?? '') ?? 0;
     return Row(
       children: List.generate(5, (i) {
@@ -249,16 +454,18 @@ class _QuestionWidget extends StatelessWidget {
 
   Widget _buildSingleChoice() {
     final options = question.options ?? [];
-    return Column(
-      children: options.map((option) {
-        return RadioListTile<String>(
-          title: Text(option, style: AppTextStyles.body2),
-          value: option,
-          groupValue: currentAnswer,
-          contentPadding: EdgeInsets.zero,
-          onChanged: (v) => onChanged(v ?? ''),
-        );
-      }).toList(),
+    return RadioGroup<String>(
+      groupValue: currentAnswer,
+      onChanged: (v) => onChanged(v ?? ''),
+      child: Column(
+        children: options.map((option) {
+          return RadioListTile<String>(
+            title: Text(option, style: AppTextStyles.body2),
+            value: option,
+            contentPadding: EdgeInsets.zero,
+          );
+        }).toList(),
+      ),
     );
   }
 

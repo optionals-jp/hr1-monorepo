@@ -51,6 +51,24 @@ class AuthController extends AutoDisposeNotifier<AuthState> {
     };
   }
 
+  /// セッション復元（スプラッシュ画面用）
+  ///
+  /// セッションが存在する場合、ユーザー情報を取得して appUserProvider にセットする。
+  /// 成功時は true、セッションなし・取得失敗時は false を返す。
+  Future<bool> restoreSession() async {
+    final repo = ref.read(authRepositoryProvider);
+    if (!repo.hasSession) return false;
+
+    final result = await repo.getCurrentUser();
+    return switch (result) {
+      Success(data: final user) => () {
+        ref.read(appUserProvider.notifier).setUser(user);
+        return true;
+      }(),
+      Failure() => false,
+    };
+  }
+
   /// ログアウト
   Future<bool> signOut() async {
     state = const AuthState(isLoading: true);

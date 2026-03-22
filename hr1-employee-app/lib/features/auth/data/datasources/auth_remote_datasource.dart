@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/app_user.dart';
 
@@ -73,6 +75,33 @@ class AuthRemoteDatasource {
       position: profile['position'] as String?,
     );
   }
+
+  /// プロフィールのフィールドを更新
+  Future<void> updateProfileField({
+    required String userId,
+    required Map<String, dynamic> fields,
+  }) async {
+    await _client.from('profiles').update(fields).eq('id', userId);
+  }
+
+  /// アバター画像をアップロードして公開URLを返す
+  Future<String> uploadAvatar({
+    required String userId,
+    required File file,
+    required String extension,
+  }) async {
+    final path = '$userId/${DateTime.now().millisecondsSinceEpoch}.$extension';
+    await _client.storage
+        .from('avatars')
+        .upload(path, file, fileOptions: const FileOptions(upsert: true));
+    return _client.storage.from('avatars').getPublicUrl(path);
+  }
+
+  /// 現在のセッションが存在するかを返す
+  bool get hasSession => _client.auth.currentSession != null;
+
+  /// 現在の認証ユーザーIDを返す
+  String? get currentUserId => _client.auth.currentUser?.id;
 
   /// 認証状態の変更を監視
   Stream<AuthState> watchAuthState() {

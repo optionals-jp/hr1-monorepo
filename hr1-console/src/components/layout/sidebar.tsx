@@ -23,6 +23,9 @@ import {
   ListTodo,
   CircleHelp,
   HeartPulse,
+  FileCheck,
+  CalendarOff,
+  Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -53,6 +56,9 @@ const navSections: NavSection[] = [
       { href: "/projects", label: "プロジェクト", icon: FolderKanban },
       { href: "/attendance", label: "勤怠管理", icon: Clock },
       { href: "/shifts", label: "シフト管理", icon: CalendarRange },
+      { href: "/workflows", label: "申請管理", icon: FileCheck },
+      { href: "/leave", label: "休暇管理", icon: CalendarOff },
+      { href: "/payslips", label: "給与明細", icon: Receipt },
     ],
   },
   {

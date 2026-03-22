@@ -226,7 +226,7 @@ export default function TaskDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!task || !confirm("このタスクを削除しますか？")) return;
+    if (!task || !window.confirm("削除してもよろしいですか？")) return;
     try {
       const { error } = await getSupabase().from("tasks").delete().eq("id", task.id);
       if (error) throw error;
@@ -255,6 +255,7 @@ export default function TaskDetailPage() {
   };
 
   const handleRemoveAssignee = async (assigneeId: string) => {
+    if (!window.confirm("削除してもよろしいですか？")) return;
     try {
       const { error } = await getSupabase().from("task_assignees").delete().eq("id", assigneeId);
       if (error) throw error;

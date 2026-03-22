@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../shared/utils/month_utils.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/repositories/supabase_attendance_repository.dart';
 import '../../domain/entities/attendance_record.dart';
@@ -58,6 +59,143 @@ final monthlyRecordsProvider = FutureProvider.autoDispose
           '${params.year}-${params.month.toString().padLeft(2, '0')}-$lastDay';
       return repo.getRecords(startDate: startDate, endDate: endDate);
     });
+
+/// 勤怠明細画面の選択月プロバイダー
+final selectedMonthProvider =
+    AutoDisposeNotifierProvider<SelectedMonthNotifier, ({int year, int month})>(
+      SelectedMonthNotifier.new,
+    );
+
+class SelectedMonthNotifier
+    extends AutoDisposeNotifier<({int year, int month})> {
+  @override
+  ({int year, int month}) build() {
+    final now = DateTime.now();
+    return (year: now.year, month: now.month);
+  }
+
+  void prevMonth() {
+    final prev = MonthUtils.prevMonth(state.year, state.month);
+    state = prev;
+  }
+
+  void nextMonth() {
+    if (MonthUtils.isCurrentMonth(state.year, state.month)) return;
+    final next = MonthUtils.nextMonth(state.year, state.month);
+    state = next;
+  }
+}
+
+/// 月次勤怠サマリーデータ
+class MonthlySummary {
+  const MonthlySummary({
+    required this.totalWorkMinutes,
+    required this.totalOvertimeMinutes,
+    required this.totalLateNightMinutes,
+    required this.workDayCount,
+    required this.lateEarlyCount,
+  });
+
+  final int totalWorkMinutes;
+  final int totalOvertimeMinutes;
+  final int totalLateNightMinutes;
+  final int workDayCount;
+  final int lateEarlyCount;
+}
+
+/// 日別表示データ
+class DayData {
+  const DayData({
+    required this.date,
+    required this.dateStr,
+    this.record,
+    this.isWeekend = false,
+  });
+
+  final DateTime date;
+  final String dateStr;
+  final AttendanceRecord? record;
+  final bool isWeekend;
+}
+
+/// 月次サマリープロバイダー
+final monthlySummaryProvider = Provider.autoDispose
+    .family<AsyncValue<MonthlySummary>, ({int year, int month})>((ref, params) {
+      return ref.watch(monthlyRecordsProvider(params)).whenData(_calcSummary);
+    });
+
+MonthlySummary _calcSummary(List<AttendanceRecord> records) {
+  int totalWorkMinutes = 0;
+  int totalOvertimeMinutes = 0;
+  int totalLateNightMinutes = 0;
+  int workDayCount = 0;
+  int lateEarlyCount = 0;
+
+  for (final r in records) {
+    totalWorkMinutes += r.workMinutes;
+    totalOvertimeMinutes += r.overtimeMinutes;
+    totalLateNightMinutes += r.lateNightMinutes;
+
+    if (r.status == AttendanceStatus.present ||
+        r.status == AttendanceStatus.late ||
+        r.status == AttendanceStatus.earlyLeave) {
+      workDayCount++;
+    }
+    if (r.status == AttendanceStatus.late ||
+        r.status == AttendanceStatus.earlyLeave) {
+      lateEarlyCount++;
+    }
+  }
+
+  return MonthlySummary(
+    totalWorkMinutes: totalWorkMinutes,
+    totalOvertimeMinutes: totalOvertimeMinutes,
+    totalLateNightMinutes: totalLateNightMinutes,
+    workDayCount: workDayCount,
+    lateEarlyCount: lateEarlyCount,
+  );
+}
+
+/// 日別一覧データプロバイダー
+final monthlyDayListProvider = Provider.autoDispose
+    .family<AsyncValue<List<DayData>>, ({int year, int month})>((ref, params) {
+      return ref
+          .watch(monthlyRecordsProvider(params))
+          .whenData(
+            (records) => _buildDayList(records, params.year, params.month),
+          );
+    });
+
+List<DayData> _buildDayList(
+  List<AttendanceRecord> records,
+  int year,
+  int month,
+) {
+  final lastDay = DateTime(year, month + 1, 0).day;
+  final recordMap = <String, AttendanceRecord>{};
+  for (final r in records) {
+    recordMap[r.date] = r;
+  }
+
+  final days = <DayData>[];
+  for (var d = 1; d <= lastDay; d++) {
+    final date = DateTime(year, month, d);
+    final dateStr =
+        '$year-${month.toString().padLeft(2, '0')}-${d.toString().padLeft(2, '0')}';
+    final record = recordMap[dateStr];
+    final isWeekend =
+        date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
+    days.add(
+      DayData(
+        date: date,
+        dateStr: dateStr,
+        record: record,
+        isWeekend: isWeekend,
+      ),
+    );
+  }
+  return days;
+}
 
 /// 勤怠状態管理（出勤中・休憩中などの状態を管理）
 enum WorkState { notStarted, working, onBreak, finished }

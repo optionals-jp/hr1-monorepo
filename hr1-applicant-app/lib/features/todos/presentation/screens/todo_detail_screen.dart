@@ -57,7 +57,7 @@ class TodoDetailScreen extends HookConsumerWidget {
       if (picked != null) dueDate.value = picked;
     }
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         title: const Text('やることの詳細'),
         actions: [

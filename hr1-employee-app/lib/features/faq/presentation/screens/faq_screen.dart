@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../core/constants/constants.dart';
-import '../../../../shared/widgets/empty_state.dart';
-import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/search_box.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../domain/entities/faq_item.dart';
 import '../providers/faq_providers.dart';
 
@@ -21,7 +18,7 @@ class FaqScreen extends HookConsumerWidget {
     final query = useValueListenable(searchController).text.trim();
     final faqsAsync = ref.watch(employeeFaqsProvider);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('よくある質問')),
       body: faqsAsync.when(
         data: (faqs) => _Body(

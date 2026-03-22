@@ -31,7 +31,10 @@ class PortalActionChip extends StatelessWidget {
             theme.colorScheme.surface,
           ),
           borderRadius: AppRadius.radius160,
-          border: Border.all(color: color.withValues(alpha: 0.15), width: AppStroke.strokeWidth05),
+          border: Border.all(
+            color: color.withValues(alpha: 0.15),
+            width: AppStroke.strokeWidth05,
+          ),
           boxShadow: AppShadows.shadow4,
         ),
         child: Column(

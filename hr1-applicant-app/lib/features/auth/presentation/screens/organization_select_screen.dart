@@ -41,7 +41,7 @@ class OrganizationSelectScreen extends HookConsumerWidget {
         selectedIds.value.isNotEmpty &&
         ref.read(allOrganizationsProvider).hasValue;
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('おすすめ企業')),
       body: orgsAsync.when(
         data: (orgs) => _Body(
@@ -131,13 +131,13 @@ class _Body extends ConsumerWidget {
             Icon(
               Icons.business_outlined,
               size: 48,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+              color: AppColors.textTertiaryOf(theme.brightness),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               'すべての企業に登録済みです',
               style: AppTextStyles.body2.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+                color: AppColors.textSecondaryOf(theme.brightness),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -179,7 +179,9 @@ class _Body extends ConsumerWidget {
             itemCount: filtered.length,
             separatorBuilder: (_, __) => Divider(
               height: 1,
-              color: theme.dividerColor.withValues(alpha: 0.5),
+              color: AppColors.dividerOf(
+                theme.brightness,
+              ).withValues(alpha: 0.5),
             ),
             itemBuilder: (context, index) {
               final org = filtered[index];
@@ -248,7 +250,7 @@ class _OrganizationRow extends StatelessWidget {
                     Text(
                       organization.industry!,
                       style: AppTextStyles.caption2.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: AppColors.textSecondaryOf(theme.brightness),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -269,7 +271,7 @@ class _OrganizationRow extends StatelessWidget {
                   : Icon(
                       Icons.circle_outlined,
                       key: const ValueKey('unchecked'),
-                      color: theme.dividerColor,
+                      color: AppColors.dividerOf(theme.brightness),
                     ),
             ),
           ],

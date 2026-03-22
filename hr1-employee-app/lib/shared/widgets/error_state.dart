@@ -45,7 +45,7 @@ class ErrorState extends StatelessWidget {
             Icon(
               icon,
               size: 48,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+              color: AppColors.textTertiary(theme.brightness),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(

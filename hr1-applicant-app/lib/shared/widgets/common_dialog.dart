@@ -36,7 +36,7 @@ class CommonDialog {
           content: Text(
             message,
             style: AppTextStyles.body2.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              color: AppColors.textSecondaryOf(theme.brightness),
             ),
           ),
           actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
@@ -129,7 +129,7 @@ class CommonDialog {
             decoration: InputDecoration(
               hintText: hintText,
               hintStyle: AppTextStyles.body2.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                color: AppColors.textSecondaryOf(theme.brightness),
               ),
               filled: true,
               fillColor: AppColors.surfaceSecondary,

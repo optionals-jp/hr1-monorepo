@@ -28,6 +28,24 @@ final completedSurveyIdsProvider = FutureProvider.autoDispose<Set<String>>((
   return repo.getCompletedSurveyIds();
 });
 
+/// 未回答サーベイ一覧プロバイダー
+final pendingSurveysProvider = FutureProvider.autoDispose<List<PulseSurvey>>((
+  ref,
+) async {
+  final surveys = await ref.watch(activeSurveysProvider.future);
+  final completedIds = await ref.watch(completedSurveyIdsProvider.future);
+  return surveys.where((s) => !completedIds.contains(s.id)).toList();
+});
+
+/// 回答済みサーベイ一覧プロバイダー
+final completedSurveysProvider = FutureProvider.autoDispose<List<PulseSurvey>>((
+  ref,
+) async {
+  final surveys = await ref.watch(activeSurveysProvider.future);
+  final completedIds = await ref.watch(completedSurveyIdsProvider.future);
+  return surveys.where((s) => completedIds.contains(s.id)).toList();
+});
+
 /// サーベイID指定取得プロバイダー（ディープリンク用）
 final surveyByIdProvider = FutureProvider.autoDispose
     .family<PulseSurvey?, String>((ref, surveyId) async {

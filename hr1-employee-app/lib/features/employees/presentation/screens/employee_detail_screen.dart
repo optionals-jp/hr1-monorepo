@@ -4,8 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
-import '../../../../shared/widgets/user_avatar.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../../messages/domain/entities/message_thread.dart';
 import '../../../skills/presentation/providers/skills_providers.dart';
 import '../../domain/entities/employee_contact.dart';
@@ -32,7 +31,7 @@ class EmployeeDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 3,
-      child: Scaffold(
+      child: CommonScaffold(
         appBar: AppBar(title: const Text('プロフィール')),
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -42,6 +41,8 @@ class EmployeeDetailScreen extends StatelessWidget {
                 pinned: true,
                 delegate: _TabBarDelegate(
                   TabBar(
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
                     tabs: const [
                       Tab(text: '連絡先'),
                       Tab(text: '経歴'),
@@ -341,9 +342,7 @@ class _SkillsTab extends ConsumerWidget {
                   child: Text(
                     'スキルが登録されていません',
                     style: AppTextStyles.caption1.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.45,
-                      ),
+                      color: AppColors.textSecondary(theme.brightness),
                     ),
                   ),
                 ),
@@ -400,9 +399,7 @@ class _SkillsTab extends ConsumerWidget {
                   child: Text(
                     '資格が登録されていません',
                     style: AppTextStyles.caption1.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.45,
-                      ),
+                      color: AppColors.textSecondary(theme.brightness),
                     ),
                   ),
                 ),
@@ -588,7 +585,7 @@ class _ActionButton extends StatelessWidget {
             label,
             style: AppTextStyles.caption1.copyWith(
               fontWeight: FontWeight.w500,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              color: AppColors.textSecondary(theme.brightness),
             ),
           ),
         ],
@@ -639,7 +636,7 @@ class _ProjectCard extends StatelessWidget {
             children: [
               AppIcons.user(
                 size: 14,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                color: AppColors.textSecondary(theme.brightness),
               ),
               const SizedBox(width: 4),
               Text(
@@ -652,7 +649,7 @@ class _ProjectCard extends StatelessWidget {
               const SizedBox(width: AppSpacing.md),
               AppIcons.calendar(
                 size: 12,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                color: AppColors.textSecondary(theme.brightness),
               ),
               const SizedBox(width: 4),
               Text(
@@ -668,7 +665,7 @@ class _ProjectCard extends StatelessWidget {
             Text(
               project.description!,
               style: AppTextStyles.caption2.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                color: AppColors.textSecondary(theme.brightness),
                 height: 1.5,
               ),
             ),
@@ -767,7 +764,10 @@ class _WorkStatusBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: AppStroke.strokeWidth05),
+        border: Border.all(
+          color: color.withValues(alpha: 0.3),
+          width: AppStroke.strokeWidth05,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

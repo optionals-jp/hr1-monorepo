@@ -28,6 +28,13 @@ final completedSurveyIdsProvider = FutureProvider.autoDispose<Set<String>>((
   return repo.getCompletedSurveyIds();
 });
 
+/// 自分の回答内容プロバイダー
+final myAnswersProvider = FutureProvider.autoDispose
+    .family<Map<String, String>, String>((ref, surveyId) async {
+      final repo = ref.watch(surveyRepositoryProvider);
+      return repo.getMyAnswers(surveyId);
+    });
+
 /// サーベイID指定取得プロバイダー（ディープリンク用）
 final surveyByIdProvider = FutureProvider.autoDispose
     .family<PulseSurvey?, String>((ref, surveyId) async {

@@ -45,13 +45,13 @@ class ErrorState extends StatelessWidget {
             Icon(
               icon,
               size: 48,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+              color: AppColors.textTertiaryOf(theme.brightness),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               message,
               style: AppTextStyles.body2.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.textSecondaryOf(theme.brightness),
               ),
               textAlign: TextAlign.center,
             ),

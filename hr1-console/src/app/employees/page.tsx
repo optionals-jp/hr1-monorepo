@@ -32,7 +32,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { SearchBar } from "@/components/ui/search-bar";
-import { SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X, Download } from "lucide-react";
+import { exportToCSV } from "@/lib/export-csv";
 import { useRouter } from "next/navigation";
 
 interface EmployeeWithDepts {
@@ -197,7 +198,36 @@ export default function EmployeesPage() {
         description="社員の管理・招待"
         sticky={false}
         border={false}
-        action={<Button onClick={openAddDialog}>社員を追加</Button>}
+        action={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (employees.length === 0) return;
+                exportToCSV(
+                  employees.map((e) => ({
+                    ...e,
+                    _name: e.display_name ?? "",
+                    _departments: e.departments.map((d) => d.name).join(", "),
+                    _position: e.position ?? "",
+                  })),
+                  [
+                    { key: "_name", label: "氏名" },
+                    { key: "email", label: "メール" },
+                    { key: "_departments", label: "部署" },
+                    { key: "_position", label: "役職" },
+                  ],
+                  `社員名簿_${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}${String(new Date().getDate()).padStart(2, "0")}`
+                );
+              }}
+            >
+              <Download className="mr-1.5 h-4 w-4" />
+              CSV出力
+            </Button>
+            <Button onClick={openAddDialog}>社員を追加</Button>
+          </div>
+        }
       />
 
       <div className="sticky top-14 z-10">

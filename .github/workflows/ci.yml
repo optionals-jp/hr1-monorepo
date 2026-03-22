@@ -5,7 +5,8 @@ on:
     branches: [main]
 
 jobs:
-  lint-and-build:
+  console:
+    name: Console (Next.js)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -22,3 +23,37 @@ jobs:
       - run: npm run lint
       - run: npm run test
       - run: npm run build
+
+  employee-app:
+    name: Employee App (Flutter)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hr1-employee-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart format --set-exit-if-changed .
+      - run: flutter analyze
+      - run: flutter test
+
+  applicant-app:
+    name: Applicant App (Flutter)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hr1-applicant-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart format --set-exit-if-changed .
+      - run: flutter analyze
+      - run: flutter test

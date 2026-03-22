@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/common_dialog.dart';
-import '../../../../shared/widgets/grouped_section.dart';
-import '../../../../shared/widgets/menu_row.dart';
-import '../../../../shared/widgets/user_avatar.dart';
-import '../controllers/auth_controller.dart';
-import '../providers/auth_providers.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/core/router/app_router.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
 
 /// マイページ画面 — Teams / Outlook 設定画面スタイル
 class ProfileScreen extends ConsumerWidget {
@@ -18,7 +15,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(appUserProvider);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: Text('マイページ', style: AppTextStyles.headline)),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -92,13 +89,17 @@ class ProfileScreen extends ConsumerWidget {
                 icon: AppIcons.notification(),
                 title: '通知設定',
                 showChevron: true,
-                onTap: () {},
+                onTap: () {
+                  CommonSnackBar.show(context, '通知設定は端末の設定アプリから変更できます');
+                },
               ),
               MenuRow(
                 icon: Icon(Icons.palette_outlined),
                 title: '外観',
                 showChevron: true,
-                onTap: () {},
+                onTap: () {
+                  CommonSnackBar.show(context, '外観はシステム設定に従います');
+                },
               ),
             ],
           ),
@@ -120,13 +121,20 @@ class ProfileScreen extends ConsumerWidget {
                 icon: Icon(Icons.help_outline_rounded),
                 title: 'ヘルプ',
                 showChevron: true,
-                onTap: () {},
+                onTap: () => context.push(AppRoutes.faq),
               ),
               MenuRow(
                 icon: Icon(Icons.info_outline_rounded),
                 title: 'バージョン情報',
                 showChevron: true,
-                onTap: () {},
+                onTap: () {
+                  showAboutDialog(
+                    context: context,
+                    applicationName: 'HR1',
+                    applicationVersion: '1.0.0',
+                    applicationLegalese: '© 2026 HR1',
+                  );
+                },
               ),
             ],
           ),

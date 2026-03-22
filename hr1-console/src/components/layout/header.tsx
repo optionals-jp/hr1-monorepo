@@ -8,6 +8,8 @@ import { Bell, Search, HelpCircle, ChevronDown, Menu, LogOut, User } from "lucid
 import { Button } from "@/components/ui/button";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
+import { useQuery } from "@/lib/use-query";
+import { getSupabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -24,6 +26,18 @@ export function Header() {
   const { profile, signOut } = useAuth();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const { data: pendingCount } = useQuery(
+    organization ? `header-pending-${organization.id}` : null,
+    async () => {
+      const { count } = await getSupabase()
+        .from("workflow_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("organization_id", organization!.id)
+        .eq("status", "pending");
+      return count ?? 0;
+    }
+  );
 
   const handleSignOut = useCallback(async () => {
     await signOut();
@@ -106,8 +120,18 @@ export function Header() {
           <Button variant="ghost" size="sm" className="hidden sm:flex h-9 w-9 p-0 rounded-full">
             <HelpCircle className="h-5 w-5 text-muted-foreground" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 w-9 p-0 rounded-full relative"
+            onClick={() => router.push("/workflows")}
+          >
             <Bell className="h-5 w-5 text-muted-foreground" />
+            {(pendingCount ?? 0) > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                {pendingCount! > 99 ? "99+" : pendingCount}
+              </span>
+            )}
           </Button>
 
           {/* User menu */}

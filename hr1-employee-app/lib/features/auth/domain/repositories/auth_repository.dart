@@ -19,6 +19,15 @@ abstract class AuthRepository {
   /// 現在のユーザー情報を取得
   Future<Result<AppUser>> getCurrentUser();
 
+  /// プロフィールのフィールドを更新
+  Future<Result<void>> updateProfileField(Map<String, dynamic> fields);
+
+  /// アバター画像をアップロードしてプロフィールに反映
+  Future<Result<String>> uploadAvatar(String filePath);
+
+  /// 現在のセッションが存在するかを返す
+  bool get hasSession;
+
   /// 認証状態の変更を監視
   Stream<bool> watchAuthState();
 }

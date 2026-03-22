@@ -3,14 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
-import '../../../../shared/widgets/org_icon.dart';
-import '../../../../shared/widgets/search_box.dart';
-import '../../../../shared/widgets/user_avatar.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../notifications/domain/entities/notification_item.dart';
-import '../../../notifications/presentation/providers/notification_providers.dart';
+import 'package:hr1_employee_app/features/notifications/presentation/controllers/notification_controller.dart';
+import 'package:hr1_employee_app/features/notifications/presentation/providers/notification_providers.dart';
 import 'widgets/action_chip.dart';
 
 /// 社内ポータル画面 — Teams / Outlook モバイルスタイル
@@ -22,7 +19,7 @@ class PortalScreen extends ConsumerWidget {
     final user = ref.watch(appUserProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         titleSpacing: AppSpacing.screenHorizontal,
         title: Row(
@@ -179,7 +176,7 @@ class PortalScreen extends ConsumerWidget {
                         icon: AppIcons.doc(size: 24, color: AppColors.warning),
                         label: '各種申請',
                         color: AppColors.warning,
-                        onTap: () {},
+                        onTap: () => context.push(AppRoutes.workflow),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
@@ -215,23 +212,25 @@ class PortalScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: AppIcons.folder(
+                        icon: const Icon(
+                          Icons.beach_access_rounded,
                           size: 24,
-                          color: AppColors.brandSecondary,
+                          color: AppColors.success,
                         ),
-                        label: '社内文書',
-                        color: AppColors.brandSecondary,
-                        onTap: () {},
+                        label: '有給管理',
+                        color: AppColors.success,
+                        onTap: () => context.push(AppRoutes.leaveBalance),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: AppIcons.teacher(
+                        icon: const Icon(
+                          Icons.receipt_long_rounded,
                           size: 24,
-                          color: AppColors.purple,
+                          color: AppColors.brandSecondary,
                         ),
-                        label: '研修',
-                        color: AppColors.purple,
-                        onTap: () {},
+                        label: '給与明細',
+                        color: AppColors.brandSecondary,
+                        onTap: () => context.push(AppRoutes.payslips),
                       ),
                     ],
                   ),
@@ -305,9 +304,7 @@ class PortalScreen extends ConsumerWidget {
                         child: Text(
                           '新しい通知はありません',
                           style: AppTextStyles.caption1.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.45,
-                            ),
+                            color: AppColors.textSecondary(theme.brightness),
                           ),
                         ),
                       ),
@@ -345,9 +342,7 @@ class _NotificationPreviewTile extends ConsumerWidget {
     return InkWell(
       onTap: () {
         if (!item.isRead) {
-          ref.read(notificationRepositoryProvider).markAsRead(item.id);
-          ref.invalidate(latestNotificationsProvider);
-          ref.invalidate(unreadNotificationCountProvider);
+          ref.read(notificationControllerProvider.notifier).markAsRead(item.id);
         }
         if (item.actionUrl != null && item.actionUrl!.startsWith('/')) {
           context.push(item.actionUrl!);
@@ -375,7 +370,7 @@ class _NotificationPreviewTile extends ConsumerWidget {
                 size: 20,
                 color: !item.isRead
                     ? iconColor
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                    : AppColors.textSecondary(theme.brightness),
               ),
             ),
             const SizedBox(width: AppSpacing.md),

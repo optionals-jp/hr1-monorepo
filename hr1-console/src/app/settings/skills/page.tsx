@@ -52,7 +52,7 @@ export default function SkillsSettingsPage() {
   };
 
   const handleDelete = async (master: SkillMaster) => {
-    if (!confirm(`「${master.name}」を削除しますか？`)) return;
+    if (!window.confirm("削除してもよろしいですか？")) return;
     await getSupabase().from("skill_masters").delete().eq("id", master.id);
     await load();
   };

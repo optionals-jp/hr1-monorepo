@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/core/router/app_router.dart';
+import 'package:hr1_employee_app/features/surveys/domain/entities/pulse_survey.dart';
+import 'package:hr1_employee_app/features/surveys/presentation/providers/survey_providers.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
-import '../../domain/entities/pulse_survey.dart';
-import '../providers/survey_providers.dart';
 
 /// パルスサーベイ一覧画面
 class SurveyListScreen extends ConsumerStatefulWidget {
@@ -35,13 +34,21 @@ class _SurveyListScreenState extends ConsumerState<SurveyListScreen>
 
   @override
   Widget build(BuildContext context) {
-    final surveysAsync = ref.watch(activeSurveysProvider);
-    final completedAsync = ref.watch(completedSurveyIdsProvider);
+    final pendingAsync = ref.watch(pendingSurveysProvider);
+    final completedAsync = ref.watch(completedSurveysProvider);
+    final completedIds =
+        ref.watch(completedSurveyIdsProvider).valueOrNull ?? <String>{};
 
-    return Scaffold(
+    // 両方のプロバイダーの状態を統合
+    final isLoading = pendingAsync.isLoading || completedAsync.isLoading;
+    final error = pendingAsync.error ?? completedAsync.error;
+
+    return CommonScaffold(
       appBar: AppBar(
         title: Text('パルスサーベイ', style: AppTextStyles.headline),
         bottom: TabBar(
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           controller: _tabController,
           labelStyle: AppTextStyles.body2,
           tabs: const [
@@ -50,44 +57,34 @@ class _SurveyListScreenState extends ConsumerState<SurveyListScreen>
           ],
         ),
       ),
-      body: surveysAsync.when(
-        loading: () => const LoadingIndicator(),
-        error: (e, _) => ErrorState(
-          onRetry: () {
-            ref.invalidate(activeSurveysProvider);
-            ref.invalidate(completedSurveyIdsProvider);
-          },
-        ),
-        data: (surveys) {
-          final completedIds = completedAsync.valueOrNull ?? <String>{};
-          final pending = surveys
-              .where((s) => !completedIds.contains(s.id))
-              .toList();
-          final completed = surveys
-              .where((s) => completedIds.contains(s.id))
-              .toList();
-
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              _SurveyList(
-                surveys: pending,
-                completedIds: completedIds,
-                emptyIcon: Icons.assignment_outlined,
-                emptyMessage: '未回答のサーベイはありません',
-                onRefresh: () => _refresh(ref),
-              ),
-              _SurveyList(
-                surveys: completed,
-                completedIds: completedIds,
-                emptyIcon: Icons.check_circle_outline,
-                emptyMessage: '回答済みのサーベイはありません',
-                onRefresh: () => _refresh(ref),
-              ),
-            ],
-          );
-        },
-      ),
+      body: isLoading
+          ? const LoadingIndicator()
+          : error != null
+          ? ErrorState(
+              onRetry: () {
+                ref.invalidate(activeSurveysProvider);
+                ref.invalidate(completedSurveyIdsProvider);
+              },
+            )
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _SurveyList(
+                  surveys: pendingAsync.valueOrNull ?? [],
+                  completedIds: completedIds,
+                  emptyIcon: Icons.assignment_outlined,
+                  emptyMessage: '未回答のサーベイはありません',
+                  onRefresh: () => _refresh(ref),
+                ),
+                _SurveyList(
+                  surveys: completedAsync.valueOrNull ?? [],
+                  completedIds: completedIds,
+                  emptyIcon: Icons.check_circle_outline,
+                  emptyMessage: '回答済みのサーベイはありません',
+                  onRefresh: () => _refresh(ref),
+                ),
+              ],
+            ),
     );
   }
 
@@ -165,7 +162,7 @@ class _SurveyList extends ConsumerWidget {
             Icon(
               emptyIcon,
               size: 48,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+              color: AppColors.textTertiary(theme.brightness),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(

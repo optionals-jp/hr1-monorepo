@@ -3,12 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/constants.dart';
-import '../../domain/entities/pulse_survey.dart';
-import '../../../../shared/widgets/common_button.dart';
-import '../../../../shared/widgets/common_dialog.dart';
-import '../../../../shared/widgets/common_snackbar.dart';
-import '../providers/survey_providers.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/features/surveys/domain/entities/pulse_survey.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/features/surveys/presentation/controllers/survey_answer_controller.dart';
 
 /// パルスサーベイ回答画面
 class SurveyAnswerScreen extends ConsumerStatefulWidget {
@@ -38,7 +36,6 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
   Future<void> _submit() async {
     if (!_canSubmit || _submitting) return;
 
-    // 送信確認ダイアログ
     final confirmed = await CommonDialog.confirm(
       context: context,
       title: '回答を送信',
@@ -48,20 +45,19 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
     if (!confirmed) return;
 
     setState(() => _submitting = true);
-    try {
-      await ref
-          .read(surveyRepositoryProvider)
-          .submitResponse(surveyId: survey.id, answers: _answers);
-      ref.invalidate(completedSurveyIdsProvider);
+    await ref
+        .read(surveyAnswerControllerProvider.notifier)
+        .submit(surveyId: survey.id, answers: Map.of(_answers));
+
+    final state = ref.read(surveyAnswerControllerProvider);
+    if (!mounted) return;
+    if (state.submitted) {
       CommonSnackBar.show(context, '回答を送信しました');
-      if (mounted) {
-        context.pop();
-      }
-    } catch (_) {
-      CommonSnackBar.error(context, '送信に失敗しました。しばらくしてから再度お試しください。');
-    } finally {
-      if (mounted) setState(() => _submitting = false);
+      context.pop();
+    } else if (state.error != null) {
+      CommonSnackBar.error(context, state.error!);
     }
+    if (mounted) setState(() => _submitting = false);
   }
 
   @override
@@ -84,7 +80,7 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
       );
     }
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: Text(survey.title, style: AppTextStyles.headline)),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
@@ -228,16 +224,18 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
   Widget _buildSingleChoice(PulseSurveyQuestion q, ThemeData theme) {
     final options = q.options ?? [];
     final selected = _answers[q.id];
-    return Column(
-      children: options.map((option) {
-        return RadioListTile<String>(
-          title: Text(option, style: AppTextStyles.body2),
-          value: option,
-          groupValue: selected,
-          contentPadding: EdgeInsets.zero,
-          onChanged: (v) => setState(() => _answers[q.id] = v ?? ''),
-        );
-      }).toList(),
+    return RadioGroup<String>(
+      groupValue: selected,
+      onChanged: (v) => setState(() => _answers[q.id] = v ?? ''),
+      child: Column(
+        children: options.map((option) {
+          return RadioListTile<String>(
+            title: Text(option, style: AppTextStyles.body2),
+            value: option,
+            contentPadding: EdgeInsets.zero,
+          );
+        }).toList(),
+      ),
     );
   }
 

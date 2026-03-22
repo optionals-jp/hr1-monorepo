@@ -175,7 +175,7 @@ class _CommonDatePickerState extends State<CommonDatePicker> {
                         style: AppTextStyles.caption2.copyWith(
                           color: isWeekend
                               ? AppColors.textSecondary
-                              : theme.colorScheme.onSurface,
+                              : AppColors.textPrimaryOf(theme.brightness),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -289,10 +289,10 @@ class _CommonDatePickerState extends State<CommonDatePicker> {
                         color: isSelected
                             ? Colors.white
                             : !selectable
-                            ? theme.colorScheme.onSurface.withValues(alpha: 0.2)
+                            ? AppColors.textTertiaryOf(theme.brightness)
                             : isToday
                             ? AppColors.primaryLight
-                            : theme.colorScheme.onSurface,
+                            : AppColors.textPrimaryOf(theme.brightness),
                         fontWeight: isSelected || isToday
                             ? FontWeight.w600
                             : null,

@@ -23,6 +23,9 @@ import {
   ClipboardList,
   Building2,
   UserCheck,
+  ClipboardCheck,
+  CalendarDays,
+  AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
 import { format, subMonths } from "date-fns";
@@ -303,6 +306,53 @@ export default function DashboardPage() {
     }
   );
 
+  // --- 承認待ちワークフロー件数 ---
+  const { data: pendingWorkflows } = useQuery(
+    organization ? `pending-workflows-${organization.id}` : null,
+    async () => {
+      const { count } = await getSupabase()
+        .from("workflow_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("organization_id", organization!.id)
+        .eq("status", "pending");
+      return count ?? 0;
+    }
+  );
+
+  // --- 有給取得率 ---
+  const { data: leaveUsageRate } = useQuery(
+    organization ? `leave-usage-${organization.id}` : null,
+    async () => {
+      const { data } = await getSupabase()
+        .from("leave_balances")
+        .select("granted_days, used_days, carried_over_days")
+        .eq("organization_id", organization!.id)
+        .eq("fiscal_year", new Date().getFullYear());
+      if (!data || data.length === 0) return 0;
+      const totalGranted = data.reduce(
+        (sum, b) => sum + (b.granted_days || 0) + (b.carried_over_days || 0),
+        0
+      );
+      const totalUsed = data.reduce((sum, b) => sum + (b.used_days || 0), 0);
+      return totalGranted > 0 ? Math.round((totalUsed / totalGranted) * 100) : 0;
+    }
+  );
+
+  // --- 勤怠異常（打刻漏れ）件数 ---
+  const { data: attendanceAnomalies } = useQuery(
+    organization ? `attendance-anomalies-${organization.id}` : null,
+    async () => {
+      const today = format(new Date(), "yyyy-MM-dd");
+      const { count } = await getSupabase()
+        .from("attendance_records")
+        .select("*", { count: "exact", head: true })
+        .eq("organization_id", organization!.id)
+        .is("clock_out", null)
+        .lt("date", today);
+      return count ?? 0;
+    }
+  );
+
   // --- 社員: 採用区分 ---
   const { data: hiringTypeStats } = useQuery<HiringTypeStat[]>(
     orgId ? `dashboard-hiring-type-${orgId}` : null,
@@ -396,6 +446,31 @@ export default function DashboardPage() {
       bg: "bg-indigo-50",
       accent: "bg-indigo-500",
       suffix: "%",
+    },
+    {
+      title: "承認待ち",
+      value: pendingWorkflows ?? 0,
+      icon: ClipboardCheck,
+      color: "text-orange-600",
+      bg: "bg-orange-50",
+      accent: "bg-orange-500",
+    },
+    {
+      title: "有給取得率",
+      value: leaveUsageRate ?? 0,
+      icon: CalendarDays,
+      color: "text-teal-600",
+      bg: "bg-teal-50",
+      accent: "bg-teal-500",
+      suffix: "%",
+    },
+    {
+      title: "勤怠異常",
+      value: attendanceAnomalies ?? 0,
+      icon: AlertTriangle,
+      color: attendanceAnomalies && attendanceAnomalies > 0 ? "text-red-600" : "text-gray-400",
+      bg: attendanceAnomalies && attendanceAnomalies > 0 ? "bg-red-50" : "bg-gray-50",
+      accent: attendanceAnomalies && attendanceAnomalies > 0 ? "bg-red-500" : "bg-gray-300",
     },
   ];
 

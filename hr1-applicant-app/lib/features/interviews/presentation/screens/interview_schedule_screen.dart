@@ -37,7 +37,7 @@ class InterviewScheduleScreen extends ConsumerWidget {
       }
     });
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('面接日程の選択')),
       body: asyncInterview.when(
         data: (interview) {
@@ -232,7 +232,9 @@ class _SlotCard extends StatelessWidget {
               : theme.colorScheme.surface,
           borderRadius: AppRadius.radius120,
           border: Border.all(
-            color: isSelected ? AppColors.primaryLight : theme.dividerColor,
+            color: isSelected
+                ? AppColors.primaryLight
+                : AppColors.dividerOf(theme.brightness),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -246,7 +248,7 @@ class _SlotCard extends StatelessWidget {
                 border: Border.all(
                   color: isSelected
                       ? AppColors.primaryLight
-                      : theme.dividerColor,
+                      : AppColors.dividerOf(theme.brightness),
                   width: 2,
                 ),
                 color: isSelected ? AppColors.primaryLight : Colors.transparent,
@@ -268,7 +270,7 @@ class _SlotCard extends StatelessWidget {
                   Text(
                     '${timeFormat.format(slot.startAt)} 〜 ${timeFormat.format(slot.endAt)}',
                     style: AppTextStyles.body2.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: AppColors.textSecondaryOf(theme.brightness),
                     ),
                   ),
                 ],

@@ -1,5 +1,6 @@
 export 'common_button.dart';
 export 'common_card.dart';
+export 'common_scaffold.dart';
 export 'count_badge.dart';
 export 'common_date_picker.dart';
 export 'common_dialog.dart';

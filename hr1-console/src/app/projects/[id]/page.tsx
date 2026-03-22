@@ -173,6 +173,7 @@ export default function ProjectDetailPage() {
 
   const deleteProject = async () => {
     if (!project) return;
+    if (!window.confirm("削除してもよろしいですか？")) return;
     try {
       const { error } = await getSupabase().from("projects").delete().eq("id", project.id);
       if (error) throw error;
@@ -213,6 +214,7 @@ export default function ProjectDetailPage() {
   };
 
   const deleteTeam = async (teamId: string) => {
+    if (!window.confirm("削除してもよろしいですか？")) return;
     try {
       const { error } = await getSupabase().from("project_teams").delete().eq("id", teamId);
       if (error) throw error;
@@ -273,6 +275,7 @@ export default function ProjectDetailPage() {
   };
 
   const removeMember = async (memberId: string) => {
+    if (!window.confirm("削除してもよろしいですか？")) return;
     try {
       const { error } = await getSupabase()
         .from("project_team_members")

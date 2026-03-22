@@ -45,7 +45,7 @@ class NoticeListItem extends StatelessWidget {
                 size: 20,
                 color: isNew
                     ? AppColors.brandPrimary
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                    : AppColors.textSecondary(theme.brightness),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -72,9 +72,7 @@ class NoticeListItem extends StatelessWidget {
                       Text(
                         date,
                         style: AppTextStyles.caption2.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.45,
-                          ),
+                          color: AppColors.textSecondary(theme.brightness),
                         ),
                       ),
                     ],

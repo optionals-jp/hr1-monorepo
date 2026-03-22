@@ -1,94 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/detail_row.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
-import '../../domain/entities/attendance_record.dart';
-import '../providers/attendance_providers.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/shared/utils/month_utils.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/features/attendance/domain/entities/attendance_record.dart';
+import 'package:hr1_employee_app/features/attendance/presentation/providers/attendance_providers.dart';
 
 /// 勤怠明細画面 — 月次サマリー＋日別一覧
-class AttendanceDetailScreen extends ConsumerStatefulWidget {
+class AttendanceDetailScreen extends ConsumerWidget {
   const AttendanceDetailScreen({super.key});
 
   @override
-  ConsumerState<AttendanceDetailScreen> createState() =>
-      _AttendanceDetailScreenState();
-}
-
-class _AttendanceDetailScreenState
-    extends ConsumerState<AttendanceDetailScreen> {
-  late int _year;
-  late int _month;
-
-  @override
-  void initState() {
-    super.initState();
-    final now = DateTime.now();
-    _year = now.year;
-    _month = now.month;
-  }
-
-  void _prevMonth() {
-    setState(() {
-      if (_month == 1) {
-        _year--;
-        _month = 12;
-      } else {
-        _month--;
-      }
-    });
-  }
-
-  void _nextMonth() {
-    final now = DateTime.now();
-    if (_year == now.year && _month == now.month) return;
-    setState(() {
-      if (_month == 12) {
-        _year++;
-        _month = 1;
-      } else {
-        _month++;
-      }
-    });
-  }
-
-  bool get _isCurrentMonth {
-    final now = DateTime.now();
-    return _year == now.year && _month == now.month;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final records = ref.watch(
-      monthlyRecordsProvider((year: _year, month: _month)),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(selectedMonthProvider);
+    final params = (year: selected.year, month: selected.month);
+    final summaryAsync = ref.watch(monthlySummaryProvider(params));
+    final dayListAsync = ref.watch(monthlyDayListProvider(params));
+    final isCurrentMonth = MonthUtils.isCurrentMonth(
+      selected.year,
+      selected.month,
     );
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('勤怠明細')),
       body: Column(
         children: [
-          // 月セレクター
           _MonthSelector(
-            year: _year,
-            month: _month,
-            isCurrentMonth: _isCurrentMonth,
-            onPrev: _prevMonth,
-            onNext: _nextMonth,
+            year: selected.year,
+            month: selected.month,
+            isCurrentMonth: isCurrentMonth,
+            onPrev: () => ref.read(selectedMonthProvider.notifier).prevMonth(),
+            onNext: () => ref.read(selectedMonthProvider.notifier).nextMonth(),
           ),
-
-          // コンテンツ
           Expanded(
-            child: records.when(
-              data: (list) => _buildContent(list, isDark, theme),
+            child: summaryAsync.when(
+              data: (summary) => dayListAsync.when(
+                data: (days) => _Body(summary: summary, days: days),
+                loading: () => const LoadingIndicator(),
+                error: (e, _) => ErrorState(
+                  onRetry: () => ref.invalidate(monthlyRecordsProvider(params)),
+                ),
+              ),
               loading: () => const LoadingIndicator(),
               error: (e, _) => ErrorState(
-                onRetry: () => ref.invalidate(
-                  monthlyRecordsProvider((year: _year, month: _month)),
-                ),
+                onRetry: () => ref.invalidate(monthlyRecordsProvider(params)),
               ),
             ),
           ),
@@ -96,14 +52,17 @@ class _AttendanceDetailScreenState
       ),
     );
   }
+}
 
-  Widget _buildContent(
-    List<AttendanceRecord> records,
-    bool isDark,
-    ThemeData theme,
-  ) {
-    final summary = _calcSummary(records);
-    final days = _buildDayList(records);
+class _Body extends StatelessWidget {
+  const _Body({required this.summary, required this.days});
+
+  final MonthlySummary summary;
+  final List<DayData> days;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
 
     return ListView(
       padding: const EdgeInsets.symmetric(
@@ -111,11 +70,8 @@ class _AttendanceDetailScreenState
         vertical: AppSpacing.md,
       ),
       children: [
-        // サマリーカード
-        _SummarySection(summary: summary, isDark: isDark, theme: theme),
+        _SummarySection(summary: summary),
         const SizedBox(height: AppSpacing.xl),
-
-        // 日別一覧ヘッダー
         Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: Text(
@@ -125,82 +81,20 @@ class _AttendanceDetailScreenState
             ),
           ),
         ),
-
-        // 日別一覧
         ...days.map(
           (day) => _DayTile(
             day: day,
-            isDark: isDark,
-            theme: theme,
-            onTap: day.record != null ? () => _showDayDetail(day, theme) : null,
+            onTap: day.record != null
+                ? () => _showDayDetail(context, day)
+                : null,
           ),
         ),
       ],
     );
   }
 
-  List<_DayData> _buildDayList(List<AttendanceRecord> records) {
-    final lastDay = DateTime(_year, _month + 1, 0).day;
-    final recordMap = <String, AttendanceRecord>{};
-    for (final r in records) {
-      recordMap[r.date] = r;
-    }
-
-    final days = <_DayData>[];
-    for (var d = 1; d <= lastDay; d++) {
-      final date = DateTime(_year, _month, d);
-      final dateStr =
-          '$_year-${_month.toString().padLeft(2, '0')}-${d.toString().padLeft(2, '0')}';
-      final record = recordMap[dateStr];
-      final isWeekend =
-          date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
-      days.add(
-        _DayData(
-          date: date,
-          dateStr: dateStr,
-          record: record,
-          isWeekend: isWeekend,
-        ),
-      );
-    }
-    return days;
-  }
-
-  _MonthlySummary _calcSummary(List<AttendanceRecord> records) {
-    int totalWorkMinutes = 0;
-    int totalOvertimeMinutes = 0;
-    int totalLateNightMinutes = 0;
-    int workDayCount = 0;
-    int lateEarlyCount = 0;
-
-    for (final r in records) {
-      totalWorkMinutes += r.workMinutes;
-      totalOvertimeMinutes += r.overtimeMinutes;
-      totalLateNightMinutes += r.lateNightMinutes;
-
-      if (r.status == AttendanceStatus.present ||
-          r.status == AttendanceStatus.late ||
-          r.status == AttendanceStatus.earlyLeave) {
-        workDayCount++;
-      }
-      if (r.status == AttendanceStatus.late ||
-          r.status == AttendanceStatus.earlyLeave) {
-        lateEarlyCount++;
-      }
-    }
-
-    return _MonthlySummary(
-      totalWorkMinutes: totalWorkMinutes,
-      totalOvertimeMinutes: totalOvertimeMinutes,
-      totalLateNightMinutes: totalLateNightMinutes,
-      workDayCount: workDayCount,
-      lateEarlyCount: lateEarlyCount,
-    );
-  }
-
-  void _showDayDetail(_DayData day, ThemeData theme) {
+  void _showDayDetail(BuildContext context, DayData day) {
     final record = day.record!;
-    final isDark = theme.brightness == Brightness.dark;
     final dateLabel = DateFormat('M月d日（E）', 'ja').format(day.date);
 
     showModalBottomSheet(
@@ -208,7 +102,8 @@ class _AttendanceDetailScreenState
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (context) {
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
@@ -216,7 +111,6 @@ class _AttendanceDetailScreenState
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ヘッダー
                 Row(
                   children: [
                     Text(
@@ -226,16 +120,10 @@ class _AttendanceDetailScreenState
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
-                    _StatusBadge(
-                      status: record.status,
-                      isDark: isDark,
-                      small: false,
-                    ),
+                    _StatusBadge(status: record.status, small: false),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
-
-                // 出退勤時刻
                 DetailRow(
                   label: '出勤',
                   value: record.clockIn != null
@@ -249,8 +137,6 @@ class _AttendanceDetailScreenState
                       : '-',
                 ),
                 const Divider(height: AppSpacing.xl),
-
-                // 勤務詳細
                 DetailRow(
                   label: '勤務時間',
                   value: _formatMinutes(record.workMinutes),
@@ -278,7 +164,7 @@ class _AttendanceDetailScreenState
                   Text(
                     '備考',
                     style: AppTextStyles.caption1.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                      color: AppColors.textSecondary(theme.brightness),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
@@ -292,40 +178,6 @@ class _AttendanceDetailScreenState
       },
     );
   }
-}
-
-// ---------------------------------------------------------------------------
-// データクラス
-// ---------------------------------------------------------------------------
-
-class _MonthlySummary {
-  const _MonthlySummary({
-    required this.totalWorkMinutes,
-    required this.totalOvertimeMinutes,
-    required this.totalLateNightMinutes,
-    required this.workDayCount,
-    required this.lateEarlyCount,
-  });
-
-  final int totalWorkMinutes;
-  final int totalOvertimeMinutes;
-  final int totalLateNightMinutes;
-  final int workDayCount;
-  final int lateEarlyCount;
-}
-
-class _DayData {
-  const _DayData({
-    required this.date,
-    required this.dateStr,
-    this.record,
-    this.isWeekend = false,
-  });
-
-  final DateTime date;
-  final String dateStr;
-  final AttendanceRecord? record;
-  final bool isWeekend;
 }
 
 // ---------------------------------------------------------------------------
@@ -371,7 +223,7 @@ class _MonthSelector extends StatelessWidget {
             icon: Icon(
               Icons.chevron_right,
               color: isCurrentMonth
-                  ? theme.colorScheme.onSurface.withValues(alpha: 0.2)
+                  ? AppColors.textTertiary(theme.brightness)
                   : null,
             ),
           ),
@@ -383,28 +235,21 @@ class _MonthSelector extends StatelessWidget {
 
 /// サマリーセクション
 class _SummarySection extends StatelessWidget {
-  const _SummarySection({
-    required this.summary,
-    required this.isDark,
-    required this.theme,
-  });
+  const _SummarySection({required this.summary});
 
-  final _MonthlySummary summary;
-  final bool isDark;
-  final ThemeData theme;
+  final MonthlySummary summary;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-          width: 0.5,
-        ),
-        boxShadow: isDark ? null : AppShadows.shadow8,
+        border: Border.all(color: AppColors.border(brightness), width: 0.5),
+        boxShadow: brightness == Brightness.dark ? null : AppShadows.shadow8,
       ),
       child: Column(
         children: [
@@ -488,7 +333,7 @@ class _SummaryItem extends StatelessWidget {
           Text(
             label,
             style: AppTextStyles.caption2.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              color: AppColors.textSecondary(theme.brightness),
             ),
           ),
         ],
@@ -499,24 +344,18 @@ class _SummaryItem extends StatelessWidget {
 
 /// 日別タイル
 class _DayTile extends StatelessWidget {
-  const _DayTile({
-    required this.day,
-    required this.isDark,
-    required this.theme,
-    this.onTap,
-  });
+  const _DayTile({required this.day, this.onTap});
 
-  final _DayData day;
-  final bool isDark;
-  final ThemeData theme;
+  final DayData day;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final dateLabel = DateFormat('d（E）', 'ja').format(day.date);
     final record = day.record;
     final textColor = day.isWeekend && record == null
-        ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
+        ? AppColors.textTertiary(theme.brightness)
         : theme.colorScheme.onSurface;
 
     return InkWell(
@@ -530,14 +369,13 @@ class _DayTile extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: isDark ? AppColors.darkDivider : AppColors.lightDivider,
+              color: AppColors.divider(theme.brightness),
               width: 0.5,
             ),
           ),
         ),
         child: Row(
           children: [
-            // 日付
             SizedBox(
               width: 64,
               child: Text(
@@ -550,14 +388,10 @@ class _DayTile extends StatelessWidget {
                 ),
               ),
             ),
-
-            // ステータスバッジ
             if (record != null) ...[
-              _StatusBadge(status: record.status, isDark: isDark, small: true),
+              _StatusBadge(status: record.status, small: true),
               const SizedBox(width: AppSpacing.sm),
             ],
-
-            // 出退勤時刻
             Expanded(
               child: record != null
                   ? Text(
@@ -569,28 +403,22 @@ class _DayTile extends StatelessWidget {
                   : Text(
                       day.isWeekend ? '休日' : '-',
                       style: AppTextStyles.body2.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.3,
-                        ),
+                        color: AppColors.textTertiary(theme.brightness),
                       ),
                     ),
             ),
-
-            // 勤務時間
             if (record != null && record.workMinutes > 0)
               Text(
                 record.workDurationFormatted,
                 style: AppTextStyles.body2.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: AppColors.textSecondary(theme.brightness),
                 ),
               ),
-
-            // 矢印
             if (record != null)
               Icon(
                 Icons.chevron_right,
                 size: 16,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                color: AppColors.textTertiary(theme.brightness),
               ),
           ],
         ),
@@ -601,14 +429,9 @@ class _DayTile extends StatelessWidget {
 
 /// ステータスバッジ
 class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({
-    required this.status,
-    required this.isDark,
-    this.small = false,
-  });
+  const _StatusBadge({required this.status, this.small = false});
 
   final String status;
-  final bool isDark;
   final bool small;
 
   Color get _color {

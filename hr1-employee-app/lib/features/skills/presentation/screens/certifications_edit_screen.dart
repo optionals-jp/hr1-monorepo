@@ -1,30 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../shared/widgets/common_dialog.dart';
-import '../../../../shared/widgets/master_search_bar.dart';
-import '../../domain/entities/certification_master.dart';
-import '../../domain/entities/employee_certification.dart';
-import '../controllers/skills_controller.dart';
-import '../../../../shared/widgets/common_snackbar.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
-import '../providers/skills_providers.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/features/skills/domain/entities/certification_master.dart';
+import 'package:hr1_employee_app/features/skills/domain/entities/employee_certification.dart';
+import 'package:hr1_employee_app/features/skills/presentation/controllers/skills_controller.dart';
+import 'package:hr1_employee_app/features/skills/presentation/providers/skills_providers.dart';
 
 /// 資格・認定 編集画面
-class CertificationsEditScreen extends ConsumerStatefulWidget {
+class CertificationsEditScreen extends ConsumerWidget {
   const CertificationsEditScreen({super.key});
 
-  @override
-  ConsumerState<CertificationsEditScreen> createState() =>
-      _CertificationsEditScreenState();
-}
-
-class _CertificationsEditScreenState
-    extends ConsumerState<CertificationsEditScreen> {
-  bool _isAdding = false;
-
-  Future<void> _addCertification(String name) async {
+  Future<void> _addCertification(
+    BuildContext context,
+    WidgetRef ref,
+    String name,
+  ) async {
     if (name.isEmpty) return;
 
     // マスタから has_score を判定
@@ -38,27 +30,27 @@ class _CertificationsEditScreenState
     // スコアが必要な資格はダイアログで入力
     int? score;
     if (hasScore) {
-      score = await _showScoreDialog(name);
-      // ダイアログがキャンセルされた場合は追加しない
-      if (score == null && mounted) return;
+      score = await _showScoreDialog(context, name);
+      if (score == null) return;
     }
 
     // 取得年月を選択
-    final acquiredDate = await _pickAcquiredDate();
+    if (!context.mounted) return;
+    final acquiredDate = await _pickAcquiredDate(context);
 
-    setState(() => _isAdding = true);
+    ref.read(certificationIsAddingProvider.notifier).state = true;
     try {
       await ref
           .read(certificationsControllerProvider.notifier)
           .addCertification(name, acquiredDate, score: score);
     } catch (e) {
-      CommonSnackBar.error(context, 'エラー: $e');
+      if (context.mounted) CommonSnackBar.error(context, 'エラー: $e');
     } finally {
-      if (mounted) setState(() => _isAdding = false);
+      ref.read(certificationIsAddingProvider.notifier).state = false;
     }
   }
 
-  Future<int?> _showScoreDialog(String certName) async {
+  Future<int?> _showScoreDialog(BuildContext context, String certName) async {
     final scoreText = await CommonDialog.input(
       context: context,
       title: '$certName のスコア',
@@ -71,7 +63,7 @@ class _CertificationsEditScreenState
     return int.tryParse(scoreText);
   }
 
-  Future<DateTime?> _pickAcquiredDate() async {
+  Future<DateTime?> _pickAcquiredDate(BuildContext context) async {
     return showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -83,7 +75,11 @@ class _CertificationsEditScreenState
     );
   }
 
-  Future<void> _deleteCertification(EmployeeCertification cert) async {
+  Future<void> _deleteCertification(
+    BuildContext context,
+    WidgetRef ref,
+    EmployeeCertification cert,
+  ) async {
     final confirmed = await CommonDialog.confirm(
       context: context,
       title: '資格の削除',
@@ -98,28 +94,29 @@ class _CertificationsEditScreenState
           .read(certificationsControllerProvider.notifier)
           .deleteCertification(cert.id);
     } catch (e) {
-      CommonSnackBar.error(context, 'エラー: $e');
+      if (context.mounted) CommonSnackBar.error(context, 'エラー: $e');
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final certsAsync = ref.watch(certificationsControllerProvider);
     final mastersAsync = ref.watch(certificationMastersProvider);
+    final isAdding = ref.watch(certificationIsAddingProvider);
     final theme = Theme.of(context);
 
     final masterNames =
         mastersAsync.valueOrNull?.map((m) => m.name).toList() ?? [];
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('資格・認定')),
       body: Column(
         children: [
           MasterSearchBar(
             masterNames: masterNames,
-            onAdd: _addCertification,
+            onAdd: (name) => _addCertification(context, ref, name),
             hintText: '資格を検索・追加',
-            isAdding: _isAdding,
+            isAdding: isAdding,
           ),
           Expanded(
             child: certsAsync.when(
@@ -133,17 +130,13 @@ class _CertificationsEditScreenState
                       children: [
                         AppIcons.award(
                           size: 48,
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.25,
-                          ),
+                          color: AppColors.textTertiary(theme.brightness),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         Text(
                           '資格が登録されていません',
                           style: AppTextStyles.caption1.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.45,
-                            ),
+                            color: AppColors.textSecondary(theme.brightness),
                           ),
                         ),
                       ],
@@ -160,7 +153,7 @@ class _CertificationsEditScreenState
                     final cert = certs[index];
                     return _CertTile(
                       certification: cert,
-                      onDelete: () => _deleteCertification(cert),
+                      onDelete: () => _deleteCertification(context, ref, cert),
                     );
                   },
                 );
@@ -220,9 +213,7 @@ class _CertTile extends StatelessWidget {
                   Text(
                     DateFormat('yyyy/MM').format(certification.acquiredDate!),
                     style: AppTextStyles.caption2.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.55,
-                      ),
+                      color: AppColors.textSecondary(theme.brightness),
                     ),
                   ),
               ],
@@ -233,7 +224,7 @@ class _CertTile extends StatelessWidget {
             child: Icon(
               Icons.close_rounded,
               size: 18,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+              color: AppColors.textTertiary(theme.brightness),
             ),
           ),
         ],

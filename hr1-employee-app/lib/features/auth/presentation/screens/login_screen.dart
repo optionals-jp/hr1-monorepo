@@ -4,8 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/validators.dart';
-import '../../../../shared/widgets/common_button.dart';
-import '../../../../shared/widgets/common_snackbar.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../controllers/auth_controller.dart';
 
 /// ログイン画面（OTP認証）
@@ -78,7 +77,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isLoading = authState.isLoading;
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return CommonScaffold(
       backgroundColor: theme.colorScheme.surface,
       body: SafeArea(
         child: Center(

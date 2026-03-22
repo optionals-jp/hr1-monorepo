@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../../auth/presentation/providers/organization_context_provider.dart';
-import '../../domain/entities/application.dart';
-import '../../domain/entities/application_status.dart';
-import '../../domain/entities/application_step.dart';
-import '../../domain/entities/job.dart';
-import '../providers/applications_providers.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/core/router/app_router.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/organization_context_provider.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/application.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/application_status.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/application_step.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/job.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/providers/applications_providers.dart';
 
 /// 応募状況一覧画面
 class ApplicationsScreen extends ConsumerWidget {
@@ -19,25 +19,28 @@ class ApplicationsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentOrg = ref.watch(currentOrganizationProvider);
-    final asyncApplications = ref.watch(applicationsProvider);
-    final asyncJobs = ref.watch(jobsProvider);
+    final asyncInProgress = ref.watch(inProgressApplicationsProvider);
+    final asyncCompleted = ref.watch(completedApplicationsProvider);
+    final asyncAvailableJobs = ref.watch(availableJobsProvider);
 
     if (currentOrg == null) {
       return const Scaffold(body: Center(child: Text('企業が選択されていません')));
     }
 
-    return Scaffold(
-      body: asyncApplications.when(
-        data: (applications) {
-          final jobs = asyncJobs.valueOrNull ?? [];
+    return CommonScaffold(
+      body: asyncInProgress.when(
+        data: (inProgress) {
+          final completed = asyncCompleted.valueOrNull ?? [];
+          final availableJobs = asyncAvailableJobs.valueOrNull ?? [];
           return RefreshIndicator(
             onRefresh: () async {
               ref.invalidate(applicationsProvider);
               ref.invalidate(jobsProvider);
             },
             child: _Body(
-              applications: applications,
-              jobs: jobs,
+              inProgress: inProgress,
+              completed: completed,
+              availableJobs: availableJobs,
               organizationName: currentOrg.name,
             ),
           );
@@ -56,41 +59,20 @@ class ApplicationsScreen extends ConsumerWidget {
 
 class _Body extends StatelessWidget {
   const _Body({
-    required this.applications,
-    required this.jobs,
+    required this.inProgress,
+    required this.completed,
+    required this.availableJobs,
     required this.organizationName,
   });
 
-  final List<Application> applications;
-  final List<Job> jobs;
+  final List<Application> inProgress;
+  final List<Application> completed;
+  final List<Job> availableJobs;
   final String organizationName;
 
   @override
   Widget build(BuildContext context) {
-    // 応募済みの求人IDセット
-    final appliedJobIds = applications.map((a) => a.jobId).toSet();
-
-    // 進行中（対応必要 + 選考中）
-    final inProgress =
-        applications.where((a) => a.status == ApplicationStatus.active).toList()
-          ..sort((a, b) {
-            // 対応必要を先に
-            if (a.requiresAction && !b.requiresAction) return -1;
-            if (!a.requiresAction && b.requiresAction) return 1;
-            return b.appliedAt.compareTo(a.appliedAt);
-          });
-
-    // 完了（内定・不採用・辞退）
-    final completed =
-        applications.where((a) => a.status != ApplicationStatus.active).toList()
-          ..sort((a, b) => b.appliedAt.compareTo(a.appliedAt));
-
-    // 未応募の求人
-    final availableJobs = jobs
-        .where((j) => !appliedJobIds.contains(j.id) && j.isOpen)
-        .toList();
-
-    final hasApplications = applications.isNotEmpty;
+    final hasApplications = inProgress.isNotEmpty || completed.isNotEmpty;
 
     return ListView(
       padding: const EdgeInsets.only(top: AppSpacing.md, bottom: 40),
@@ -315,9 +297,9 @@ class _ApplicationCard extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 4,
-                      backgroundColor: theme.dividerColor.withValues(
-                        alpha: 0.5,
-                      ),
+                      backgroundColor: AppColors.dividerOf(
+                        theme.brightness,
+                      ).withValues(alpha: 0.5),
                       valueColor: AlwaysStoppedAnimation<Color>(
                         application.requiresAction
                             ? AppColors.warning

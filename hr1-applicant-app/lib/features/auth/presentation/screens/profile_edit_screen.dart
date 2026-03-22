@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/controllers/profile_edit_controller.dart';
@@ -15,7 +18,7 @@ class ProfileEditScreen extends ConsumerWidget {
     final user = ref.watch(appUserProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('プロフィール編集')),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
@@ -23,9 +26,7 @@ class ProfileEditScreen extends ConsumerWidget {
           // アバター（タップで変更 — プレースホルダー）
           Center(
             child: GestureDetector(
-              onTap: () {
-                // TODO: アバター画像の変更
-              },
+              onTap: () => _pickAndUploadAvatar(context, ref),
               child: Stack(
                 children: [
                   UserAvatar(
@@ -88,6 +89,54 @@ class ProfileEditScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _pickAndUploadAvatar(BuildContext context, WidgetRef ref) async {
+    final picker = ImagePicker();
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('カメラ'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('ギャラリー'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    final picked = await picker.pickImage(
+      source: source,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 80,
+    );
+    if (picked == null) return;
+
+    final file = File(picked.path);
+    final ext = picked.path.split('.').last;
+
+    final success = await ref
+        .read(profileEditControllerProvider.notifier)
+        .uploadAvatar(file, ext);
+
+    if (!context.mounted) return;
+    if (success) {
+      CommonSnackBar.show(context, 'プロフィール画像を更新しました');
+    } else {
+      CommonSnackBar.error(context, '画像のアップロードに失敗しました');
+    }
   }
 
   Future<void> _showEditDisplayNameDialog(

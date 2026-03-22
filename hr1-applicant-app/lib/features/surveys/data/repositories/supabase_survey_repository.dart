@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/pulse_survey.dart';
 
@@ -71,6 +70,28 @@ class SupabaseSurveyRepository {
     return (response as List).map((r) => r['survey_id'] as String).toSet();
   }
 
+  /// 自分の回答内容を取得
+  Future<Map<String, String>> getMyAnswers(String surveyId) async {
+    final response = await _client
+        .from('pulse_survey_responses')
+        .select('id')
+        .eq('survey_id', surveyId)
+        .eq('user_id', _userId)
+        .maybeSingle();
+    if (response == null) return {};
+
+    final responseId = response['id'] as String;
+    final answers = await _client
+        .from('pulse_survey_answers')
+        .select('question_id, value')
+        .eq('response_id', responseId);
+
+    return {
+      for (final a in answers as List)
+        a['question_id'] as String: a['value'] as String? ?? '',
+    };
+  }
+
   /// サーベイに回答を送信（RPC経由でアトミックに実行）
   Future<void> submitResponse({
     required String surveyId,
@@ -82,7 +103,7 @@ class SupabaseSurveyRepository {
 
     await _client.rpc(
       'submit_survey_response',
-      params: {'p_survey_id': surveyId, 'p_answers': jsonEncode(answersList)},
+      params: {'p_survey_id': surveyId, 'p_answers': answersList},
     );
   }
 }

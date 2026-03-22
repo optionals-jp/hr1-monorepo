@@ -4,14 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/org_icon.dart';
-import '../../../../shared/widgets/user_avatar.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/task.dart';
 import '../controllers/task_controller.dart';
-import '../../../../shared/widgets/common_snackbar.dart';
-import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
 import '../providers/task_providers.dart';
 
 /// タスク画面 — Microsoft To Do スタイル
@@ -69,7 +65,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     final tasksAsync = ref.watch(taskListControllerProvider);
     final user = ref.watch(appUserProvider);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         titleSpacing: AppSpacing.screenHorizontal,
         title: Row(
@@ -217,6 +213,7 @@ class _FilterTabs extends StatelessWidget {
               color: isActive
                   ? color.withValues(alpha: 0.12)
                   : theme.colorScheme.onSurface.withValues(alpha: 0.05),
+
               borderRadius: AppRadius.radiusCircular,
               child: InkWell(
                 onTap: () => onSelected(f),
@@ -241,9 +238,7 @@ class _FilterTabs extends StatelessWidget {
                         style: AppTextStyles.caption2.copyWith(
                           color: isActive
                               ? color
-                              : theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.7,
-                                ),
+                              : AppColors.textSecondary(theme.brightness),
                           fontWeight: isActive
                               ? FontWeight.w600
                               : FontWeight.w500,
@@ -368,7 +363,7 @@ class _TaskItem extends StatelessWidget {
                     border: Border.all(
                       color: task.isCompleted
                           ? AppColors.brandPrimary
-                          : theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                          : AppColors.textTertiary(theme.brightness),
                       width: 1.5,
                     ),
                     color: task.isCompleted
@@ -397,7 +392,7 @@ class _TaskItem extends StatelessWidget {
                             ? TextDecoration.lineThrough
                             : null,
                         color: task.isCompleted
-                            ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
+                            ? AppColors.textSecondary(theme.brightness)
                             : null,
                       ),
                       maxLines: 2,
@@ -423,7 +418,7 @@ class _TaskItem extends StatelessWidget {
                     size: 22,
                     color: task.isImportant
                         ? AppColors.error
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                        : AppColors.textTertiary(theme.brightness),
                   ),
                 ),
               ),
@@ -456,14 +451,14 @@ class _MetadataRow extends StatelessWidget {
             Icon(
               Icons.wb_sunny_outlined,
               size: 12,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              color: AppColors.textSecondary(theme.brightness),
             ),
             const SizedBox(width: 3),
             Text(
               'My Day',
               style: AppTextStyles.caption1.copyWith(
                 fontWeight: FontWeight.w500,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                color: AppColors.textSecondary(theme.brightness),
               ),
             ),
           ],
@@ -482,7 +477,7 @@ class _MetadataRow extends StatelessWidget {
               size: 12,
               color: isOverdue
                   ? AppColors.error
-                  : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  : AppColors.textSecondary(theme.brightness),
             ),
             const SizedBox(width: 3),
             Text(
@@ -491,7 +486,7 @@ class _MetadataRow extends StatelessWidget {
                 fontWeight: FontWeight.w500,
                 color: isOverdue
                     ? AppColors.error
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    : AppColors.textSecondary(theme.brightness),
               ),
             ),
           ],
@@ -506,7 +501,7 @@ class _MetadataRow extends StatelessWidget {
           '$done/${task.steps!.length}',
           style: AppTextStyles.caption1.copyWith(
             fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            color: AppColors.textSecondary(theme.brightness),
           ),
         ),
       );
@@ -567,7 +562,7 @@ class _CompletedSectionState extends State<_CompletedSection> {
                       ? Icons.keyboard_arrow_down_rounded
                       : Icons.keyboard_arrow_right_rounded,
                   size: 20,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: AppColors.textSecondary(theme.brightness),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -629,7 +624,10 @@ class _AddTaskBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(
-          top: BorderSide(color: theme.colorScheme.outlineVariant, width: AppStroke.strokeWidth05),
+          top: BorderSide(
+            color: theme.colorScheme.outlineVariant,
+            width: AppStroke.strokeWidth05,
+          ),
         ),
         boxShadow: isDark ? null : AppShadows.shadow4,
       ),
@@ -645,9 +643,7 @@ class _AddTaskBar extends StatelessWidget {
                     decoration: InputDecoration(
                       hintText: 'タスクを追加',
                       hintStyle: AppTextStyles.caption1.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.4,
-                        ),
+                        color: AppColors.textSecondary(theme.brightness),
                       ),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
@@ -658,7 +654,7 @@ class _AddTaskBar extends StatelessWidget {
                   icon: Icon(
                     Icons.close_rounded,
                     size: 20,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                    color: AppColors.textSecondary(theme.brightness),
                   ),
                   onPressed: onCancel,
                 ),
@@ -707,7 +703,7 @@ class _EmptyTaskState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final emptyColor = theme.colorScheme.onSurface.withValues(alpha: 0.2);
+    final emptyColor = AppColors.textTertiary(theme.brightness);
     final (icon, title, subtitle) = switch (filter) {
       TaskFilter.myDay => (
         Icon(Icons.wb_sunny_outlined, size: 48, color: emptyColor) as Widget,
@@ -748,7 +744,7 @@ class _EmptyTaskState extends StatelessWidget {
             Text(
               subtitle,
               style: AppTextStyles.caption2.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                color: AppColors.textSecondary(theme.brightness),
               ),
               textAlign: TextAlign.center,
             ),
@@ -819,7 +815,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
           );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
-      CommonSnackBar.error(context, 'エラー: $e');
+      if (mounted) CommonSnackBar.error(context, 'エラー: $e');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -891,7 +887,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,
               hintStyle: AppTextStyles.title3.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                color: AppColors.textTertiary(theme.brightness),
               ),
             ),
           ),
@@ -926,7 +922,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
               Icon(
                 Icons.add_rounded,
                 size: 18,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                color: AppColors.textSecondary(theme.brightness),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -937,9 +933,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                   decoration: InputDecoration(
                     hintText: 'ステップを追加',
                     hintStyle: AppTextStyles.caption1.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.35,
-                      ),
+                      color: AppColors.textTertiary(theme.brightness),
                     ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
@@ -957,7 +951,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
               size: 20,
               color: _isMyDay
                   ? AppColors.brandPrimary
-                  : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  : AppColors.textSecondary(theme.brightness),
             ),
             label: 'My Day に追加',
             isActive: _isMyDay,
@@ -970,7 +964,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
               size: 20,
               color: _dueDate != null
                   ? AppColors.brandPrimary
-                  : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  : AppColors.textSecondary(theme.brightness),
             ),
             label: _dueDate != null
                 ? '期限: ${DateFormat('M/d').format(_dueDate!)}'
@@ -982,7 +976,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                     icon: Icon(
                       Icons.close_rounded,
                       size: 16,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                      color: AppColors.textSecondary(theme.brightness),
                     ),
                     onPressed: () => setState(() => _dueDate = null),
                   )
@@ -998,7 +992,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                 padding: const EdgeInsets.only(top: 2),
                 child: AppIcons.doc(
                   size: 20,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: AppColors.textSecondary(theme.brightness),
                 ),
               ),
               const SizedBox(width: 14),
@@ -1011,9 +1005,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                   decoration: InputDecoration(
                     hintText: 'メモを追加',
                     hintStyle: AppTextStyles.caption1.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.35,
-                      ),
+                      color: AppColors.textTertiary(theme.brightness),
                     ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
@@ -1057,7 +1049,7 @@ class _StepRow extends StatelessWidget {
                 border: Border.all(
                   color: step.isCompleted
                       ? AppColors.brandPrimary
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                      : AppColors.textTertiary(theme.brightness),
                   width: 1.5,
                 ),
                 color: step.isCompleted
@@ -1082,7 +1074,7 @@ class _StepRow extends StatelessWidget {
                     ? TextDecoration.lineThrough
                     : null,
                 color: step.isCompleted
-                    ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
+                    ? AppColors.textSecondary(theme.brightness)
                     : null,
               ),
             ),
@@ -1092,7 +1084,7 @@ class _StepRow extends StatelessWidget {
             child: Icon(
               Icons.close_rounded,
               size: 16,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+              color: AppColors.textTertiary(theme.brightness),
             ),
           ),
         ],

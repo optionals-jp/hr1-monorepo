@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../../auth/presentation/providers/organization_context_provider.dart';
-import '../../../company/presentation/widgets/section_renderers.dart';
-import '../../domain/entities/job.dart';
-import '../../domain/entities/job_step.dart';
-import '../providers/applications_providers.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/core/router/app_router.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/company/presentation/widgets/section_renderers.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/job.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/job_step.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/controllers/job_apply_controller.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/providers/applications_providers.dart';
 
 /// 求人詳細画面（企業カスタマイズ対応）
 class JobDetailScreen extends ConsumerWidget {
@@ -29,7 +28,7 @@ class JobDetailScreen extends ConsumerWidget {
           );
         }
 
-        return Scaffold(
+        return CommonScaffold(
           body: CustomScrollView(
             slivers: [
               // ヘッダー
@@ -104,7 +103,7 @@ class _SelectionFlowCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: AppRadius.radius120,
-        border: Border.all(color: theme.dividerColor),
+        border: Border.all(color: AppColors.dividerOf(theme.brightness)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,7 +140,7 @@ class _SelectionFlowCard extends StatelessWidget {
                       Container(
                         width: 2,
                         height: 20,
-                        color: theme.dividerColor,
+                        color: AppColors.dividerOf(theme.brightness),
                       ),
                   ],
                 ),
@@ -160,14 +159,17 @@ class _SelectionFlowCard extends StatelessWidget {
                               vertical: 1,
                             ),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.1),
+                              color: AppColors.textTertiaryOf(
+                                theme.brightness,
+                              ).withValues(alpha: 0.1),
                               borderRadius: AppRadius.radius40,
                             ),
                             child: Text(
                               '外部',
                               style: AppTextStyles.caption2.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
+                                color: AppColors.textSecondaryOf(
+                                  theme.brightness,
+                                ),
                               ),
                             ),
                           ),
@@ -327,20 +329,14 @@ class _ApplyBar extends ConsumerWidget {
     );
     if (!confirmed) return;
 
-    final org = ref.read(currentOrganizationProvider);
-    if (org == null) return;
-
-    final repo = ref.read(applicationsRepositoryProvider);
-    await repo.apply(
-      jobId: job.id,
-      applicantId: ref.read(appUserProvider)!.id,
-      organizationId: org.id,
-    );
-
-    ref.invalidate(applicationsProvider);
-
-    if (!screenContext.mounted) return;
-    CommonSnackBar.show(screenContext, '「${job.title}」に応募しました');
-    screenContext.go(AppRoutes.applications);
+    try {
+      await ref.read(jobApplyControllerProvider.notifier).apply(jobId: job.id);
+      if (!screenContext.mounted) return;
+      CommonSnackBar.show(screenContext, '「${job.title}」に応募しました');
+      screenContext.go(AppRoutes.applications);
+    } catch (_) {
+      if (!screenContext.mounted) return;
+      CommonSnackBar.error(screenContext, '応募に失敗しました');
+    }
   }
 }
