@@ -94,7 +94,7 @@ class _DayViewState extends State<DayView> {
                     ),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: AppRadius.radius40,
                     ),
                     child: Text(
                       event.title,

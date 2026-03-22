@@ -490,15 +490,7 @@ class _InfoSection extends StatelessWidget {
                     width: 0.5,
                   )
                 : null,
-            boxShadow: isDark
-                ? null
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 3,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
+            boxShadow: isDark ? null : AppShadows.shadow4,
           ),
           child: Column(
             children: [
@@ -633,15 +625,7 @@ class _ProjectCard extends StatelessWidget {
                 width: 0.5,
               )
             : null,
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
-                ),
-              ],
+        boxShadow: isDark ? null : AppShadows.shadow4,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -783,7 +767,7 @@ class _WorkStatusBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 0.5),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: AppStroke.strokeWidth05),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

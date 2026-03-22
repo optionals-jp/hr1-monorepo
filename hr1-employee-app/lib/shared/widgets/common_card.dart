@@ -47,9 +47,9 @@ class CommonCard extends StatelessWidget {
         border: highlighted && highlightColor != null
             ? Border.all(
                 color: highlightColor!.withValues(alpha: 0.3),
-                width: AppStroke.thin,
+                width: AppStroke.strokeWidth05,
               )
-            : Border.all(color: theme.dividerColor, width: AppStroke.thin),
+            : Border.all(color: theme.dividerColor, width: AppStroke.strokeWidth05),
         boxShadow: AppShadows.shadow4,
       ),
       child: child,

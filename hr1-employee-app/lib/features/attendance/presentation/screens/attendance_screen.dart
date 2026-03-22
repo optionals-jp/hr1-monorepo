@@ -204,7 +204,7 @@ class _TimeStatusHero extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
           decoration: BoxDecoration(
             color: statusColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppRadius.radiusCircular,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -329,27 +329,21 @@ class _PunchButton extends StatelessWidget {
       height: 56,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.06),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            ),
-          ],
+          borderRadius: AppRadius.radius120,
+          boxShadow: AppShadows.shadow4,
         ),
         child: Material(
           color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadius.radius120,
           child: InkWell(
             onTap: enabled ? onPressed : null,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadius.radius120,
             child: Container(
               decoration: BoxDecoration(
                 color: enabled
                     ? color.withValues(alpha: 0.15)
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: AppRadius.radius120,
                 border: Border.all(
                   color: enabled
                       ? color.withValues(alpha: 0.15)
@@ -397,19 +391,13 @@ class _SummaryRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.radius120,
         border: Border.all(
           color: isDark
               ? theme.colorScheme.outline.withValues(alpha: 0.35)
               : theme.colorScheme.outlineVariant,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.06),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        boxShadow: AppShadows.shadow4,
       ),
       child: Row(
         children: [

@@ -360,13 +360,7 @@ class _CorrectionRequestScreenState
                   ? theme.colorScheme.outline.withValues(alpha: 0.35)
                   : theme.colorScheme.outlineVariant,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.06),
-                blurRadius: 4,
-                offset: const Offset(0, 1),
-              ),
-            ],
+            boxShadow: AppShadows.shadow4,
           ),
           child: Row(
             children: [
@@ -457,15 +451,7 @@ class _CorrectionRequestScreenState
                 width: 0.5,
               )
             : null,
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
+        boxShadow: isDark ? null : AppShadows.shadow4,
       ),
       child: child,
     );

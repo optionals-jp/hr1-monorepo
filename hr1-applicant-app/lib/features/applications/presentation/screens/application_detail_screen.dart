@@ -570,7 +570,10 @@ class _HistorySection extends StatelessWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: event.color.withValues(alpha: 0.2),
-                          border: Border.all(color: event.color, width: 2),
+                          border: Border.all(
+                            color: event.color,
+                            width: AppStroke.strokeWidth20,
+                          ),
                         ),
                       ),
                       if (!isLast)

@@ -146,13 +146,7 @@ class _SkillTile extends StatelessWidget {
             : null,
         boxShadow: theme.brightness == Brightness.dark
             ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
-                ),
-              ],
+            : AppShadows.shadow4,
       ),
       child: Row(
         children: [

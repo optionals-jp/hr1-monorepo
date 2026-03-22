@@ -45,15 +45,7 @@ class EventCard extends StatelessWidget {
                       width: 0.5,
                     )
                   : null,
-              boxShadow: isDark
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 2,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
+              boxShadow: isDark ? null : AppShadows.shadow2,
             ),
             child: Row(
               children: [

@@ -404,15 +404,7 @@ class _SummarySection extends StatelessWidget {
           color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
           width: 0.5,
         ),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+        boxShadow: isDark ? null : AppShadows.shadow8,
       ),
       child: Column(
         children: [
@@ -529,7 +521,7 @@ class _DayTile extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppRadius.radius80,
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
@@ -651,7 +643,7 @@ class _StatusBadge extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: _color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadius.radius40,
       ),
       child: Text(
         AttendanceStatus.label(status),

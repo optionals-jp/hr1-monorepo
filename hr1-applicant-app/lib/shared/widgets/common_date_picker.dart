@@ -119,7 +119,7 @@ class _CommonDatePickerState extends State<CommonDatePicker> {
               height: 4,
               decoration: BoxDecoration(
                 color: theme.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: AppRadius.radius20,
               ),
             ),
             const SizedBox(height: AppSpacing.lg),

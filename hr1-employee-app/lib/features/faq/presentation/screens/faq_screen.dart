@@ -197,13 +197,7 @@ class _FaqTileState extends State<_FaqTile> {
               ? theme.colorScheme.outline.withValues(alpha: 0.35)
               : theme.colorScheme.outlineVariant,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.06),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        boxShadow: AppShadows.shadow4,
       ),
       child: Column(
         children: [

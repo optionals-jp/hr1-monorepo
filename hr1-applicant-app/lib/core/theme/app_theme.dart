@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
+import '../constants/app_stroke.dart';
 
 /// HR1 応募者アプリテーマ定義
 class AppTheme {
@@ -147,11 +148,11 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: AppRadius.radius80,
-          borderSide: BorderSide(color: border, width: 0.5),
+          borderSide: BorderSide(color: border, width: AppStroke.strokeWidth05),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppRadius.radius80,
-          borderSide: BorderSide(color: border, width: 0.5),
+          borderSide: BorderSide(color: border, width: AppStroke.strokeWidth05),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.radius80,
@@ -162,7 +163,10 @@ class AppTheme {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: AppRadius.radius80,
-          borderSide: const BorderSide(color: AppColors.error, width: 0.5),
+          borderSide: const BorderSide(
+            color: AppColors.error,
+            width: AppStroke.strokeWidth05,
+          ),
         ),
         labelStyle: GoogleFonts.notoSansJp(fontSize: 14, color: textSecondary),
         hintStyle: GoogleFonts.notoSansJp(
@@ -179,7 +183,10 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.radius120,
           side: isDark
-              ? BorderSide(color: border.withValues(alpha: 0.3), width: 0.5)
+              ? BorderSide(
+                  color: border.withValues(alpha: 0.3),
+                  width: AppStroke.strokeWidth05,
+                )
               : BorderSide.none,
         ),
         margin: EdgeInsets.zero,

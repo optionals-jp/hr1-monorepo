@@ -543,17 +543,12 @@ class _AddTodoButton extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(
-          top: BorderSide(color: theme.colorScheme.outlineVariant, width: 0.5),
+          top: BorderSide(
+            color: theme.colorScheme.outlineVariant,
+            width: AppStroke.strokeWidth05,
+          ),
         ),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, -1),
-                ),
-              ],
+        boxShadow: isDark ? null : [...AppShadows.shadow4],
       ),
       child: InkWell(
         onTap: onTap,

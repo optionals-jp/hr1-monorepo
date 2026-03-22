@@ -147,7 +147,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
               height: 4,
               decoration: BoxDecoration(
                 color: theme.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: AppRadius.radius20,
               ),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -446,7 +446,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: AppColors.surfaceTertiary(theme.brightness),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: AppRadius.radius160,
           ),
           child: AnimatedBuilder(
             animation: _animController,
@@ -515,7 +515,7 @@ class _EditingBubble extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: AppColors.brandPrimary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: AppRadius.radius160,
                   border: Border.all(
                     color: AppColors.brandPrimary.withValues(alpha: 0.3),
                   ),

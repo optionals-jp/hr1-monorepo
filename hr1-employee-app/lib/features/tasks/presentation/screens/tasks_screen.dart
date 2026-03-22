@@ -217,10 +217,10 @@ class _FilterTabs extends StatelessWidget {
               color: isActive
                   ? color.withValues(alpha: 0.12)
                   : theme.colorScheme.onSurface.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: AppRadius.radiusCircular,
               child: InkWell(
                 onTap: () => onSelected(f),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: AppRadius.radiusCircular,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
@@ -629,17 +629,9 @@ class _AddTaskBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(
-          top: BorderSide(color: theme.colorScheme.outlineVariant, width: 0.5),
+          top: BorderSide(color: theme.colorScheme.outlineVariant, width: AppStroke.strokeWidth05),
         ),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, -1),
-                ),
-              ],
+        boxShadow: isDark ? null : AppShadows.shadow4,
       ),
       child: showField
           ? Row(
@@ -681,7 +673,7 @@ class _AddTaskBar extends StatelessWidget {
             )
           : InkWell(
               onTap: onTap,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppRadius.radius80,
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Row(
