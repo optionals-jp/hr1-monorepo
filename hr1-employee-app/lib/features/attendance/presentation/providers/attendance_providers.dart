@@ -15,35 +15,38 @@ final attendanceRepositoryProvider = Provider<SupabaseAttendanceRepository>((
 });
 
 /// 今日の勤怠レコードプロバイダー
-final todayRecordProvider = FutureProvider<AttendanceRecord?>((ref) async {
+final todayRecordProvider = FutureProvider.autoDispose<AttendanceRecord?>((
+  ref,
+) async {
   final repo = ref.watch(attendanceRepositoryProvider);
   return repo.getTodayRecord();
 });
 
 /// 今日の打刻履歴プロバイダー
-final todayPunchesProvider = FutureProvider<List<AttendancePunch>>((ref) async {
+final todayPunchesProvider = FutureProvider.autoDispose<List<AttendancePunch>>((
+  ref,
+) async {
   final repo = ref.watch(attendanceRepositoryProvider);
   return repo.getTodayPunches();
 });
 
 /// 指定日の打刻履歴プロバイダー
-final punchesByDateProvider =
-    FutureProvider.family<List<AttendancePunch>, DateTime>((ref, date) async {
+final punchesByDateProvider = FutureProvider.autoDispose
+    .family<List<AttendancePunch>, DateTime>((ref, date) async {
       final repo = ref.watch(attendanceRepositoryProvider);
       return repo.getPunchesByDate(date);
     });
 
 /// 勤怠設定プロバイダー
-final attendanceSettingsProvider = FutureProvider<AttendanceSettings>((
-  ref,
-) async {
-  final repo = ref.watch(attendanceRepositoryProvider);
-  return repo.getSettings();
-});
+final attendanceSettingsProvider =
+    FutureProvider.autoDispose<AttendanceSettings>((ref) async {
+      final repo = ref.watch(attendanceRepositoryProvider);
+      return repo.getSettings();
+    });
 
 /// 月間勤怠レコードプロバイダー
-final monthlyRecordsProvider =
-    FutureProvider.family<List<AttendanceRecord>, ({int year, int month})>((
+final monthlyRecordsProvider = FutureProvider.autoDispose
+    .family<List<AttendanceRecord>, ({int year, int month})>((
       ref,
       params,
     ) async {

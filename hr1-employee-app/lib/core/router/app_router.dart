@@ -23,6 +23,9 @@ import '../../features/skills/presentation/screens/certifications_edit_screen.da
 import '../../features/skills/presentation/screens/skills_edit_screen.dart';
 import '../../features/faq/presentation/screens/faq_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
+import '../../features/service_requests/domain/entities/service_request.dart';
+import '../../features/service_requests/presentation/screens/service_request_list_screen.dart';
+import '../../features/service_requests/presentation/screens/service_request_create_screen.dart';
 import '../../features/surveys/presentation/screens/survey_list_screen.dart';
 import '../../features/surveys/presentation/screens/survey_answer_screen.dart';
 import '../../features/surveys/presentation/providers/survey_providers.dart';
@@ -57,6 +60,8 @@ class AppRoutes {
   static const String _skillsEdit = 'skills-edit';
   static const String _certificationsEdit = 'certifications-edit';
   static const String _profileFullscreen = 'profile-fullscreen';
+  static const String _serviceRequests = 'service-requests';
+  static const String _serviceRequestCreate = 'service-request-create';
   static const String _faq = 'faq';
   static const String _surveys = 'surveys';
   static const String _notifications = 'notifications';
@@ -78,6 +83,8 @@ class AppRoutes {
   static const String chat = '/$_chat';
   static const String skillsEdit = '/$_skillsEdit';
   static const String certificationsEdit = '/$_certificationsEdit';
+  static const String serviceRequests = '/$_serviceRequests';
+  static const String serviceRequestCreate = '/$_serviceRequestCreate';
 }
 
 /// ルートナビゲーターキー（フルスクリーン遷移用 + プッシュ通知からの遷移用）
@@ -247,6 +254,24 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           ),
         ],
+      ),
+
+      /// サービスリクエスト画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.serviceRequests,
+        builder: (context, state) => const ServiceRequestListScreen(),
+      ),
+
+      /// サービスリクエスト作成画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.serviceRequestCreate,
+        builder: (context, state) {
+          final type =
+              state.extra as ServiceRequestType? ?? ServiceRequestType.bug;
+          return ServiceRequestCreateScreen(type: type);
+        },
       ),
 
       /// プロフィール画面（フルスクリーン — ヘッダーアイコンから遷移）

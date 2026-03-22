@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../../auth/presentation/providers/organization_context_provider.dart';
 import '../../domain/entities/application.dart';
 import '../../domain/entities/application_status.dart';
+import '../../domain/entities/application_step.dart';
+import '../../domain/entities/job.dart';
 import '../providers/applications_providers.dart';
 
-/// 応募状況一覧画面（応募者専用）
+/// 応募状況一覧画面
 class ApplicationsScreen extends ConsumerWidget {
   const ApplicationsScreen({super.key});
 
@@ -20,31 +20,124 @@ class ApplicationsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentOrg = ref.watch(currentOrganizationProvider);
     final asyncApplications = ref.watch(applicationsProvider);
+    final asyncJobs = ref.watch(jobsProvider);
+
+    if (currentOrg == null) {
+      return const Scaffold(body: Center(child: Text('企業が選択されていません')));
+    }
 
     return Scaffold(
-      body: currentOrg == null
-          ? const Center(child: Text('企業が選択されていません'))
-          : asyncApplications.when(
-              data: (applications) => applications.isEmpty
-                  ? _EmptyState(organizationName: currentOrg.name)
-                  : _ApplicationsList(applications: applications),
-              loading: () => const LoadingIndicator(),
-              error: (e, _) => ErrorState(
-                onRetry: () => ref.invalidate(applicationsProvider),
-              ),
+      body: asyncApplications.when(
+        data: (applications) {
+          final jobs = asyncJobs.valueOrNull ?? [];
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(applicationsProvider);
+              ref.invalidate(jobsProvider);
+            },
+            child: _Body(
+              applications: applications,
+              jobs: jobs,
+              organizationName: currentOrg.name,
             ),
-      floatingActionButton: currentOrg != null
-          ? FloatingActionButton.extended(
-              onPressed: () => context.push(AppRoutes.jobs),
-              backgroundColor: AppColors.primaryLight,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              icon: const Icon(Icons.add),
-              label: const Text('求人を探す'),
-            )
-          : null,
+          );
+        },
+        loading: () => const LoadingIndicator(),
+        error: (e, _) =>
+            ErrorState(onRetry: () => ref.invalidate(applicationsProvider)),
+      ),
     );
   }
 }
+
+// =============================================================================
+// Body
+// =============================================================================
+
+class _Body extends StatelessWidget {
+  const _Body({
+    required this.applications,
+    required this.jobs,
+    required this.organizationName,
+  });
+
+  final List<Application> applications;
+  final List<Job> jobs;
+  final String organizationName;
+
+  @override
+  Widget build(BuildContext context) {
+    // 応募済みの求人IDセット
+    final appliedJobIds = applications.map((a) => a.jobId).toSet();
+
+    // 進行中（対応必要 + 選考中）
+    final inProgress =
+        applications.where((a) => a.status == ApplicationStatus.active).toList()
+          ..sort((a, b) {
+            // 対応必要を先に
+            if (a.requiresAction && !b.requiresAction) return -1;
+            if (!a.requiresAction && b.requiresAction) return 1;
+            return b.appliedAt.compareTo(a.appliedAt);
+          });
+
+    // 完了（内定・不採用・辞退）
+    final completed =
+        applications.where((a) => a.status != ApplicationStatus.active).toList()
+          ..sort((a, b) => b.appliedAt.compareTo(a.appliedAt));
+
+    // 未応募の求人
+    final availableJobs = jobs
+        .where((j) => !appliedJobIds.contains(j.id) && j.isOpen)
+        .toList();
+
+    final hasApplications = applications.isNotEmpty;
+
+    return ListView(
+      padding: const EdgeInsets.only(top: AppSpacing.md, bottom: 40),
+      children: [
+        // 進行中セクション
+        if (inProgress.isNotEmpty) ...[
+          _SectionHeader(
+            title: '進行中',
+            count: inProgress.length,
+            color: AppColors.primaryLight,
+          ),
+          ...inProgress.map((a) => _ApplicationCard(application: a)),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+
+        // 完了セクション
+        if (completed.isNotEmpty) ...[
+          _SectionHeader(
+            title: '完了',
+            count: completed.length,
+            color: AppColors.textSecondary,
+          ),
+          ...completed.map((a) => _ApplicationCard(application: a)),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+
+        // 求人セクション
+        if (availableJobs.isNotEmpty) ...[
+          _SectionHeader(
+            title: '募集中の求人',
+            count: availableJobs.length,
+            color: AppColors.accent,
+          ),
+          ...availableJobs.map((j) => _JobCard(job: j)),
+        ],
+
+        // 応募なし＋求人なしの場合の空状態
+        if (!hasApplications && availableJobs.isEmpty)
+          _EmptyState(organizationName: organizationName),
+      ],
+    );
+  }
+}
+
+// =============================================================================
+// Empty State
+// =============================================================================
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.organizationName});
@@ -52,51 +145,98 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.assignment_outlined,
-              size: 64,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 40),
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(height: AppSpacing.lg),
-            Text('応募はまだありません', style: AppTextStyles.title3),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              '$organizationNameの求人を探して応募しましょう',
-              style: AppTextStyles.caption1.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
+            child: Icon(
+              Icons.description_outlined,
+              size: 36,
+              color: AppColors.primaryLight.withValues(alpha: 0.5),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 20),
+          Text('応募はまだありません', style: AppTextStyles.headline),
+          const SizedBox(height: 8),
+          Text(
+            '$organizationNameの求人を探して\n応募してみましょう',
+            style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ApplicationsList extends StatelessWidget {
-  const _ApplicationsList({required this.applications});
-  final List<Application> applications;
+// =============================================================================
+// Section Header
+// =============================================================================
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    required this.count,
+    required this.color,
+  });
+  final String title;
+  final int count;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
-      itemCount: applications.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-      itemBuilder: (context, index) {
-        return _ApplicationCard(application: applications[index]);
-      },
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenHorizontal,
+        AppSpacing.sm,
+        AppSpacing.screenHorizontal,
+        AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 16,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: AppRadius.radius40,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(title, style: AppTextStyles.footnote),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: AppRadius.radius80,
+            ),
+            child: Text(
+              '$count',
+              style: AppTextStyles.caption2.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
+
+// =============================================================================
+// Application Card
+// =============================================================================
 
 class _ApplicationCard extends StatelessWidget {
   const _ApplicationCard({required this.application});
@@ -105,112 +245,239 @@ class _ApplicationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return InkWell(
-      onTap: () {
-        context.push('${AppRoutes.applications}/${application.id}');
-      },
-      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.cardPadding),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          border: Border.all(color: theme.dividerColor),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    final job = application.job;
+    final statusColor = _statusColor(application, context);
+    final steps = application.steps;
+    final completedSteps = steps
+        .where((s) => s.status == StepStatus.completed)
+        .length;
+    final totalSteps = steps.length;
+    final progress = totalSteps > 0 ? completedSteps / totalSteps : 0.0;
+
+    return CommonCard(
+      onTap: () => context.push('${AppRoutes.applications}/${application.id}'),
+      highlighted: application.requiresAction,
+      highlightColor: AppColors.warning,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              OrgIcon(
+                initial: job != null && job.title.isNotEmpty
+                    ? job.title[0]
+                    : '?',
+                size: 40,
+                borderRadius: 10,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      job?.title ?? '求人情報なし',
+                      style: AppTextStyles.body1.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (job?.department != null)
+                      Text(
+                        job!.department!,
+                        style: AppTextStyles.caption1.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              StatusChip(
+                label: application.currentStepLabel,
+                color: statusColor,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          if (totalSteps > 0 &&
+              application.status == ApplicationStatus.active) ...[
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    application.job?.title ?? '求人情報なし',
-                    style: AppTextStyles.callout,
-                  ),
-                ),
-                _StatusChip(application: application),
-              ],
-            ),
-            if (application.job?.department != null) ...[
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                application.job!.department!,
-                style: AppTextStyles.caption1.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                Text(
-                  '応募日: ${_formatDate(application.appliedAt)}',
-                  style: AppTextStyles.caption2.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const Spacer(),
-                if (application.requiresAction)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.warning.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '対応が必要',
-                      style: AppTextStyles.caption2.copyWith(
-                        color: AppColors.warning,
-                        fontWeight: FontWeight.w600,
+                  child: ClipRRect(
+                    borderRadius: AppRadius.radius40,
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 4,
+                      backgroundColor: theme.dividerColor.withValues(
+                        alpha: 0.5,
+                      ),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        application.requiresAction
+                            ? AppColors.warning
+                            : AppColors.primaryLight,
                       ),
                     ),
                   ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  '$completedSteps/$totalSteps',
+                  style: AppTextStyles.caption2.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
+            const SizedBox(height: 10),
           ],
-        ),
+
+          Row(
+            children: [
+              Icon(
+                Icons.schedule_rounded,
+                size: 14,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                DateFormatter.toDateSlash(application.appliedAt),
+                style: AppTextStyles.caption2.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const Spacer(),
+              if (application.requiresAction)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.1),
+                    borderRadius: AppRadius.radius80,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: AppColors.warning,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '対応が必要',
+                        style: AppTextStyles.caption2.copyWith(
+                          color: AppColors.warning,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: AppColors.textSecondary,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.application});
-  final Application application;
+// =============================================================================
+// Job Card
+// =============================================================================
+
+class _JobCard extends StatelessWidget {
+  const _JobCard({required this.job});
+  final Job job;
 
   @override
   Widget build(BuildContext context) {
-    final chipColor = _getColor(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: chipColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        application.currentStepLabel,
-        style: AppTextStyles.caption2.copyWith(
-          color: chipColor,
-          fontWeight: FontWeight.w600,
-        ),
+    return CommonCard(
+      onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
+      child: Row(
+        children: [
+          OrgIcon(
+            initial: job.title.isNotEmpty ? job.title[0] : '?',
+            size: 40,
+            borderRadius: 10,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  job.title,
+                  style: AppTextStyles.body1.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  [
+                    if (job.department != null) job.department!,
+                    if (job.location != null) job.location!,
+                    if (job.employmentType != null) job.employmentType!,
+                  ].join(' · '),
+                  style: AppTextStyles.caption1.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: AppRadius.radius120,
+            ),
+            child: Text(
+              '詳細',
+              style: AppTextStyles.caption2.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
+}
 
-  Color _getColor(BuildContext context) => switch (application.status) {
+// =============================================================================
+// Helpers
+// =============================================================================
+
+Color _statusColor(Application application, BuildContext context) {
+  return switch (application.status) {
     ApplicationStatus.offered => AppColors.success,
     ApplicationStatus.rejected => AppColors.error,
-    ApplicationStatus.withdrawn => Theme.of(
-      context,
-    ).colorScheme.onSurfaceVariant,
+    ApplicationStatus.withdrawn => AppColors.textSecondary,
     ApplicationStatus.active =>
       application.requiresAction ? AppColors.warning : AppColors.primaryLight,
   };
-}
-
-String _formatDate(DateTime date) {
-  return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
 }

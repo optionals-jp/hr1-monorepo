@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import '../../core/constants/constants.dart';
 
 /// グローバルローディングオーバーレイ
 ///
@@ -55,13 +56,7 @@ class _LoadingOverlay extends StatelessWidget {
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              boxShadow: AppShadows.shadow16,
             ),
             child: Center(
               child: Lottie.asset(

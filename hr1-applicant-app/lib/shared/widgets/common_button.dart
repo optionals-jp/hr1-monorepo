@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../core/constants/app_colors.dart';
+import '../../core/constants/constants.dart';
 
 /// 共通ボタンコンポーネント — Fluent 2 iOS スタイル
 ///
@@ -54,8 +54,8 @@ class CommonButton extends StatelessWidget {
     letterSpacing: -0.2,
   );
 
-  static const _baseShape = RoundedRectangleBorder(
-    borderRadius: BorderRadius.all(Radius.circular(12)),
+  static final _baseShape = RoundedRectangleBorder(
+    borderRadius: AppRadius.radius120,
   );
 
   static const _baseSize = Size(double.infinity, 48);

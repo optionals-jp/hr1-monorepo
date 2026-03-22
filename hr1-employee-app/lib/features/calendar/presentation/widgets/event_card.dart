@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_icons.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../domain/entities/calendar_event.dart';
 
 /// Outlook スタイルのイベントカード（左カラーバー付き）
@@ -47,15 +45,7 @@ class EventCard extends StatelessWidget {
                       width: 0.5,
                     )
                   : null,
-              boxShadow: isDark
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 2,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
+              boxShadow: isDark ? null : AppShadows.shadow2,
             ),
             child: Row(
               children: [

@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../shared/widgets/error_state.dart';
+import '../../../../shared/widgets/detail_row.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
-import '../../../../core/constants/app_text_styles.dart';
 import '../../domain/entities/attendance_record.dart';
 import '../providers/attendance_providers.dart';
 
@@ -237,45 +236,39 @@ class _AttendanceDetailScreenState
                 const SizedBox(height: AppSpacing.lg),
 
                 // 出退勤時刻
-                _DetailRow(
+                DetailRow(
                   label: '出勤',
                   value: record.clockIn != null
                       ? DateFormat('HH:mm').format(record.clockIn!.toLocal())
                       : '-',
-                  theme: theme,
                 ),
-                _DetailRow(
+                DetailRow(
                   label: '退勤',
                   value: record.clockOut != null
                       ? DateFormat('HH:mm').format(record.clockOut!.toLocal())
                       : '-',
-                  theme: theme,
                 ),
                 const Divider(height: AppSpacing.xl),
 
                 // 勤務詳細
-                _DetailRow(
+                DetailRow(
                   label: '勤務時間',
                   value: _formatMinutes(record.workMinutes),
-                  theme: theme,
                 ),
-                _DetailRow(
+                DetailRow(
                   label: '休憩',
                   value: _formatMinutes(record.breakMinutes),
-                  theme: theme,
                 ),
-                _DetailRow(
+                DetailRow(
                   label: '残業',
                   value: _formatMinutes(record.overtimeMinutes),
-                  theme: theme,
                   valueColor: record.overtimeMinutes > 0
                       ? AppColors.warning
                       : null,
                 ),
-                _DetailRow(
+                DetailRow(
                   label: '深夜',
                   value: _formatMinutes(record.lateNightMinutes),
-                  theme: theme,
                   valueColor: record.lateNightMinutes > 0
                       ? AppColors.brandPrimary
                       : null,
@@ -411,15 +404,7 @@ class _SummarySection extends StatelessWidget {
           color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
           width: 0.5,
         ),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+        boxShadow: isDark ? null : AppShadows.shadow8,
       ),
       child: Column(
         children: [
@@ -536,7 +521,7 @@ class _DayTile extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppRadius.radius80,
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
@@ -658,52 +643,12 @@ class _StatusBadge extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: _color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadius.radius40,
       ),
       child: Text(
         AttendanceStatus.label(status),
         style: (small ? AppTextStyles.caption2 : AppTextStyles.caption1)
             .copyWith(color: _color, fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-}
-
-/// 詳細行
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({
-    required this.label,
-    required this.value,
-    required this.theme,
-    this.valueColor,
-  });
-
-  final String label;
-  final String value;
-  final ThemeData theme;
-  final Color? valueColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: AppTextStyles.body2.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-          Text(
-            value,
-            style: AppTextStyles.body2.copyWith(
-              color: valueColor ?? theme.colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
       ),
     );
   }

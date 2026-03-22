@@ -15,31 +15,37 @@ final todoFilterProvider = StateProvider<TodoFilter>(
 );
 
 /// 未完了のやること
-final incompleteTodosProvider = FutureProvider<List<Todo>>((ref) async {
+final incompleteTodosProvider = FutureProvider.autoDispose<List<Todo>>((
+  ref,
+) async {
   final repo = ref.watch(todoRepositoryProvider);
   return repo.getIncompleteTodos();
 });
 
 /// 重要なやること
-final importantTodosProvider = FutureProvider<List<Todo>>((ref) async {
+final importantTodosProvider = FutureProvider.autoDispose<List<Todo>>((
+  ref,
+) async {
   final repo = ref.watch(todoRepositoryProvider);
   return repo.getImportantTodos();
 });
 
 /// すべてのやること
-final allTodosProvider = FutureProvider<List<Todo>>((ref) async {
+final allTodosProvider = FutureProvider.autoDispose<List<Todo>>((ref) async {
   final repo = ref.watch(todoRepositoryProvider);
   return repo.getTodos(includeCompleted: true);
 });
 
 /// 未完了のやること数（バッジ用）
-final incompleteTodoCountProvider = FutureProvider<int>((ref) async {
+final incompleteTodoCountProvider = FutureProvider.autoDispose<int>((
+  ref,
+) async {
   final todos = await ref.watch(incompleteTodosProvider.future);
   return todos.length;
 });
 
 /// やること詳細
-final todoDetailProvider = FutureProvider.family<Todo?, String>((
+final todoDetailProvider = FutureProvider.autoDispose.family<Todo?, String>((
   ref,
   id,
 ) async {

@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_icons.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/org_icon.dart';
 import '../../../../shared/widgets/user_avatar.dart';
@@ -202,10 +199,7 @@ class _FilterTabs extends StatelessWidget {
         children: TaskFilter.values.map((f) {
           final isActive = f == selected;
           final (icon, color) = switch (f) {
-            TaskFilter.myDay => (
-              Icons.wb_sunny_outlined,
-              const Color(0xFFE8912D),
-            ),
+            TaskFilter.myDay => (Icons.wb_sunny_outlined, AppColors.sunOrange),
             TaskFilter.important => (
               Icons.star_outline_rounded,
               AppColors.error,
@@ -223,10 +217,10 @@ class _FilterTabs extends StatelessWidget {
               color: isActive
                   ? color.withValues(alpha: 0.12)
                   : theme.colorScheme.onSurface.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: AppRadius.radiusCircular,
               child: InkWell(
                 onTap: () => onSelected(f),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: AppRadius.radiusCircular,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
@@ -300,7 +294,7 @@ class _FilterHeader extends StatelessWidget {
               child: Icon(
                 Icons.wb_sunny_rounded,
                 size: 24,
-                color: const Color(0xFFE8912D),
+                color: AppColors.sunOrange,
               ),
             ),
           Column(
@@ -635,17 +629,9 @@ class _AddTaskBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(
-          top: BorderSide(color: theme.colorScheme.outlineVariant, width: 0.5),
+          top: BorderSide(color: theme.colorScheme.outlineVariant, width: AppStroke.strokeWidth05),
         ),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, -1),
-                ),
-              ],
+        boxShadow: isDark ? null : AppShadows.shadow4,
       ),
       child: showField
           ? Row(
@@ -687,7 +673,7 @@ class _AddTaskBar extends StatelessWidget {
             )
           : InkWell(
               onTap: onTap,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppRadius.radius80,
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Row(

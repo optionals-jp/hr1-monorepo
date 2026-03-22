@@ -9,55 +9,64 @@ class SupabaseMessagesRepository implements MessagesRepository {
   final SupabaseClient _client;
 
   @override
-  Future<List<MessageThread>> getThreads(String userId) async {
-    // participant_id で自分のスレッドを取得
-    final response = await _client
+  Future<List<MessageThread>> getThreads(
+    String userId, {
+    String? organizationId,
+  }) async {
+    var query = _client
         .from('message_threads')
-        .select('*, organizations:organization_id(name)')
-        .eq('participant_id', userId)
-        .order('updated_at', ascending: false);
+        .select(
+          '*, organizations:organization_id(name), '
+          'messages(*, sender:sender_id(id, display_name, role))',
+        )
+        .eq('participant_id', userId);
 
-    final threads = (response as List).map((row) {
+    if (organizationId != null) {
+      query = query.eq('organization_id', organizationId);
+    }
+
+    final response = await query
+        .order('updated_at', ascending: false)
+        .order('created_at', referencedTable: 'messages', ascending: false)
+        .limit(1, referencedTable: 'messages');
+
+    final rows = response as List;
+    if (rows.isEmpty) return [];
+
+    final threadIds = rows.map((row) => row['id'] as String).toList();
+
+    // 未読件数を1回のバッチクエリで取得
+    final unreadRows = await _client
+        .from('messages')
+        .select('thread_id')
+        .inFilter('thread_id', threadIds)
+        .neq('sender_id', userId)
+        .isFilter('read_at', null);
+
+    // thread_id ごとに未読件数を集計
+    final unreadMap = <String, int>{};
+    for (final row in unreadRows as List) {
+      final threadId = row['thread_id'] as String;
+      unreadMap[threadId] = (unreadMap[threadId] ?? 0) + 1;
+    }
+
+    return rows.map((row) {
       final map = Map<String, dynamic>.from(row);
-      final org = map['organizations'] as Map<String, dynamic>?;
+      final org = map.remove('organizations') as Map<String, dynamic>?;
       map['organization_name'] = org?['name'];
-      return MessageThread.fromJson(map);
+      final messagesList = map.remove('messages') as List? ?? [];
+
+      final thread = MessageThread.fromJson(map);
+
+      final Message? latestMessage = messagesList.isNotEmpty
+          ? Message.fromJson(Map<String, dynamic>.from(messagesList.first))
+          : null;
+
+      return thread.copyWith(
+        latestMessage: latestMessage,
+        unreadCount: unreadMap[thread.id] ?? 0,
+      );
     }).toList();
-
-    // 各スレッドの最新メッセージと未読数を並列取得
-    final enriched = await Future.wait(
-      threads.map((thread) async {
-        final results = await Future.wait([
-          _client
-              .from('messages')
-              .select('*, sender:sender_id(id, display_name, role)')
-              .eq('thread_id', thread.id)
-              .order('created_at', ascending: false)
-              .limit(1),
-          _client
-              .from('messages')
-              .select('id')
-              .eq('thread_id', thread.id)
-              .neq('sender_id', userId)
-              .isFilter('read_at', null),
-        ]);
-
-        final latestList = results[0] as List;
-        final Message? latestMessage = latestList.isNotEmpty
-            ? Message.fromJson(Map<String, dynamic>.from(latestList.first))
-            : null;
-
-        // 未読件数を取得
-        final unreadCount = (results[1] as List).length;
-
-        return thread.copyWith(
-          latestMessage: latestMessage,
-          unreadCount: unreadCount,
-        );
-      }),
-    );
-
-    return enriched;
   }
 
   @override
@@ -108,7 +117,11 @@ class SupabaseMessagesRepository implements MessagesRepository {
   }) async {
     final response = await _client
         .from('messages')
-        .insert({'thread_id': threadId, 'content': content})
+        .insert({
+          'thread_id': threadId,
+          'sender_id': senderId,
+          'content': content,
+        })
         .select('*, sender:sender_id(id, display_name, role)')
         .single();
 
@@ -154,5 +167,41 @@ class SupabaseMessagesRepository implements MessagesRepository {
         .select('id, display_name, role')
         .eq('id', senderId)
         .single();
+  }
+
+  @override
+  Future<MessageThread> getOrCreateThread({
+    required String userId,
+    required String organizationId,
+  }) async {
+    final existing = await _client
+        .from('message_threads')
+        .select('*, organizations:organization_id(name)')
+        .eq('participant_id', userId)
+        .eq('organization_id', organizationId)
+        .eq('participant_type', 'applicant')
+        .maybeSingle();
+
+    if (existing != null) {
+      final map = Map<String, dynamic>.from(existing);
+      final org = map['organizations'] as Map<String, dynamic>?;
+      map['organization_name'] = org?['name'];
+      return MessageThread.fromJson(map);
+    }
+
+    final response = await _client
+        .from('message_threads')
+        .insert({
+          'participant_id': userId,
+          'organization_id': organizationId,
+          'participant_type': 'applicant',
+        })
+        .select('*, organizations:organization_id(name)')
+        .single();
+
+    final map = Map<String, dynamic>.from(response);
+    final org = map['organizations'] as Map<String, dynamic>?;
+    map['organization_name'] = org?['name'];
+    return MessageThread.fromJson(map);
   }
 }

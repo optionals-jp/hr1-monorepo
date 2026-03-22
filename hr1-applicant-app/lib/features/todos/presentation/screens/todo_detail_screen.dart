@@ -3,14 +3,10 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:hr1_applicant_app/core/constants/app_colors.dart';
-import 'package:hr1_applicant_app/core/constants/app_spacing.dart';
-import 'package:hr1_applicant_app/core/constants/app_text_styles.dart';
-import 'package:hr1_applicant_app/shared/widgets/common_snackbar.dart';
-import 'package:hr1_applicant_app/shared/widgets/loading_indicator.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 import '../../domain/entities/todo.dart';
 import '../controllers/todo_controller.dart';
-import '../providers/todo_providers.dart';
 
 /// やること詳細画面
 class TodoDetailScreen extends HookConsumerWidget {
@@ -32,20 +28,17 @@ class TodoDetailScreen extends HookConsumerWidget {
 
       isSaving.value = true;
       try {
-        final repo = ref.read(todoRepositoryProvider);
-        await repo.updateTodo(
-          todo.copyWith(
-            title: title,
-            note: noteController.text.trim().isEmpty
-                ? null
-                : noteController.text.trim(),
-            dueDate: dueDate.value,
-          ),
-        );
-        ref.invalidate(todoListControllerProvider);
-        ref.invalidate(incompleteTodosProvider);
-        ref.invalidate(importantTodosProvider);
-        ref.invalidate(allTodosProvider);
+        await ref
+            .read(todoListControllerProvider.notifier)
+            .updateTodo(
+              todo.copyWith(
+                title: title,
+                note: noteController.text.trim().isEmpty
+                    ? null
+                    : noteController.text.trim(),
+                dueDate: dueDate.value,
+              ),
+            );
         if (context.mounted) Navigator.of(context).pop();
       } catch (e) {
         if (context.mounted) CommonSnackBar.error(context, 'エラー: $e');
@@ -55,7 +48,7 @@ class TodoDetailScreen extends HookConsumerWidget {
     }
 
     Future<void> pickDueDate() async {
-      final picked = await showDatePicker(
+      final picked = await CommonDatePicker.show(
         context: context,
         initialDate: dueDate.value ?? DateTime.now(),
         firstDate: DateTime(2020),

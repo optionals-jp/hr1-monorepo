@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../todos/presentation/providers/todo_providers.dart';
 import '../providers/survey_providers.dart';
 
 /// サーベイ回答送信の状態
@@ -29,6 +30,9 @@ class SurveyAnswerController extends AutoDisposeNotifier<SurveySubmitState> {
       final repo = ref.read(surveyRepositoryProvider);
       await repo.submitResponse(surveyId: surveyId, answers: answers);
       ref.invalidate(completedSurveyIdsProvider);
+      ref.invalidate(incompleteTodosProvider);
+      ref.invalidate(allTodosProvider);
+      ref.invalidate(incompleteTodoCountProvider);
       state = const SurveySubmitState(submitted: true);
     } catch (e) {
       state = const SurveySubmitState(error: '送信に失敗しました。しばらくしてから再度お試しください');

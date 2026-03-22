@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_spacing.dart';
-import '../../core/constants/app_colors.dart';
+import '../../core/constants/constants.dart';
 
 /// 共通フルスクリーンボトムシート
 ///

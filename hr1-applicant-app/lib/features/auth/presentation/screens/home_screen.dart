@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_icons.dart';
-import '../../../../shared/widgets/organization_switcher.dart';
+import '../../../../core/constants/constants.dart';
+import '../../../../core/router/app_router.dart';
+import '../../../../shared/widgets/widgets.dart';
+import '../../../notifications/presentation/providers/notification_providers.dart';
 import '../providers/organization_context_provider.dart';
 
 /// ホーム画面（BottomNavigationBar付きのシェル）
@@ -25,20 +27,13 @@ class HomeScreen extends ConsumerWidget {
         // 企業切り替えはホーム（企業）タブのみ
         title: isCompanyTab
             ? const OrganizationSwitcher()
-            : Text(_tabTitles[navigationShell.currentIndex]),
-        centerTitle: !isCompanyTab,
-        actions: currentOrg != null
-            ? [
-                IconButton(
-                  icon: AppIcons.notification(
-                    color: Theme.of(context).appBarTheme.foregroundColor,
-                  ),
-                  onPressed: () {
-                    // TODO: 通知画面へ遷移
-                  },
-                ),
-              ]
-            : null,
+            : Text(
+                _tabTitles[navigationShell.currentIndex],
+                style: AppTextStyles.title2,
+              ),
+        // centerTitle: !isCompanyTab,
+        centerTitle: false,
+        actions: currentOrg != null ? [const _NotificationIconButton()] : null,
       ),
       body: navigationShell,
       bottomNavigationBar: Builder(
@@ -127,6 +122,35 @@ class HomeScreen extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// 通知アイコンボタン（未読バッジ付き）
+class _NotificationIconButton extends ConsumerWidget {
+  const _NotificationIconButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
+    final iconColor = Theme.of(context).appBarTheme.foregroundColor;
+
+    return IconButton(
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          AppIcons.notification(color: iconColor),
+          if (unreadCount.valueOrNull != null && unreadCount.valueOrNull! > 0)
+            Positioned(
+              right: -4,
+              top: -4,
+              child: CountBadge(count: unreadCount.valueOrNull!, size: 16),
+            ),
+        ],
+      ),
+      onPressed: () {
+        context.push(AppRoutes.notifications);
+      },
     );
   }
 }

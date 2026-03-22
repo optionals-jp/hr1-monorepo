@@ -1,13 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
-import '../../../../shared/widgets/common_button.dart';
-import '../../../../shared/widgets/common_dialog.dart';
-import '../../../../shared/widgets/common_snackbar.dart';
-import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../core/constants/constants.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../domain/entities/form_field_item.dart';
 import '../controllers/form_fill_controller.dart';
 import '../providers/forms_providers.dart';
@@ -81,9 +75,7 @@ class FormFillScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(AppSpacing.cardPadding),
                     decoration: BoxDecoration(
                       color: AppColors.primaryLight.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(
-                        AppSpacing.cardRadius,
-                      ),
+                      borderRadius: AppRadius.radius120,
                       border: Border.all(
                         color: AppColors.primaryLight.withValues(alpha: 0.2),
                       ),
@@ -139,7 +131,7 @@ class _FormFieldWidget extends ConsumerWidget {
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        borderRadius: AppRadius.radius120,
         border: Border.all(color: theme.dividerColor),
       ),
       child: Column(
@@ -157,7 +149,7 @@ class _FormFieldWidget extends ConsumerWidget {
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: AppRadius.radius40,
                   ),
                   child: Text(
                     '必須',

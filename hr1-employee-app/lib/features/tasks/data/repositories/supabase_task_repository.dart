@@ -28,7 +28,10 @@ class SupabaseTaskRepository implements TaskRepository {
       query = query.eq('is_completed', false);
     }
 
-    final response = await query.order('sort_order').order('created_at');
+    final response = await query
+        .order('sort_order')
+        .order('created_at')
+        .limit(200);
     return response.map((e) => Task.fromJson(e)).toList();
   }
 
@@ -45,7 +48,8 @@ class SupabaseTaskRepository implements TaskRepository {
         .eq('is_my_day', true)
         .eq('my_day_date', todayStr)
         .order('sort_order')
-        .order('created_at');
+        .order('created_at')
+        .limit(200);
 
     return response.map((e) => Task.fromJson(e)).toList();
   }
@@ -59,7 +63,8 @@ class SupabaseTaskRepository implements TaskRepository {
         .eq('is_important', true)
         .eq('is_completed', false)
         .order('sort_order')
-        .order('created_at');
+        .order('created_at')
+        .limit(200);
 
     return response.map((e) => Task.fromJson(e)).toList();
   }
@@ -73,7 +78,8 @@ class SupabaseTaskRepository implements TaskRepository {
         .eq('is_completed', false)
         .not('due_date', 'is', null)
         .order('due_date')
-        .order('created_at');
+        .order('created_at')
+        .limit(200);
 
     return response.map((e) => Task.fromJson(e)).toList();
   }
@@ -176,7 +182,8 @@ class SupabaseTaskRepository implements TaskRepository {
         .select()
         .eq('task_id', taskId)
         .order('sort_order')
-        .order('created_at');
+        .order('created_at')
+        .limit(200);
 
     return response.map((e) => TaskStep.fromJson(e)).toList();
   }

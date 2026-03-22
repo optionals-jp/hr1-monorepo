@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/domain/entities/page_section.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../../applications/domain/entities/job.dart';
 import '../../../applications/presentation/providers/applications_providers.dart';
 
@@ -84,7 +82,7 @@ class _MarkdownSection extends StatelessWidget {
         ),
         codeblockDecoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+          borderRadius: AppRadius.radius80,
         ),
       ),
     );
@@ -110,7 +108,7 @@ class _JobListSection extends ConsumerWidget {
             padding: const EdgeInsets.all(AppSpacing.xl),
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+              borderRadius: AppRadius.radius120,
             ),
             child: Center(
               child: Text(
@@ -135,9 +133,7 @@ class _JobListSection extends ConsumerWidget {
                   foregroundColor: AppColors.primaryLight,
                   side: const BorderSide(color: AppColors.primaryLight),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppSpacing.buttonRadius,
-                    ),
+                    borderRadius: AppRadius.radius80,
                   ),
                 ),
                 child: const Text('すべての求人を見る'),
@@ -158,47 +154,34 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: InkWell(
-        onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppSpacing.cardPadding),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-            border: Border.all(color: theme.dividerColor),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return CommonCard(
+      onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
+      margin: EdgeInsets.only(bottom: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(job.title, style: AppTextStyles.callout),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.xs,
             children: [
-              Text(job.title, style: AppTextStyles.callout),
-              const SizedBox(height: AppSpacing.sm),
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.xs,
-                children: [
-                  if (job.department != null) _Tag(job.department!),
-                  if (job.location != null) _Tag(job.location!),
-                  if (job.employmentType != null) _Tag(job.employmentType!),
-                ],
-              ),
-              if (job.salaryRange != null) ...[
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  job.salaryRange!,
-                  style: AppTextStyles.body2.copyWith(
-                    color: AppColors.primaryLight,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+              if (job.department != null) _Tag(job.department!),
+              if (job.location != null) _Tag(job.location!),
+              if (job.employmentType != null) _Tag(job.employmentType!),
             ],
           ),
-        ),
+          if (job.salaryRange != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              job.salaryRange!,
+              style: AppTextStyles.body2.copyWith(
+                color: AppColors.primaryLight,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -229,7 +212,7 @@ class _BenefitListSection extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               color: theme.scaffoldBackgroundColor,
-              borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+              borderRadius: AppRadius.radius80,
             ),
             child: Row(
               children: [
@@ -269,62 +252,53 @@ class _ValueListSection extends StatelessWidget {
         final item = entry.value;
         final color = _accentColors[index % _accentColors.length];
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.md),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.cardPadding),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-              border: Border.all(color: theme.dividerColor),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${index + 1}',
-                      style: AppTextStyles.callout.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: color,
-                      ),
+        return CommonCard(
+          margin: EdgeInsets.only(bottom: AppSpacing.md),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: AppRadius.radius80,
+                ),
+                child: Center(
+                  child: Text(
+                    '${index + 1}',
+                    style: AppTextStyles.callout.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: color,
                     ),
                   ),
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item['title'] as String? ?? '',
+                      style: AppTextStyles.body2.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (item['description'] != null) ...[
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
-                        item['title'] as String? ?? '',
-                        style: AppTextStyles.body2.copyWith(
-                          fontWeight: FontWeight.w600,
+                        item['description'] as String? ?? '',
+                        style: AppTextStyles.caption1.copyWith(
+                          height: 1.5,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      if (item['description'] != null) ...[
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          item['description'] as String? ?? '',
-                          style: AppTextStyles.caption1.copyWith(
-                            height: 1.5,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
                     ],
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       }).toList(),
@@ -348,7 +322,7 @@ class _StatsSection extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        borderRadius: AppRadius.radius120,
       ),
       child: Wrap(
         alignment: WrapAlignment.spaceEvenly,
@@ -393,54 +367,45 @@ class _MembersSection extends StatelessWidget {
     final theme = Theme.of(context);
     return Column(
       children: items.map((item) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.md),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.cardPadding),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-              border: Border.all(color: theme.dividerColor),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: theme.colorScheme.primary.withValues(
-                    alpha: 0.1,
-                  ),
-                  child: Text(
-                    (item['name'] as String? ?? '?').characters.first,
-                    style: AppTextStyles.body2.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
+        return CommonCard(
+          margin: EdgeInsets.only(bottom: AppSpacing.md),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: theme.colorScheme.primary.withValues(
+                  alpha: 0.1,
+                ),
+                child: Text(
+                  (item['name'] as String? ?? '?').characters.first,
+                  style: AppTextStyles.body2.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item['name'] as String? ?? '',
+                      style: AppTextStyles.body2.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (item['role'] != null)
                       Text(
-                        item['name'] as String? ?? '',
-                        style: AppTextStyles.body2.copyWith(
-                          fontWeight: FontWeight.w600,
+                        item['role'] as String? ?? '',
+                        style: AppTextStyles.caption2.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      if (item['role'] != null)
-                        Text(
-                          item['role'] as String? ?? '',
-                          style: AppTextStyles.caption2.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                    ],
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       }).toList(),
@@ -479,7 +444,7 @@ class _GallerySection extends StatelessWidget {
         itemBuilder: (context, index) {
           final item = items[index];
           return ClipRRect(
-            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+            borderRadius: AppRadius.radius120,
             child: Container(
               width: 240,
               color: theme.scaffoldBackgroundColor,
@@ -558,17 +523,14 @@ class _FaqTileState extends State<_FaqTile> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: theme.dividerColor),
-      ),
+    return CommonCard(
+      padding: EdgeInsets.zero,
+      margin: EdgeInsets.zero,
       child: Column(
         children: [
           InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
-            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+            borderRadius: AppRadius.radius160,
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.cardPadding),
               child: Row(
@@ -578,7 +540,7 @@ class _FaqTileState extends State<_FaqTile> {
                     height: 24,
                     decoration: BoxDecoration(
                       color: AppColors.primaryLight.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: AppRadius.radius40,
                     ),
                     child: Center(
                       child: Text(
@@ -654,7 +616,7 @@ class _Tag extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: AppColors.primaryLight.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadius.radius40,
       ),
       child: Text(
         text,

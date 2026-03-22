@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_icons.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/user_avatar.dart';
@@ -493,15 +490,7 @@ class _InfoSection extends StatelessWidget {
                     width: 0.5,
                   )
                 : null,
-            boxShadow: isDark
-                ? null
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 3,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
+            boxShadow: isDark ? null : AppShadows.shadow4,
           ),
           child: Column(
             children: [
@@ -636,15 +625,7 @@ class _ProjectCard extends StatelessWidget {
                 width: 0.5,
               )
             : null,
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
-                ),
-              ],
+        boxShadow: isDark ? null : AppShadows.shadow4,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -786,7 +767,7 @@ class _WorkStatusBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 0.5),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: AppStroke.strokeWidth05),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -799,10 +780,9 @@ class _WorkStatusBadge extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             label,
-            style: AppTextStyles.caption1.copyWith(
+            style: AppTextStyles.caption2.copyWith(
               color: color,
               fontWeight: FontWeight.w600,
-              fontSize: 11,
             ),
           ),
         ],

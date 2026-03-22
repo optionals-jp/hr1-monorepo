@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_spacing.dart';
-import '../../core/constants/app_text_styles.dart';
+import '../../core/constants/constants.dart';
 
-/// iOS / Teams スタイルのグループ化セクション（ヘッダー付き）
+/// グループ化セクション（ヘッダー付き）
 class GroupedSection extends StatelessWidget {
   const GroupedSection({
     super.key,

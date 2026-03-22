@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_icons.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../domain/entities/attendance_record.dart';
 import '../controllers/attendance_controller.dart';
 import '../../../../shared/widgets/common_button.dart';
@@ -363,13 +360,7 @@ class _CorrectionRequestScreenState
                   ? theme.colorScheme.outline.withValues(alpha: 0.35)
                   : theme.colorScheme.outlineVariant,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.06),
-                blurRadius: 4,
-                offset: const Offset(0, 1),
-              ),
-            ],
+            boxShadow: AppShadows.shadow4,
           ),
           child: Row(
             children: [
@@ -460,15 +451,7 @@ class _CorrectionRequestScreenState
                 width: 0.5,
               )
             : null,
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
+        boxShadow: isDark ? null : AppShadows.shadow4,
       ),
       child: child,
     );

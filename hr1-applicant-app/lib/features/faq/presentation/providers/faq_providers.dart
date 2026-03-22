@@ -10,7 +10,9 @@ final faqRepositoryProvider = Provider<SupabaseFaqRepository>((ref) {
 });
 
 /// 応募者向けFAQ一覧プロバイダー
-final applicantFaqsProvider = FutureProvider<List<FaqItem>>((ref) async {
+final applicantFaqsProvider = FutureProvider.autoDispose<List<FaqItem>>((
+  ref,
+) async {
   final org = ref.watch(currentOrganizationProvider);
   if (org == null) return [];
   final repo = ref.watch(faqRepositoryProvider);

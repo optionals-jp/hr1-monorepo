@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_text_styles.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
 
 /// 共通ダイアログユーティリティ
 class CommonDialog {
@@ -33,9 +32,7 @@ class CommonDialog {
         final theme = Theme.of(ctx);
         return AlertDialog(
           title: Text(title, style: AppTextStyles.headline),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusCircular),
           content: Text(
             message,
             style: AppTextStyles.body2.copyWith(
@@ -137,11 +134,9 @@ class CommonDialog {
               ),
               suffixText: suffixText,
               filled: true,
-              fillColor: theme.brightness == Brightness.dark
-                  ? theme.colorScheme.surfaceContainerHighest
-                  : const Color(0xFFEFEFEF),
+              fillColor: AppColors.surfaceTertiary(theme.brightness),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: AppRadius.radius80,
                 borderSide: BorderSide.none,
               ),
               contentPadding: const EdgeInsets.symmetric(

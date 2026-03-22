@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../core/constants/app_text_styles.dart';
+import '../../../../../core/constants/constants.dart';
 
 /// 横スクロール アクションチップ — Teams モバイルの提案アクション風
 class PortalActionChip extends StatelessWidget {
@@ -30,15 +30,9 @@ class PortalActionChip extends StatelessWidget {
             color.withValues(alpha: 0.1),
             theme.colorScheme.surface,
           ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.15), width: 0.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            ),
-          ],
+          borderRadius: AppRadius.radius160,
+          border: Border.all(color: color.withValues(alpha: 0.15), width: AppStroke.strokeWidth05),
+          boxShadow: AppShadows.shadow4,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

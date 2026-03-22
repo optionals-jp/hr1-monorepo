@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_icons.dart';
-import '../../core/constants/app_text_styles.dart';
-import '../screens/search_screen.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/shared/screens/search_screen.dart';
 
 /// 共通検索ボックス — Teams / Outlook モバイルスタイル（ピル型）
 ///
@@ -40,10 +39,8 @@ class SearchBox extends StatelessWidget {
     final box = Container(
       height: 40,
       decoration: BoxDecoration(
-        color: theme.brightness == Brightness.dark
-            ? theme.colorScheme.surfaceContainerHighest
-            : const Color(0xFFEFEFEF),
-        borderRadius: BorderRadius.circular(20),
+        color: AppColors.surfaceTertiary(theme.brightness),
+        borderRadius: AppRadius.radiusCircular,
       ),
       child: Row(
         children: [

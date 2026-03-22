@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_spacing.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
 
 /// HR1 アプリテーマ定義 — Fluent 2 Design System 準拠
 class AppTheme {
@@ -98,9 +97,7 @@ class AppTheme {
           backgroundColor: AppColors.brandPrimary,
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 50),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.radius80),
           elevation: 0,
           textStyle: GoogleFonts.notoSansJp(
             fontSize: 15,
@@ -117,9 +114,7 @@ class AppTheme {
           side: BorderSide(
             color: AppColors.brandPrimary.withValues(alpha: 0.3),
           ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.radius80),
           textStyle: GoogleFonts.notoSansJp(
             fontSize: 15,
             fontWeight: FontWeight.w600,
@@ -147,23 +142,23 @@ class AppTheme {
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-          borderSide: BorderSide(color: border, width: 0.5),
+          borderRadius: AppRadius.radius80,
+          borderSide: BorderSide(color: border, width: AppStroke.strokeWidth05),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-          borderSide: BorderSide(color: border, width: 0.5),
+          borderRadius: AppRadius.radius80,
+          borderSide: BorderSide(color: border, width: AppStroke.strokeWidth05),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+          borderRadius: AppRadius.radius80,
           borderSide: const BorderSide(
             color: AppColors.brandPrimary,
             width: 1.5,
           ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-          borderSide: const BorderSide(color: AppColors.error, width: 0.5),
+          borderRadius: AppRadius.radius80,
+          borderSide: const BorderSide(color: AppColors.error, width: AppStroke.strokeWidth05),
         ),
         labelStyle: GoogleFonts.notoSansJp(fontSize: 14, color: textSecondary),
         hintStyle: GoogleFonts.notoSansJp(
@@ -178,9 +173,9 @@ class AppTheme {
         elevation: isDark ? 0 : 1,
         shadowColor: Colors.black.withValues(alpha: 0.08),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+          borderRadius: AppRadius.radius120,
           side: isDark
-              ? BorderSide(color: border.withValues(alpha: 0.3), width: 0.5)
+              ? BorderSide(color: border.withValues(alpha: 0.3), width: AppStroke.strokeWidth05)
               : BorderSide.none,
         ),
         margin: EdgeInsets.zero,
@@ -213,14 +208,14 @@ class AppTheme {
       // SnackBar テーマ
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.radius80),
       ),
 
       // Dialog テーマ
       dialogTheme: DialogThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.cornerRadius160),
+        ),
         titleTextStyle: GoogleFonts.notoSansJp(
           fontSize: 17,
           fontWeight: FontWeight.w600,

@@ -40,4 +40,41 @@ class DateFormatter {
   static String toYearMonth(DateTime date) {
     return DateFormat('yyyy年M月').format(date);
   }
+
+  /// 相対日付（今日/昨日/M月d日/yyyy年M月d日）
+  static String toRelativeDate(DateTime date) {
+    final now = DateTime.now();
+    final local = date.toLocal();
+    if (local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day) {
+      return '今日';
+    }
+    final yesterday = now.subtract(const Duration(days: 1));
+    if (local.year == yesterday.year &&
+        local.month == yesterday.month &&
+        local.day == yesterday.day) {
+      return '昨日';
+    }
+    if (local.year == now.year) return '${local.month}月${local.day}日';
+    return '${local.year}年${local.month}月${local.day}日';
+  }
+
+  /// メッセージ一覧用（今日→HH:mm、今年→M/d、他→yyyy/M/d）
+  static String toMessageDate(DateTime date) {
+    final now = DateTime.now();
+    final local = date.toLocal();
+    if (local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day) {
+      return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+    }
+    if (local.year == now.year) return '${local.month}/${local.day}';
+    return '${local.year}/${local.month}/${local.day}';
+  }
+
+  /// 短い日付（yyyy/MM/dd）
+  static String toDateSlash(DateTime date) {
+    return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
+  }
 }

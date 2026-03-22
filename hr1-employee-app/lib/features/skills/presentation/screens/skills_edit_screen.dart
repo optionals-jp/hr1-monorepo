@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../shared/widgets/common_dialog.dart';
 import '../../../../shared/widgets/master_search_bar.dart';
 import '../../domain/entities/employee_skill.dart';
@@ -148,13 +146,7 @@ class _SkillTile extends StatelessWidget {
             : null,
         boxShadow: theme.brightness == Brightness.dark
             ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
-                ),
-              ],
+            : AppShadows.shadow4,
       ),
       child: Row(
         children: [

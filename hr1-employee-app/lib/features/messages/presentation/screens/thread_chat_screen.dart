@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_icons.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/message_thread.dart';
 import '../../../../shared/widgets/common_dialog.dart';
 import '../../../../shared/widgets/common_snackbar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/message_input_bar.dart';
 import '../controllers/thread_chat_controller.dart';
 import '../controllers/thread_realtime_controller.dart';
 
-/// スレッドチャット画面 — Teams チャットスタイル
+/// スレッドチャット画面
 class ThreadChatScreen extends ConsumerStatefulWidget {
   const ThreadChatScreen({super.key, required this.thread});
 
@@ -50,8 +48,8 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels <=
-        _scrollController.position.minScrollExtent + 50) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 50) {
       ref
           .read(threadRealtimeControllerProvider(_realtimeArg).notifier)
           .loadOlderMessages();
@@ -62,18 +60,6 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
     ref
         .read(threadRealtimeControllerProvider(_realtimeArg).notifier)
         .onTextChanged(_controller.text);
-  }
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
   }
 
   Future<void> _sendMessage() async {
@@ -161,7 +147,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
               height: 4,
               decoration: BoxDecoration(
                 color: theme.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: AppRadius.radius20,
               ),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -203,15 +189,6 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
       threadRealtimeControllerProvider(_realtimeArg),
     );
 
-    // 新しいメッセージが追加されたらスクロール
-    ref.listen(threadRealtimeControllerProvider(_realtimeArg), (prev, next) {
-      if (prev != null &&
-          next.messages.length > prev.messages.length &&
-          !next.loading) {
-        _scrollToBottom();
-      }
-    });
-
     final messages = realtimeState.messages;
     final loading = realtimeState.loading;
     final loadingMore = realtimeState.loadingMore;
@@ -221,10 +198,10 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            // ミニアバター（Teams チャットヘッダー風）
+            // アバター
             Container(
-              width: 28,
-              height: 28,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 color: AppColors.brandPrimary,
                 shape: BoxShape.circle,
@@ -239,7 +216,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Text(displayName, style: AppTextStyles.headline),
           ],
         ),
@@ -253,16 +230,40 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                 ? const LoadingIndicator()
                 : messages.isEmpty
                 ? Center(
-                    child: Text(
-                      'メッセージはまだありません',
-                      style: AppTextStyles.body2.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.45,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: AppColors.brandPrimary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              displayName.isNotEmpty ? displayName[0] : '?',
+                              style: AppTextStyles.title2.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        Text(displayName, style: AppTextStyles.callout),
+                        const SizedBox(height: 4),
+                        Text(
+                          'メッセージを送ってみましょう',
+                          style: AppTextStyles.caption1.copyWith(
+                            color: AppColors.textSecondary(theme.brightness),
+                          ),
+                        ),
+                      ],
                     ),
                   )
                 : ListView.builder(
+                    reverse: true,
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.lg,
@@ -270,36 +271,71 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                     ),
                     itemCount: messages.length + (loadingMore ? 1 : 0),
                     itemBuilder: (context, index) {
-                      if (loadingMore && index == 0) {
+                      if (loadingMore && index == messages.length) {
                         return const Padding(
                           padding: EdgeInsets.symmetric(
                             vertical: AppSpacing.md,
                           ),
-                          child: Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: LoadingIndicator(size: 20),
-                            ),
-                          ),
+                          child: Center(child: LoadingIndicator(size: 20)),
                         );
                       }
-                      final msgIndex = loadingMore ? index - 1 : index;
+                      final msgIndex = messages.length - 1 - index;
                       final msg = messages[msgIndex];
                       final isMe = msg.senderId == _currentUserId;
                       final isEditing = _editingMessageId == msg.id;
 
-                      return GestureDetector(
-                        onLongPress: isMe
-                            ? () => _showMessageActions(msg)
-                            : null,
-                        child: isEditing
-                            ? _EditingBubble(
-                                controller: _editController,
-                                onSave: _saveEdit,
-                                onCancel: _cancelEditing,
-                              )
-                            : _MessageBubble(message: msg, isMe: isMe),
+                      // グルーピング判定
+                      final prevMsg = msgIndex > 0
+                          ? messages[msgIndex - 1]
+                          : null;
+                      final nextMsg = msgIndex < messages.length - 1
+                          ? messages[msgIndex + 1]
+                          : null;
+                      final isFirstInGroup =
+                          prevMsg == null ||
+                          prevMsg.senderId != msg.senderId ||
+                          msg.createdAt
+                                  .difference(prevMsg.createdAt)
+                                  .inMinutes >
+                              5;
+                      final isLastInGroup =
+                          nextMsg == null ||
+                          nextMsg.senderId != msg.senderId ||
+                          nextMsg.createdAt
+                                  .difference(msg.createdAt)
+                                  .inMinutes >
+                              5;
+
+                      // 日付セパレーター
+                      Widget? dateSeparator;
+                      if (prevMsg == null ||
+                          prevMsg.createdAt.day != msg.createdAt.day ||
+                          prevMsg.createdAt.month != msg.createdAt.month ||
+                          prevMsg.createdAt.year != msg.createdAt.year) {
+                        dateSeparator = _DateSeparator(date: msg.createdAt);
+                      }
+
+                      return Column(
+                        children: [
+                          if (dateSeparator != null) dateSeparator,
+                          GestureDetector(
+                            onLongPress: isMe
+                                ? () => _showMessageActions(msg)
+                                : null,
+                            child: isEditing
+                                ? _EditingBubble(
+                                    controller: _editController,
+                                    onSave: _saveEdit,
+                                    onCancel: _cancelEditing,
+                                  )
+                                : _MessageBubble(
+                                    message: msg,
+                                    isMe: isMe,
+                                    isFirstInGroup: isFirstInGroup,
+                                    isLastInGroup: isLastInGroup,
+                                  ),
+                          ),
+                        ],
                       );
                     },
                   ),
@@ -307,104 +343,66 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
 
           // タイピングインジケーター
           if (otherUserTyping)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.xs,
+            Padding(
+              padding: const EdgeInsets.only(
+                left: AppSpacing.lg,
+                bottom: AppSpacing.xs,
               ),
               child: _TypingIndicator(),
             ),
 
-          // 入力エリア — SearchBox と同じピル型デザイン
-          Container(
-            color: theme.colorScheme.surface,
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.screenHorizontal,
-              AppSpacing.sm,
-              AppSpacing.sm,
-              MediaQuery.of(context).padding.bottom + AppSpacing.sm,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Container(
-                    constraints: const BoxConstraints(minHeight: 40),
-                    decoration: BoxDecoration(
-                      color: theme.brightness == Brightness.dark
-                          ? theme.colorScheme.surfaceContainerHighest
-                          : const Color(0xFFEFEFEF),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 14, bottom: 10),
-                          child: AppIcons.directbox(
-                            size: 20,
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.4,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: TextField(
-                            controller: _controller,
-                            decoration: InputDecoration(
-                              hintText: 'メッセージを入力',
-                              hintStyle: AppTextStyles.caption1.copyWith(
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.5,
-                                ),
-                              ),
-                              filled: false,
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 10,
-                              ),
-                              isDense: true,
-                            ),
-                            style: AppTextStyles.caption1,
-                            maxLines: 4,
-                            minLines: 1,
-                            textInputAction: TextInputAction.send,
-                            onSubmitted: (_) => _sendMessage(),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: SizedBox(
-                    width: 36,
-                    height: 36,
-                    child: IconButton(
-                      onPressed: _sending ? null : _sendMessage,
-                      icon: AppIcons.send(
-                        color: _sending
-                            ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
-                            : AppColors.brandPrimary,
-                        size: 22,
-                      ),
-                      padding: EdgeInsets.zero,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          // 入力エリア
+          MessageInputBar(
+            controller: _controller,
+            onSend: _sendMessage,
+            isSending: _sending,
           ),
         ],
       ),
     );
+  }
+}
+
+// =============================================================================
+// Date Separator
+// =============================================================================
+
+class _DateSeparator extends StatelessWidget {
+  const _DateSeparator({required this.date});
+
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: Text(
+          _format(date.toLocal()),
+          style: AppTextStyles.caption2.copyWith(
+            color: AppColors.textSecondary(theme.brightness),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _format(DateTime dt) {
+    final now = DateTime.now();
+    if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
+      return '今日';
+    }
+    final yesterday = now.subtract(const Duration(days: 1));
+    if (dt.year == yesterday.year &&
+        dt.month == yesterday.month &&
+        dt.day == yesterday.day) {
+      return '昨日';
+    }
+    if (dt.year == now.year) {
+      return '${dt.month}月${dt.day}日';
+    }
+    return '${dt.year}年${dt.month}月${dt.day}日';
   }
 }
 
@@ -420,7 +418,6 @@ class _TypingIndicator extends StatefulWidget {
 class _TypingIndicatorState extends State<_TypingIndicator>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
-  int _dotCount = 0;
 
   @override
   void initState() {
@@ -429,17 +426,10 @@ class _TypingIndicatorState extends State<_TypingIndicator>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat();
-    _animController.addListener(_onTick);
-  }
-
-  void _onTick() {
-    final newCount = (_animController.value * 4).floor().clamp(0, 3);
-    if (newCount != _dotCount) setState(() => _dotCount = newCount);
   }
 
   @override
   void dispose() {
-    _animController.removeListener(_onTick);
     _animController.dispose();
     super.dispose();
   }
@@ -447,11 +437,48 @@ class _TypingIndicatorState extends State<_TypingIndicator>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Text(
-      '${'.' * _dotCount} 入力中',
-      style: AppTextStyles.caption2.copyWith(
-        color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
-      ),
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        const SizedBox(width: 32),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceTertiary(theme.brightness),
+            borderRadius: AppRadius.radius160,
+          ),
+          child: AnimatedBuilder(
+            animation: _animController,
+            builder: (context, _) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(3, (i) {
+                  final delay = i * 0.2;
+                  final t = (_animController.value - delay).clamp(0.0, 1.0);
+                  final scale = 0.5 + 0.5 * (1 - (2 * t - 1).abs());
+                  return Padding(
+                    padding: EdgeInsets.only(right: i < 2 ? 4 : 0),
+                    child: Transform.scale(
+                      scale: scale,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.4,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -475,80 +502,70 @@ class _EditingBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Flexible(
-            child: Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: AppColors.brandPrimary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.brandPrimary.withValues(alpha: 0.3),
-                ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.7,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  TextField(
-                    controller: controller,
-                    autofocus: true,
-                    maxLines: 4,
-                    minLines: 1,
-                    style: AppTextStyles.caption1,
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xs,
-                        vertical: AppSpacing.xs,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.brandPrimary.withValues(alpha: 0.08),
+                  borderRadius: AppRadius.radius160,
+                  border: Border.all(
+                    color: AppColors.brandPrimary.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    TextField(
+                      controller: controller,
+                      autofocus: true,
+                      maxLines: 4,
+                      minLines: 1,
+                      style: AppTextStyles.body1,
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
                       ),
                     ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextButton(
-                        onPressed: onCancel,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.sm,
-                          ),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: Text(
-                          'キャンセル',
-                          style: AppTextStyles.caption2.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.6,
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GestureDetector(
+                          onTap: onCancel,
+                          child: Text(
+                            'キャンセル',
+                            style: AppTextStyles.caption2.copyWith(
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.6,
+                              ),
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      TextButton(
-                        onPressed: onSave,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.sm,
-                          ),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: Text(
-                          '保存',
-                          style: AppTextStyles.caption2.copyWith(
-                            color: AppColors.brandPrimary,
-                            fontWeight: FontWeight.w600,
+                        const SizedBox(width: 12),
+                        GestureDetector(
+                          onTap: onSave,
+                          child: Text(
+                            '保存',
+                            style: AppTextStyles.caption2.copyWith(
+                              color: AppColors.brandPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -559,133 +576,132 @@ class _EditingBubble extends StatelessWidget {
 }
 
 // =============================================================================
-// Message Bubble — Teams スタイル
+// Message Bubble
 // =============================================================================
 
 class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({required this.message, required this.isMe});
+  const _MessageBubble({
+    required this.message,
+    required this.isMe,
+    this.isFirstInGroup = true,
+    this.isLastInGroup = true,
+  });
 
   final Message message;
   final bool isMe;
+  final bool isFirstInGroup;
+  final bool isLastInGroup;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Teams スタイル: 送信=ブランドカラー、受信=グレー塗り（ボーダーなし）
+    // バブルカラー
     final bubbleColor = isMe
         ? AppColors.brandPrimary
-        : (theme.brightness == Brightness.dark
-              ? theme.colorScheme.surfaceContainerHighest
-              : const Color(0xFFF0F0F0));
+        : AppColors.surfaceTertiary(theme.brightness);
     final textColor = isMe ? Colors.white : theme.colorScheme.onSurface;
-    final metaColor = isMe
-        ? Colors.white.withValues(alpha: 0.7)
-        : theme.colorScheme.onSurface.withValues(alpha: 0.45);
+
+    // グループ内のスペーシング
+    final bottomPadding = isLastInGroup ? 12.0 : 2.0;
+
+    // 角丸: グループ内の位置で変化
+    const r = Radius.circular(18);
+    const rSmall = Radius.circular(4);
+    final borderRadius = isMe
+        ? BorderRadius.only(
+            topLeft: r,
+            topRight: isFirstInGroup ? r : rSmall,
+            bottomLeft: r,
+            bottomRight: isLastInGroup ? r : rSmall,
+          )
+        : BorderRadius.only(
+            topLeft: isFirstInGroup ? r : rSmall,
+            topRight: r,
+            bottomLeft: isLastInGroup ? r : rSmall,
+            bottomRight: r,
+          );
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      padding: EdgeInsets.only(bottom: bottomPadding),
       child: Row(
         mainAxisAlignment: isMe
             ? MainAxisAlignment.end
             : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          // 受信側アバター（グループ最後のみ表示）
           if (!isMe) ...[
-            // アバター（Teams: 小さめの丸アバター）
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: AppColors.brandPrimary,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  (message.senderName ?? '?')[0],
-                  style: AppTextStyles.caption1.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+            if (isLastInGroup)
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: AppColors.brandPrimary,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    (message.senderName ?? '?')[0],
+                    style: AppTextStyles.caption2.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
+              )
+            else
+              const SizedBox(width: 24),
+            const SizedBox(width: 8),
           ],
           Flexible(
-            child: Column(
-              crossAxisAlignment: isMe
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
-              children: [
-                if (!isMe)
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      left: AppSpacing.xs,
-                      bottom: 3,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.7,
+              ),
+              child: Column(
+                crossAxisAlignment: isMe
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: bubbleColor,
+                      borderRadius: borderRadius,
                     ),
                     child: Text(
-                      message.senderName ?? '相手',
-                      style: AppTextStyles.caption1.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.55,
-                        ),
-                        fontWeight: FontWeight.w600,
-                      ),
+                      message.content,
+                      style: AppTextStyles.body1.copyWith(color: textColor),
                     ),
                   ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: bubbleColor,
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(16),
-                      topRight: const Radius.circular(16),
-                      bottomLeft: Radius.circular(isMe ? 16 : 4),
-                      bottomRight: Radius.circular(isMe ? 4 : 16),
-                    ),
-                  ),
-                  child: Text(
-                    message.content,
-                    style: AppTextStyles.caption1.copyWith(color: textColor),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 3, left: 4, right: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (message.isEdited)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: Text(
-                            '編集済み',
-                            style: AppTextStyles.caption1.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: metaColor,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ),
-                      Text(
-                        '${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}',
-                        style: AppTextStyles.caption1.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: metaColor,
+                  // タイムスタンプ: グループ最後のみ表示
+                  if (isLastInGroup)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
+                      child: Text(
+                        _formatTime(message),
+                        style: AppTextStyles.caption2.copyWith(
+                          color: AppColors.textSecondary(theme.brightness),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ],
+                    ),
+                ],
+              ),
             ),
           ),
-          if (isMe) const SizedBox(width: AppSpacing.sm),
         ],
       ),
     );
+  }
+
+  String _formatTime(Message msg) {
+    final time =
+        '${msg.createdAt.hour.toString().padLeft(2, '0')}:${msg.createdAt.minute.toString().padLeft(2, '0')}';
+    if (msg.isEdited) return '$time · 編集済み';
+    return time;
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_text_styles.dart';
+import '../../core/constants/constants.dart';
 
-/// プレゼンスステータス（Teams スタイルのオンライン状態表示）
+/// プレゼンスステータス
 enum PresenceStatus {
   /// オンライン / 勤務中（緑）
   available,

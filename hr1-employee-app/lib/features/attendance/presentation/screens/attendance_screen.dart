@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_icons.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
 import '../../domain/entities/attendance_record.dart';
 import '../controllers/attendance_controller.dart';
 import '../../../../shared/widgets/common_snackbar.dart';
@@ -197,7 +194,6 @@ class _TimeStatusHero extends StatelessWidget {
         Text(
           timeFormat.format(now),
           style: AppTextStyles.display.copyWith(
-            fontSize: 52,
             fontWeight: FontWeight.w200,
             color: theme.colorScheme.onSurface,
           ),
@@ -208,7 +204,7 @@ class _TimeStatusHero extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
           decoration: BoxDecoration(
             color: statusColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppRadius.radiusCircular,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -333,27 +329,21 @@ class _PunchButton extends StatelessWidget {
       height: 56,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.06),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            ),
-          ],
+          borderRadius: AppRadius.radius120,
+          boxShadow: AppShadows.shadow4,
         ),
         child: Material(
           color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadius.radius120,
           child: InkWell(
             onTap: enabled ? onPressed : null,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadius.radius120,
             child: Container(
               decoration: BoxDecoration(
                 color: enabled
                     ? color.withValues(alpha: 0.15)
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: AppRadius.radius120,
                 border: Border.all(
                   color: enabled
                       ? color.withValues(alpha: 0.15)
@@ -401,19 +391,13 @@ class _SummaryRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.radius120,
         border: Border.all(
           color: isDark
               ? theme.colorScheme.outline.withValues(alpha: 0.35)
               : theme.colorScheme.outlineVariant,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.06),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        boxShadow: AppShadows.shadow4,
       ),
       child: Row(
         children: [
@@ -595,8 +579,7 @@ class _TimelineItem extends StatelessWidget {
                 child: Text.rich(
                   _punchDescription(
                     punch,
-                    AppTextStyles.body2.copyWith(
-                      fontSize: 14,
+                    AppTextStyles.footnote.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),

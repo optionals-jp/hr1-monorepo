@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_icons.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../attendance/domain/entities/attendance_record.dart';
 import '../../domain/entities/calendar_event.dart';
 
@@ -96,7 +94,7 @@ class _DayViewState extends State<DayView> {
                     ),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: AppRadius.radius40,
                     ),
                     child: Text(
                       event.title,

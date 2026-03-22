@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/constants.dart';
 
 /// 通知の種類
 enum NotificationType {
@@ -7,7 +7,7 @@ enum NotificationType {
     'survey_request',
     'サーベイ依頼',
     Icons.poll_outlined,
-    Color(0xFF8764B8),
+    AppColors.purple,
   ),
   taskAssigned(
     'task_assigned',

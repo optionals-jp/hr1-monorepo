@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_text_styles.dart';
+import '../../core/constants/constants.dart';
 
 /// 共通ダイアログユーティリティ
 class CommonDialog {
@@ -33,9 +32,7 @@ class CommonDialog {
         final theme = Theme.of(ctx);
         return AlertDialog(
           title: Text(title, style: AppTextStyles.callout),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.radius160),
           content: Text(
             message,
             style: AppTextStyles.body2.copyWith(
@@ -91,5 +88,109 @@ class CommonDialog {
       },
     );
     return result ?? false;
+  }
+
+  /// 入力ダイアログを表示
+  ///
+  /// 戻り値は入力された文字列。キャンセル時は null。
+  ///
+  /// ```dart
+  /// final value = await CommonDialog.input(
+  ///   context: context,
+  ///   title: '名前の変更',
+  ///   hintText: '名前を入力',
+  ///   initialValue: currentName,
+  /// );
+  /// ```
+  static Future<String?> input({
+    required BuildContext context,
+    required String title,
+    String? hintText,
+    String? initialValue,
+    String cancelLabel = 'キャンセル',
+    String confirmLabel = '保存',
+    TextInputType keyboardType = TextInputType.text,
+    bool autofocus = true,
+  }) async {
+    final controller = TextEditingController(text: initialValue);
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return AlertDialog(
+          title: Text(title, style: AppTextStyles.callout),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.radius160),
+          content: TextField(
+            controller: controller,
+            autofocus: autofocus,
+            keyboardType: keyboardType,
+            style: AppTextStyles.body2,
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: AppTextStyles.body2.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
+              filled: true,
+              fillColor: AppColors.surfaceSecondary,
+              border: OutlineInputBorder(
+                borderRadius: AppRadius.radius80,
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
+            ),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primaryLight,
+                      side: const BorderSide(color: AppColors.primaryLight),
+                      shape: const StadiumBorder(),
+                      minimumSize: const Size(0, 40),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 16,
+                      ),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(cancelLabel),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryLight,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: const StadiumBorder(),
+                      minimumSize: const Size(0, 40),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 16,
+                      ),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(confirmLabel),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+
+    controller.dispose();
+    return result;
   }
 }

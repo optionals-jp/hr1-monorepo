@@ -13,22 +13,24 @@ final surveyRepositoryProvider = Provider<SupabaseSurveyRepository>((ref) {
 });
 
 /// アクティブサーベイ一覧プロバイダー
-final activeSurveysProvider = FutureProvider<List<PulseSurvey>>((ref) async {
+final activeSurveysProvider = FutureProvider.autoDispose<List<PulseSurvey>>((
+  ref,
+) async {
   final repo = ref.watch(surveyRepositoryProvider);
   return repo.getActiveSurveys();
 });
 
 /// 回答済みサーベイIDプロバイダー
-final completedSurveyIdsProvider = FutureProvider<Set<String>>((ref) async {
+final completedSurveyIdsProvider = FutureProvider.autoDispose<Set<String>>((
+  ref,
+) async {
   final repo = ref.watch(surveyRepositoryProvider);
   return repo.getCompletedSurveyIds();
 });
 
 /// サーベイID指定取得プロバイダー（ディープリンク用）
-final surveyByIdProvider = FutureProvider.family<PulseSurvey?, String>((
-  ref,
-  surveyId,
-) async {
-  final repo = ref.watch(surveyRepositoryProvider);
-  return repo.getSurveyById(surveyId);
-});
+final surveyByIdProvider = FutureProvider.autoDispose
+    .family<PulseSurvey?, String>((ref, surveyId) async {
+      final repo = ref.watch(surveyRepositoryProvider);
+      return repo.getSurveyById(surveyId);
+    });

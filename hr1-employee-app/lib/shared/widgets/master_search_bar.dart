@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_spacing.dart';
-import '../../core/constants/app_text_styles.dart';
-import 'loading_indicator.dart';
-import 'search_box.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/shared/widgets/loading_indicator.dart';
+import 'package:hr1_employee_app/shared/widgets/search_box.dart';
 
 /// マスタデータから検索・選択・自由入力が可能な検索バーコンポーネント
 ///
@@ -90,7 +88,7 @@ class _MasterSearchBarState extends State<MasterSearchBar> {
                   alignment: Alignment.topLeft,
                   child: Material(
                     elevation: 4,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.radius120,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxHeight: 200),
                       child: ListView.builder(

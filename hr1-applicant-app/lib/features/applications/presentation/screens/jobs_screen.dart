@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../../auth/presentation/providers/organization_context_provider.dart';
 import '../../domain/entities/job.dart';
 import '../providers/applications_providers.dart';
@@ -56,70 +53,62 @@ class _JobCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return InkWell(
+    return CommonCard(
       onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
-      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.cardPadding),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          border: Border.all(color: theme.dividerColor),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(job.title, style: AppTextStyles.callout),
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(job.title, style: AppTextStyles.callout),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            job.description,
+            style: AppTextStyles.caption1.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.xs,
+            children: [
+              if (job.department != null) _Tag(job.department!),
+              if (job.location != null) _Tag(job.location!),
+              if (job.employmentType != null) _Tag(job.employmentType!),
+            ],
+          ),
+          if (job.salaryRange != null) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(
-              job.description,
-              style: AppTextStyles.caption1.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              job.salaryRange!,
+              style: AppTextStyles.body2.copyWith(
+                color: AppColors.primaryLight,
+                fontWeight: FontWeight.w600,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.xs,
-              children: [
-                if (job.department != null) _Tag(job.department!),
-                if (job.location != null) _Tag(job.location!),
-                if (job.employmentType != null) _Tag(job.employmentType!),
-              ],
-            ),
-            if (job.salaryRange != null) ...[
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                job.salaryRange!,
-                style: AppTextStyles.body2.copyWith(
-                  color: AppColors.primaryLight,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '詳細を見る',
-                    style: AppTextStyles.body2.copyWith(
-                      color: AppColors.primaryLight,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 14,
-                  color: AppColors.primaryLight,
-                ),
-              ],
             ),
           ],
-        ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '詳細を見る',
+                  style: AppTextStyles.body2.copyWith(
+                    color: AppColors.primaryLight,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: AppColors.primaryLight,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -139,7 +128,7 @@ class _Tag extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadius.radius40,
       ),
       child: Text(
         text,

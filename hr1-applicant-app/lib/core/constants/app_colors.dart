@@ -26,6 +26,9 @@ class AppColors {
   /// エラー（レッド）
   static const Color error = Color(0xFFDC2626);
 
+  /// サーベイ・研修用パープル
+  static const Color purple = Color(0xFF8764B8);
+
   // ---------------------------------------------------------------------------
   // ライトモード
   // ---------------------------------------------------------------------------
@@ -51,6 +54,9 @@ class AppColors {
   /// サーフェスセカンダリ
   static const Color surfaceSecondary = Color(0xFFF1F5F9);
 
+  /// サーフェスターシャリ（入力欄背景・受信バブル等）
+  static const Color surfaceTertiary = Color(0xFFEFEFEF);
+
   // ---------------------------------------------------------------------------
   // ダークモード
   // ---------------------------------------------------------------------------
@@ -58,6 +64,7 @@ class AppColors {
   static const Color darkBackground = Color(0xFF292929);
   static const Color darkSurface = Color(0xFF292929);
   static const Color darkSurfaceSecondary = Color(0xFF1F1F1F);
+  static const Color darkSurfaceTertiary = Color(0xFF3A3A3A);
   static const Color darkTextPrimary = Color(0xFFFFFFFF);
   static const Color darkTextSecondary = Color(0xFFD6D6D6);
   static const Color darkBorder = Color(0xFF666666);

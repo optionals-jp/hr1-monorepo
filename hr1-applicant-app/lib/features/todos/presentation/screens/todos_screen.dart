@@ -3,14 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/router/app_router.dart';
-import 'package:hr1_applicant_app/core/constants/app_colors.dart';
-import 'package:hr1_applicant_app/core/constants/app_spacing.dart';
-import 'package:hr1_applicant_app/core/constants/app_text_styles.dart';
-import 'package:hr1_applicant_app/shared/widgets/common_button.dart';
-import 'package:hr1_applicant_app/shared/widgets/common_sheet.dart';
-import 'package:hr1_applicant_app/shared/widgets/common_snackbar.dart';
-import 'package:hr1_applicant_app/shared/widgets/loading_indicator.dart';
-import 'package:hr1_applicant_app/shared/widgets/error_state.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 import '../../domain/entities/todo.dart';
 import '../controllers/todo_controller.dart';
 import '../providers/todo_providers.dart';
@@ -52,6 +46,27 @@ class TodosScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _handleToggleComplete(
+    BuildContext context,
+    TodoListController controller,
+    Todo todo,
+  ) async {
+    // サーベイ紐付きTODOを未完了→完了にする場合は確認ダイアログ
+    if (todo.source == TodoSource.survey && !todo.isCompleted) {
+      final confirmed = await CommonDialog.confirm(
+        context: context,
+        title: 'サーベイが未回答です',
+        message:
+            'このやることはサーベイに紐付いています。'
+            'サーベイに回答すると自動で完了になります。\n\n'
+            'それでも完了にしますか？',
+        confirmLabel: '完了にする',
+      );
+      if (!confirmed) return;
+    }
+    await controller.toggleComplete(todo.id, todo.isCompleted);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(todoFilterProvider);
@@ -89,10 +104,8 @@ class TodosScreen extends ConsumerWidget {
                     for (final todo in incomplete)
                       _TodoItem(
                         todo: todo,
-                        onToggleComplete: () => controller.toggleComplete(
-                          todo.id,
-                          todo.isCompleted,
-                        ),
+                        onToggleComplete: () =>
+                            _handleToggleComplete(context, controller, todo),
                         onToggleImportant: () => controller.toggleImportant(
                           todo.id,
                           todo.isImportant,
@@ -105,10 +118,8 @@ class TodosScreen extends ConsumerWidget {
                     if (completed.isNotEmpty)
                       _CompletedSection(
                         todos: completed,
-                        onToggleComplete: (todo) => controller.toggleComplete(
-                          todo.id,
-                          todo.isCompleted,
-                        ),
+                        onToggleComplete: (todo) =>
+                            _handleToggleComplete(context, controller, todo),
                         onTap: (todo) => _onTodoTap(context, todo),
                       ),
                   ],
@@ -161,10 +172,10 @@ class _FilterTabs extends StatelessWidget {
               color: isActive
                   ? color.withValues(alpha: 0.12)
                   : theme.colorScheme.onSurface.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: AppRadius.radiusCircular,
               child: InkWell(
                 onTap: () => onSelected(f),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: AppRadius.radiusCircular,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
@@ -380,7 +391,7 @@ class _MetadataRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
           decoration: BoxDecoration(
             color: _sourceColor(todo.source).withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: AppRadius.radius40,
           ),
           child: Text(
             todo.source.label,
@@ -532,21 +543,16 @@ class _AddTodoButton extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(
-          top: BorderSide(color: theme.colorScheme.outlineVariant, width: 0.5),
+          top: BorderSide(
+            color: theme.colorScheme.outlineVariant,
+            width: AppStroke.strokeWidth05,
+          ),
         ),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, -1),
-                ),
-              ],
+        boxShadow: isDark ? null : [...AppShadows.shadow4],
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppRadius.radius80,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Row(
@@ -624,7 +630,7 @@ class _AddTodoFormState extends State<_AddTodoForm> {
   }
 
   Future<void> _pickDueDate() async {
-    final picked = await showDatePicker(
+    final picked = await CommonDatePicker.show(
       context: context,
       initialDate: _dueDate ?? DateTime.now(),
       firstDate: DateTime.now(),
@@ -724,14 +730,14 @@ class _OptionChip extends StatelessWidget {
     final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppRadius.radius80,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isActive
               ? activeColor.withValues(alpha: 0.1)
               : theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppRadius.radius80,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

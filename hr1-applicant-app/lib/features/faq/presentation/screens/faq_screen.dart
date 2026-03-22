@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
-import '../../../../shared/widgets/skeleton.dart';
+import '../../../../core/constants/constants.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../domain/entities/faq_item.dart';
 import '../providers/faq_providers.dart';
 
@@ -118,17 +116,14 @@ class _FaqTileState extends State<_FaqTile> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: theme.dividerColor),
-      ),
+    return CommonCard(
+      padding: EdgeInsets.zero,
+      margin: EdgeInsets.zero,
       child: Column(
         children: [
           InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
-            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+            borderRadius: AppRadius.radius160,
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.cardPadding),
               child: Row(
@@ -138,7 +133,7 @@ class _FaqTileState extends State<_FaqTile> {
                     height: 24,
                     decoration: BoxDecoration(
                       color: AppColors.primaryLight.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: AppRadius.radius40,
                     ),
                     child: Center(
                       child: Text(

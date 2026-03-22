@@ -3,9 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/search_box.dart';
@@ -199,13 +197,7 @@ class _FaqTileState extends State<_FaqTile> {
               ? theme.colorScheme.outline.withValues(alpha: 0.35)
               : theme.colorScheme.outlineVariant,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.06),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        boxShadow: AppShadows.shadow4,
       ),
       child: Column(
         children: [

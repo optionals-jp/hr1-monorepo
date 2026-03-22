@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_icons.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/org_icon.dart';
 import '../../../../shared/widgets/user_avatar.dart';
@@ -115,7 +112,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                       alpha: 0.1,
                                     )
                                   : null,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: AppRadius.radius80,
                               border: isCurrent
                                   ? Border.all(
                                       color: AppColors.brandPrimary,
@@ -940,7 +937,7 @@ class _DateTimeRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.radius80,
               ),
               child: Text(date, style: AppTextStyles.caption1),
             ),
@@ -956,7 +953,7 @@ class _DateTimeRow extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppRadius.radius80,
                 ),
                 child: Text(time!, style: AppTextStyles.caption1),
               ),
@@ -993,16 +990,9 @@ class _ColorPicker extends StatelessWidget {
               color: color,
               shape: BoxShape.circle,
               border: isSelected
-                  ? Border.all(color: Colors.white, width: 2)
+                  ? Border.all(color: Colors.white, width: AppStroke.strokeWidth20)
                   : null,
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.4),
-                        blurRadius: 4,
-                      ),
-                    ]
-                  : null,
+              boxShadow: isSelected ? AppShadows.shadow4 : null,
             ),
           ),
         );

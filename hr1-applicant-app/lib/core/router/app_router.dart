@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../shared/widgets/loading_indicator.dart';
+import '../../shared/widgets/widgets.dart';
 import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
@@ -18,12 +18,17 @@ import '../../features/messages/presentation/screens/messages_screen.dart';
 import '../../features/messages/presentation/screens/thread_chat_screen.dart';
 import '../../features/messages/domain/entities/message_thread.dart';
 import '../../features/auth/presentation/screens/profile_screen.dart';
+import '../../features/auth/presentation/screens/profile_edit_screen.dart';
 import '../../features/todos/presentation/screens/todos_screen.dart';
 import '../../features/todos/presentation/screens/todo_detail_screen.dart';
 import '../../features/todos/domain/entities/todo.dart';
 import '../../features/faq/presentation/screens/faq_screen.dart';
 import '../../features/surveys/presentation/screens/survey_list_screen.dart';
 import '../../features/surveys/presentation/screens/survey_answer_screen.dart';
+import '../../features/service_requests/domain/entities/service_request.dart';
+import '../../features/service_requests/presentation/screens/service_request_list_screen.dart';
+import '../../features/service_requests/presentation/screens/service_request_create_screen.dart';
+import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/surveys/presentation/providers/survey_providers.dart';
 import '../../features/surveys/domain/entities/pulse_survey.dart';
 
@@ -44,6 +49,10 @@ class AppRoutes {
   static const String todos = '/todos';
   static const String todoDetail = '/todo-detail';
   static const String organizationSelect = '/organization-select';
+  static const String notifications = '/notifications';
+  static const String profileEdit = '/profile-edit';
+  static const String serviceRequests = '/service-requests';
+  static const String serviceRequestCreate = '/service-request-create';
 }
 
 /// 認証不要なルート
@@ -145,6 +154,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
+      /// 通知一覧画面（シェル外 → BottomNav非表示）
+      GoRoute(
+        path: AppRoutes.notifications,
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+
       /// FAQ画面（シェル外 → BottomNav非表示）
       GoRoute(
         path: AppRoutes.faq,
@@ -169,6 +184,28 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           ),
         ],
+      ),
+
+      /// プロフィール編集画面（シェル外 → BottomNav非表示）
+      GoRoute(
+        path: AppRoutes.profileEdit,
+        builder: (context, state) => const ProfileEditScreen(),
+      ),
+
+      /// サービスリクエスト画面（シェル外 → BottomNav非表示）
+      GoRoute(
+        path: AppRoutes.serviceRequests,
+        builder: (context, state) => const ServiceRequestListScreen(),
+      ),
+
+      /// サービスリクエスト作成画面（シェル外 → BottomNav非表示）
+      GoRoute(
+        path: AppRoutes.serviceRequestCreate,
+        builder: (context, state) {
+          final type =
+              state.extra as ServiceRequestType? ?? ServiceRequestType.bug;
+          return ServiceRequestCreateScreen(type: type);
+        },
       ),
 
       /// メッセージ詳細（シェル外 → 独自AppBar、BottomNav非表示）
