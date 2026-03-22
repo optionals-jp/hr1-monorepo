@@ -103,7 +103,7 @@ class _SelectionFlowCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: AppRadius.radius120,
-        border: Border.all(color: theme.dividerColor),
+        border: Border.all(color: AppColors.dividerOf(theme.brightness)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,7 +140,7 @@ class _SelectionFlowCard extends StatelessWidget {
                       Container(
                         width: 2,
                         height: 20,
-                        color: theme.dividerColor,
+                        color: AppColors.dividerOf(theme.brightness),
                       ),
                   ],
                 ),
@@ -159,14 +159,17 @@ class _SelectionFlowCard extends StatelessWidget {
                               vertical: 1,
                             ),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.1),
+                              color: AppColors.textTertiaryOf(
+                                theme.brightness,
+                              ).withValues(alpha: 0.1),
                               borderRadius: AppRadius.radius40,
                             ),
                             child: Text(
                               '外部',
                               style: AppTextStyles.caption2.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
+                                color: AppColors.textSecondaryOf(
+                                  theme.brightness,
+                                ),
                               ),
                             ),
                           ),
@@ -326,10 +329,14 @@ class _ApplyBar extends ConsumerWidget {
     );
     if (!confirmed) return;
 
-    await ref.read(jobApplyControllerProvider.notifier).apply(jobId: job.id);
-
-    if (!screenContext.mounted) return;
-    CommonSnackBar.show(screenContext, '「${job.title}」に応募しました');
-    screenContext.go(AppRoutes.applications);
+    try {
+      await ref.read(jobApplyControllerProvider.notifier).apply(jobId: job.id);
+      if (!screenContext.mounted) return;
+      CommonSnackBar.show(screenContext, '「${job.title}」に応募しました');
+      screenContext.go(AppRoutes.applications);
+    } catch (_) {
+      if (!screenContext.mounted) return;
+      CommonSnackBar.error(screenContext, '応募に失敗しました');
+    }
   }
 }

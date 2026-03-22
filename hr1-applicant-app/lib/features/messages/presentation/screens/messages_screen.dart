@@ -35,7 +35,9 @@ class MessagesScreen extends ConsumerWidget {
                   Icon(
                     Icons.chat_bubble_outline_rounded,
                     size: 48,
-                    color: AppColors.textTertiary,
+                    color: AppColors.textTertiaryOf(
+                      Theme.of(context).brightness,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   Text('メッセージはありません', style: AppTextStyles.callout),

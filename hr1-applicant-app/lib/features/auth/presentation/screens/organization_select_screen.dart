@@ -137,7 +137,7 @@ class _Body extends ConsumerWidget {
             Text(
               'すべての企業に登録済みです',
               style: AppTextStyles.body2.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+                color: AppColors.textSecondaryOf(theme.brightness),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -179,7 +179,9 @@ class _Body extends ConsumerWidget {
             itemCount: filtered.length,
             separatorBuilder: (_, __) => Divider(
               height: 1,
-              color: theme.dividerColor.withValues(alpha: 0.5),
+              color: AppColors.dividerOf(
+                theme.brightness,
+              ).withValues(alpha: 0.5),
             ),
             itemBuilder: (context, index) {
               final org = filtered[index];
@@ -248,7 +250,7 @@ class _OrganizationRow extends StatelessWidget {
                     Text(
                       organization.industry!,
                       style: AppTextStyles.caption2.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: AppColors.textSecondaryOf(theme.brightness),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -269,7 +271,7 @@ class _OrganizationRow extends StatelessWidget {
                   : Icon(
                       Icons.circle_outlined,
                       key: const ValueKey('unchecked'),
-                      color: theme.dividerColor,
+                      color: AppColors.dividerOf(theme.brightness),
                     ),
             ),
           ],

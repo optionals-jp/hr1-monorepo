@@ -367,7 +367,7 @@ class _StepCard extends StatelessWidget {
                       width: 2,
                       color: step.status == StepStatus.completed
                           ? AppColors.success
-                          : theme.dividerColor,
+                          : AppColors.dividerOf(theme.brightness),
                     ),
                   ),
               ],
@@ -386,7 +386,7 @@ class _StepCard extends StatelessWidget {
                 border: Border.all(
                   color: step.status == StepStatus.inProgress
                       ? AppColors.primaryLight.withValues(alpha: 0.2)
-                      : theme.dividerColor,
+                      : AppColors.dividerOf(theme.brightness),
                 ),
               ),
               child: Column(
@@ -403,7 +403,7 @@ class _StepCard extends StatelessWidget {
                                 : FontWeight.w400,
                             color: step.status == StepStatus.pending
                                 ? AppColors.textSecondary
-                                : theme.colorScheme.onSurface,
+                                : AppColors.textPrimaryOf(theme.brightness),
                           ),
                         ),
                       ),
@@ -490,10 +490,14 @@ class _StepDot extends StatelessWidget {
         ),
       ),
       StepStatus.skipped => (
-        theme.dividerColor,
-        Icon(Icons.remove, size: 14, color: theme.colorScheme.onSurfaceVariant),
+        AppColors.dividerOf(theme.brightness),
+        Icon(
+          Icons.remove,
+          size: 14,
+          color: AppColors.textSecondaryOf(theme.brightness),
+        ),
       ),
-      StepStatus.pending => (theme.dividerColor, null),
+      StepStatus.pending => (AppColors.dividerOf(theme.brightness), null),
     };
 
     return Container(

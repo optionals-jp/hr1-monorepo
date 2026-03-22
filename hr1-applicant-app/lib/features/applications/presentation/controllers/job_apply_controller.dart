@@ -11,10 +11,10 @@ class JobApplyController extends AutoDisposeNotifier<void> {
   /// 求人に応募する
   Future<void> apply({required String jobId}) async {
     final org = ref.read(currentOrganizationProvider);
-    if (org == null) return;
+    if (org == null) throw Exception('組織が選択されていません');
 
     final user = ref.read(appUserProvider);
-    if (user == null) return;
+    if (user == null) throw Exception('ログインが必要です');
 
     final repo = ref.read(applicationsRepositoryProvider);
     await repo.apply(

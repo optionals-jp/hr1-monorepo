@@ -132,7 +132,7 @@ class _FormFieldWidget extends ConsumerWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: AppRadius.radius120,
-        border: Border.all(color: theme.dividerColor),
+        border: Border.all(color: AppColors.dividerOf(theme.brightness)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,7 +168,7 @@ class _FormFieldWidget extends ConsumerWidget {
             Text(
               field.description!,
               style: AppTextStyles.caption1.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+                color: AppColors.textSecondaryOf(theme.brightness),
               ),
             ),
           ],

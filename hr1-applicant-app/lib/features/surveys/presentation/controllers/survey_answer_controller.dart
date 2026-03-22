@@ -39,7 +39,7 @@ class SurveyAnswerController extends AutoDisposeNotifier<SurveySubmitState> {
       debugPrint('=== サーベイ送信エラー ===');
       debugPrint('Error: $e');
       debugPrint('StackTrace: $st');
-      state = SurveySubmitState(error: '送信に失敗しました: $e');
+      state = const SurveySubmitState(error: '送信に失敗しました');
     }
   }
 }

@@ -50,7 +50,7 @@ class CommonCard extends StatelessWidget {
                 width: AppStroke.strokeWidth05,
               )
             : Border.all(
-                color: theme.dividerColor,
+                color: AppColors.dividerOf(theme.brightness),
                 width: AppStroke.strokeWidth05,
               ),
         boxShadow: AppShadows.shadow4,

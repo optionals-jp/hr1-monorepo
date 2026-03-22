@@ -64,7 +64,7 @@ class _JobCard extends StatelessWidget {
           Text(
             job.description,
             style: AppTextStyles.caption1.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+              color: AppColors.textSecondaryOf(theme.brightness),
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -133,7 +133,7 @@ class _Tag extends StatelessWidget {
       child: Text(
         text,
         style: AppTextStyles.caption2.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
+          color: AppColors.textSecondaryOf(theme.brightness),
         ),
       ),
     );

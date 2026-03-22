@@ -393,7 +393,9 @@ class _MessageBubble extends StatelessWidget {
     final bubbleColor = isMe
         ? AppColors.primaryLight
         : AppColors.surfaceTertiaryOf(theme.brightness);
-    final textColor = isMe ? Colors.white : theme.colorScheme.onSurface;
+    final textColor = isMe
+        ? Colors.white
+        : AppColors.textPrimaryOf(theme.brightness);
 
     final bottomPadding = isLastInGroup ? 12.0 : 2.0;
 

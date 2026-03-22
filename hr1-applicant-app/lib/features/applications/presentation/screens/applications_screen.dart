@@ -297,9 +297,9 @@ class _ApplicationCard extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 4,
-                      backgroundColor: theme.dividerColor.withValues(
-                        alpha: 0.5,
-                      ),
+                      backgroundColor: AppColors.dividerOf(
+                        theme.brightness,
+                      ).withValues(alpha: 0.5),
                       valueColor: AlwaysStoppedAnimation<Color>(
                         application.requiresAction
                             ? AppColors.warning

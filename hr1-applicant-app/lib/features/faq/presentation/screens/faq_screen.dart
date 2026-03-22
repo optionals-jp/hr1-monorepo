@@ -33,7 +33,7 @@ class FaqScreen extends ConsumerWidget {
                   Text(
                     'FAQはまだありません',
                     style: AppTextStyles.body2.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: AppColors.textSecondaryOf(theme.brightness),
                     ),
                   ),
                 ],
@@ -84,7 +84,7 @@ class _FaqCategorySection extends StatelessWidget {
           child: Text(
             FaqCategory.label(category),
             style: AppTextStyles.caption2.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+              color: AppColors.textSecondaryOf(theme.brightness),
               fontWeight: FontWeight.w600,
               letterSpacing: 0.3,
             ),
@@ -159,7 +159,7 @@ class _FaqTileState extends State<_FaqTile> {
                     duration: const Duration(milliseconds: 200),
                     child: Icon(
                       Icons.expand_more,
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: AppColors.textSecondaryOf(theme.brightness),
                     ),
                   ),
                 ],
@@ -180,14 +180,14 @@ class _FaqTileState extends State<_FaqTile> {
                 data: widget.faq.answer,
                 styleSheet: MarkdownStyleSheet(
                   p: AppTextStyles.body2.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: AppColors.textSecondaryOf(theme.brightness),
                     height: 1.6,
                   ),
                   h1: AppTextStyles.title3,
                   h2: AppTextStyles.callout,
                   h3: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600),
                   listBullet: AppTextStyles.body2.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: AppColors.textSecondaryOf(theme.brightness),
                   ),
                   code: AppTextStyles.caption1.copyWith(
                     backgroundColor: theme.colorScheme.surfaceContainerHighest,

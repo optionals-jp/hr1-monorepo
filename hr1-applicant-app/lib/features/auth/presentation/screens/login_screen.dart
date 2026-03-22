@@ -130,7 +130,7 @@ class LoginScreen extends HookConsumerWidget {
                           ? '${emailController.text.trim()} に送信された\n6桁のコードを入力してください'
                           : 'メールアドレスを入力してください',
                       style: AppTextStyles.caption1.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: AppColors.textSecondaryOf(theme.brightness),
                       ),
                       textAlign: TextAlign.center,
                     ),

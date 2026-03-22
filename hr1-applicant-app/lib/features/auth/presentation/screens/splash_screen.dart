@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 import 'package:hr1_applicant_app/core/router/app_router.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/providers/app_init_provider.dart';
 
 /// スプラッシュ画面
@@ -38,7 +38,7 @@ class SplashScreen extends HookConsumerWidget {
                 actions: [
                   TextButton(
                     onPressed: () async {
-                      await Supabase.instance.client.auth.signOut();
+                      await ref.read(authControllerProvider.notifier).signOut();
                       if (ctx.mounted) {
                         Navigator.of(ctx).pop();
                         GoRouter.of(context).go(AppRoutes.login);

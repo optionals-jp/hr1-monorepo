@@ -78,6 +78,10 @@ class AppColors {
   // テーマ対応ヘルパー
   // ---------------------------------------------------------------------------
 
+  /// プライマリテキスト（ライト/ダーク切り替え）
+  static Color textPrimaryOf(Brightness brightness) =>
+      brightness == Brightness.dark ? darkTextPrimary : textPrimary;
+
   /// セカンダリテキスト（ライト/ダーク切り替え）
   static Color textSecondaryOf(Brightness brightness) =>
       brightness == Brightness.dark ? darkTextSecondary : textSecondary;
