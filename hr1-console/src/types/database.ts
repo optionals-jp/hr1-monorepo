@@ -114,23 +114,19 @@ export interface FormResponse {
   submitted_at: string;
 }
 
-export interface FormChangeLog {
+export interface AuditLog {
   id: string;
-  form_id: string;
-  changed_by: string | null;
-  change_type: string;
-  summary: string;
-  details: Record<string, unknown> | null;
-  created_at: string;
-}
-
-export interface JobChangeLog {
-  id: string;
-  job_id: string;
-  changed_by: string | null;
-  change_type: string;
-  summary: string;
-  details: Record<string, unknown> | null;
+  sequence_number: number;
+  organization_id: string;
+  user_id: string;
+  action: string;
+  table_name: string;
+  record_id: string;
+  changes: Record<string, unknown>;
+  metadata: Record<string, unknown> | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  source: string;
   created_at: string;
 }
 
@@ -142,16 +138,6 @@ export interface Interview {
   notes: string | null;
   status: "scheduling" | "confirmed" | "completed" | "cancelled";
   confirmed_slot_id: string | null;
-  created_at: string;
-}
-
-export interface InterviewChangeLog {
-  id: string;
-  interview_id: string;
-  changed_by: string | null;
-  change_type: string;
-  summary: string;
-  details: Record<string, unknown> | null;
   created_at: string;
 }
 
@@ -604,6 +590,17 @@ export interface WorkflowRequest {
   updated_at: string;
   profiles?: Profile;
   reviewer?: Profile;
+}
+
+export interface WorkflowRule {
+  id: string;
+  organization_id: string;
+  request_type: string;
+  rule_type: "auto_approve" | "notify" | "validate";
+  conditions: Record<string, unknown>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface LeaveBalance {

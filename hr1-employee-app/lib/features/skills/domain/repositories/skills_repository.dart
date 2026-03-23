@@ -1,7 +1,7 @@
-import '../entities/certification_master.dart';
-import '../entities/employee_certification.dart';
-import '../entities/employee_skill.dart';
-import '../entities/skill_master.dart';
+import 'package:hr1_employee_app/features/skills/domain/entities/certification_master.dart';
+import 'package:hr1_employee_app/features/skills/domain/entities/employee_certification.dart';
+import 'package:hr1_employee_app/features/skills/domain/entities/employee_skill.dart';
+import 'package:hr1_employee_app/features/skills/domain/entities/skill_master.dart';
 
 /// スキル・資格リポジトリインターフェース
 abstract class SkillsRepository {

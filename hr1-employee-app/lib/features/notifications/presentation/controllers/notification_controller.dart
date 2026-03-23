@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/notification_item.dart';
-import '../providers/notification_providers.dart';
+import 'package:hr1_employee_app/features/notifications/domain/entities/notification_item.dart';
+import 'package:hr1_employee_app/features/notifications/presentation/providers/notification_providers.dart';
 
 /// 通知コントローラー
 class NotificationController

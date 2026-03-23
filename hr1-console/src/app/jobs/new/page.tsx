@@ -18,6 +18,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
+import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
 import { Trash2, GripVertical } from "lucide-react";
 import { jobStatusLabels, stepTypeLabels } from "@/lib/constants";
 
@@ -44,6 +45,7 @@ export default function NewJobPage() {
     { tempId: "3", step_type: "offer", label: "内定" },
   ]);
   const [saving, setSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState<ValidationErrors>({});
 
   const addStep = () => {
     setSteps([
@@ -65,7 +67,19 @@ export default function NewJobPage() {
   };
 
   const handleSubmit = async () => {
-    if (!organization || !title) return;
+    if (!organization) return;
+
+    const errors = validateForm(
+      {
+        title: [validators.required("タイトル"), validators.maxLength(200, "タイトル")],
+      },
+      { title }
+    );
+    if (errors) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors({});
     setSaving(true);
 
     try {
@@ -126,9 +140,14 @@ export default function NewJobPage() {
                 <Label>タイトル *</Label>
                 <Input
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    setFormErrors((prev) => ({ ...prev, title: "" }));
+                  }}
                   placeholder="バックエンドエンジニア"
+                  className={formErrors.title ? "border-red-500" : ""}
                 />
+                {formErrors.title && <p className="text-sm text-red-500">{formErrors.title}</p>}
               </div>
               <div className="space-y-2">
                 <Label>説明</Label>
@@ -248,7 +267,7 @@ export default function NewJobPage() {
           <Button variant="outline" onClick={() => router.push("/jobs")}>
             キャンセル
           </Button>
-          <Button onClick={handleSubmit} disabled={!title || saving}>
+          <Button onClick={handleSubmit} disabled={!title.trim() || saving}>
             {saving ? "作成中..." : "求人を作成"}
           </Button>
         </div>

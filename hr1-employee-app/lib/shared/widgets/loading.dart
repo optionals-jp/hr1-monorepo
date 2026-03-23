@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hr1_shared/hr1_shared.dart' show LoadingIndicator;
 import 'package:lottie/lottie.dart';
-import '../../core/constants/constants.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
 
 /// グローバルローディングオーバーレイ
 ///
@@ -49,7 +49,9 @@ class _LoadingOverlay extends StatelessWidget {
     return PopScope(
       canPop: false,
       child: Material(
-        color: AppColors.lightTextPrimary.withValues(alpha: 0.3),
+        color: AppColors.textPrimary(
+          Theme.of(context).brightness,
+        ).withValues(alpha: 0.3),
         child: Center(
           child: Container(
             width: 100,

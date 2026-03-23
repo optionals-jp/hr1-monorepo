@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../domain/entities/task.dart';
-import '../controllers/task_controller.dart';
-import '../providers/task_providers.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/core/router/app_router.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_employee_app/features/tasks/domain/entities/task.dart';
+import 'package:hr1_employee_app/features/tasks/presentation/controllers/task_controller.dart';
+import 'package:hr1_employee_app/features/tasks/presentation/providers/task_providers.dart';
 
 /// タスク画面 — Microsoft To Do スタイル
 class TasksScreen extends ConsumerStatefulWidget {
@@ -212,7 +212,7 @@ class _FilterTabs extends StatelessWidget {
             child: Material(
               color: isActive
                   ? color.withValues(alpha: 0.12)
-                  : theme.colorScheme.onSurface.withValues(alpha: 0.05),
+                  : AppColors.divider(theme.brightness),
 
               borderRadius: AppRadius.radiusCircular,
               child: InkWell(

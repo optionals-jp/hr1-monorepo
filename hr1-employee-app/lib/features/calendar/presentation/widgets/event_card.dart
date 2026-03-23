@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/constants.dart';
-import '../../domain/entities/calendar_event.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/features/calendar/domain/entities/calendar_event.dart';
 
 /// Outlook スタイルのイベントカード（左カラーバー付き）
 class EventCard extends StatelessWidget {
@@ -78,8 +78,8 @@ class EventCard extends StatelessWidget {
                             child: Text(
                               '${timeFormat.format(event.startAt.toLocal())} - ${timeFormat.format(event.endAt.toLocal())}',
                               style: AppTextStyles.caption2.copyWith(
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.55,
+                                color: AppColors.textSecondary(
+                                  theme.brightness,
                                 ),
                               ),
                             ),
@@ -113,8 +113,8 @@ class EventCard extends StatelessWidget {
                               children: [
                                 AppIcons.location(
                                   size: 13,
-                                  color: theme.colorScheme.onSurface.withValues(
-                                    alpha: 0.45,
+                                  color: AppColors.textTertiary(
+                                    theme.brightness,
                                   ),
                                 ),
                                 const SizedBox(width: 3),
@@ -123,8 +123,9 @@ class EventCard extends StatelessWidget {
                                     event.location!,
                                     style: AppTextStyles.caption1.copyWith(
                                       fontWeight: FontWeight.w500,
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.45),
+                                      color: AppColors.textTertiary(
+                                        theme.brightness,
+                                      ),
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,

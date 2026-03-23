@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/calendar_event.dart';
-import '../../domain/repositories/calendar_repository.dart';
+import 'package:hr1_employee_app/features/calendar/domain/entities/calendar_event.dart';
+import 'package:hr1_employee_app/features/calendar/domain/repositories/calendar_repository.dart';
 
 /// Supabase カレンダーリポジトリ実装
 class SupabaseCalendarRepository implements CalendarRepository {

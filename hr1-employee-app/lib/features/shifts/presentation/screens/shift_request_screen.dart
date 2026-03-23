@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../domain/entities/shift_type.dart';
-import '../controllers/shift_request_controller.dart';
-import '../providers/shift_providers.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/features/shifts/domain/entities/shift_type.dart';
+import 'package:hr1_employee_app/features/shifts/presentation/controllers/shift_request_controller.dart';
+import 'package:hr1_employee_app/features/shifts/presentation/providers/shift_providers.dart';
 
 /// シフト希望提出画面
 class ShiftRequestScreen extends ConsumerStatefulWidget {

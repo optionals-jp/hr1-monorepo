@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../../messages/domain/entities/message_thread.dart';
-import '../../../skills/presentation/providers/skills_providers.dart';
-import '../../domain/entities/employee_contact.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/core/router/app_router.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/features/messages/domain/entities/message_thread.dart';
+import 'package:hr1_employee_app/features/skills/presentation/providers/skills_providers.dart';
+import 'package:hr1_employee_app/features/employees/domain/entities/employee_contact.dart';
 
 /// WorkStatus → PresenceStatus 変換
 PresenceStatus _toPresence(WorkStatus status) {

@@ -41,8 +41,9 @@ import { mutate } from "swr";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { SurveyAnalyticsTab } from "./survey-analytics-tab";
 
-type Tab = "questions" | "responses";
+type Tab = "questions" | "responses" | "analytics";
 
 export default function SurveyDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -94,6 +95,15 @@ export default function SurveyDetailPage() {
       return data ?? [];
     }
   );
+
+  const memberCountCacheKey = organization ? `org-member-count-${organization.id}` : null;
+  const { data: totalTargetUsers = 0 } = useQuery<number>(memberCountCacheKey, async () => {
+    const { count } = await getSupabase()
+      .from("user_organizations")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", organization!.id);
+    return count ?? 0;
+  });
 
   // 質問編集パネル
   const [qEditOpen, setQEditOpen] = useState(false);
@@ -341,7 +351,7 @@ export default function SurveyDetailPage() {
 
       {/* タブ */}
       <div className="border-b px-6 flex gap-6" role="tablist">
-        {(["questions", "responses"] as Tab[]).map((t) => (
+        {(["questions", "responses", "analytics"] as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
@@ -355,7 +365,11 @@ export default function SurveyDetailPage() {
                 : "border-transparent text-muted-foreground hover:text-foreground"
             )}
           >
-            {t === "questions" ? `質問 (${questions.length})` : `回答 (${completedCount})`}
+            {t === "questions"
+              ? `質問 (${questions.length})`
+              : t === "responses"
+                ? `回答 (${completedCount})`
+                : "分析"}
           </button>
         ))}
       </div>
@@ -478,6 +492,16 @@ export default function SurveyDetailPage() {
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {/* 分析タブ */}
+      {tab === "analytics" && (
+        <SurveyAnalyticsTab
+          questions={questions}
+          responses={responses}
+          totalTargetUsers={totalTargetUsers}
+          surveyTitle={survey.title}
+        />
       )}
 
       {/* 質問編集パネル */}

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hr1_shared/hr1_shared.dart' show MonthUtils;
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../data/repositories/supabase_attendance_repository.dart';
-import '../../domain/entities/attendance_record.dart';
+import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_employee_app/features/attendance/data/repositories/supabase_attendance_repository.dart';
+import 'package:hr1_employee_app/features/attendance/domain/entities/attendance_record.dart';
 
 /// リポジトリプロバイダー
 final attendanceRepositoryProvider = Provider<SupabaseAttendanceRepository>((

@@ -27,7 +27,7 @@ import {
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase";
-import type { Job, JobStep, JobChangeLog, Application, Interview } from "@/types/database";
+import type { Job, JobStep, AuditLog, Application, Interview } from "@/types/database";
 import { useOrg } from "@/lib/org-context";
 import {
   DropdownMenu,
@@ -50,7 +50,7 @@ import {
   jobStatusLabels as statusLabels,
   applicationStatusLabels as appStatusLabels,
   applicationStatusColors as appStatusColors,
-  jobChangeTypeLabels as changeTypeLabels,
+  getAuditActionLabel,
   stepStatusLabels,
 } from "@/lib/constants";
 
@@ -83,7 +83,7 @@ export default function JobDetailPage() {
   const [steps, setSteps] = useState<JobStep[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>([]);
-  const [changeLogs, setChangeLogs] = useState<JobChangeLog[]>([]);
+  const [changeLogs, setChangeLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("detail");
 
@@ -150,10 +150,13 @@ export default function JobDetailPage() {
           .eq("job_id", id)
           .order("applied_at", { ascending: false }),
         getSupabase()
-          .from("job_change_logs")
+          .from("audit_logs")
           .select("*")
-          .eq("job_id", id)
-          .order("created_at", { ascending: false }),
+          .eq("organization_id", organization.id)
+          .eq("table_name", "jobs")
+          .eq("record_id", id)
+          .order("created_at", { ascending: false })
+          .limit(50),
       ]);
 
     setJob(jobData);
@@ -226,25 +229,20 @@ export default function JobDetailPage() {
   }, [organization]);
 
   const updateJobStatus = async (status: string) => {
+    if (!organization) return;
     const oldStatus = job?.status;
     await getSupabase().from("jobs").update({ status }).eq("id", id);
     setJob((prev) => (prev ? { ...prev, status: status as Job["status"] } : prev));
 
     if (oldStatus && oldStatus !== status) {
-      await getSupabase()
-        .from("job_change_logs")
-        .insert({
-          id: `log-${id}-${Date.now()}`,
-          job_id: id,
-          change_type: "status_updated",
-          summary: `ステータスを「${statusLabels[oldStatus]}」から「${statusLabels[status]}」に変更`,
-          details: { old: oldStatus, new: status },
-        });
       const { data: logsData } = await getSupabase()
-        .from("job_change_logs")
+        .from("audit_logs")
         .select("*")
-        .eq("job_id", id)
-        .order("created_at", { ascending: false });
+        .eq("organization_id", organization.id)
+        .eq("table_name", "jobs")
+        .eq("record_id", id)
+        .order("created_at", { ascending: false })
+        .limit(50);
       setChangeLogs(logsData ?? []);
     }
   };
@@ -276,14 +274,21 @@ export default function JobDetailPage() {
       return;
     }
 
-    await getSupabase()
-      .from("job_change_logs")
-      .insert({
-        id: crypto.randomUUID(),
-        job_id: id,
-        change_type: "step_added",
-        summary: `ステップ「${newStepLabel}」を追加`,
-      });
+    if (organization) {
+      const userId = (await getSupabase().auth.getUser()).data.user?.id;
+      if (!userId) throw new Error("認証ユーザーが取得できません");
+      await getSupabase()
+        .from("audit_logs")
+        .insert({
+          organization_id: organization.id,
+          user_id: userId,
+          action: "create",
+          table_name: "jobs",
+          record_id: id,
+          metadata: { summary: `ステップ「${newStepLabel}」を追加`, detail_action: "step_added" },
+          source: "console",
+        });
+    }
 
     const newStep: JobStep = {
       id: stepId,
@@ -307,14 +312,19 @@ export default function JobDetailPage() {
     const step = steps.find((s) => s.id === stepId);
     await getSupabase().from("job_steps").delete().eq("id", stepId);
 
-    if (step) {
+    if (step && organization) {
+      const userId = (await getSupabase().auth.getUser()).data.user?.id;
+      if (!userId) throw new Error("認証ユーザーが取得できません");
       await getSupabase()
-        .from("job_change_logs")
+        .from("audit_logs")
         .insert({
-          id: `log-${id}-${Date.now()}-stepdel`,
-          job_id: id,
-          change_type: "step_deleted",
-          summary: `ステップ「${step.label}」を削除`,
+          organization_id: organization.id,
+          user_id: userId,
+          action: "delete",
+          table_name: "jobs",
+          record_id: id,
+          metadata: { summary: `ステップ「${step.label}」を削除`, detail_action: "step_deleted" },
+          source: "console",
         });
     }
 
@@ -412,28 +422,6 @@ export default function JobDetailPage() {
     if (!job) return;
     setSavingInfo(true);
 
-    const logs: { change_type: string; summary: string; details?: Record<string, unknown> }[] = [];
-
-    if (editTitle !== job.title) {
-      logs.push({
-        change_type: "title_updated",
-        summary: `タイトルを「${job.title}」から「${editTitle}」に変更`,
-        details: { old: job.title, new: editTitle },
-      });
-    }
-    if (editDescription !== (job.description ?? "")) {
-      logs.push({ change_type: "description_updated", summary: "説明を変更" });
-    }
-
-    const infoChanged =
-      editDepartment !== (job.department ?? "") ||
-      editLocation !== (job.location ?? "") ||
-      editEmploymentType !== (job.employment_type ?? "") ||
-      editSalaryRange !== (job.salary_range ?? "");
-    if (infoChanged) {
-      logs.push({ change_type: "info_updated", summary: "求人情報を変更" });
-    }
-
     await getSupabase()
       .from("jobs")
       .update({
@@ -445,20 +433,6 @@ export default function JobDetailPage() {
         salary_range: editSalaryRange || null,
       })
       .eq("id", job.id);
-
-    if (logs.length > 0) {
-      await getSupabase()
-        .from("job_change_logs")
-        .insert(
-          logs.map((log, i) => ({
-            id: `log-${job.id}-${Date.now()}-${i}`,
-            job_id: job.id,
-            change_type: log.change_type,
-            summary: log.summary,
-            details: log.details ?? null,
-          }))
-        );
-    }
 
     setSavingInfo(false);
     setEditingInfo(false);
@@ -922,11 +896,15 @@ export default function JobDetailPage() {
                     >
                       <div className="shrink-0 mt-0.5">
                         <Badge variant="outline" className="text-xs">
-                          {changeTypeLabels[log.change_type] ?? log.change_type}
+                          {getAuditActionLabel(log)}
                         </Badge>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm">{log.summary}</p>
+                        <p className="text-sm">
+                          {(log.metadata as Record<string, string> | null)?.summary ??
+                            (log.changes as Record<string, string> | null)?.summary ??
+                            log.action}
+                        </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {format(new Date(log.created_at), "yyyy/MM/dd HH:mm")}
                         </p>

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../data/repositories/supabase_task_repository.dart';
-import '../../domain/entities/task.dart';
-import '../../domain/repositories/task_repository.dart';
+import 'package:hr1_employee_app/features/tasks/data/repositories/supabase_task_repository.dart';
+import 'package:hr1_employee_app/features/tasks/domain/entities/task.dart';
+import 'package:hr1_employee_app/features/tasks/domain/repositories/task_repository.dart';
 
 /// タスクリポジトリプロバイダー
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {

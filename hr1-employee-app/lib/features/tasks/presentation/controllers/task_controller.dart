@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/task.dart';
-import '../../domain/repositories/task_repository.dart';
-import '../providers/task_providers.dart';
+import 'package:hr1_employee_app/features/tasks/domain/entities/task.dart';
+import 'package:hr1_employee_app/features/tasks/domain/repositories/task_repository.dart';
+import 'package:hr1_employee_app/features/tasks/presentation/providers/task_providers.dart';
 
 /// タスクリスト管理コントローラー
 ///

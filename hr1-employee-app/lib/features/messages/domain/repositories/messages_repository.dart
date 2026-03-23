@@ -1,4 +1,4 @@
-import '../entities/message_thread.dart';
+import 'package:hr1_employee_app/features/messages/domain/entities/message_thread.dart';
 
 /// メッセージリポジトリインターフェース（社員向け）
 abstract class MessagesRepository {

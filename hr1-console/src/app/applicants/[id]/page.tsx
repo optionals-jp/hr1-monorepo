@@ -40,6 +40,7 @@ import {
   stepStatusLabels,
   interviewStatusLabels,
 } from "@/lib/constants";
+import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 
 interface TimelineEvent {
   id: string;
@@ -55,6 +56,7 @@ const tabs = [
   { value: "profile", label: "プロフィール" },
   { value: "evaluations", label: "評価" },
   { value: "timeline", label: "履歴" },
+  { value: "audit", label: "変更履歴" },
 ];
 
 export default function ApplicantDetailPage() {
@@ -528,6 +530,12 @@ export default function ApplicantDetailPage() {
             </Table>
           </div>
         </>
+      )}
+
+      {activeTab === "audit" && organization && (
+        <div className="px-4 sm:px-6 md:px-8 py-6">
+          <AuditLogPanel organizationId={organization.id} tableName="profiles" recordId={id} />
+        </div>
       )}
     </>
   );

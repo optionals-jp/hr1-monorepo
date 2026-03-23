@@ -1,4 +1,4 @@
-import '../entities/task.dart';
+import 'package:hr1_employee_app/features/tasks/domain/entities/task.dart';
 
 /// タスクリポジトリインターフェース
 abstract class TaskRepository {

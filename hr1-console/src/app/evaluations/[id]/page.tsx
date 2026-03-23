@@ -53,6 +53,7 @@ import {
   cycleStatusLabels,
   cycleStatusColors,
 } from "@/lib/constants";
+import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 
 interface CriterionDraft {
   id: string;
@@ -74,6 +75,7 @@ function getTabs(evaluationType?: string) {
   } else {
     base.push({ value: "statistics", label: "統計" }, { value: "comparison", label: "比較" });
   }
+  base.push({ value: "audit", label: "変更履歴" });
   return base;
 }
 
@@ -923,6 +925,14 @@ export default function EvaluationTemplateDetailPage() {
               </div>
             )}
           </div>
+        )}
+
+        {activeTab === "audit" && organization && (
+          <AuditLogPanel
+            organizationId={organization.id}
+            tableName="evaluation_templates"
+            recordId={id}
+          />
         )}
       </div>
 

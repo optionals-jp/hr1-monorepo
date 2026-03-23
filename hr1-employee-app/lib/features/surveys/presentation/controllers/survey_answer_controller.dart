@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/survey_providers.dart';
+import 'package:hr1_employee_app/features/surveys/presentation/providers/survey_providers.dart';
 
 class SurveySubmitState {
   const SurveySubmitState({

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/calendar_event.dart';
-import '../../domain/repositories/calendar_repository.dart';
-import '../providers/calendar_providers.dart';
+import 'package:hr1_employee_app/features/calendar/domain/entities/calendar_event.dart';
+import 'package:hr1_employee_app/features/calendar/domain/repositories/calendar_repository.dart';
+import 'package:hr1_employee_app/features/calendar/presentation/providers/calendar_providers.dart';
 
 /// カレンダーイベント管理コントローラー
 ///

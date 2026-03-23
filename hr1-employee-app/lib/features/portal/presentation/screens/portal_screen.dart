@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../../notifications/domain/entities/notification_item.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/core/router/app_router.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_employee_app/features/notifications/domain/entities/notification_item.dart';
 import 'package:hr1_employee_app/features/notifications/presentation/controllers/notification_controller.dart';
 import 'package:hr1_employee_app/features/notifications/presentation/providers/notification_providers.dart';
-import 'widgets/action_chip.dart';
+import 'package:hr1_employee_app/features/portal/presentation/screens/widgets/action_chip.dart';
 
 /// 社内ポータル画面 — Teams / Outlook モバイルスタイル
 class PortalScreen extends ConsumerWidget {
@@ -359,7 +359,7 @@ class _NotificationPreviewTile extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: !item.isRead
                     ? iconColor.withValues(alpha: 0.1)
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.06),
+                    : AppColors.divider(theme.brightness),
                 shape: BoxShape.circle,
               ),
               child: Icon(

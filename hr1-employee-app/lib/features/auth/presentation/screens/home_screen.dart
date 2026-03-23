@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/constants.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
 
 /// ホーム画面（BottomNavigationBar付きのシェル）— Teams モバイルスタイル
 class HomeScreen extends ConsumerWidget {

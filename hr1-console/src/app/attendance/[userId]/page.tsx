@@ -20,6 +20,7 @@ import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
+import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 import { cn, formatDateLocal, formatTime, formatMinutesHM, weekdayLabel } from "@/lib/utils";
 import type {
   AttendanceRecord,
@@ -317,6 +318,7 @@ export default function AttendanceDetailPage() {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  const [showAuditLog, setShowAuditLog] = useState(false);
 
   // 社員プロフィール
   const { data: profile } = useQuery<Profile | null>(
@@ -778,6 +780,33 @@ export default function AttendanceDetailPage() {
             残業
           </span>
         </div>
+
+        {organization && (
+          <div className="border rounded-lg bg-white">
+            <button
+              type="button"
+              className="flex items-center justify-between w-full px-5 py-3 text-sm font-medium"
+              onClick={() => setShowAuditLog((v) => !v)}
+            >
+              変更履歴
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 text-muted-foreground transition-transform",
+                  showAuditLog && "rotate-180"
+                )}
+              />
+            </button>
+            {showAuditLog && (
+              <div className="px-5 pb-4">
+                <AuditLogPanel
+                  organizationId={organization.id}
+                  tableName="attendance_records"
+                  recordIds={records.map((r) => r.id)}
+                />
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -72,6 +72,7 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final hasApplications = inProgress.isNotEmpty || completed.isNotEmpty;
 
     return ListView(
@@ -93,7 +94,7 @@ class _Body extends StatelessWidget {
           _SectionHeader(
             title: '完了',
             count: completed.length,
-            color: AppColors.lightTextSecondary,
+            color: AppColors.textSecondary(theme.brightness),
           ),
           ...completed.map((a) => _ApplicationCard(application: a)),
           const SizedBox(height: AppSpacing.xl),
@@ -127,6 +128,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.xxl),
       child: Column(
@@ -152,7 +154,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             '$organizationNameの求人を探して\n応募してみましょう',
             style: AppTextStyles.body2.copyWith(
-              color: AppColors.lightTextSecondary,
+              color: AppColors.textSecondary(theme.brightness),
             ),
             textAlign: TextAlign.center,
           ),
@@ -271,7 +273,7 @@ class _ApplicationCard extends StatelessWidget {
                       Text(
                         job!.department!,
                         style: AppTextStyles.caption1.copyWith(
-                          color: AppColors.lightTextSecondary,
+                          color: AppColors.textSecondary(theme.brightness),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -314,7 +316,7 @@ class _ApplicationCard extends StatelessWidget {
                 Text(
                   '$completedSteps/$totalSteps',
                   style: AppTextStyles.caption2.copyWith(
-                    color: AppColors.lightTextSecondary,
+                    color: AppColors.textSecondary(theme.brightness),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -328,13 +330,13 @@ class _ApplicationCard extends StatelessWidget {
               Icon(
                 Icons.schedule_rounded,
                 size: 14,
-                color: AppColors.lightTextSecondary,
+                color: AppColors.textSecondary(theme.brightness),
               ),
               const SizedBox(width: 4),
               Text(
                 DateFormatter.toDateSlash(application.appliedAt),
                 style: AppTextStyles.caption2.copyWith(
-                  color: AppColors.lightTextSecondary,
+                  color: AppColors.textSecondary(theme.brightness),
                 ),
               ),
               const Spacer(),
@@ -373,7 +375,7 @@ class _ApplicationCard extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: 20,
-                color: AppColors.lightTextSecondary,
+                color: AppColors.textSecondary(theme.brightness),
               ),
             ],
           ),
@@ -393,6 +395,7 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return CommonCard(
       onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
       child: Row(
@@ -423,7 +426,7 @@ class _JobCard extends StatelessWidget {
                     if (job.employmentType != null) job.employmentType!,
                   ].join(' · '),
                   style: AppTextStyles.caption1.copyWith(
-                    color: AppColors.lightTextSecondary,
+                    color: AppColors.textSecondary(theme.brightness),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -460,7 +463,9 @@ Color _statusColor(Application application, BuildContext context) {
   return switch (application.status) {
     ApplicationStatus.offered => AppColors.success,
     ApplicationStatus.rejected => AppColors.error,
-    ApplicationStatus.withdrawn => AppColors.lightTextSecondary,
+    ApplicationStatus.withdrawn => AppColors.textSecondary(
+      Theme.of(context).brightness,
+    ),
     ApplicationStatus.active =>
       application.requiresAction ? AppColors.warning : AppColors.brand,
   };

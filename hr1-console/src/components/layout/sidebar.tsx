@@ -26,64 +26,66 @@ import {
   FileCheck,
   CalendarOff,
   Receipt,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { t } from "@/lib/i18n";
 
 interface NavSection {
-  label: string;
-  items: { href: string; label: string; icon: React.ElementType }[];
+  labelKey: string;
+  items: { href: string; labelKey: string; icon: React.ElementType }[];
 }
 
 const navSections: NavSection[] = [
   {
-    label: "",
-    items: [{ href: "/", label: "ダッシュボード", icon: LayoutDashboard }],
+    labelKey: "",
+    items: [{ href: "/", labelKey: "nav.dashboard", icon: LayoutDashboard }],
   },
   {
-    label: "採用",
+    labelKey: "nav.section.recruitment",
     items: [
-      { href: "/applicants", label: "応募者一覧", icon: UserPlus },
-      { href: "/jobs", label: "求人管理", icon: Briefcase },
-      { href: "/applications", label: "応募管理", icon: ClipboardList },
-      { href: "/scheduling", label: "日程調整", icon: Calendar },
+      { href: "/applicants", labelKey: "nav.applicants", icon: UserPlus },
+      { href: "/jobs", labelKey: "nav.jobs", icon: Briefcase },
+      { href: "/applications", labelKey: "nav.applications", icon: ClipboardList },
+      { href: "/scheduling", labelKey: "nav.scheduling", icon: Calendar },
     ],
   },
   {
-    label: "社内",
+    labelKey: "nav.section.internal",
     items: [
-      { href: "/employees", label: "社員一覧", icon: Users },
-      { href: "/departments", label: "部署管理", icon: Building2 },
-      { href: "/projects", label: "プロジェクト", icon: FolderKanban },
-      { href: "/attendance", label: "勤怠管理", icon: Clock },
-      { href: "/shifts", label: "シフト管理", icon: CalendarRange },
-      { href: "/workflows", label: "申請管理", icon: FileCheck },
-      { href: "/leave", label: "休暇管理", icon: CalendarOff },
-      { href: "/payslips", label: "給与明細", icon: Receipt },
+      { href: "/employees", labelKey: "nav.employees", icon: Users },
+      { href: "/departments", labelKey: "nav.departments", icon: Building2 },
+      { href: "/projects", labelKey: "nav.projects", icon: FolderKanban },
+      { href: "/attendance", labelKey: "nav.attendance", icon: Clock },
+      { href: "/shifts", labelKey: "nav.shifts", icon: CalendarRange },
+      { href: "/workflows", labelKey: "nav.workflows", icon: FileCheck },
+      { href: "/leave", labelKey: "nav.leave", icon: CalendarOff },
+      { href: "/payslips", labelKey: "nav.payslips", icon: Receipt },
     ],
   },
   {
-    label: "共通",
+    labelKey: "nav.section.common",
     items: [
-      { href: "/tasks", label: "タスク", icon: ListTodo },
-      { href: "/messages", label: "メッセージ", icon: MessageSquare },
-      { href: "/calendar", label: "カレンダー", icon: CalendarDays },
-      { href: "/forms", label: "フォーム管理", icon: FileText },
-      { href: "/evaluations", label: "評価管理", icon: Star },
-      { href: "/surveys", label: "パルスサーベイ", icon: HeartPulse },
-      { href: "/faqs", label: "FAQ管理", icon: CircleHelp },
+      { href: "/tasks", labelKey: "nav.tasks", icon: ListTodo },
+      { href: "/messages", labelKey: "nav.messages", icon: MessageSquare },
+      { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays },
+      { href: "/forms", labelKey: "nav.forms", icon: FileText },
+      { href: "/evaluations", labelKey: "nav.evaluations", icon: Star },
+      { href: "/surveys", labelKey: "nav.surveys", icon: HeartPulse },
+      { href: "/faqs", labelKey: "nav.faqs", icon: CircleHelp },
     ],
   },
 ];
 
 function NavLink({
   href,
-  label,
+  labelKey,
   icon: Icon,
   pathname,
   onNavigate,
 }: {
   href: string;
-  label: string;
+  labelKey: string;
   icon: React.ElementType;
   pathname: string;
   onNavigate?: () => void;
@@ -104,7 +106,7 @@ function NavLink({
         <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.75 rounded-r-full bg-primary" />
       )}
       <Icon className="h-5 w-5 shrink-0" />
-      {label}
+      {t(labelKey)}
     </Link>
   );
 }
@@ -130,18 +132,18 @@ function CollapsibleSection({
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between px-3 pb-1 pt-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 hover:text-muted-foreground transition-colors"
       >
-        {section.label}
+        {t(section.labelKey)}
         <ChevronDown
           className={cn("h-3.5 w-3.5 transition-transform duration-200", !open && "-rotate-90")}
         />
       </button>
       {open && (
         <>
-          {section.items.map(({ href, label, icon }) => (
+          {section.items.map(({ href, labelKey, icon }) => (
             <NavLink
               key={href}
               href={href}
-              label={label}
+              labelKey={labelKey}
               icon={icon}
               pathname={pathname}
               onNavigate={onNavigate}
@@ -161,20 +163,20 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
     <nav className="flex flex-col h-full py-3 px-2 overflow-y-auto">
       <div className="flex-1 space-y-4">
         {navSections.map((section) =>
-          section.label ? (
+          section.labelKey ? (
             <CollapsibleSection
-              key={section.label}
+              key={section.labelKey}
               section={section}
               pathname={pathname}
               onNavigate={onNavigate}
             />
           ) : (
             <div key="_top" className="space-y-0.5">
-              {section.items.map(({ href, label, icon }) => (
+              {section.items.map(({ href, labelKey, icon }) => (
                 <NavLink
                   key={href}
                   href={href}
-                  label={label}
+                  labelKey={labelKey}
                   icon={icon}
                   pathname={pathname}
                   onNavigate={onNavigate}
@@ -186,8 +188,15 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       </div>
       <div className="border-t pt-2 mt-2 space-y-0.5">
         <NavLink
+          href="/audit-logs"
+          labelKey="nav.auditLogs"
+          icon={ShieldCheck}
+          pathname={pathname}
+          onNavigate={onNavigate}
+        />
+        <NavLink
           href="/settings"
-          label="設定"
+          labelKey="nav.settings"
           icon={Settings}
           pathname={pathname}
           onNavigate={onNavigate}

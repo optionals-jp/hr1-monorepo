@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../data/repositories/supabase_messages_repository.dart';
-import '../../domain/entities/message_thread.dart';
+import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_employee_app/features/messages/data/repositories/supabase_messages_repository.dart';
+import 'package:hr1_employee_app/features/messages/domain/entities/message_thread.dart';
 
 /// MessagesRepository プロバイダー
 final messagesRepositoryProvider = Provider<SupabaseMessagesRepository>((ref) {

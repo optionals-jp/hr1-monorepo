@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../core/constants/constants.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
 
 /// 横スクロール アクションチップ — Teams モバイルの提案アクション風
 class PortalActionChip extends StatelessWidget {

@@ -1,4 +1,4 @@
-import '../entities/calendar_event.dart';
+import 'package:hr1_employee_app/features/calendar/domain/entities/calendar_event.dart';
 
 /// カレンダーリポジトリインターフェース
 abstract class CalendarRepository {

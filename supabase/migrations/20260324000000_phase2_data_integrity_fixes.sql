@@ -41,15 +41,28 @@ CREATE INDEX IF NOT EXISTS idx_employee_tasks_user_my_day ON public.employee_tas
 ALTER TABLE public.employee_tasks ENABLE ROW LEVEL SECURITY;
 
 -- RLS: 自分のタスクのみ
-CREATE POLICY "employee_tasks_select_own" ON public.employee_tasks FOR SELECT
-  USING (user_id = auth.uid()::text);
-CREATE POLICY "employee_tasks_insert_own" ON public.employee_tasks FOR INSERT
-  WITH CHECK (user_id = auth.uid()::text);
-CREATE POLICY "employee_tasks_update_own" ON public.employee_tasks FOR UPDATE
-  USING (user_id = auth.uid()::text);
-CREATE POLICY "employee_tasks_delete_own" ON public.employee_tasks FOR DELETE
-  USING (user_id = auth.uid()::text);
+DO $$ BEGIN
+  CREATE POLICY "employee_tasks_select_own" ON public.employee_tasks FOR SELECT
+    USING (user_id = auth.uid()::text);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "employee_tasks_insert_own" ON public.employee_tasks FOR INSERT
+    WITH CHECK (user_id = auth.uid()::text);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "employee_tasks_update_own" ON public.employee_tasks FOR UPDATE
+    USING (user_id = auth.uid()::text);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "employee_tasks_delete_own" ON public.employee_tasks FOR DELETE
+    USING (user_id = auth.uid()::text);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
+DROP TRIGGER IF EXISTS set_employee_tasks_updated_at ON public.employee_tasks;
 CREATE TRIGGER set_employee_tasks_updated_at
   BEFORE UPDATE ON public.employee_tasks
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
@@ -69,14 +82,26 @@ CREATE INDEX IF NOT EXISTS idx_employee_task_steps_task ON public.employee_task_
 ALTER TABLE public.employee_task_steps ENABLE ROW LEVEL SECURITY;
 
 -- RLS: 親タスクの所有者のみ
-CREATE POLICY "employee_task_steps_select" ON public.employee_task_steps FOR SELECT
-  USING (task_id IN (SELECT id FROM public.employee_tasks WHERE user_id = auth.uid()::text));
-CREATE POLICY "employee_task_steps_insert" ON public.employee_task_steps FOR INSERT
-  WITH CHECK (task_id IN (SELECT id FROM public.employee_tasks WHERE user_id = auth.uid()::text));
-CREATE POLICY "employee_task_steps_update" ON public.employee_task_steps FOR UPDATE
-  USING (task_id IN (SELECT id FROM public.employee_tasks WHERE user_id = auth.uid()::text));
-CREATE POLICY "employee_task_steps_delete" ON public.employee_task_steps FOR DELETE
-  USING (task_id IN (SELECT id FROM public.employee_tasks WHERE user_id = auth.uid()::text));
+DO $$ BEGIN
+  CREATE POLICY "employee_task_steps_select" ON public.employee_task_steps FOR SELECT
+    USING (task_id IN (SELECT id FROM public.employee_tasks WHERE user_id = auth.uid()::text));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "employee_task_steps_insert" ON public.employee_task_steps FOR INSERT
+    WITH CHECK (task_id IN (SELECT id FROM public.employee_tasks WHERE user_id = auth.uid()::text));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "employee_task_steps_update" ON public.employee_task_steps FOR UPDATE
+    USING (task_id IN (SELECT id FROM public.employee_tasks WHERE user_id = auth.uid()::text));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "employee_task_steps_delete" ON public.employee_task_steps FOR DELETE
+    USING (task_id IN (SELECT id FROM public.employee_tasks WHERE user_id = auth.uid()::text));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ========================================================================
 -- employee_tasks.user_id が UUID型で作成されていた場合のマイグレーション
@@ -277,15 +302,23 @@ CREATE INDEX IF NOT EXISTS idx_push_notification_logs_status ON public.push_noti
 
 ALTER TABLE public.push_notification_logs ENABLE ROW LEVEL SECURITY;
 
--- 管理者のみ閲覧可能
-CREATE POLICY "push_notification_logs_select_admin" ON public.push_notification_logs FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid()::text
-        AND p.role = 'admin'
-    )
-  );
+-- 管理者のみ閲覧可能（組織スコープ）
+DO $$ BEGIN
+  CREATE POLICY "push_notification_logs_select_admin" ON public.push_notification_logs FOR SELECT
+    USING (
+      EXISTS (
+        SELECT 1 FROM public.user_organizations uo
+        JOIN public.profiles p ON p.id = uo.user_id
+        WHERE uo.user_id = auth.uid()::text
+          AND p.role = 'admin'
+          AND uo.organization_id IN (
+            SELECT n.organization_id FROM public.notifications n
+            WHERE n.id = push_notification_logs.notification_id
+          )
+      )
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- トリガー関数を改善: エラーログ記録 + 設定未構成時の警告ログ
 CREATE OR REPLACE FUNCTION public.send_push_on_notification_insert()

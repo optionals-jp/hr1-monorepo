@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/service_request.dart';
-import '../providers/service_request_providers.dart';
+import 'package:hr1_employee_app/features/service_requests/domain/entities/service_request.dart';
+import 'package:hr1_employee_app/features/service_requests/presentation/providers/service_request_providers.dart';
 
 /// サービスリクエスト作成コントローラー
 final serviceRequestControllerProvider =

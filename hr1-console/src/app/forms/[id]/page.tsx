@@ -27,14 +27,10 @@ import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase";
 import { useOrg } from "@/lib/org-context";
-import type { CustomForm, FormField, FormChangeLog } from "@/types/database";
+import type { CustomForm, FormField, AuditLog } from "@/types/database";
 import { format } from "date-fns";
 import { Trash2 } from "lucide-react";
-import {
-  fieldTypeLabels,
-  formChangeTypeLabels as changeTypeLabels,
-  formTargetLabels,
-} from "@/lib/constants";
+import { fieldTypeLabels, getAuditActionLabel, formTargetLabels } from "@/lib/constants";
 
 interface FieldDraft {
   id: string;
@@ -72,7 +68,7 @@ export default function FormDetailPage() {
   const [form, setForm] = useState<CustomForm | null>(null);
   const [fields, setFields] = useState<FormField[]>([]);
   const [responses, setResponses] = useState<ResponseRow[]>([]);
-  const [changeLogs, setChangeLogs] = useState<FormChangeLog[]>([]);
+  const [changeLogs, setChangeLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("fields");
 
@@ -106,10 +102,13 @@ export default function FormDetailPage() {
         getSupabase().from("form_fields").select("*").eq("form_id", id).order("sort_order"),
         getSupabase().from("form_responses").select("*").eq("form_id", id),
         getSupabase()
-          .from("form_change_logs")
+          .from("audit_logs")
           .select("*")
-          .eq("form_id", id)
-          .order("created_at", { ascending: false }),
+          .eq("organization_id", organization.id)
+          .eq("table_name", "custom_forms")
+          .eq("record_id", id)
+          .order("created_at", { ascending: false })
+          .limit(50),
       ]);
 
     setForm(formData);
@@ -203,7 +202,7 @@ export default function FormDetailPage() {
     if (!form) return;
     setSaving(true);
 
-    const logs: { change_type: string; summary: string; details?: Record<string, unknown> }[] = [];
+    const fieldLogs: { detail_action: string; summary: string }[] = [];
 
     // 1. Update form title/description/target
     const titleChanged = editTitle !== form.title;
@@ -219,23 +218,6 @@ export default function FormDetailPage() {
           description: editDescription || null,
         })
         .eq("id", form.id);
-
-      if (titleChanged) {
-        logs.push({
-          change_type: "title_updated",
-          summary: `タイトルを「${form.title}」から「${editTitle}」に変更`,
-          details: { old: form.title, new: editTitle },
-        });
-      }
-      if (targetChanged) {
-        logs.push({
-          change_type: "target_updated",
-          summary: `対象を「${formTargetLabels[form.target] ?? form.target}」から「${formTargetLabels[editTarget]}」に変更`,
-        });
-      }
-      if (descChanged) {
-        logs.push({ change_type: "description_updated", summary: "説明を変更" });
-      }
     }
 
     // 2. Handle field changes
@@ -250,7 +232,10 @@ export default function FormDetailPage() {
         .filter((f) => deletedIds.includes(f.id))
         .map((f) => f.label)
         .join("、");
-      logs.push({ change_type: "field_deleted", summary: `フィールド「${deletedLabels}」を削除` });
+      fieldLogs.push({
+        detail_action: "field_deleted",
+        summary: `フィールド「${deletedLabels}」を削除`,
+      });
     }
 
     // New fields
@@ -275,7 +260,7 @@ export default function FormDetailPage() {
           }))
         );
       const newLabels = newFields.map((f) => f.label).join("、");
-      logs.push({ change_type: "field_added", summary: `フィールド「${newLabels}」を追加` });
+      fieldLogs.push({ detail_action: "field_added", summary: `フィールド「${newLabels}」を追加` });
     }
 
     // Updated existing fields
@@ -306,21 +291,32 @@ export default function FormDetailPage() {
             sort_order: ef.sort_order,
           })
           .eq("id", ef.id);
-        logs.push({ change_type: "field_updated", summary: `フィールド「${ef.label}」を変更` });
+        fieldLogs.push({
+          detail_action: "field_updated",
+          summary: `フィールド「${ef.label}」を変更`,
+        });
       }
     }
 
-    // 3. Save change logs
-    if (logs.length > 0) {
+    // 3. Save field change logs
+    if (fieldLogs.length > 0 && organization) {
+      const userId = (await getSupabase().auth.getUser()).data.user?.id;
+      if (!userId) throw new Error("認証ユーザーが取得できません");
       await getSupabase()
-        .from("form_change_logs")
+        .from("audit_logs")
         .insert(
-          logs.map((log, i) => ({
-            id: `log-${form.id}-${Date.now()}-${i}`,
-            form_id: form.id,
-            change_type: log.change_type,
-            summary: log.summary,
-            details: log.details ?? null,
+          fieldLogs.map((log) => ({
+            organization_id: organization.id,
+            user_id: userId,
+            action: log.detail_action.includes("deleted")
+              ? "delete"
+              : log.detail_action.includes("added")
+                ? "create"
+                : "update",
+            table_name: "custom_forms",
+            record_id: form.id,
+            metadata: { summary: log.summary, detail_action: log.detail_action },
+            source: "console" as const,
           }))
         );
     }
@@ -489,11 +485,15 @@ export default function FormDetailPage() {
                   <div key={log.id} className="flex items-start gap-4 py-3 border-b last:border-0">
                     <div className="shrink-0 mt-0.5">
                       <Badge variant="outline" className="text-xs">
-                        {changeTypeLabels[log.change_type] ?? log.change_type}
+                        {getAuditActionLabel(log)}
                       </Badge>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm">{log.summary}</p>
+                      <p className="text-sm">
+                        {(log.metadata as Record<string, string> | null)?.summary ??
+                          (log.changes as Record<string, string> | null)?.summary ??
+                          log.action}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {format(new Date(log.created_at), "yyyy/MM/dd HH:mm")}
                       </p>

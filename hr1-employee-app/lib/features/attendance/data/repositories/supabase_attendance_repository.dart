@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/attendance_record.dart';
+import 'package:hr1_employee_app/features/attendance/domain/entities/attendance_record.dart';
 
 /// 勤怠データのSupabaseリポジトリ
 class SupabaseAttendanceRepository {
