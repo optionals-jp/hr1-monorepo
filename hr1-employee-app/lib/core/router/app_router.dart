@@ -19,10 +19,15 @@ import 'package:hr1_employee_app/features/shifts/presentation/screens/shift_requ
 import 'package:hr1_employee_app/features/attendance/presentation/screens/correction_request_screen.dart';
 import 'package:hr1_employee_app/features/employees/domain/entities/employee_contact.dart';
 import 'package:hr1_employee_app/features/employees/presentation/screens/employee_detail_screen.dart';
+import 'package:hr1_employee_app/features/employees/presentation/screens/employee_list_screen.dart';
 import 'package:hr1_employee_app/features/skills/presentation/screens/certifications_edit_screen.dart';
 import 'package:hr1_employee_app/features/skills/presentation/screens/skills_edit_screen.dart';
 import 'package:hr1_employee_app/features/faq/presentation/screens/faq_screen.dart';
+import 'package:hr1_employee_app/features/wiki/domain/entities/wiki_page.dart';
+import 'package:hr1_employee_app/features/wiki/presentation/screens/wiki_list_screen.dart';
+import 'package:hr1_employee_app/features/wiki/presentation/screens/wiki_detail_screen.dart';
 import 'package:hr1_employee_app/features/notifications/presentation/screens/notifications_screen.dart';
+import 'package:hr1_employee_app/features/announcements/presentation/screens/announcements_screen.dart';
 import 'package:hr1_employee_app/features/service_requests/domain/entities/service_request.dart';
 import 'package:hr1_employee_app/features/service_requests/presentation/screens/service_request_list_screen.dart';
 import 'package:hr1_employee_app/features/service_requests/presentation/screens/service_request_create_screen.dart';
@@ -62,6 +67,7 @@ class AppRoutes {
   static const String _correction = 'correction';
   static const String _thread = 'thread';
   static const String _employeeDetail = 'employee-detail';
+  static const String _employees = 'employees';
   static const String _search = 'search';
   static const String _profileEdit = 'profile-edit';
   static const String _chat = 'chat';
@@ -73,18 +79,25 @@ class AppRoutes {
   static const String _faq = 'faq';
   static const String _surveys = 'surveys';
   static const String _notifications = 'notifications';
+  static const String _announcements = 'announcements';
   static const String _workflow = 'workflow';
   static const String _workflowCreate = 'workflow-create';
   static const String _workflowDetail = 'workflow-detail';
   static const String _leaveBalance = 'leave-balance';
   static const String _payslips = 'payslips';
   static const String _payslipDetail = 'payslip-detail';
+  static const String _wiki = 'wiki';
+  static const String _wikiDetail = 'wiki-detail';
   // フルパス（画面遷移用）
   static const String faq = '/$_faq';
+  static const String wiki = '/$_wiki';
+  static const String wikiDetail = '/$_wikiDetail';
   static const String surveys = '/$_surveys';
   static const String notifications = '/$_notifications';
+  static const String announcements = '/$_announcements';
   static const String profileFullscreen = '/$_profileFullscreen';
   static const String attendance = '/$_attendance';
+  static const String employees = '/$_employees';
   static const String employeeDetail = '/$_employeeDetail';
   static const String _attendanceDetail = 'detail';
   static const String correction = '/$_attendance/$_correction';
@@ -193,6 +206,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
+      /// 社員名簿画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.employees,
+        builder: (context, state) => const EmployeeListScreen(),
+      ),
+
       /// 社員プロフィール詳細画面（フルスクリーン）
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
@@ -247,11 +267,38 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const NotificationsScreen(),
       ),
 
+      /// お知らせ画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.announcements,
+        builder: (context, state) => const AnnouncementsScreen(),
+      ),
+
       /// FAQ画面（フルスクリーン）
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.faq,
         builder: (context, state) => const FaqScreen(),
+      ),
+
+      /// 社内Wiki一覧画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.wiki,
+        builder: (context, state) => const WikiListScreen(),
+      ),
+
+      /// 社内Wikiページ詳細画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.wikiDetail,
+        builder: (context, state) {
+          final page = state.extra as WikiPage?;
+          if (page == null) {
+            return const Scaffold(body: Center(child: Text('ページが見つかりません')));
+          }
+          return WikiDetailScreen(page: page);
+        },
       ),
 
       /// パルスサーベイ一覧画面（フルスクリーン）

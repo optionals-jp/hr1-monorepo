@@ -27,6 +27,8 @@ import {
   CalendarOff,
   Receipt,
   ShieldCheck,
+  Megaphone,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { t } from "@/lib/i18n";
@@ -73,6 +75,8 @@ const navSections: NavSection[] = [
       { href: "/evaluations", labelKey: "nav.evaluations", icon: Star },
       { href: "/surveys", labelKey: "nav.surveys", icon: HeartPulse },
       { href: "/faqs", labelKey: "nav.faqs", icon: CircleHelp },
+      { href: "/wiki", labelKey: "nav.wiki", icon: BookOpen },
+      { href: "/announcements", labelKey: "nav.announcements", icon: Megaphone },
     ],
   },
 ];

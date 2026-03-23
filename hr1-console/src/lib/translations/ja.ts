@@ -40,6 +40,8 @@ export const ja: Record<string, string> = {
   "nav.evaluations": "評価管理",
   "nav.surveys": "パルスサーベイ",
   "nav.faqs": "FAQ管理",
+  "nav.wiki": "社内Wiki",
+  "nav.announcements": "お知らせ管理",
   "nav.auditLogs": "監査ログ",
   "nav.settings": "設定",
 

@@ -8,7 +8,10 @@ import 'package:hr1_employee_app/features/auth/presentation/providers/auth_provi
 import 'package:hr1_employee_app/features/notifications/domain/entities/notification_item.dart';
 import 'package:hr1_employee_app/features/notifications/presentation/controllers/notification_controller.dart';
 import 'package:hr1_employee_app/features/notifications/presentation/providers/notification_providers.dart';
+import 'package:hr1_employee_app/features/announcements/domain/entities/announcement.dart';
+import 'package:hr1_employee_app/features/announcements/presentation/providers/announcement_providers.dart';
 import 'package:hr1_employee_app/features/portal/presentation/screens/widgets/action_chip.dart';
+import 'package:intl/intl.dart';
 
 /// 社内ポータル画面 — Teams / Outlook モバイルスタイル
 class PortalScreen extends ConsumerWidget {
@@ -71,7 +74,6 @@ class PortalScreen extends ConsumerWidget {
                               count > 99 ? '99+' : '$count',
                               style: AppTextStyles.caption2.copyWith(
                                 color: Colors.white,
-                                fontSize: 9,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -188,6 +190,17 @@ class PortalScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
+                        icon: const Icon(
+                          Icons.menu_book_rounded,
+                          size: 24,
+                          color: AppColors.brandSecondary,
+                        ),
+                        label: '社内Wiki',
+                        color: AppColors.brandSecondary,
+                        onTap: () => context.push(AppRoutes.wiki),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      PortalActionChip(
                         icon: AppIcons.calendar(
                           size: 24,
                           color: AppColors.success,
@@ -229,6 +242,24 @@ class PortalScreen extends ConsumerWidget {
                         color: AppColors.brandSecondary,
                         onTap: () => context.push(AppRoutes.payslips),
                       ),
+                      const SizedBox(width: AppSpacing.md),
+                      PortalActionChip(
+                        icon: AppIcons.user(size: 24, color: AppColors.brand),
+                        label: '社員名簿',
+                        color: AppColors.brand,
+                        onTap: () => context.push(AppRoutes.employees),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      PortalActionChip(
+                        icon: const Icon(
+                          Icons.campaign_outlined,
+                          size: 24,
+                          color: AppColors.warning,
+                        ),
+                        label: 'お知らせ',
+                        color: AppColors.warning,
+                        onTap: () => context.push(AppRoutes.announcements),
+                      ),
                     ],
                   ),
                 ),
@@ -236,7 +267,76 @@ class PortalScreen extends ConsumerWidget {
             ),
           ),
 
-          // セクションヘッダー: お知らせ
+          // セクションヘッダー: 全社お知らせ
+          Consumer(
+            builder: (context, ref, _) {
+              final pinnedAsync = ref.watch(pinnedAnnouncementsProvider);
+              return pinnedAsync.when(
+                loading: () =>
+                    const SliverToBoxAdapter(child: SizedBox.shrink()),
+                error: (_, __) =>
+                    const SliverToBoxAdapter(child: SizedBox.shrink()),
+                data: (pinned) {
+                  if (pinned.isEmpty) {
+                    return const SliverToBoxAdapter(child: SizedBox.shrink());
+                  }
+                  return SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.screenHorizontal,
+                            AppSpacing.xxl,
+                            AppSpacing.screenHorizontal,
+                            AppSpacing.xs,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '全社お知らせ',
+                                  style: AppTextStyles.caption2.copyWith(
+                                    color: AppColors.textSecondary(
+                                      theme.brightness,
+                                    ),
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () =>
+                                    context.push(AppRoutes.announcements),
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  'すべて表示',
+                                  style: AppTextStyles.caption2.copyWith(
+                                    color: AppColors.brand,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ...pinned.map(
+                          (a) => _PinnedAnnouncementTile(announcement: a),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+
+          // セクションヘッダー: 通知
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -249,7 +349,7 @@ class PortalScreen extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'お知らせ',
+                      '通知',
                       style: AppTextStyles.caption2.copyWith(
                         color: AppColors.textSecondary(theme.brightness),
                         fontWeight: FontWeight.w600,
@@ -320,6 +420,71 @@ class PortalScreen extends ConsumerWidget {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PinnedAnnouncementTile extends StatelessWidget {
+  const _PinnedAnnouncementTile({required this.announcement});
+
+  final Announcement announcement;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dateStr = DateFormat(
+      'MM/dd',
+    ).format(announcement.publishedAt.toLocal());
+
+    return InkWell(
+      onTap: () => context.push(AppRoutes.announcements),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+          vertical: 14,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.push_pin,
+                size: 20,
+                color: AppColors.warning,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    announcement.title,
+                    style: AppTextStyles.caption1.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    dateStr,
+                    style: AppTextStyles.caption2.copyWith(
+                      color: AppColors.textSecondary(theme.brightness),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

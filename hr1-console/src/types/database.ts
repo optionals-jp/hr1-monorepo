@@ -266,6 +266,10 @@ export interface MessageThread {
   title: string | null;
   created_at: string;
   updated_at: string;
+  is_channel?: boolean;
+  channel_name?: string | null;
+  channel_type?: "department" | "project" | "custom" | null;
+  channel_source_id?: string | null;
   participant?: {
     id: string;
     display_name: string | null;
@@ -280,6 +284,16 @@ export interface MessageThread {
   application_count?: number;
   latest_message?: Message;
   unread_count?: number;
+  member_count?: number;
+}
+
+export interface ChannelMember {
+  id: string;
+  user_id: string;
+  display_name: string | null;
+  email: string;
+  avatar_url: string | null;
+  joined_at: string;
 }
 
 export interface Message {
@@ -485,6 +499,21 @@ export interface SkillMaster {
   created_at: string;
 }
 
+export interface WikiPage {
+  id: string;
+  organization_id: string;
+  title: string;
+  content: string;
+  category: string | null;
+  parent_id: string | null;
+  is_published: boolean;
+  created_by: string;
+  updated_by: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Faq {
   id: string;
   organization_id: string;
@@ -617,6 +646,19 @@ export interface LeaveBalance {
   created_at: string;
   updated_at: string;
   profiles?: Profile;
+}
+
+export interface Announcement {
+  id: string;
+  organization_id: string;
+  title: string;
+  body: string;
+  is_pinned: boolean;
+  target: "all" | "employee" | "applicant";
+  published_at: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Payslip {

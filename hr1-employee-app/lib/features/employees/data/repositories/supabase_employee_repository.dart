@@ -69,4 +69,51 @@ class SupabaseEmployeeRepository {
         })
         .toList();
   }
+
+  /// 組織内の全社員を取得
+  Future<List<EmployeeContact>> getEmployees() async {
+    final orgId = await _getOrganizationId();
+
+    final results = await _client
+        .from('user_organizations')
+        .select(
+          'user_id, profiles(id, display_name, email, department, position, avatar_url)',
+        )
+        .eq('organization_id', orgId);
+
+    return (results as List)
+        .where((r) => r['profiles'] != null)
+        .toList()
+        .asMap()
+        .entries
+        .map((entry) {
+          final p = entry.value['profiles'];
+          final name =
+              p['display_name'] as String? ?? p['email'] as String? ?? '';
+          return EmployeeContact(
+            id: p['id'] as String,
+            name: name,
+            initial: name.isNotEmpty ? name[0] : '?',
+            position: p['position'] as String? ?? '',
+            department: p['department'] as String? ?? '',
+            color: _avatarColors[entry.key % _avatarColors.length],
+            email: p['email'] as String?,
+            avatarUrl: p['avatar_url'] as String?,
+          );
+        })
+        .toList();
+  }
+
+  /// 組織内の部署一覧を取得
+  Future<List<String>> getDepartments() async {
+    final orgId = await _getOrganizationId();
+
+    final results = await _client
+        .from('departments')
+        .select('name')
+        .eq('organization_id', orgId)
+        .order('name');
+
+    return (results as List).map((r) => r['name'] as String).toList();
+  }
 }

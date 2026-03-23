@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { useQuery } from "@/lib/use-query";
-import type { MessageThread, Message, Profile } from "@/types/database";
+import type { MessageThread, Message, Profile, ChannelMember } from "@/types/database";
 import {
   Search,
   Send,
@@ -23,8 +23,20 @@ import {
   Trash2,
   Check,
   Loader2,
+  Hash,
+  Users,
+  Plus,
+  UserMinus,
+  UserPlus,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +53,9 @@ export default function MessagesPage() {
   );
   const [search, setSearch] = useState("");
   const [showNewThread, setShowNewThread] = useState(false);
+  const [mainTab, setMainTab] = useState<"dm" | "channels">("dm");
+  const [showCreateChannel, setShowCreateChannel] = useState(false);
+  const [showChannelMembers, setShowChannelMembers] = useState(false);
   const messageCache = useRef<MessageCache>(new Map());
 
   // --- スレッド一覧 (RPC で1回のクエリで取得) ---
@@ -93,6 +108,45 @@ export default function MessagesPage() {
     }
   );
 
+  // --- チャンネル一覧 ---
+  const {
+    data: channels = [],
+    isLoading: channelsLoading,
+    error: channelsError,
+    mutate: mutateChannels,
+  } = useQuery<MessageThread[]>(organization ? `channels-${organization.id}` : null, async () => {
+    const { data } = await getSupabase().rpc("get_channels_with_details", {
+      p_org_id: organization!.id,
+    });
+    if (!data) return [];
+    return (data as Record<string, unknown>[]).map((row) => ({
+      id: row.id as string,
+      organization_id: row.organization_id as string,
+      participant_id: "",
+      participant_type: "employee" as const,
+      is_channel: true,
+      channel_name: row.channel_name as string | null,
+      channel_type: row.channel_type as "department" | "project" | "custom" | null,
+      channel_source_id: row.channel_source_id as string | null,
+      title: row.title as string | null,
+      created_at: row.created_at as string,
+      updated_at: row.updated_at as string,
+      member_count: Number(row.member_count ?? 0),
+      latest_message: row.latest_message_id
+        ? {
+            id: row.latest_message_id as string,
+            thread_id: row.id as string,
+            sender_id: "",
+            content: row.latest_message_content as string,
+            read_at: null,
+            edited_at: null,
+            created_at: row.latest_message_created_at as string,
+            sender: { display_name: row.latest_message_sender_name as string | null },
+          }
+        : undefined,
+    })) as MessageThread[];
+  });
+
   const filtered = threads.filter((t) => {
     if (!search) return true;
     const s = search.toLowerCase();
@@ -102,19 +156,36 @@ export default function MessagesPage() {
     return name.includes(s) || email.includes(s) || jobTitles.includes(s);
   });
 
-  const selectedThread = threads.find((t) => t.id === selectedThreadId);
+  const filteredChannels = channels.filter((c) => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return (c.channel_name?.toLowerCase() ?? "").includes(s);
+  });
+
+  const selectedThread =
+    mainTab === "dm"
+      ? threads.find((t) => t.id === selectedThreadId)
+      : channels.find((c) => c.id === selectedThreadId);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       <QueryErrorBanner error={threadsError} onRetry={() => mutateThreads()} />
+      <QueryErrorBanner error={channelsError} onRetry={() => mutateChannels()} />
       <PageHeader
         title="メッセージ"
         description="応募者・社員とのメッセージ管理"
         sticky={false}
         action={
-          <Button size="sm" onClick={() => setShowNewThread(true)}>
-            新規メッセージ
-          </Button>
+          mainTab === "dm" ? (
+            <Button size="sm" onClick={() => setShowNewThread(true)}>
+              新規メッセージ
+            </Button>
+          ) : (
+            <Button size="sm" onClick={() => setShowCreateChannel(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              チャンネル作成
+            </Button>
+          )
         }
       />
 
@@ -129,6 +200,26 @@ export default function MessagesPage() {
         />
       )}
 
+      {showCreateChannel && (
+        <CreateChannelPanel
+          onCreated={async (threadId) => {
+            setShowCreateChannel(false);
+            await mutateChannels();
+            setMainTab("channels");
+            setSelectedThreadId(threadId);
+          }}
+          onClose={() => setShowCreateChannel(false)}
+        />
+      )}
+
+      {showChannelMembers && selectedThread?.is_channel && (
+        <ChannelMembersPanel
+          thread={selectedThread}
+          onClose={() => setShowChannelMembers(false)}
+          onMembersChanged={() => mutateChannels()}
+        />
+      )}
+
       <div className="flex flex-1 min-h-0 overflow-hidden bg-white border-t">
         {/* スレッド一覧（左パネル） */}
         <div
@@ -137,7 +228,29 @@ export default function MessagesPage() {
             selectedThreadId ? "hidden md:flex" : "flex"
           )}
         >
-          <div className="px-3 py-3">
+          <div className="px-3 pt-2 pb-1">
+            <Tabs
+              value={mainTab}
+              onValueChange={(v) => {
+                setMainTab(v as "dm" | "channels");
+                setSelectedThreadId(null);
+                setSearch("");
+              }}
+            >
+              <TabsList className="w-full">
+                <TabsTrigger value="dm" className="flex-1">
+                  <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+                  DM
+                </TabsTrigger>
+                <TabsTrigger value="channels" className="flex-1">
+                  <Hash className="h-3.5 w-3.5 mr-1.5" />
+                  チャンネル
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          <div className="px-3 py-2">
             <div className="flex items-center rounded-full bg-gray-100 px-4 py-2.5">
               <Search className="h-4 w-4 text-muted-foreground shrink-0" />
               <input
@@ -150,104 +263,174 @@ export default function MessagesPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            {threadsLoading ? (
+            {mainTab === "dm" ? (
+              /* DM 一覧 */
+              threadsLoading ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">読み込み中...</div>
+              ) : filtered.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                  <MessageSquare className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                  <p className="text-sm text-muted-foreground">
+                    {search ? "一致するスレッドがありません" : "メッセージスレッドがありません"}
+                  </p>
+                </div>
+              ) : (
+                filtered.map((thread) => {
+                  const displayName =
+                    thread.participant?.display_name ?? thread.participant?.email ?? "不明";
+                  const initial = displayName[0]?.toUpperCase() ?? "?";
+                  const isSelected = thread.id === selectedThreadId;
+                  const hasUnread = (thread.unread_count ?? 0) > 0;
+                  const isEmployee = thread.participant_type === "employee";
+                  const subtitleText = isEmployee
+                    ? [thread.participant?.department, thread.participant?.position]
+                        .filter(Boolean)
+                        .join(" / ") ||
+                      (thread.title ?? "社員")
+                    : (thread.job_titles ?? "");
+
+                  return (
+                    <button
+                      key={thread.id}
+                      type="button"
+                      onClick={() => setSelectedThreadId(thread.id)}
+                      className={cn(
+                        "w-full text-left px-4 py-3 border-b transition-colors hover:bg-accent/50",
+                        isSelected && "bg-accent"
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-9 w-9 shrink-0 mt-0.5">
+                          <AvatarFallback
+                            className={cn(
+                              "text-xs font-medium",
+                              isEmployee
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-blue-100 text-blue-700"
+                            )}
+                          >
+                            {initial}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="flex items-center gap-1.5 min-w-0">
+                              <span
+                                className={cn(
+                                  "text-sm truncate",
+                                  hasUnread ? "font-semibold" : "font-medium"
+                                )}
+                              >
+                                {displayName}
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "shrink-0 text-[10px] px-1.5 py-0 h-4 font-normal",
+                                  isEmployee
+                                    ? "border-emerald-300 text-emerald-700"
+                                    : "border-blue-300 text-blue-700"
+                                )}
+                              >
+                                {isEmployee ? "社員" : "応募者"}
+                              </Badge>
+                            </span>
+                            {thread.latest_message && (
+                              <span className="text-[11px] text-muted-foreground shrink-0">
+                                {format(new Date(thread.latest_message.created_at), "MM/dd")}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">
+                            {subtitleText}
+                          </p>
+                          {thread.latest_message && (
+                            <p
+                              className={cn(
+                                "text-xs truncate mt-1",
+                                hasUnread ? "text-foreground font-medium" : "text-muted-foreground"
+                              )}
+                            >
+                              {thread.latest_message.content}
+                            </p>
+                          )}
+                        </div>
+                        {hasUnread && (
+                          <Badge
+                            variant="default"
+                            className="h-5 min-w-5 px-1.5 text-[10px] shrink-0 mt-1"
+                          >
+                            {thread.unread_count}
+                          </Badge>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
+              )
+            ) : /* チャンネル一覧 */
+            channelsLoading ? (
               <div className="p-4 text-center text-sm text-muted-foreground">読み込み中...</div>
-            ) : filtered.length === 0 ? (
+            ) : filteredChannels.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                <MessageSquare className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                <Hash className="h-10 w-10 text-muted-foreground/40 mb-3" />
                 <p className="text-sm text-muted-foreground">
-                  {search ? "一致するスレッドがありません" : "メッセージスレッドがありません"}
+                  {search ? "一致するチャンネルがありません" : "チャンネルがありません"}
                 </p>
               </div>
             ) : (
-              filtered.map((thread) => {
-                const displayName =
-                  thread.participant?.display_name ?? thread.participant?.email ?? "不明";
-                const initial = displayName[0]?.toUpperCase() ?? "?";
-                const isSelected = thread.id === selectedThreadId;
-                const hasUnread = (thread.unread_count ?? 0) > 0;
-                const isEmployee = thread.participant_type === "employee";
-                const subtitleText = isEmployee
-                  ? [thread.participant?.department, thread.participant?.position]
-                      .filter(Boolean)
-                      .join(" / ") ||
-                    (thread.title ?? "社員")
-                  : (thread.job_titles ?? "");
+              filteredChannels.map((channel) => {
+                const isSelected = channel.id === selectedThreadId;
+                const channelTypeLabel =
+                  channel.channel_type === "department"
+                    ? "部署"
+                    : channel.channel_type === "project"
+                      ? "プロジェクト"
+                      : "カスタム";
 
                 return (
                   <button
-                    key={thread.id}
+                    key={channel.id}
                     type="button"
-                    onClick={() => setSelectedThreadId(thread.id)}
+                    onClick={() => setSelectedThreadId(channel.id)}
                     className={cn(
                       "w-full text-left px-4 py-3 border-b transition-colors hover:bg-accent/50",
                       isSelected && "bg-accent"
                     )}
                   >
                     <div className="flex items-start gap-3">
-                      <Avatar className="h-9 w-9 shrink-0 mt-0.5">
-                        <AvatarFallback
-                          className={cn(
-                            "text-xs font-medium",
-                            isEmployee
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-blue-100 text-blue-700"
-                          )}
-                        >
-                          {initial}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="h-9 w-9 shrink-0 mt-0.5 rounded-lg bg-violet-100 flex items-center justify-center">
+                        <Hash className="h-4 w-4 text-violet-700" />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <span className="flex items-center gap-1.5 min-w-0">
-                            <span
-                              className={cn(
-                                "text-sm truncate",
-                                hasUnread ? "font-semibold" : "font-medium"
-                              )}
-                            >
-                              {displayName}
+                            <span className="text-sm font-medium truncate">
+                              {channel.channel_name ?? "無題"}
                             </span>
                             <Badge
                               variant="outline"
-                              className={cn(
-                                "shrink-0 text-[10px] px-1.5 py-0 h-4 font-normal",
-                                isEmployee
-                                  ? "border-emerald-300 text-emerald-700"
-                                  : "border-blue-300 text-blue-700"
-                              )}
+                              className="shrink-0 text-[10px] px-1.5 py-0 h-4 font-normal border-violet-300 text-violet-700"
                             >
-                              {isEmployee ? "社員" : "応募者"}
+                              {channelTypeLabel}
                             </Badge>
                           </span>
-                          {thread.latest_message && (
+                          {channel.latest_message && (
                             <span className="text-[11px] text-muted-foreground shrink-0">
-                              {format(new Date(thread.latest_message.created_at), "MM/dd")}
+                              {format(new Date(channel.latest_message.created_at), "MM/dd")}
                             </span>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground truncate mt-0.5">
-                          {subtitleText}
+                          <Users className="h-3 w-3 inline mr-1" />
+                          {channel.member_count ?? 0}人
                         </p>
-                        {thread.latest_message && (
-                          <p
-                            className={cn(
-                              "text-xs truncate mt-1",
-                              hasUnread ? "text-foreground font-medium" : "text-muted-foreground"
-                            )}
-                          >
-                            {thread.latest_message.content}
+                        {channel.latest_message && (
+                          <p className="text-xs text-muted-foreground truncate mt-1">
+                            {channel.latest_message.content}
                           </p>
                         )}
                       </div>
-                      {hasUnread && (
-                        <Badge
-                          variant="default"
-                          className="h-5 min-w-5 px-1.5 text-[10px] shrink-0 mt-1"
-                        >
-                          {thread.unread_count}
-                        </Badge>
-                      )}
                     </div>
                   </button>
                 );
@@ -259,17 +442,24 @@ export default function MessagesPage() {
         {/* チャット詳細（右パネル） */}
         <div className={cn("flex-1 flex flex-col", !selectedThreadId ? "hidden md:flex" : "flex")}>
           {selectedThread ? (
-            <ThreadChat
-              key={selectedThread.id}
-              thread={selectedThread}
-              onBack={() => setSelectedThreadId(null)}
-              messageCache={messageCache}
-            />
+            <>
+              <ThreadChat
+                key={selectedThread.id}
+                thread={selectedThread}
+                onBack={() => setSelectedThreadId(null)}
+                messageCache={messageCache}
+                onShowMembers={
+                  selectedThread.is_channel ? () => setShowChannelMembers(true) : undefined
+                }
+              />
+            </>
           ) : (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <MessageSquare className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">スレッドを選択してください</p>
+                <p className="text-sm text-muted-foreground">
+                  {mainTab === "dm" ? "スレッドを選択してください" : "チャンネルを選択してください"}
+                </p>
               </div>
             </div>
           )}
@@ -287,10 +477,12 @@ function ThreadChat({
   thread,
   onBack,
   messageCache,
+  onShowMembers,
 }: {
   thread: MessageThread;
   onBack: () => void;
   messageCache: React.MutableRefObject<MessageCache>;
+  onShowMembers?: () => void;
 }) {
   const { user, profile: myProfile } = useAuth();
   const cached = messageCache.current.get(thread.id);
@@ -313,7 +505,10 @@ function ThreadChat({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const channelRef = useRef<any>(null);
 
-  const displayName = thread.participant?.display_name ?? thread.participant?.email ?? "不明";
+  const isChannel = thread.is_channel === true;
+  const displayName = isChannel
+    ? (thread.channel_name ?? "無題")
+    : (thread.participant?.display_name ?? thread.participant?.email ?? "不明");
   const isEmployee = thread.participant_type === "employee";
 
   // --- キャッシュをメッセージ・hasMore の変化に合わせて同期 ---
@@ -637,38 +832,75 @@ function ThreadChat({
         <Button variant="ghost" size="sm" className="md:hidden h-8 w-8 p-0" onClick={onBack}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <Avatar className="h-8 w-8">
-          <AvatarFallback
-            className={cn(
-              "text-xs font-medium",
-              isEmployee ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"
+        {isChannel ? (
+          <>
+            <div className="h-8 w-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+              <Hash className="h-4 w-4 text-violet-700" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium truncate">{displayName}</p>
+                <Badge
+                  variant="outline"
+                  className="shrink-0 text-[10px] px-1.5 py-0 h-4 font-normal border-violet-300 text-violet-700"
+                >
+                  {thread.channel_type === "department"
+                    ? "部署"
+                    : thread.channel_type === "project"
+                      ? "プロジェクト"
+                      : "カスタム"}
+                </Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">
+                <Users className="h-3 w-3 inline mr-1" />
+                {thread.member_count ?? 0}人のメンバー
+              </p>
+            </div>
+            {onShowMembers && (
+              <Button variant="ghost" size="sm" className="h-8 px-2" onClick={onShowMembers}>
+                <Users className="h-4 w-4 mr-1" />
+                メンバー
+              </Button>
             )}
-          >
-            {displayName[0]?.toUpperCase() ?? "?"}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-medium truncate">{displayName}</p>
-            <Badge
-              variant="outline"
-              className={cn(
-                "shrink-0 text-[10px] px-1.5 py-0 h-4 font-normal",
-                isEmployee ? "border-emerald-300 text-emerald-700" : "border-blue-300 text-blue-700"
-              )}
-            >
-              {isEmployee ? "社員" : "応募者"}
-            </Badge>
-          </div>
-          <p className="text-[11px] text-muted-foreground truncate">
-            {isEmployee
-              ? [thread.participant?.department, thread.participant?.position]
-                  .filter(Boolean)
-                  .join(" / ") ||
-                (thread.title ?? "")
-              : (thread.job_titles ?? "")}
-          </p>
-        </div>
+          </>
+        ) : (
+          <>
+            <Avatar className="h-8 w-8">
+              <AvatarFallback
+                className={cn(
+                  "text-xs font-medium",
+                  isEmployee ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"
+                )}
+              >
+                {displayName[0]?.toUpperCase() ?? "?"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium truncate">{displayName}</p>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "shrink-0 text-[10px] px-1.5 py-0 h-4 font-normal",
+                    isEmployee
+                      ? "border-emerald-300 text-emerald-700"
+                      : "border-blue-300 text-blue-700"
+                  )}
+                >
+                  {isEmployee ? "社員" : "応募者"}
+                </Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {isEmployee
+                  ? [thread.participant?.department, thread.participant?.position]
+                      .filter(Boolean)
+                      .join(" / ") ||
+                    (thread.title ?? "")
+                  : (thread.job_titles ?? "")}
+              </p>
+            </div>
+          </>
+        )}
       </div>
 
       {/* メッセージ一覧 */}
@@ -1132,6 +1364,398 @@ function NewThreadPanel({
                 </button>
               );
             })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// チャンネル作成パネル
+// ---------------------------------------------------------------------------
+
+function CreateChannelPanel({
+  onCreated,
+  onClose,
+}: {
+  onCreated: (threadId: string) => void;
+  onClose: () => void;
+}) {
+  const { organization } = useOrg();
+  const [channelName, setChannelName] = useState("");
+  const [channelType, setChannelType] = useState<"department" | "project" | "custom">("custom");
+  const [sourceId, setSourceId] = useState<string>("");
+  const [creating, setCreating] = useState(false);
+  const [generatingDept, setGeneratingDept] = useState(false);
+
+  const { data: departments = [] } = useQuery<{ id: string; name: string }[]>(
+    organization && channelType === "department" ? `departments-${organization.id}` : null,
+    async () => {
+      const { data } = await getSupabase()
+        .from("departments")
+        .select("id, name")
+        .eq("organization_id", organization!.id)
+        .order("name");
+      return (data ?? []) as { id: string; name: string }[];
+    }
+  );
+
+  const { data: projects = [] } = useQuery<{ id: string; name: string }[]>(
+    organization && channelType === "project" ? `projects-${organization.id}` : null,
+    async () => {
+      const { data } = await getSupabase()
+        .from("projects")
+        .select("id, name")
+        .eq("organization_id", organization!.id)
+        .eq("status", "active")
+        .order("name");
+      return (data ?? []) as { id: string; name: string }[];
+    }
+  );
+
+  const handleCreate = async () => {
+    if (!organization || !channelName.trim() || creating) return;
+    setCreating(true);
+
+    const { data: newThread } = await getSupabase()
+      .from("message_threads")
+      .insert({
+        organization_id: organization.id,
+        is_channel: true,
+        channel_name: channelName.trim(),
+        channel_type: channelType,
+        channel_source_id: sourceId || null,
+        title: channelName.trim() + " チャンネル",
+      })
+      .select("id")
+      .single();
+
+    if (newThread && channelType === "department" && sourceId) {
+      const { data: deptMembers } = await getSupabase()
+        .from("employee_departments")
+        .select("user_id")
+        .eq("department_id", sourceId);
+
+      if (deptMembers && deptMembers.length > 0) {
+        await getSupabase()
+          .from("channel_members")
+          .insert(
+            deptMembers.map((m) => ({
+              thread_id: newThread.id,
+              user_id: m.user_id,
+            }))
+          );
+      }
+    }
+
+    setCreating(false);
+    if (newThread) onCreated(newThread.id);
+  };
+
+  const handleGenerateDeptChannels = async () => {
+    if (!organization || generatingDept) return;
+    setGeneratingDept(true);
+    await getSupabase().rpc("create_department_channels", {
+      p_organization_id: organization.id,
+    });
+    setGeneratingDept(false);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <h2 className="text-sm font-semibold">チャンネル作成</h2>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="p-4 space-y-4">
+          <div>
+            <label className="text-sm font-medium">チャンネル名</label>
+            <Input
+              placeholder="例: 営業部、プロジェクトA"
+              value={channelName}
+              onChange={(e) => setChannelName(e.target.value)}
+              className="mt-1"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">種別</label>
+            <Select
+              value={channelType}
+              onValueChange={(v) => {
+                setChannelType(v as "department" | "project" | "custom");
+                setSourceId("");
+                if (v === "department" && departments.length > 0) {
+                  setChannelName(departments[0].name);
+                } else if (v === "project" && projects.length > 0) {
+                  setChannelName(projects[0].name);
+                }
+              }}
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="department">部署</SelectItem>
+                <SelectItem value="project">プロジェクト</SelectItem>
+                <SelectItem value="custom">カスタム</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {channelType === "department" && departments.length > 0 && (
+            <div>
+              <label className="text-sm font-medium">部署</label>
+              <Select
+                value={sourceId}
+                onValueChange={(v) => {
+                  if (!v) return;
+                  setSourceId(v);
+                  const dept = departments.find((d) => d.id === v);
+                  if (dept) setChannelName(dept.name);
+                }}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="部署を選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {channelType === "project" && projects.length > 0 && (
+            <div>
+              <label className="text-sm font-medium">プロジェクト</label>
+              <Select
+                value={sourceId}
+                onValueChange={(v) => {
+                  if (!v) return;
+                  setSourceId(v);
+                  const proj = projects.find((p) => p.id === v);
+                  if (proj) setChannelName(proj.name);
+                }}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="プロジェクトを選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between px-4 py-3 border-t">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleGenerateDeptChannels}
+            disabled={generatingDept}
+          >
+            {generatingDept && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+            全部署チャンネルを一括作成
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              キャンセル
+            </Button>
+            <Button size="sm" onClick={handleCreate} disabled={!channelName.trim() || creating}>
+              {creating && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+              作成
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// チャンネルメンバー管理パネル
+// ---------------------------------------------------------------------------
+
+function ChannelMembersPanel({
+  thread,
+  onClose,
+  onMembersChanged,
+}: {
+  thread: MessageThread;
+  onClose: () => void;
+  onMembersChanged: () => void;
+}) {
+  const { organization } = useOrg();
+  const [search, setSearch] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [showAddMember, setShowAddMember] = useState(false);
+
+  const {
+    data: members = [],
+    isLoading,
+    mutate: mutateMembers,
+  } = useQuery<ChannelMember[]>(`channel-members-${thread.id}`, async () => {
+    const { data } = await getSupabase().rpc("get_channel_members", {
+      p_thread_id: thread.id,
+    });
+    return (data ?? []) as ChannelMember[];
+  });
+
+  const { data: orgUsers = [] } = useQuery<Profile[]>(
+    showAddMember && organization ? `org-users-for-channel-${organization.id}` : null,
+    async () => {
+      const { data } = await getSupabase()
+        .from("user_organizations")
+        .select("user_id, profiles:user_id(id, display_name, email, avatar_url)")
+        .eq("organization_id", organization!.id);
+      return (
+        (data ?? []).map((u) => (u as unknown as { profiles: Profile }).profiles) as Profile[]
+      ).filter(Boolean);
+    }
+  );
+
+  const memberIds = new Set(members.map((m) => m.user_id));
+  const availableUsers = orgUsers.filter((u) => !memberIds.has(u.id));
+
+  const filteredAvailable = availableUsers.filter((u) => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return (
+      (u.display_name?.toLowerCase() ?? "").includes(s) ||
+      (u.email?.toLowerCase() ?? "").includes(s)
+    );
+  });
+
+  const handleAddMember = async (userId: string) => {
+    if (adding) return;
+    setAdding(true);
+    await getSupabase().from("channel_members").insert({ thread_id: thread.id, user_id: userId });
+    await mutateMembers();
+    onMembersChanged();
+    setAdding(false);
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    if (!window.confirm("このメンバーをチャンネルから削除しますか？")) return;
+    await getSupabase()
+      .from("channel_members")
+      .delete()
+      .eq("thread_id", thread.id)
+      .eq("user_id", userId);
+    await mutateMembers();
+    onMembersChanged();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <h2 className="text-sm font-semibold">
+            {thread.channel_name} - メンバー管理 ({members.length}人)
+          </h2>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-2 px-4 py-2 border-b">
+          <Button
+            variant={showAddMember ? "default" : "outline"}
+            size="sm"
+            onClick={() => {
+              setShowAddMember(!showAddMember);
+              setSearch("");
+            }}
+          >
+            <UserPlus className="h-3.5 w-3.5 mr-1" />
+            メンバー追加
+          </Button>
+        </div>
+
+        {showAddMember && (
+          <div className="border-b">
+            <div className="flex items-center h-10 px-3 border-b bg-gray-50">
+              <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <input
+                placeholder="名前・メールで検索"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground ml-2"
+                autoFocus
+              />
+            </div>
+            <div className="max-h-40 overflow-y-auto">
+              {filteredAvailable.length === 0 ? (
+                <div className="p-3 text-center text-xs text-muted-foreground">
+                  追加可能なメンバーがいません
+                </div>
+              ) : (
+                filteredAvailable.map((u) => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() => handleAddMember(u.id)}
+                    disabled={adding}
+                    className="w-full text-left px-4 py-2 hover:bg-accent/50 flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-[10px] bg-gray-100">
+                        {(u.display_name ?? u.email ?? "?")[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm truncate">{u.display_name ?? u.email}</span>
+                    <UserPlus className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0" />
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="max-h-80 overflow-y-auto">
+          {isLoading ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">読み込み中...</div>
+          ) : (
+            members.map((member) => (
+              <div
+                key={member.id}
+                className="flex items-center gap-3 px-4 py-2.5 border-b last:border-0"
+              >
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback className="text-[10px] bg-emerald-100 text-emerald-700">
+                    {(member.display_name ?? member.email ?? "?")[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm truncate">{member.display_name ?? member.email}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{member.email}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveMember(member.user_id)}
+                  className="h-7 w-7 flex items-center justify-center rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive shrink-0"
+                  title="削除"
+                >
+                  <UserMinus className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))
           )}
         </div>
       </div>
