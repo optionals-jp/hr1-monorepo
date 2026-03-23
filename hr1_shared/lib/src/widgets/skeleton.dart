@@ -27,10 +27,10 @@ class SkeletonContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Shimmer.fromColors(
-      baseColor: isDark ? const Color(0xFF3D3D3D) : const Color(0xFFE8E8E8),
+      baseColor: isDark ? AppColors.darkSurfaceTertiary : AppColors.lightBorder,
       highlightColor: isDark
-          ? const Color(0xFF525252)
-          : const Color(0xFFF5F5F5),
+          ? AppColors.darkDivider
+          : AppColors.lightSurfaceSecondary,
       child: child,
     );
   }

@@ -31,12 +31,12 @@ class WorkflowDetailScreen extends ConsumerWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.brandPrimary.withValues(alpha: 0.1),
+                  color: AppColors.brand.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppSpacing.sm),
                 ),
                 child: Icon(
                   _typeIcon(request.requestType),
-                  color: AppColors.brandPrimary,
+                  color: AppColors.brand,
                   size: 20,
                 ),
               ),
@@ -247,7 +247,7 @@ class _StatusBadge extends StatelessWidget {
       case WorkflowRequestStatus.rejected:
         return AppColors.error;
       case WorkflowRequestStatus.cancelled:
-        return Colors.grey;
+        return AppColors.lightTextTertiary;
     }
   }
 }

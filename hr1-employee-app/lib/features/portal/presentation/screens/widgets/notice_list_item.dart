@@ -36,7 +36,7 @@ class NoticeListItem extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: isNew
-                    ? AppColors.brandPrimary.withValues(alpha: 0.1)
+                    ? AppColors.brand.withValues(alpha: 0.1)
                     : theme.colorScheme.onSurface.withValues(alpha: 0.06),
                 shape: BoxShape.circle,
               ),
@@ -44,7 +44,7 @@ class NoticeListItem extends StatelessWidget {
                 Icons.campaign_outlined,
                 size: 20,
                 color: isNew
-                    ? AppColors.brandPrimary
+                    ? AppColors.brand
                     : AppColors.textSecondary(theme.brightness),
               ),
             ),
@@ -94,7 +94,7 @@ class NoticeListItem extends StatelessWidget {
                 width: 8,
                 height: 8,
                 decoration: const BoxDecoration(
-                  color: AppColors.brandPrimary,
+                  color: AppColors.brand,
                   shape: BoxShape.circle,
                 ),
               ),

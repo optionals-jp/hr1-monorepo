@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/result/result.dart';
-import '../../../../core/router/app_router.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/core/result/result.dart';
+import 'package:hr1_applicant_app/core/router/app_router.dart';
 import 'package:hr1_shared/hr1_shared.dart' show Validators;
-import '../../../../shared/widgets/widgets.dart';
-import '../providers/auth_providers.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
 
 /// ログイン画面（OTP認証）
 class LoginScreen extends HookConsumerWidget {
@@ -81,7 +81,6 @@ class LoginScreen extends HookConsumerWidget {
     }
 
     return CommonScaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -100,7 +99,7 @@ class LoginScreen extends HookConsumerWidget {
                       width: 64,
                       height: 64,
                       decoration: BoxDecoration(
-                        color: AppColors.primary,
+                        color: AppColors.brandSecondary,
                         borderRadius: AppRadius.radius160,
                       ),
                       child: Center(
@@ -130,7 +129,7 @@ class LoginScreen extends HookConsumerWidget {
                           ? '${emailController.text.trim()} に送信された\n6桁のコードを入力してください'
                           : 'メールアドレスを入力してください',
                       style: AppTextStyles.caption1.copyWith(
-                        color: AppColors.textSecondaryOf(theme.brightness),
+                        color: AppColors.textSecondary(theme.brightness),
                       ),
                       textAlign: TextAlign.center,
                     ),

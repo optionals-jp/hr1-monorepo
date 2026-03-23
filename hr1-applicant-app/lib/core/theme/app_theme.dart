@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hr1_shared/hr1_shared.dart'
-    show AppRadius, AppSpacing, AppStroke;
-import '../constants/app_colors.dart';
+    show AppColors, AppRadius, AppSpacing, AppStroke;
 
 /// HR1 応募者アプリテーマ定義
 class AppTheme {
@@ -12,13 +11,13 @@ class AppTheme {
   /// ライトモードテーマ
   static ThemeData get light => _build(
     brightness: Brightness.light,
-    background: AppColors.background,
-    surface: AppColors.surface,
-    surfaceSecondary: AppColors.surfaceSecondary,
-    textPrimary: AppColors.textPrimary,
-    textSecondary: AppColors.textSecondary,
-    border: AppColors.border,
-    divider: AppColors.divider,
+    background: AppColors.lightBackground,
+    surface: AppColors.lightSurface,
+    surfaceSecondary: AppColors.lightSurfaceSecondary,
+    textPrimary: AppColors.lightTextPrimary,
+    textSecondary: AppColors.lightTextSecondary,
+    border: AppColors.lightBorder,
+    divider: AppColors.lightDivider,
   );
 
   /// ダークモードテーマ
@@ -51,11 +50,11 @@ class AppTheme {
 
       // カラースキーム
       colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primary,
+        seedColor: AppColors.brandSecondary,
         brightness: brightness,
-        primary: isDark ? AppColors.primaryLight : AppColors.primary,
-        secondary: AppColors.primaryLight,
-        tertiary: AppColors.accent,
+        primary: isDark ? AppColors.brand : AppColors.brandSecondary,
+        secondary: AppColors.brand,
+        tertiary: AppColors.brandLight,
         error: AppColors.error,
         surface: surface,
         onPrimary: Colors.white,
@@ -97,7 +96,7 @@ class AppTheme {
       // ElevatedButton テーマ
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryLight,
+          backgroundColor: AppColors.brand,
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 48),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.radius80),
@@ -112,10 +111,10 @@ class AppTheme {
       // OutlinedButton テーマ
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
+          foregroundColor: isDark ? AppColors.brand : AppColors.brandSecondary,
           minimumSize: const Size(double.infinity, 48),
           side: BorderSide(
-            color: (isDark ? AppColors.primaryLight : AppColors.primary)
+            color: (isDark ? AppColors.brand : AppColors.brandSecondary)
                 .withValues(alpha: 0.3),
           ),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.radius80),
@@ -129,7 +128,7 @@ class AppTheme {
       // TextButton テーマ
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primaryLight,
+          foregroundColor: AppColors.brand,
           textStyle: GoogleFonts.notoSansJp(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -155,10 +154,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.radius80,
-          borderSide: const BorderSide(
-            color: AppColors.primaryLight,
-            width: 1.5,
-          ),
+          borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: AppRadius.radius80,
@@ -194,7 +190,7 @@ class AppTheme {
       // BottomNavigationBar テーマ
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: surface,
-        selectedItemColor: isDark ? AppColors.primaryLight : AppColors.primary,
+        selectedItemColor: isDark ? AppColors.brand : AppColors.brandSecondary,
         unselectedItemColor: textSecondary,
         type: BottomNavigationBarType.fixed,
         elevation: 0,

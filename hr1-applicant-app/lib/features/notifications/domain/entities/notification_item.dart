@@ -13,7 +13,7 @@ enum NotificationType {
     'task_assigned',
     'タスク割り当て',
     Icons.task_alt_rounded,
-    AppColors.primaryLight,
+    AppColors.brand,
   ),
   recruitmentUpdate(
     'recruitment_update',
@@ -31,9 +31,9 @@ enum NotificationType {
     'announcement',
     'お知らせ',
     Icons.campaign_outlined,
-    AppColors.primaryLight,
+    AppColors.brand,
   ),
-  general('general', 'その他', Icons.notifications_outlined, AppColors.accent);
+  general('general', 'その他', Icons.notifications_outlined, AppColors.brandLight);
 
   const NotificationType(this.value, this.label, this.icon, this.color);
   final String value;

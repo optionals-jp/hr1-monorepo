@@ -104,14 +104,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
                               color: isCurrent
-                                  ? AppColors.brandPrimary.withValues(
-                                      alpha: 0.1,
-                                    )
+                                  ? AppColors.brand.withValues(alpha: 0.1)
                                   : null,
                               borderRadius: AppRadius.radius80,
                               border: isCurrent
                                   ? Border.all(
-                                      color: AppColors.brandPrimary,
+                                      color: AppColors.brand,
                                       width: 1.5,
                                     )
                                   : null,
@@ -120,7 +118,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               '$month月',
                               style: AppTextStyles.body2.copyWith(
                                 color: isCurrent
-                                    ? AppColors.brandPrimary
+                                    ? AppColors.brand
                                     : theme.colorScheme.onSurface,
                                 fontWeight: isCurrent ? FontWeight.w600 : null,
                               ),
@@ -218,7 +216,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             child: Text(
               '今日',
               style: AppTextStyles.caption2.copyWith(
-                color: AppColors.brandPrimary,
+                color: AppColors.brand,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -328,7 +326,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       // FAB: イベント作成
       floatingActionButton: FloatingActionButton(
         onPressed: () => _navigateToEventForm(),
-        backgroundColor: AppColors.brandPrimary,
+        backgroundColor: AppColors.brand,
         foregroundColor: Colors.white,
         elevation: 2,
         child: const Icon(Icons.add_rounded),
@@ -347,15 +345,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       value: mode,
       child: Row(
         children: [
-          iconBuilder(
-            size: 20,
-            color: isSelected ? AppColors.brandPrimary : null,
-          ),
+          iconBuilder(size: 20, color: isSelected ? AppColors.brand : null),
           const SizedBox(width: 12),
           Text(
             label,
             style: AppTextStyles.caption1.copyWith(
-              color: isSelected ? AppColors.brandPrimary : null,
+              color: isSelected ? AppColors.brand : null,
               fontWeight: isSelected ? FontWeight.w600 : null,
             ),
           ),
@@ -473,7 +468,7 @@ class _DateHeader extends StatelessWidget {
         label,
         style: AppTextStyles.caption2.copyWith(
           color: isToday
-              ? AppColors.brandPrimary
+              ? AppColors.brand
               : AppColors.textSecondary(theme.brightness),
           fontWeight: FontWeight.w600,
         ),
@@ -542,7 +537,7 @@ class _ThreeDayViewWrapper extends ConsumerWidget {
                     style: AppTextStyles.caption1.copyWith(
                       fontWeight: FontWeight.w600,
                       color: _isToday(date)
-                          ? AppColors.brandPrimary
+                          ? AppColors.brand
                           : theme.colorScheme.onSurface,
                     ),
                   ),
@@ -740,7 +735,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                 : Text(
                     '保存',
                     style: AppTextStyles.caption1.copyWith(
-                      color: AppColors.brandPrimary,
+                      color: AppColors.brand,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -779,7 +774,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
               Switch.adaptive(
                 value: _isAllDay,
                 onChanged: (v) => setState(() => _isAllDay = v),
-                activeTrackColor: AppColors.brandPrimary,
+                activeTrackColor: AppColors.brand,
               ),
             ],
           ),
@@ -886,7 +881,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
     try {
       return Color(int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
     } catch (_) {
-      return AppColors.brandPrimary;
+      return AppColors.brand;
     }
   }
 }

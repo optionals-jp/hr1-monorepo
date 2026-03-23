@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/app_user.dart';
-import '../../domain/entities/organization.dart';
-import '../../domain/entities/user_role.dart';
+import 'package:hr1_applicant_app/features/auth/domain/entities/app_user.dart';
+import 'package:hr1_applicant_app/features/auth/domain/entities/organization.dart';
+import 'package:hr1_applicant_app/features/auth/domain/entities/user_role.dart';
 
 /// Supabase を使った認証データソース
 class AuthRemoteDatasource {

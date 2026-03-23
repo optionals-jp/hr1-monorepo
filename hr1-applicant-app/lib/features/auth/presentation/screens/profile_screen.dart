@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../controllers/auth_controller.dart';
-import '../providers/auth_providers.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/core/router/app_router.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
 
 /// マイページ画面 — Teams / Outlook 設定画面スタイル
 class ProfileScreen extends ConsumerWidget {
@@ -24,7 +24,7 @@ class ProfileScreen extends ConsumerWidget {
             MenuRow(
               leading: UserAvatar(
                 initial: user?.displayName?.substring(0, 1) ?? '?',
-                color: AppColors.primaryLight,
+                color: AppColors.brand,
                 size: 48,
                 imageUrl: user?.avatarUrl,
               ),

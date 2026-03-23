@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
 import 'package:hr1_employee_app/core/router/app_router.dart';
 import 'package:hr1_employee_app/features/employees/domain/entities/employee_contact.dart';
+import 'package:hr1_employee_app/features/employees/presentation/providers/employee_providers.dart';
 import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 
 /// 全画面検索画面 — Teams / Outlook モバイルスタイル
-class SearchScreen extends StatefulWidget {
+class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
   /// GoRouter 経由で検索画面を表示
@@ -16,10 +17,10 @@ class SearchScreen extends StatefulWidget {
   }
 
   @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  ConsumerState<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   final _recentSearches = <String>['有給休暇', '勤怠修正', '社内規定'];
@@ -79,7 +80,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       child: Text(
                         'キャンセル',
                         style: AppTextStyles.caption1.copyWith(
-                          color: AppColors.brandPrimary,
+                          color: AppColors.brand,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -92,7 +93,7 @@ class _SearchScreenState extends State<SearchScreen> {
             // コンテンツ
             Expanded(
               child: _isSearching
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(child: LoadingIndicator())
                   : _searchResults.isNotEmpty
                   ? _buildSearchResults(theme)
                   : ListView(
@@ -387,60 +388,12 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  static const _avatarColors = [
-    Color(0xFF0F6CBD),
-    Color(0xFF0E7A0B),
-    Color(0xFFBC4B09),
-    Color(0xFF115EA3),
-    Color(0xFFB10E1C),
-  ];
-
   void _onSearch(String query) async {
     if (query.trim().isEmpty) return;
     setState(() => _isSearching = true);
     try {
-      final client = Supabase.instance.client;
-      final userId = client.auth.currentUser?.id;
-      if (userId == null) return;
-      final orgData = await client
-          .from('user_organizations')
-          .select('organization_id')
-          .eq('user_id', userId)
-          .limit(1)
-          .single();
-      final orgId = orgData['organization_id'] as String;
-
-      final results = await client
-          .from('user_organizations')
-          .select(
-            'user_id, profiles(id, display_name, email, department, position, avatar_url)',
-          )
-          .eq('organization_id', orgId)
-          .or(
-            'profiles.display_name.ilike.%$query%,profiles.department.ilike.%$query%,profiles.position.ilike.%$query%',
-          );
-
-      final contacts = (results as List)
-          .where((r) => r['profiles'] != null)
-          .toList()
-          .asMap()
-          .entries
-          .map((entry) {
-            final p = entry.value['profiles'];
-            final name =
-                p['display_name'] as String? ?? p['email'] as String? ?? '';
-            return EmployeeContact(
-              id: p['id'] as String,
-              name: name,
-              initial: name.isNotEmpty ? name[0] : '?',
-              position: p['position'] as String? ?? '',
-              department: p['department'] as String? ?? '',
-              color: _avatarColors[entry.key % _avatarColors.length],
-              email: p['email'] as String?,
-              avatarUrl: p['avatar_url'] as String?,
-            );
-          })
-          .toList();
+      final repo = ref.read(employeeRepositoryProvider);
+      final contacts = await repo.searchEmployees(query);
 
       setState(() {
         _searchResults = contacts;

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/domain/entities/page_section.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../../applications/domain/entities/job.dart';
-import '../../../applications/presentation/providers/applications_providers.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/core/router/app_router.dart';
+import 'package:hr1_applicant_app/shared/domain/entities/page_section.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/job.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/providers/applications_providers.dart';
 
 /// セクションタイプに応じたウィジェットを返す
 class SectionRenderer extends StatelessWidget {
@@ -61,15 +61,13 @@ class _MarkdownSection extends StatelessWidget {
         p: AppTextStyles.body2.copyWith(height: 1.7),
         listBullet: AppTextStyles.body2,
         blockquoteDecoration: BoxDecoration(
-          border: Border(
-            left: BorderSide(color: AppColors.primaryLight, width: 3),
-          ),
+          border: Border(left: BorderSide(color: AppColors.brand, width: 3)),
         ),
         blockquotePadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: 4,
         ),
-        blockquote: AppTextStyles.body2.copyWith(color: AppColors.primaryLight),
+        blockquote: AppTextStyles.body2.copyWith(color: AppColors.brand),
         strong: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w700),
         horizontalRuleDecoration: BoxDecoration(
           border: Border(
@@ -130,8 +128,8 @@ class _JobListSection extends ConsumerWidget {
               child: OutlinedButton(
                 onPressed: () => context.push(AppRoutes.jobs),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primaryLight,
-                  side: const BorderSide(color: AppColors.primaryLight),
+                  foregroundColor: AppColors.brand,
+                  side: const BorderSide(color: AppColors.brand),
                   shape: RoundedRectangleBorder(
                     borderRadius: AppRadius.radius80,
                   ),
@@ -176,7 +174,7 @@ class _JobCard extends StatelessWidget {
             Text(
               job.salaryRange!,
               style: AppTextStyles.body2.copyWith(
-                color: AppColors.primaryLight,
+                color: AppColors.brand,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -237,9 +235,9 @@ class _ValueListSection extends StatelessWidget {
   final List<Map<String, dynamic>> items;
 
   static const _accentColors = [
-    AppColors.primaryLight,
+    AppColors.brand,
     AppColors.success,
-    AppColors.accent,
+    AppColors.brandLight,
     AppColors.warning,
   ];
 
@@ -539,7 +537,7 @@ class _FaqTileState extends State<_FaqTile> {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: AppColors.primaryLight.withValues(alpha: 0.1),
+                      color: AppColors.brand.withValues(alpha: 0.1),
                       borderRadius: AppRadius.radius40,
                     ),
                     child: Center(
@@ -547,7 +545,7 @@ class _FaqTileState extends State<_FaqTile> {
                         'Q',
                         style: AppTextStyles.caption1.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primaryLight,
+                          color: AppColors.brand,
                         ),
                       ),
                     ),
@@ -615,13 +613,13 @@ class _Tag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.primaryLight.withValues(alpha: 0.08),
+        color: AppColors.brand.withValues(alpha: 0.08),
         borderRadius: AppRadius.radius40,
       ),
       child: Text(
         text,
         style: AppTextStyles.caption2.copyWith(
-          color: AppColors.primaryLight,
+          color: AppColors.brand,
           fontWeight: FontWeight.w600,
         ),
       ),

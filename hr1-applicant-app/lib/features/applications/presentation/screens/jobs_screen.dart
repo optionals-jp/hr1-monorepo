@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../../auth/presentation/providers/organization_context_provider.dart';
-import '../../domain/entities/job.dart';
-import '../providers/applications_providers.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/core/router/app_router.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/organization_context_provider.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/job.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/providers/applications_providers.dart';
 
 /// 求人一覧画面
 class JobsScreen extends ConsumerWidget {
@@ -64,7 +64,7 @@ class _JobCard extends StatelessWidget {
           Text(
             job.description,
             style: AppTextStyles.caption1.copyWith(
-              color: AppColors.textSecondaryOf(theme.brightness),
+              color: AppColors.textSecondary(theme.brightness),
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -84,7 +84,7 @@ class _JobCard extends StatelessWidget {
             Text(
               job.salaryRange!,
               style: AppTextStyles.body2.copyWith(
-                color: AppColors.primaryLight,
+                color: AppColors.brand,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -96,16 +96,12 @@ class _JobCard extends StatelessWidget {
                 child: Text(
                   '詳細を見る',
                   style: AppTextStyles.body2.copyWith(
-                    color: AppColors.primaryLight,
+                    color: AppColors.brand,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 14,
-                color: AppColors.primaryLight,
-              ),
+              Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.brand),
             ],
           ),
         ],
@@ -133,7 +129,7 @@ class _Tag extends StatelessWidget {
       child: Text(
         text,
         style: AppTextStyles.caption2.copyWith(
-          color: AppColors.textSecondaryOf(theme.brightness),
+          color: AppColors.textSecondary(theme.brightness),
         ),
       ),
     );

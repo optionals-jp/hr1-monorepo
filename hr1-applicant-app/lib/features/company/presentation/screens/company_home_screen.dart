@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../../auth/domain/entities/organization.dart';
-import '../../../auth/presentation/providers/organization_context_provider.dart';
-import '../../../applications/presentation/providers/applications_providers.dart';
-import '../../domain/entities/company_page_config.dart';
-import '../providers/company_page_providers.dart';
-import '../widgets/section_renderers.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/core/router/app_router.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/auth/domain/entities/organization.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/organization_context_provider.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/providers/applications_providers.dart';
+import 'package:hr1_applicant_app/features/company/domain/entities/company_page_config.dart';
+import 'package:hr1_applicant_app/features/company/presentation/providers/company_page_providers.dart';
+import 'package:hr1_applicant_app/features/company/presentation/widgets/section_renderers.dart';
 
 /// 企業プロフィール画面（ホームタブ）
 class CompanyHomeScreen extends ConsumerWidget {
@@ -56,7 +56,7 @@ class _NoConfigState extends StatelessWidget {
             child: Text(
               'ページが設定されていません',
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.lightTextSecondary,
               ),
             ),
           ),
@@ -183,9 +183,9 @@ class _ProfileHeader extends ConsumerWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.primary,
-                    AppColors.primaryLight,
-                    AppColors.accent.withValues(alpha: 0.7),
+                    AppColors.brandSecondary,
+                    AppColors.brand,
+                    AppColors.brandLight.withValues(alpha: 0.7),
                   ],
                 ),
               ),
@@ -234,14 +234,14 @@ class _ProfileHeader extends ConsumerWidget {
                     Text(
                       org.industry!,
                       style: AppTextStyles.caption1.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.lightTextSecondary,
                       ),
                     ),
                     if (org.location != null)
                       Text(
                         ' · ',
                         style: AppTextStyles.caption1.copyWith(
-                          color: AppColors.textSecondary,
+                          color: AppColors.lightTextSecondary,
                         ),
                       ),
                   ],
@@ -249,7 +249,7 @@ class _ProfileHeader extends ConsumerWidget {
                     Text(
                       org.location!,
                       style: AppTextStyles.caption1.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.lightTextSecondary,
                       ),
                     ),
                 ],
@@ -338,8 +338,8 @@ class _StatPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: highlighted
-            ? AppColors.primaryLight.withValues(alpha: 0.08)
-            : AppColors.surfaceTertiary,
+            ? AppColors.brand.withValues(alpha: 0.08)
+            : AppColors.lightSurfaceTertiary,
         borderRadius: AppRadius.radius80,
       ),
       child: Column(
@@ -348,14 +348,14 @@ class _StatPill extends StatelessWidget {
             value,
             style: AppTextStyles.body2.copyWith(
               fontWeight: FontWeight.w700,
-              color: highlighted ? AppColors.primaryLight : null,
+              color: highlighted ? AppColors.brand : null,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
             style: AppTextStyles.caption2.copyWith(
-              color: AppColors.textSecondary,
+              color: AppColors.lightTextSecondary,
             ),
           ),
         ],
@@ -387,13 +387,13 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.dividerOf(theme.brightness)),
+          border: Border.all(color: AppColors.divider(theme.brightness)),
           borderRadius: AppRadius.radius80,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 18, color: AppColors.textSecondary),
+            Icon(icon, size: 18, color: AppColors.lightTextSecondary),
             const SizedBox(width: 6),
             Text(
               label,
@@ -438,7 +438,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
         tabAlignment: TabAlignment.start,
         controller: tabController,
         labelColor: theme.colorScheme.primary,
-        unselectedLabelColor: AppColors.textSecondary,
+        unselectedLabelColor: AppColors.lightTextSecondary,
         labelStyle: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600),
         unselectedLabelStyle: AppTextStyles.body2,
         indicatorColor: theme.colorScheme.primary,

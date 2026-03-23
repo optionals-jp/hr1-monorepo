@@ -103,7 +103,7 @@ class _SelectionFlowCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: AppRadius.radius120,
-        border: Border.all(color: AppColors.dividerOf(theme.brightness)),
+        border: Border.all(color: AppColors.divider(theme.brightness)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,13 +124,13 @@ class _SelectionFlowCard extends StatelessWidget {
                       height: 28,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.primaryLight.withValues(alpha: 0.15),
+                        color: AppColors.brand.withValues(alpha: 0.15),
                       ),
                       child: Center(
                         child: Text(
                           '${index + 1}',
                           style: AppTextStyles.caption2.copyWith(
-                            color: AppColors.primaryLight,
+                            color: AppColors.brand,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -140,7 +140,7 @@ class _SelectionFlowCard extends StatelessWidget {
                       Container(
                         width: 2,
                         height: 20,
-                        color: AppColors.dividerOf(theme.brightness),
+                        color: AppColors.divider(theme.brightness),
                       ),
                   ],
                 ),
@@ -159,7 +159,7 @@ class _SelectionFlowCard extends StatelessWidget {
                               vertical: 1,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.textTertiaryOf(
+                              color: AppColors.textTertiary(
                                 theme.brightness,
                               ).withValues(alpha: 0.1),
                               borderRadius: AppRadius.radius40,
@@ -167,7 +167,7 @@ class _SelectionFlowCard extends StatelessWidget {
                             child: Text(
                               '外部',
                               style: AppTextStyles.caption2.copyWith(
-                                color: AppColors.textSecondaryOf(
+                                color: AppColors.textSecondary(
                                   theme.brightness,
                                 ),
                               ),
@@ -206,7 +206,7 @@ class _JobSliverAppBar extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.primary, AppColors.primaryLight],
+              colors: [AppColors.brandSecondary, AppColors.brand],
             ),
           ),
           child: SafeArea(

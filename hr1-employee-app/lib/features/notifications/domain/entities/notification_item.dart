@@ -13,7 +13,7 @@ enum NotificationType {
     'task_assigned',
     'タスク割り当て',
     Icons.task_alt_rounded,
-    AppColors.brandPrimary,
+    AppColors.brand,
   ),
   recruitmentUpdate(
     'recruitment_update',
@@ -25,7 +25,7 @@ enum NotificationType {
     'attendance_reminder',
     '勤怠リマインド',
     Icons.schedule_rounded,
-    AppColors.brandPrimary,
+    AppColors.brand,
   ),
   messageReceived(
     'message_received',
@@ -37,7 +37,7 @@ enum NotificationType {
     'announcement',
     'お知らせ',
     Icons.campaign_outlined,
-    AppColors.brandPrimary,
+    AppColors.brand,
   ),
   general('general', 'その他', Icons.notifications_outlined, AppColors.brandLight);
 

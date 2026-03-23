@@ -82,7 +82,7 @@ class _Body extends StatelessWidget {
           _SectionHeader(
             title: '進行中',
             count: inProgress.length,
-            color: AppColors.primaryLight,
+            color: AppColors.brand,
           ),
           ...inProgress.map((a) => _ApplicationCard(application: a)),
           const SizedBox(height: AppSpacing.xl),
@@ -93,7 +93,7 @@ class _Body extends StatelessWidget {
           _SectionHeader(
             title: '完了',
             count: completed.length,
-            color: AppColors.textSecondary,
+            color: AppColors.lightTextSecondary,
           ),
           ...completed.map((a) => _ApplicationCard(application: a)),
           const SizedBox(height: AppSpacing.xl),
@@ -104,7 +104,7 @@ class _Body extends StatelessWidget {
           _SectionHeader(
             title: '募集中の求人',
             count: availableJobs.length,
-            color: AppColors.accent,
+            color: AppColors.brandLight,
           ),
           ...availableJobs.map((j) => _JobCard(job: j)),
         ],
@@ -137,13 +137,13 @@ class _EmptyState extends StatelessWidget {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.primaryLight.withValues(alpha: 0.08),
+              color: AppColors.brand.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.description_outlined,
               size: 36,
-              color: AppColors.primaryLight.withValues(alpha: 0.5),
+              color: AppColors.brand.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 20),
@@ -151,7 +151,9 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '$organizationNameの求人を探して\n応募してみましょう',
-            style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.body2.copyWith(
+              color: AppColors.lightTextSecondary,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -269,7 +271,7 @@ class _ApplicationCard extends StatelessWidget {
                       Text(
                         job!.department!,
                         style: AppTextStyles.caption1.copyWith(
-                          color: AppColors.textSecondary,
+                          color: AppColors.lightTextSecondary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -297,13 +299,13 @@ class _ApplicationCard extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 4,
-                      backgroundColor: AppColors.dividerOf(
+                      backgroundColor: AppColors.divider(
                         theme.brightness,
                       ).withValues(alpha: 0.5),
                       valueColor: AlwaysStoppedAnimation<Color>(
                         application.requiresAction
                             ? AppColors.warning
-                            : AppColors.primaryLight,
+                            : AppColors.brand,
                       ),
                     ),
                   ),
@@ -312,7 +314,7 @@ class _ApplicationCard extends StatelessWidget {
                 Text(
                   '$completedSteps/$totalSteps',
                   style: AppTextStyles.caption2.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.lightTextSecondary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -326,13 +328,13 @@ class _ApplicationCard extends StatelessWidget {
               Icon(
                 Icons.schedule_rounded,
                 size: 14,
-                color: AppColors.textSecondary,
+                color: AppColors.lightTextSecondary,
               ),
               const SizedBox(width: 4),
               Text(
                 DateFormatter.toDateSlash(application.appliedAt),
                 style: AppTextStyles.caption2.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.lightTextSecondary,
                 ),
               ),
               const Spacer(),
@@ -371,7 +373,7 @@ class _ApplicationCard extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: 20,
-                color: AppColors.textSecondary,
+                color: AppColors.lightTextSecondary,
               ),
             ],
           ),
@@ -421,7 +423,7 @@ class _JobCard extends StatelessWidget {
                     if (job.employmentType != null) job.employmentType!,
                   ].join(' · '),
                   style: AppTextStyles.caption1.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.lightTextSecondary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -433,7 +435,7 @@ class _JobCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: AppColors.primaryLight,
+              color: AppColors.brand,
               borderRadius: AppRadius.radius120,
             ),
             child: Text(
@@ -458,8 +460,8 @@ Color _statusColor(Application application, BuildContext context) {
   return switch (application.status) {
     ApplicationStatus.offered => AppColors.success,
     ApplicationStatus.rejected => AppColors.error,
-    ApplicationStatus.withdrawn => AppColors.textSecondary,
+    ApplicationStatus.withdrawn => AppColors.lightTextSecondary,
     ApplicationStatus.active =>
-      application.requiresAction ? AppColors.warning : AppColors.primaryLight,
+      application.requiresAction ? AppColors.warning : AppColors.brand,
   };
 }

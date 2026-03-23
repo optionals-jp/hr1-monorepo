@@ -136,7 +136,7 @@ class _ThreadTile extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: AppColors.brandPrimary,
+                color: AppColors.brand,
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -207,7 +207,7 @@ class _ThreadTile extends StatelessWidget {
                             width: 20,
                             height: 20,
                             decoration: const BoxDecoration(
-                              color: AppColors.brandPrimary,
+                              color: AppColors.brand,
                               shape: BoxShape.circle,
                             ),
                             child: Center(

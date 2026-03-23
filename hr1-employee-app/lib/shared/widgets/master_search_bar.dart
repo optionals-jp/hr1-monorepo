@@ -124,7 +124,7 @@ class _MasterSearchBarState extends State<MasterSearchBar> {
             child: IconButton(
               onPressed: widget.isAdding ? null : () => _handleAdd(),
               style: IconButton.styleFrom(
-                backgroundColor: AppColors.brandPrimary,
+                backgroundColor: AppColors.brand,
                 foregroundColor: Colors.white,
               ),
               icon: widget.isAdding

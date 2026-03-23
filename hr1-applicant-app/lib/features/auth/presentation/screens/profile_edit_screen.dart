@@ -31,7 +31,7 @@ class ProfileEditScreen extends ConsumerWidget {
                 children: [
                   UserAvatar(
                     initial: user?.displayName?.substring(0, 1) ?? '?',
-                    color: AppColors.primaryLight,
+                    color: AppColors.brand,
                     size: 64,
                     imageUrl: user?.avatarUrl,
                   ),
@@ -42,7 +42,7 @@ class ProfileEditScreen extends ConsumerWidget {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: AppColors.primaryLight,
+                        color: AppColors.brand,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: theme.scaffoldBackgroundColor,

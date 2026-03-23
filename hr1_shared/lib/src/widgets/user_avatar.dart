@@ -21,7 +21,7 @@ class UserAvatar extends StatelessWidget {
   const UserAvatar({
     super.key,
     required this.initial,
-    this.color = const Color(0xFF0F6CBD),
+    this.color = AppColors.brand,
     this.size = 48,
     this.imageUrl,
     this.presence,
@@ -108,11 +108,11 @@ class UserAvatar extends StatelessWidget {
   Color get _presenceColor {
     switch (presence) {
       case PresenceStatus.available:
-        return const Color(0xFF0E7A0B);
+        return AppColors.success;
       case PresenceStatus.away:
-        return const Color(0xFFEAA300);
+        return AppColors.sunOrange;
       default:
-        return Colors.grey;
+        return AppColors.lightTextTertiary;
     }
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../core/result/result.dart';
-import '../providers/auth_providers.dart';
+import 'package:hr1_applicant_app/core/result/result.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
 
 /// 企業選択の状態
 class OrganizationSelectState {
@@ -28,20 +28,15 @@ class OrganizationSelectController
     state = const OrganizationSelectState(isSubmitting: true);
 
     try {
-      final client = Supabase.instance.client;
-      final userId = client.auth.currentUser!.id;
+      final profileRepo = ref.read(profileRepositoryProvider);
+      final userId = ref.read(supabaseClientProvider).auth.currentUser!.id;
 
       // 1件ずつ挿入（既存は無視）
       for (final orgId in organizationIds) {
-        try {
-          await client.from('user_organizations').insert({
-            'user_id': userId,
-            'organization_id': orgId,
-          });
-        } on PostgrestException catch (e) {
-          // 23505 = unique_violation（既に登録済み）→ 無視
-          if (e.code != '23505') rethrow;
-        }
+        await profileRepo.selectOrganization(
+          userId: userId,
+          organizationId: orgId,
+        );
       }
 
       // ユーザー情報を再取得

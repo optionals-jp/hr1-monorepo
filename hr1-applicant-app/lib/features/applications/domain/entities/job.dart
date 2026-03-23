@@ -1,4 +1,4 @@
-import '../../../../shared/domain/entities/page_section.dart';
+import 'package:hr1_applicant_app/shared/domain/entities/page_section.dart';
 import 'job_step.dart';
 
 /// 求人情報

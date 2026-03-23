@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../applications/presentation/providers/applications_providers.dart';
-import '../providers/interviews_providers.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/providers/applications_providers.dart';
+import 'package:hr1_applicant_app/features/interviews/presentation/providers/interviews_providers.dart';
 
 /// 面接スロット確定の状態
 class InterviewConfirmState {

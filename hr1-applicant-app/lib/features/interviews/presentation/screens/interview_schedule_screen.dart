@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../domain/entities/interview.dart';
-import '../../domain/entities/interview_slot.dart';
-import '../controllers/interview_controller.dart';
-import '../providers/interviews_providers.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/interviews/domain/entities/interview.dart';
+import 'package:hr1_applicant_app/features/interviews/domain/entities/interview_slot.dart';
+import 'package:hr1_applicant_app/features/interviews/presentation/controllers/interview_controller.dart';
+import 'package:hr1_applicant_app/features/interviews/presentation/providers/interviews_providers.dart';
 
 /// 面接日程調整画面
 class InterviewScheduleScreen extends ConsumerWidget {
@@ -160,22 +160,16 @@ class _InterviewInfoCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: AppColors.primaryLight.withValues(alpha: 0.05),
+        color: AppColors.brand.withValues(alpha: 0.05),
         borderRadius: AppRadius.radius120,
-        border: Border.all(
-          color: AppColors.primaryLight.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: AppColors.brand.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.videocam_outlined,
-                size: 20,
-                color: AppColors.primaryLight,
-              ),
+              Icon(Icons.videocam_outlined, size: 20, color: AppColors.brand),
               const SizedBox(width: AppSpacing.sm),
               Text('面接情報', style: AppTextStyles.callout),
             ],
@@ -228,13 +222,13 @@ class _SlotCard extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.cardPadding),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primaryLight.withValues(alpha: 0.08)
+              ? AppColors.brand.withValues(alpha: 0.08)
               : theme.colorScheme.surface,
           borderRadius: AppRadius.radius120,
           border: Border.all(
             color: isSelected
-                ? AppColors.primaryLight
-                : AppColors.dividerOf(theme.brightness),
+                ? AppColors.brand
+                : AppColors.divider(theme.brightness),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -247,11 +241,11 @@ class _SlotCard extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isSelected
-                      ? AppColors.primaryLight
-                      : AppColors.dividerOf(theme.brightness),
+                      ? AppColors.brand
+                      : AppColors.divider(theme.brightness),
                   width: 2,
                 ),
-                color: isSelected ? AppColors.primaryLight : Colors.transparent,
+                color: isSelected ? AppColors.brand : Colors.transparent,
               ),
               child: isSelected
                   ? const Icon(Icons.check, size: 14, color: Colors.white)
@@ -270,7 +264,7 @@ class _SlotCard extends StatelessWidget {
                   Text(
                     '${timeFormat.format(slot.startAt)} 〜 ${timeFormat.format(slot.endAt)}',
                     style: AppTextStyles.body2.copyWith(
-                      color: AppColors.textSecondaryOf(theme.brightness),
+                      color: AppColors.textSecondary(theme.brightness),
                     ),
                   ),
                 ],

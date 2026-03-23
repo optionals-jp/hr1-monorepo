@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/router/app_router.dart';
+import 'package:hr1_applicant_app/core/router/app_router.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
-import '../../domain/entities/todo.dart';
-import '../controllers/todo_controller.dart';
-import '../providers/todo_providers.dart';
+import 'package:hr1_applicant_app/features/todos/domain/entities/todo.dart';
+import 'package:hr1_applicant_app/features/todos/presentation/controllers/todo_controller.dart';
+import 'package:hr1_applicant_app/features/todos/presentation/providers/todo_providers.dart';
 
 /// やること画面
 class TodosScreen extends ConsumerWidget {
@@ -155,15 +155,12 @@ class _FilterTabs extends StatelessWidget {
         children: TodoFilter.values.map((f) {
           final isActive = f == selected;
           final (icon, color) = switch (f) {
-            TodoFilter.incomplete => (
-              Icons.checklist_rounded,
-              AppColors.primaryLight,
-            ),
+            TodoFilter.incomplete => (Icons.checklist_rounded, AppColors.brand),
             TodoFilter.important => (
               Icons.star_outline_rounded,
               AppColors.error,
             ),
-            TodoFilter.all => (Icons.list_rounded, AppColors.primary),
+            TodoFilter.all => (Icons.list_rounded, AppColors.brandSecondary),
           };
 
           return Padding(
@@ -171,7 +168,7 @@ class _FilterTabs extends StatelessWidget {
             child: Material(
               color: isActive
                   ? color.withValues(alpha: 0.12)
-                  : AppColors.surfaceTertiaryOf(theme.brightness),
+                  : AppColors.surfaceTertiary(theme.brightness),
               borderRadius: AppRadius.radiusCircular,
               child: InkWell(
                 onTap: () => onSelected(f),
@@ -186,7 +183,7 @@ class _FilterTabs extends StatelessWidget {
                       Icon(
                         icon,
                         size: 16,
-                        color: isActive ? color : AppColors.textSecondary,
+                        color: isActive ? color : AppColors.lightTextSecondary,
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -194,7 +191,7 @@ class _FilterTabs extends StatelessWidget {
                         style: AppTextStyles.caption2.copyWith(
                           color: isActive
                               ? color
-                              : AppColors.textSecondaryOf(theme.brightness),
+                              : AppColors.textSecondary(theme.brightness),
                           fontWeight: isActive
                               ? FontWeight.w600
                               : FontWeight.w500,
@@ -280,12 +277,12 @@ class _TodoItem extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: todo.isCompleted
-                        ? AppColors.primaryLight
-                        : AppColors.textTertiaryOf(theme.brightness),
+                        ? AppColors.brand
+                        : AppColors.textTertiary(theme.brightness),
                     width: 1.5,
                   ),
                   color: todo.isCompleted
-                      ? AppColors.primaryLight
+                      ? AppColors.brand
                       : Colors.transparent,
                 ),
                 child: todo.isCompleted
@@ -310,7 +307,7 @@ class _TodoItem extends StatelessWidget {
                           ? TextDecoration.lineThrough
                           : null,
                       color: todo.isCompleted
-                          ? AppColors.textSecondaryOf(theme.brightness)
+                          ? AppColors.textSecondary(theme.brightness)
                           : null,
                     ),
                     maxLines: 2,
@@ -335,7 +332,7 @@ class _TodoItem extends StatelessWidget {
                   size: 22,
                   color: todo.isImportant
                       ? AppColors.error
-                      : AppColors.textTertiaryOf(theme.brightness),
+                      : AppColors.textTertiary(theme.brightness),
                 ),
               ),
             ),
@@ -413,14 +410,16 @@ class _MetadataRow extends StatelessWidget {
             Icon(
               Icons.calendar_today_rounded,
               size: 12,
-              color: isOverdue ? AppColors.error : AppColors.textSecondary,
+              color: isOverdue ? AppColors.error : AppColors.lightTextSecondary,
             ),
             const SizedBox(width: 3),
             Text(
               label,
               style: AppTextStyles.caption2.copyWith(
                 fontWeight: FontWeight.w500,
-                color: isOverdue ? AppColors.error : AppColors.textSecondary,
+                color: isOverdue
+                    ? AppColors.error
+                    : AppColors.lightTextSecondary,
               ),
             ),
           ],
@@ -433,11 +432,11 @@ class _MetadataRow extends StatelessWidget {
 
   Color _sourceColor(TodoSource source) {
     return switch (source) {
-      TodoSource.survey => AppColors.accent,
+      TodoSource.survey => AppColors.brandLight,
       TodoSource.form => AppColors.success,
       TodoSource.interview => AppColors.warning,
-      TodoSource.system => AppColors.primaryLight,
-      TodoSource.manual => AppColors.textSecondary,
+      TodoSource.system => AppColors.brand,
+      TodoSource.manual => AppColors.lightTextSecondary,
     };
   }
 
@@ -492,13 +491,13 @@ class _CompletedSectionState extends State<_CompletedSection> {
                       ? Icons.keyboard_arrow_down_rounded
                       : Icons.keyboard_arrow_right_rounded,
                   size: 20,
-                  color: AppColors.textSecondary,
+                  color: AppColors.lightTextSecondary,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   '完了済み (${widget.todos.length})',
                   style: AppTextStyles.caption1.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.lightTextSecondary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -555,12 +554,12 @@ class _AddTodoButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Row(
             children: [
-              Icon(Icons.add_rounded, size: 22, color: AppColors.primaryLight),
+              Icon(Icons.add_rounded, size: 22, color: AppColors.brand),
               const SizedBox(width: 12),
               Text(
                 'やることを追加',
                 style: AppTextStyles.body2.copyWith(
-                  color: AppColors.primaryLight,
+                  color: AppColors.brand,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -649,7 +648,7 @@ class _AddTodoFormState extends State<_AddTodoForm> {
           decoration: InputDecoration(
             hintText: 'タイトルを入力',
             hintStyle: AppTextStyles.body2.copyWith(
-              color: AppColors.textSecondary,
+              color: AppColors.lightTextSecondary,
             ),
           ),
         ),
@@ -662,7 +661,7 @@ class _AddTodoFormState extends State<_AddTodoForm> {
           decoration: InputDecoration(
             hintText: 'メモ（任意）',
             hintStyle: AppTextStyles.body2.copyWith(
-              color: AppColors.textSecondary,
+              color: AppColors.lightTextSecondary,
             ),
           ),
         ),
@@ -675,7 +674,7 @@ class _AddTodoFormState extends State<_AddTodoForm> {
                   ? '${_dueDate!.month}/${_dueDate!.day}'
                   : '期限',
               isActive: _dueDate != null,
-              activeColor: AppColors.primaryLight,
+              activeColor: AppColors.brand,
               onTap: _pickDueDate,
               onClear: _dueDate != null
                   ? () => setState(() => _dueDate = null)
@@ -743,13 +742,13 @@ class _OptionChip extends StatelessWidget {
             Icon(
               icon,
               size: 16,
-              color: isActive ? activeColor : AppColors.textSecondary,
+              color: isActive ? activeColor : AppColors.lightTextSecondary,
             ),
             const SizedBox(width: 6),
             Text(
               label,
               style: AppTextStyles.caption1.copyWith(
-                color: isActive ? activeColor : AppColors.textSecondary,
+                color: isActive ? activeColor : AppColors.lightTextSecondary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -776,7 +775,7 @@ class _EmptyTodoState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final emptyColor = AppColors.textTertiaryOf(theme.brightness);
+    final emptyColor = AppColors.textTertiary(theme.brightness);
     final (icon, title, subtitle) = switch (filter) {
       TodoFilter.incomplete => (
         Icon(Icons.checklist_rounded, size: 48, color: emptyColor),
@@ -812,7 +811,7 @@ class _EmptyTodoState extends StatelessWidget {
             Text(
               subtitle,
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.textSecondaryOf(theme.brightness),
+                color: AppColors.textSecondary(theme.brightness),
               ),
               textAlign: TextAlign.center,
             ),

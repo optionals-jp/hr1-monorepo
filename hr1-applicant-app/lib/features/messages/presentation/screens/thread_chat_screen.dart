@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../domain/entities/message_thread.dart';
-import '../controllers/thread_chat_controller.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_applicant_app/features/messages/domain/entities/message_thread.dart';
+import 'package:hr1_applicant_app/features/messages/presentation/controllers/thread_chat_controller.dart';
 
 /// スレッドチャット画面
 class ThreadChatScreen extends ConsumerStatefulWidget {
@@ -179,7 +179,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
           children: [
             UserAvatar(
               initial: displayName.isNotEmpty ? displayName[0] : '?',
-              color: AppColors.primaryLight,
+              color: AppColors.brand,
               size: 32,
             ),
             const SizedBox(width: 12),
@@ -192,7 +192,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                     Text(
                       widget.thread.jobTitle!,
                       style: AppTextStyles.caption2.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.lightTextSecondary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -220,7 +220,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                           initial: displayName.isNotEmpty
                               ? displayName[0]
                               : '?',
-                          color: AppColors.primaryLight,
+                          color: AppColors.brand,
                           size: 64,
                         ),
                         const SizedBox(height: 16),
@@ -229,7 +229,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                         Text(
                           'メッセージを送ってみましょう',
                           style: AppTextStyles.caption1.copyWith(
-                            color: AppColors.textSecondary,
+                            color: AppColors.lightTextSecondary,
                           ),
                         ),
                       ],
@@ -353,7 +353,7 @@ class _DateSeparator extends StatelessWidget {
         child: Text(
           DateFormatter.toRelativeDate(date),
           style: AppTextStyles.caption2.copyWith(
-            color: AppColors.textSecondary,
+            color: AppColors.lightTextSecondary,
           ),
         ),
       ),
@@ -391,11 +391,11 @@ class _MessageBubble extends StatelessWidget {
     final theme = Theme.of(context);
 
     final bubbleColor = isMe
-        ? AppColors.primaryLight
-        : AppColors.surfaceTertiaryOf(theme.brightness);
+        ? AppColors.brand
+        : AppColors.surfaceTertiary(theme.brightness);
     final textColor = isMe
         ? Colors.white
-        : AppColors.textPrimaryOf(theme.brightness);
+        : AppColors.textPrimary(theme.brightness);
 
     final bottomPadding = isLastInGroup ? 12.0 : 2.0;
 
@@ -427,7 +427,7 @@ class _MessageBubble extends StatelessWidget {
             if (isLastInGroup)
               UserAvatar(
                 initial: (message.senderName ?? '?')[0],
-                color: AppColors.primaryLight,
+                color: AppColors.brand,
                 size: 24,
               )
             else
@@ -470,7 +470,7 @@ class _MessageBubble extends StatelessWidget {
                       child: Text(
                         _formatTime(message),
                         style: AppTextStyles.caption2.copyWith(
-                          color: AppColors.textSecondary,
+                          color: AppColors.lightTextSecondary,
                         ),
                       ),
                     ),
@@ -500,7 +500,7 @@ class _MessageBubble extends StatelessWidget {
           autofocus: true,
           maxLines: null,
           style: AppTextStyles.body1.copyWith(
-            color: isMe ? Colors.white : AppColors.textPrimary,
+            color: isMe ? Colors.white : AppColors.lightTextPrimary,
           ),
           decoration: InputDecoration(
             isDense: true,
@@ -510,7 +510,7 @@ class _MessageBubble extends StatelessWidget {
             hintStyle: AppTextStyles.body1.copyWith(
               color: isMe
                   ? Colors.white.withValues(alpha: 0.6)
-                  : AppColors.textSecondary,
+                  : AppColors.lightTextSecondary,
             ),
           ),
         ),
@@ -525,7 +525,7 @@ class _MessageBubble extends StatelessWidget {
                 style: AppTextStyles.caption2.copyWith(
                   color: isMe
                       ? Colors.white.withValues(alpha: 0.8)
-                      : AppColors.textSecondary,
+                      : AppColors.lightTextSecondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -536,7 +536,7 @@ class _MessageBubble extends StatelessWidget {
               child: Text(
                 '保存',
                 style: AppTextStyles.caption2.copyWith(
-                  color: isMe ? Colors.white : AppColors.primaryLight,
+                  color: isMe ? Colors.white : AppColors.brand,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -589,7 +589,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: AppColors.surfaceTertiaryOf(theme.brightness),
+            color: AppColors.surfaceTertiary(theme.brightness),
             borderRadius: AppRadius.radius160,
           ),
           child: AnimatedBuilder(
@@ -609,7 +609,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: AppColors.textSecondaryOf(theme.brightness),
+                          color: AppColors.textSecondary(theme.brightness),
                           shape: BoxShape.circle,
                         ),
                       ),

@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../domain/entities/message_thread.dart';
-import '../../domain/repositories/messages_repository.dart';
-import '../providers/messages_providers.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_applicant_app/features/messages/domain/entities/message_thread.dart';
+import 'package:hr1_applicant_app/features/messages/domain/repositories/messages_repository.dart';
+import 'package:hr1_applicant_app/features/messages/presentation/providers/messages_providers.dart';
 
 const threadChatPageSize = 30;
 

@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/application.dart';
-import '../../domain/entities/job.dart';
-import '../../domain/repositories/applications_repository.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/application.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/job.dart';
+import 'package:hr1_applicant_app/features/applications/domain/repositories/applications_repository.dart';
 
 /// ApplicationsRepository の Supabase 実装
 class SupabaseApplicationsRepository implements ApplicationsRepository {

@@ -42,7 +42,7 @@ class AttendanceScreen extends ConsumerWidget {
             child: Text(
               '明細',
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.brandPrimary,
+                color: AppColors.brand,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -52,7 +52,7 @@ class AttendanceScreen extends ConsumerWidget {
             child: Text(
               '修正依頼',
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.brandPrimary,
+                color: AppColors.brand,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -173,7 +173,7 @@ class _TimeStatusHero extends StatelessWidget {
       ),
       WorkState.working => ('勤務中', AppColors.success),
       WorkState.onBreak => ('休憩中', AppColors.warning),
-      WorkState.finished => ('退勤済み', AppColors.brandPrimary),
+      WorkState.finished => ('退勤済み', AppColors.brand),
     };
 
     return Column(

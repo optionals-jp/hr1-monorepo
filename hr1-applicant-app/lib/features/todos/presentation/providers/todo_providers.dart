@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../data/repositories/supabase_todo_repository.dart';
-import '../../domain/entities/todo.dart';
-import '../../domain/repositories/todo_repository.dart';
+import 'package:hr1_applicant_app/features/todos/data/repositories/supabase_todo_repository.dart';
+import 'package:hr1_applicant_app/features/todos/domain/entities/todo.dart';
+import 'package:hr1_applicant_app/features/todos/domain/repositories/todo_repository.dart';
 
 /// やることリポジトリプロバイダー
 final todoRepositoryProvider = Provider<TodoRepository>((ref) {

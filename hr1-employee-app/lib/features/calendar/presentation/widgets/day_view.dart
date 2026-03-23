@@ -300,7 +300,7 @@ class _DayViewState extends State<DayView> {
     try {
       return Color(int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
     } catch (_) {
-      return AppColors.brandPrimary;
+      return AppColors.brand;
     }
   }
 }

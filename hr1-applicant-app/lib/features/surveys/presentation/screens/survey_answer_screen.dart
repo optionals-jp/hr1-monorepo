@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../domain/entities/pulse_survey.dart';
-import '../controllers/survey_answer_controller.dart';
-import '../providers/survey_providers.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/surveys/domain/entities/pulse_survey.dart';
+import 'package:hr1_applicant_app/features/surveys/presentation/controllers/survey_answer_controller.dart';
+import 'package:hr1_applicant_app/features/surveys/presentation/providers/survey_providers.dart';
 
 /// パルスサーベイ回答画面（応募者向け）
 ///
@@ -82,7 +82,7 @@ class _CompletedView extends ConsumerWidget {
               Text(
                 survey.description!,
                 style: AppTextStyles.caption1.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.lightTextSecondary,
                 ),
               ),
             ],
@@ -157,7 +157,9 @@ class _EditView extends HookConsumerWidget {
         body: Center(
           child: Text(
             '質問が設定されていません',
-            style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.body2.copyWith(
+              color: AppColors.lightTextSecondary,
+            ),
           ),
         ),
       );
@@ -177,7 +179,7 @@ class _EditView extends HookConsumerWidget {
             Text(
               survey.description!,
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.lightTextSecondary,
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -229,7 +231,7 @@ class _ReadOnlyQuestion extends StatelessWidget {
             Text(
               question.description!,
               style: AppTextStyles.caption2.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.lightTextSecondary,
               ),
             ),
           ],
@@ -244,7 +246,9 @@ class _ReadOnlyQuestion extends StatelessWidget {
     if (answer == null || answer!.isEmpty) {
       return Text(
         '未回答',
-        style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary),
+        style: AppTextStyles.body2.copyWith(
+          color: AppColors.lightTextSecondary,
+        ),
       );
     }
 
@@ -261,12 +265,12 @@ class _ReadOnlyQuestion extends StatelessWidget {
                 height: 44,
                 decoration: BoxDecoration(
                   color: v <= value
-                      ? AppColors.primaryLight.withValues(alpha: 0.15)
+                      ? AppColors.brand.withValues(alpha: 0.15)
                       : theme.colorScheme.surface,
                   borderRadius: AppRadius.radius80,
                   border: Border.all(
                     color: v <= value
-                        ? AppColors.primaryLight
+                        ? AppColors.brand
                         : theme.colorScheme.outlineVariant,
                   ),
                 ),
@@ -276,8 +280,8 @@ class _ReadOnlyQuestion extends StatelessWidget {
                     style: AppTextStyles.body2.copyWith(
                       fontWeight: FontWeight.w600,
                       color: v <= value
-                          ? AppColors.primaryLight
-                          : AppColors.textSecondary,
+                          ? AppColors.brand
+                          : AppColors.lightTextSecondary,
                     ),
                   ),
                 ),
@@ -373,7 +377,7 @@ class _QuestionWidget extends StatelessWidget {
             Text(
               question.description!,
               style: AppTextStyles.caption2.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.lightTextSecondary,
               ),
             ),
           ],
@@ -414,12 +418,12 @@ class _QuestionWidget extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.primaryLight.withValues(alpha: 0.15)
+                    ? AppColors.brand.withValues(alpha: 0.15)
                     : theme.colorScheme.surface,
                 borderRadius: AppRadius.radius80,
                 border: Border.all(
                   color: isSelected
-                      ? AppColors.primaryLight
+                      ? AppColors.brand
                       : theme.colorScheme.outlineVariant,
                 ),
               ),
@@ -429,8 +433,8 @@ class _QuestionWidget extends StatelessWidget {
                   style: AppTextStyles.body2.copyWith(
                     fontWeight: FontWeight.w600,
                     color: isSelected
-                        ? AppColors.primaryLight
-                        : AppColors.textSecondary,
+                        ? AppColors.brand
+                        : AppColors.lightTextSecondary,
                   ),
                 ),
               ),

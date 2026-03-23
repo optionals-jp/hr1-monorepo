@@ -204,7 +204,7 @@ class _FilterTabs extends StatelessWidget {
               Icons.calendar_today_rounded,
               AppColors.success,
             ),
-            TaskFilter.all => (Icons.list_rounded, AppColors.brandPrimary),
+            TaskFilter.all => (Icons.list_rounded, AppColors.brand),
           };
 
           return Padding(
@@ -362,12 +362,12 @@ class _TaskItem extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: task.isCompleted
-                          ? AppColors.brandPrimary
+                          ? AppColors.brand
                           : AppColors.textTertiary(theme.brightness),
                       width: 1.5,
                     ),
                     color: task.isCompleted
-                        ? AppColors.brandPrimary
+                        ? AppColors.brand
                         : Colors.transparent,
                   ),
                   child: task.isCompleted
@@ -659,10 +659,7 @@ class _AddTaskBar extends StatelessWidget {
                   onPressed: onCancel,
                 ),
                 IconButton(
-                  icon: AppIcons.sendFill(
-                    size: 20,
-                    color: AppColors.brandPrimary,
-                  ),
+                  icon: AppIcons.sendFill(size: 20, color: AppColors.brand),
                   onPressed: onSubmit,
                 ),
               ],
@@ -674,16 +671,12 @@ class _AddTaskBar extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.add_rounded,
-                      size: 22,
-                      color: AppColors.brandPrimary,
-                    ),
+                    Icon(Icons.add_rounded, size: 22, color: AppColors.brand),
                     const SizedBox(width: 12),
                     Text(
                       'タスクを追加',
                       style: AppTextStyles.caption1.copyWith(
-                        color: AppColors.brandPrimary,
+                        color: AppColors.brand,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -867,7 +860,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                 : Text(
                     '保存',
                     style: AppTextStyles.caption1.copyWith(
-                      color: AppColors.brandPrimary,
+                      color: AppColors.brand,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -950,7 +943,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
               Icons.wb_sunny_outlined,
               size: 20,
               color: _isMyDay
-                  ? AppColors.brandPrimary
+                  ? AppColors.brand
                   : AppColors.textSecondary(theme.brightness),
             ),
             label: 'My Day に追加',
@@ -963,7 +956,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
             icon: AppIcons.calendar(
               size: 20,
               color: _dueDate != null
-                  ? AppColors.brandPrimary
+                  ? AppColors.brand
                   : AppColors.textSecondary(theme.brightness),
             ),
             label: _dueDate != null
@@ -1048,13 +1041,11 @@ class _StepRow extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: step.isCompleted
-                      ? AppColors.brandPrimary
+                      ? AppColors.brand
                       : AppColors.textTertiary(theme.brightness),
                   width: 1.5,
                 ),
-                color: step.isCompleted
-                    ? AppColors.brandPrimary
-                    : Colors.transparent,
+                color: step.isCompleted ? AppColors.brand : Colors.transparent,
               ),
               child: step.isCompleted
                   ? const Icon(
@@ -1125,7 +1116,7 @@ class _DetailActionRow extends StatelessWidget {
                 label,
                 style: AppTextStyles.caption1.copyWith(
                   color: isActive
-                      ? AppColors.brandPrimary
+                      ? AppColors.brand
                       : theme.colorScheme.onSurface,
                 ),
               ),

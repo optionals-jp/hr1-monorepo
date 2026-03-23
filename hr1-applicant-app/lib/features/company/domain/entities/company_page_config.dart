@@ -1,4 +1,4 @@
-import '../../../../shared/domain/entities/page_section.dart';
+import 'package:hr1_applicant_app/shared/domain/entities/page_section.dart';
 
 /// 企業ページ全体の構成設定
 /// 企業ごとにタブ構成・セクション配置をカスタマイズ可能

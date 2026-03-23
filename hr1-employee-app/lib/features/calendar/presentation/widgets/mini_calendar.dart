@@ -178,7 +178,7 @@ class _MiniCalendarState extends State<MiniCalendar> {
     } else if (isToday) {
       textColor = Colors.white;
     } else if (isSelected) {
-      textColor = AppColors.brandPrimary;
+      textColor = AppColors.brand;
     } else if (date.weekday == 6 || date.weekday == 7) {
       textColor = AppColors.textSecondary(theme.brightness);
     } else {
@@ -199,13 +199,13 @@ class _MiniCalendarState extends State<MiniCalendar> {
                 height: 32,
                 decoration: BoxDecoration(
                   color: isToday
-                      ? AppColors.brandPrimary
+                      ? AppColors.brand
                       : isSelected
-                      ? AppColors.brandPrimary.withValues(alpha: 0.1)
+                      ? AppColors.brand.withValues(alpha: 0.1)
                       : null,
                   shape: BoxShape.circle,
                   border: isSelected && !isToday
-                      ? Border.all(color: AppColors.brandPrimary, width: 1.5)
+                      ? Border.all(color: AppColors.brand, width: 1.5)
                       : null,
                 ),
                 alignment: Alignment.center,
@@ -225,7 +225,7 @@ class _MiniCalendarState extends State<MiniCalendar> {
                         width: 4,
                         height: 4,
                         decoration: const BoxDecoration(
-                          color: AppColors.brandPrimary,
+                          color: AppColors.brand,
                           shape: BoxShape.circle,
                         ),
                       )

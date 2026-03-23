@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../domain/entities/organization.dart';
-import '../controllers/organization_select_controller.dart';
-import '../providers/auth_providers.dart';
-import '../providers/organization_context_provider.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/core/router/app_router.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/auth/domain/entities/organization.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/controllers/organization_select_controller.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/organization_context_provider.dart';
 
 /// 企業選択画面
 class OrganizationSelectScreen extends HookConsumerWidget {
@@ -131,13 +131,13 @@ class _Body extends ConsumerWidget {
             Icon(
               Icons.business_outlined,
               size: 48,
-              color: AppColors.textTertiaryOf(theme.brightness),
+              color: AppColors.textTertiary(theme.brightness),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               'すべての企業に登録済みです',
               style: AppTextStyles.body2.copyWith(
-                color: AppColors.textSecondaryOf(theme.brightness),
+                color: AppColors.textSecondary(theme.brightness),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -179,9 +179,7 @@ class _Body extends ConsumerWidget {
             itemCount: filtered.length,
             separatorBuilder: (_, __) => Divider(
               height: 1,
-              color: AppColors.dividerOf(
-                theme.brightness,
-              ).withValues(alpha: 0.5),
+              color: AppColors.divider(theme.brightness).withValues(alpha: 0.5),
             ),
             itemBuilder: (context, index) {
               final org = filtered[index];
@@ -250,7 +248,7 @@ class _OrganizationRow extends StatelessWidget {
                     Text(
                       organization.industry!,
                       style: AppTextStyles.caption2.copyWith(
-                        color: AppColors.textSecondaryOf(theme.brightness),
+                        color: AppColors.textSecondary(theme.brightness),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -266,12 +264,12 @@ class _OrganizationRow extends StatelessWidget {
                   ? Icon(
                       Icons.check_circle,
                       key: const ValueKey('checked'),
-                      color: AppColors.primaryLight,
+                      color: AppColors.brand,
                     )
                   : Icon(
                       Icons.circle_outlined,
                       key: const ValueKey('unchecked'),
-                      color: AppColors.dividerOf(theme.brightness),
+                      color: AppColors.divider(theme.brightness),
                     ),
             ),
           ],

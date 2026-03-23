@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/providers/organization_context_provider.dart';
-import '../providers/applications_providers.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/providers/applications_providers.dart';
 
 /// 求人応募コントローラー
 class JobApplyController extends AutoDisposeNotifier<void> {

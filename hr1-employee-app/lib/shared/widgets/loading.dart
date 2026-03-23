@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hr1_shared/hr1_shared.dart' show LoadingIndicator;
 import 'package:lottie/lottie.dart';
 import '../../core/constants/constants.dart';
 
@@ -48,7 +49,7 @@ class _LoadingOverlay extends StatelessWidget {
     return PopScope(
       canPop: false,
       child: Material(
-        color: Colors.black.withValues(alpha: 0.3),
+        color: AppColors.lightTextPrimary.withValues(alpha: 0.3),
         child: Center(
           child: Container(
             width: 100,
@@ -67,7 +68,7 @@ class _LoadingOverlay extends StatelessWidget {
                   return const SizedBox(
                     width: 32,
                     height: 32,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: LoadingIndicator(size: 20),
                   );
                 },
               ),

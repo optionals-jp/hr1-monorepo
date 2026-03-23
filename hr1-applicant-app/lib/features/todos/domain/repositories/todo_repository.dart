@@ -1,4 +1,4 @@
-import '../entities/todo.dart';
+import 'package:hr1_applicant_app/features/todos/domain/entities/todo.dart';
 
 /// TODO リポジトリインターフェース
 abstract class TodoRepository {

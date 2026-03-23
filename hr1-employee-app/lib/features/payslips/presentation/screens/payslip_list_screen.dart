@@ -92,11 +92,11 @@ class _YearSelector extends StatelessWidget {
                     : theme.colorScheme.onSurface,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),
-              selectedColor: AppColors.brandPrimary,
+              selectedColor: AppColors.brand,
               backgroundColor: theme.colorScheme.surface,
               side: BorderSide(
                 color: isSelected
-                    ? AppColors.brandPrimary
+                    ? AppColors.brand
                     : theme.colorScheme.outlineVariant,
               ),
               visualDensity: VisualDensity.compact,
@@ -178,14 +178,14 @@ class _PayslipCard extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: AppColors.brandPrimary.withValues(alpha: 0.1),
+                    color: AppColors.brand.withValues(alpha: 0.1),
                     borderRadius: AppRadius.radius80,
                   ),
                   child: Center(
                     child: Text(
                       '${payslip.month}月',
                       style: AppTextStyles.headline.copyWith(
-                        color: AppColors.brandPrimary,
+                        color: AppColors.brand,
                       ),
                     ),
                   ),

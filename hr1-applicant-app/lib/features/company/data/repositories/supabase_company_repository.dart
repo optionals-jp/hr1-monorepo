@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/company_page_config.dart';
-import '../../domain/repositories/company_repository.dart';
+import 'package:hr1_applicant_app/features/company/domain/entities/company_page_config.dart';
+import 'package:hr1_applicant_app/features/company/domain/repositories/company_repository.dart';
 
 /// CompanyRepository の Supabase 実装
 class SupabaseCompanyRepository implements CompanyRepository {

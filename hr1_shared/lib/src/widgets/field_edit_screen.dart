@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_spacing.dart';
-import '../constants/app_text_styles.dart';
-import 'common_button.dart';
-import 'common_scaffold.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 
 /// 単一フィールド編集画面
 ///

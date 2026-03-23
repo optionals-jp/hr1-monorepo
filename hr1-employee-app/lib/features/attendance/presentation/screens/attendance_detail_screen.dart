@@ -156,7 +156,7 @@ class _Body extends StatelessWidget {
                   label: '深夜',
                   value: _formatMinutes(record.lateNightMinutes),
                   valueColor: record.lateNightMinutes > 0
-                      ? AppColors.brandPrimary
+                      ? AppColors.brand
                       : null,
                 ),
                 if (record.note != null && record.note!.isNotEmpty) ...[
@@ -258,7 +258,7 @@ class _SummarySection extends StatelessWidget {
             children: [
               _SummaryItem(
                 icon: Icons.schedule,
-                color: AppColors.brandPrimary,
+                color: AppColors.brand,
                 label: '総労働時間',
                 value: _formatMinutes(summary.totalWorkMinutes),
               ),
@@ -447,13 +447,13 @@ class _StatusBadge extends StatelessWidget {
       case AttendanceStatus.halfDayAm:
       case AttendanceStatus.halfDayPm:
       case AttendanceStatus.specialLeave:
-        return AppColors.brandPrimary;
+        return AppColors.brand;
       case AttendanceStatus.sickLeave:
-        return Colors.purple;
+        return AppColors.purple;
       case AttendanceStatus.holiday:
-        return Colors.grey;
+        return AppColors.lightTextTertiary;
       default:
-        return Colors.grey;
+        return AppColors.lightTextTertiary;
     }
   }
 

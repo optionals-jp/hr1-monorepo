@@ -34,7 +34,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 children: [
                   UserAvatar(
                     initial: user?.displayName?.substring(0, 1) ?? '?',
-                    color: AppColors.brandPrimary,
+                    color: AppColors.brand,
                     size: 96,
                     imageUrl: user?.avatarUrl,
                   ),
@@ -45,7 +45,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: AppColors.brandPrimary,
+                        color: AppColors.brand,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: theme.scaffoldBackgroundColor,

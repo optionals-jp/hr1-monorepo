@@ -25,6 +25,60 @@ class AppColors {
   static const Color warning = Color(0xFFBC4B09);
   static const Color error = Color(0xFFB10E1C);
 
+  /// Danger（Fluent Chip 等）
+  static const Color danger = Color(0xFFC50F1F);
+
+  /// Severe（Fluent Chip 等）
+  static const Color severe = Color(0xFFDA3B01);
+
+  /// Filled Warning（Fluent Chip 等）
+  static const Color warningFilled = Color(0xFFF7630C);
+
+  /// Filled Success（Fluent Chip 等）
+  static const Color successFilled = Color(0xFF107C10);
+
+  // -------------------------------------------------------------------------
+  // Fluent Chip Tint カラー
+  // -------------------------------------------------------------------------
+
+  // Brand tint
+  static const Color brandTintBgLight = Color(0xFFCFE4FA);
+  static const Color brandTintBgDark = Color(0xFF1B3A5C);
+  static const Color brandTintFgLight = Color(0xFF0F548C);
+  static const Color brandTintFgDark = Color(0xFF77B7F7);
+
+  // Danger tint
+  static const Color dangerTintBgLight = Color(0xFFFDF3F4);
+  static const Color dangerTintBgDark = Color(0xFF3B1519);
+  static const Color dangerTintFgLight = Color(0xFF960B18);
+  static const Color dangerTintFgDark = Color(0xFFEE7981);
+
+  // Severe tint
+  static const Color severeTintBgLight = Color(0xFFFDF6F3);
+  static const Color severeTintBgDark = Color(0xFF3C1A08);
+  static const Color severeTintFgLight = Color(0xFFC43501);
+  static const Color severeTintFgDark = Color(0xFFF59D72);
+
+  // Warning tint
+  static const Color warningTintBgLight = Color(0xFFFFF9F5);
+  static const Color warningTintBgDark = Color(0xFF3D2C08);
+  static const Color warningTintFgDark = Color(0xFFF7CE5C);
+  static const Color warningTintBorder = Color(0xFFDA3B01);
+
+  // Success tint
+  static const Color successTintBgLight = Color(0xFFF1FAF1);
+  static const Color successTintBgDark = Color(0xFF0D3B0D);
+  static const Color successTintFgLight = Color(0xFF0E700E);
+  static const Color successTintFgDark = Color(0xFF54B054);
+
+  // Neutral chip
+  static const Color neutralChipBgLight = Color(0xFFDBDBDB);
+  static const Color neutralChipBgDark = Color(0xFF4D4D4D);
+
+  // Disabled chip
+  static const Color disabledChipBgDark = Color(0xFF3D3D3D);
+  static const Color disabledChipFg = Color(0xFFBDBDBD);
+
   /// サーベイ・研修用パープル
   static const Color purple = Color(0xFF8764B8);
 

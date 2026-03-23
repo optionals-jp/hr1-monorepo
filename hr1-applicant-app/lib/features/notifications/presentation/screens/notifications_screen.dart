@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
-import '../../domain/entities/notification_item.dart';
-import '../controllers/notification_controller.dart';
+import 'package:hr1_applicant_app/features/notifications/domain/entities/notification_item.dart';
+import 'package:hr1_applicant_app/features/notifications/presentation/controllers/notification_controller.dart';
 
 /// 通知一覧画面
 class NotificationsScreen extends ConsumerWidget {
@@ -33,7 +33,7 @@ class NotificationsScreen extends ConsumerWidget {
             child: Text(
               'すべて既読',
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.primaryLight,
+                color: AppColors.brand,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -54,13 +54,13 @@ class NotificationsScreen extends ConsumerWidget {
                 children: [
                   AppIcons.notification(
                     size: 48,
-                    color: AppColors.textSecondary.withValues(alpha: 0.5),
+                    color: AppColors.lightTextSecondary.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     '通知はありません',
                     style: AppTextStyles.body2.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.lightTextSecondary,
                     ),
                   ),
                 ],
@@ -130,9 +130,7 @@ class _NotificationTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          color: item.isRead
-              ? null
-              : AppColors.primaryLight.withValues(alpha: 0.03),
+          color: item.isRead ? null : AppColors.brand.withValues(alpha: 0.03),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.screenHorizontal,
             vertical: 14,
@@ -172,7 +170,7 @@ class _NotificationTile extends StatelessWidget {
                         Text(
                           _formatDate(item.createdAt),
                           style: AppTextStyles.caption2.copyWith(
-                            color: AppColors.textSecondary,
+                            color: AppColors.lightTextSecondary,
                           ),
                         ),
                       ],
@@ -182,7 +180,7 @@ class _NotificationTile extends StatelessWidget {
                       Text(
                         item.body!,
                         style: AppTextStyles.caption2.copyWith(
-                          color: AppColors.textSecondary,
+                          color: AppColors.lightTextSecondary,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -197,7 +195,7 @@ class _NotificationTile extends StatelessWidget {
                   width: 8,
                   height: 8,
                   decoration: const BoxDecoration(
-                    color: AppColors.primaryLight,
+                    color: AppColors.brand,
                     shape: BoxShape.circle,
                   ),
                 ),

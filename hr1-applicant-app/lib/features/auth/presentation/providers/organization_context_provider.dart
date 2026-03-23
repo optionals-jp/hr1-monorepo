@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../domain/entities/organization.dart';
+import 'package:hr1_applicant_app/features/auth/domain/entities/organization.dart';
 import 'auth_providers.dart';
 
 const _kLastOrgIdKey = 'last_selected_organization_id';

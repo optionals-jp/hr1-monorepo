@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_applicant_app/features/auth/data/repositories/profile_repository.dart';
-import '../../data/datasources/auth_remote_datasource.dart';
-import '../../data/repositories/auth_repository_impl.dart';
-import '../../domain/entities/app_user.dart';
-import '../../domain/entities/organization.dart';
-import '../../domain/repositories/auth_repository.dart';
+import 'package:hr1_applicant_app/features/auth/data/datasources/auth_remote_datasource.dart';
+import 'package:hr1_applicant_app/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:hr1_applicant_app/features/auth/domain/entities/app_user.dart';
+import 'package:hr1_applicant_app/features/auth/domain/entities/organization.dart';
+import 'package:hr1_applicant_app/features/auth/domain/repositories/auth_repository.dart';
 
 /// Supabase クライアントプロバイダー
 final supabaseClientProvider = Provider<SupabaseClient>((ref) {

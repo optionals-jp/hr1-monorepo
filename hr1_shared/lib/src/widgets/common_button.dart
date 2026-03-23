@@ -63,7 +63,7 @@ class CommonButton extends StatelessWidget {
   static final ButtonStyle _outlineStyle =
       OutlinedButton.styleFrom(
         foregroundColor: AppColors.brand,
-        disabledForegroundColor: Colors.grey,
+        disabledForegroundColor: AppColors.lightTextTertiary,
         minimumSize: _baseSize,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         shape: _baseShape,
@@ -72,7 +72,7 @@ class CommonButton extends StatelessWidget {
       ).copyWith(
         side: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.disabled)) {
-            return const BorderSide(color: Colors.grey, width: 1);
+            return const BorderSide(color: AppColors.lightTextTertiary, width: 1);
           }
           return const BorderSide(color: AppColors.brand, width: 1);
         }),
@@ -93,7 +93,7 @@ class CommonButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDisabled = !enabled || loading;
-    final loadingColor = filled ? Colors.white : Colors.grey;
+    final loadingColor = filled ? Colors.white : AppColors.lightTextTertiary;
     final loadingChild = SizedBox(
       width: 20,
       height: 20,

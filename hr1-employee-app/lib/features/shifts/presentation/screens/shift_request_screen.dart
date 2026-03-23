@@ -68,11 +68,11 @@ class _ShiftRequestScreenState extends ConsumerState<ShiftRequestScreen> {
                   '${m.year}年${m.month}月',
                   style: AppTextStyles.body1.copyWith(
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    color: selected ? AppColors.brandPrimary : null,
+                    color: selected ? AppColors.brand : null,
                   ),
                 ),
                 trailing: selected
-                    ? const Icon(Icons.check, color: AppColors.brandPrimary)
+                    ? const Icon(Icons.check, color: AppColors.brand)
                     : null,
                 onTap: () {
                   Navigator.pop(ctx);
@@ -312,7 +312,7 @@ class _ShiftSummaryBar extends StatelessWidget {
               _SummaryItem(
                 icon: Icons.event_busy_outlined,
                 label: '休暇 $leaveDays日',
-                color: AppColors.brandPrimary,
+                color: AppColors.brand,
               ),
             ],
           ],
@@ -493,12 +493,12 @@ class _DayShiftTile extends StatelessWidget {
                 leading: Icon(
                   t.icon,
                   color: selected
-                      ? AppColors.brandPrimary
+                      ? AppColors.brand
                       : AppColors.textSecondary(theme.brightness),
                 ),
                 title: Text(t.label, style: AppTextStyles.body1),
                 trailing: selected
-                    ? const Icon(Icons.check, color: AppColors.brandPrimary)
+                    ? const Icon(Icons.check, color: AppColors.brand)
                     : null,
                 onTap: () {
                   Navigator.pop(ctx);
@@ -569,7 +569,7 @@ class _TimeButton extends StatelessWidget {
         child: Text(
           time,
           style: AppTextStyles.body2.copyWith(
-            color: AppColors.brandPrimary,
+            color: AppColors.brand,
             fontWeight: FontWeight.w600,
           ),
         ),

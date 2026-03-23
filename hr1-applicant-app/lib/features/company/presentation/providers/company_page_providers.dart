@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../../auth/presentation/providers/organization_context_provider.dart';
-import '../../data/repositories/supabase_company_repository.dart';
-import '../../domain/entities/company_page_config.dart';
-import '../../domain/repositories/company_repository.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/organization_context_provider.dart';
+import 'package:hr1_applicant_app/features/company/data/repositories/supabase_company_repository.dart';
+import 'package:hr1_applicant_app/features/company/domain/entities/company_page_config.dart';
+import 'package:hr1_applicant_app/features/company/domain/repositories/company_repository.dart';
 
 /// CompanyRepository プロバイダー
 final companyRepositoryProvider = Provider<CompanyRepository>((ref) {

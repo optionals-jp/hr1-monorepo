@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/constants.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
 
 /// カスタム日付選択 BottomSheet
 ///
@@ -174,8 +174,8 @@ class _CommonDatePickerState extends State<CommonDatePicker> {
                         day,
                         style: AppTextStyles.caption2.copyWith(
                           color: isWeekend
-                              ? AppColors.textSecondary
-                              : AppColors.textPrimaryOf(theme.brightness),
+                              ? AppColors.lightTextSecondary
+                              : AppColors.textPrimary(theme.brightness),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -208,8 +208,8 @@ class _CommonDatePickerState extends State<CommonDatePicker> {
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primaryLight,
-                        side: const BorderSide(color: AppColors.primaryLight),
+                        foregroundColor: AppColors.brand,
+                        side: const BorderSide(color: AppColors.brand),
                         shape: const StadiumBorder(),
                         minimumSize: const Size(0, 44),
                       ),
@@ -223,9 +223,9 @@ class _CommonDatePickerState extends State<CommonDatePicker> {
                           ? () => Navigator.pop(context, _selectedDate)
                           : null,
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primaryLight,
+                        backgroundColor: AppColors.brand,
                         foregroundColor: Colors.white,
-                        disabledBackgroundColor: AppColors.border,
+                        disabledBackgroundColor: AppColors.lightBorder,
                         shape: const StadiumBorder(),
                         minimumSize: const Size(0, 44),
                       ),
@@ -279,7 +279,7 @@ class _CommonDatePickerState extends State<CommonDatePicker> {
                 child: Container(
                   height: 44,
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primaryLight : null,
+                    color: isSelected ? AppColors.brand : null,
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -289,10 +289,10 @@ class _CommonDatePickerState extends State<CommonDatePicker> {
                         color: isSelected
                             ? Colors.white
                             : !selectable
-                            ? AppColors.textTertiaryOf(theme.brightness)
+                            ? AppColors.textTertiary(theme.brightness)
                             : isToday
-                            ? AppColors.primaryLight
-                            : AppColors.textPrimaryOf(theme.brightness),
+                            ? AppColors.brand
+                            : AppColors.textPrimary(theme.brightness),
                         fontWeight: isSelected || isToday
                             ? FontWeight.w600
                             : null,

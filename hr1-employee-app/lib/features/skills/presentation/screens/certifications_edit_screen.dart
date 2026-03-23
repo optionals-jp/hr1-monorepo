@@ -196,7 +196,7 @@ class _CertTile extends StatelessWidget {
         children: [
           AppIcons.award(
             size: 20,
-            color: AppColors.brandPrimary.withValues(alpha: 0.7),
+            color: AppColors.brand.withValues(alpha: 0.7),
           ),
           const SizedBox(width: 12),
           Expanded(
