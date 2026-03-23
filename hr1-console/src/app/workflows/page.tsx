@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -20,6 +20,8 @@ import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { EditPanel } from "@/components/ui/edit-panel";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -33,14 +35,14 @@ import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import { cn } from "@/lib/utils";
-import type { WorkflowRequest } from "@/types/database";
+import type { WorkflowRequest, WorkflowRule } from "@/types/database";
 import {
   workflowRequestTypeLabels,
   workflowRequestTypeColors,
   workflowStatusLabels,
   workflowStatusColors,
 } from "@/lib/constants";
-import { FileCheck, Settings2, SlidersHorizontal, X } from "lucide-react";
+import { FileCheck, Settings2, SlidersHorizontal, X, Bell, Loader2, Save } from "lucide-react";
 
 type TabValue = "requests" | "settings";
 
@@ -55,6 +57,20 @@ interface Employee {
   display_name: string | null;
   avatar_url: string | null;
 }
+
+interface AutoApproveConfig {
+  paid_leave: { is_active: boolean; max_days: number };
+  overtime: { is_active: boolean; max_hours: number };
+  expense: { is_active: boolean; max_amount: number };
+  business_trip: { is_active: boolean };
+}
+
+const defaultAutoApproveConfig: AutoApproveConfig = {
+  paid_leave: { is_active: false, max_days: 3 },
+  overtime: { is_active: false, max_hours: 2 },
+  expense: { is_active: false, max_amount: 10000 },
+  business_trip: { is_active: false },
+};
 
 function formatRequestSummary(req: WorkflowRequest): string {
   const data = req.request_data ?? {};
@@ -113,20 +129,20 @@ export default function WorkflowsPage() {
   const { organization } = useOrg();
   const [activeTab, setActiveTab] = useState<TabValue>("requests");
 
-  // --- フィルター ---
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
 
-  // --- レビューダイアログ ---
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<WorkflowRequest | null>(null);
   const [reviewComment, setReviewComment] = useState("");
   const [savingReview, setSavingReview] = useState(false);
 
-  // ---------- データ取得 ----------
+  const [autoApproveConfig, setAutoApproveConfig] =
+    useState<AutoApproveConfig>(defaultAutoApproveConfig);
+  const [notifyAdmins, setNotifyAdmins] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
 
-  // 社員一覧（プロフィール参照用）
   const { data: employees = [] } = useQuery<Employee[]>(
     organization ? `employees-list-${organization.id}` : null,
     async () => {
@@ -138,12 +154,16 @@ export default function WorkflowsPage() {
         .eq("organization_id", organization!.id);
       return (data ?? []).map((d) => {
         const p = d.profiles as unknown as Employee;
-        return { id: p.id, email: p.email, display_name: p.display_name, avatar_url: p.avatar_url };
+        return {
+          id: p.id,
+          email: p.email,
+          display_name: p.display_name,
+          avatar_url: p.avatar_url,
+        };
       });
     }
   );
 
-  // 申請一覧
   const {
     data: requests = [],
     isLoading: requestsLoading,
@@ -161,11 +181,56 @@ export default function WorkflowsPage() {
     }
   );
 
-  // プロフィール参照ヘルパー
+  const {
+    data: rules = [],
+    isLoading: rulesLoading,
+    mutate: mutateRules,
+  } = useQuery<WorkflowRule[]>(
+    organization && activeTab === "settings" ? `workflow-rules-${organization.id}` : null,
+    async () => {
+      const { data } = await getSupabase()
+        .from("workflow_rules")
+        .select("*")
+        .eq("organization_id", organization!.id);
+      return (data ?? []) as WorkflowRule[];
+    }
+  );
+
+  useEffect(() => {
+    if (rules.length === 0) return;
+    const config = { ...defaultAutoApproveConfig };
+    for (const rule of rules) {
+      if (rule.rule_type === "auto_approve") {
+        const reqType = rule.request_type as keyof AutoApproveConfig;
+        if (reqType === "paid_leave") {
+          config.paid_leave = {
+            is_active: rule.is_active,
+            max_days: (rule.conditions?.max_days as number) ?? 3,
+          };
+        } else if (reqType === "overtime") {
+          config.overtime = {
+            is_active: rule.is_active,
+            max_hours: (rule.conditions?.max_hours as number) ?? 2,
+          };
+        } else if (reqType === "expense") {
+          config.expense = {
+            is_active: rule.is_active,
+            max_amount: (rule.conditions?.max_amount as number) ?? 10000,
+          };
+        } else if (reqType === "business_trip") {
+          config.business_trip = { is_active: rule.is_active };
+        }
+      }
+      if (rule.rule_type === "notify") {
+        setNotifyAdmins(rule.is_active);
+      }
+    }
+    setAutoApproveConfig(config);
+  }, [rules]);
+
   const getEmployee = (userId: string): Employee | undefined =>
     employees.find((e) => e.id === userId);
 
-  // ---------- フィルター ----------
   const filteredRequests = useMemo(() => {
     let rows = requests;
     if (filterStatus !== "all") {
@@ -187,7 +252,6 @@ export default function WorkflowsPage() {
     return rows;
   }, [requests, filterStatus, filterType, search, employees]);
 
-  // ---------- 承認/却下 ----------
   const handleReview = async (status: "approved" | "rejected") => {
     if (!selectedRequest) return;
     setSavingReview(true);
@@ -197,37 +261,31 @@ export default function WorkflowsPage() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      await supabase
-        .from("workflow_requests")
-        .update({
-          status,
-          reviewed_by: user?.id ?? null,
-          reviewed_at: new Date().toISOString(),
-          review_comment: reviewComment || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", selectedRequest.id);
-
-      // 有給休暇の承認時、leave_balances を更新
       if (status === "approved" && selectedRequest.request_type === "paid_leave") {
-        const days = (selectedRequest.request_data?.days as number) ?? 1;
-        const { data: balance } = await supabase
-          .from("leave_balances")
-          .select("id, used_days")
-          .eq("user_id", selectedRequest.user_id)
-          .order("fiscal_year", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        const { data: result } = await supabase.rpc("approve_leave_request", {
+          p_request_id: selectedRequest.id,
+          p_reviewer_id: user?.id ?? "",
+          p_comment: reviewComment || null,
+        });
 
-        if (balance) {
-          await supabase
-            .from("leave_balances")
-            .update({ used_days: ((balance.used_days as number) ?? 0) + days })
-            .eq("id", balance.id);
+        if (result?.error) {
+          showToast(result.error as string, "error");
+          setSavingReview(false);
+          return;
         }
+      } else {
+        await supabase
+          .from("workflow_requests")
+          .update({
+            status,
+            reviewed_by: user?.id ?? null,
+            reviewed_at: new Date().toISOString(),
+            review_comment: reviewComment || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", selectedRequest.id);
       }
 
-      // 申請者に通知を送信
       const typeLabel =
         workflowRequestTypeLabels[selectedRequest.request_type] || selectedRequest.request_type;
       await supabase.from("notifications").insert({
@@ -255,9 +313,85 @@ export default function WorkflowsPage() {
     }
   };
 
+  const handleSaveSettings = useCallback(async () => {
+    if (!organization) return;
+    setSavingSettings(true);
+    try {
+      const supabase = getSupabase();
+      const orgId = organization.id;
+
+      const upserts: {
+        organization_id: string;
+        request_type: string;
+        rule_type: string;
+        conditions: Record<string, unknown>;
+        is_active: boolean;
+      }[] = [];
+
+      upserts.push({
+        organization_id: orgId,
+        request_type: "paid_leave",
+        rule_type: "auto_approve",
+        conditions: { max_days: autoApproveConfig.paid_leave.max_days },
+        is_active: autoApproveConfig.paid_leave.is_active,
+      });
+      upserts.push({
+        organization_id: orgId,
+        request_type: "overtime",
+        rule_type: "auto_approve",
+        conditions: { max_hours: autoApproveConfig.overtime.max_hours },
+        is_active: autoApproveConfig.overtime.is_active,
+      });
+      upserts.push({
+        organization_id: orgId,
+        request_type: "expense",
+        rule_type: "auto_approve",
+        conditions: { max_amount: autoApproveConfig.expense.max_amount },
+        is_active: autoApproveConfig.expense.is_active,
+      });
+      upserts.push({
+        organization_id: orgId,
+        request_type: "business_trip",
+        rule_type: "auto_approve",
+        conditions: {},
+        is_active: autoApproveConfig.business_trip.is_active,
+      });
+      upserts.push({
+        organization_id: orgId,
+        request_type: "_all",
+        rule_type: "notify",
+        conditions: {},
+        is_active: notifyAdmins,
+      });
+
+      for (const upsert of upserts) {
+        const existing = rules.find(
+          (r) => r.request_type === upsert.request_type && r.rule_type === upsert.rule_type
+        );
+        if (existing) {
+          await supabase
+            .from("workflow_rules")
+            .update({
+              conditions: upsert.conditions,
+              is_active: upsert.is_active,
+            })
+            .eq("id", existing.id);
+        } else {
+          await supabase.from("workflow_rules").insert(upsert);
+        }
+      }
+
+      await mutateRules();
+      showToast("設定を保存しました", "success");
+    } catch {
+      showToast("設定の保存に失敗しました", "error");
+    } finally {
+      setSavingSettings(false);
+    }
+  }, [organization, autoApproveConfig, notifyAdmins, rules, mutateRules, showToast]);
+
   const pendingCount = requests.filter((r) => r.status === "pending").length;
 
-  // アクティブフィルター数
   const activeFilterCount = [filterStatus !== "all", filterType !== "all"].filter(Boolean).length;
 
   return (
@@ -298,7 +432,6 @@ export default function WorkflowsPage() {
 
       <QueryErrorBanner error={requestsError} onRetry={() => mutate()} />
 
-      {/* ========= 申請一覧タブ ========= */}
       {activeTab === "requests" && (
         <>
           <div className="sticky top-14 z-10">
@@ -444,26 +577,192 @@ export default function WorkflowsPage() {
         </>
       )}
 
-      {/* ========= 設定タブ ========= */}
       {activeTab === "settings" && (
         <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
           <div className="max-w-xl space-y-6">
-            <Card>
-              <CardContent className="p-6 space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  承認設定は勤怠管理の承認者設定を共有します。
-                </p>
-                <Button variant="outline" onClick={() => router.push("/attendance")}>
-                  <Settings2 className="h-4 w-4 mr-1.5" />
-                  勤怠管理の承認者設定へ
-                </Button>
-              </CardContent>
-            </Card>
+            {rulesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>自動承認ルール</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">有給休暇の自動承認</p>
+                        {autoApproveConfig.paid_leave.is_active && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <Input
+                              type="number"
+                              min={1}
+                              className="w-20"
+                              value={autoApproveConfig.paid_leave.max_days}
+                              onChange={(e) =>
+                                setAutoApproveConfig((prev) => ({
+                                  ...prev,
+                                  paid_leave: {
+                                    ...prev.paid_leave,
+                                    max_days: Number(e.target.value) || 1,
+                                  },
+                                }))
+                              }
+                            />
+                            <span className="text-sm text-muted-foreground">日以内は自動承認</span>
+                          </div>
+                        )}
+                      </div>
+                      <Switch
+                        checked={autoApproveConfig.paid_leave.is_active}
+                        onCheckedChange={(checked) =>
+                          setAutoApproveConfig((prev) => ({
+                            ...prev,
+                            paid_leave: { ...prev.paid_leave, is_active: checked },
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="border-t" />
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">残業申請の自動承認</p>
+                        {autoApproveConfig.overtime.is_active && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <Input
+                              type="number"
+                              min={1}
+                              className="w-20"
+                              value={autoApproveConfig.overtime.max_hours}
+                              onChange={(e) =>
+                                setAutoApproveConfig((prev) => ({
+                                  ...prev,
+                                  overtime: {
+                                    ...prev.overtime,
+                                    max_hours: Number(e.target.value) || 1,
+                                  },
+                                }))
+                              }
+                            />
+                            <span className="text-sm text-muted-foreground">
+                              時間以下は自動承認
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <Switch
+                        checked={autoApproveConfig.overtime.is_active}
+                        onCheckedChange={(checked) =>
+                          setAutoApproveConfig((prev) => ({
+                            ...prev,
+                            overtime: { ...prev.overtime, is_active: checked },
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="border-t" />
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">経費申請の自動承認</p>
+                        {autoApproveConfig.expense.is_active && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-sm text-muted-foreground">¥</span>
+                            <Input
+                              type="number"
+                              min={1}
+                              className="w-28"
+                              value={autoApproveConfig.expense.max_amount}
+                              onChange={(e) =>
+                                setAutoApproveConfig((prev) => ({
+                                  ...prev,
+                                  expense: {
+                                    ...prev.expense,
+                                    max_amount: Number(e.target.value) || 1,
+                                  },
+                                }))
+                              }
+                            />
+                            <span className="text-sm text-muted-foreground">以下は自動承認</span>
+                          </div>
+                        )}
+                      </div>
+                      <Switch
+                        checked={autoApproveConfig.expense.is_active}
+                        onCheckedChange={(checked) =>
+                          setAutoApproveConfig((prev) => ({
+                            ...prev,
+                            expense: { ...prev.expense, is_active: checked },
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="border-t" />
+
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">出張申請の自動承認</p>
+                      <Switch
+                        checked={autoApproveConfig.business_trip.is_active}
+                        onCheckedChange={(checked) =>
+                          setAutoApproveConfig((prev) => ({
+                            ...prev,
+                            business_trip: { is_active: checked },
+                          }))
+                        }
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>通知設定</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Bell className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-medium">申請時に管理者へ通知</p>
+                      </div>
+                      <Switch checked={notifyAdmins} onCheckedChange={setNotifyAdmins} />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-6 space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      承認者の設定は勤怠管理の承認者設定を共有します。
+                    </p>
+                    <Button variant="outline" onClick={() => router.push("/attendance")}>
+                      <Settings2 className="h-4 w-4 mr-1.5" />
+                      勤怠管理の承認者設定へ
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveSettings} disabled={savingSettings}>
+                    {savingSettings ? (
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-1.5" />
+                    )}
+                    設定を保存
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
 
-      {/* レビューダイアログ */}
       <EditPanel
         open={reviewDialogOpen}
         onOpenChange={(open) => {

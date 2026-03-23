@@ -1,12 +1,21 @@
 # RLS Policies Reference
 
-All tables have `ROW LEVEL SECURITY` enabled. This document catalogs the final active policies after all migrations through `20260324500000`.
+All tables have `ROW LEVEL SECURITY` enabled. This document catalogs the final active policies after all migrations through `20260324600000`.
 
 Legend:
-- **Org member** = `user_organizations` join on `auth.uid()::text`
-- **Admin** = org member with `profiles.role = 'admin'`
+- **Org member** = `get_my_organization_ids()` helper function
+- **Admin** = `get_my_role() = 'admin'` helper function
 - **Own** = `user_id = auth.uid()::text` (or equivalent)
 - **FOR ALL** = covers SELECT, INSERT, UPDATE, DELETE
+
+## Helper Functions
+
+`profiles` と `user_organizations` の相互参照による RLS 無限再帰を防ぐため、以下の `SECURITY DEFINER` ヘルパー関数を使用する。
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `get_my_role()` | `text` | 現在のユーザーの `profiles.role` を返す（RLS迂回） |
+| `get_my_organization_ids()` | `SETOF text` | 現在のユーザーの所属組織ID一覧を返す（RLS迂回） |
 
 ---
 
@@ -14,25 +23,24 @@ Legend:
 
 | Policy | Operation | Condition | Migration |
 |--------|-----------|-----------|-----------|
-| `org_select_member` | SELECT | Org member | 20260324300000 |
-| `org_all_admin` | ALL | Admin | 20260324300000 |
+| `org_select_member` | SELECT | Org member via `get_my_organization_ids()` | 20260324300000 |
+| `org_all_admin` | ALL | Admin via `get_my_role()` + `get_my_organization_ids()` | 20260324300000 |
 
 ## profiles
 
 | Policy | Operation | Condition | Migration |
 |--------|-----------|-----------|-----------|
 | `profiles_select_own` | SELECT | Own (`id = auth.uid()`) | 20260324300000 |
-| `profiles_select_org_member` | SELECT | Same org member | 20260324300000 |
+| `profiles_select_org_member` | SELECT | Same org member via `get_my_organization_ids()` | 20260324600000 |
 | `profiles_update_own` | UPDATE | Own | 20260324300000 |
-| `profiles_all_admin` | ALL | Admin (global) | 20260324300000 |
+| `profiles_all_admin` | ALL | Admin via `get_my_role()` | 20260324600000 |
 
 ## user_organizations
 
 | Policy | Operation | Condition | Migration |
 |--------|-----------|-----------|-----------|
 | `user_org_select_own` | SELECT | Own | 20260324300000 |
-| `user_org_select_org_member` | SELECT | Same org member | 20260324300000 |
-| `user_org_all_admin` | ALL | Admin in same org | 20260324300000 |
+| `user_org_all_admin` | ALL | Admin via `get_my_role()` | 20260324600000 |
 
 ## departments
 
@@ -477,3 +485,5 @@ Legend:
 - Tables marked with `FOR ALL` admin policies: the admin policy covers all four operations (SELECT, INSERT, UPDATE, DELETE). Specific per-operation policies (e.g., `_select_own`) work alongside them via PostgreSQL's OR-based policy evaluation.
 - The `DO $$ ... EXCEPTION WHEN duplicate_object` pattern in migrations `20260324300000` and `20260324500000` ensures idempotency for environments where policies may already exist.
 - `form_change_logs`, `job_change_logs`, `interview_change_logs` were dropped in migration `20260324400000` after data was migrated to `audit_logs`.
+- `profiles` と `user_organizations` のRLSポリシーは `SECURITY DEFINER` ヘルパー関数（`get_my_role()`, `get_my_organization_ids()`）を使用して無限再帰を防止する。これらの関数はRLSを迂回して直接テーブルにアクセスする（20260324600000で修正）。
+- 削除済みポリシー: `user_org_select_org_member`（`user_org_select_own` + `user_org_all_admin` でカバー）、`authenticated_read_user_organizations`（再帰の原因）。

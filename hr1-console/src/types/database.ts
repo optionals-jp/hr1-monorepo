@@ -592,6 +592,17 @@ export interface WorkflowRequest {
   reviewer?: Profile;
 }
 
+export interface WorkflowRule {
+  id: string;
+  organization_id: string;
+  request_type: string;
+  rule_type: "auto_approve" | "notify" | "validate";
+  conditions: Record<string, unknown>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface LeaveBalance {
   id: string;
   organization_id: string;

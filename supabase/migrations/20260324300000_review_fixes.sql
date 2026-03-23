@@ -3,6 +3,31 @@
 -- ========================================================================
 
 -- ========================================================================
+-- RLS再帰防止用ヘルパー関数
+-- profiles と user_organizations の相互参照による無限再帰を防ぐため、
+-- SECURITY DEFINER でRLSを迂回してロール・組織IDを取得する。
+-- ========================================================================
+CREATE OR REPLACE FUNCTION public.get_my_role()
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT role FROM profiles WHERE id = auth.uid()::text;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_my_organization_ids()
+RETURNS SETOF text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT organization_id FROM user_organizations WHERE user_id = auth.uid()::text;
+$$;
+
+-- ========================================================================
 -- 🔴1: 初期テーブルの RLS ポリシー追加
 -- CREATE TABLE IF NOT EXISTS で作成されたテーブルのうち、
 -- 既存環境ではポリシーが存在するが、新規環境では未定義になるものを補完
@@ -11,22 +36,14 @@
 -- organizations: 組織メンバーのみ閲覧、管理者のみ変更
 DO $$ BEGIN
   CREATE POLICY "org_select_member" ON public.organizations FOR SELECT
-    USING (id IN (SELECT organization_id FROM public.user_organizations WHERE user_id = auth.uid()::text));
+    USING (id IN (SELECT public.get_my_organization_ids()));
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
   CREATE POLICY "org_all_admin" ON public.organizations FOR ALL
-    USING (id IN (
-      SELECT uo.organization_id FROM public.user_organizations uo
-      JOIN public.profiles p ON p.id = uo.user_id
-      WHERE uo.user_id = auth.uid()::text AND p.role = 'admin'
-    ))
-    WITH CHECK (id IN (
-      SELECT uo.organization_id FROM public.user_organizations uo
-      JOIN public.profiles p ON p.id = uo.user_id
-      WHERE uo.user_id = auth.uid()::text AND p.role = 'admin'
-    ));
+    USING (id IN (SELECT public.get_my_organization_ids()) AND public.get_my_role() = 'admin')
+    WITH CHECK (id IN (SELECT public.get_my_organization_ids()) AND public.get_my_role() = 'admin');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -41,9 +58,7 @@ DO $$ BEGIN
   CREATE POLICY "profiles_select_org_member" ON public.profiles FOR SELECT
     USING (id IN (
       SELECT uo.user_id FROM public.user_organizations uo
-      WHERE uo.organization_id IN (
-        SELECT organization_id FROM public.user_organizations WHERE user_id = auth.uid()::text
-      )
+      WHERE uo.organization_id IN (SELECT public.get_my_organization_ids())
     ));
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
@@ -56,9 +71,7 @@ END $$;
 
 DO $$ BEGIN
   CREATE POLICY "profiles_all_admin" ON public.profiles FOR ALL
-    USING (EXISTS (
-      SELECT 1 FROM public.profiles p WHERE p.id = auth.uid()::text AND p.role = 'admin'
-    ));
+    USING (public.get_my_role() = 'admin');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -69,43 +82,28 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
-DO $$ BEGIN
-  CREATE POLICY "user_org_select_org_member" ON public.user_organizations FOR SELECT
-    USING (organization_id IN (
-      SELECT organization_id FROM public.user_organizations WHERE user_id = auth.uid()::text
-    ));
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+-- user_org_select_org_member は削除（user_org_select_own + user_org_all_admin で十分カバー）
 
 DO $$ BEGIN
   CREATE POLICY "user_org_all_admin" ON public.user_organizations FOR ALL
-    USING (organization_id IN (
-      SELECT uo.organization_id FROM public.user_organizations uo
-      JOIN public.profiles p ON p.id = uo.user_id
-      WHERE uo.user_id = auth.uid()::text AND p.role = 'admin'
-    ));
+    USING (public.get_my_role() = 'admin')
+    WITH CHECK (public.get_my_role() = 'admin');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- jobs: 組織メンバー閲覧 + 管理者管理
 DO $$ BEGIN
   CREATE POLICY "jobs_select_org" ON public.jobs FOR SELECT
-    USING (organization_id IN (SELECT organization_id FROM public.user_organizations WHERE user_id = auth.uid()::text));
+    USING (organization_id IN (SELECT public.get_my_organization_ids()));
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
   CREATE POLICY "jobs_all_admin" ON public.jobs FOR ALL
-    USING (organization_id IN (
-      SELECT uo.organization_id FROM public.user_organizations uo
-      JOIN public.profiles p ON p.id = uo.user_id
-      WHERE uo.user_id = auth.uid()::text AND p.role = 'admin'
-    ))
-    WITH CHECK (organization_id IN (
-      SELECT uo.organization_id FROM public.user_organizations uo
-      JOIN public.profiles p ON p.id = uo.user_id
-      WHERE uo.user_id = auth.uid()::text AND p.role = 'admin'
-    ));
+    USING (public.get_my_role() = 'admin'
+      AND organization_id IN (SELECT public.get_my_organization_ids()))
+    WITH CHECK (public.get_my_role() = 'admin'
+      AND organization_id IN (SELECT public.get_my_organization_ids()));
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -124,28 +122,22 @@ END $$;
 
 DO $$ BEGIN
   CREATE POLICY "applications_all_admin" ON public.applications FOR ALL
-    USING (organization_id IN (
-      SELECT uo.organization_id FROM public.user_organizations uo
-      JOIN public.profiles p ON p.id = uo.user_id
-      WHERE uo.user_id = auth.uid()::text AND p.role = 'admin'
-    ));
+    USING (public.get_my_role() = 'admin'
+      AND organization_id IN (SELECT public.get_my_organization_ids()));
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- departments: 組織メンバー閲覧 + 管理者管理
 DO $$ BEGIN
   CREATE POLICY "departments_select_org" ON public.departments FOR SELECT
-    USING (organization_id IN (SELECT organization_id FROM public.user_organizations WHERE user_id = auth.uid()::text));
+    USING (organization_id IN (SELECT public.get_my_organization_ids()));
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
   CREATE POLICY "departments_all_admin" ON public.departments FOR ALL
-    USING (organization_id IN (
-      SELECT uo.organization_id FROM public.user_organizations uo
-      JOIN public.profiles p ON p.id = uo.user_id
-      WHERE uo.user_id = auth.uid()::text AND p.role = 'admin'
-    ));
+    USING (public.get_my_role() = 'admin'
+      AND organization_id IN (SELECT public.get_my_organization_ids()));
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -155,11 +147,8 @@ DO $$ BEGIN
     USING (thread_id IN (
       SELECT id FROM public.message_threads
       WHERE participant_id = auth.uid()::text
-        OR organization_id IN (
-          SELECT uo.organization_id FROM public.user_organizations uo
-          JOIN public.profiles p ON p.id = uo.user_id
-          WHERE uo.user_id = auth.uid()::text AND p.role IN ('admin', 'employee')
-        )
+        OR (organization_id IN (SELECT public.get_my_organization_ids())
+            AND public.get_my_role() IN ('admin', 'employee'))
     ));
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
@@ -172,12 +161,11 @@ END $$;
 
 DO $$ BEGIN
   CREATE POLICY "messages_update_own" ON public.messages FOR UPDATE
-    USING (sender_id = auth.uid()::text OR thread_id IN (
-      SELECT id FROM public.message_threads mt
-      WHERE mt.organization_id IN (
-        SELECT uo.organization_id FROM public.user_organizations uo
-        JOIN public.profiles p ON p.id = uo.user_id
-        WHERE uo.user_id = auth.uid()::text AND p.role IN ('admin', 'employee')
+    USING (sender_id = auth.uid()::text OR (
+      public.get_my_role() IN ('admin', 'employee')
+      AND thread_id IN (
+        SELECT id FROM public.message_threads mt
+        WHERE mt.organization_id IN (SELECT public.get_my_organization_ids())
       )
     ));
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -188,39 +176,30 @@ DO $$ BEGIN
   CREATE POLICY "threads_select" ON public.message_threads FOR SELECT
     USING (
       participant_id = auth.uid()::text
-      OR organization_id IN (
-        SELECT uo.organization_id FROM public.user_organizations uo
-        JOIN public.profiles p ON p.id = uo.user_id
-        WHERE uo.user_id = auth.uid()::text AND p.role IN ('admin', 'employee')
-      )
+      OR (organization_id IN (SELECT public.get_my_organization_ids())
+          AND public.get_my_role() IN ('admin', 'employee'))
     );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
   CREATE POLICY "threads_all_admin" ON public.message_threads FOR ALL
-    USING (organization_id IN (
-      SELECT uo.organization_id FROM public.user_organizations uo
-      JOIN public.profiles p ON p.id = uo.user_id
-      WHERE uo.user_id = auth.uid()::text AND p.role = 'admin'
-    ));
+    USING (public.get_my_role() = 'admin'
+      AND organization_id IN (SELECT public.get_my_organization_ids()));
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- tasks, task_assignees, projects 等: 組織メンバー閲覧 + 管理者管理
 DO $$ BEGIN
   CREATE POLICY "tasks_select_org" ON public.tasks FOR SELECT
-    USING (organization_id IN (SELECT organization_id FROM public.user_organizations WHERE user_id = auth.uid()::text));
+    USING (organization_id IN (SELECT public.get_my_organization_ids()));
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
   CREATE POLICY "tasks_all_admin" ON public.tasks FOR ALL
-    USING (organization_id IN (
-      SELECT uo.organization_id FROM public.user_organizations uo
-      JOIN public.profiles p ON p.id = uo.user_id
-      WHERE uo.user_id = auth.uid()::text AND p.role = 'admin'
-    ));
+    USING (public.get_my_role() = 'admin'
+      AND organization_id IN (SELECT public.get_my_organization_ids()));
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
