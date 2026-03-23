@@ -20,6 +20,15 @@ class MessagesScreen extends ConsumerWidget {
 
     final threadsAsync = ref.watch(messageThreadsProvider);
 
+    ref.listen<AsyncValue<List<MessageThread>>>(messageThreadsProvider, (
+      prev,
+      next,
+    ) {
+      if (next.hasError && prev?.hasError != true) {
+        CommonSnackBar.error(context, 'メッセージの取得に失敗しました');
+      }
+    });
+
     return threadsAsync.when(
       loading: () => const LoadingIndicator(),
       error: (e, _) =>
