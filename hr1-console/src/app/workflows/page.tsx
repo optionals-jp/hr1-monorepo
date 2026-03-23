@@ -28,6 +28,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { SearchBar } from "@/components/ui/search-bar";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
@@ -146,6 +147,7 @@ export default function WorkflowsPage() {
   const {
     data: requests = [],
     isLoading: requestsLoading,
+    error: requestsError,
     mutate,
   } = useQuery<WorkflowRequest[]>(
     organization && activeTab === "requests" ? `workflow-requests-${organization.id}` : null,
@@ -293,6 +295,8 @@ export default function WorkflowsPage() {
           </div>
         }
       />
+
+      <QueryErrorBanner error={requestsError} onRetry={() => mutate()} />
 
       {/* ========= 申請一覧タブ ========= */}
       {activeTab === "requests" && (

@@ -16,6 +16,7 @@ import { OpenJobsChart, OpenJobStat } from "@/components/dashboard/open-jobs-cha
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import {
   Users,
   UserPlus,
@@ -94,7 +95,11 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("recruiting");
 
   // --- 共通 KPI ---
-  const { data: stats } = useQuery<Stats>(orgId ? `dashboard-stats-${orgId}` : null, async () => {
+  const {
+    data: stats,
+    error: statsError,
+    mutate: mutateStats,
+  } = useQuery<Stats>(orgId ? `dashboard-stats-${orgId}` : null, async () => {
     const [applicantsRes, employeesRes, jobsRes, appsRes] = await Promise.all([
       getSupabase()
         .from("user_organizations")
@@ -505,6 +510,8 @@ export default function DashboardPage() {
       </div>
 
       <PageContent>
+        <QueryErrorBanner error={statsError} onRetry={() => mutateStats()} />
+
         {/* ===== 採用タブ ===== */}
         {activeTab === "recruiting" && (
           <div className="space-y-6">

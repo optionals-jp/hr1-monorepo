@@ -1,0 +1,18 @@
+name: hr1_shared
+description: "HR1 - 共有パッケージ"
+publish_to: 'none'
+version: 1.0.0
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_svg: ^2.0.17
+  google_fonts: ^6.2.1
+  shimmer: ^3.0.0
+
+flutter:
+  assets:
+    - assets/

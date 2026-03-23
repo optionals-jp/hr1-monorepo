@@ -32,13 +32,19 @@ import {
 import { format } from "date-fns";
 import { Pencil, GripVertical, Eye, EyeOff } from "lucide-react";
 import { mutate } from "swr";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 
 export default function FaqsPage() {
   const { organization } = useOrg();
 
   const cacheKey = organization ? `faqs-${organization.id}` : null;
 
-  const { data: faqs = [], isLoading } = useQuery<Faq[]>(cacheKey, async () => {
+  const {
+    data: faqs = [],
+    isLoading,
+    error: faqsError,
+    mutate: mutateFaqs,
+  } = useQuery<Faq[]>(cacheKey, async () => {
     const { data } = await getSupabase()
       .from("faqs")
       .select("*")
@@ -135,6 +141,8 @@ export default function FaqsPage() {
         sticky={false}
         action={<Button onClick={openCreate}>FAQを作成</Button>}
       />
+
+      <QueryErrorBanner error={faqsError} onRetry={() => mutateFaqs()} />
 
       <div className="bg-white">
         <Table>

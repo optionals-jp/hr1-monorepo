@@ -30,7 +30,10 @@ Deno.serve(async (req: Request) => {
     if (!authHeader) {
       return new Response(
         JSON.stringify({ error: "認証が必要です" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
     }
 
@@ -42,12 +45,17 @@ Deno.serve(async (req: Request) => {
     const callerClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: { user: caller }, error: callerError } =
-      await callerClient.auth.getUser();
+    const {
+      data: { user: caller },
+      error: callerError,
+    } = await callerClient.auth.getUser();
     if (callerError || !caller) {
       return new Response(
         JSON.stringify({ error: "認証に失敗しました" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
     }
 
@@ -62,7 +70,10 @@ Deno.serve(async (req: Request) => {
     if (callerProfile?.role !== "admin") {
       return new Response(
         JSON.stringify({ error: "管理者権限が必要です" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
     }
 
@@ -71,7 +82,10 @@ Deno.serve(async (req: Request) => {
     if (!body.email || !body.role || !body.organization_id) {
       return new Response(
         JSON.stringify({ error: "email, role, organization_id は必須です" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
     }
 
@@ -87,82 +101,51 @@ Deno.serve(async (req: Request) => {
       });
 
     if (authError) {
-      return new Response(
-        JSON.stringify({ error: authError.message }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: authError.message }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const userId = authData.user.id;
 
-    // 2. profiles テーブルにプロフィールを作成
-    const { error: profileError } = await adminClient
-      .from("profiles")
-      .insert({
-        id: userId,
-        email: body.email,
-        display_name: body.display_name ?? null,
-        role: body.role,
-        position: body.position ?? null,
-        hiring_type: body.hiring_type ?? null,
-        graduation_year: body.graduation_year ?? null,
-      });
+    // 2. RPC でプロフィール・組織・部署を一括作成（トランザクション保証）
+    const { error: rpcError } = await adminClient.rpc("create_user_with_org", {
+      p_user_id: userId,
+      p_email: body.email,
+      p_display_name: body.display_name ?? null,
+      p_role: body.role,
+      p_organization_id: body.organization_id,
+      p_position: body.position ?? null,
+      p_hiring_type: body.hiring_type ?? null,
+      p_graduation_year: body.graduation_year ?? null,
+      p_department_ids: body.department_ids ?? [],
+    });
 
-    if (profileError) {
-      // プロフィール作成失敗時はAuthユーザーも削除（ロールバック）
+    if (rpcError) {
+      // RPC 失敗時は Auth ユーザーも削除（ロールバック）
       await adminClient.auth.admin.deleteUser(userId);
       return new Response(
-        JSON.stringify({ error: `プロフィール作成失敗: ${profileError.message}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: `ユーザー作成失敗: ${rpcError.message}` }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
     }
 
-    // 3. user_organizations にリンク
-    const { error: orgError } = await adminClient
-      .from("user_organizations")
-      .insert({
-        user_id: userId,
-        organization_id: body.organization_id,
-      });
-
-    if (orgError) {
-      // ロールバック
-      await adminClient.from("profiles").delete().eq("id", userId);
-      await adminClient.auth.admin.deleteUser(userId);
-      return new Response(
-        JSON.stringify({ error: `組織紐付け失敗: ${orgError.message}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // 4. 部署割り当て（指定がある場合）
-    if (body.department_ids && body.department_ids.length > 0) {
-      const { error: deptError } = await adminClient
-        .from("employee_departments")
-        .insert(
-          body.department_ids.map((deptId) => ({
-            user_id: userId,
-            department_id: deptId,
-          }))
-        );
-
-      if (deptError) {
-        console.error("部署割り当てエラー（ユーザーは作成済み）:", deptError.message);
-      }
-    }
-
-    return new Response(
-      JSON.stringify({ id: userId, email: body.email }),
-      {
-        status: 201,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ id: userId, email: body.email }), {
+      status: 201,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (err) {
     console.error("create-user error:", err);
     return new Response(
       JSON.stringify({ error: "内部エラーが発生しました" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
     );
   }
 });

@@ -25,6 +25,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { SearchBar } from "@/components/ui/search-bar";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
@@ -100,19 +101,20 @@ export default function PayslipsPage() {
 
   // ---------- データ取得 ----------
 
-  const { data: payslips, mutate } = useQuery<Payslip[]>(
-    organization ? `payslips-${organization.id}` : null,
-    async () => {
-      const supabase = getSupabase();
-      const { data } = await supabase
-        .from("payslips")
-        .select("*")
-        .eq("organization_id", organization!.id)
-        .order("year", { ascending: false })
-        .order("month", { ascending: false });
-      return (data ?? []) as Payslip[];
-    }
-  );
+  const {
+    data: payslips,
+    error: payslipsError,
+    mutate,
+  } = useQuery<Payslip[]>(organization ? `payslips-${organization.id}` : null, async () => {
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from("payslips")
+      .select("*")
+      .eq("organization_id", organization!.id)
+      .order("year", { ascending: false })
+      .order("month", { ascending: false });
+    return (data ?? []) as Payslip[];
+  });
 
   const { data: members } = useQuery<MemberRow[]>(
     organization ? `members-${organization.id}` : null,
@@ -452,6 +454,8 @@ export default function PayslipsPage() {
           </div>
         }
       />
+
+      <QueryErrorBanner error={payslipsError} onRetry={() => mutate()} />
 
       {/* ========= 明細一覧タブ ========= */}
       {activeTab === "list" && (

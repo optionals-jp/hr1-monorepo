@@ -4,7 +4,7 @@ import '../../core/constants/constants.dart';
 import '../../features/auth/presentation/providers/organization_context_provider.dart';
 import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/auth/domain/entities/organization.dart';
-import 'org_icon.dart';
+import 'package:hr1_shared/hr1_shared.dart' show OrgIcon;
 
 /// 企業切り替えウィジェット（AppBar用）
 /// 応募者が複数企業にエントリーしている場合にのみ表示される

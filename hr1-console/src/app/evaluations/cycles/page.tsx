@@ -16,6 +16,7 @@ import {
 import { useOrg } from "@/lib/org-context";
 import { useQuery } from "@/lib/use-query";
 import { getSupabase } from "@/lib/supabase";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { cycleStatusLabels, cycleStatusColors } from "@/lib/constants";
 import type { EvaluationCycle } from "@/types/database";
 
@@ -23,7 +24,12 @@ export default function EvaluationCyclesPage() {
   const router = useRouter();
   const { organization } = useOrg();
 
-  const { data: cycles, isLoading } = useQuery<
+  const {
+    data: cycles,
+    isLoading,
+    error: cyclesError,
+    mutate: mutateCycles,
+  } = useQuery<
     (EvaluationCycle & {
       template_title: string;
       assignment_count: number;
@@ -74,6 +80,8 @@ export default function EvaluationCyclesPage() {
           <Button onClick={() => router.push("/evaluations/cycles/new")}>サイクルを作成</Button>
         }
       />
+
+      <QueryErrorBanner error={cyclesError} onRetry={() => mutateCycles()} />
 
       <PageContent>
         {isLoading ? (

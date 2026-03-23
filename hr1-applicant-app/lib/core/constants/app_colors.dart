@@ -1,122 +1,71 @@
 import 'package:flutter/material.dart';
+import 'package:hr1_shared/hr1_shared.dart' as shared;
 
-/// HR1 ブランドカラーパレット
+/// HR1 カラーパレット（後方互換ラッパー）
+///
+/// 実体は hr1_shared の AppColors。
+/// 旧APIエイリアス（primaryLight, accent, *Of() 等）を提供。
 class AppColors {
   AppColors._();
 
-  // ---------------------------------------------------------------------------
-  // ブランドカラー（ライト/ダーク共通）
-  // ---------------------------------------------------------------------------
+  // ブランド
+  static const Color brand = shared.AppColors.brand;
+  static const Color brandLight = shared.AppColors.brandLight;
+  static const Color brandSecondary = shared.AppColors.brandSecondary;
 
-  /// プライマリカラー（ネイビー）
-  static const Color primary = Color(0xFF1B2F4E);
+  // 旧エイリアス
+  static const Color primary = shared.AppColors.brandSecondary;
+  static const Color primaryLight = shared.AppColors.brand;
+  static const Color accent = shared.AppColors.brandLight;
 
-  /// プライマリライト（ブルー）
-  static const Color primaryLight = Color(0xFF2563EB);
+  // セマンティック
+  static const Color success = shared.AppColors.success;
+  static const Color warning = shared.AppColors.warning;
+  static const Color error = shared.AppColors.error;
+  static const Color purple = shared.AppColors.purple;
 
-  /// アクセントカラー（スカイブルー）
-  static const Color accent = Color(0xFF0EA5E9);
-
-  /// 成功（グリーン）
-  static const Color success = Color(0xFF059669);
-
-  /// 警告（オレンジ）
-  static const Color warning = Color(0xFFEA580C);
-
-  /// エラー（レッド）
-  static const Color error = Color(0xFFDC2626);
-
-  /// サーベイ・研修用パープル
-  static const Color purple = Color(0xFF8764B8);
-
-  // ---------------------------------------------------------------------------
   // ライトモード
-  // ---------------------------------------------------------------------------
+  static const Color background = shared.AppColors.lightBackground;
+  static const Color surface = shared.AppColors.lightSurface;
+  static const Color textPrimary = shared.AppColors.lightTextPrimary;
+  static const Color textSecondary = shared.AppColors.lightTextSecondary;
+  static const Color textTertiary = shared.AppColors.lightTextTertiary;
+  static const Color border = shared.AppColors.lightBorder;
+  static const Color divider = shared.AppColors.lightDivider;
+  static const Color surfaceSecondary = shared.AppColors.lightSurfaceSecondary;
+  static const Color surfaceTertiary = shared.AppColors.lightSurfaceTertiary;
 
-  /// 背景色（白）
-  static const Color background = Color(0xFFFFFFFF);
-
-  /// サーフェス（ホワイト）
-  static const Color surface = Color(0xFFFFFFFF);
-
-  /// テキストプライマリ（ダークネイビー）
-  static const Color textPrimary = Color(0xFF1E293B);
-
-  /// テキストセカンダリ（グレー）
-  static const Color textSecondary = Color(0xFF64748B);
-
-  /// テキストターシャリ（薄いアイコン・無効テキスト）
-  static const Color textTertiary = Color(0xFF94A3B8);
-
-  /// ボーダー（ライトグレー）
-  static const Color border = Color(0xFFCBD5E1);
-
-  /// ディバイダー（非常に薄い）
-  static const Color divider = Color(0xFFE2E8F0);
-
-  /// サーフェスセカンダリ
-  static const Color surfaceSecondary = Color(0xFFF1F5F9);
-
-  /// サーフェスターシャリ（入力欄背景・受信バブル等）
-  static const Color surfaceTertiary = Color(0xFFEFEFEF);
-
-  // ---------------------------------------------------------------------------
   // ダークモード
-  // ---------------------------------------------------------------------------
+  static const Color darkBackground = shared.AppColors.darkBackground;
+  static const Color darkSurface = shared.AppColors.darkSurface;
+  static const Color darkSurfaceSecondary =
+      shared.AppColors.darkSurfaceSecondary;
+  static const Color darkSurfaceTertiary = shared.AppColors.darkSurfaceTertiary;
+  static const Color darkTextPrimary = shared.AppColors.darkTextPrimary;
+  static const Color darkTextSecondary = shared.AppColors.darkTextSecondary;
+  static const Color darkTextTertiary = shared.AppColors.darkTextTertiary;
+  static const Color darkBorder = shared.AppColors.darkBorder;
+  static const Color darkDivider = shared.AppColors.darkDivider;
 
-  static const Color darkBackground = Color(0xFF292929);
-  static const Color darkSurface = Color(0xFF292929);
-  static const Color darkSurfaceSecondary = Color(0xFF1F1F1F);
-  static const Color darkSurfaceTertiary = Color(0xFF3A3A3A);
-  static const Color darkTextPrimary = Color(0xFFFFFFFF);
-  static const Color darkTextSecondary = Color(0xFFD6D6D6);
-  static const Color darkBorder = Color(0xFF666666);
-  static const Color darkDivider = Color(0xFF525252);
-  static const Color darkTextTertiary = Color(0xFFADADAD);
-
-  // ---------------------------------------------------------------------------
-  // テーマ対応ヘルパー
-  // ---------------------------------------------------------------------------
-
-  /// プライマリテキスト（ライト/ダーク切り替え）
+  // テーマ対応ヘルパー（旧 "Of" サフィックス API）
   static Color textPrimaryOf(Brightness brightness) =>
-      brightness == Brightness.dark ? darkTextPrimary : textPrimary;
+      shared.AppColors.textPrimary(brightness);
 
-  /// セカンダリテキスト（ライト/ダーク切り替え）
   static Color textSecondaryOf(Brightness brightness) =>
-      brightness == Brightness.dark ? darkTextSecondary : textSecondary;
+      shared.AppColors.textSecondary(brightness);
 
-  /// ターシャリテキスト（ライト/ダーク切り替え）
   static Color textTertiaryOf(Brightness brightness) =>
-      brightness == Brightness.dark ? darkTextTertiary : textTertiary;
+      shared.AppColors.textTertiary(brightness);
 
-  /// ボーダー（ライト/ダーク切り替え）
   static Color borderOf(Brightness brightness) =>
-      brightness == Brightness.dark ? darkBorder : border;
+      shared.AppColors.border(brightness);
 
-  /// ディバイダー（ライト/ダーク切り替え）
   static Color dividerOf(Brightness brightness) =>
-      brightness == Brightness.dark ? darkDivider : divider;
+      shared.AppColors.divider(brightness);
 
-  /// ターシャリサーフェス（ライト/ダーク切り替え）
   static Color surfaceTertiaryOf(Brightness brightness) =>
-      brightness == Brightness.dark ? darkSurfaceTertiary : surfaceTertiary;
+      shared.AppColors.surfaceTertiary(brightness);
 
-  // ---------------------------------------------------------------------------
   // MaterialColor
-  // ---------------------------------------------------------------------------
-
-  static const MaterialColor primarySwatch =
-      MaterialColor(0xFF1B2F4E, <int, Color>{
-        50: Color(0xFFE8EDF3),
-        100: Color(0xFFC5D1E0),
-        200: Color(0xFF9EB3CC),
-        300: Color(0xFF7794B7),
-        400: Color(0xFF597DA7),
-        500: Color(0xFF3C6697),
-        600: Color(0xFF345B8A),
-        700: Color(0xFF2A4D78),
-        800: Color(0xFF1B2F4E),
-        900: Color(0xFF112240),
-      });
+  static const MaterialColor primarySwatch = shared.AppColors.primarySwatch;
 }

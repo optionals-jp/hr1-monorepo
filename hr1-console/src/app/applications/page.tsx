@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import {
   Table,
@@ -60,19 +61,21 @@ export default function ApplicationsPage() {
     }
   );
 
-  const { data: applications = [], isLoading } = useQuery<Application[]>(
-    organization ? `applications-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("applications")
-        .select(
-          "*, jobs(*), profiles:applicant_id(id, email, display_name, role), application_steps(*)"
-        )
-        .eq("organization_id", organization!.id)
-        .order("applied_at", { ascending: false });
-      return data ?? [];
-    }
-  );
+  const {
+    data: applications = [],
+    isLoading,
+    error: applicationsError,
+    mutate: mutateApplications,
+  } = useQuery<Application[]>(organization ? `applications-${organization.id}` : null, async () => {
+    const { data } = await getSupabase()
+      .from("applications")
+      .select(
+        "*, jobs(*), profiles:applicant_id(id, email, display_name, role), application_steps(*)"
+      )
+      .eq("organization_id", organization!.id)
+      .order("applied_at", { ascending: false });
+    return data ?? [];
+  });
 
   const filtered = applications.filter((app) => {
     if (statusFilter !== "all" && app.status !== statusFilter) return false;
@@ -103,6 +106,7 @@ export default function ApplicationsPage() {
 
   return (
     <div className="flex flex-col">
+      <QueryErrorBanner error={applicationsError} onRetry={() => mutateApplications()} />
       <PageHeader
         title="応募管理"
         description="応募の確認・選考ステップの管理"

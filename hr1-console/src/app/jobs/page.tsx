@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
@@ -41,17 +42,19 @@ export default function JobsPage() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("open");
 
-  const { data: jobs = [], isLoading } = useQuery<Job[]>(
-    organization ? `jobs-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("jobs")
-        .select("*")
-        .eq("organization_id", organization!.id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    }
-  );
+  const {
+    data: jobs = [],
+    isLoading,
+    error: jobsError,
+    mutate: mutateJobs,
+  } = useQuery<Job[]>(organization ? `jobs-${organization.id}` : null, async () => {
+    const { data } = await getSupabase()
+      .from("jobs")
+      .select("*")
+      .eq("organization_id", organization!.id)
+      .order("created_at", { ascending: false });
+    return data ?? [];
+  });
 
   const { data: appCounts = {} } = useQuery<Record<string, AppCounts>>(
     organization ? `job-app-counts-${organization.id}` : null,
@@ -89,6 +92,7 @@ export default function JobsPage() {
 
   return (
     <div className="flex flex-col">
+      <QueryErrorBanner error={jobsError} onRetry={() => mutateJobs()} />
       <PageHeader
         title="求人管理"
         description="求人の作成・管理"

@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase";
@@ -37,7 +38,11 @@ export default function NewEvaluationCyclePage() {
   const [saving, setSaving] = useState(false);
 
   // 多面評価シートのみ取得
-  const { data: templates } = useQuery<EvaluationTemplate[]>(
+  const {
+    data: templates,
+    error: templatesError,
+    mutate: mutateTemplates,
+  } = useQuery<EvaluationTemplate[]>(
     organization ? `eval-templates-multi-${organization.id}` : null,
     async () => {
       if (!organization) return [];
@@ -91,6 +96,8 @@ export default function NewEvaluationCyclePage() {
           { label: "評価サイクル", href: "/evaluations?tab=cycles" },
         ]}
       />
+
+      <QueryErrorBanner error={templatesError} onRetry={() => mutateTemplates()} />
 
       <PageContent>
         <div className="space-y-6 max-w-3xl">

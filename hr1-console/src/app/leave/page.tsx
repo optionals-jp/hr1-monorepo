@@ -26,6 +26,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { SearchBar } from "@/components/ui/search-bar";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import {
   Dialog,
   DialogContent,
@@ -129,7 +130,11 @@ export default function LeavePage() {
 
   // ---------- データ取得 ----------
 
-  const { data: balances, mutate: mutateBalances } = useQuery<LeaveBalance[]>(
+  const {
+    data: balances,
+    error: balancesError,
+    mutate: mutateBalances,
+  } = useQuery<LeaveBalance[]>(
     organization ? `leave-balances-${organization.id}` : null,
     async () => {
       const supabase = getSupabase();
@@ -393,6 +398,8 @@ export default function LeavePage() {
           </div>
         }
       />
+
+      <QueryErrorBanner error={balancesError} onRetry={() => mutateBalances()} />
 
       {/* ========= 残日数一覧タブ ========= */}
       {activeTab === "balances" && (

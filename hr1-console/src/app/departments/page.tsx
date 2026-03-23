@@ -28,6 +28,7 @@ import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import type { Department } from "@/types/database";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { Trash2, Pencil, Users, ZoomIn, ZoomOut, Maximize } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -112,6 +113,7 @@ export default function DepartmentsPage() {
   const {
     data: departments = [],
     isLoading,
+    error: departmentsError,
     mutate,
   } = useQuery<Department[]>(organization ? `departments-${organization.id}` : null, async () => {
     const { data } = await getSupabase()
@@ -372,6 +374,7 @@ export default function DepartmentsPage() {
 
   return (
     <div className="flex flex-col">
+      <QueryErrorBanner error={departmentsError} onRetry={() => mutate()} />
       <PageHeader
         title="部署管理"
         description="組織の部署を管理"
