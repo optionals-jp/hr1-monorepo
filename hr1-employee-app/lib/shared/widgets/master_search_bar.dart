@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
-import 'package:hr1_employee_app/shared/widgets/loading_indicator.dart';
-import 'package:hr1_employee_app/shared/widgets/search_box.dart';
+import 'package:hr1_shared/hr1_shared.dart' show LoadingIndicator, SearchBox;
 
 /// マスタデータから検索・選択・自由入力が可能な検索バーコンポーネント
 ///
@@ -125,7 +124,7 @@ class _MasterSearchBarState extends State<MasterSearchBar> {
             child: IconButton(
               onPressed: widget.isAdding ? null : () => _handleAdd(),
               style: IconButton.styleFrom(
-                backgroundColor: AppColors.brandPrimary,
+                backgroundColor: AppColors.brand,
                 foregroundColor: Colors.white,
               ),
               icon: widget.isAdding

@@ -52,8 +52,8 @@ class EmployeeDetailScreen extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                     unselectedLabelStyle: AppTextStyles.caption1,
-                    indicatorColor: AppColors.brandPrimary,
-                    labelColor: AppColors.brandPrimary,
+                    indicatorColor: AppColors.brand,
+                    labelColor: AppColors.brand,
                     unselectedLabelColor: AppColors.textSecondary(
                       Theme.of(context).brightness,
                     ),
@@ -113,12 +113,9 @@ class _ProfileHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _ActionButton(
-                icon: AppIcons.directbox(
-                  size: 22,
-                  color: AppColors.brandPrimary,
-                ),
+                icon: AppIcons.directbox(size: 22, color: AppColors.brand),
                 label: 'チャット',
-                color: AppColors.brandPrimary,
+                color: AppColors.brand,
                 onTap: () {
                   final thread = MessageThread(
                     id: 'thread_${contact.id}',
@@ -364,11 +361,9 @@ class _SkillsTab extends ConsumerWidget {
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    backgroundColor: AppColors.brandPrimary.withValues(
-                      alpha: 0.08,
-                    ),
+                    backgroundColor: AppColors.brand.withValues(alpha: 0.08),
                     side: BorderSide(
-                      color: AppColors.brandPrimary.withValues(alpha: 0.2),
+                      color: AppColors.brand.withValues(alpha: 0.2),
                       width: 0.5,
                     ),
                     shape: RoundedRectangleBorder(
@@ -642,7 +637,7 @@ class _ProjectCard extends StatelessWidget {
               Text(
                 project.role,
                 style: AppTextStyles.caption2.copyWith(
-                  color: AppColors.brandPrimary,
+                  color: AppColors.brand,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -694,7 +689,7 @@ class _CareerRow extends StatelessWidget {
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              color: AppColors.brandPrimary.withValues(alpha: 0.6),
+              color: AppColors.brand.withValues(alpha: 0.6),
               shape: BoxShape.circle,
             ),
           ),
@@ -754,9 +749,9 @@ class _WorkStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      WorkStatus.working => ('勤務中', const Color(0xFF0E7A0B)),
-      WorkStatus.onBreak => ('休憩中', const Color(0xFFEAA300)),
-      WorkStatus.offline => ('退勤済み', Colors.grey),
+      WorkStatus.working => ('勤務中', AppColors.success),
+      WorkStatus.onBreak => ('休憩中', AppColors.sunOrange),
+      WorkStatus.offline => ('退勤済み', AppColors.lightTextTertiary),
     };
 
     return Container(

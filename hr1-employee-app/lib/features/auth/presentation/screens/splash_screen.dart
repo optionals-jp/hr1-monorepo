@@ -60,7 +60,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.brandPrimary,
+      backgroundColor: AppColors.brand,
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -79,7 +79,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     'HR1',
                     style: AppTextStyles.title2.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: AppColors.brandPrimary,
+                      color: AppColors.brand,
                       letterSpacing: -0.5,
                     ),
                   ),

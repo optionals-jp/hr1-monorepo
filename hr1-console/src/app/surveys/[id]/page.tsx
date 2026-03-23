@@ -40,6 +40,7 @@ import { Pencil, Trash2, Plus, Play, Square, Loader2 } from "lucide-react";
 import { mutate } from "swr";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 
 type Tab = "questions" | "responses";
 
@@ -55,18 +56,20 @@ export default function SurveyDetailPage() {
   const responsesCacheKey = organization ? `pulse-survey-responses-${id}` : null;
   const listCacheKey = organization ? `pulse-surveys-${organization.id}` : null;
 
-  const { data: survey, isLoading: surveyLoading } = useQuery<PulseSurvey>(
-    surveyCacheKey,
-    async () => {
-      const { data } = await getSupabase()
-        .from("pulse_surveys")
-        .select("*")
-        .eq("id", id)
-        .eq("organization_id", organization!.id)
-        .single();
-      return data;
-    }
-  );
+  const {
+    data: survey,
+    isLoading: surveyLoading,
+    error: surveyError,
+    mutate: mutateSurvey,
+  } = useQuery<PulseSurvey>(surveyCacheKey, async () => {
+    const { data } = await getSupabase()
+      .from("pulse_surveys")
+      .select("*")
+      .eq("id", id)
+      .eq("organization_id", organization!.id)
+      .single();
+    return data;
+  });
 
   const { data: questions = [], isLoading: questionsLoading } = useQuery<PulseSurveyQuestion[]>(
     questionsCacheKey,
@@ -278,6 +281,8 @@ export default function SurveyDetailPage() {
 
   return (
     <div className="flex flex-col">
+      <QueryErrorBanner error={surveyError} onRetry={() => mutateSurvey()} />
+
       <PageHeader
         title={survey.title}
         description={survey.description ?? undefined}

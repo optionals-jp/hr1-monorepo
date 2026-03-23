@@ -183,12 +183,12 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
               height: 44,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.brandPrimary.withValues(alpha: 0.15)
+                    ? AppColors.brand.withValues(alpha: 0.15)
                     : theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isSelected
-                      ? AppColors.brandPrimary
+                      ? AppColors.brand
                       : theme.colorScheme.outlineVariant,
                 ),
               ),
@@ -198,7 +198,7 @@ class _SurveyAnswerScreenState extends ConsumerState<SurveyAnswerScreen> {
                   style: AppTextStyles.body2.copyWith(
                     fontWeight: FontWeight.w600,
                     color: isSelected
-                        ? AppColors.brandPrimary
+                        ? AppColors.brand
                         : AppColors.textSecondary(theme.brightness),
                   ),
                 ),

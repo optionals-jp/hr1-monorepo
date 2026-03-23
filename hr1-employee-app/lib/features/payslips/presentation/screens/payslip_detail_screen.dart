@@ -82,7 +82,7 @@ class PayslipDetailScreen extends StatelessWidget {
                 child: Text(
                   _formatCurrency(payslip.netPay),
                   style: AppTextStyles.title1.copyWith(
-                    color: AppColors.brandPrimary,
+                    color: AppColors.brand,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../data/repositories/supabase_forms_repository.dart';
-import '../../domain/entities/custom_form.dart';
-import '../../domain/repositories/forms_repository.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_applicant_app/features/forms/data/repositories/supabase_forms_repository.dart';
+import 'package:hr1_applicant_app/features/forms/domain/entities/custom_form.dart';
+import 'package:hr1_applicant_app/features/forms/domain/repositories/forms_repository.dart';
 
 /// FormsRepository プロバイダー
 final formsRepositoryProvider = Provider<FormsRepository>((ref) {

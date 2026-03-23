@@ -200,7 +200,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: AppColors.brandPrimary,
+                color: AppColors.brand,
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -234,7 +234,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                           width: 64,
                           height: 64,
                           decoration: BoxDecoration(
-                            color: AppColors.brandPrimary,
+                            color: AppColors.brand,
                             shape: BoxShape.circle,
                           ),
                           child: Center(
@@ -511,10 +511,10 @@ class _EditingBubble extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.brandPrimary.withValues(alpha: 0.08),
+                  color: AppColors.brand.withValues(alpha: 0.08),
                   borderRadius: AppRadius.radius160,
                   border: Border.all(
-                    color: AppColors.brandPrimary.withValues(alpha: 0.3),
+                    color: AppColors.brand.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Column(
@@ -554,7 +554,7 @@ class _EditingBubble extends StatelessWidget {
                           child: Text(
                             '保存',
                             style: AppTextStyles.caption2.copyWith(
-                              color: AppColors.brandPrimary,
+                              color: AppColors.brand,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -595,7 +595,7 @@ class _MessageBubble extends StatelessWidget {
 
     // バブルカラー
     final bubbleColor = isMe
-        ? AppColors.brandPrimary
+        ? AppColors.brand
         : AppColors.surfaceTertiary(theme.brightness);
     final textColor = isMe ? Colors.white : theme.colorScheme.onSurface;
 
@@ -634,7 +634,7 @@ class _MessageBubble extends StatelessWidget {
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: AppColors.brandPrimary,
+                  color: AppColors.brand,
                   shape: BoxShape.circle,
                 ),
                 child: Center(

@@ -1,4 +1,4 @@
-import '../entities/interview.dart';
+import 'package:hr1_applicant_app/features/interviews/domain/entities/interview.dart';
 
 /// 面接リポジトリの抽象インターフェース
 abstract class InterviewsRepository {

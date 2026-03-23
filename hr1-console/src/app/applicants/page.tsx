@@ -37,6 +37,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { SlidersHorizontal, X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -63,6 +64,7 @@ export default function ApplicantsPage() {
   const {
     data: applicants = [],
     isLoading,
+    error: applicantsError,
     mutate,
   } = useQuery<Profile[]>(organization ? `applicants-${organization.id}` : null, async () => {
     const { data } = await getSupabase()
@@ -128,6 +130,7 @@ export default function ApplicantsPage() {
 
   return (
     <div className="flex flex-col">
+      <QueryErrorBanner error={applicantsError} onRetry={() => mutate()} />
       <PageHeader
         title="応募者一覧"
         description="応募者の管理・招待"

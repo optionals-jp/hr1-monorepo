@@ -65,7 +65,7 @@ class SplashScreen extends HookConsumerWidget {
     }, [initAsync]);
 
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.brandSecondary,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -82,7 +82,7 @@ class SplashScreen extends HookConsumerWidget {
                   'HR1',
                   style: AppTextStyles.title2.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: AppColors.primary,
+                    color: AppColors.brandSecondary,
                   ),
                 ),
               ),

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/custom_form.dart';
-import '../../domain/repositories/forms_repository.dart';
+import 'package:hr1_applicant_app/features/forms/domain/entities/custom_form.dart';
+import 'package:hr1_applicant_app/features/forms/domain/repositories/forms_repository.dart';
 
 /// FormsRepository の Supabase 実装
 class SupabaseFormsRepository implements FormsRepository {

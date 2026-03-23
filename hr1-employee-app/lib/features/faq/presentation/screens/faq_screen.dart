@@ -209,7 +209,7 @@ class _FaqTileState extends State<_FaqTile> {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: AppColors.brandPrimary.withValues(alpha: 0.1),
+                      color: AppColors.brand.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Center(
@@ -217,7 +217,7 @@ class _FaqTileState extends State<_FaqTile> {
                         'Q',
                         style: AppTextStyles.caption1.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: AppColors.brandPrimary,
+                          color: AppColors.brand,
                         ),
                       ),
                     ),
@@ -310,8 +310,8 @@ class _FaqTileState extends State<_FaqTile> {
         TextSpan(
           text: text.substring(idx, idx + query.length),
           style: baseStyle.copyWith(
-            backgroundColor: AppColors.brandPrimary.withValues(alpha: 0.15),
-            color: AppColors.brandPrimary,
+            backgroundColor: AppColors.brand.withValues(alpha: 0.15),
+            color: AppColors.brand,
           ),
         ),
       );

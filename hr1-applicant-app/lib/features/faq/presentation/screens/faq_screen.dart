@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../domain/entities/faq_item.dart';
-import '../providers/faq_providers.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/faq/domain/entities/faq_item.dart';
+import 'package:hr1_applicant_app/features/faq/presentation/providers/faq_providers.dart';
 
 /// FAQ一覧画面（応募者向け）
 class FaqScreen extends ConsumerWidget {
@@ -27,13 +27,13 @@ class FaqScreen extends ConsumerWidget {
                   Icon(
                     Icons.help_outline_rounded,
                     size: 48,
-                    color: AppColors.textTertiaryOf(theme.brightness),
+                    color: AppColors.textTertiary(theme.brightness),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     'FAQはまだありません',
                     style: AppTextStyles.body2.copyWith(
-                      color: AppColors.textSecondaryOf(theme.brightness),
+                      color: AppColors.textSecondary(theme.brightness),
                     ),
                   ),
                 ],
@@ -84,7 +84,7 @@ class _FaqCategorySection extends StatelessWidget {
           child: Text(
             FaqCategory.label(category),
             style: AppTextStyles.caption2.copyWith(
-              color: AppColors.textSecondaryOf(theme.brightness),
+              color: AppColors.textSecondary(theme.brightness),
               fontWeight: FontWeight.w600,
               letterSpacing: 0.3,
             ),
@@ -132,7 +132,7 @@ class _FaqTileState extends State<_FaqTile> {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: AppColors.primaryLight.withValues(alpha: 0.1),
+                      color: AppColors.brand.withValues(alpha: 0.1),
                       borderRadius: AppRadius.radius40,
                     ),
                     child: Center(
@@ -140,7 +140,7 @@ class _FaqTileState extends State<_FaqTile> {
                         'Q',
                         style: AppTextStyles.caption1.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primaryLight,
+                          color: AppColors.brand,
                         ),
                       ),
                     ),
@@ -159,7 +159,7 @@ class _FaqTileState extends State<_FaqTile> {
                     duration: const Duration(milliseconds: 200),
                     child: Icon(
                       Icons.expand_more,
-                      color: AppColors.textSecondaryOf(theme.brightness),
+                      color: AppColors.textSecondary(theme.brightness),
                     ),
                   ),
                 ],
@@ -180,14 +180,14 @@ class _FaqTileState extends State<_FaqTile> {
                 data: widget.faq.answer,
                 styleSheet: MarkdownStyleSheet(
                   p: AppTextStyles.body2.copyWith(
-                    color: AppColors.textSecondaryOf(theme.brightness),
+                    color: AppColors.textSecondary(theme.brightness),
                     height: 1.6,
                   ),
                   h1: AppTextStyles.title3,
                   h2: AppTextStyles.callout,
                   h3: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600),
                   listBullet: AppTextStyles.body2.copyWith(
-                    color: AppColors.textSecondaryOf(theme.brightness),
+                    color: AppColors.textSecondary(theme.brightness),
                   ),
                   code: AppTextStyles.caption1.copyWith(
                     backgroundColor: theme.colorScheme.surfaceContainerHighest,

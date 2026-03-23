@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/auth_providers.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
 
 /// 認証コントローラー
 class AuthController extends AutoDisposeNotifier<void> {

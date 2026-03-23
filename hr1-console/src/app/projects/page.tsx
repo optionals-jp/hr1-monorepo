@@ -22,6 +22,7 @@ import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import type { Project } from "@/types/database";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { projectStatusLabels, projectStatusColors } from "@/lib/constants";
 import { useRouter } from "next/navigation";
@@ -73,6 +74,7 @@ export default function ProjectsPage() {
   const {
     data: projects = [],
     isLoading,
+    error: projectsError,
     mutate,
   } = useQuery<(Project & { team_count: number })[]>(
     organization ? `projects-${organization.id}` : null,
@@ -212,6 +214,8 @@ export default function ProjectsPage() {
           </>
         )}
       </div>
+
+      <QueryErrorBanner error={projectsError} onRetry={() => mutate()} />
 
       {activeTab === "list" && (
         <div className="bg-white">

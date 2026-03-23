@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../domain/entities/form_field_item.dart';
-import '../controllers/form_fill_controller.dart';
-import '../providers/forms_providers.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/forms/domain/entities/form_field_item.dart';
+import 'package:hr1_applicant_app/features/forms/presentation/controllers/form_fill_controller.dart';
+import 'package:hr1_applicant_app/features/forms/presentation/providers/forms_providers.dart';
 
 /// フォーム回答画面（Google Forms風）
 class FormFillScreen extends ConsumerWidget {
@@ -74,10 +74,10 @@ class FormFillScreen extends ConsumerWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppSpacing.cardPadding),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryLight.withValues(alpha: 0.05),
+                      color: AppColors.brand.withValues(alpha: 0.05),
                       borderRadius: AppRadius.radius120,
                       border: Border.all(
-                        color: AppColors.primaryLight.withValues(alpha: 0.2),
+                        color: AppColors.brand.withValues(alpha: 0.2),
                       ),
                     ),
                     child: Text(form.description!, style: AppTextStyles.body2),
@@ -132,7 +132,7 @@ class _FormFieldWidget extends ConsumerWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: AppRadius.radius120,
-        border: Border.all(color: AppColors.dividerOf(theme.brightness)),
+        border: Border.all(color: AppColors.divider(theme.brightness)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,7 +168,7 @@ class _FormFieldWidget extends ConsumerWidget {
             Text(
               field.description!,
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.textSecondaryOf(theme.brightness),
+                color: AppColors.textSecondary(theme.brightness),
               ),
             ),
           ],
@@ -226,7 +226,7 @@ class _FormFieldWidget extends ConsumerWidget {
                 title: Text(option, style: AppTextStyles.body2),
                 value: option,
                 contentPadding: EdgeInsets.zero,
-                activeColor: AppColors.primaryLight,
+                activeColor: AppColors.brand,
               );
             }).toList(),
           ),
@@ -250,7 +250,7 @@ class _FormFieldWidget extends ConsumerWidget {
                 notifier.setAnswer(field.id, updated);
               },
               contentPadding: EdgeInsets.zero,
-              activeColor: AppColors.primaryLight,
+              activeColor: AppColors.brand,
               controlAffinity: ListTileControlAffinity.leading,
             );
           }).toList(),

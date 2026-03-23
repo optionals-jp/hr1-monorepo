@@ -52,8 +52,11 @@ Deno.serve(async (req: Request) => {
 
     let granted = 0;
     let skipped = 0;
+    let carryOverUpdated = 0;
     const errors: string[] = [];
 
+    // 組織ごとにグルーピング
+    const orgEmployees = new Map<string, typeof employees>();
     for (const emp of employees ?? []) {
       const profile = emp.profiles as {
         id: string;
@@ -85,12 +88,20 @@ Deno.serve(async (req: Request) => {
               grant_date: grantDate,
               expiry_date: expiryDate,
             },
-            { onConflict: "user_id,organization_id,fiscal_year", ignoreDuplicates: false }
+            {
+              onConflict: "user_id,organization_id,fiscal_year",
+              ignoreDuplicates: false,
+            }
           );
 
         if (upsertError) {
           errors.push(`${emp.user_id}: ${upsertError.message}`);
           continue;
+        }
+
+        // 組織IDを記録（繰越計算用）
+        if (!orgEmployees.has(emp.organization_id)) {
+          orgEmployees.set(emp.organization_id, []);
         }
 
         // 通知を作成
@@ -110,10 +121,34 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    return new Response(JSON.stringify({ granted, skipped, errors }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    // 繰越日数の自動計算（組織ごとに RPC 呼び出し）
+    for (const orgId of orgEmployees.keys()) {
+      try {
+        const { data: carryOverResult, error: coError } = await supabase.rpc(
+          "auto_grant_leave_with_carry_over",
+          {
+            p_organization_id: orgId,
+            p_fiscal_year: currentYear,
+          }
+        );
+
+        if (coError) {
+          errors.push(`carry_over(${orgId}): ${coError.message}`);
+        } else {
+          carryOverUpdated += carryOverResult?.length ?? 0;
+        }
+      } catch (e) {
+        errors.push(`carry_over(${orgId}): ${String(e)}`);
+      }
+    }
+
+    return new Response(
+      JSON.stringify({ granted, skipped, carryOverUpdated, errors }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
   } catch (error) {
     console.error("auto-grant-leave error:", error);
     return new Response(JSON.stringify({ error: String(error) }), {

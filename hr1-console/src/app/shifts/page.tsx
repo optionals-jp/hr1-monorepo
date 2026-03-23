@@ -17,10 +17,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
-import { cn } from "@/lib/utils";
+import { cn, formatYearMonth, weekdayLabel } from "@/lib/utils";
 import type { ShiftRequest, ShiftSchedule, Profile } from "@/types/database";
 import { shiftScheduleStatusLabels, shiftScheduleStatusColors } from "@/lib/constants";
 import { ChevronLeft, ChevronRight, CalendarRange, ClipboardList, Send } from "lucide-react";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 
 // ---------------------------------------------------------------------------
 // 型
@@ -53,15 +54,6 @@ type ScheduleWithProfile = ShiftSchedule & {
 
 function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
-}
-
-function formatYM(year: number, month: number): string {
-  return `${year}-${String(month).padStart(2, "0")}`;
-}
-
-function weekdayLabel(year: number, month: number, day: number): string {
-  const d = new Date(year, month - 1, day);
-  return ["日", "月", "火", "水", "木", "金", "土"][d.getDay()];
 }
 
 function isWeekend(year: number, month: number, day: number): boolean {
@@ -102,24 +94,25 @@ export default function ShiftsPage() {
     } else setMonth((m) => m + 1);
   };
 
-  const ym = formatYM(year, month);
+  const ym = formatYearMonth(year, month);
   const totalDays = daysInMonth(year, month);
 
   // シフト希望取得
-  const { data: requests, mutate: mutateReqs } = useQuery<RequestWithProfile[]>(
-    orgId ? `shift-requests-${orgId}-${ym}` : null,
-    async () => {
-      const sb = getSupabase();
-      const { data } = await sb
-        .from("shift_requests")
-        .select("*, profiles!shift_requests_user_id_fkey(display_name, email)")
-        .eq("organization_id", orgId!)
-        .gte("target_date", `${ym}-01`)
-        .lte("target_date", `${ym}-${totalDays}`)
-        .order("target_date");
-      return (data ?? []) as RequestWithProfile[];
-    }
-  );
+  const {
+    data: requests,
+    error: requestsError,
+    mutate: mutateReqs,
+  } = useQuery<RequestWithProfile[]>(orgId ? `shift-requests-${orgId}-${ym}` : null, async () => {
+    const sb = getSupabase();
+    const { data } = await sb
+      .from("shift_requests")
+      .select("*, profiles!shift_requests_user_id_fkey(display_name, email)")
+      .eq("organization_id", orgId!)
+      .gte("target_date", `${ym}-01`)
+      .lte("target_date", `${ym}-${totalDays}`)
+      .order("target_date");
+    return (data ?? []) as RequestWithProfile[];
+  });
 
   // 確定シフト取得
   const { data: schedules, mutate: mutateSch } = useQuery<ScheduleWithProfile[]>(
@@ -279,6 +272,8 @@ export default function ShiftsPage() {
         </div>
       </div>
 
+      <QueryErrorBanner error={requestsError} onRetry={() => mutateReqs()} />
+
       {/* コンテンツ */}
       <div className="flex-1 overflow-auto p-6">
         {tab === "requests" && (
@@ -359,7 +354,7 @@ function RequestsGrid({
                 >
                   <div>{d}</div>
                   <div className={cn("text-[10px]", we && "text-red-500")}>
-                    {weekdayLabel(year, month, d)}
+                    {weekdayLabel(new Date(year, month - 1, d))}
                   </div>
                 </TableHead>
               );
@@ -468,7 +463,7 @@ function ScheduleGrid({
                 >
                   <div>{d}</div>
                   <div className={cn("text-[10px]", we && "text-red-500")}>
-                    {weekdayLabel(year, month, d)}
+                    {weekdayLabel(new Date(year, month - 1, d))}
                   </div>
                 </TableHead>
               );

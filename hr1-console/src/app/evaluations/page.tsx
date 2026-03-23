@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import {
   formTargetLabels,
   evaluationTypeLabels,
@@ -312,7 +313,12 @@ export default function EvaluationsPage() {
   const activeTab = tabParam === "cycles" ? "cycles" : tabParam === "guide" ? "guide" : "sheets";
   const { organization } = useOrg();
 
-  const { data: templates = [], isLoading: templatesLoading } = useQuery<EvaluationTemplate[]>(
+  const {
+    data: templates = [],
+    isLoading: templatesLoading,
+    error: templatesError,
+    mutate: mutateTemplates,
+  } = useQuery<EvaluationTemplate[]>(
     organization ? `eval-templates-${organization.id}` : null,
     async () => {
       const { data } = await getSupabase()
@@ -393,6 +399,8 @@ export default function EvaluationsPage() {
           ) : undefined
         }
       />
+
+      <QueryErrorBanner error={templatesError} onRetry={() => mutateTemplates()} />
 
       {/* サブナビゲーション */}
       <div className="sticky top-14 z-10 bg-white">

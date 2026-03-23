@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../todos/presentation/providers/todo_providers.dart';
-import '../providers/survey_providers.dart';
+import 'package:hr1_applicant_app/features/todos/presentation/providers/todo_providers.dart';
+import 'package:hr1_applicant_app/features/surveys/presentation/providers/survey_providers.dart';
 
 /// サーベイ回答送信の状態
 class SurveySubmitState {

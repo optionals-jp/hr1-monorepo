@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../../applications/presentation/providers/applications_providers.dart';
-import '../providers/forms_providers.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/providers/applications_providers.dart';
+import 'package:hr1_applicant_app/features/forms/presentation/providers/forms_providers.dart';
 
 /// フォーム送信の状態
 class FormFillState {

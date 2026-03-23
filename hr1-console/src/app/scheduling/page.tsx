@@ -35,6 +35,7 @@ import {
   interviewScheduleStatusColors as statusColors,
 } from "@/lib/constants";
 import { autoFillEndAt } from "@/lib/utils";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 
 export default function SchedulingPage() {
   const router = useRouter();
@@ -50,6 +51,7 @@ export default function SchedulingPage() {
   const {
     data: interviews = [],
     isLoading,
+    error: interviewsError,
     mutate,
   } = useQuery<(Interview & { interview_slots: InterviewSlot[] })[]>(
     organization ? `interviews-${organization.id}` : null,
@@ -236,6 +238,8 @@ export default function SchedulingPage() {
           </Dialog>
         }
       />
+
+      <QueryErrorBanner error={interviewsError} onRetry={() => mutate()} />
 
       <div className="bg-white">
         <Table>

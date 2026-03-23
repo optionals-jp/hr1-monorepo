@@ -112,8 +112,10 @@ class FluentChip extends StatelessWidget {
   _ChipColors _resolveColors(bool isDark) {
     if (!enabled) {
       return _ChipColors(
-        background: isDark ? const Color(0xFF3D3D3D) : const Color(0xFFF0F0F0),
-        foreground: const Color(0xFFBDBDBD),
+        background: isDark
+            ? AppColors.disabledChipBgDark
+            : AppColors.lightDivider,
+        foreground: AppColors.disabledChipFg,
       );
     }
 
@@ -130,57 +132,63 @@ class FluentChip extends StatelessWidget {
       case FluentChipColor.brand:
         return _ChipColors(
           background: isDark
-              ? const Color(0xFF1B3A5C)
-              : const Color(0xFFCFE4FA),
+              ? AppColors.brandTintBgDark
+              : AppColors.brandTintBgLight,
           foreground: isDark
-              ? const Color(0xFF77B7F7)
-              : const Color(0xFF0F548C),
+              ? AppColors.brandTintFgDark
+              : AppColors.brandTintFgLight,
         );
       case FluentChipColor.danger:
         return _ChipColors(
           background: isDark
-              ? const Color(0xFF3B1519)
-              : const Color(0xFFFDF3F4),
+              ? AppColors.dangerTintBgDark
+              : AppColors.dangerTintBgLight,
           foreground: isDark
-              ? const Color(0xFFEE7981)
-              : const Color(0xFF960B18),
+              ? AppColors.dangerTintFgDark
+              : AppColors.dangerTintFgLight,
         );
       case FluentChipColor.severe:
         return _ChipColors(
           background: isDark
-              ? const Color(0xFF3C1A08)
-              : const Color(0xFFFDF6F3),
+              ? AppColors.severeTintBgDark
+              : AppColors.severeTintBgLight,
           foreground: isDark
-              ? const Color(0xFFF59D72)
-              : const Color(0xFFC43501),
+              ? AppColors.severeTintFgDark
+              : AppColors.severeTintFgLight,
         );
       case FluentChipColor.warning:
         return _ChipColors(
           background: isDark
-              ? const Color(0xFF3D2C08)
-              : const Color(0xFFFFF9F5),
-          foreground: isDark
-              ? const Color(0xFFF7CE5C)
-              : const Color(0xFFBC4B09),
-          border: isDark ? null : const Color(0xFFDA3B01),
+              ? AppColors.warningTintBgDark
+              : AppColors.warningTintBgLight,
+          foreground: isDark ? AppColors.warningTintFgDark : AppColors.warning,
+          border: isDark ? null : AppColors.warningTintBorder,
         );
       case FluentChipColor.success:
         return _ChipColors(
           background: isDark
-              ? const Color(0xFF0D3B0D)
-              : const Color(0xFFF1FAF1),
+              ? AppColors.successTintBgDark
+              : AppColors.successTintBgLight,
           foreground: isDark
-              ? const Color(0xFF54B054)
-              : const Color(0xFF0E700E),
+              ? AppColors.successTintFgDark
+              : AppColors.successTintFgLight,
         );
       case FluentChipColor.neutral:
         return _ChipColors(
           background: selected
-              ? (isDark ? const Color(0xFF4D4D4D) : const Color(0xFFDBDBDB))
-              : (isDark ? const Color(0xFF3D3D3D) : const Color(0xFFF0F0F0)),
+              ? (isDark
+                    ? AppColors.neutralChipBgDark
+                    : AppColors.neutralChipBgLight)
+              : (isDark
+                    ? AppColors.disabledChipBgDark
+                    : AppColors.lightDivider),
           foreground: selected
-              ? (isDark ? const Color(0xFFFFFFFF) : const Color(0xFF242424))
-              : (isDark ? const Color(0xFFD6D6D6) : const Color(0xFF616161)),
+              ? (isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.lightTextPrimary)
+              : (isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary),
         );
     }
   }
@@ -189,37 +197,37 @@ class FluentChip extends StatelessWidget {
     switch (color) {
       case FluentChipColor.brand:
         return const _ChipColors(
-          background: Color(0xFF0F6CBD),
+          background: AppColors.brand,
           foreground: Colors.white,
         );
       case FluentChipColor.danger:
         return const _ChipColors(
-          background: Color(0xFFC50F1F),
+          background: AppColors.danger,
           foreground: Colors.white,
         );
       case FluentChipColor.severe:
         return const _ChipColors(
-          background: Color(0xFFDA3B01),
+          background: AppColors.severe,
           foreground: Colors.white,
         );
       case FluentChipColor.warning:
         return _ChipColors(
-          background: const Color(0xFFF7630C),
+          background: AppColors.warningFilled,
           foreground: isDark ? Colors.white : Colors.black,
         );
       case FluentChipColor.success:
         return const _ChipColors(
-          background: Color(0xFF107C10),
+          background: AppColors.successFilled,
           foreground: Colors.white,
         );
       case FluentChipColor.neutral:
         return _ChipColors(
           background: isDark
-              ? const Color(0xFF4D4D4D)
-              : const Color(0xFFDBDBDB),
+              ? AppColors.neutralChipBgDark
+              : AppColors.neutralChipBgLight,
           foreground: isDark
-              ? const Color(0xFFFFFFFF)
-              : const Color(0xFF242424),
+              ? AppColors.darkTextPrimary
+              : AppColors.lightTextPrimary,
         );
     }
   }

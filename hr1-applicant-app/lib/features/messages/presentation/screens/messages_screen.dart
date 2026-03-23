@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/core/router/app_router.dart';
 import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../domain/entities/message_thread.dart';
-import '../providers/message_threads_realtime_provider.dart';
-import '../providers/messages_providers.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/messages/domain/entities/message_thread.dart';
+import 'package:hr1_applicant_app/features/messages/presentation/providers/message_threads_realtime_provider.dart';
+import 'package:hr1_applicant_app/features/messages/presentation/providers/messages_providers.dart';
 
 /// メッセージ画面 — 企業とのスレッド一覧
 class MessagesScreen extends ConsumerWidget {
@@ -35,9 +35,7 @@ class MessagesScreen extends ConsumerWidget {
                   Icon(
                     Icons.chat_bubble_outline_rounded,
                     size: 48,
-                    color: AppColors.textTertiaryOf(
-                      Theme.of(context).brightness,
-                    ),
+                    color: AppColors.textTertiary(Theme.of(context).brightness),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   Text('メッセージはありません', style: AppTextStyles.callout),
@@ -45,7 +43,7 @@ class MessagesScreen extends ConsumerWidget {
                   Text(
                     '気になることがあれば聞いてみましょう！',
                     style: AppTextStyles.body2.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.lightTextSecondary,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -97,7 +95,7 @@ class _ThreadTile extends StatelessWidget {
               style: AppTextStyles.caption1.copyWith(
                 color: hasUnread
                     ? Theme.of(context).colorScheme.onSurface
-                    : AppColors.textSecondary,
+                    : AppColors.lightTextSecondary,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -105,7 +103,7 @@ class _ThreadTile extends StatelessWidget {
           : Text(
               'メッセージはありません',
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.lightTextSecondary,
               ),
             ),
       trailing: Column(
@@ -116,14 +114,14 @@ class _ThreadTile extends StatelessWidget {
             Text(
               DateFormatter.toMessageDate(thread.latestMessage!.createdAt),
               style: AppTextStyles.caption2.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.lightTextSecondary,
               ),
             ),
           if (hasUnread) ...[
             const SizedBox(height: 4),
             CountBadge(
               count: thread.unreadCount,
-              color: AppColors.primaryLight,
+              color: AppColors.brand,
               size: 20,
             ),
           ],

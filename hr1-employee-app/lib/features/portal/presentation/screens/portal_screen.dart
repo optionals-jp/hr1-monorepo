@@ -163,12 +163,9 @@ class PortalScreen extends ConsumerWidget {
                   child: Row(
                     children: [
                       PortalActionChip(
-                        icon: AppIcons.clock(
-                          size: 24,
-                          color: AppColors.brandPrimary,
-                        ),
+                        icon: AppIcons.clock(size: 24, color: AppColors.brand),
                         label: '勤怠打刻',
-                        color: AppColors.brandPrimary,
+                        color: AppColors.brand,
                         onTap: () => context.push(AppRoutes.attendance),
                       ),
                       const SizedBox(width: AppSpacing.md),
@@ -270,7 +267,7 @@ class PortalScreen extends ConsumerWidget {
                     child: Text(
                       'すべて表示',
                       style: AppTextStyles.caption2.copyWith(
-                        color: AppColors.brandPrimary,
+                        color: AppColors.brand,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -408,7 +405,7 @@ class _NotificationPreviewTile extends ConsumerWidget {
                 width: 8,
                 height: 8,
                 decoration: const BoxDecoration(
-                  color: AppColors.brandPrimary,
+                  color: AppColors.brand,
                   shape: BoxShape.circle,
                 ),
               ),

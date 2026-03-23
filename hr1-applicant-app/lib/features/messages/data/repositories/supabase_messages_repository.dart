@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/message_thread.dart';
-import '../../domain/repositories/messages_repository.dart';
+import 'package:hr1_applicant_app/features/messages/domain/entities/message_thread.dart';
+import 'package:hr1_applicant_app/features/messages/domain/repositories/messages_repository.dart';
 
 /// MessagesRepository の Supabase 実装
 class SupabaseMessagesRepository implements MessagesRepository {

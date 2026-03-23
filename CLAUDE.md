@@ -86,6 +86,45 @@ class MyScreen extends ConsumerWidget {
 3. `test` — Vitest
 4. `build` — Next.js build
 
+## Commit Message Format
+
+```
+[prefix] TICKET-ID 要約
+
+- 変更内容1
+- 変更内容2
+```
+
+- **1行目**: `[プレフィックス] チケット番号 要約` — 日本語で簡潔に
+- **2行目**: 空行
+- **3行目以降**: 変更内容の箇条書き（`- ` で始まる）
+- **チケット番号**: ブランチ名から取得（例: `feature/HR-36` → `HR-36`）
+
+### プレフィックス一覧
+
+| プレフィックス | 用途 |
+|--------------|------|
+| `[add]` | 新機能追加（新しい画面、API、テーブル等） |
+| `[fix]` | バグ修正 |
+| `[update]` | 既存機能の改善・拡張 |
+| `[refactor]` | リファクタリング（動作を変えないコード整理） |
+| `[remove]` | 不要コード・機能の削除 |
+| `[style]` | フォーマット、lint修正（動作変更なし） |
+| `[docs]` | ドキュメント（README、コメント、CLAUDE.md等） |
+| `[test]` | テスト追加・修正 |
+| `[chore]` | 依存更新、CI設定、ビルド設定等の雑務 |
+| `[perf]` | パフォーマンス改善（クエリ最適化、インデックス追加等） |
+| `[security]` | セキュリティ修正（RLS、認証強化等） |
+
+例:
+```
+[add] HR-36 共通関数をhr1_sharedに移行
+
+- AppColors, AppSpacing等の定数をhr1_sharedに集約
+- 両アプリの共通ウィジェット16個を移行
+- PushNotificationServiceをappTypeパラメータ化
+```
+
 ## Task Completion Checklist
 
 Before considering a task complete in `hr1-console/`:

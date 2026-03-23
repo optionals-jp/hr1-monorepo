@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { useQuery } from "@/lib/use-query";
 import type { MessageThread, Message, Profile } from "@/types/database";
 import {
@@ -46,6 +47,7 @@ export default function MessagesPage() {
   const {
     data: threads = [],
     isLoading: threadsLoading,
+    error: threadsError,
     mutate: mutateThreads,
   } = useQuery<MessageThread[]>(
     organization && user ? `message-threads-${organization.id}` : null,
@@ -104,6 +106,7 @@ export default function MessagesPage() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+      <QueryErrorBanner error={threadsError} onRetry={() => mutateThreads()} />
       <PageHeader
         title="メッセージ"
         description="応募者・社員とのメッセージ管理"

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/interview.dart';
-import '../../domain/repositories/interviews_repository.dart';
+import 'package:hr1_applicant_app/features/interviews/domain/entities/interview.dart';
+import 'package:hr1_applicant_app/features/interviews/domain/repositories/interviews_repository.dart';
 
 /// InterviewsRepository の Supabase 実装
 class SupabaseInterviewsRepository implements InterviewsRepository {

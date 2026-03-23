@@ -49,9 +49,9 @@ class AppTheme {
 
       // カラースキーム
       colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.brandPrimary,
+        seedColor: AppColors.brand,
         brightness: brightness,
-        primary: AppColors.brandPrimary,
+        primary: AppColors.brand,
         secondary: AppColors.brandLight,
         error: AppColors.error,
         surface: surface,
@@ -94,7 +94,7 @@ class AppTheme {
       // ElevatedButton テーマ — ピル型
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.brandPrimary,
+          backgroundColor: AppColors.brand,
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 50),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.radius80),
@@ -109,11 +109,9 @@ class AppTheme {
       // OutlinedButton テーマ
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.brandPrimary,
+          foregroundColor: AppColors.brand,
           minimumSize: const Size(double.infinity, 50),
-          side: BorderSide(
-            color: AppColors.brandPrimary.withValues(alpha: 0.3),
-          ),
+          side: BorderSide(color: AppColors.brand.withValues(alpha: 0.3)),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.radius80),
           textStyle: GoogleFonts.notoSansJp(
             fontSize: 15,
@@ -125,7 +123,7 @@ class AppTheme {
       // TextButton テーマ
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.brandPrimary,
+          foregroundColor: AppColors.brand,
           textStyle: GoogleFonts.notoSansJp(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -151,10 +149,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.radius80,
-          borderSide: const BorderSide(
-            color: AppColors.brandPrimary,
-            width: 1.5,
-          ),
+          borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: AppRadius.radius80,
@@ -190,7 +185,7 @@ class AppTheme {
       // BottomNavigationBar テーマ
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: surface,
-        selectedItemColor: AppColors.brandPrimary,
+        selectedItemColor: AppColors.brand,
         unselectedItemColor: textSecondary,
         type: BottomNavigationBarType.fixed,
         elevation: 0,

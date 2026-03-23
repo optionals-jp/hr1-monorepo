@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../domain/entities/service_request.dart';
-import '../providers/service_request_providers.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/core/router/app_router.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/service_requests/domain/entities/service_request.dart';
+import 'package:hr1_applicant_app/features/service_requests/presentation/providers/service_request_providers.dart';
 
 /// サービスリクエスト画面
 class ServiceRequestListScreen extends ConsumerWidget {

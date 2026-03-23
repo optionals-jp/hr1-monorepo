@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../providers/applications_providers.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/providers/applications_providers.dart';
 
 /// 応募詳細画面のコントローラー
 ///

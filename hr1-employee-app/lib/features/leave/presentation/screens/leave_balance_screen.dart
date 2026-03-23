@@ -127,7 +127,7 @@ class _CurrentBalanceCard extends StatelessWidget {
             '${balance.remainingDays.toStringAsFixed(1)}日',
             style: AppTextStyles.display.copyWith(
               fontWeight: FontWeight.w600,
-              color: AppColors.brandPrimary,
+              color: AppColors.brand,
             ),
           ),
           const SizedBox(height: 4),
@@ -143,10 +143,8 @@ class _CurrentBalanceCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress.clamp(0.0, 1.0),
               minHeight: 8,
-              backgroundColor: AppColors.brandPrimary.withValues(alpha: 0.15),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.brandPrimary,
-              ),
+              backgroundColor: AppColors.brand.withValues(alpha: 0.15),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.brand),
             ),
           ),
           const SizedBox(height: 6),
@@ -279,7 +277,7 @@ class _PastBalanceCard extends StatelessWidget {
           Text(
             '残 ${balance.remainingDays.toStringAsFixed(1)}',
             style: AppTextStyles.caption2.copyWith(
-              color: AppColors.brandPrimary,
+              color: AppColors.brand,
               fontWeight: FontWeight.w600,
             ),
           ),

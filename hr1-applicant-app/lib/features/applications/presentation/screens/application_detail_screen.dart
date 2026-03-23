@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/utils/date_formatter.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../../../core/router/app_router.dart';
-import '../../domain/entities/application.dart';
-import '../../domain/entities/application_status.dart';
-import '../../domain/entities/application_step.dart';
-import '../controllers/application_detail_controller.dart';
-import '../providers/applications_providers.dart';
-import '../../../forms/presentation/screens/form_fill_screen.dart';
-import '../../../interviews/presentation/providers/interviews_providers.dart';
-import '../../../todos/presentation/providers/todo_providers.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/core/router/app_router.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/application.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/application_status.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/application_step.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/controllers/application_detail_controller.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/providers/applications_providers.dart';
+import 'package:hr1_applicant_app/features/forms/presentation/screens/form_fill_screen.dart';
+import 'package:hr1_applicant_app/features/interviews/presentation/providers/interviews_providers.dart';
+import 'package:hr1_applicant_app/features/todos/presentation/providers/todo_providers.dart';
 
 /// 応募詳細画面
 class ApplicationDetailScreen extends ConsumerWidget {
@@ -140,7 +140,7 @@ class _OverviewTab extends StatelessWidget {
                   Text(
                     '$completedCount / $totalSteps ステップ完了',
                     style: AppTextStyles.caption2.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.lightTextSecondary,
                     ),
                   ),
                 ],
@@ -152,11 +152,9 @@ class _OverviewTab extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: totalSteps > 0 ? completedCount / totalSteps : 0,
                     minHeight: 6,
-                    backgroundColor: AppColors.primaryLight.withValues(
-                      alpha: 0.15,
-                    ),
+                    backgroundColor: AppColors.brand.withValues(alpha: 0.15),
                     valueColor: const AlwaysStoppedAnimation<Color>(
-                      AppColors.primaryLight,
+                      AppColors.brand,
                     ),
                   ),
                 ),
@@ -300,7 +298,7 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               label,
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.lightTextSecondary,
               ),
             ),
           ),
@@ -326,7 +324,9 @@ class _StepsTab extends ConsumerWidget {
       return Center(
         child: Text(
           '選考ステップがありません',
-          style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary),
+          style: AppTextStyles.body2.copyWith(
+            color: AppColors.lightTextSecondary,
+          ),
         ),
       );
     }
@@ -367,7 +367,7 @@ class _StepCard extends StatelessWidget {
                       width: 2,
                       color: step.status == StepStatus.completed
                           ? AppColors.success
-                          : AppColors.dividerOf(theme.brightness),
+                          : AppColors.divider(theme.brightness),
                     ),
                   ),
               ],
@@ -380,13 +380,13 @@ class _StepCard extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: step.status == StepStatus.inProgress
-                    ? AppColors.primaryLight.withValues(alpha: 0.05)
+                    ? AppColors.brand.withValues(alpha: 0.05)
                     : theme.colorScheme.surface,
                 borderRadius: AppRadius.radius120,
                 border: Border.all(
                   color: step.status == StepStatus.inProgress
-                      ? AppColors.primaryLight.withValues(alpha: 0.2)
-                      : AppColors.dividerOf(theme.brightness),
+                      ? AppColors.brand.withValues(alpha: 0.2)
+                      : AppColors.divider(theme.brightness),
                 ),
               ),
               child: Column(
@@ -402,8 +402,8 @@ class _StepCard extends StatelessWidget {
                                 ? FontWeight.w600
                                 : FontWeight.w400,
                             color: step.status == StepStatus.pending
-                                ? AppColors.textSecondary
-                                : AppColors.textPrimaryOf(theme.brightness),
+                                ? AppColors.lightTextSecondary
+                                : AppColors.textPrimary(theme.brightness),
                           ),
                         ),
                       ),
@@ -414,7 +414,7 @@ class _StepCard extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.textSecondary.withValues(
+                            color: AppColors.lightTextSecondary.withValues(
                               alpha: 0.1,
                             ),
                             borderRadius: AppRadius.radius40,
@@ -422,7 +422,7 @@ class _StepCard extends StatelessWidget {
                           child: Text(
                             '外部',
                             style: AppTextStyles.caption2.copyWith(
-                              color: AppColors.textSecondary,
+                              color: AppColors.lightTextSecondary,
                             ),
                           ),
                         ),
@@ -479,7 +479,7 @@ class _StepDot extends StatelessWidget {
         const Icon(Icons.check_rounded, size: 14, color: Colors.white),
       ),
       StepStatus.inProgress => (
-        AppColors.primaryLight,
+        AppColors.brand,
         Container(
           width: 8,
           height: 8,
@@ -490,14 +490,14 @@ class _StepDot extends StatelessWidget {
         ),
       ),
       StepStatus.skipped => (
-        AppColors.dividerOf(theme.brightness),
+        AppColors.divider(theme.brightness),
         Icon(
           Icons.remove,
           size: 14,
-          color: AppColors.textSecondaryOf(theme.brightness),
+          color: AppColors.textSecondary(theme.brightness),
         ),
       ),
-      StepStatus.pending => (AppColors.dividerOf(theme.brightness), null),
+      StepStatus.pending => (AppColors.divider(theme.brightness), null),
     };
 
     return Container(
@@ -525,7 +525,9 @@ class _HistoryTab extends StatelessWidget {
       return Center(
         child: Text(
           '履歴がありません',
-          style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary),
+          style: AppTextStyles.body2.copyWith(
+            color: AppColors.lightTextSecondary,
+          ),
         ),
       );
     }
@@ -560,7 +562,10 @@ class _HistoryTab extends StatelessWidget {
                     ),
                     if (!isLast)
                       Expanded(
-                        child: Container(width: 1, color: AppColors.divider),
+                        child: Container(
+                          width: 1,
+                          color: AppColors.lightDivider,
+                        ),
                       ),
                   ],
                 ),
@@ -585,7 +590,7 @@ class _HistoryTab extends StatelessWidget {
                           Text(
                             DateFormatter.toDateTime(event.dateTime),
                             style: AppTextStyles.caption2.copyWith(
-                              color: AppColors.textSecondary,
+                              color: AppColors.lightTextSecondary,
                             ),
                           ),
                         ],
@@ -594,7 +599,7 @@ class _HistoryTab extends StatelessWidget {
                       Text(
                         event.subtitle,
                         style: AppTextStyles.caption1.copyWith(
-                          color: AppColors.textSecondary,
+                          color: AppColors.lightTextSecondary,
                         ),
                       ),
                     ],
@@ -616,7 +621,7 @@ class _HistoryTab extends StatelessWidget {
         title: '応募しました',
         subtitle: application.job?.title ?? '求人',
         dateTime: application.appliedAt,
-        color: AppColors.primaryLight,
+        color: AppColors.brand,
       ),
     );
 
@@ -627,7 +632,7 @@ class _HistoryTab extends StatelessWidget {
             title: '${step.label} - 開始',
             subtitle: _stepTypeLabel(step.stepType),
             dateTime: step.startedAt!,
-            color: AppColors.primaryLight,
+            color: AppColors.brand,
           ),
         );
       }
@@ -650,7 +655,7 @@ class _HistoryTab extends StatelessWidget {
             subtitle: _stepTypeLabel(step.stepType),
             dateTime:
                 step.completedAt ?? step.startedAt ?? application.appliedAt,
-            color: AppColors.textSecondary,
+            color: AppColors.lightTextSecondary,
           ),
         );
       }
@@ -702,12 +707,16 @@ class _TasksTab extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.task_alt, size: 48, color: AppColors.textSecondary),
+                Icon(
+                  Icons.task_alt,
+                  size: 48,
+                  color: AppColors.lightTextSecondary,
+                ),
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   'この応募に関連するタスクはありません',
                   style: AppTextStyles.body2.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.lightTextSecondary,
                   ),
                 ),
               ],
@@ -732,7 +741,7 @@ class _TasksTab extends ConsumerWidget {
                     size: 22,
                     color: todo.isCompleted
                         ? AppColors.success
-                        : AppColors.textSecondary,
+                        : AppColors.lightTextSecondary,
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -746,7 +755,7 @@ class _TasksTab extends ConsumerWidget {
                                 ? TextDecoration.lineThrough
                                 : null,
                             color: todo.isCompleted
-                                ? AppColors.textSecondary
+                                ? AppColors.lightTextSecondary
                                 : null,
                           ),
                         ),
@@ -755,7 +764,7 @@ class _TasksTab extends ConsumerWidget {
                           Text(
                             '期限: ${DateFormat('yyyy/MM/dd').format(todo.dueDate!)}',
                             style: AppTextStyles.caption2.copyWith(
-                              color: AppColors.textSecondary,
+                              color: AppColors.lightTextSecondary,
                             ),
                           ),
                         ],
@@ -867,7 +876,7 @@ class _Header extends StatelessWidget {
                       Text(
                         job!.department!,
                         style: AppTextStyles.caption1.copyWith(
-                          color: AppColors.textSecondary,
+                          color: AppColors.lightTextSecondary,
                         ),
                       ),
                   ],
@@ -883,7 +892,7 @@ class _Header extends StatelessWidget {
               Text(
                 '応募日 ${DateFormatter.toShortDate(application.appliedAt)}',
                 style: AppTextStyles.caption2.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.lightTextSecondary,
                 ),
               ),
             ],
@@ -942,10 +951,10 @@ Color _applicationColor(Application application, BuildContext context) {
   return switch (application.status) {
     ApplicationStatus.offered => AppColors.success,
     ApplicationStatus.rejected => AppColors.error,
-    ApplicationStatus.withdrawn => AppColors.textSecondary,
+    ApplicationStatus.withdrawn => AppColors.lightTextSecondary,
     ApplicationStatus.active => () {
       if (application.requiresAction) return AppColors.warning;
-      return AppColors.primaryLight;
+      return AppColors.brand;
     }(),
   };
 }

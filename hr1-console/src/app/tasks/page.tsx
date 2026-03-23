@@ -33,6 +33,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { useRouter } from "next/navigation";
 import { useOrg } from "@/lib/org-context";
@@ -117,6 +118,7 @@ export default function TasksPage() {
   const {
     data: tasks = [],
     isLoading,
+    error: tasksError,
     mutate,
   } = useQuery<TaskRow[]>(organization ? `tasks-${organization.id}` : null, async () => {
     const { data } = await getSupabase()
@@ -319,6 +321,7 @@ export default function TasksPage() {
 
   return (
     <div className="flex flex-col">
+      <QueryErrorBanner error={tasksError} onRetry={() => mutate()} />
       <PageHeader
         title="タスク一覧"
         description="従業員へのタスク依頼・共有タスクの管理"

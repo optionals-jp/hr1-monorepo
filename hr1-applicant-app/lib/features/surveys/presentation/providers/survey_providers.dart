@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../data/repositories/supabase_survey_repository.dart';
-import '../../domain/entities/pulse_survey.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_applicant_app/features/surveys/data/repositories/supabase_survey_repository.dart';
+import 'package:hr1_applicant_app/features/surveys/domain/entities/pulse_survey.dart';
 
 /// サーベイリポジトリプロバイダー
 final surveyRepositoryProvider = Provider<SupabaseSurveyRepository>((ref) {

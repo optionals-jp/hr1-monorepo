@@ -1,8 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../core/result/result.dart';
-import '../../domain/repositories/auth_repository.dart';
-import '../../domain/entities/app_user.dart';
-import '../datasources/auth_remote_datasource.dart';
+import 'package:hr1_applicant_app/core/result/result.dart';
+import 'package:hr1_applicant_app/features/auth/domain/repositories/auth_repository.dart';
+import 'package:hr1_applicant_app/features/auth/domain/entities/app_user.dart';
+import 'package:hr1_applicant_app/features/auth/data/datasources/auth_remote_datasource.dart';
 
 /// AuthRepository の Supabase 実装
 class AuthRepositoryImpl implements AuthRepository {

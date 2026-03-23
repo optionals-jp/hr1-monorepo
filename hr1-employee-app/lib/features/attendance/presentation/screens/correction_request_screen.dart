@@ -352,7 +352,7 @@ class _PunchCorrectionRow extends StatelessWidget {
       PunchType.clockOut => (AppIcons.logout, AppColors.error),
       PunchType.breakStart => (AppIcons.coffee, AppColors.warning),
       PunchType.breakEnd => (AppIcons.pause, AppColors.brandLight),
-      _ => (AppIcons.clock, AppColors.brandPrimary),
+      _ => (AppIcons.clock, AppColors.brand),
     };
   }
 
@@ -419,7 +419,7 @@ class _PunchCorrectionRow extends StatelessWidget {
                       Text(
                         _correctedTimeText,
                         style: AppTextStyles.headline.copyWith(
-                          color: AppColors.brandPrimary,
+                          color: AppColors.brand,
                         ),
                       ),
                     ],

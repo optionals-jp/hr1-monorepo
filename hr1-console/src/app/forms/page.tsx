@@ -17,6 +17,7 @@ import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import type { CustomForm } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { formTargetLabels } from "@/lib/constants";
 
 import { useRouter } from "next/navigation";
@@ -26,17 +27,19 @@ export default function FormsPage() {
   const router = useRouter();
   const { organization } = useOrg();
 
-  const { data: forms = [], isLoading } = useQuery<CustomForm[]>(
-    organization ? `forms-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("custom_forms")
-        .select("*")
-        .eq("organization_id", organization!.id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    }
-  );
+  const {
+    data: forms = [],
+    isLoading,
+    error: formsError,
+    mutate: mutateForms,
+  } = useQuery<CustomForm[]>(organization ? `forms-${organization.id}` : null, async () => {
+    const { data } = await getSupabase()
+      .from("custom_forms")
+      .select("*")
+      .eq("organization_id", organization!.id)
+      .order("created_at", { ascending: false });
+    return data ?? [];
+  });
 
   return (
     <div className="flex flex-col">
@@ -50,6 +53,8 @@ export default function FormsPage() {
           </Link>
         }
       />
+
+      <QueryErrorBanner error={formsError} onRetry={() => mutateForms()} />
 
       <div className="bg-white">
         <Table>

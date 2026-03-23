@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
-import 'package:hr1_employee_app/shared/utils/month_utils.dart';
+import 'package:hr1_shared/hr1_shared.dart' show MonthUtils;
 import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 import 'package:hr1_employee_app/features/attendance/domain/entities/attendance_record.dart';
 import 'package:hr1_employee_app/features/attendance/presentation/providers/attendance_providers.dart';
@@ -156,7 +156,7 @@ class _Body extends StatelessWidget {
                   label: '深夜',
                   value: _formatMinutes(record.lateNightMinutes),
                   valueColor: record.lateNightMinutes > 0
-                      ? AppColors.brandPrimary
+                      ? AppColors.brand
                       : null,
                 ),
                 if (record.note != null && record.note!.isNotEmpty) ...[
@@ -258,7 +258,7 @@ class _SummarySection extends StatelessWidget {
             children: [
               _SummaryItem(
                 icon: Icons.schedule,
-                color: AppColors.brandPrimary,
+                color: AppColors.brand,
                 label: '総労働時間',
                 value: _formatMinutes(summary.totalWorkMinutes),
               ),
@@ -447,13 +447,13 @@ class _StatusBadge extends StatelessWidget {
       case AttendanceStatus.halfDayAm:
       case AttendanceStatus.halfDayPm:
       case AttendanceStatus.specialLeave:
-        return AppColors.brandPrimary;
+        return AppColors.brand;
       case AttendanceStatus.sickLeave:
-        return Colors.purple;
+        return AppColors.purple;
       case AttendanceStatus.holiday:
-        return Colors.grey;
+        return AppColors.lightTextTertiary;
       default:
-        return Colors.grey;
+        return AppColors.lightTextTertiary;
     }
   }
 

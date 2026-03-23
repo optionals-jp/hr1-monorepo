@@ -16,10 +16,11 @@ import {
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
-import { cn } from "@/lib/utils";
+import { cn, formatDateLocal, formatTime, formatMinutesHM, weekdayLabel } from "@/lib/utils";
 import type {
   AttendanceRecord,
   AttendancePunch,
@@ -40,29 +41,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-/** yyyy-MM-dd 形式（ローカルタイムゾーン基準） */
-function formatDate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-/** 時刻文字列を HH:mm に */
-function formatTime(iso: string | null): string {
-  if (!iso) return "-";
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
-/** 分を H:mm に */
-function formatMinutes(m: number): string {
-  if (m <= 0) return "-";
-  const h = Math.floor(m / 60);
-  const min = m % 60;
-  return `${h}:${String(min).padStart(2, "0")}`;
-}
-
 /** 勤務時間（分）を計算 */
 function calcWorkMinutes(r: AttendanceRecord): number {
   if (!r.clock_in || !r.clock_out) return 0;
@@ -82,9 +60,6 @@ function timeToMinutes(iso: string, baseDate?: Date): number {
   }
   return minutes;
 }
-
-/** 曜日ラベル */
-const dayLabels = ["日", "月", "火", "水", "木", "金", "土"];
 
 /** タイムラインバー */
 function TimelineBar({
@@ -273,18 +248,18 @@ function DayDetail({
               <div className="flex justify-between px-3 py-1.5 bg-background rounded border">
                 <span className="text-muted-foreground">休憩</span>
                 <span className="font-mono">
-                  {record.break_minutes > 0 ? formatMinutes(record.break_minutes) : "-"}
+                  {record.break_minutes > 0 ? formatMinutesHM(record.break_minutes) : "-"}
                 </span>
               </div>
               <div className="flex justify-between px-3 py-1.5 bg-background rounded border">
                 <span className="text-muted-foreground">勤務時間</span>
-                <span className="font-mono">{formatMinutes(calcWorkMinutes(record))}</span>
+                <span className="font-mono">{formatMinutesHM(calcWorkMinutes(record))}</span>
               </div>
               {record.overtime_minutes > 0 && (
                 <div className="flex justify-between px-3 py-1.5 bg-background rounded border">
                   <span className="text-muted-foreground">残業</span>
                   <span className="font-mono text-red-600">
-                    {formatMinutes(record.overtime_minutes)}
+                    {formatMinutesHM(record.overtime_minutes)}
                   </span>
                 </div>
               )}
@@ -292,7 +267,7 @@ function DayDetail({
                 <div className="flex justify-between px-3 py-1.5 bg-background rounded border">
                   <span className="text-muted-foreground">深夜</span>
                   <span className="font-mono text-purple-600">
-                    {formatMinutes(record.late_night_minutes)}
+                    {formatMinutesHM(record.late_night_minutes)}
                   </span>
                 </div>
               )}
@@ -364,7 +339,12 @@ export default function AttendanceDetailPage() {
   const lastDay = new Date(year, month, 0).getDate();
   const endDate = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
 
-  const { data: records = [], isLoading: recordsLoading } = useQuery<AttendanceRecord[]>(
+  const {
+    data: records = [],
+    isLoading: recordsLoading,
+    error: recordsError,
+    mutate: mutateRecords,
+  } = useQuery<AttendanceRecord[]>(
     organization ? `attendance-detail-records-${userId}-${year}-${month}` : null,
     async () => {
       const { data } = await getSupabase()
@@ -414,7 +394,7 @@ export default function AttendanceDetailPage() {
   const punchesByDate = useMemo(() => {
     const map = new Map<string, AttendancePunch[]>();
     for (const p of punches) {
-      const date = formatDate(new Date(p.punched_at));
+      const date = formatDateLocal(new Date(p.punched_at));
       const arr = map.get(date) ?? [];
       arr.push(p);
       map.set(date, arr);
@@ -436,11 +416,11 @@ export default function AttendanceDetailPage() {
     const days: { date: string; dayOfWeek: number; isToday: boolean }[] = [];
     for (let d = 1; d <= lastDay; d++) {
       const dateObj = new Date(year, month - 1, d);
-      const dateStr = formatDate(dateObj);
+      const dateStr = formatDateLocal(dateObj);
       days.push({
         date: dateStr,
         dayOfWeek: dateObj.getDay(),
-        isToday: dateStr === formatDate(new Date()),
+        isToday: dateStr === formatDateLocal(new Date()),
       });
     }
     return days;
@@ -508,6 +488,8 @@ export default function AttendanceDetailPage() {
           </Button>
         }
       />
+
+      <QueryErrorBanner error={recordsError} onRetry={() => mutateRecords()} />
 
       <div className="px-4 py-4 sm:px-6 md:px-8 space-y-6">
         {/* プロフィールヘッダー */}
@@ -590,7 +572,7 @@ export default function AttendanceDetailPage() {
               <div>
                 <p className="text-xs text-muted-foreground">総勤務時間</p>
                 <p className="text-xl font-semibold">
-                  {formatMinutes(monthlySummary.totalWorkMinutes)}
+                  {formatMinutesHM(monthlySummary.totalWorkMinutes)}
                 </p>
               </div>
             </CardContent>
@@ -603,7 +585,7 @@ export default function AttendanceDetailPage() {
               <div>
                 <p className="text-xs text-muted-foreground">総休憩時間</p>
                 <p className="text-xl font-semibold">
-                  {formatMinutes(monthlySummary.totalBreakMinutes)}
+                  {formatMinutesHM(monthlySummary.totalBreakMinutes)}
                 </p>
               </div>
             </CardContent>
@@ -616,7 +598,7 @@ export default function AttendanceDetailPage() {
               <div>
                 <p className="text-xs text-muted-foreground">総残業時間</p>
                 <p className="text-xl font-semibold">
-                  {formatMinutes(monthlySummary.totalOvertimeMinutes)}
+                  {formatMinutesHM(monthlySummary.totalOvertimeMinutes)}
                 </p>
               </div>
             </CardContent>
@@ -629,7 +611,7 @@ export default function AttendanceDetailPage() {
               <div>
                 <p className="text-xs text-muted-foreground">総深夜時間</p>
                 <p className="text-xl font-semibold">
-                  {formatMinutes(monthlySummary.totalLateNightMinutes)}
+                  {formatMinutesHM(monthlySummary.totalLateNightMinutes)}
                 </p>
               </div>
             </CardContent>
@@ -698,7 +680,7 @@ export default function AttendanceDetailPage() {
                                 dayOfWeek === 6 && "text-blue-500"
                               )}
                             >
-                              {dayNum}日（{dayLabels[dayOfWeek]}）
+                              {dayNum}日（{weekdayLabel(new Date(year, month - 1, dayNum))}）
                             </span>
                           </div>
                         </TableCell>
@@ -721,16 +703,16 @@ export default function AttendanceDetailPage() {
                         </TableCell>
                         <TableCell className="font-mono text-sm">
                           {record && record.break_minutes > 0
-                            ? formatMinutes(record.break_minutes)
+                            ? formatMinutesHM(record.break_minutes)
                             : "-"}
                         </TableCell>
                         <TableCell className="font-mono text-sm">
-                          {record ? formatMinutes(calcWorkMinutes(record)) : "-"}
+                          {record ? formatMinutesHM(calcWorkMinutes(record)) : "-"}
                         </TableCell>
                         <TableCell className="text-sm">
                           {record && record.overtime_minutes > 0 ? (
                             <span className="text-red-600 font-medium">
-                              {formatMinutes(record.overtime_minutes)}
+                              {formatMinutesHM(record.overtime_minutes)}
                             </span>
                           ) : (
                             "-"
@@ -739,7 +721,7 @@ export default function AttendanceDetailPage() {
                         <TableCell className="text-sm">
                           {record && record.late_night_minutes > 0 ? (
                             <span className="text-purple-600 font-medium">
-                              {formatMinutes(record.late_night_minutes)}
+                              {formatMinutesHM(record.late_night_minutes)}
                             </span>
                           ) : (
                             "-"

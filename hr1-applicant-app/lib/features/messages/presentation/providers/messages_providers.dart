@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../../auth/presentation/providers/organization_context_provider.dart';
-import '../../data/repositories/supabase_messages_repository.dart';
-import '../../domain/entities/message_thread.dart';
-import '../../domain/repositories/messages_repository.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/organization_context_provider.dart';
+import 'package:hr1_applicant_app/features/messages/data/repositories/supabase_messages_repository.dart';
+import 'package:hr1_applicant_app/features/messages/domain/entities/message_thread.dart';
+import 'package:hr1_applicant_app/features/messages/domain/repositories/messages_repository.dart';
 
 /// MessagesRepository プロバイダー
 final messagesRepositoryProvider = Provider<MessagesRepository>((ref) {

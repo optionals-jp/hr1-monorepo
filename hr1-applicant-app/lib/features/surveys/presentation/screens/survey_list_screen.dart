@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../providers/survey_providers.dart';
+import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/core/router/app_router.dart';
+import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
+import 'package:hr1_applicant_app/features/surveys/presentation/providers/survey_providers.dart';
 
 /// パルスサーベイ一覧画面（応募者向け）
 class SurveyListScreen extends ConsumerWidget {
@@ -30,7 +30,7 @@ class SurveyListScreen extends ConsumerWidget {
               Text(
                 '読み込みに失敗しました',
                 style: AppTextStyles.body2.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.lightTextSecondary,
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -55,13 +55,13 @@ class SurveyListScreen extends ConsumerWidget {
                   Icon(
                     Icons.poll_outlined,
                     size: 48,
-                    color: AppColors.textSecondary,
+                    color: AppColors.lightTextSecondary,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     'サーベイはありません',
                     style: AppTextStyles.body2.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.lightTextSecondary,
                     ),
                   ),
                 ],
@@ -129,15 +129,13 @@ class SurveyListScreen extends ConsumerWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.primaryLight.withValues(
-                                  alpha: 0.1,
-                                ),
+                                color: AppColors.brand.withValues(alpha: 0.1),
                                 borderRadius: AppRadius.radius40,
                               ),
                               child: Text(
                                 '未回答',
                                 style: AppTextStyles.caption2.copyWith(
-                                  color: AppColors.primaryLight,
+                                  color: AppColors.brand,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -149,7 +147,7 @@ class SurveyListScreen extends ConsumerWidget {
                         Text(
                           survey.description!,
                           style: AppTextStyles.caption1.copyWith(
-                            color: AppColors.textSecondary,
+                            color: AppColors.lightTextSecondary,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -161,7 +159,7 @@ class SurveyListScreen extends ConsumerWidget {
                           Text(
                             '${survey.questions.length}問',
                             style: AppTextStyles.caption2.copyWith(
-                              color: AppColors.textSecondary,
+                              color: AppColors.lightTextSecondary,
                             ),
                           ),
                           if (survey.deadline != null) ...[
@@ -169,7 +167,7 @@ class SurveyListScreen extends ConsumerWidget {
                             Text(
                               '締切: ${DateFormat('yyyy/MM/dd').format(survey.deadline!.toLocal())}',
                               style: AppTextStyles.caption2.copyWith(
-                                color: AppColors.textSecondary,
+                                color: AppColors.lightTextSecondary,
                               ),
                             ),
                           ],

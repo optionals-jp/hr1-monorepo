@@ -1,4 +1,4 @@
-import '../entities/custom_form.dart';
+import 'package:hr1_applicant_app/features/forms/domain/entities/custom_form.dart';
 
 /// フォームリポジトリの抽象インターフェース
 abstract class FormsRepository {

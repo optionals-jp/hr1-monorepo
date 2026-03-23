@@ -1,4 +1,4 @@
-import '../entities/message_thread.dart';
+import 'package:hr1_applicant_app/features/messages/domain/entities/message_thread.dart';
 
 /// メッセージリポジトリインターフェース
 abstract class MessagesRepository {

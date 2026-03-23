@@ -135,7 +135,7 @@ class _CreateOption extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ListTile(
-      leading: Icon(icon, color: AppColors.brandPrimary),
+      leading: Icon(icon, color: AppColors.brand),
       title: Text(label, style: AppTextStyles.body1),
       trailing: Icon(
         Icons.chevron_right_rounded,
@@ -208,12 +208,12 @@ class _RequestCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.brandPrimary.withValues(alpha: 0.1),
+              color: AppColors.brand.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppSpacing.sm),
             ),
             child: Icon(
               _typeIcon(request.requestType),
-              color: AppColors.brandPrimary,
+              color: AppColors.brand,
               size: 20,
             ),
           ),
@@ -309,7 +309,7 @@ class _StatusBadge extends StatelessWidget {
       case WorkflowRequestStatus.rejected:
         return AppColors.error;
       case WorkflowRequestStatus.cancelled:
-        return Colors.grey;
+        return AppColors.lightTextTertiary;
     }
   }
 }

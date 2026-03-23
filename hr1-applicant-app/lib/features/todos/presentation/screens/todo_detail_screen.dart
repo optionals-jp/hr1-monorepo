@@ -5,8 +5,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
-import '../../domain/entities/todo.dart';
-import '../controllers/todo_controller.dart';
+import 'package:hr1_applicant_app/features/todos/domain/entities/todo.dart';
+import 'package:hr1_applicant_app/features/todos/presentation/controllers/todo_controller.dart';
 
 /// やること詳細画面
 class TodoDetailScreen extends HookConsumerWidget {
@@ -72,7 +72,7 @@ class TodoDetailScreen extends HookConsumerWidget {
                 : Text(
                     '保存',
                     style: AppTextStyles.body2.copyWith(
-                      color: AppColors.primaryLight,
+                      color: AppColors.brand,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -93,7 +93,7 @@ class TodoDetailScreen extends HookConsumerWidget {
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,
               hintStyle: AppTextStyles.title3.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.lightTextSecondary,
               ),
             ),
           ),
@@ -108,9 +108,7 @@ class TodoDetailScreen extends HookConsumerWidget {
               },
               icon: const Icon(Icons.open_in_new_rounded, size: 18),
               label: const Text('アクションへ移動'),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primaryLight,
-              ),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.brand),
             ),
             const SizedBox(height: AppSpacing.lg),
           ],
@@ -121,8 +119,8 @@ class TodoDetailScreen extends HookConsumerWidget {
               Icons.calendar_today_rounded,
               size: 20,
               color: dueDate.value != null
-                  ? AppColors.primaryLight
-                  : AppColors.textSecondary,
+                  ? AppColors.brand
+                  : AppColors.lightTextSecondary,
             ),
             label: dueDate.value != null
                 ? '期限: ${DateFormat('M/d').format(dueDate.value!)}'
@@ -134,7 +132,7 @@ class TodoDetailScreen extends HookConsumerWidget {
                     icon: Icon(
                       Icons.close_rounded,
                       size: 16,
-                      color: AppColors.textSecondary,
+                      color: AppColors.lightTextSecondary,
                     ),
                     onPressed: () => dueDate.value = null,
                   )
@@ -151,7 +149,7 @@ class TodoDetailScreen extends HookConsumerWidget {
                 child: Icon(
                   Icons.notes_rounded,
                   size: 20,
-                  color: AppColors.textSecondary,
+                  color: AppColors.lightTextSecondary,
                 ),
               ),
               const SizedBox(width: 14),
@@ -164,7 +162,7 @@ class TodoDetailScreen extends HookConsumerWidget {
                   decoration: InputDecoration(
                     hintText: 'メモを追加',
                     hintStyle: AppTextStyles.body2.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.lightTextSecondary,
                     ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
@@ -209,7 +207,7 @@ class _DetailActionRow extends StatelessWidget {
                 label,
                 style: AppTextStyles.body2.copyWith(
                   color: isActive
-                      ? AppColors.primaryLight
+                      ? AppColors.brand
                       : Theme.of(context).colorScheme.onSurface,
                 ),
               ),

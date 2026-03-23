@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/todo.dart';
-import '../../domain/repositories/todo_repository.dart';
+import 'package:hr1_applicant_app/features/todos/domain/entities/todo.dart';
+import 'package:hr1_applicant_app/features/todos/domain/repositories/todo_repository.dart';
 
 /// Supabase やることリポジトリ実装
 class SupabaseTodoRepository implements TodoRepository {

@@ -33,6 +33,7 @@ import {
 import { format } from "date-fns";
 import { mutate } from "swr";
 import { useToast } from "@/components/ui/toast";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 
 export default function SurveysPage() {
   const { organization } = useOrg();
@@ -41,7 +42,12 @@ export default function SurveysPage() {
 
   const cacheKey = organization ? `pulse-surveys-${organization.id}` : null;
 
-  const { data: surveys = [], isLoading } = useQuery<PulseSurvey[]>(cacheKey, async () => {
+  const {
+    data: surveys = [],
+    isLoading,
+    error: surveysError,
+    mutate: mutateSurveys,
+  } = useQuery<PulseSurvey[]>(cacheKey, async () => {
     const { data } = await getSupabase()
       .from("pulse_surveys")
       .select("*, pulse_survey_questions(id)")
@@ -110,6 +116,8 @@ export default function SurveysPage() {
         sticky={false}
         action={<Button onClick={openCreate}>サーベイを作成</Button>}
       />
+
+      <QueryErrorBanner error={surveysError} onRetry={() => mutateSurveys()} />
 
       <div className="bg-white">
         <Table>

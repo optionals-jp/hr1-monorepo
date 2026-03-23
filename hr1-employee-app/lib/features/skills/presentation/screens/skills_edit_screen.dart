@@ -148,7 +148,7 @@ class _SkillTile extends StatelessWidget {
           Icon(
             Icons.psychology_outlined,
             size: 20,
-            color: AppColors.brandPrimary.withValues(alpha: 0.7),
+            color: AppColors.brand.withValues(alpha: 0.7),
           ),
           const SizedBox(width: 12),
           Expanded(child: Text(skill.name, style: AppTextStyles.caption1)),

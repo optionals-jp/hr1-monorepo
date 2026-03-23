@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { useQuery } from "@/lib/use-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -85,7 +86,11 @@ export default function CalendarPage() {
     return e;
   }, [currentMonth]);
 
-  const { data: events = [] } = useQuery<CalendarEvent[]>(
+  const {
+    data: events = [],
+    error: eventsError,
+    mutate: mutateEvents,
+  } = useQuery<CalendarEvent[]>(
     organization ? `calendar-${organization.id}-${currentMonth.toISOString()}` : null,
     async () => {
       // Fetch interview slots within range with applicant + job details
@@ -167,6 +172,7 @@ export default function CalendarPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-(--spacing(14)))]">
+      <QueryErrorBanner error={eventsError} onRetry={() => mutateEvents()} />
       <PageHeader title="カレンダー" description="面接日程を一覧表示" />
 
       <div className="flex flex-col flex-1 min-h-0 px-4 py-4 sm:px-6 md:px-8 md:py-6">

@@ -35,7 +35,7 @@ class NotificationsScreen extends ConsumerWidget {
             child: Text(
               'すべて既読',
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.brandPrimary,
+                color: AppColors.brand,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -133,9 +133,7 @@ class _NotificationTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          color: item.isRead
-              ? null
-              : AppColors.brandPrimary.withValues(alpha: 0.03),
+          color: item.isRead ? null : AppColors.brand.withValues(alpha: 0.03),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.screenHorizontal,
             vertical: 14,
@@ -200,7 +198,7 @@ class _NotificationTile extends StatelessWidget {
                   width: 8,
                   height: 8,
                   decoration: const BoxDecoration(
-                    color: AppColors.brandPrimary,
+                    color: AppColors.brand,
                     shape: BoxShape.circle,
                   ),
                 ),

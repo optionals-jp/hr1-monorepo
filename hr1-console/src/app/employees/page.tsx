@@ -31,6 +31,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { SlidersHorizontal, X, Download } from "lucide-react";
 import { exportToCSV } from "@/lib/export-csv";
@@ -78,6 +79,7 @@ export default function EmployeesPage() {
   const {
     data: employees = [],
     isLoading,
+    error: employeesError,
     mutate,
   } = useQuery<EmployeeWithDepts[]>(
     organization ? `employees-${organization.id}` : null,
@@ -193,6 +195,7 @@ export default function EmployeesPage() {
 
   return (
     <div className="flex flex-col">
+      <QueryErrorBanner error={employeesError} onRetry={() => mutate()} />
       <PageHeader
         title="社員一覧"
         description="社員の管理・招待"

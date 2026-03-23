@@ -1,5 +1,5 @@
-import '../entities/application.dart';
-import '../entities/job.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/application.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/job.dart';
 
 /// 応募リポジトリの抽象インターフェース
 abstract class ApplicationsRepository {

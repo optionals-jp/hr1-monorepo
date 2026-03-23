@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_shared/hr1_shared.dart' show FieldEditScreen;
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/controllers/profile_edit_controller.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
@@ -23,7 +23,7 @@ class ProfileEditScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
         children: [
-          // アバター（タップで変更 — プレースホルダー）
+          // アバター
           Center(
             child: GestureDetector(
               onTap: () => _pickAndUploadAvatar(context, ref),
@@ -31,7 +31,7 @@ class ProfileEditScreen extends ConsumerWidget {
                 children: [
                   UserAvatar(
                     initial: user?.displayName?.substring(0, 1) ?? '?',
-                    color: AppColors.primaryLight,
+                    color: AppColors.brand,
                     size: 64,
                     imageUrl: user?.avatarUrl,
                   ),
@@ -42,7 +42,7 @@ class ProfileEditScreen extends ConsumerWidget {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: AppColors.primaryLight,
+                        color: AppColors.brand,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: theme.scaffoldBackgroundColor,
@@ -71,11 +71,8 @@ class ProfileEditScreen extends ConsumerWidget {
                 icon: AppIcons.user(),
                 label: '表示名',
                 title: user?.displayName ?? '未設定',
-                onTap: () => _showEditDisplayNameDialog(
-                  context,
-                  ref,
-                  user?.displayName ?? '',
-                ),
+                onTap: () =>
+                    _editDisplayName(context, ref, user?.displayName ?? ''),
               ),
               MenuRow(
                 icon: Icon(Icons.mail_outline_rounded),
@@ -139,16 +136,20 @@ class ProfileEditScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _showEditDisplayNameDialog(
+  Future<void> _editDisplayName(
     BuildContext context,
     WidgetRef ref,
     String currentName,
   ) async {
-    final value = await CommonDialog.input(
-      context: context,
-      title: '表示名',
-      hintText: '表示名を入力',
-      initialValue: currentName,
+    final value = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FieldEditScreen(
+          title: '表示名',
+          initialValue: currentName,
+          maxLength: 50,
+        ),
+      ),
     );
     if (value == null || value.isEmpty) return;
     if (!context.mounted) return;
@@ -160,7 +161,6 @@ class ProfileEditScreen extends ConsumerWidget {
     if (!context.mounted) return;
     if (success) {
       CommonSnackBar.show(context, '表示名を更新しました');
-      context.pop();
     } else {
       CommonSnackBar.error(context, '表示名の更新に失敗しました');
     }

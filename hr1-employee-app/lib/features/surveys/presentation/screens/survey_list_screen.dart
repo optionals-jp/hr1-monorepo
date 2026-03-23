@@ -102,7 +102,7 @@ class _SurveyListScreenState extends ConsumerState<SurveyListScreen>
 /// サーベイの質問構成から代表アイコンと色を決定
 ({IconData icon, Color color}) _surveyTypeIcon(PulseSurvey survey) {
   if (survey.questions.isEmpty) {
-    return (icon: Icons.poll_outlined, color: AppColors.brandPrimary);
+    return (icon: Icons.poll_outlined, color: AppColors.brand);
   }
 
   // 最も多い質問タイプで代表アイコンを決定
@@ -118,7 +118,7 @@ class _SurveyListScreenState extends ConsumerState<SurveyListScreen>
     case 'rating':
       return (icon: Icons.star_half_rounded, color: AppColors.warning);
     case 'text':
-      return (icon: Icons.edit_note_rounded, color: AppColors.brandPrimary);
+      return (icon: Icons.edit_note_rounded, color: AppColors.brand);
     case 'single_choice':
       return (
         icon: Icons.radio_button_checked_rounded,
@@ -127,7 +127,7 @@ class _SurveyListScreenState extends ConsumerState<SurveyListScreen>
     case 'multiple_choice':
       return (icon: Icons.checklist_rounded, color: AppColors.purple);
     default:
-      return (icon: Icons.poll_outlined, color: AppColors.brandPrimary);
+      return (icon: Icons.poll_outlined, color: AppColors.brand);
   }
 }
 
@@ -213,7 +213,7 @@ class _SurveyList extends ConsumerWidget {
                           height: 6,
                           margin: const EdgeInsets.only(right: AppSpacing.sm),
                           decoration: const BoxDecoration(
-                            color: AppColors.brandPrimary,
+                            color: AppColors.brand,
                             shape: BoxShape.circle,
                           ),
                         ),

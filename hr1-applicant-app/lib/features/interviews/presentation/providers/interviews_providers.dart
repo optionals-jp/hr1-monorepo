@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../data/repositories/supabase_interviews_repository.dart';
-import '../../domain/entities/interview.dart';
-import '../../domain/repositories/interviews_repository.dart';
+import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_applicant_app/features/interviews/data/repositories/supabase_interviews_repository.dart';
+import 'package:hr1_applicant_app/features/interviews/domain/entities/interview.dart';
+import 'package:hr1_applicant_app/features/interviews/domain/repositories/interviews_repository.dart';
 
 /// InterviewsRepository プロバイダー
 final interviewsRepositoryProvider = Provider<InterviewsRepository>((ref) {

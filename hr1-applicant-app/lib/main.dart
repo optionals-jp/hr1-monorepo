@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app.dart';
 import 'core/config/app_config.dart';
 import 'core/router/app_router.dart';
-import 'core/services/push_notification_service.dart';
+import 'package:hr1_shared/hr1_shared.dart' show PushNotificationService;
 
 /// HR1 応募者アプリのエントリーポイント
 void main() async {
@@ -31,7 +31,10 @@ void main() async {
 
   // プッシュ通知初期化
   try {
-    await PushNotificationService.initialize(navigatorKey: rootNavigatorKey);
+    await PushNotificationService.initialize(
+      navigatorKey: rootNavigatorKey,
+      appType: 'applicant',
+    );
     debugPrint('プッシュ通知初期化完了');
   } catch (e) {
     debugPrint('プッシュ通知初期化エラー: $e');

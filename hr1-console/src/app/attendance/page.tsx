@@ -39,7 +39,8 @@ import { SearchBar } from "@/components/ui/search-bar";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
-import { cn } from "@/lib/utils";
+import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { cn, formatDateLocal, formatTime, formatMinutesHM } from "@/lib/utils";
 import type {
   AttendanceRecord,
   AttendancePunch,
@@ -91,10 +92,6 @@ type DailyRecord = AttendanceRecord & {
   profiles: { display_name: string | null; email: string; position: string | null };
 };
 
-type MonthlyRecord = AttendanceRecord & {
-  profiles: { display_name: string | null; email: string };
-};
-
 type ApproverRow = AttendanceApprover & {
   target_profile?: { display_name: string | null; email: string } | null;
   approver_profile?: { display_name: string | null; email: string } | null;
@@ -112,29 +109,6 @@ interface Employee {
   id: string;
   email: string;
   display_name: string | null;
-}
-
-/** yyyy-MM-dd 形式（ローカルタイムゾーン基準） */
-function formatDate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-/** 時刻文字列を HH:mm に */
-function formatTime(iso: string | null): string {
-  if (!iso) return "-";
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
-/** 分を H:mm に */
-function formatMinutes(m: number): string {
-  if (m <= 0) return "-";
-  const h = Math.floor(m / 60);
-  const min = m % 60;
-  return `${h}:${String(min).padStart(2, "0")}`;
 }
 
 /** 勤務時間（分）を計算 */
@@ -307,7 +281,7 @@ export default function AttendancePage() {
   const [activeTab, setActiveTab] = useState<TabValue>("daily");
 
   // --- 日次タブ ---
-  const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
+  const [selectedDate, setSelectedDate] = useState(formatDateLocal(new Date()));
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
@@ -387,7 +361,12 @@ export default function AttendancePage() {
   );
 
   // 日次
-  const { data: dailyRecords = [], isLoading: dailyLoading } = useQuery<DailyRecord[]>(
+  const {
+    data: dailyRecords = [],
+    isLoading: dailyLoading,
+    error: dailyError,
+    mutate: mutateDaily,
+  } = useQuery<DailyRecord[]>(
     organization ? `attendance-daily-${organization.id}-${selectedDate}` : null,
     async () => {
       const { data } = await getSupabase()
@@ -432,8 +411,24 @@ export default function AttendancePage() {
     return map;
   }, [dailyPunches]);
 
-  // 月次
-  const { data: monthlyRecords = [], isLoading: monthlyLoading } = useQuery<MonthlyRecord[]>(
+  // 月次（サーバーサイド集計 RPC）
+  interface MonthlySummaryRow {
+    user_id: string;
+    display_name: string | null;
+    email: string;
+    present_days: number;
+    late_days: number;
+    absent_days: number;
+    leave_days: number;
+    total_work_minutes: number;
+    total_overtime_minutes: number;
+  }
+  const {
+    data: monthlySummary = [],
+    isLoading: monthlyLoading,
+    error: monthlyError,
+    mutate: mutateMonthly,
+  } = useQuery<MonthlySummaryRow[]>(
     organization && activeTab === "monthly"
       ? `attendance-monthly-${organization.id}-${monthYear}-${monthMonth}`
       : null,
@@ -441,14 +436,12 @@ export default function AttendancePage() {
       const startDate = `${monthYear}-${String(monthMonth).padStart(2, "0")}-01`;
       const lastDay = new Date(monthYear, monthMonth, 0).getDate();
       const endDate = `${monthYear}-${String(monthMonth).padStart(2, "0")}-${lastDay}`;
-      const { data } = await getSupabase()
-        .from("attendance_records")
-        .select("*, profiles!attendance_records_user_id_fkey(display_name, email)")
-        .eq("organization_id", organization!.id)
-        .gte("date", startDate)
-        .lte("date", endDate)
-        .order("date");
-      return (data ?? []) as MonthlyRecord[];
+      const { data } = await getSupabase().rpc("get_monthly_attendance_summary", {
+        p_organization_id: organization!.id,
+        p_start_date: startDate,
+        p_end_date: endDate,
+      });
+      return (data ?? []) as MonthlySummaryRow[];
     }
   );
 
@@ -527,55 +520,7 @@ export default function AttendancePage() {
     return corrections.filter((c) => c.status === correctionFilter);
   }, [corrections, correctionFilter]);
 
-  // ---------- 月次集計 ----------
-  const monthlySummary = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        userId: string;
-        name: string;
-        email: string;
-        presentDays: number;
-        lateDays: number;
-        absentDays: number;
-        leaveDays: number;
-        totalWorkMinutes: number;
-        totalOvertimeMinutes: number;
-      }
-    >();
-    for (const r of monthlyRecords) {
-      const key = r.user_id;
-      if (!map.has(key)) {
-        map.set(key, {
-          userId: r.user_id,
-          name: r.profiles?.display_name ?? r.profiles?.email ?? "",
-          email: r.profiles?.email ?? "",
-          presentDays: 0,
-          lateDays: 0,
-          absentDays: 0,
-          leaveDays: 0,
-          totalWorkMinutes: 0,
-          totalOvertimeMinutes: 0,
-        });
-      }
-      const s = map.get(key)!;
-      if (r.status === "present") s.presentDays++;
-      if (r.status === "late") {
-        s.lateDays++;
-        s.presentDays++;
-      }
-      if (r.status === "absent") s.absentDays++;
-      if (
-        ["paid_leave", "half_day_am", "half_day_pm", "sick_leave", "special_leave"].includes(
-          r.status
-        )
-      )
-        s.leaveDays++;
-      s.totalWorkMinutes += calcWorkMinutes(r);
-      s.totalOvertimeMinutes += r.overtime_minutes;
-    }
-    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "ja"));
-  }, [monthlyRecords]);
+  // ---------- 月次集計はサーバーサイド RPC で取得済み（monthlySummary） ----------
 
   const dailySummary = useMemo(() => {
     const total = dailyRecords.length;
@@ -718,7 +663,7 @@ export default function AttendancePage() {
   const shiftDate = (days: number) => {
     const d = new Date(selectedDate);
     d.setDate(d.getDate() + days);
-    setSelectedDate(formatDate(d));
+    setSelectedDate(formatDateLocal(d));
   };
 
   const shiftMonth = (dir: number) => {
@@ -778,6 +723,7 @@ export default function AttendancePage() {
       {activeTab === "daily" && (
         <>
           <div className="px-4 py-3 sm:px-6 md:px-8 space-y-4">
+            <QueryErrorBanner error={dailyError} onRetry={() => mutateDaily()} />
             <div className="flex items-center gap-2">
               <Button variant="outline" size="icon" onClick={() => shiftDate(-1)}>
                 <ChevronLeft className="h-4 w-4" />
@@ -794,7 +740,7 @@ export default function AttendancePage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSelectedDate(formatDate(new Date()))}
+                onClick={() => setSelectedDate(formatDateLocal(new Date()))}
               >
                 今日
               </Button>
@@ -954,15 +900,15 @@ export default function AttendancePage() {
                             {formatTime(r.clock_out)}
                           </TableCell>
                           <TableCell className="font-mono text-sm">
-                            {r.break_minutes > 0 ? formatMinutes(r.break_minutes) : "-"}
+                            {r.break_minutes > 0 ? formatMinutesHM(r.break_minutes) : "-"}
                           </TableCell>
                           <TableCell className="font-mono text-sm">
-                            {formatMinutes(calcWorkMinutes(r))}
+                            {formatMinutesHM(calcWorkMinutes(r))}
                           </TableCell>
                           <TableCell className="text-sm">
                             {r.overtime_minutes > 0 ? (
                               <span className="text-red-600 font-medium">
-                                {formatMinutes(r.overtime_minutes)}
+                                {formatMinutesHM(r.overtime_minutes)}
                               </span>
                             ) : (
                               "-"
@@ -1031,6 +977,7 @@ export default function AttendancePage() {
       {activeTab === "monthly" && (
         <>
           <div className="px-4 py-3 sm:px-6 md:px-8 space-y-4">
+            <QueryErrorBanner error={monthlyError} onRetry={() => mutateMonthly()} />
             <div className="flex items-center gap-2">
               <Button variant="outline" size="icon" onClick={() => shiftMonth(-1)}>
                 <ChevronLeft className="h-4 w-4" />
@@ -1060,15 +1007,16 @@ export default function AttendancePage() {
                   exportToCSV(
                     monthlySummary.map((s) => ({
                       ...s,
-                      totalWorkFormatted: formatMinutes(s.totalWorkMinutes),
-                      totalOvertimeFormatted: formatMinutes(s.totalOvertimeMinutes),
+                      name: s.display_name ?? s.email,
+                      totalWorkFormatted: formatMinutesHM(s.total_work_minutes),
+                      totalOvertimeFormatted: formatMinutesHM(s.total_overtime_minutes),
                     })),
                     [
                       { key: "name", label: "社員名" },
-                      { key: "presentDays", label: "出勤日数" },
-                      { key: "lateDays", label: "遅刻" },
-                      { key: "absentDays", label: "欠勤" },
-                      { key: "leaveDays", label: "休暇" },
+                      { key: "present_days", label: "出勤日数" },
+                      { key: "late_days", label: "遅刻" },
+                      { key: "absent_days", label: "欠勤" },
+                      { key: "leave_days", label: "休暇" },
                       { key: "totalWorkFormatted", label: "総勤務時間" },
                       { key: "totalOvertimeFormatted", label: "総残業時間" },
                     ],
@@ -1103,9 +1051,9 @@ export default function AttendancePage() {
                     <div>
                       <p className="text-xs text-muted-foreground">平均労働時間</p>
                       <p className="text-xl font-semibold">
-                        {formatMinutes(
+                        {formatMinutesHM(
                           Math.round(
-                            monthlySummary.reduce((sum, s) => sum + s.totalWorkMinutes, 0) /
+                            monthlySummary.reduce((sum, s) => sum + s.total_work_minutes, 0) /
                               monthlySummary.length
                           )
                         )}
@@ -1122,7 +1070,7 @@ export default function AttendancePage() {
                       <p className="text-xs text-muted-foreground">平均出勤日数</p>
                       <p className="text-xl font-semibold">
                         {(
-                          monthlySummary.reduce((sum, s) => sum + s.presentDays, 0) /
+                          monthlySummary.reduce((sum, s) => sum + s.present_days, 0) /
                           monthlySummary.length
                         ).toFixed(1)}
                         日
@@ -1138,8 +1086,8 @@ export default function AttendancePage() {
                     <div>
                       <p className="text-xs text-muted-foreground">総残業時間</p>
                       <p className="text-xl font-semibold">
-                        {formatMinutes(
-                          monthlySummary.reduce((sum, s) => sum + s.totalOvertimeMinutes, 0)
+                        {formatMinutesHM(
+                          monthlySummary.reduce((sum, s) => sum + s.total_overtime_minutes, 0)
                         )}
                       </p>
                     </div>
@@ -1170,48 +1118,50 @@ export default function AttendancePage() {
                   emptyMessage="この月の勤怠記録はありません"
                 >
                   {monthlySummary.map((s) => (
-                    <TableRow key={s.userId}>
+                    <TableRow key={s.user_id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-7 w-7">
                             <AvatarFallback className="text-xs">
-                              {(s.name || s.email)[0]}
+                              {(s.display_name || s.email)[0]}
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0">
                             <p
                               className="text-sm font-medium truncate text-primary hover:underline cursor-pointer"
                               role="button"
-                              onClick={() => router.push(`/attendance/${s.userId}`)}
+                              onClick={() => router.push(`/attendance/${s.user_id}`)}
                             >
-                              {s.name || s.email}
+                              {s.display_name || s.email}
                             </p>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center font-mono">{s.presentDays}</TableCell>
+                      <TableCell className="text-center font-mono">{s.present_days}</TableCell>
                       <TableCell className="text-center">
-                        {s.lateDays > 0 ? (
+                        {s.late_days > 0 ? (
                           <Badge variant="outline" className="text-yellow-600">
-                            {s.lateDays}
+                            {s.late_days}
                           </Badge>
                         ) : (
                           "0"
                         )}
                       </TableCell>
                       <TableCell className="text-center">
-                        {s.absentDays > 0 ? (
-                          <Badge variant="destructive">{s.absentDays}</Badge>
+                        {s.absent_days > 0 ? (
+                          <Badge variant="destructive">{s.absent_days}</Badge>
                         ) : (
                           "0"
                         )}
                       </TableCell>
-                      <TableCell className="text-center">{s.leaveDays}</TableCell>
+                      <TableCell className="text-center">{s.leave_days}</TableCell>
                       <TableCell className="text-center font-mono">
-                        {formatMinutes(s.totalWorkMinutes)}
+                        {formatMinutesHM(s.total_work_minutes)}
                       </TableCell>
                       <TableCell className="text-center font-mono">
-                        {s.totalOvertimeMinutes > 0 ? formatMinutes(s.totalOvertimeMinutes) : "-"}
+                        {s.total_overtime_minutes > 0
+                          ? formatMinutesHM(s.total_overtime_minutes)
+                          : "-"}
                       </TableCell>
                     </TableRow>
                   ))}

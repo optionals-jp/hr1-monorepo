@@ -70,7 +70,7 @@ class _ServiceRequestCreateScreenState
                   ? '不具合の内容を教えてください'
                   : 'ご要望の内容を教えてください',
               style: AppTextStyles.body2.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.lightTextSecondary,
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -86,7 +86,7 @@ class _ServiceRequestCreateScreenState
                     ? '例: ログインできない'
                     : '例: ダークモードに対応してほしい',
                 hintStyle: AppTextStyles.body2.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.lightTextSecondary,
                 ),
               ),
               validator: (value) {
@@ -111,7 +111,7 @@ class _ServiceRequestCreateScreenState
                     ? '発生した状況や手順を詳しく教えてください'
                     : '具体的にどのような機能があると嬉しいですか？',
                 hintStyle: AppTextStyles.body2.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.lightTextSecondary,
                 ),
                 alignLabelWithHint: true,
               ),

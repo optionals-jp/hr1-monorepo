@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/todo.dart';
-import '../../domain/repositories/todo_repository.dart';
-import '../providers/todo_providers.dart';
+import 'package:hr1_applicant_app/features/todos/domain/entities/todo.dart';
+import 'package:hr1_applicant_app/features/todos/domain/repositories/todo_repository.dart';
+import 'package:hr1_applicant_app/features/todos/presentation/providers/todo_providers.dart';
 
 /// やることリスト管理コントローラー
 ///
