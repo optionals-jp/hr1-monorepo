@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
 import 'package:hr1_applicant_app/core/router/app_router.dart';
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
@@ -32,7 +33,8 @@ class CompanyHomeScreen extends ConsumerWidget {
         return _Body(org: currentOrg, config: config);
       },
       loading: () => const LoadingIndicator(),
-      error: (e, _) => const Center(child: Text('エラーが発生しました')),
+      error: (e, _) =>
+          ErrorState(onRetry: () => ref.invalidate(companyPageConfigProvider)),
     );
   }
 }
@@ -47,6 +49,8 @@ class _NoConfigState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(child: _ProfileHeader(org: org)),
@@ -56,7 +60,7 @@ class _NoConfigState extends StatelessWidget {
             child: Text(
               'ページが設定されていません',
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.lightTextSecondary,
+                color: AppColors.textSecondary(theme.brightness),
               ),
             ),
           ),
@@ -70,63 +74,34 @@ class _NoConfigState extends StatelessWidget {
 // Body
 // =============================================================================
 
-class _Body extends ConsumerStatefulWidget {
+class _Body extends HookConsumerWidget {
   const _Body({required this.org, required this.config});
   final Organization org;
   final CompanyPageConfig config;
 
   @override
-  ConsumerState<_Body> createState() => _BodyState();
-}
-
-class _BodyState extends ConsumerState<_Body> with TickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(
-      length: widget.config.tabs.length,
-      vsync: this,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tabController = useTabController(
+      initialLength: config.tabs.length,
+      keys: [config.tabs.length],
     );
-  }
 
-  @override
-  void didUpdateWidget(covariant _Body oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.config.tabs.length != widget.config.tabs.length) {
-      _tabController.dispose();
-      _tabController = TabController(
-        length: widget.config.tabs.length,
-        vsync: this,
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return NestedScrollView(
       headerSliverBuilder: (context, innerBoxIsScrolled) {
         return [
-          SliverToBoxAdapter(child: _ProfileHeader(org: widget.org)),
+          SliverToBoxAdapter(child: _ProfileHeader(org: org)),
           SliverPersistentHeader(
             pinned: true,
             delegate: _TabBarDelegate(
-              tabController: _tabController,
-              tabs: widget.config.tabs.map((t) => t.label).toList(),
+              tabController: tabController,
+              tabs: config.tabs.map((t) => t.label).toList(),
             ),
           ),
         ];
       },
       body: TabBarView(
-        controller: _tabController,
-        children: widget.config.tabs.map((tab) {
+        controller: tabController,
+        children: config.tabs.map((tab) {
           return _TabContent(tab: tab);
         }).toList(),
       ),
@@ -234,14 +209,14 @@ class _ProfileHeader extends ConsumerWidget {
                     Text(
                       org.industry!,
                       style: AppTextStyles.caption1.copyWith(
-                        color: AppColors.lightTextSecondary,
+                        color: AppColors.textSecondary(theme.brightness),
                       ),
                     ),
                     if (org.location != null)
                       Text(
                         ' · ',
                         style: AppTextStyles.caption1.copyWith(
-                          color: AppColors.lightTextSecondary,
+                          color: AppColors.textSecondary(theme.brightness),
                         ),
                       ),
                   ],
@@ -249,7 +224,7 @@ class _ProfileHeader extends ConsumerWidget {
                     Text(
                       org.location!,
                       style: AppTextStyles.caption1.copyWith(
-                        color: AppColors.lightTextSecondary,
+                        color: AppColors.textSecondary(theme.brightness),
                       ),
                     ),
                 ],
@@ -334,12 +309,14 @@ class _StatPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: highlighted
             ? AppColors.brand.withValues(alpha: 0.08)
-            : AppColors.lightSurfaceTertiary,
+            : AppColors.surfaceTertiary(theme.brightness),
         borderRadius: AppRadius.radius80,
       ),
       child: Column(
@@ -355,7 +332,7 @@ class _StatPill extends StatelessWidget {
           Text(
             label,
             style: AppTextStyles.caption2.copyWith(
-              color: AppColors.lightTextSecondary,
+              color: AppColors.textSecondary(theme.brightness),
             ),
           ),
         ],
@@ -393,7 +370,11 @@ class _ActionButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 18, color: AppColors.lightTextSecondary),
+            Icon(
+              icon,
+              size: 18,
+              color: AppColors.textSecondary(theme.brightness),
+            ),
             const SizedBox(width: 6),
             Text(
               label,
@@ -438,7 +419,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
         tabAlignment: TabAlignment.start,
         controller: tabController,
         labelColor: theme.colorScheme.primary,
-        unselectedLabelColor: AppColors.lightTextSecondary,
+        unselectedLabelColor: AppColors.textSecondary(theme.brightness),
         labelStyle: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600),
         unselectedLabelStyle: AppTextStyles.body2,
         indicatorColor: theme.colorScheme.primary,

@@ -38,7 +38,9 @@ import {
   CheckCircle2,
   CircleDot,
   HelpCircle,
+  Download,
 } from "lucide-react";
+import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
 import type { EvaluationTemplate, EvaluationCycle } from "@/types/database";
 
 const subTabs = [
@@ -389,13 +391,74 @@ export default function EvaluationsPage() {
         sticky={false}
         action={
           activeTab === "sheets" ? (
-            <Link href="/evaluations/new">
-              <Button>評価シートを作成</Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (templates.length === 0) return;
+                  exportToCSV(
+                    templates.map((t) => ({
+                      ...t,
+                      _type: evaluationTypeLabels[t.evaluation_type] ?? t.evaluation_type,
+                      _target: formTargetLabels[t.target] ?? t.target,
+                      _description: t.description ?? "",
+                      _createdAt: t.created_at,
+                    })),
+                    [
+                      { key: "title", label: "評価シート名" },
+                      { key: "_type", label: "タイプ" },
+                      { key: "_target", label: "対象" },
+                      { key: "_description", label: "説明" },
+                      { key: "_createdAt", label: "作成日" },
+                    ],
+                    csvFilenameWithDate("評価シート一覧")
+                  );
+                }}
+              >
+                <Download className="mr-1.5 h-4 w-4" />
+                CSV出力
+              </Button>
+              <Link href="/evaluations/new">
+                <Button>評価シートを作成</Button>
+              </Link>
+            </div>
           ) : activeTab === "cycles" ? (
-            <Link href="/evaluations/cycles/new">
-              <Button>サイクルを作成</Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (cycles.length === 0) return;
+                  exportToCSV(
+                    cycles.map((c) => ({
+                      ...c,
+                      _templateTitle: c.template_title,
+                      _period: `${format(new Date(c.start_date), "yyyy/MM/dd")} 〜 ${format(new Date(c.end_date), "yyyy/MM/dd")}`,
+                      _progress:
+                        c.assignment_count > 0
+                          ? `${c.submitted_count}/${c.assignment_count} (${Math.round((c.submitted_count / c.assignment_count) * 100)}%)`
+                          : "-",
+                      _status: cycleStatusLabels[c.status] ?? c.status,
+                    })),
+                    [
+                      { key: "title", label: "サイクル名" },
+                      { key: "_templateTitle", label: "評価シート" },
+                      { key: "_period", label: "期間" },
+                      { key: "_progress", label: "進捗" },
+                      { key: "_status", label: "ステータス" },
+                    ],
+                    csvFilenameWithDate("評価サイクル一覧")
+                  );
+                }}
+              >
+                <Download className="mr-1.5 h-4 w-4" />
+                CSV出力
+              </Button>
+              <Link href="/evaluations/cycles/new">
+                <Button>サイクルを作成</Button>
+              </Link>
+            </div>
           ) : undefined
         }
       />

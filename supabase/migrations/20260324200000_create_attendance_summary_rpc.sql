@@ -19,10 +19,22 @@ RETURNS TABLE(
   total_work_minutes bigint,
   total_overtime_minutes bigint
 )
-LANGUAGE sql
+LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
 AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM user_organizations uo
+    JOIN profiles p ON p.id = uo.user_id
+    WHERE uo.user_id = auth.uid()::text
+      AND uo.organization_id = p_organization_id
+      AND p.role = 'admin'
+  ) THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+
+  RETURN QUERY
   SELECT
     ar.user_id,
     p.display_name,
@@ -47,5 +59,6 @@ AS $$
     AND ar.date >= p_start_date
     AND ar.date <= p_end_date
   GROUP BY ar.user_id, p.display_name, p.email
-  ORDER BY p.display_name COLLATE "ja_JP.utf8" NULLS LAST, p.email;
+  ORDER BY p.display_name NULLS LAST, p.email;
+END;
 $$;

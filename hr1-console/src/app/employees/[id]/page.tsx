@@ -28,6 +28,7 @@ import {
   projectStatusColors,
   teamMemberRoleLabels,
 } from "@/lib/constants";
+import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 import type { Profile, Department, EmployeeSkill, EmployeeCertification } from "@/types/database";
 import { useRouter } from "next/navigation";
 import { FolderKanban, Users, LogIn, LogOut } from "lucide-react";
@@ -47,6 +48,7 @@ const pageTabs = [
   { value: "projects", label: "プロジェクト" },
   { value: "skills", label: "スキル" },
   { value: "evaluations", label: "評価" },
+  { value: "audit", label: "変更履歴" },
 ];
 
 const editTabs: EditPanelTab[] = [
@@ -610,6 +612,12 @@ export default function EmployeeDetailPage() {
       {activeTab === "evaluations" && (
         <PageContent>
           <EvaluationTab targetUserId={id} targetType="employee" />
+        </PageContent>
+      )}
+
+      {activeTab === "audit" && organization && (
+        <PageContent>
+          <AuditLogPanel organizationId={organization.id} tableName="profiles" recordId={id} />
         </PageContent>
       )}
 

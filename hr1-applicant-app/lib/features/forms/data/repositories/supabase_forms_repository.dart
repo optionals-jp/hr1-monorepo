@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_applicant_app/features/forms/domain/entities/custom_form.dart';
@@ -8,6 +10,22 @@ class SupabaseFormsRepository implements FormsRepository {
   SupabaseFormsRepository(this._client);
 
   final SupabaseClient _client;
+
+  static const _allowedExtensions = {
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'pdf',
+    'doc',
+    'docx',
+    'xls',
+    'xlsx',
+  };
+
+  static String _sanitizePathSegment(String value) {
+    return value.replaceAll(RegExp(r'[/\\.]'), '_');
+  }
 
   @override
   Future<void> submitResponses({
@@ -32,6 +50,39 @@ class SupabaseFormsRepository implements FormsRepository {
     if (rows.isNotEmpty) {
       await _client.from('form_responses').insert(rows);
     }
+  }
+
+  @override
+  Future<String> uploadFormFile({
+    required String formId,
+    required String fieldId,
+    required File file,
+    required String extension,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw Exception('ユーザーが認証されていません');
+
+    const maxFileSize = 10 * 1024 * 1024; // 10MB
+    if (file.lengthSync() > maxFileSize) {
+      throw Exception('ファイルサイズが10MBを超えています');
+    }
+
+    final ext = extension.toLowerCase();
+    if (!_allowedExtensions.contains(ext)) {
+      throw Exception('許可されていないファイル形式です: $extension');
+    }
+
+    final safeFormId = _sanitizePathSegment(formId);
+    final safeFieldId = _sanitizePathSegment(fieldId);
+
+    final path =
+        '$safeFormId/$userId/${safeFieldId}_${DateTime.now().millisecondsSinceEpoch}.$ext';
+
+    await _client.storage
+        .from('form-attachments')
+        .upload(path, file, fileOptions: const FileOptions(upsert: true));
+
+    return path;
   }
 
   @override

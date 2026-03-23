@@ -50,14 +50,8 @@ class ProfileScreen extends ConsumerWidget {
               icon: AppIcons.notification(),
               title: '通知設定',
               showChevron: true,
-              onTap: () {},
-            ),
-            MenuRow(
-              icon: AppIcons.setting(),
-              title: '設定',
-              showChevron: true,
               onTap: () {
-                // TODO: 設定画面
+                CommonSnackBar.show(context, '通知設定は端末の設定アプリから変更できます');
               },
             ),
           ],
@@ -80,13 +74,20 @@ class ProfileScreen extends ConsumerWidget {
               icon: Icon(Icons.help_outline_rounded),
               title: 'ヘルプ',
               showChevron: true,
-              onTap: () {},
+              onTap: () => context.push(AppRoutes.faq),
             ),
             MenuRow(
               icon: Icon(Icons.info_outline_rounded),
               title: 'バージョン情報',
               showChevron: true,
-              onTap: () {},
+              onTap: () {
+                showAboutDialog(
+                  context: context,
+                  applicationName: 'HR1',
+                  applicationVersion: '1.0.0',
+                  applicationLegalese: '© 2026 HR1',
+                );
+              },
             ),
           ],
         ),
@@ -101,34 +102,21 @@ class ProfileScreen extends ConsumerWidget {
               title: 'ログアウト',
               isDestructive: true,
               onTap: () async {
-                final confirmed = await showDialog<bool>(
+                final confirmed = await CommonDialog.confirm(
                   context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('ログアウト'),
-                    content: const Text('ログアウトしますか？'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text('キャンセル'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: Text(
-                          'ログアウト',
-                          style: AppTextStyles.body2.copyWith(
-                            color: AppColors.error,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  title: 'ログアウト',
+                  message: 'ログアウトしますか？',
+                  confirmLabel: 'ログアウト',
+                  isDestructive: true,
                 );
-                if (confirmed != true) return;
-                final success = await ref
-                    .read(authControllerProvider.notifier)
-                    .signOut();
-                if (!context.mounted) return;
-                if (success) GoRouter.of(context).go(AppRoutes.login);
+                if (confirmed) {
+                  final success = await ref
+                      .read(authControllerProvider.notifier)
+                      .signOut();
+                  if (success && context.mounted) {
+                    context.go(AppRoutes.login);
+                  }
+                }
               },
             ),
           ],

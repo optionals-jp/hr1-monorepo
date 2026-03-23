@@ -1,3 +1,4 @@
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
@@ -32,11 +33,13 @@ class AppUserNotifier extends StateNotifier<AppUser?> {
   /// ユーザー情報をセット（ログイン後に呼び出す）
   void setUser(AppUser user) {
     state = user;
+    FirebaseCrashlytics.instance.setUserIdentifier(user.id);
   }
 
   /// ユーザー情報をクリア（ログアウト時に呼び出す）
   void clearUser() {
     state = null;
+    FirebaseCrashlytics.instance.setUserIdentifier('');
   }
 }
 

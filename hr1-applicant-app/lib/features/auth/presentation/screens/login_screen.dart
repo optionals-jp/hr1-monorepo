@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
@@ -9,7 +11,8 @@ import 'package:hr1_shared/hr1_shared.dart' show Validators;
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
 
-/// ログイン画面（OTP認証）
+const _resendCooldownSeconds = 60;
+
 class LoginScreen extends HookConsumerWidget {
   const LoginScreen({super.key});
 
@@ -20,11 +23,23 @@ class LoginScreen extends HookConsumerWidget {
     final otpController = useTextEditingController();
     final isLoading = useState(false);
     final otpSent = useState(false);
+    final resendCooldown = useState(0);
 
     final theme = Theme.of(context);
 
-    /// OTPを送信
+    useEffect(() {
+      if (resendCooldown.value <= 0) return null;
+      final timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        resendCooldown.value--;
+        if (resendCooldown.value <= 0) {
+          resendCooldown.value = 0;
+        }
+      });
+      return timer.cancel;
+    }, [resendCooldown.value > 0]);
+
     Future<void> sendOtp() async {
+      if (isLoading.value) return;
       if (!formKey.currentState!.validate()) return;
 
       isLoading.value = true;
@@ -38,17 +53,21 @@ class LoginScreen extends HookConsumerWidget {
 
         switch (result) {
           case Success():
+            final wasAlreadySent = otpSent.value;
             otpSent.value = true;
-            CommonSnackBar.show(context, '認証コードを送信しました。メールをご確認ください。');
-          case Failure(message: final message):
-            CommonSnackBar.error(context, message);
+            resendCooldown.value = _resendCooldownSeconds;
+            CommonSnackBar.show(
+              context,
+              wasAlreadySent ? '認証コードを再送信しました' : '認証コードを送信しました。メールをご確認ください。',
+            );
+          case Failure():
+            CommonSnackBar.error(context, 'メール送信に失敗しました。メールアドレスを確認してください');
         }
       } finally {
         if (context.mounted) isLoading.value = false;
       }
     }
 
-    /// OTPを検証してログイン
     Future<void> verifyOtp() async {
       final otp = otpController.text.trim();
       if (otp.isEmpty) return;
@@ -66,19 +85,21 @@ class LoginScreen extends HookConsumerWidget {
           case Success(data: final user):
             ref.read(appUserProvider.notifier).setUser(user);
             context.go(AppRoutes.companyHome);
-          case Failure(message: final message):
-            CommonSnackBar.error(context, message);
+          case Failure():
+            CommonSnackBar.error(context, '認証コードが正しくありません。再度お試しください');
         }
       } finally {
         if (context.mounted) isLoading.value = false;
       }
     }
 
-    /// メール入力画面に戻る
     void backToEmail() {
       otpSent.value = false;
       otpController.clear();
+      resendCooldown.value = 0;
     }
+
+    final canResend = resendCooldown.value <= 0 && !isLoading.value;
 
     return CommonScaffold(
       body: SafeArea(
@@ -93,7 +114,6 @@ class LoginScreen extends HookConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // ロゴ
                   Center(
                     child: Container(
                       width: 64,
@@ -115,7 +135,6 @@ class LoginScreen extends HookConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.xl),
 
-                  // タイトル
                   Center(
                     child: Text(
                       otpSent.value ? '認証コードを入力' : 'ログイン',
@@ -137,7 +156,6 @@ class LoginScreen extends HookConsumerWidget {
                   const SizedBox(height: AppSpacing.xxl),
 
                   if (!otpSent.value) ...[
-                    // メールアドレス入力
                     TextFormField(
                       controller: emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -149,14 +167,12 @@ class LoginScreen extends HookConsumerWidget {
                     ),
                     const SizedBox(height: AppSpacing.xl),
 
-                    // OTP送信ボタン
                     CommonButton(
                       onPressed: sendOtp,
                       loading: isLoading.value,
                       child: const Text('認証コードを送信'),
                     ),
                   ] else ...[
-                    // OTP入力
                     TextFormField(
                       controller: otpController,
                       keyboardType: TextInputType.number,
@@ -171,7 +187,6 @@ class LoginScreen extends HookConsumerWidget {
                     ),
                     const SizedBox(height: AppSpacing.xl),
 
-                    // ログインボタン
                     CommonButton(
                       onPressed: verifyOtp,
                       loading: isLoading.value,
@@ -179,20 +194,32 @@ class LoginScreen extends HookConsumerWidget {
                     ),
                     const SizedBox(height: AppSpacing.md),
 
-                    // 戻るボタン・再送信
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        TextButton(
-                          onPressed: isLoading.value ? null : backToEmail,
-                          child: const Text('メールアドレスを変更'),
+                    CommonButton.outline(
+                      onPressed: canResend ? sendOtp : null,
+                      child: Text(
+                        canResend
+                            ? 'OTPを再送信'
+                            : '再送信可能まで ${resendCooldown.value}秒',
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    Center(
+                      child: TextButton(
+                        onPressed: isLoading.value ? null : backToEmail,
+                        child: const Text('メールアドレスを変更'),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+
+                    Center(
+                      child: Text(
+                        'ログインでお困りの場合は support@hr1.jp までご連絡ください',
+                        style: AppTextStyles.caption1.copyWith(
+                          color: AppColors.textSecondary(theme.brightness),
                         ),
-                        const SizedBox(width: AppSpacing.md),
-                        TextButton(
-                          onPressed: isLoading.value ? null : sendOtp,
-                          child: const Text('コードを再送信'),
-                        ),
-                      ],
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ],
                 ],

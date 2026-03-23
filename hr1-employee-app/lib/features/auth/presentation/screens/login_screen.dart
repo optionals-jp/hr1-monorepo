@@ -1,13 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/core/router/app_router.dart';
 import 'package:hr1_shared/hr1_shared.dart' show Validators;
-import '../../../../shared/widgets/widgets.dart';
-import '../controllers/auth_controller.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/features/auth/presentation/controllers/auth_controller.dart';
 
-/// ログイン画面（OTP認証）
+const _resendCooldownSeconds = 60;
+
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -20,16 +23,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _otpController = TextEditingController();
   bool _otpSent = false;
+  int _resendCooldown = 0;
+  Timer? _cooldownTimer;
 
   @override
   void dispose() {
     _emailController.dispose();
     _otpController.dispose();
+    _cooldownTimer?.cancel();
     super.dispose();
   }
 
+  void _startCooldown() {
+    _cooldownTimer?.cancel();
+    setState(() => _resendCooldown = _resendCooldownSeconds);
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() {
+        _resendCooldown--;
+        if (_resendCooldown <= 0) {
+          _resendCooldown = 0;
+          _cooldownTimer?.cancel();
+        }
+      });
+    });
+  }
+
   Future<void> _sendOtp() async {
+    final authState = ref.read(authControllerProvider);
+    if (authState.isLoading) return;
     if (!_formKey.currentState!.validate()) return;
+
+    final wasAlreadySent = _otpSent;
 
     final success = await ref
         .read(authControllerProvider.notifier)
@@ -39,10 +63,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (success) {
       setState(() => _otpSent = true);
-      CommonSnackBar.show(context, '認証コードを送信しました。メールをご確認ください。');
+      _startCooldown();
+      CommonSnackBar.show(
+        context,
+        wasAlreadySent ? '認証コードを再送信しました' : '認証コードを送信しました。メールをご確認ください。',
+      );
     } else {
-      final error = ref.read(authControllerProvider).error;
-      CommonSnackBar.error(context, error ?? 'エラーが発生しました');
+      CommonSnackBar.error(context, 'メール送信に失敗しました。メールアドレスを確認してください');
     }
   }
 
@@ -59,15 +86,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (success) {
       context.go(AppRoutes.portal);
     } else {
-      final error = ref.read(authControllerProvider).error;
-      CommonSnackBar.error(context, error ?? 'エラーが発生しました');
+      CommonSnackBar.error(context, '認証コードが正しくありません。再度お試しください');
     }
   }
 
   void _backToEmail() {
+    _cooldownTimer?.cancel();
     setState(() {
       _otpSent = false;
       _otpController.clear();
+      _resendCooldown = 0;
     });
   }
 
@@ -76,6 +104,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState.isLoading;
     final theme = Theme.of(context);
+    final canResend = _resendCooldown <= 0 && !isLoading;
 
     return CommonScaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -89,7 +118,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // ロゴ
                   Center(
                     child: Container(
                       width: 56,
@@ -112,7 +140,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xxl),
 
-                  // タイトル
                   Center(
                     child: Text(
                       _otpSent ? '認証コードを入力' : 'ログイン',
@@ -126,9 +153,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ? '${_emailController.text.trim()} に送信された\n6桁のコードを入力してください'
                           : 'メールアドレスを入力してください',
                       style: AppTextStyles.caption1.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.6,
-                        ),
+                        color: AppColors.textSecondary(theme.brightness),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -175,21 +200,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       loading: isLoading,
                       child: const Text('ログイン'),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
+                    const SizedBox(height: AppSpacing.md),
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        TextButton(
-                          onPressed: isLoading ? null : _backToEmail,
-                          child: const Text('メールアドレスを変更'),
+                    CommonButton.outline(
+                      onPressed: canResend ? _sendOtp : null,
+                      child: Text(
+                        canResend ? 'OTPを再送信' : '再送信可能まで $_resendCooldown秒',
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    Center(
+                      child: TextButton(
+                        onPressed: isLoading ? null : _backToEmail,
+                        child: const Text('メールアドレスを変更'),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+
+                    Center(
+                      child: Text(
+                        'ログインでお困りの場合は support@hr1.jp までご連絡ください',
+                        style: AppTextStyles.caption1.copyWith(
+                          color: AppColors.textSecondary(theme.brightness),
                         ),
-                        const SizedBox(width: AppSpacing.md),
-                        TextButton(
-                          onPressed: isLoading ? null : _sendOtp,
-                          child: const Text('コードを再送信'),
-                        ),
-                      ],
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ],
                 ],

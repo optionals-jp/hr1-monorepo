@@ -35,11 +35,13 @@ import {
   assignmentStatusLabels,
   scoreTypeLabels,
 } from "@/lib/constants";
+import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 
 const tabs = [
   { value: "overview", label: "概要" },
   { value: "assignments", label: "対象者・評価者" },
   { value: "report", label: "集計レポート" },
+  { value: "audit", label: "変更履歴" },
 ];
 
 type AddMode = "individual" | "department" | "all_mutual";
@@ -1150,6 +1152,14 @@ export default function EvaluationCycleDetailPage() {
               ))
             )}
           </div>
+        )}
+
+        {activeTab === "audit" && organization && (
+          <AuditLogPanel
+            organizationId={organization.id}
+            tableName="evaluation_cycles"
+            recordId={id}
+          />
         )}
       </div>
     </>

@@ -37,9 +37,11 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
-import { SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X, Download } from "lucide-react";
+import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
 import { useRouter } from "next/navigation";
 
 const addTabs: EditPanelTab[] = [
@@ -60,6 +62,7 @@ export default function ApplicantsPage() {
   const [newHiringType, setNewHiringType] = useState<string>("");
   const [newGradYear, setNewGradYear] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState<ValidationErrors>({});
 
   const {
     data: applicants = [],
@@ -83,12 +86,27 @@ export default function ApplicantsPage() {
     setNewName("");
     setNewHiringType("");
     setNewGradYear("");
+    setFormErrors({});
     setAddTab("basic");
     setDialogOpen(true);
   };
 
   const handleAdd = async () => {
-    if (!organization || !newEmail) return;
+    if (!organization) return;
+
+    const errors = validateForm(
+      {
+        email: [validators.required("メールアドレス"), validators.email()],
+        name: [validators.maxLength(100, "名前")],
+      },
+      { email: newEmail, name: newName }
+    );
+    if (errors) {
+      setFormErrors(errors);
+      if (errors.email) setAddTab("basic");
+      return;
+    }
+    setFormErrors({});
     setSaving(true);
 
     try {
@@ -136,7 +154,41 @@ export default function ApplicantsPage() {
         description="応募者の管理・招待"
         sticky={false}
         border={false}
-        action={<Button onClick={openAddDialog}>応募者を追加</Button>}
+        action={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (applicants.length === 0) return;
+                exportToCSV(
+                  applicants.map((a) => ({
+                    ...a,
+                    _name: a.display_name ?? "",
+                    _hiringType:
+                      a.hiring_type === "new_grad"
+                        ? `新卒（${a.graduation_year}年卒）`
+                        : a.hiring_type === "mid_career"
+                          ? "中途採用"
+                          : "",
+                    _createdAt: a.created_at,
+                  })),
+                  [
+                    { key: "_name", label: "氏名" },
+                    { key: "email", label: "メール" },
+                    { key: "_hiringType", label: "採用区分" },
+                    { key: "_createdAt", label: "登録日" },
+                  ],
+                  csvFilenameWithDate("応募者一覧")
+                );
+              }}
+            >
+              <Download className="mr-1.5 h-4 w-4" />
+              CSV出力
+            </Button>
+            <Button onClick={openAddDialog}>応募者を追加</Button>
+          </div>
+        }
       />
 
       <div className="sticky top-14 z-10">
@@ -254,17 +306,27 @@ export default function ApplicantsPage() {
               <Input
                 type="email"
                 value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
+                onChange={(e) => {
+                  setNewEmail(e.target.value);
+                  setFormErrors((prev) => ({ ...prev, email: "" }));
+                }}
                 placeholder="example@email.com"
+                className={formErrors.email ? "border-red-500" : ""}
               />
+              {formErrors.email && <p className="text-sm text-red-500">{formErrors.email}</p>}
             </div>
             <div className="space-y-2">
               <Label>名前</Label>
               <Input
                 value={newName}
-                onChange={(e) => setNewName(e.target.value)}
+                onChange={(e) => {
+                  setNewName(e.target.value);
+                  setFormErrors((prev) => ({ ...prev, name: "" }));
+                }}
                 placeholder="山田 花子"
+                className={formErrors.name ? "border-red-500" : ""}
               />
+              {formErrors.name && <p className="text-sm text-red-500">{formErrors.name}</p>}
             </div>
           </div>
         )}

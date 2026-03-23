@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
@@ -7,171 +8,152 @@ import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_prov
 import 'package:hr1_applicant_app/features/messages/domain/entities/message_thread.dart';
 import 'package:hr1_applicant_app/features/messages/presentation/controllers/thread_chat_controller.dart';
 
-/// スレッドチャット画面
-class ThreadChatScreen extends ConsumerStatefulWidget {
+class ThreadChatScreen extends HookConsumerWidget {
   const ThreadChatScreen({super.key, required this.thread});
 
   final MessageThread thread;
 
   @override
-  ConsumerState<ThreadChatScreen> createState() => _ThreadChatScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = useTextEditingController();
+    final scrollController = useScrollController();
+    final editController = useTextEditingController();
+    final editingMessageId = useState<String?>(null);
 
-class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
-  final _controller = TextEditingController();
-  final _scrollController = ScrollController();
-  final _editController = TextEditingController();
-  String? _editingMessageId;
+    final currentUserId = ref.read(appUserProvider)?.id ?? '';
+    final controllerArg = (threadId: thread.id, currentUserId: currentUserId);
 
-  String get _currentUserId => ref.read(appUserProvider)?.id ?? '';
+    useEffect(() {
+      void onScroll() {
+        if (scrollController.position.pixels >=
+            scrollController.position.maxScrollExtent - 50) {
+          ref
+              .read(threadChatControllerProvider(controllerArg).notifier)
+              .loadOlderMessages();
+        }
+      }
 
-  ({String threadId, String currentUserId}) get _controllerArg =>
-      (threadId: widget.thread.id, currentUserId: _currentUserId);
+      void onTextChanged() {
+        ref
+            .read(threadChatControllerProvider(controllerArg).notifier)
+            .onTextChanged(controller.text);
+      }
 
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-    _controller.addListener(_onTextChanged);
-  }
+      scrollController.addListener(onScroll);
+      controller.addListener(onTextChanged);
+      return () {
+        scrollController.removeListener(onScroll);
+        controller.removeListener(onTextChanged);
+      };
+    }, [scrollController, controller]);
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    _editController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
+    Future<void> sendMessage() async {
+      final content = controller.text.trim();
+      if (content.isEmpty) return;
 
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 50) {
-      ref
-          .read(threadChatControllerProvider(_controllerArg).notifier)
-          .loadOlderMessages();
-    }
-  }
+      controller.clear();
 
-  void _onTextChanged() {
-    ref
-        .read(threadChatControllerProvider(_controllerArg).notifier)
-        .onTextChanged(_controller.text);
-  }
-
-  Future<void> _sendMessage() async {
-    final content = _controller.text.trim();
-    if (content.isEmpty) return;
-
-    _controller.clear();
-
-    final success = await ref
-        .read(threadChatControllerProvider(_controllerArg).notifier)
-        .sendMessage(content: content);
-
-    if (!success && mounted) {
-      _controller.text = content;
-      CommonSnackBar.error(context, 'メッセージの送信に失敗しました');
-    }
-  }
-
-  void _showMessageActions(Message message) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text('編集'),
-              onTap: () {
-                Navigator.pop(context);
-                _startEditing(message);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.delete_outline, color: AppColors.error),
-              title: Text(
-                '削除',
-                style: AppTextStyles.body2.copyWith(color: AppColors.error),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _confirmDelete(message);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _startEditing(Message message) {
-    setState(() {
-      _editingMessageId = message.id;
-      _editController.text = message.content;
-    });
-  }
-
-  void _cancelEditing() {
-    setState(() {
-      _editingMessageId = null;
-      _editController.clear();
-    });
-  }
-
-  Future<void> _saveEdit(Message message) async {
-    final newContent = _editController.text.trim();
-    if (newContent.isEmpty || newContent == message.content) {
-      _cancelEditing();
-      return;
-    }
-
-    final success = await ref
-        .read(threadChatControllerProvider(_controllerArg).notifier)
-        .editMessage(message.id, newContent);
-
-    if (success && mounted) {
-      _cancelEditing();
-    } else if (!success && mounted) {
-      CommonSnackBar.error(context, 'メッセージの編集に失敗しました');
-    }
-  }
-
-  Future<void> _confirmDelete(Message message) async {
-    final confirmed = await CommonDialog.confirm(
-      context: context,
-      title: 'メッセージを削除',
-      message: 'このメッセージを削除しますか？この操作は取り消せません。',
-      confirmLabel: '削除',
-      isDestructive: true,
-    );
-
-    if (confirmed) {
       final success = await ref
-          .read(threadChatControllerProvider(_controllerArg).notifier)
-          .deleteMessage(message.id);
-      if (!success && mounted) {
-        CommonSnackBar.error(context, 'メッセージの削除に失敗しました');
+          .read(threadChatControllerProvider(controllerArg).notifier)
+          .sendMessage(content: content);
+
+      if (!success && context.mounted) {
+        controller.text = content;
+        CommonSnackBar.error(context, 'メッセージの送信に失敗しました');
       }
     }
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    final chatState = ref.watch(threadChatControllerProvider(_controllerArg));
-    final displayName = widget.thread.organizationName ?? '企業';
-
-    if (chatState.error != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          CommonSnackBar.error(context, chatState.error!);
-          ref
-              .read(threadChatControllerProvider(_controllerArg).notifier)
-              .clearError();
-        }
-      });
+    void startEditing(Message message) {
+      editingMessageId.value = message.id;
+      editController.text = message.content;
     }
+
+    void cancelEditing() {
+      editingMessageId.value = null;
+      editController.clear();
+    }
+
+    Future<void> saveEdit(Message message) async {
+      final newContent = editController.text.trim();
+      if (newContent.isEmpty || newContent == message.content) {
+        cancelEditing();
+        return;
+      }
+
+      final success = await ref
+          .read(threadChatControllerProvider(controllerArg).notifier)
+          .editMessage(message.id, newContent);
+
+      if (success && context.mounted) {
+        cancelEditing();
+      } else if (!success && context.mounted) {
+        CommonSnackBar.error(context, 'メッセージの編集に失敗しました');
+      }
+    }
+
+    Future<void> confirmDelete(Message message) async {
+      final confirmed = await CommonDialog.confirm(
+        context: context,
+        title: 'メッセージを削除',
+        message: 'このメッセージを削除しますか？この操作は取り消せません。',
+        confirmLabel: '削除',
+        isDestructive: true,
+      );
+
+      if (confirmed) {
+        final success = await ref
+            .read(threadChatControllerProvider(controllerArg).notifier)
+            .deleteMessage(message.id);
+        if (!success && context.mounted) {
+          CommonSnackBar.error(context, 'メッセージの削除に失敗しました');
+        }
+      }
+    }
+
+    void showMessageActions(Message message) {
+      showModalBottomSheet(
+        context: context,
+        builder: (context) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('編集'),
+                onTap: () {
+                  Navigator.pop(context);
+                  startEditing(message);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete_outline, color: AppColors.error),
+                title: Text(
+                  '削除',
+                  style: AppTextStyles.body2.copyWith(color: AppColors.error),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  confirmDelete(message);
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    ref.listen(threadChatControllerProvider(controllerArg), (prev, next) {
+      if (next.error != null && prev?.error == null) {
+        CommonSnackBar.error(context, next.error!);
+        ref
+            .read(threadChatControllerProvider(controllerArg).notifier)
+            .clearError();
+      }
+    });
+
+    final chatState = ref.watch(threadChatControllerProvider(controllerArg));
+    final theme = Theme.of(context);
+    final displayName = thread.organizationName ?? '企業';
 
     return CommonScaffold(
       appBar: AppBar(
@@ -188,11 +170,11 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(displayName, style: AppTextStyles.callout),
-                  if (widget.thread.jobTitle != null)
+                  if (thread.jobTitle != null)
                     Text(
-                      widget.thread.jobTitle!,
+                      thread.jobTitle!,
                       style: AppTextStyles.caption2.copyWith(
-                        color: AppColors.lightTextSecondary,
+                        color: AppColors.textSecondary(theme.brightness),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -229,7 +211,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                         Text(
                           'メッセージを送ってみましょう',
                           style: AppTextStyles.caption1.copyWith(
-                            color: AppColors.lightTextSecondary,
+                            color: AppColors.textSecondary(theme.brightness),
                           ),
                         ),
                       ],
@@ -237,7 +219,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                   )
                 : ListView.builder(
                     reverse: true,
-                    controller: _scrollController,
+                    controller: scrollController,
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.lg,
                       vertical: AppSpacing.sm,
@@ -259,10 +241,9 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
 
                       final msgIndex = messages.length - 1 - index;
                       final msg = messages[msgIndex];
-                      final isMe = msg.senderId == _currentUserId;
-                      final isEditing = _editingMessageId == msg.id;
+                      final isMe = msg.senderId == currentUserId;
+                      final isEditing = editingMessageId.value == msg.id;
 
-                      // グルーピング判定
                       final prevMsg = msgIndex > 0
                           ? messages[msgIndex - 1]
                           : null;
@@ -297,15 +278,15 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                           if (dateSeparator != null) dateSeparator,
                           GestureDetector(
                             onLongPress: isMe
-                                ? () => _showMessageActions(msg)
+                                ? () => showMessageActions(msg)
                                 : null,
                             child: _MessageBubble(
                               message: msg,
                               isMe: isMe,
                               isEditing: isEditing,
-                              editController: _editController,
-                              onSaveEdit: () => _saveEdit(msg),
-                              onCancelEdit: _cancelEditing,
+                              editController: editController,
+                              onSaveEdit: () => saveEdit(msg),
+                              onCancelEdit: cancelEditing,
                               isFirstInGroup: isFirstInGroup,
                               isLastInGroup: isLastInGroup,
                             ),
@@ -326,8 +307,8 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
             ),
 
           MessageInputBar(
-            controller: _controller,
-            onSend: _sendMessage,
+            controller: controller,
+            onSend: sendMessage,
             isSending: chatState.isSending,
           ),
         ],
@@ -347,13 +328,15 @@ class _DateSeparator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Center(
         child: Text(
           DateFormatter.toRelativeDate(date),
           style: AppTextStyles.caption2.copyWith(
-            color: AppColors.lightTextSecondary,
+            color: AppColors.textSecondary(theme.brightness),
           ),
         ),
       ),
@@ -470,7 +453,7 @@ class _MessageBubble extends StatelessWidget {
                       child: Text(
                         _formatTime(message),
                         style: AppTextStyles.caption2.copyWith(
-                          color: AppColors.lightTextSecondary,
+                          color: AppColors.textSecondary(theme.brightness),
                         ),
                       ),
                     ),
@@ -491,6 +474,8 @@ class _MessageBubble extends StatelessWidget {
   }
 
   Widget _buildEditingContent(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
@@ -500,7 +485,9 @@ class _MessageBubble extends StatelessWidget {
           autofocus: true,
           maxLines: null,
           style: AppTextStyles.body1.copyWith(
-            color: isMe ? Colors.white : AppColors.lightTextPrimary,
+            color: isMe
+                ? Colors.white
+                : AppColors.textPrimary(theme.brightness),
           ),
           decoration: InputDecoration(
             isDense: true,
@@ -510,7 +497,7 @@ class _MessageBubble extends StatelessWidget {
             hintStyle: AppTextStyles.body1.copyWith(
               color: isMe
                   ? Colors.white.withValues(alpha: 0.6)
-                  : AppColors.lightTextSecondary,
+                  : AppColors.textSecondary(theme.brightness),
             ),
           ),
         ),
@@ -525,7 +512,7 @@ class _MessageBubble extends StatelessWidget {
                 style: AppTextStyles.caption2.copyWith(
                   color: isMe
                       ? Colors.white.withValues(alpha: 0.8)
-                      : AppColors.lightTextSecondary,
+                      : AppColors.textSecondary(theme.brightness),
                   fontWeight: FontWeight.w500,
                 ),
               ),

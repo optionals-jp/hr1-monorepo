@@ -31,6 +31,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { SlidersHorizontal, X, Download } from "lucide-react";
@@ -63,6 +64,7 @@ export default function EmployeesPage() {
   const [newPosition, setNewPosition] = useState("");
   const [selectedDeptIds, setSelectedDeptIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState<ValidationErrors>({});
 
   const { data: departments = [] } = useQuery<Department[]>(
     organization ? `departments-${organization.id}` : null,
@@ -140,12 +142,28 @@ export default function EmployeesPage() {
     setNewName("");
     setNewPosition("");
     setSelectedDeptIds([]);
+    setFormErrors({});
     setAddTab("basic");
     setDialogOpen(true);
   };
 
   const handleAdd = async () => {
-    if (!organization || !newEmail) return;
+    if (!organization) return;
+
+    const errors = validateForm(
+      {
+        email: [validators.required("メールアドレス"), validators.email()],
+        name: [validators.maxLength(100, "名前")],
+        position: [validators.maxLength(100, "役職")],
+      },
+      { email: newEmail, name: newName, position: newPosition }
+    );
+    if (errors) {
+      setFormErrors(errors);
+      if (errors.email || errors.name || errors.position) setAddTab("basic");
+      return;
+    }
+    setFormErrors({});
     setSaving(true);
 
     try {
@@ -356,25 +374,40 @@ export default function EmployeesPage() {
               <Input
                 type="email"
                 value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
+                onChange={(e) => {
+                  setNewEmail(e.target.value);
+                  setFormErrors((prev) => ({ ...prev, email: "" }));
+                }}
                 placeholder="example@company.com"
+                className={formErrors.email ? "border-red-500" : ""}
               />
+              {formErrors.email && <p className="text-sm text-red-500">{formErrors.email}</p>}
             </div>
             <div className="space-y-2">
               <Label>名前</Label>
               <Input
                 value={newName}
-                onChange={(e) => setNewName(e.target.value)}
+                onChange={(e) => {
+                  setNewName(e.target.value);
+                  setFormErrors((prev) => ({ ...prev, name: "" }));
+                }}
                 placeholder="田中 太郎"
+                className={formErrors.name ? "border-red-500" : ""}
               />
+              {formErrors.name && <p className="text-sm text-red-500">{formErrors.name}</p>}
             </div>
             <div className="space-y-2">
               <Label>役職</Label>
               <Input
                 value={newPosition}
-                onChange={(e) => setNewPosition(e.target.value)}
+                onChange={(e) => {
+                  setNewPosition(e.target.value);
+                  setFormErrors((prev) => ({ ...prev, position: "" }));
+                }}
                 placeholder="マネージャー"
+                className={formErrors.position ? "border-red-500" : ""}
               />
+              {formErrors.position && <p className="text-sm text-red-500">{formErrors.position}</p>}
             </div>
           </div>
         )}

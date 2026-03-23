@@ -1,5 +1,9 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 import 'package:hr1_applicant_app/features/forms/domain/entities/form_field_item.dart';
@@ -7,7 +11,7 @@ import 'package:hr1_applicant_app/features/forms/presentation/controllers/form_f
 import 'package:hr1_applicant_app/features/forms/presentation/providers/forms_providers.dart';
 
 /// フォーム回答画面（Google Forms風）
-class FormFillScreen extends ConsumerWidget {
+class FormFillScreen extends HookConsumerWidget {
   const FormFillScreen({
     super.key,
     required this.formId,
@@ -24,7 +28,7 @@ class FormFillScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final formKey = GlobalKey<FormState>();
+    final formKey = useMemoized(GlobalKey<FormState>.new);
     final asyncForm = ref.watch(formDetailProvider(formId));
     final controllerState = ref.watch(
       formFillControllerProvider(_controllerArg),
@@ -277,14 +281,115 @@ class _FormFieldWidget extends ConsumerWidget {
         return _DateField(field: field, answers: answers, notifier: notifier);
 
       case FormFieldType.fileUpload:
-        return OutlinedButton.icon(
-          onPressed: () {
-            // TODO: ファイル選択
-          },
-          icon: const Icon(Icons.upload_file),
-          label: const Text('ファイルを選択'),
+        return _FileUploadField(
+          field: field,
+          formId: formId,
+          answers: answers,
+          notifier: notifier,
         );
     }
+  }
+}
+
+class _FileUploadField extends HookConsumerWidget {
+  const _FileUploadField({
+    required this.field,
+    required this.formId,
+    required this.answers,
+    required this.notifier,
+  });
+
+  final FormFieldItem field;
+  final String formId;
+  final Map<String, dynamic> answers;
+  final FormAnswersNotifier notifier;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isUploading = useState(false);
+    final fileName = useState<String?>(null);
+
+    useEffect(() {
+      final existing = answers[field.id];
+      if (existing is String && existing.isNotEmpty) {
+        fileName.value = Uri.parse(existing).pathSegments.lastOrNull;
+      }
+      return null;
+    }, []);
+
+    Future<void> pickAndUpload() async {
+      final result = await FilePicker.platform.pickFiles();
+      if (result == null || result.files.isEmpty) return;
+
+      final platformFile = result.files.first;
+      if (platformFile.path == null) return;
+
+      isUploading.value = true;
+
+      try {
+        final file = File(platformFile.path!);
+        final ext = platformFile.extension ?? '';
+        final repo = ref.read(formsRepositoryProvider);
+        final url = await repo.uploadFormFile(
+          formId: formId,
+          fieldId: field.id,
+          file: file,
+          extension: ext,
+        );
+        notifier.setAnswer(field.id, url);
+        fileName.value = platformFile.name;
+      } catch (e) {
+        debugPrint('Upload failed: $e');
+        if (context.mounted) {
+          CommonSnackBar.error(context, 'ファイルのアップロードに失敗しました');
+        }
+      } finally {
+        isUploading.value = false;
+      }
+    }
+
+    if (isUploading.value) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+        child: LoadingIndicator(size: 20),
+      );
+    }
+
+    if (fileName.value != null) {
+      return Row(
+        children: [
+          Icon(Icons.check_circle, color: AppColors.success, size: 20),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: Text(
+              fileName.value!,
+              style: AppTextStyles.caption1.copyWith(
+                color: AppColors.textSecondary(theme.brightness),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          CommonButton.outline(
+            onPressed: pickAndUpload,
+            child: const Text('変更'),
+          ),
+        ],
+      );
+    }
+
+    return CommonButton.outline(
+      onPressed: pickAndUpload,
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.upload_file, size: 18),
+          SizedBox(width: AppSpacing.xs),
+          Text('ファイルを選択'),
+        ],
+      ),
+    );
   }
 }
 

@@ -399,6 +399,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 -- ========================================================================
 -- 🔴5: create_user_with_org の department_ids 型を uuid[] に変更
 -- ========================================================================
+DROP FUNCTION IF EXISTS public.create_user_with_org(text, text, text, text, text, text, text, integer, text[]);
+
 CREATE OR REPLACE FUNCTION public.create_user_with_org(
   p_user_id text,
   p_email text,
@@ -457,11 +459,23 @@ RETURNS TABLE(
   total_work_minutes bigint,
   total_overtime_minutes bigint
 )
-LANGUAGE sql
+LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM user_organizations uo
+    JOIN profiles p ON p.id = uo.user_id
+    WHERE uo.user_id = auth.uid()::text
+      AND uo.organization_id = p_organization_id
+      AND p.role = 'admin'
+  ) THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+
+  RETURN QUERY
   SELECT
     ar.user_id,
     p.display_name,
@@ -487,4 +501,5 @@ AS $$
     AND ar.date <= p_end_date
   GROUP BY ar.user_id, p.display_name, p.email
   ORDER BY p.display_name NULLS LAST, p.email;
+END;
 $$;

@@ -41,6 +41,7 @@ import {
   stepStatusLabels,
   stepTypeLabels,
 } from "@/lib/constants";
+import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 
 /** リソース選択が必要なステップ種別 */
 const RESOURCE_STEP_TYPES = ["form", "interview"] as const;
@@ -65,7 +66,9 @@ export default function ApplicationDetailPage() {
   const [formSheetLoading, setFormSheetLoading] = useState(false);
 
   // リソース選択ダイアログの状態
-  const [activeTab, setActiveTab] = useState<"dashboard" | "steps" | "history">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "steps" | "history" | "audit">(
+    "dashboard"
+  );
   const [resourceDialogOpen, setResourceDialogOpen] = useState(false);
   const [resourceDialogStep, setResourceDialogStep] = useState<ApplicationStep | null>(null);
   const [forms, setForms] = useState<CustomForm[]>([]);
@@ -373,6 +376,7 @@ export default function ApplicationDetailPage() {
     { value: "dashboard" as const, label: "ダッシュボード" },
     { value: "steps" as const, label: "選考ステップ", count: steps.length },
     { value: "history" as const, label: "選考履歴" },
+    { value: "audit" as const, label: "変更履歴" },
   ];
 
   return (
@@ -540,6 +544,10 @@ export default function ApplicationDetailPage() {
               </div>
             </section>
           </div>
+        )}
+
+        {activeTab === "audit" && organization && (
+          <AuditLogPanel organizationId={organization.id} tableName="applications" recordId={id} />
         )}
       </div>
 

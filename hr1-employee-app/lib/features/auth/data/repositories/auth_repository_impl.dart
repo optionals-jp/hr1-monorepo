@@ -1,10 +1,11 @@
 import 'dart:io';
 
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../core/result/result.dart';
-import '../../domain/entities/app_user.dart';
-import '../../domain/repositories/auth_repository.dart';
-import '../datasources/auth_remote_datasource.dart';
+import 'package:hr1_employee_app/core/result/result.dart';
+import 'package:hr1_employee_app/features/auth/domain/entities/app_user.dart';
+import 'package:hr1_employee_app/features/auth/domain/repositories/auth_repository.dart';
+import 'package:hr1_employee_app/features/auth/data/datasources/auth_remote_datasource.dart';
 
 /// AuthRepository の Supabase 実装
 class AuthRepositoryImpl implements AuthRepository {
@@ -19,7 +20,8 @@ class AuthRepositoryImpl implements AuthRepository {
       return Result.success(null);
     } on AuthException catch (e) {
       return Result.failure(e.message);
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
+      FirebaseCrashlytics.instance.recordError(e, stackTrace);
       return Result.failure(e.toString());
     }
   }
@@ -35,7 +37,8 @@ class AuthRepositoryImpl implements AuthRepository {
       return Result.success(user);
     } on AuthException catch (e) {
       return Result.failure(e.message);
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
+      FirebaseCrashlytics.instance.recordError(e, stackTrace);
       return Result.failure(e.toString());
     }
   }
@@ -45,7 +48,8 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       await _datasource.signOut();
       return Result.success(null);
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
+      FirebaseCrashlytics.instance.recordError(e, stackTrace);
       return Result.failure(e.toString());
     }
   }
@@ -55,7 +59,8 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final user = await _datasource.fetchCurrentUserProfile();
       return Result.success(user);
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
+      FirebaseCrashlytics.instance.recordError(e, stackTrace);
       return Result.failure(e.toString());
     }
   }
@@ -69,7 +74,8 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       await _datasource.updateProfileField(userId: userId, fields: fields);
       return Result.success(null);
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
+      FirebaseCrashlytics.instance.recordError(e, stackTrace);
       return Result.failure(e.toString());
     }
   }
@@ -93,7 +99,8 @@ class AuthRepositoryImpl implements AuthRepository {
         fields: {'avatar_url': publicUrl},
       );
       return Result.success(publicUrl);
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
+      FirebaseCrashlytics.instance.recordError(e, stackTrace);
       return Result.failure(e.toString());
     }
   }

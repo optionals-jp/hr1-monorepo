@@ -28,13 +28,13 @@ import { DatetimeInput } from "@/components/ui/datetime-input";
 import { cn, autoFillEndAt } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase";
 import { useOrg } from "@/lib/org-context";
-import type { Interview, InterviewSlot, InterviewChangeLog } from "@/types/database";
+import type { Interview, InterviewSlot, AuditLog } from "@/types/database";
 import { Calendar, Trash2, Search } from "lucide-react";
 import { format } from "date-fns";
 import {
   interviewScheduleStatusLabels as statusLabels,
   interviewScheduleStatusColors as statusColors,
-  scheduleChangeTypeLabels as changeTypeLabels,
+  getAuditActionLabel,
 } from "@/lib/constants";
 
 const tabs = [
@@ -69,7 +69,7 @@ export default function SchedulingDetailPage() {
   const { organization } = useOrg();
   const [interview, setInterview] = useState<Interview | null>(null);
   const [slots, setSlots] = useState<InterviewSlot[]>([]);
-  const [changeLogs, setChangeLogs] = useState<InterviewChangeLog[]>([]);
+  const [changeLogs, setChangeLogs] = useState<AuditLog[]>([]);
   const [bookedApps, setBookedApps] = useState<BookedApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("detail");
@@ -107,10 +107,13 @@ export default function SchedulingDetailPage() {
         .eq("organization_id", organization.id)
         .single(),
       getSupabase()
-        .from("interview_change_logs")
+        .from("audit_logs")
         .select("*")
-        .eq("interview_id", id)
-        .order("created_at", { ascending: false }),
+        .eq("organization_id", organization.id)
+        .eq("table_name", "interviews")
+        .eq("record_id", id)
+        .order("created_at", { ascending: false })
+        .limit(50),
     ]);
 
     if (data) {
@@ -153,26 +156,20 @@ export default function SchedulingDetailPage() {
   }, [id, organization]);
 
   const updateStatus = async (status: string) => {
+    if (!organization) return;
     const oldStatus = interview?.status;
     await getSupabase().from("interviews").update({ status }).eq("id", id);
     setInterview((prev) => (prev ? { ...prev, status: status as Interview["status"] } : prev));
 
-    // Log status change
     if (oldStatus && oldStatus !== status) {
-      await getSupabase()
-        .from("interview_change_logs")
-        .insert({
-          id: `log-${id}-${Date.now()}`,
-          interview_id: id,
-          change_type: "status_updated",
-          summary: `ステータスを「${statusLabels[oldStatus]}」から「${statusLabels[status]}」に変更`,
-          details: { old: oldStatus, new: status },
-        });
       const { data: logsData } = await getSupabase()
-        .from("interview_change_logs")
+        .from("audit_logs")
         .select("*")
-        .eq("interview_id", id)
-        .order("created_at", { ascending: false });
+        .eq("organization_id", organization.id)
+        .eq("table_name", "interviews")
+        .eq("record_id", id)
+        .order("created_at", { ascending: false })
+        .limit(50);
       setChangeLogs(logsData ?? []);
     }
   };
@@ -228,22 +225,7 @@ export default function SchedulingDetailPage() {
     if (!interview) return;
     setSaving(true);
 
-    const logs: { change_type: string; summary: string; details?: Record<string, unknown> }[] = [];
-
-    // Info changes
-    if (editTitle !== interview.title) {
-      logs.push({
-        change_type: "title_updated",
-        summary: `タイトルを「${interview.title}」から「${editTitle}」に変更`,
-        details: { old: interview.title, new: editTitle },
-      });
-    }
-    if (editLocation !== (interview.location ?? "")) {
-      logs.push({ change_type: "location_updated", summary: "場所を変更" });
-    }
-    if (editNotes !== (interview.notes ?? "")) {
-      logs.push({ change_type: "notes_updated", summary: "備考を変更" });
-    }
+    const slotLogs: { detail_action: string; summary: string }[] = [];
 
     await getSupabase()
       .from("interviews")
@@ -265,7 +247,10 @@ export default function SchedulingDetailPage() {
     });
     if (deletableIds.length > 0) {
       await getSupabase().from("interview_slots").delete().in("id", deletableIds);
-      logs.push({ change_type: "slot_deleted", summary: `候補日時を${deletableIds.length}件削除` });
+      slotLogs.push({
+        detail_action: "slot_deleted",
+        summary: `候補日時を${deletableIds.length}件削除`,
+      });
     }
 
     const newSlots = editSlots.filter((s) => s.isNew && s.startAt && s.endAt);
@@ -282,7 +267,7 @@ export default function SchedulingDetailPage() {
             max_applicants: s.maxApplicants,
           }))
         );
-      logs.push({ change_type: "slot_added", summary: `候補日時を${newSlots.length}件追加` });
+      slotLogs.push({ detail_action: "slot_added", summary: `候補日時を${newSlots.length}件追加` });
     }
 
     let updatedCount = 0;
@@ -305,18 +290,27 @@ export default function SchedulingDetailPage() {
       }
     }
     if (updatedCount > 0) {
-      logs.push({ change_type: "slot_updated", summary: `候補日時を${updatedCount}件変更` });
+      slotLogs.push({ detail_action: "slot_updated", summary: `候補日時を${updatedCount}件変更` });
     }
 
-    if (logs.length > 0) {
+    if (slotLogs.length > 0 && organization) {
+      const userId = (await getSupabase().auth.getUser()).data.user?.id;
+      if (!userId) throw new Error("認証ユーザーが取得できません");
       await getSupabase()
-        .from("interview_change_logs")
+        .from("audit_logs")
         .insert(
-          logs.map((log, i) => ({
-            id: `log-${interview.id}-${Date.now()}-${i}`,
-            interview_id: interview.id,
-            change_type: log.change_type,
-            summary: log.summary,
+          slotLogs.map((log) => ({
+            organization_id: organization.id,
+            user_id: userId,
+            action: log.detail_action.includes("deleted")
+              ? "delete"
+              : log.detail_action.includes("added")
+                ? "create"
+                : "update",
+            table_name: "interviews",
+            record_id: interview.id,
+            metadata: { summary: log.summary, detail_action: log.detail_action },
+            source: "console" as const,
           }))
         );
     }
@@ -522,11 +516,15 @@ export default function SchedulingDetailPage() {
                     >
                       <div className="shrink-0 mt-0.5">
                         <Badge variant="outline" className="text-xs">
-                          {changeTypeLabels[log.change_type] ?? log.change_type}
+                          {getAuditActionLabel(log)}
                         </Badge>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm">{log.summary}</p>
+                        <p className="text-sm">
+                          {(log.metadata as Record<string, string> | null)?.summary ??
+                            (log.changes as Record<string, string> | null)?.summary ??
+                            log.action}
+                        </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {format(new Date(log.created_at), "yyyy/MM/dd HH:mm")}
                         </p>

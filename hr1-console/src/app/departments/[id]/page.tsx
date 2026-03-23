@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase";
 import { useOrg } from "@/lib/org-context";
 import { genderLabels } from "@/lib/constants";
+import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 import type { Department } from "@/types/database";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +39,7 @@ interface DeptMember {
 const tabs = [
   { value: "overview", label: "概要" },
   { value: "members", label: "社員" },
+  { value: "audit", label: "変更履歴" },
 ];
 
 const editTabs: EditPanelTab[] = [{ value: "basic", label: "基本情報" }];
@@ -378,6 +380,12 @@ export default function DepartmentDetailPage() {
               )}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {activeTab === "audit" && organization && (
+        <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
+          <AuditLogPanel organizationId={organization.id} tableName="departments" recordId={id} />
         </div>
       )}
 
