@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
 import 'package:hr1_employee_app/core/router/app_router.dart';
+import 'package:hr1_shared/hr1_shared.dart' show FieldEditScreen;
 import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hr1_employee_app/features/auth/presentation/controllers/profile_edit_controller.dart';
@@ -214,11 +215,15 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     required String fieldKey,
     required String successMessage,
   }) async {
-    final value = await CommonDialog.input(
-      context: context,
-      title: title,
-      hintText: '$titleを入力',
-      initialValue: initialValue,
+    final value = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FieldEditScreen(
+          title: title,
+          initialValue: initialValue,
+          maxLength: 50,
+        ),
+      ),
     );
     if (value == null || value.isEmpty) return;
 

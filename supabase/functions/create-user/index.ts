@@ -89,6 +89,24 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // 呼び出し元が指定組織に所属しているか確認
+    const { data: callerOrg } = await adminClient
+      .from("user_organizations")
+      .select("organization_id")
+      .eq("user_id", caller.id)
+      .eq("organization_id", body.organization_id)
+      .maybeSingle();
+
+    if (!callerOrg) {
+      return new Response(
+        JSON.stringify({ error: "指定された組織に所属していません" }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     // 1. Supabase Auth でユーザーを作成
     const { data: authData, error: authError } =
       await adminClient.auth.admin.createUser({

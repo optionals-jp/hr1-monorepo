@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
-import 'package:hr1_employee_app/shared/utils/month_utils.dart';
+import 'package:hr1_shared/hr1_shared.dart' show MonthUtils;
 import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 import 'package:hr1_employee_app/features/attendance/domain/entities/attendance_record.dart';
 import 'package:hr1_employee_app/features/attendance/presentation/providers/attendance_providers.dart';

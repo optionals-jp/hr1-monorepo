@@ -86,6 +86,29 @@ class MyScreen extends ConsumerWidget {
 3. `test` — Vitest
 4. `build` — Next.js build
 
+## Commit Message Format
+
+```
+[prefix] TICKET-ID 要約
+
+- 変更内容1
+- 変更内容2
+```
+
+- **1行目**: `[プレフィックス] チケット番号 要約` — 日本語で簡潔に
+- **2行目**: 空行
+- **3行目以降**: 変更内容の箇条書き（`- ` で始まる）
+- **プレフィックス**: `[add]` 新機能 / `[fix]` バグ修正 / `[update]` 既存機能の改善 / `[refactor]` リファクタリング / `[remove]` 削除
+- **チケット番号**: ブランチ名から取得（例: `feature/HR-36` → `HR-36`）
+
+例:
+```
+[add] HR-36 共通関数をhr1_sharedに移行
+- AppColors, AppSpacing等の定数をhr1_sharedに集約
+- 両アプリの共通ウィジェット16個を移行
+- PushNotificationServiceをappTypeパラメータ化
+```
+
 ## Task Completion Checklist
 
 Before considering a task complete in `hr1-console/`:

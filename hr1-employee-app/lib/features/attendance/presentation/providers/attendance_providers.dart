@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../shared/utils/month_utils.dart';
+import 'package:hr1_shared/hr1_shared.dart' show MonthUtils;
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/repositories/supabase_attendance_repository.dart';
 import '../../domain/entities/attendance_record.dart';

@@ -9,12 +9,20 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// バックグラウンドメッセージハンドラ（トップレベル関数である必要がある）
 @pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   debugPrint('バックグラウンド通知: ${message.notification?.title}');
 }
 
 /// プッシュ通知サービス
+///
+/// 使い方:
+/// ```dart
+/// await PushNotificationService.initialize(
+///   navigatorKey: rootNavigatorKey,
+///   appType: 'employee', // or 'applicant'
+/// );
+/// ```
 class PushNotificationService {
   PushNotificationService._();
 
@@ -22,15 +30,18 @@ class PushNotificationService {
   static final _localNotifications = FlutterLocalNotificationsPlugin();
   static GlobalKey<NavigatorState>? _navigatorKey;
   static StreamSubscription<AuthState>? _authSubscription;
+  static String _appType = 'employee';
 
   /// 初期化
   static Future<void> initialize({
     GlobalKey<NavigatorState>? navigatorKey,
+    required String appType,
   }) async {
     _navigatorKey = navigatorKey;
+    _appType = appType;
 
     // バックグラウンドハンドラ登録
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
     // 通知権限リクエスト
     final settings = await _messaging.requestPermission(
@@ -140,7 +151,7 @@ class PushNotificationService {
         params: {
           'p_token': token,
           'p_platform': Platform.isIOS ? 'ios' : 'android',
-          'p_app_type': 'employee',
+          'p_app_type': _appType,
         },
       );
       debugPrint('FCM トークン登録完了: ${token.substring(0, 20)}...');
@@ -154,8 +165,6 @@ class PushNotificationService {
     final notification = message.notification;
     if (notification == null) return;
 
-    // iOS は setForegroundNotificationPresentationOptions で表示するため、
-    // ローカル通知は Android のみ
     if (Platform.isIOS) return;
 
     _localNotifications.show(
