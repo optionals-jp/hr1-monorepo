@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/faq_item.dart';
+import 'package:hr1_employee_app/features/faq/domain/entities/faq_item.dart';
 
 /// FAQ のSupabaseリポジトリ
 class SupabaseFaqRepository {

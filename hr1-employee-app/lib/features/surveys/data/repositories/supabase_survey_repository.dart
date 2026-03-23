@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/pulse_survey.dart';
+import 'package:hr1_employee_app/features/surveys/domain/entities/pulse_survey.dart';
 
 /// パルスサーベイのSupabaseリポジトリ
 class SupabaseSurveyRepository {

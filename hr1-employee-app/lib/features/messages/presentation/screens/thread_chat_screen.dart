@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../domain/entities/message_thread.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../controllers/thread_chat_controller.dart';
-import '../controllers/thread_realtime_controller.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_employee_app/features/messages/domain/entities/message_thread.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/features/messages/presentation/controllers/thread_chat_controller.dart';
+import 'package:hr1_employee_app/features/messages/presentation/controllers/thread_realtime_controller.dart';
 
 /// スレッドチャット画面
 class ThreadChatScreen extends ConsumerStatefulWidget {
@@ -462,9 +462,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.4,
-                          ),
+                          color: AppColors.textTertiary(theme.brightness),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -541,9 +539,7 @@ class _EditingBubble extends StatelessWidget {
                           child: Text(
                             'キャンセル',
                             style: AppTextStyles.caption2.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.6,
-                              ),
+                              color: AppColors.textSecondary(theme.brightness),
                               fontWeight: FontWeight.w500,
                             ),
                           ),

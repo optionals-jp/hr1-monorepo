@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/shift_type.dart';
-import '../../domain/entities/shift_request.dart';
-import '../providers/shift_providers.dart';
+import 'package:hr1_employee_app/features/shifts/domain/entities/shift_type.dart';
+import 'package:hr1_employee_app/features/shifts/domain/entities/shift_request.dart';
+import 'package:hr1_employee_app/features/shifts/presentation/providers/shift_providers.dart';
 
 /// シフト希望提出の状態
 class ShiftRequestState {

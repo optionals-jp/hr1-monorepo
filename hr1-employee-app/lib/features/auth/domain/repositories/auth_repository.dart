@@ -1,5 +1,5 @@
-import '../../../../core/result/result.dart';
-import '../entities/app_user.dart';
+import 'package:hr1_employee_app/core/result/result.dart';
+import 'package:hr1_employee_app/features/auth/domain/entities/app_user.dart';
 
 /// 認証リポジトリの抽象インターフェース
 /// domain層はこのインターフェースにのみ依存する

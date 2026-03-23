@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/notification_item.dart';
+import 'package:hr1_employee_app/features/notifications/domain/entities/notification_item.dart';
 
 /// Supabase 通知リポジトリ
 class SupabaseNotificationRepository {

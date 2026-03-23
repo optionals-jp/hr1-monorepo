@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/constants.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
 
 /// Outlook スタイルの折りたたみ可能ミニカレンダー
 class MiniCalendar extends StatefulWidget {

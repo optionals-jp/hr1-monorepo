@@ -43,7 +43,9 @@ class MessagesScreen extends ConsumerWidget {
                   Text(
                     '気になることがあれば聞いてみましょう！',
                     style: AppTextStyles.body2.copyWith(
-                      color: AppColors.lightTextSecondary,
+                      color: AppColors.textSecondary(
+                        Theme.of(context).brightness,
+                      ),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -75,6 +77,7 @@ class _ThreadTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final hasUnread = thread.unreadCount > 0;
     final displayName = thread.organizationName ?? '企業';
     final initial = displayName.isNotEmpty ? displayName[0] : '?';
@@ -94,8 +97,8 @@ class _ThreadTile extends StatelessWidget {
               thread.latestMessage!.content,
               style: AppTextStyles.caption1.copyWith(
                 color: hasUnread
-                    ? Theme.of(context).colorScheme.onSurface
-                    : AppColors.lightTextSecondary,
+                    ? theme.colorScheme.onSurface
+                    : AppColors.textSecondary(theme.brightness),
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -103,7 +106,7 @@ class _ThreadTile extends StatelessWidget {
           : Text(
               'メッセージはありません',
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.lightTextSecondary,
+                color: AppColors.textSecondary(theme.brightness),
               ),
             ),
       trailing: Column(
@@ -114,7 +117,7 @@ class _ThreadTile extends StatelessWidget {
             Text(
               DateFormatter.toMessageDate(thread.latestMessage!.createdAt),
               style: AppTextStyles.caption2.copyWith(
-                color: AppColors.lightTextSecondary,
+                color: AppColors.textSecondary(theme.brightness),
               ),
             ),
           if (hasUnread) ...[

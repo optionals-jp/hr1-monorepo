@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../data/repositories/supabase_shift_repository.dart';
-import '../../domain/entities/shift_request.dart';
+import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_employee_app/features/shifts/data/repositories/supabase_shift_repository.dart';
+import 'package:hr1_employee_app/features/shifts/domain/entities/shift_request.dart';
 
 /// リポジトリプロバイダー
 final shiftRepositoryProvider = Provider<SupabaseShiftRepository>((ref) {

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../domain/entities/notification_item.dart';
-import '../controllers/notification_controller.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/features/notifications/domain/entities/notification_item.dart';
+import 'package:hr1_employee_app/features/notifications/presentation/controllers/notification_controller.dart';
 
 /// 通知一覧画面
 class NotificationsScreen extends ConsumerWidget {

@@ -15,6 +15,7 @@ class TodoDetailScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final titleController = useTextEditingController(text: todo.title);
     final noteController = useTextEditingController(text: todo.note ?? '');
     final dueDate = useState<DateTime?>(todo.dueDate);
@@ -93,7 +94,7 @@ class TodoDetailScreen extends HookConsumerWidget {
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,
               hintStyle: AppTextStyles.title3.copyWith(
-                color: AppColors.lightTextSecondary,
+                color: AppColors.textSecondary(theme.brightness),
               ),
             ),
           ),
@@ -120,7 +121,7 @@ class TodoDetailScreen extends HookConsumerWidget {
               size: 20,
               color: dueDate.value != null
                   ? AppColors.brand
-                  : AppColors.lightTextSecondary,
+                  : AppColors.textSecondary(theme.brightness),
             ),
             label: dueDate.value != null
                 ? '期限: ${DateFormat('M/d').format(dueDate.value!)}'
@@ -132,7 +133,7 @@ class TodoDetailScreen extends HookConsumerWidget {
                     icon: Icon(
                       Icons.close_rounded,
                       size: 16,
-                      color: AppColors.lightTextSecondary,
+                      color: AppColors.textSecondary(theme.brightness),
                     ),
                     onPressed: () => dueDate.value = null,
                   )
@@ -149,7 +150,7 @@ class TodoDetailScreen extends HookConsumerWidget {
                 child: Icon(
                   Icons.notes_rounded,
                   size: 20,
-                  color: AppColors.lightTextSecondary,
+                  color: AppColors.textSecondary(theme.brightness),
                 ),
               ),
               const SizedBox(width: 14),
@@ -162,7 +163,7 @@ class TodoDetailScreen extends HookConsumerWidget {
                   decoration: InputDecoration(
                     hintText: 'メモを追加',
                     hintStyle: AppTextStyles.body2.copyWith(
-                      color: AppColors.lightTextSecondary,
+                      color: AppColors.textSecondary(theme.brightness),
                     ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,

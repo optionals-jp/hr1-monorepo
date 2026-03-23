@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 
 /// シフト種別
 enum ShiftType {

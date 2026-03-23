@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../attendance/domain/entities/attendance_record.dart';
-import '../../domain/entities/calendar_event.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/features/attendance/domain/entities/attendance_record.dart';
+import 'package:hr1_employee_app/features/calendar/domain/entities/calendar_event.dart';
 
 /// Outlook スタイルのデイビュー（時間軸グリッド）
 class DayView extends StatefulWidget {

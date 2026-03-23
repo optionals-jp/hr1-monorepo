@@ -1,9 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/certification_master.dart';
-import '../../domain/entities/employee_certification.dart';
-import '../../domain/entities/employee_skill.dart';
-import '../../domain/entities/skill_master.dart';
-import '../../domain/repositories/skills_repository.dart';
+import 'package:hr1_employee_app/features/skills/domain/entities/certification_master.dart';
+import 'package:hr1_employee_app/features/skills/domain/entities/employee_certification.dart';
+import 'package:hr1_employee_app/features/skills/domain/entities/employee_skill.dart';
+import 'package:hr1_employee_app/features/skills/domain/entities/skill_master.dart';
+import 'package:hr1_employee_app/features/skills/domain/repositories/skills_repository.dart';
 
 /// Supabase スキル・資格リポジトリ実装
 class SupabaseSkillsRepository implements SkillsRepository {

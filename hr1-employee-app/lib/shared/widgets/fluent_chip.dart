@@ -72,8 +72,8 @@ class FluentChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final colors = _resolveColors(isDark);
+    final brightness = Theme.of(context).brightness;
+    final colors = _resolveColors(brightness);
 
     final child = Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -109,7 +109,8 @@ class FluentChip extends StatelessWidget {
     return child;
   }
 
-  _ChipColors _resolveColors(bool isDark) {
+  _ChipColors _resolveColors(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
     if (!enabled) {
       return _ChipColors(
         background: isDark
@@ -121,13 +122,14 @@ class FluentChip extends StatelessWidget {
 
     switch (style) {
       case FluentChipStyle.tint:
-        return _tintColors(isDark);
+        return _tintColors(brightness);
       case FluentChipStyle.filled:
-        return _filledColors(isDark);
+        return _filledColors(brightness);
     }
   }
 
-  _ChipColors _tintColors(bool isDark) {
+  _ChipColors _tintColors(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
     switch (color) {
       case FluentChipColor.brand:
         return _ChipColors(
@@ -183,17 +185,14 @@ class FluentChip extends StatelessWidget {
                     ? AppColors.disabledChipBgDark
                     : AppColors.lightDivider),
           foreground: selected
-              ? (isDark
-                    ? AppColors.darkTextPrimary
-                    : AppColors.lightTextPrimary)
-              : (isDark
-                    ? AppColors.darkTextSecondary
-                    : AppColors.lightTextSecondary),
+              ? AppColors.textPrimary(brightness)
+              : AppColors.textSecondary(brightness),
         );
     }
   }
 
-  _ChipColors _filledColors(bool isDark) {
+  _ChipColors _filledColors(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
     switch (color) {
       case FluentChipColor.brand:
         return const _ChipColors(
@@ -225,9 +224,7 @@ class FluentChip extends StatelessWidget {
           background: isDark
               ? AppColors.neutralChipBgDark
               : AppColors.neutralChipBgLight,
-          foreground: isDark
-              ? AppColors.darkTextPrimary
-              : AppColors.lightTextPrimary,
+          foreground: AppColors.textPrimary(brightness),
         );
     }
   }

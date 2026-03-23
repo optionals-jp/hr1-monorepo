@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../data/repositories/supabase_notification_repository.dart';
-import '../../domain/entities/notification_item.dart';
+import 'package:hr1_employee_app/features/notifications/data/repositories/supabase_notification_repository.dart';
+import 'package:hr1_employee_app/features/notifications/domain/entities/notification_item.dart';
 
 /// リポジトリプロバイダー
 final notificationRepositoryProvider = Provider<SupabaseNotificationRepository>(

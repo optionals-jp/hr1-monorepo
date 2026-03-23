@@ -183,7 +183,9 @@ class _FilterTabs extends StatelessWidget {
                       Icon(
                         icon,
                         size: 16,
-                        color: isActive ? color : AppColors.lightTextSecondary,
+                        color: isActive
+                            ? color
+                            : AppColors.textSecondary(theme.brightness),
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -377,6 +379,7 @@ class _MetadataRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final items = <Widget>[];
 
     // ソースバッジ（システム生成）
@@ -385,13 +388,16 @@ class _MetadataRow extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
           decoration: BoxDecoration(
-            color: _sourceColor(todo.source).withValues(alpha: 0.12),
+            color: _sourceColor(
+              todo.source,
+              theme.brightness,
+            ).withValues(alpha: 0.12),
             borderRadius: AppRadius.radius40,
           ),
           child: Text(
             todo.source.label,
             style: AppTextStyles.caption2.copyWith(
-              color: _sourceColor(todo.source),
+              color: _sourceColor(todo.source, theme.brightness),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -410,7 +416,9 @@ class _MetadataRow extends StatelessWidget {
             Icon(
               Icons.calendar_today_rounded,
               size: 12,
-              color: isOverdue ? AppColors.error : AppColors.lightTextSecondary,
+              color: isOverdue
+                  ? AppColors.error
+                  : AppColors.textSecondary(theme.brightness),
             ),
             const SizedBox(width: 3),
             Text(
@@ -419,7 +427,7 @@ class _MetadataRow extends StatelessWidget {
                 fontWeight: FontWeight.w500,
                 color: isOverdue
                     ? AppColors.error
-                    : AppColors.lightTextSecondary,
+                    : AppColors.textSecondary(theme.brightness),
               ),
             ),
           ],
@@ -430,13 +438,13 @@ class _MetadataRow extends StatelessWidget {
     return Wrap(spacing: 10, children: items);
   }
 
-  Color _sourceColor(TodoSource source) {
+  Color _sourceColor(TodoSource source, Brightness brightness) {
     return switch (source) {
       TodoSource.survey => AppColors.brandLight,
       TodoSource.form => AppColors.success,
       TodoSource.interview => AppColors.warning,
       TodoSource.system => AppColors.brand,
-      TodoSource.manual => AppColors.lightTextSecondary,
+      TodoSource.manual => AppColors.textSecondary(brightness),
     };
   }
 
@@ -475,6 +483,7 @@ class _CompletedSectionState extends State<_CompletedSection> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         InkWell(
@@ -491,13 +500,13 @@ class _CompletedSectionState extends State<_CompletedSection> {
                       ? Icons.keyboard_arrow_down_rounded
                       : Icons.keyboard_arrow_right_rounded,
                   size: 20,
-                  color: AppColors.lightTextSecondary,
+                  color: AppColors.textSecondary(theme.brightness),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   '完了済み (${widget.todos.length})',
                   style: AppTextStyles.caption1.copyWith(
-                    color: AppColors.lightTextSecondary,
+                    color: AppColors.textSecondary(theme.brightness),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -638,6 +647,7 @@ class _AddTodoFormState extends State<_AddTodoForm> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
       children: [
@@ -648,7 +658,7 @@ class _AddTodoFormState extends State<_AddTodoForm> {
           decoration: InputDecoration(
             hintText: 'タイトルを入力',
             hintStyle: AppTextStyles.body2.copyWith(
-              color: AppColors.lightTextSecondary,
+              color: AppColors.textSecondary(theme.brightness),
             ),
           ),
         ),
@@ -661,7 +671,7 @@ class _AddTodoFormState extends State<_AddTodoForm> {
           decoration: InputDecoration(
             hintText: 'メモ（任意）',
             hintStyle: AppTextStyles.body2.copyWith(
-              color: AppColors.lightTextSecondary,
+              color: AppColors.textSecondary(theme.brightness),
             ),
           ),
         ),
@@ -742,13 +752,17 @@ class _OptionChip extends StatelessWidget {
             Icon(
               icon,
               size: 16,
-              color: isActive ? activeColor : AppColors.lightTextSecondary,
+              color: isActive
+                  ? activeColor
+                  : AppColors.textSecondary(theme.brightness),
             ),
             const SizedBox(width: 6),
             Text(
               label,
               style: AppTextStyles.caption1.copyWith(
-                color: isActive ? activeColor : AppColors.lightTextSecondary,
+                color: isActive
+                    ? activeColor
+                    : AppColors.textSecondary(theme.brightness),
                 fontWeight: FontWeight.w500,
               ),
             ),

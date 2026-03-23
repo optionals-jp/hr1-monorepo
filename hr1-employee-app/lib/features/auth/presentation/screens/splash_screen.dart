@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
 import 'package:hr1_employee_app/core/router/app_router.dart';
 import 'package:hr1_employee_app/shared/widgets/widgets.dart';
-import '../controllers/auth_controller.dart';
+import 'package:hr1_employee_app/features/auth/presentation/controllers/auth_controller.dart';
 
 /// スプラッシュ画面
 class SplashScreen extends ConsumerStatefulWidget {

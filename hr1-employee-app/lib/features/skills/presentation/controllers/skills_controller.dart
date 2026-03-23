@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/employee_certification.dart';
-import '../../domain/entities/employee_skill.dart';
-import '../../domain/repositories/skills_repository.dart';
-import '../providers/skills_providers.dart';
+import 'package:hr1_employee_app/features/skills/domain/entities/employee_certification.dart';
+import 'package:hr1_employee_app/features/skills/domain/entities/employee_skill.dart';
+import 'package:hr1_employee_app/features/skills/domain/repositories/skills_repository.dart';
+import 'package:hr1_employee_app/features/skills/presentation/providers/skills_providers.dart';
 
 /// スキル管理コントローラー
 class SkillsController extends AutoDisposeAsyncNotifier<List<EmployeeSkill>> {

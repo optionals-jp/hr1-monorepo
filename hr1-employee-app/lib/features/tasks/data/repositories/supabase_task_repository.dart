@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/task.dart';
-import '../../domain/repositories/task_repository.dart';
+import 'package:hr1_employee_app/features/tasks/domain/entities/task.dart';
+import 'package:hr1_employee_app/features/tasks/domain/repositories/task_repository.dart';
 
 /// Supabase タスクリポジトリ実装
 class SupabaseTaskRepository implements TaskRepository {

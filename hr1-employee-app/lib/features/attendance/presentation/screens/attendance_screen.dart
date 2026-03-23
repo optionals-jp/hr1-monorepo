@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../domain/entities/attendance_record.dart';
-import '../controllers/attendance_controller.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../providers/attendance_providers.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/core/router/app_router.dart';
+import 'package:hr1_employee_app/features/attendance/domain/entities/attendance_record.dart';
+import 'package:hr1_employee_app/features/attendance/presentation/controllers/attendance_controller.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/features/attendance/presentation/providers/attendance_providers.dart';
 
 /// 勤怠打刻画面 — Office モバイルスタイル
 class AttendanceScreen extends ConsumerWidget {

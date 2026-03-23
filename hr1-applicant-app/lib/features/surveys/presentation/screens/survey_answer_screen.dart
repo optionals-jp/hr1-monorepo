@@ -39,6 +39,7 @@ class _CompletedView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final answersAsync = ref.watch(myAnswersProvider(survey.id));
 
     return CommonScaffold(
@@ -82,7 +83,7 @@ class _CompletedView extends ConsumerWidget {
               Text(
                 survey.description!,
                 style: AppTextStyles.caption1.copyWith(
-                  color: AppColors.lightTextSecondary,
+                  color: AppColors.textSecondary(theme.brightness),
                 ),
               ),
             ],
@@ -105,6 +106,7 @@ class _EditView extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final answers = useRef(<String, String>{});
     final revision = useState(0);
     final controllerState = ref.watch(surveyAnswerControllerProvider);
@@ -158,7 +160,7 @@ class _EditView extends HookConsumerWidget {
           child: Text(
             '質問が設定されていません',
             style: AppTextStyles.body2.copyWith(
-              color: AppColors.lightTextSecondary,
+              color: AppColors.textSecondary(theme.brightness),
             ),
           ),
         ),
@@ -179,7 +181,7 @@ class _EditView extends HookConsumerWidget {
             Text(
               survey.description!,
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.lightTextSecondary,
+                color: AppColors.textSecondary(theme.brightness),
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -231,7 +233,7 @@ class _ReadOnlyQuestion extends StatelessWidget {
             Text(
               question.description!,
               style: AppTextStyles.caption2.copyWith(
-                color: AppColors.lightTextSecondary,
+                color: AppColors.textSecondary(theme.brightness),
               ),
             ),
           ],
@@ -247,7 +249,7 @@ class _ReadOnlyQuestion extends StatelessWidget {
       return Text(
         '未回答',
         style: AppTextStyles.body2.copyWith(
-          color: AppColors.lightTextSecondary,
+          color: AppColors.textSecondary(theme.brightness),
         ),
       );
     }
@@ -281,7 +283,7 @@ class _ReadOnlyQuestion extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       color: v <= value
                           ? AppColors.brand
-                          : AppColors.lightTextSecondary,
+                          : AppColors.textSecondary(theme.brightness),
                     ),
                   ),
                 ),
@@ -377,7 +379,7 @@ class _QuestionWidget extends StatelessWidget {
             Text(
               question.description!,
               style: AppTextStyles.caption2.copyWith(
-                color: AppColors.lightTextSecondary,
+                color: AppColors.textSecondary(theme.brightness),
               ),
             ),
           ],
@@ -434,7 +436,7 @@ class _QuestionWidget extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     color: isSelected
                         ? AppColors.brand
-                        : AppColors.lightTextSecondary,
+                        : AppColors.textSecondary(theme.brightness),
                   ),
                 ),
               ),

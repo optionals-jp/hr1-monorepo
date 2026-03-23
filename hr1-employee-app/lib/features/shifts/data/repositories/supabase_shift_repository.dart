@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/shift_request.dart';
+import 'package:hr1_employee_app/features/shifts/domain/entities/shift_request.dart';
 
 /// シフト管理のSupabaseリポジトリ
 class SupabaseShiftRepository {

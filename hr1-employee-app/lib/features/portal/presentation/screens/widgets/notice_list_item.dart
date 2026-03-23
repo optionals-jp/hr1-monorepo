@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../core/constants/constants.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
 
 /// お知らせリストアイテム — Teams アクティビティフィードスタイル
 class NoticeListItem extends StatelessWidget {
@@ -37,7 +37,7 @@ class NoticeListItem extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isNew
                     ? AppColors.brand.withValues(alpha: 0.1)
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.06),
+                    : AppColors.divider(theme.brightness),
                 shape: BoxShape.circle,
               ),
               child: Icon(

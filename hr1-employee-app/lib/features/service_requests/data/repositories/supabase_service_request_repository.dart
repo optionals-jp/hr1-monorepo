@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/service_request.dart';
+import 'package:hr1_employee_app/features/service_requests/domain/entities/service_request.dart';
 
 /// サービスリクエスト リポジトリ
 class SupabaseServiceRequestRepository {

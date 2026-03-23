@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/constants.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/widgets.dart';
-import '../../../attendance/presentation/providers/attendance_providers.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../domain/entities/calendar_event.dart';
-import '../controllers/calendar_controller.dart';
-import '../providers/calendar_providers.dart';
-import '../widgets/day_view.dart';
-import '../widgets/event_card.dart';
-import '../widgets/mini_calendar.dart';
+import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/core/router/app_router.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
+import 'package:hr1_employee_app/features/attendance/presentation/providers/attendance_providers.dart';
+import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_employee_app/features/calendar/domain/entities/calendar_event.dart';
+import 'package:hr1_employee_app/features/calendar/presentation/controllers/calendar_controller.dart';
+import 'package:hr1_employee_app/features/calendar/presentation/providers/calendar_providers.dart';
+import 'package:hr1_employee_app/features/calendar/presentation/widgets/day_view.dart';
+import 'package:hr1_employee_app/features/calendar/presentation/widgets/event_card.dart';
+import 'package:hr1_employee_app/features/calendar/presentation/widgets/mini_calendar.dart';
 
 /// カレンダー画面 — Outlook モバイルスタイル
 class CalendarScreen extends ConsumerStatefulWidget {
@@ -923,7 +923,7 @@ class _DateTimeRow extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+                color: AppColors.divider(theme.brightness),
                 borderRadius: AppRadius.radius80,
               ),
               child: Text(date, style: AppTextStyles.caption1),
@@ -939,7 +939,7 @@ class _DateTimeRow extends StatelessWidget {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+                  color: AppColors.divider(theme.brightness),
                   borderRadius: AppRadius.radius80,
                 ),
                 child: Text(time!, style: AppTextStyles.caption1),
