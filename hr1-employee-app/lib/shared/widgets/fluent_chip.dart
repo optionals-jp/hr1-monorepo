@@ -161,9 +161,7 @@ class FluentChip extends StatelessWidget {
           background: isDark
               ? AppColors.warningTintBgDark
               : AppColors.warningTintBgLight,
-          foreground: isDark
-              ? AppColors.warningTintFgDark
-              : AppColors.warning,
+          foreground: isDark ? AppColors.warningTintFgDark : AppColors.warning,
           border: isDark ? null : AppColors.warningTintBorder,
         );
       case FluentChipColor.success:
@@ -179,18 +177,18 @@ class FluentChip extends StatelessWidget {
         return _ChipColors(
           background: selected
               ? (isDark
-                  ? AppColors.neutralChipBgDark
-                  : AppColors.neutralChipBgLight)
+                    ? AppColors.neutralChipBgDark
+                    : AppColors.neutralChipBgLight)
               : (isDark
-                  ? AppColors.disabledChipBgDark
-                  : AppColors.lightDivider),
+                    ? AppColors.disabledChipBgDark
+                    : AppColors.lightDivider),
           foreground: selected
               ? (isDark
-                  ? AppColors.darkTextPrimary
-                  : AppColors.lightTextPrimary)
+                    ? AppColors.darkTextPrimary
+                    : AppColors.lightTextPrimary)
               : (isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.lightTextSecondary),
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary),
         );
     }
   }

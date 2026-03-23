@@ -3,8 +3,7 @@ import 'package:hr1_employee_app/features/auth/presentation/providers/auth_provi
 import 'package:hr1_employee_app/features/employees/data/repositories/supabase_employee_repository.dart';
 
 /// 社員リポジトリプロバイダー
-final employeeRepositoryProvider =
-    Provider<SupabaseEmployeeRepository>((ref) {
+final employeeRepositoryProvider = Provider<SupabaseEmployeeRepository>((ref) {
   final user = ref.watch(appUserProvider);
   return SupabaseEmployeeRepository(
     ref.watch(supabaseClientProvider),
