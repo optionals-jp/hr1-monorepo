@@ -71,9 +71,7 @@ class CorrectionRequestScreen extends HookConsumerWidget {
       }
     }
 
-    Widget buildDurationSummary(
-      List<AttendancePunch> punches,
-    ) {
+    Widget buildDurationSummary(List<AttendancePunch> punches) {
       final settings =
           ref.watch(attendanceSettingsProvider).valueOrNull ??
           const AttendanceSettings();
@@ -181,10 +179,7 @@ class CorrectionRequestScreen extends HookConsumerWidget {
       );
     }
 
-    Widget buildCard({
-      required Widget child,
-      EdgeInsets? padding,
-    }) {
+    Widget buildCard({required Widget child, EdgeInsets? padding}) {
       return Container(
         padding: padding,
         decoration: BoxDecoration(

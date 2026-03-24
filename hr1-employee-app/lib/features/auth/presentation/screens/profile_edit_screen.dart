@@ -16,7 +16,6 @@ class ProfileEditScreen extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(appUserProvider);
 
-
     Future<void> pickAndUploadAvatar() async {
       final picker = ImagePicker();
       final source = await showModalBottomSheet<ImageSource>(

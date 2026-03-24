@@ -358,10 +358,7 @@ class SearchScreen extends HookConsumerWidget {
                   ? buildSearchResults()
                   : ListView(
                       padding: EdgeInsets.zero,
-                      children: [
-                        buildAvatarCarousel(),
-                        buildRecentSearches(),
-                      ],
+                      children: [buildAvatarCarousel(), buildRecentSearches()],
                     ),
             ),
           ],
