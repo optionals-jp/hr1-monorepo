@@ -51,6 +51,15 @@ export default function FormsPage() {
     if (!window.confirm(`「${form.title}」を削除しますか？`)) return;
     setDeletingId(form.id);
     try {
+      const { count } = await getSupabase()
+        .from("form_responses")
+        .select("id", { count: "exact", head: true })
+        .eq("form_id", form.id);
+      if (count && count > 0) {
+        showToast(`このフォームには${count}件の回答があるため削除できません`, "error");
+        return;
+      }
+      await getSupabase().from("form_fields").delete().eq("form_id", form.id);
       const { error } = await getSupabase()
         .from("custom_forms")
         .delete()

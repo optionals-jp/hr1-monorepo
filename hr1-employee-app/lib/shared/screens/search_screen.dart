@@ -24,7 +24,7 @@ class SearchScreen extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = useTextEditingController();
     final focusNode = useFocusNode();
-    final recentSearches = useRef(<String>['有給休暇', '勤怠修正', '社内規定']);
+    final recentSearches = useState(<String>[]);
     final searchState = ref.watch(searchControllerProvider);
 
     ref.listen(searchControllerProvider, (prev, next) {
@@ -42,7 +42,12 @@ class SearchScreen extends HookConsumerWidget {
 
     void onSearch(String query) {
       if (query.trim().isEmpty) return;
-      ref.read(searchControllerProvider.notifier).search(query);
+      final trimmed = query.trim();
+      recentSearches.value = [
+        trimmed,
+        ...recentSearches.value.where((s) => s != trimmed),
+      ].take(10).toList();
+      ref.read(searchControllerProvider.notifier).search(trimmed);
     }
 
     return Scaffold(
@@ -98,12 +103,13 @@ class SearchScreen extends HookConsumerWidget {
                       padding: EdgeInsets.zero,
                       children: [
                         _buildAvatarCarousel(context),
-                        _buildRecentSearches(
-                          context,
-                          recentSearches.value,
-                          controller,
-                          onSearch,
-                        ),
+                        if (recentSearches.value.isNotEmpty)
+                          _buildRecentSearches(
+                            context,
+                            recentSearches.value,
+                            controller,
+                            onSearch,
+                          ),
                       ],
                     );
                   }

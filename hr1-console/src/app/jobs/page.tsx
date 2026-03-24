@@ -88,6 +88,14 @@ export default function JobsPage() {
     if (!window.confirm(`「${job.title}」を削除しますか？`)) return;
     setDeletingId(job.id);
     try {
+      const { count } = await getSupabase()
+        .from("applications")
+        .select("id", { count: "exact", head: true })
+        .eq("job_id", job.id);
+      if (count && count > 0) {
+        showToast(`この求人には${count}件の応募があるため削除できません`, "error");
+        return;
+      }
       const { error } = await getSupabase()
         .from("jobs")
         .delete()

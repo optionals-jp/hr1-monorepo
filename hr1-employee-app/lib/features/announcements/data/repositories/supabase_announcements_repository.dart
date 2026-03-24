@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hr1_employee_app/core/utils/query_utils.dart';
 import 'package:hr1_employee_app/features/announcements/domain/entities/announcement.dart';
 
 class SupabaseAnnouncementsRepository {
@@ -63,7 +64,7 @@ class SupabaseAnnouncementsRepository {
   /// タイトル・本文でお知らせを検索
   Future<List<Announcement>> searchAnnouncements(String query) async {
     final orgId = await _getOrganizationId();
-    final sanitized = _sanitizeForLike(query);
+    final sanitized = sanitizeForLike(query);
     final pattern = '%$sanitized%';
     final response = await _client
         .from('announcements')
@@ -78,15 +79,5 @@ class SupabaseAnnouncementsRepository {
     return (response as List)
         .map((json) => Announcement.fromJson(json))
         .toList();
-  }
-
-  static String _sanitizeForLike(String input) {
-    return input
-        .replaceAll(r'\', r'\\')
-        .replaceAll('%', r'\%')
-        .replaceAll('_', r'\_')
-        .replaceAll(',', ' ')
-        .replaceAll('(', ' ')
-        .replaceAll(')', ' ');
   }
 }

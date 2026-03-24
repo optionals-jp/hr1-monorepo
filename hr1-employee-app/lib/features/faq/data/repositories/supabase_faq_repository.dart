@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hr1_employee_app/core/utils/query_utils.dart';
 import 'package:hr1_employee_app/features/faq/domain/entities/faq_item.dart';
 
 /// FAQ のSupabaseリポジトリ
@@ -45,7 +46,7 @@ class SupabaseFaqRepository {
   /// 質問・回答でFAQを検索
   Future<List<FaqItem>> searchFaqs(String query) async {
     final orgId = await _getOrganizationId();
-    final sanitized = _sanitizeForLike(query);
+    final sanitized = sanitizeForLike(query);
     final pattern = '%$sanitized%';
     final response = await _client
         .from('faqs')
@@ -58,15 +59,5 @@ class SupabaseFaqRepository {
         .limit(20);
 
     return (response as List).map((json) => FaqItem.fromJson(json)).toList();
-  }
-
-  static String _sanitizeForLike(String input) {
-    return input
-        .replaceAll(r'\', r'\\')
-        .replaceAll('%', r'\%')
-        .replaceAll('_', r'\_')
-        .replaceAll(',', ' ')
-        .replaceAll('(', ' ')
-        .replaceAll(')', ' ');
   }
 }

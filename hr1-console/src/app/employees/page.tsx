@@ -330,11 +330,16 @@ export default function EmployeesPage() {
     if (!window.confirm(`${emp.display_name ?? emp.email} を組織から削除しますか？`)) return;
     setDeletingId(emp.id);
     try {
-      await getSupabase()
-        .from("employee_departments")
-        .delete()
-        .eq("user_id", emp.id)
-        .eq("organization_id", organization.id);
+      if (emp.departments.length > 0) {
+        await getSupabase()
+          .from("employee_departments")
+          .delete()
+          .eq("user_id", emp.id)
+          .in(
+            "department_id",
+            emp.departments.map((d) => d.id)
+          );
+      }
       const { error } = await getSupabase()
         .from("user_organizations")
         .delete()

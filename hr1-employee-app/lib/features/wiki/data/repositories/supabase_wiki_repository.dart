@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hr1_employee_app/core/utils/query_utils.dart';
 import 'package:hr1_employee_app/features/wiki/domain/entities/wiki_page.dart';
 
 class SupabaseWikiRepository {
@@ -43,7 +44,7 @@ class SupabaseWikiRepository {
   /// タイトル・本文でWikiページを検索
   Future<List<WikiPage>> searchPages(String query) async {
     final orgId = await _getOrganizationId();
-    final sanitized = _sanitizeForLike(query);
+    final sanitized = sanitizeForLike(query);
     final pattern = '%$sanitized%';
     final response = await _client
         .from('wiki_pages')
@@ -55,15 +56,5 @@ class SupabaseWikiRepository {
         .limit(20);
 
     return (response as List).map((json) => WikiPage.fromJson(json)).toList();
-  }
-
-  static String _sanitizeForLike(String input) {
-    return input
-        .replaceAll(r'\', r'\\')
-        .replaceAll('%', r'\%')
-        .replaceAll('_', r'\_')
-        .replaceAll(',', ' ')
-        .replaceAll('(', ' ')
-        .replaceAll(')', ' ');
   }
 }
