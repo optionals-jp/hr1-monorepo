@@ -118,4 +118,17 @@ class SupabaseEmployeeRepository {
 
     return (results as List).map((r) => r['name'] as String).toList();
   }
+
+  /// 組織内の役職一覧を取得
+  Future<List<String>> getPositions() async {
+    final orgId = await _getOrganizationId();
+
+    final results = await _client
+        .from('positions')
+        .select('name')
+        .eq('organization_id', orgId)
+        .order('name');
+
+    return (results as List).map((r) => r['name'] as String).toList();
+  }
 }

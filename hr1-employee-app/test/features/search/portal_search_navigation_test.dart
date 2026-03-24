@@ -10,6 +10,9 @@ import 'package:hr1_employee_app/features/auth/presentation/providers/auth_provi
 import 'package:hr1_employee_app/features/notifications/presentation/providers/notification_providers.dart';
 import 'package:hr1_employee_app/features/announcements/presentation/providers/announcement_providers.dart';
 import 'package:hr1_employee_app/features/compliance/presentation/providers/compliance_providers.dart';
+import 'package:hr1_employee_app/features/attendance/presentation/providers/attendance_providers.dart';
+import 'package:hr1_employee_app/features/tasks/presentation/providers/task_providers.dart';
+import 'package:hr1_employee_app/features/surveys/presentation/providers/survey_providers.dart';
 import 'package:hr1_employee_app/core/router/app_router.dart';
 
 import '../../helpers/firebase_mock.dart';
@@ -57,6 +60,10 @@ void main() {
             unreadNotificationCountProvider.overrideWith((ref) => 0),
             myComplianceAlertsProvider.overrideWith((ref) => Future.value([])),
             latestNotificationsProvider.overrideWith((ref) => Future.value([])),
+            todayRecordProvider.overrideWith((ref) => Future.value(null)),
+            todayPunchesProvider.overrideWith((ref) => Future.value([])),
+            myDayTasksProvider.overrideWith((ref) => Future.value([])),
+            pendingSurveysProvider.overrideWith((ref) => Future.value([])),
           ],
           child: MaterialApp.router(routerConfig: mockRouter),
         ),

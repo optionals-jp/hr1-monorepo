@@ -16,8 +16,10 @@ class EmployeeListScreen extends HookConsumerWidget {
     final searchController = useTextEditingController();
     final query = useValueListenable(searchController).text.trim();
     final selectedDepartment = useState<String?>(null);
+    final selectedPosition = useState<String?>(null);
     final employeesAsync = ref.watch(employeeListProvider);
     final departmentsAsync = ref.watch(departmentListProvider);
+    final positionsAsync = ref.watch(positionListProvider);
 
     return CommonScaffold(
       appBar: AppBar(title: const Text('社員名簿')),
@@ -25,12 +27,17 @@ class EmployeeListScreen extends HookConsumerWidget {
         data: (employees) => _Body(
           employees: employees,
           departments: departmentsAsync.valueOrNull ?? [],
+          positions: positionsAsync.valueOrNull ?? [],
           query: query,
           selectedDepartment: selectedDepartment.value,
+          selectedPosition: selectedPosition.value,
           onDepartmentSelected: (dept) {
             selectedDepartment.value = selectedDepartment.value == dept
                 ? null
                 : dept;
+          },
+          onPositionSelected: (pos) {
+            selectedPosition.value = selectedPosition.value == pos ? null : pos;
           },
           searchController: searchController,
         ),
@@ -46,23 +53,32 @@ class _Body extends StatelessWidget {
   const _Body({
     required this.employees,
     required this.departments,
+    required this.positions,
     required this.query,
     required this.selectedDepartment,
+    required this.selectedPosition,
     required this.onDepartmentSelected,
+    required this.onPositionSelected,
     required this.searchController,
   });
 
   final List<EmployeeContact> employees;
   final List<String> departments;
+  final List<String> positions;
   final String query;
   final String? selectedDepartment;
+  final String? selectedPosition;
   final ValueChanged<String> onDepartmentSelected;
+  final ValueChanged<String> onPositionSelected;
   final TextEditingController searchController;
 
   @override
   Widget build(BuildContext context) {
     final filtered = employees.where((e) {
       if (selectedDepartment != null && e.department != selectedDepartment) {
+        return false;
+      }
+      if (selectedPosition != null && e.position != selectedPosition) {
         return false;
       }
       if (query.isNotEmpty) {
@@ -88,31 +104,31 @@ class _Body extends StatelessWidget {
             hintText: '名前・部署・役職で検索',
           ),
         ),
-        if (departments.isNotEmpty)
-          SizedBox(
-            height: 40,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenHorizontal,
-              ),
-              itemCount: departments.length,
-              separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
-              itemBuilder: (context, index) {
-                final dept = departments[index];
-                final isSelected = dept == selectedDepartment;
-                return FilterChip(
-                  selected: isSelected,
-                  label: Text(dept),
-                  labelStyle: AppTextStyles.caption2.copyWith(
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                  onSelected: (_) => onDepartmentSelected(dept),
-                  showCheckmark: false,
-                );
-              },
-            ),
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenHorizontal,
           ),
+          child: Row(
+            children: [
+              if (departments.isNotEmpty)
+                _FilterChipButton(
+                  label: '部署',
+                  selectedValue: selectedDepartment,
+                  options: departments,
+                  onSelected: onDepartmentSelected,
+                ),
+              if (departments.isNotEmpty && positions.isNotEmpty)
+                const SizedBox(width: AppSpacing.sm),
+              if (positions.isNotEmpty)
+                _FilterChipButton(
+                  label: '役職',
+                  selectedValue: selectedPosition,
+                  options: positions,
+                  onSelected: onPositionSelected,
+                ),
+            ],
+          ),
+        ),
         const SizedBox(height: AppSpacing.sm),
         Expanded(
           child: filtered.isEmpty
@@ -139,6 +155,152 @@ class _Body extends StatelessWidget {
                 ),
         ),
       ],
+    );
+  }
+}
+
+class _FilterChipButton extends StatelessWidget {
+  const _FilterChipButton({
+    required this.label,
+    required this.selectedValue,
+    required this.options,
+    required this.onSelected,
+  });
+
+  final String label;
+  final String? selectedValue;
+  final List<String> options;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasSelection = selectedValue != null;
+
+    return GestureDetector(
+      onTap: () => _showModal(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: hasSelection
+              ? AppColors.brand.withValues(alpha: 0.08)
+              : AppColors.surface(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: hasSelection ? AppColors.brand : AppColors.border(context),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              selectedValue ?? label,
+              style: AppTextStyles.caption2.copyWith(
+                color: hasSelection
+                    ? AppColors.brand
+                    : AppColors.textSecondary(context),
+                fontWeight: hasSelection ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+            const SizedBox(width: 2),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 16,
+              color: hasSelection
+                  ? AppColors.brand
+                  : AppColors.textSecondary(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showModal(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screenHorizontal,
+                  AppSpacing.lg,
+                  AppSpacing.screenHorizontal,
+                  AppSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      '$labelを選択',
+                      style: AppTextStyles.headline.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (selectedValue != null)
+                      GestureDetector(
+                        onTap: () {
+                          onSelected(selectedValue!);
+                          Navigator.pop(context);
+                        },
+                        child: Text(
+                          'クリア',
+                          style: AppTextStyles.caption1.copyWith(
+                            color: AppColors.brand,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.5,
+                ),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: options.length,
+                  itemBuilder: (context, index) {
+                    final option = options[index];
+                    final isSelected = option == selectedValue;
+                    return ListTile(
+                      title: Text(
+                        option,
+                        style: AppTextStyles.caption1.copyWith(
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: isSelected
+                              ? AppColors.brand
+                              : AppColors.textPrimary(context),
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? const Icon(
+                              Icons.check_rounded,
+                              color: AppColors.brand,
+                              size: 20,
+                            )
+                          : null,
+                      onTap: () {
+                        onSelected(option);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
