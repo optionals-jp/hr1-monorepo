@@ -5,16 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
 import 'package:hr1_employee_app/core/router/app_router.dart';
 import 'package:hr1_employee_app/features/employees/domain/entities/employee_contact.dart';
-import 'package:hr1_employee_app/features/employees/presentation/providers/employee_providers.dart';
 import 'package:hr1_employee_app/features/wiki/domain/entities/wiki_page.dart';
-import 'package:hr1_employee_app/features/wiki/presentation/providers/wiki_providers.dart';
 import 'package:hr1_employee_app/features/announcements/domain/entities/announcement.dart';
-import 'package:hr1_employee_app/features/announcements/presentation/providers/announcement_providers.dart';
 import 'package:hr1_employee_app/features/faq/domain/entities/faq_item.dart';
-import 'package:hr1_employee_app/features/faq/domain/entities/faq_item.dart'
-    show FaqCategory;
-import 'package:hr1_employee_app/features/faq/presentation/providers/faq_providers.dart';
-import 'package:hr1_employee_app/shared/models/search_result.dart';
+import 'package:hr1_employee_app/features/search/domain/entities/portal_search_results.dart';
+import 'package:hr1_employee_app/features/search/presentation/providers/search_providers.dart';
 import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
@@ -30,8 +25,13 @@ class SearchScreen extends HookConsumerWidget {
     final controller = useTextEditingController();
     final focusNode = useFocusNode();
     final recentSearches = useRef(<String>['有給休暇', '勤怠修正', '社内規定']);
-    final searchResults = useState<PortalSearchResults?>(null);
-    final isSearching = useState(false);
+    final searchState = ref.watch(searchControllerProvider);
+
+    ref.listen(searchControllerProvider, (prev, next) {
+      if (next.hasError && context.mounted) {
+        CommonSnackBar.error(context, '検索中にエラーが発生しました');
+      }
+    });
 
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -40,33 +40,9 @@ class SearchScreen extends HookConsumerWidget {
       return null;
     }, []);
 
-    Future<void> onSearch(String query) async {
+    void onSearch(String query) {
       if (query.trim().isEmpty) return;
-      isSearching.value = true;
-      try {
-        final employeeRepo = ref.read(employeeRepositoryProvider);
-        final wikiRepo = ref.read(wikiRepositoryProvider);
-        final announcementsRepo = ref.read(announcementsRepositoryProvider);
-        final faqRepo = ref.read(faqRepositoryProvider);
-
-        final results = await Future.wait([
-          employeeRepo.searchEmployees(query),
-          wikiRepo.searchPages(query),
-          announcementsRepo.searchAnnouncements(query),
-          faqRepo.searchFaqs(query),
-        ]);
-
-        searchResults.value = PortalSearchResults(
-          employees: results[0] as List<EmployeeContact>,
-          wikiPages: results[1] as List<WikiPage>,
-          announcements: results[2] as List<Announcement>,
-          faqs: results[3] as List<FaqItem>,
-        );
-      } catch (_) {
-        searchResults.value = const PortalSearchResults();
-      } finally {
-        isSearching.value = false;
-      }
+      ref.read(searchControllerProvider.notifier).search(query);
     }
 
     return Scaffold(
@@ -88,7 +64,8 @@ class SearchScreen extends HookConsumerWidget {
                       controller: controller,
                       focusNode: focusNode,
                       onSubmitted: onSearch,
-                      onClear: () => searchResults.value = null,
+                      onClear: () =>
+                          ref.read(searchControllerProvider.notifier).clear(),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -114,25 +91,33 @@ class SearchScreen extends HookConsumerWidget {
 
             // コンテンツ
             Expanded(
-              child: isSearching.value
-                  ? const Center(child: LoadingIndicator())
-                  : searchResults.value != null
-                      ? _SearchResultsView(
-                          results: searchResults.value!,
-                          query: controller.text,
-                        )
-                      : ListView(
-                          padding: EdgeInsets.zero,
-                          children: [
-                            _buildAvatarCarousel(context),
-                            _buildRecentSearches(
-                              context,
-                              recentSearches.value,
-                              controller,
-                              onSearch,
-                            ),
-                          ],
+              child: searchState.when(
+                data: (results) {
+                  if (results == null) {
+                    return ListView(
+                      padding: EdgeInsets.zero,
+                      children: [
+                        _buildAvatarCarousel(context),
+                        _buildRecentSearches(
+                          context,
+                          recentSearches.value,
+                          controller,
+                          onSearch,
                         ),
+                      ],
+                    );
+                  }
+                  return _SearchResultsView(
+                    results: results,
+                    query: controller.text,
+                  );
+                },
+                loading: () => const Center(child: LoadingIndicator()),
+                error: (_, __) => ErrorState(
+                  message: '検索中にエラーが発生しました',
+                  onRetry: () => onSearch(controller.text),
+                ),
+              ),
             ),
           ],
         ),
@@ -243,7 +228,7 @@ class SearchScreen extends HookConsumerWidget {
               final contact = contacts[index];
               return GestureDetector(
                 onTap: () {
-                  context.pushReplacement(
+                  context.push(
                     AppRoutes.employeeDetail,
                     extra: contact,
                   );
@@ -294,7 +279,7 @@ class SearchScreen extends HookConsumerWidget {
     BuildContext context,
     List<String> searches,
     TextEditingController controller,
-    Future<void> Function(String) onSearch,
+    void Function(String) onSearch,
   ) {
     if (searches.isEmpty) return const SizedBox.shrink();
 
@@ -363,6 +348,28 @@ class SearchScreen extends HookConsumerWidget {
 }
 
 // =============================================================================
+// Markdown除去ユーティリティ
+// =============================================================================
+
+final _markdownPattern = RegExp(
+  r'#{1,6}\s|[*_~`]{1,3}|\[([^\]]*)\]\([^)]*\)|!\[([^\]]*)\]\([^)]*\)|^>\s|^-\s|^\d+\.\s',
+  multiLine: true,
+);
+
+String _stripMarkdown(String text) {
+  return text
+      .replaceAll(_markdownPattern, '')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+}
+
+String _snippet(String markdown, {int maxLength = 80}) {
+  final plain = _stripMarkdown(markdown);
+  if (plain.length <= maxLength) return plain;
+  return '${plain.substring(0, maxLength)}...';
+}
+
+// =============================================================================
 // 検索結果ビュー
 // =============================================================================
 
@@ -387,9 +394,11 @@ class _SearchResultsView extends StatelessWidget {
                 color: AppColors.textTertiary(context),
               ),
               const SizedBox(height: AppSpacing.lg),
-              Text('「$query」に一致する結果がありません',
-                  style: AppTextStyles.headline,
-                  textAlign: TextAlign.center),
+              Text(
+                '「$query」に一致する結果がありません',
+                style: AppTextStyles.headline,
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 '別のキーワードで検索してみてください',
@@ -450,7 +459,7 @@ class _SearchResultsView extends StatelessWidget {
             count: results.faqs.length,
           ),
           ...results.faqs.map(
-            (f) => _FaqResultTile(faq: f),
+            (f) => _FaqResultTile(faq: f, searchQuery: query),
           ),
         ],
       ],
@@ -517,8 +526,7 @@ class _EmployeeResultTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () =>
-          context.pushReplacement(AppRoutes.employeeDetail, extra: contact),
+      onTap: () => context.push(AppRoutes.employeeDetail, extra: contact),
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.screenHorizontal,
@@ -578,9 +586,7 @@ class _WikiResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final snippet = page.content.length > 80
-        ? '${page.content.substring(0, 80)}...'
-        : page.content;
+    final snippetText = _snippet(page.content);
 
     return InkWell(
       onTap: () => context.push(AppRoutes.wikiDetail, extra: page),
@@ -598,7 +604,7 @@ class _WikiResultTile extends StatelessWidget {
                 color: AppColors.brand.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.article_outlined,
                 size: 22,
                 color: AppColors.brand,
@@ -617,9 +623,9 @@ class _WikiResultTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (snippet.isNotEmpty)
+                  if (snippetText.isNotEmpty)
                     Text(
-                      snippet,
+                      snippetText,
                       style: AppTextStyles.caption2.copyWith(
                         color: AppColors.textSecondary(context),
                       ),
@@ -662,12 +668,11 @@ class _AnnouncementResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final snippet = announcement.body.length > 80
-        ? '${announcement.body.substring(0, 80)}...'
-        : announcement.body;
+    final snippetText = _snippet(announcement.body);
 
     return InkWell(
-      onTap: () => context.push(AppRoutes.announcements),
+      onTap: () =>
+          context.push(AppRoutes.announcements, extra: announcement.id),
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.screenHorizontal,
@@ -682,7 +687,7 @@ class _AnnouncementResultTile extends StatelessWidget {
                 color: AppColors.warning.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.campaign_outlined,
                 size: 22,
                 color: AppColors.warning,
@@ -710,11 +715,11 @@ class _AnnouncementResultTile extends StatelessWidget {
                           color: AppColors.textSecondary(context),
                         ),
                       ),
-                      if (snippet.isNotEmpty) ...[
+                      if (snippetText.isNotEmpty) ...[
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            snippet,
+                            snippetText,
                             style: AppTextStyles.caption2.copyWith(
                               color: AppColors.textSecondary(context),
                             ),
@@ -746,17 +751,16 @@ class _AnnouncementResultTile extends StatelessWidget {
 // =============================================================================
 
 class _FaqResultTile extends StatelessWidget {
-  const _FaqResultTile({required this.faq});
+  const _FaqResultTile({required this.faq, required this.searchQuery});
   final FaqItem faq;
+  final String searchQuery;
 
   @override
   Widget build(BuildContext context) {
-    final answerSnippet = faq.answer.length > 80
-        ? '${faq.answer.substring(0, 80)}...'
-        : faq.answer;
+    final answerSnippet = _snippet(faq.answer);
 
     return InkWell(
-      onTap: () => context.push(AppRoutes.faq),
+      onTap: () => context.push(AppRoutes.faq, extra: searchQuery),
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.screenHorizontal,

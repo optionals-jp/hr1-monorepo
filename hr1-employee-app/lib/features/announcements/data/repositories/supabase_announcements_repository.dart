@@ -6,6 +6,7 @@ class SupabaseAnnouncementsRepository {
 
   final SupabaseClient _client;
   final String? overrideUserId;
+  String? _cachedOrgId;
 
   String get _userId {
     final id = overrideUserId ?? _client.auth.currentUser?.id;
@@ -14,13 +15,15 @@ class SupabaseAnnouncementsRepository {
   }
 
   Future<String> _getOrganizationId() async {
+    if (_cachedOrgId != null) return _cachedOrgId!;
     final row = await _client
         .from('user_organizations')
         .select('organization_id')
         .eq('user_id', _userId)
         .limit(1)
         .single();
-    return row['organization_id'] as String;
+    _cachedOrgId = row['organization_id'] as String;
+    return _cachedOrgId!;
   }
 
   Future<List<Announcement>> getPublishedAnnouncements() async {
@@ -60,7 +63,8 @@ class SupabaseAnnouncementsRepository {
   /// タイトル・本文でお知らせを検索
   Future<List<Announcement>> searchAnnouncements(String query) async {
     final orgId = await _getOrganizationId();
-    final pattern = '%$query%';
+    final sanitized = _sanitizeForLike(query);
+    final pattern = '%$sanitized%';
     final response = await _client
         .from('announcements')
         .select()
@@ -74,5 +78,15 @@ class SupabaseAnnouncementsRepository {
     return (response as List)
         .map((json) => Announcement.fromJson(json))
         .toList();
+  }
+
+  static String _sanitizeForLike(String input) {
+    return input
+        .replaceAll(r'\', r'\\')
+        .replaceAll('%', r'\%')
+        .replaceAll('_', r'\_')
+        .replaceAll(',', ' ')
+        .replaceAll('(', ' ')
+        .replaceAll(')', ' ');
   }
 }

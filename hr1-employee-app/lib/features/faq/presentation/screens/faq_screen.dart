@@ -9,11 +9,16 @@ import 'package:hr1_employee_app/features/faq/presentation/providers/faq_provide
 
 /// FAQ一覧画面
 class FaqScreen extends HookConsumerWidget {
-  const FaqScreen({super.key});
+  const FaqScreen({super.key, this.initialQuery});
+
+  /// 横断検索から遷移時に検索キーワードを引き継ぐ
+  final String? initialQuery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final searchController = useTextEditingController();
+    final searchController = useTextEditingController(
+      text: initialQuery ?? '',
+    );
     final focusNode = useFocusNode();
     final query = useValueListenable(searchController).text.trim();
     final faqsAsync = ref.watch(employeeFaqsProvider);

@@ -22,7 +22,4 @@ class PortalSearchResults {
       wikiPages.isEmpty &&
       announcements.isEmpty &&
       faqs.isEmpty;
-
-  int get totalCount =>
-      employees.length + wikiPages.length + announcements.length + faqs.length;
 }
