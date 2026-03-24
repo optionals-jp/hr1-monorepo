@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -5,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
 import 'package:hr1_employee_app/core/router/app_router.dart';
 import 'package:hr1_employee_app/features/employees/domain/entities/employee_contact.dart';
+import 'package:hr1_employee_app/features/employees/presentation/providers/employee_list_providers.dart';
 import 'package:hr1_employee_app/features/wiki/domain/entities/wiki_page.dart';
 import 'package:hr1_employee_app/features/announcements/domain/entities/announcement.dart';
 import 'package:hr1_employee_app/features/faq/domain/entities/faq_item.dart';
@@ -26,6 +29,8 @@ class SearchScreen extends HookConsumerWidget {
     final focusNode = useFocusNode();
     final recentSearches = useState(<String>[]);
     final searchState = ref.watch(searchControllerProvider);
+    final employeesAsync = ref.watch(employeeListProvider);
+    final debounceTimer = useRef<Timer?>(null);
 
     ref.listen(searchControllerProvider, (prev, next) {
       if (next.hasError && context.mounted) {
@@ -37,17 +42,31 @@ class SearchScreen extends HookConsumerWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         focusNode.requestFocus();
       });
-      return null;
+      return () => debounceTimer.value?.cancel();
     }, []);
 
     void onSearch(String query) {
-      if (query.trim().isEmpty) return;
+      if (query.trim().isEmpty) {
+        ref.read(searchControllerProvider.notifier).clear();
+        return;
+      }
       final trimmed = query.trim();
       recentSearches.value = [
         trimmed,
         ...recentSearches.value.where((s) => s != trimmed),
       ].take(10).toList();
       ref.read(searchControllerProvider.notifier).search(trimmed);
+    }
+
+    void onChanged(String value) {
+      debounceTimer.value?.cancel();
+      if (value.trim().isEmpty) {
+        ref.read(searchControllerProvider.notifier).clear();
+        return;
+      }
+      debounceTimer.value = Timer(const Duration(milliseconds: 300), () {
+        onSearch(value);
+      });
     }
 
     return Scaffold(
@@ -69,6 +88,7 @@ class SearchScreen extends HookConsumerWidget {
                       controller: controller,
                       focusNode: focusNode,
                       onSubmitted: onSearch,
+                      onChanged: onChanged,
                       onClear: () =>
                           ref.read(searchControllerProvider.notifier).clear(),
                     ),
@@ -83,7 +103,7 @@ class SearchScreen extends HookConsumerWidget {
                       ),
                       child: Text(
                         'キャンセル',
-                        style: AppTextStyles.caption1.copyWith(
+                        style: AppTextStyles.body1.copyWith(
                           color: AppColors.brand,
                           fontWeight: FontWeight.w500,
                         ),
@@ -96,34 +116,34 @@ class SearchScreen extends HookConsumerWidget {
 
             // コンテンツ
             Expanded(
-              child: searchState.when(
-                data: (results) {
-                  if (results == null) {
-                    return ListView(
-                      padding: EdgeInsets.zero,
-                      children: [
-                        _buildAvatarCarousel(context),
-                        if (recentSearches.value.isNotEmpty)
-                          _buildRecentSearches(
-                            context,
-                            recentSearches.value,
-                            controller,
-                            onSearch,
-                          ),
-                      ],
-                    );
-                  }
+              child: () {
+                if (searchState.hasError && !searchState.hasValue) {
+                  return ErrorState(
+                    message: '検索中にエラーが発生しました',
+                    onRetry: () => onSearch(controller.text),
+                  );
+                }
+                final results = searchState.valueOrNull;
+                if (results != null) {
                   return _SearchResultsView(
                     results: results,
                     query: controller.text,
                   );
-                },
-                loading: () => const Center(child: LoadingIndicator()),
-                error: (_, __) => ErrorState(
-                  message: '検索中にエラーが発生しました',
-                  onRetry: () => onSearch(controller.text),
-                ),
-              ),
+                }
+                return ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    _buildAvatarCarousel(context, employeesAsync),
+                    if (recentSearches.value.isNotEmpty)
+                      _buildRecentSearches(
+                        context,
+                        recentSearches.value,
+                        controller,
+                        onSearch,
+                      ),
+                  ],
+                );
+              }(),
             ),
           ],
         ),
@@ -131,77 +151,16 @@ class SearchScreen extends HookConsumerWidget {
     );
   }
 
-  Widget _buildAvatarCarousel(BuildContext context) {
-    final contacts = [
-      const EmployeeContact(
-        id: '1',
-        name: '田中 太郎',
-        initial: '田',
-        position: '部長',
-        department: '営業部',
-        color: Color(0xFF0F6CBD),
-        email: 'tanaka@example.com',
-        workStatus: WorkStatus.working,
-      ),
-      const EmployeeContact(
-        id: '2',
-        name: '佐藤 花子',
-        initial: '佐',
-        position: '課長',
-        department: '人事部',
-        color: Color(0xFF0E7A0B),
-        email: 'sato@example.com',
-        workStatus: WorkStatus.onBreak,
-      ),
-      const EmployeeContact(
-        id: '3',
-        name: '鈴木 一郎',
-        initial: '鈴',
-        position: '主任',
-        department: '開発部',
-        color: AppColors.purple,
-        email: 'suzuki@example.com',
-        workStatus: WorkStatus.working,
-      ),
-      const EmployeeContact(
-        id: '4',
-        name: '高橋 美咲',
-        initial: '高',
-        position: '係長',
-        department: '総務部',
-        color: Color(0xFFBC4B09),
-        email: 'takahashi@example.com',
-      ),
-      const EmployeeContact(
-        id: '5',
-        name: '伊藤 健太',
-        initial: '伊',
-        position: '主任',
-        department: '企画部',
-        color: Color(0xFF115EA3),
-        email: 'ito@example.com',
-        workStatus: WorkStatus.working,
-      ),
-      const EmployeeContact(
-        id: '6',
-        name: '渡辺 真理',
-        initial: '渡',
-        position: '課長',
-        department: '経理部',
-        color: Color(0xFFB10E1C),
-        email: 'watanabe@example.com',
-      ),
-      const EmployeeContact(
-        id: '7',
-        name: '山本 翔太',
-        initial: '山',
-        position: '部長',
-        department: '開発部',
-        color: Color(0xFF0E7A0B),
-        email: 'yamamoto@example.com',
-        workStatus: WorkStatus.onBreak,
-      ),
-    ];
+  Widget _buildAvatarCarousel(
+    BuildContext context,
+    AsyncValue<List<EmployeeContact>> employeesAsync,
+  ) {
+    final allEmployees = employeesAsync.valueOrNull;
+
+    if (allEmployees == null) return const SizedBox.shrink();
+
+    final contacts = allEmployees.take(10).toList();
+    if (contacts.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -123,17 +123,9 @@ class _SkillTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return CommonCard(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: BorderRadius.circular(12),
-        border: AppColors.isDark(context)
-            ? Border.all(color: AppColors.border(context), width: 0.5)
-            : null,
-        boxShadow: AppShadows.of4(context),
-      ),
       child: Row(
         children: [
           Icon(

@@ -169,64 +169,55 @@ class _WikiPageCard extends StatelessWidget {
         ? '${page.content.substring(0, 100)}...'
         : page.content;
 
-    return InkWell(
+    return CommonCard(
       onTap: () => context.push(AppRoutes.wikiDetail, extra: page),
-      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        decoration: BoxDecoration(
-          color: AppColors.surface(context),
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          border: Border.all(color: AppColors.border(context)),
-          boxShadow: AppShadows.of4(context),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.brand.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.article_outlined,
-                  size: 20,
-                  color: AppColors.brand,
-                ),
+      margin: EdgeInsets.zero,
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.brand.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.article_outlined,
+                size: 20,
+                color: AppColors.brand,
               ),
             ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  page.title,
+                  style: AppTextStyles.body2.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (snippet.isNotEmpty) ...[
+                  const SizedBox(height: 4),
                   Text(
-                    page.title,
-                    style: AppTextStyles.body2.copyWith(
-                      fontWeight: FontWeight.w600,
+                    snippet.replaceAll('\n', ' '),
+                    style: AppTextStyles.caption1.copyWith(
+                      color: AppColors.textSecondary(context),
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (snippet.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      snippet.replaceAll('\n', ' '),
-                      style: AppTextStyles.caption1.copyWith(
-                        color: AppColors.textSecondary(context),
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
                 ],
-              ),
+              ],
             ),
-            Icon(Icons.chevron_right, color: AppColors.textTertiary(context)),
-          ],
-        ),
+          ),
+          Icon(Icons.chevron_right, color: AppColors.textTertiary(context)),
+        ],
       ),
     );
   }

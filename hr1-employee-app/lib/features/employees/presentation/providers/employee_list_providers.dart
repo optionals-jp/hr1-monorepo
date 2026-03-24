@@ -17,3 +17,11 @@ final departmentListProvider = FutureProvider.autoDispose<List<String>>((
   final repo = ref.watch(employeeRepositoryProvider);
   return repo.getDepartments();
 });
+
+/// 役職一覧を取得するプロバイダー
+final positionListProvider = FutureProvider.autoDispose<List<String>>((
+  ref,
+) async {
+  final repo = ref.watch(employeeRepositoryProvider);
+  return repo.getPositions();
+});

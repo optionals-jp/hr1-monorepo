@@ -235,14 +235,8 @@ class _SummarySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.cardPadding),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: AppColors.border(context), width: 0.5),
-        boxShadow: AppShadows.of8(context),
-      ),
+    return CommonCard(
+      margin: EdgeInsets.zero,
       child: Column(
         children: [
           // 上段: 勤務時間系

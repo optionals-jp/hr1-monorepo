@@ -100,14 +100,8 @@ class _CurrentBalanceCard extends StatelessWidget {
     final totalDays = balance.grantedDays + balance.carriedOverDays;
     final progress = totalDays > 0 ? balance.usedDays / totalDays : 0.0;
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: AppRadius.radius120,
-        border: Border.all(color: AppColors.border(context)),
-        boxShadow: AppShadows.of4(context),
-      ),
+    return CommonCard(
+      margin: EdgeInsets.zero,
       child: Column(
         children: [
           Text(
@@ -226,14 +220,9 @@ class _PastBalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return CommonCard(
+      margin: EdgeInsets.zero,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: AppRadius.radius120,
-        border: Border.all(color: AppColors.border(context)),
-        boxShadow: AppShadows.of4(context),
-      ),
       child: Row(
         children: [
           Text(

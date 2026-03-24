@@ -81,9 +81,7 @@ class MessagesScreen extends ConsumerWidget {
                   return EmptyState(
                     icon: AppIcons.directbox(
                       size: 64,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                      color: AppColors.textTertiary(context),
                     ),
                     title: 'メッセージはありません',
                     description: 'メッセージがここに表示されます',

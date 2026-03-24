@@ -99,14 +99,9 @@ class CorrectionRequestScreen extends HookConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          Container(
+          CommonCard(
+            margin: EdgeInsets.zero,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: AppColors.surface(context),
-              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-              border: Border.all(color: AppColors.border(context)),
-              boxShadow: AppShadows.of4(context),
-            ),
             child: Row(
               children: [
                 _SummaryItem(
@@ -180,14 +175,9 @@ class CorrectionRequestScreen extends HookConsumerWidget {
     }
 
     Widget buildCard({required Widget child, EdgeInsets? padding}) {
-      return Container(
+      return CommonCard(
+        margin: EdgeInsets.zero,
         padding: padding,
-        decoration: BoxDecoration(
-          color: AppColors.surface(context),
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          border: Border.all(color: AppColors.border(context), width: 0.5),
-          boxShadow: AppShadows.of4(context),
-        ),
         child: child,
       );
     }

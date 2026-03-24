@@ -185,7 +185,6 @@ class ThreadChatScreen extends HookConsumerWidget {
         ),
         centerTitle: false,
         elevation: 0,
-        scrolledUnderElevation: 0.5,
       ),
       body: Column(
         children: [
