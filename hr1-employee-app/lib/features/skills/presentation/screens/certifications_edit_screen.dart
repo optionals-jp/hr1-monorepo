@@ -103,8 +103,6 @@ class CertificationsEditScreen extends ConsumerWidget {
     final certsAsync = ref.watch(certificationsControllerProvider);
     final mastersAsync = ref.watch(certificationMastersProvider);
     final isAdding = ref.watch(certificationIsAddingProvider);
-    final theme = Theme.of(context);
-
     final masterNames =
         mastersAsync.valueOrNull?.map((m) => m.name).toList() ?? [];
 
@@ -121,7 +119,7 @@ class CertificationsEditScreen extends ConsumerWidget {
           Expanded(
             child: certsAsync.when(
               loading: () => const LoadingIndicator(),
-              error: (e, _) => Center(child: Text('エラー: $e')),
+              error: (e, _) => const ErrorState(),
               data: (certs) {
                 if (certs.isEmpty) {
                   return Center(
@@ -130,13 +128,13 @@ class CertificationsEditScreen extends ConsumerWidget {
                       children: [
                         AppIcons.award(
                           size: 48,
-                          color: AppColors.textTertiary(theme.brightness),
+                          color: AppColors.textTertiary(context),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         Text(
                           '資格が登録されていません',
                           style: AppTextStyles.caption1.copyWith(
-                            color: AppColors.textSecondary(theme.brightness),
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -174,23 +172,16 @@ class _CertTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: theme.brightness == Brightness.dark
-            ? Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                width: 0.5,
-              )
+        border: AppColors.isDark(context)
+            ? Border.all(color: AppColors.border(context), width: 0.5)
             : null,
-        boxShadow: theme.brightness == Brightness.dark
-            ? null
-            : AppShadows.shadow4,
+        boxShadow: AppShadows.of4(context),
       ),
       child: Row(
         children: [
@@ -213,7 +204,7 @@ class _CertTile extends StatelessWidget {
                   Text(
                     DateFormat('yyyy/MM').format(certification.acquiredDate!),
                     style: AppTextStyles.caption2.copyWith(
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
               ],
@@ -224,7 +215,7 @@ class _CertTile extends StatelessWidget {
             child: Icon(
               Icons.close_rounded,
               size: 18,
-              color: AppColors.textTertiary(theme.brightness),
+              color: AppColors.textTertiary(context),
             ),
           ),
         ],

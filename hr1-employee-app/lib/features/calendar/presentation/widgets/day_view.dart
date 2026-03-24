@@ -61,7 +61,6 @@ class _DayViewState extends State<DayView> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final allDayEvents = widget.events.where((e) => e.isAllDay).toList();
     final timedEvents = widget.events.where((e) => !e.isAllDay).toList();
 
@@ -75,7 +74,7 @@ class _DayViewState extends State<DayView> {
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                  color: theme.colorScheme.outlineVariant,
+                  color: AppColors.border(context),
                   width: 0.5,
                 ),
               ),
@@ -125,14 +124,12 @@ class _DayViewState extends State<DayView> {
                       child: _HourRow(hour: h),
                     ),
                   // 勤怠バー（打刻間の状態を色付きバーで表示）
-                  ..._buildAttendanceBars(theme),
+                  ..._buildAttendanceBars(),
                   // 勤怠打刻マーカー（左端）
-                  ...widget.punches.map(
-                    (punch) => _buildPunchMarker(punch, theme),
-                  ),
+                  ...widget.punches.map((punch) => _buildPunchMarker(punch)),
                   // イベントブロック
                   ...timedEvents.map(
-                    (event) => _buildEventBlock(event, timedEvents, theme),
+                    (event) => _buildEventBlock(event, timedEvents),
                   ),
                   // 現在時刻インジケーター
                   if (_isToday) const _CurrentTimeIndicator(),
@@ -146,7 +143,7 @@ class _DayViewState extends State<DayView> {
   }
 
   /// 打刻間の状態バーを生成（勤務中=緑、休憩中=黄）
-  List<Widget> _buildAttendanceBars(ThemeData theme) {
+  List<Widget> _buildAttendanceBars() {
     final punches = widget.punches;
     if (punches.isEmpty) return [];
 
@@ -187,7 +184,7 @@ class _DayViewState extends State<DayView> {
   double _toMinutes(DateTime local) =>
       (local.hour * 60 + local.minute).toDouble();
 
-  Widget _buildPunchMarker(AttendancePunch punch, ThemeData theme) {
+  Widget _buildPunchMarker(AttendancePunch punch) {
     final local = punch.punchedAt.toLocal();
     final minutes = local.hour * 60 + local.minute;
     final top = minutes * _hourHeight / 60;
@@ -197,7 +194,7 @@ class _DayViewState extends State<DayView> {
       'clock_out' => (AppIcons.logout, AppColors.error),
       'break_start' => (AppIcons.coffee, AppColors.warning),
       'break_end' => (AppIcons.pause, AppColors.brandLight),
-      _ => (AppIcons.clock, AppColors.textSecondary(theme.brightness)),
+      _ => (AppIcons.clock, AppColors.textSecondary(context)),
     };
 
     return Positioned(
@@ -207,7 +204,7 @@ class _DayViewState extends State<DayView> {
         width: 22,
         height: 22,
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: AppColors.surface(context),
           shape: BoxShape.circle,
         ),
         child: Center(
@@ -232,7 +229,6 @@ class _DayViewState extends State<DayView> {
   Widget _buildEventBlock(
     CalendarEvent event,
     List<CalendarEvent> allTimedEvents,
-    ThemeData theme,
   ) {
     final startLocal = event.startAt.toLocal();
     final endLocal = event.endAt.toLocal();
@@ -266,7 +262,7 @@ class _DayViewState extends State<DayView> {
                 event.title,
                 style: AppTextStyles.caption2.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurface,
+                  color: AppColors.textPrimary(context),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -276,7 +272,7 @@ class _DayViewState extends State<DayView> {
                   '${DateFormat('HH:mm').format(startLocal)} - ${DateFormat('HH:mm').format(endLocal)}',
                   style: AppTextStyles.caption1.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary(theme.brightness),
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
               if (height > 52 && event.location != null)
@@ -284,7 +280,7 @@ class _DayViewState extends State<DayView> {
                   event.location!,
                   style: AppTextStyles.caption1.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary(theme.brightness),
+                    color: AppColors.textSecondary(context),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -312,7 +308,6 @@ class _HourRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return SizedBox(
       height: 60,
       child: Row(
@@ -326,7 +321,7 @@ class _HourRow extends StatelessWidget {
                 '${hour.toString().padLeft(2, '0')}:00',
                 style: AppTextStyles.caption1.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textTertiary(theme.brightness),
+                  color: AppColors.textTertiary(context),
                   fontFeatures: [const FontFeature.tabularFigures()],
                 ),
                 textAlign: TextAlign.right,
@@ -337,10 +332,7 @@ class _HourRow extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(
-                    color: theme.colorScheme.outlineVariant,
-                    width: 0.5,
-                  ),
+                  top: BorderSide(color: AppColors.border(context), width: 0.5),
                 ),
               ),
             ),

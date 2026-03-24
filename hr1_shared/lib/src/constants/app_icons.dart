@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:hr1_shared/src/constants/app_colors.dart';
 
 /// SVGアイコンウィジェットを関数スタイルで取得するユーティリティ
 ///
@@ -210,7 +211,7 @@ class AppIcons {
     }
     return Builder(
       builder: (context) {
-        final themeColor = Theme.of(context).colorScheme.onSurface;
+        final themeColor = AppColors.textPrimary(context);
         return SvgPicture.asset(
           path,
           width: size,

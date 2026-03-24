@@ -143,7 +143,6 @@ class _FilterTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -168,7 +167,7 @@ class _FilterTabs extends StatelessWidget {
             child: Material(
               color: isActive
                   ? color.withValues(alpha: 0.12)
-                  : AppColors.surfaceTertiary(theme.brightness),
+                  : AppColors.surfaceTertiary(context),
               borderRadius: AppRadius.radiusCircular,
               child: InkWell(
                 onTap: () => onSelected(f),
@@ -185,7 +184,7 @@ class _FilterTabs extends StatelessWidget {
                         size: 16,
                         color: isActive
                             ? color
-                            : AppColors.textSecondary(theme.brightness),
+                            : AppColors.textSecondary(context),
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -193,7 +192,7 @@ class _FilterTabs extends StatelessWidget {
                         style: AppTextStyles.caption2.copyWith(
                           color: isActive
                               ? color
-                              : AppColors.textSecondary(theme.brightness),
+                              : AppColors.textSecondary(context),
                           fontWeight: isActive
                               ? FontWeight.w600
                               : FontWeight.w500,
@@ -256,8 +255,6 @@ class _TodoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     Widget item = InkWell(
       onTap: onTap,
       child: Padding(
@@ -280,7 +277,7 @@ class _TodoItem extends StatelessWidget {
                   border: Border.all(
                     color: todo.isCompleted
                         ? AppColors.brand
-                        : AppColors.textTertiary(theme.brightness),
+                        : AppColors.textTertiary(context),
                     width: 1.5,
                   ),
                   color: todo.isCompleted
@@ -309,7 +306,7 @@ class _TodoItem extends StatelessWidget {
                           ? TextDecoration.lineThrough
                           : null,
                       color: todo.isCompleted
-                          ? AppColors.textSecondary(theme.brightness)
+                          ? AppColors.textSecondary(context)
                           : null,
                     ),
                     maxLines: 2,
@@ -334,7 +331,7 @@ class _TodoItem extends StatelessWidget {
                   size: 22,
                   color: todo.isImportant
                       ? AppColors.error
-                      : AppColors.textTertiary(theme.brightness),
+                      : AppColors.textTertiary(context),
                 ),
               ),
             ),
@@ -379,7 +376,6 @@ class _MetadataRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final items = <Widget>[];
 
     // ソースバッジ（システム生成）
@@ -388,16 +384,13 @@ class _MetadataRow extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
           decoration: BoxDecoration(
-            color: _sourceColor(
-              todo.source,
-              theme.brightness,
-            ).withValues(alpha: 0.12),
+            color: _sourceColor(todo.source, context).withValues(alpha: 0.12),
             borderRadius: AppRadius.radius40,
           ),
           child: Text(
             todo.source.label,
             style: AppTextStyles.caption2.copyWith(
-              color: _sourceColor(todo.source, theme.brightness),
+              color: _sourceColor(todo.source, context),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -418,7 +411,7 @@ class _MetadataRow extends StatelessWidget {
               size: 12,
               color: isOverdue
                   ? AppColors.error
-                  : AppColors.textSecondary(theme.brightness),
+                  : AppColors.textSecondary(context),
             ),
             const SizedBox(width: 3),
             Text(
@@ -427,7 +420,7 @@ class _MetadataRow extends StatelessWidget {
                 fontWeight: FontWeight.w500,
                 color: isOverdue
                     ? AppColors.error
-                    : AppColors.textSecondary(theme.brightness),
+                    : AppColors.textSecondary(context),
               ),
             ),
           ],
@@ -438,13 +431,13 @@ class _MetadataRow extends StatelessWidget {
     return Wrap(spacing: 10, children: items);
   }
 
-  Color _sourceColor(TodoSource source, Brightness brightness) {
+  Color _sourceColor(TodoSource source, BuildContext context) {
     return switch (source) {
       TodoSource.survey => AppColors.brandLight,
       TodoSource.form => AppColors.success,
       TodoSource.interview => AppColors.warning,
       TodoSource.system => AppColors.brand,
-      TodoSource.manual => AppColors.textSecondary(brightness),
+      TodoSource.manual => AppColors.textSecondary(context),
     };
   }
 
@@ -483,7 +476,6 @@ class _CompletedSectionState extends State<_CompletedSection> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
       children: [
         InkWell(
@@ -500,13 +492,13 @@ class _CompletedSectionState extends State<_CompletedSection> {
                       ? Icons.keyboard_arrow_down_rounded
                       : Icons.keyboard_arrow_right_rounded,
                   size: 20,
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   '完了済み (${widget.todos.length})',
                   style: AppTextStyles.caption1.copyWith(
-                    color: AppColors.textSecondary(theme.brightness),
+                    color: AppColors.textSecondary(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -536,9 +528,6 @@ class _AddTodoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.screenHorizontal,
@@ -547,14 +536,14 @@ class _AddTodoButton extends StatelessWidget {
         MediaQuery.of(context).padding.bottom + AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.surface(context),
         border: Border(
           top: BorderSide(
-            color: theme.colorScheme.outlineVariant,
+            color: AppColors.border(context),
             width: AppStroke.strokeWidth05,
           ),
         ),
-        boxShadow: isDark ? null : [...AppShadows.shadow4],
+        boxShadow: AppShadows.of4(context),
       ),
       child: InkWell(
         onTap: onTap,
@@ -647,7 +636,6 @@ class _AddTodoFormState extends State<_AddTodoForm> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
       children: [
@@ -658,7 +646,7 @@ class _AddTodoFormState extends State<_AddTodoForm> {
           decoration: InputDecoration(
             hintText: 'タイトルを入力',
             hintStyle: AppTextStyles.body2.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
           ),
         ),
@@ -671,7 +659,7 @@ class _AddTodoFormState extends State<_AddTodoForm> {
           decoration: InputDecoration(
             hintText: 'メモ（任意）',
             hintStyle: AppTextStyles.body2.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
           ),
         ),
@@ -734,7 +722,6 @@ class _OptionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadius.radius80,
@@ -743,7 +730,7 @@ class _OptionChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: isActive
               ? activeColor.withValues(alpha: 0.1)
-              : theme.colorScheme.surfaceContainerHighest,
+              : AppColors.surfaceTertiary(context),
           borderRadius: AppRadius.radius80,
         ),
         child: Row(
@@ -752,9 +739,7 @@ class _OptionChip extends StatelessWidget {
             Icon(
               icon,
               size: 16,
-              color: isActive
-                  ? activeColor
-                  : AppColors.textSecondary(theme.brightness),
+              color: isActive ? activeColor : AppColors.textSecondary(context),
             ),
             const SizedBox(width: 6),
             Text(
@@ -762,7 +747,7 @@ class _OptionChip extends StatelessWidget {
               style: AppTextStyles.caption1.copyWith(
                 color: isActive
                     ? activeColor
-                    : AppColors.textSecondary(theme.brightness),
+                    : AppColors.textSecondary(context),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -788,8 +773,7 @@ class _EmptyTodoState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final emptyColor = AppColors.textTertiary(theme.brightness);
+    final emptyColor = AppColors.textTertiary(context);
     final (icon, title, subtitle) = switch (filter) {
       TodoFilter.incomplete => (
         Icon(Icons.checklist_rounded, size: 48, color: emptyColor),
@@ -825,7 +809,7 @@ class _EmptyTodoState extends StatelessWidget {
             Text(
               subtitle,
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
               textAlign: TextAlign.center,
             ),

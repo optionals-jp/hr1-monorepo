@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
 import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hr1_employee_app/features/messages/domain/entities/message_thread.dart';
@@ -7,183 +8,162 @@ import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 import 'package:hr1_employee_app/features/messages/presentation/controllers/thread_chat_controller.dart';
 import 'package:hr1_employee_app/features/messages/presentation/controllers/thread_realtime_controller.dart';
 
-/// スレッドチャット画面
-class ThreadChatScreen extends ConsumerStatefulWidget {
+class ThreadChatScreen extends HookConsumerWidget {
   const ThreadChatScreen({super.key, required this.thread});
 
   final MessageThread thread;
 
   @override
-  ConsumerState<ThreadChatScreen> createState() => _ThreadChatScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = useTextEditingController();
+    final scrollController = useScrollController();
+    final editController = useTextEditingController();
+    final sending = useState(false);
+    final editingMessageId = useState<String?>(null);
 
-class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
-  final _controller = TextEditingController();
-  final _scrollController = ScrollController();
-  bool _sending = false;
-  String? _editingMessageId;
-  final _editController = TextEditingController();
+    final currentUserId = ref.read(appUserProvider)?.id ?? '';
+    final realtimeArg = (threadId: thread.id, currentUserId: currentUserId);
 
-  String get _currentUserId => ref.read(appUserProvider)?.id ?? '';
+    useEffect(() {
+      void onScroll() {
+        if (scrollController.position.pixels >=
+            scrollController.position.maxScrollExtent - 50) {
+          ref
+              .read(threadRealtimeControllerProvider(realtimeArg).notifier)
+              .loadOlderMessages();
+        }
+      }
 
-  ({String threadId, String currentUserId}) get _realtimeArg =>
-      (threadId: widget.thread.id, currentUserId: _currentUserId);
+      void onTextChanged() {
+        ref
+            .read(threadRealtimeControllerProvider(realtimeArg).notifier)
+            .onTextChanged(controller.text);
+      }
 
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-    _controller.addListener(_onTextChanged);
-  }
+      scrollController.addListener(onScroll);
+      controller.addListener(onTextChanged);
+      return () {
+        scrollController.removeListener(onScroll);
+        controller.removeListener(onTextChanged);
+      };
+    }, [scrollController, controller]);
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    _editController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 50) {
+    Future<void> sendMessage() async {
+      final content = controller.text.trim();
+      if (content.isEmpty || sending.value || content.length > 5000) return;
+      sending.value = true;
+      controller.clear();
       ref
-          .read(threadRealtimeControllerProvider(_realtimeArg).notifier)
-          .loadOlderMessages();
+          .read(threadRealtimeControllerProvider(realtimeArg).notifier)
+          .resetTyping();
+      try {
+        await ref
+            .read(threadChatControllerProvider.notifier)
+            .sendMessage(
+              threadId: thread.id,
+              senderId: currentUserId,
+              content: content,
+            );
+      } catch (e) {
+        if (context.mounted) {
+          controller.text = content;
+          CommonSnackBar.error(context, 'メッセージの送信に失敗しました');
+        }
+      }
+      if (context.mounted) sending.value = false;
     }
-  }
 
-  void _onTextChanged() {
-    ref
-        .read(threadRealtimeControllerProvider(_realtimeArg).notifier)
-        .onTextChanged(_controller.text);
-  }
+    void startEditing(Message message) {
+      editingMessageId.value = message.id;
+      editController.text = message.content;
+    }
 
-  Future<void> _sendMessage() async {
-    final content = _controller.text.trim();
-    if (content.isEmpty || _sending || content.length > 5000) return;
-    setState(() => _sending = true);
-    _controller.clear();
-    ref
-        .read(threadRealtimeControllerProvider(_realtimeArg).notifier)
-        .resetTyping();
-    try {
-      await ref
-          .read(threadChatControllerProvider.notifier)
-          .sendMessage(
-            threadId: widget.thread.id,
-            senderId: _currentUserId,
-            content: content,
-          );
-    } catch (e) {
-      if (mounted) {
-        _controller.text = content;
-        CommonSnackBar.error(context, 'メッセージの送信に失敗しました');
+    void cancelEditing() {
+      editingMessageId.value = null;
+      editController.clear();
+    }
+
+    Future<void> saveEdit() async {
+      final content = editController.text.trim();
+      if (content.isEmpty || editingMessageId.value == null) return;
+      final messageId = editingMessageId.value!;
+      cancelEditing();
+      try {
+        await ref
+            .read(threadChatControllerProvider.notifier)
+            .editMessage(messageId, content);
+      } catch (e) {
+        if (context.mounted) CommonSnackBar.error(context, 'メッセージの編集に失敗しました');
       }
     }
-    if (mounted) setState(() => _sending = false);
-  }
 
-  void _startEditing(Message message) {
-    setState(() {
-      _editingMessageId = message.id;
-      _editController.text = message.content;
-    });
-  }
-
-  void _cancelEditing() {
-    setState(() {
-      _editingMessageId = null;
-      _editController.clear();
-    });
-  }
-
-  Future<void> _saveEdit() async {
-    final content = _editController.text.trim();
-    if (content.isEmpty || _editingMessageId == null) return;
-    final messageId = _editingMessageId!;
-    _cancelEditing();
-    try {
-      await ref
-          .read(threadChatControllerProvider.notifier)
-          .editMessage(messageId, content);
-    } catch (e) {
-      if (mounted) CommonSnackBar.error(context, 'メッセージの編集に失敗しました');
+    Future<void> deleteMessage(String messageId) async {
+      final confirmed = await CommonDialog.confirm(
+        context: context,
+        title: 'メッセージの削除',
+        message: 'このメッセージを削除しますか？この操作は取り消せません。',
+        confirmLabel: '削除',
+        isDestructive: true,
+      );
+      if (!confirmed) return;
+      try {
+        await ref
+            .read(threadChatControllerProvider.notifier)
+            .deleteMessage(messageId);
+      } catch (e) {
+        if (context.mounted) CommonSnackBar.error(context, 'メッセージの削除に失敗しました');
+      }
     }
-  }
 
-  Future<void> _deleteMessage(String messageId) async {
-    final confirmed = await CommonDialog.confirm(
-      context: context,
-      title: 'メッセージの削除',
-      message: 'このメッセージを削除しますか？この操作は取り消せません。',
-      confirmLabel: '削除',
-      isDestructive: true,
-    );
-    if (!confirmed) return;
-    try {
-      await ref
-          .read(threadChatControllerProvider.notifier)
-          .deleteMessage(messageId);
-    } catch (e) {
-      if (mounted) CommonSnackBar.error(context, 'メッセージの削除に失敗しました');
-    }
-  }
-
-  void _showMessageActions(Message message) {
-    final theme = Theme.of(context);
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: AppSpacing.sm),
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.outlineVariant,
-                borderRadius: AppRadius.radius20,
+    void showMessageActions(Message message) {
+      showModalBottomSheet(
+        context: context,
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: AppSpacing.sm),
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border(context),
+                  borderRadius: AppRadius.radius20,
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            ListTile(
-              leading: const Icon(Icons.edit_outlined, size: 22),
-              title: const Text('編集'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _startEditing(message);
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                Icons.delete_outline,
-                color: AppColors.error,
-                size: 22,
+              const SizedBox(height: AppSpacing.md),
+              ListTile(
+                leading: const Icon(Icons.edit_outlined, size: 22),
+                title: const Text('編集'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  startEditing(message);
+                },
               ),
-              title: Text(
-                '削除',
-                style: AppTextStyles.body1.copyWith(color: AppColors.error),
+              ListTile(
+                leading: Icon(
+                  Icons.delete_outline,
+                  color: AppColors.error,
+                  size: 22,
+                ),
+                title: Text(
+                  '削除',
+                  style: AppTextStyles.body1.copyWith(color: AppColors.error),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  deleteMessage(message.id);
+                },
               ),
-              onTap: () {
-                Navigator.pop(ctx);
-                _deleteMessage(message.id);
-              },
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
-  }
+      );
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    final displayName =
-        widget.thread.participantName ?? widget.thread.title ?? '相手';
-    final theme = Theme.of(context);
+    final displayName = thread.participantName ?? thread.title ?? '相手';
     final realtimeState = ref.watch(
-      threadRealtimeControllerProvider(_realtimeArg),
+      threadRealtimeControllerProvider(realtimeArg),
     );
 
     final messages = realtimeState.messages;
@@ -195,7 +175,6 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            // アバター
             Container(
               width: 32,
               height: 32,
@@ -221,7 +200,6 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
       ),
       body: Column(
         children: [
-          // メッセージリスト
           Expanded(
             child: loading
                 ? const LoadingIndicator()
@@ -253,7 +231,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                         Text(
                           'メッセージを送ってみましょう',
                           style: AppTextStyles.caption1.copyWith(
-                            color: AppColors.textSecondary(theme.brightness),
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -261,7 +239,7 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                   )
                 : ListView.builder(
                     reverse: true,
-                    controller: _scrollController,
+                    controller: scrollController,
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.lg,
                       vertical: AppSpacing.sm,
@@ -278,10 +256,9 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                       }
                       final msgIndex = messages.length - 1 - index;
                       final msg = messages[msgIndex];
-                      final isMe = msg.senderId == _currentUserId;
-                      final isEditing = _editingMessageId == msg.id;
+                      final isMe = msg.senderId == currentUserId;
+                      final isEditing = editingMessageId.value == msg.id;
 
-                      // グルーピング判定
                       final prevMsg = msgIndex > 0
                           ? messages[msgIndex - 1]
                           : null;
@@ -303,7 +280,6 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                                   .inMinutes >
                               5;
 
-                      // 日付セパレーター
                       Widget? dateSeparator;
                       if (prevMsg == null ||
                           prevMsg.createdAt.day != msg.createdAt.day ||
@@ -317,13 +293,13 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                           if (dateSeparator != null) dateSeparator,
                           GestureDetector(
                             onLongPress: isMe
-                                ? () => _showMessageActions(msg)
+                                ? () => showMessageActions(msg)
                                 : null,
                             child: isEditing
                                 ? _EditingBubble(
-                                    controller: _editController,
-                                    onSave: _saveEdit,
-                                    onCancel: _cancelEditing,
+                                    controller: editController,
+                                    onSave: saveEdit,
+                                    onCancel: cancelEditing,
                                   )
                                 : _MessageBubble(
                                     message: msg,
@@ -338,7 +314,6 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
                   ),
           ),
 
-          // タイピングインジケーター
           if (otherUserTyping)
             Padding(
               padding: const EdgeInsets.only(
@@ -348,11 +323,10 @@ class _ThreadChatScreenState extends ConsumerState<ThreadChatScreen> {
               child: _TypingIndicator(),
             ),
 
-          // 入力エリア
           MessageInputBar(
-            controller: _controller,
-            onSend: _sendMessage,
-            isSending: _sending,
+            controller: controller,
+            onSend: sendMessage,
+            isSending: sending.value,
           ),
         ],
       ),
@@ -371,14 +345,13 @@ class _DateSeparator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Center(
         child: Text(
           _format(date.toLocal()),
           style: AppTextStyles.caption2.copyWith(
-            color: AppColors.textSecondary(theme.brightness),
+            color: AppColors.textSecondary(context),
           ),
         ),
       ),
@@ -433,8 +406,6 @@ class _TypingIndicatorState extends State<_TypingIndicator>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -442,7 +413,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: AppColors.surfaceTertiary(theme.brightness),
+            color: AppColors.surfaceTertiary(context),
             borderRadius: AppRadius.radius160,
           ),
           child: AnimatedBuilder(
@@ -462,7 +433,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: AppColors.textTertiary(theme.brightness),
+                          color: AppColors.textTertiary(context),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -495,7 +466,6 @@ class _EditingBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -539,7 +509,7 @@ class _EditingBubble extends StatelessWidget {
                           child: Text(
                             'キャンセル',
                             style: AppTextStyles.caption2.copyWith(
-                              color: AppColors.textSecondary(theme.brightness),
+                              color: AppColors.textSecondary(context),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -587,18 +557,13 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    // バブルカラー
     final bubbleColor = isMe
         ? AppColors.brand
-        : AppColors.surfaceTertiary(theme.brightness);
-    final textColor = isMe ? Colors.white : theme.colorScheme.onSurface;
+        : AppColors.surfaceTertiary(context);
+    final textColor = isMe ? Colors.white : AppColors.textPrimary(context);
 
-    // グループ内のスペーシング
     final bottomPadding = isLastInGroup ? 12.0 : 2.0;
 
-    // 角丸: グループ内の位置で変化
     const r = Radius.circular(18);
     const rSmall = Radius.circular(4);
     final borderRadius = isMe
@@ -623,7 +588,6 @@ class _MessageBubble extends StatelessWidget {
             : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // 受信側アバター（グループ最後のみ表示）
           if (!isMe) ...[
             if (isLastInGroup)
               Container(
@@ -671,14 +635,13 @@ class _MessageBubble extends StatelessWidget {
                       style: AppTextStyles.body1.copyWith(color: textColor),
                     ),
                   ),
-                  // タイムスタンプ: グループ最後のみ表示
                   if (isLastInGroup)
                     Padding(
                       padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
                       child: Text(
                         _formatTime(message),
                         style: AppTextStyles.caption2.copyWith(
-                          color: AppColors.textSecondary(theme.brightness),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ),

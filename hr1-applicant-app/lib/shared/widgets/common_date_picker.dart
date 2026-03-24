@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_shared/hr1_shared.dart' show CommonButton;
 
 /// カスタム日付選択 BottomSheet
 ///
@@ -100,11 +101,9 @@ class _CommonDatePickerState extends State<CommonDatePicker> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.surface(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SafeArea(
@@ -118,7 +117,7 @@ class _CommonDatePickerState extends State<CommonDatePicker> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: theme.colorScheme.outlineVariant,
+                color: AppColors.border(context),
                 borderRadius: AppRadius.radius20,
               ),
             ),
@@ -174,8 +173,8 @@ class _CommonDatePickerState extends State<CommonDatePicker> {
                         day,
                         style: AppTextStyles.caption2.copyWith(
                           color: isWeekend
-                              ? AppColors.textSecondary(theme.brightness)
-                              : AppColors.textPrimary(theme.brightness),
+                              ? AppColors.textSecondary(context)
+                              : AppColors.textPrimary(context),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -192,7 +191,7 @@ class _CommonDatePickerState extends State<CommonDatePicker> {
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenHorizontal,
               ),
-              child: _buildCalendarGrid(theme),
+              child: _buildCalendarGrid(),
             ),
 
             const SizedBox(height: AppSpacing.lg),
@@ -218,17 +217,11 @@ class _CommonDatePickerState extends State<CommonDatePicker> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: FilledButton(
+                    child: CommonButton(
                       onPressed: _selectedDate != null
                           ? () => Navigator.pop(context, _selectedDate)
                           : null,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.brand,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: AppColors.lightBorder,
-                        shape: const StadiumBorder(),
-                        minimumSize: const Size(0, 44),
-                      ),
+                      enabled: _selectedDate != null,
                       child: const Text('選択'),
                     ),
                   ),
@@ -243,7 +236,7 @@ class _CommonDatePickerState extends State<CommonDatePicker> {
     );
   }
 
-  Widget _buildCalendarGrid(ThemeData theme) {
+  Widget _buildCalendarGrid() {
     final year = _displayMonth.year;
     final month = _displayMonth.month;
     final daysInMonth = DateTime(year, month + 1, 0).day;
@@ -289,10 +282,10 @@ class _CommonDatePickerState extends State<CommonDatePicker> {
                         color: isSelected
                             ? Colors.white
                             : !selectable
-                            ? AppColors.textTertiary(theme.brightness)
+                            ? AppColors.textTertiary(context)
                             : isToday
                             ? AppColors.brand
-                            : AppColors.textPrimary(theme.brightness),
+                            : AppColors.textPrimary(context),
                         fontWeight: isSelected || isToday
                             ? FontWeight.w600
                             : null,

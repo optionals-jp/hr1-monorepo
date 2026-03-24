@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
@@ -9,18 +9,88 @@ import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hr1_employee_app/features/auth/presentation/controllers/profile_edit_controller.dart';
 
-class ProfileEditScreen extends ConsumerStatefulWidget {
+class ProfileEditScreen extends HookConsumerWidget {
   const ProfileEditScreen({super.key});
 
   @override
-  ConsumerState<ProfileEditScreen> createState() => _ProfileEditScreenState();
-}
-
-class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(appUserProvider);
-    final theme = Theme.of(context);
+
+
+    Future<void> pickAndUploadAvatar() async {
+      final picker = ImagePicker();
+      final source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('カメラ'),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('ギャラリー'),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (source == null) return;
+
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+      if (picked == null) return;
+
+      final controller = ref.read(profileEditControllerProvider.notifier);
+      final success = await controller.uploadAvatar(picked.path);
+
+      if (context.mounted) {
+        if (success) {
+          CommonSnackBar.show(context, 'プロフィール画像を更新しました');
+        } else {
+          CommonSnackBar.error(context, '画像のアップロードに失敗しました');
+        }
+      }
+    }
+
+    Future<void> editField({
+      required String title,
+      required String initialValue,
+      required String fieldKey,
+      required String successMessage,
+    }) async {
+      final value = await Navigator.push<String>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FieldEditScreen(
+            title: title,
+            initialValue: initialValue,
+            maxLength: 50,
+          ),
+        ),
+      );
+      if (value == null || value.isEmpty) return;
+
+      final controller = ref.read(profileEditControllerProvider.notifier);
+      final success = await controller.updateField({fieldKey: value});
+
+      if (context.mounted) {
+        if (success) {
+          CommonSnackBar.show(context, successMessage);
+        } else {
+          CommonSnackBar.error(context, '更新に失敗しました');
+        }
+      }
+    }
 
     return CommonScaffold(
       appBar: AppBar(title: const Text('プロフィール編集')),
@@ -29,7 +99,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         children: [
           Center(
             child: GestureDetector(
-              onTap: () => _pickAndUploadAvatar(),
+              onTap: () => pickAndUploadAvatar(),
               child: Stack(
                 children: [
                   UserAvatar(
@@ -48,7 +118,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                         color: AppColors.brand,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: theme.scaffoldBackgroundColor,
+                          color: AppColors.surface(context),
                           width: 3,
                         ),
                       ),
@@ -73,7 +143,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 icon: AppIcons.user(),
                 label: '表示名',
                 title: user?.displayName ?? '未設定',
-                onTap: () => _editField(
+                onTap: () => editField(
                   title: '表示名',
                   initialValue: user?.displayName ?? '',
                   fieldKey: 'display_name',
@@ -89,7 +159,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 icon: AppIcons.briefcase(),
                 label: '部署',
                 title: user?.department ?? '未設定',
-                onTap: () => _editField(
+                onTap: () => editField(
                   title: '部署',
                   initialValue: user?.department ?? '',
                   fieldKey: 'department',
@@ -100,7 +170,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 icon: AppIcons.personalcard(),
                 label: '役職',
                 title: user?.position ?? '未設定',
-                onTap: () => _editField(
+                onTap: () => editField(
                   title: '役職',
                   initialValue: user?.position ?? '',
                   fieldKey: 'position',
@@ -162,80 +232,5 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _pickAndUploadAvatar() async {
-    final picker = ImagePicker();
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('カメラ'),
-              onTap: () => Navigator.pop(ctx, ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('ギャラリー'),
-              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (source == null) return;
-
-    final picked = await picker.pickImage(
-      source: source,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 80,
-    );
-    if (picked == null) return;
-
-    final controller = ref.read(profileEditControllerProvider.notifier);
-    final success = await controller.uploadAvatar(picked.path);
-
-    if (mounted) {
-      if (success) {
-        CommonSnackBar.show(context, 'プロフィール画像を更新しました');
-      } else {
-        CommonSnackBar.error(context, '画像のアップロードに失敗しました');
-      }
-    }
-  }
-
-  Future<void> _editField({
-    required String title,
-    required String initialValue,
-    required String fieldKey,
-    required String successMessage,
-  }) async {
-    final value = await Navigator.push<String>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => FieldEditScreen(
-          title: title,
-          initialValue: initialValue,
-          maxLength: 50,
-        ),
-      ),
-    );
-    if (value == null || value.isEmpty) return;
-
-    final controller = ref.read(profileEditControllerProvider.notifier);
-    final success = await controller.updateField({fieldKey: value});
-
-    if (mounted) {
-      if (success) {
-        CommonSnackBar.show(context, successMessage);
-      } else {
-        CommonSnackBar.error(context, '更新に失敗しました');
-      }
-    }
   }
 }

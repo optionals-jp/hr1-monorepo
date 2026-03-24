@@ -21,8 +21,6 @@ class EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final timeFormat = DateFormat('HH:mm');
 
     return Padding(
@@ -37,15 +35,12 @@ class EventCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           child: Container(
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(8),
-              border: isDark
-                  ? Border.all(
-                      color: theme.colorScheme.outline.withValues(alpha: 0.15),
-                      width: 0.5,
-                    )
+              border: AppColors.isDark(context)
+                  ? Border.all(color: AppColors.border(context), width: 0.5)
                   : null,
-              boxShadow: isDark ? null : AppShadows.shadow2,
+              boxShadow: AppShadows.of2(context),
             ),
             child: Row(
               children: [
@@ -78,9 +73,7 @@ class EventCard extends StatelessWidget {
                             child: Text(
                               '${timeFormat.format(event.startAt.toLocal())} - ${timeFormat.format(event.endAt.toLocal())}',
                               style: AppTextStyles.caption2.copyWith(
-                                color: AppColors.textSecondary(
-                                  theme.brightness,
-                                ),
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                           )
@@ -113,9 +106,7 @@ class EventCard extends StatelessWidget {
                               children: [
                                 AppIcons.location(
                                   size: 13,
-                                  color: AppColors.textTertiary(
-                                    theme.brightness,
-                                  ),
+                                  color: AppColors.textTertiary(context),
                                 ),
                                 const SizedBox(width: 3),
                                 Expanded(
@@ -123,9 +114,7 @@ class EventCard extends StatelessWidget {
                                     event.location!,
                                     style: AppTextStyles.caption1.copyWith(
                                       fontWeight: FontWeight.w500,
-                                      color: AppColors.textTertiary(
-                                        theme.brightness,
-                                      ),
+                                      color: AppColors.textTertiary(context),
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,

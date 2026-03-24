@@ -29,7 +29,6 @@ class CommonDialog {
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) {
-        final theme = Theme.of(ctx);
         return AlertDialog(
           title: Text(title, style: AppTextStyles.headline),
           shape: RoundedRectangleBorder(
@@ -38,7 +37,7 @@ class CommonDialog {
           content: Text(
             message,
             style: AppTextStyles.body2.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
             textAlign: TextAlign.center,
           ),
@@ -120,7 +119,6 @@ class CommonDialog {
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) {
-        final theme = Theme.of(ctx);
         return AlertDialog(
           title: Text(title, style: AppTextStyles.headline),
           content: TextField(
@@ -131,11 +129,11 @@ class CommonDialog {
             decoration: InputDecoration(
               hintText: hintText,
               hintStyle: AppTextStyles.body2.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
               suffixText: suffixText,
               filled: true,
-              fillColor: AppColors.surfaceTertiary(theme.brightness),
+              fillColor: AppColors.surfaceTertiary(context),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide.none,

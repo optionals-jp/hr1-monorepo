@@ -13,7 +13,6 @@ class FaqScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final faqsAsync = ref.watch(applicantFaqsProvider);
-    final theme = Theme.of(context);
 
     return CommonScaffold(
       appBar: AppBar(title: const Text('よくある質問')),
@@ -27,13 +26,13 @@ class FaqScreen extends ConsumerWidget {
                   Icon(
                     Icons.help_outline_rounded,
                     size: 48,
-                    color: AppColors.textTertiary(theme.brightness),
+                    color: AppColors.textTertiary(context),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     'FAQはまだありません',
                     style: AppTextStyles.body2.copyWith(
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],
@@ -58,7 +57,8 @@ class FaqScreen extends ConsumerWidget {
           );
         },
         loading: () => const _FaqSkeleton(),
-        error: (e, _) => Center(child: Text('エラー: $e')),
+        error: (e, _) =>
+            ErrorState(onRetry: () => ref.invalidate(applicantFaqsProvider)),
       ),
     );
   }
@@ -72,7 +72,6 @@ class _FaqCategorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -84,7 +83,7 @@ class _FaqCategorySection extends StatelessWidget {
           child: Text(
             FaqCategory.label(category),
             style: AppTextStyles.caption2.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
               fontWeight: FontWeight.w600,
               letterSpacing: 0.3,
             ),
@@ -114,8 +113,6 @@ class _FaqTileState extends State<_FaqTile> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return CommonCard(
       padding: EdgeInsets.zero,
       margin: EdgeInsets.zero,
@@ -159,7 +156,7 @@ class _FaqTileState extends State<_FaqTile> {
                     duration: const Duration(milliseconds: 200),
                     child: Icon(
                       Icons.expand_more,
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],
@@ -180,17 +177,17 @@ class _FaqTileState extends State<_FaqTile> {
                 data: widget.faq.answer,
                 styleSheet: MarkdownStyleSheet(
                   p: AppTextStyles.body2.copyWith(
-                    color: AppColors.textSecondary(theme.brightness),
+                    color: AppColors.textSecondary(context),
                     height: 1.6,
                   ),
                   h1: AppTextStyles.title3,
                   h2: AppTextStyles.callout,
                   h3: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600),
                   listBullet: AppTextStyles.body2.copyWith(
-                    color: AppColors.textSecondary(theme.brightness),
+                    color: AppColors.textSecondary(context),
                   ),
                   code: AppTextStyles.caption1.copyWith(
-                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                    backgroundColor: AppColors.surfaceTertiary(context),
                   ),
                 ),
                 shrinkWrap: true,

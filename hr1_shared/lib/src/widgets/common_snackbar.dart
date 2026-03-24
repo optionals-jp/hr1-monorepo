@@ -125,7 +125,6 @@ class _AnimatedSnackBarState extends State<_AnimatedSnackBar>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final bottomPadding = MediaQuery.of(context).viewPadding.bottom;
 
     final enterSlide =
@@ -159,7 +158,7 @@ class _AnimatedSnackBarState extends State<_AnimatedSnackBar>
           );
         },
         child: Material(
-          color: widget.backgroundColor ?? theme.colorScheme.inverseSurface,
+          color: widget.backgroundColor ?? AppColors.inverseSurface(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -170,7 +169,7 @@ class _AnimatedSnackBarState extends State<_AnimatedSnackBar>
               style: AppTextStyles.body2.copyWith(
                 color: widget.backgroundColor != null
                     ? null
-                    : theme.colorScheme.onInverseSurface,
+                    : AppColors.onInverseSurface(context),
               ),
               child: widget.child,
             ),

@@ -12,7 +12,6 @@ class WikiDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final dateFormat = DateFormat('yyyy/MM/dd HH:mm');
 
     return CommonScaffold(
@@ -45,7 +44,7 @@ class WikiDetailScreen extends StatelessWidget {
             Text(
               '更新日: ${dateFormat.format(page.updatedAt)}',
               style: AppTextStyles.caption2.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -55,17 +54,17 @@ class WikiDetailScreen extends StatelessWidget {
               data: page.content,
               styleSheet: MarkdownStyleSheet(
                 p: AppTextStyles.body2.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: AppColors.textSecondary(context),
                   height: 1.6,
                 ),
                 h1: AppTextStyles.headline,
                 h2: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600),
                 h3: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w500),
                 listBullet: AppTextStyles.body2.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: AppColors.textSecondary(context),
                 ),
                 code: AppTextStyles.caption1.copyWith(
-                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                  backgroundColor: AppColors.surfaceTertiary(context),
                 ),
               ),
               shrinkWrap: true,

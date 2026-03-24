@@ -117,7 +117,6 @@ class _Body extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final user = ref.watch(appUserProvider);
     final joinedIds =
         user?.organizations.map((o) => o.id).toSet() ?? <String>{};
@@ -131,13 +130,13 @@ class _Body extends ConsumerWidget {
             Icon(
               Icons.business_outlined,
               size: 48,
-              color: AppColors.textTertiary(theme.brightness),
+              color: AppColors.textTertiary(context),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               'すべての企業に登録済みです',
               style: AppTextStyles.body2.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -179,7 +178,7 @@ class _Body extends ConsumerWidget {
             itemCount: filtered.length,
             separatorBuilder: (_, __) => Divider(
               height: 1,
-              color: AppColors.divider(theme.brightness).withValues(alpha: 0.5),
+              color: AppColors.divider(context).withValues(alpha: 0.5),
             ),
             itemBuilder: (context, index) {
               final org = filtered[index];
@@ -214,8 +213,6 @@ class _OrganizationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return InkWell(
       onTap: onToggle,
       child: Padding(
@@ -248,7 +245,7 @@ class _OrganizationRow extends StatelessWidget {
                     Text(
                       organization.industry!,
                       style: AppTextStyles.caption2.copyWith(
-                        color: AppColors.textSecondary(theme.brightness),
+                        color: AppColors.textSecondary(context),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -269,7 +266,7 @@ class _OrganizationRow extends StatelessWidget {
                   : Icon(
                       Icons.circle_outlined,
                       key: const ValueKey('unchecked'),
-                      color: AppColors.divider(theme.brightness),
+                      color: AppColors.divider(context),
                     ),
             ),
           ],

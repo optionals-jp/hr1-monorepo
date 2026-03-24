@@ -13,7 +13,6 @@ class SurveyListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final surveysAsync = ref.watch(activeSurveysProvider);
     final completedAsync = ref.watch(completedSurveyIdsProvider);
 
@@ -31,7 +30,7 @@ class SurveyListScreen extends ConsumerWidget {
               Text(
                 '読み込みに失敗しました',
                 style: AppTextStyles.body2.copyWith(
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -56,13 +55,13 @@ class SurveyListScreen extends ConsumerWidget {
                   Icon(
                     Icons.poll_outlined,
                     size: 48,
-                    color: AppColors.textSecondary(theme.brightness),
+                    color: AppColors.textSecondary(context),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     'サーベイはありません',
                     style: AppTextStyles.body2.copyWith(
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],
@@ -148,7 +147,7 @@ class SurveyListScreen extends ConsumerWidget {
                         Text(
                           survey.description!,
                           style: AppTextStyles.caption1.copyWith(
-                            color: AppColors.textSecondary(theme.brightness),
+                            color: AppColors.textSecondary(context),
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -160,7 +159,7 @@ class SurveyListScreen extends ConsumerWidget {
                           Text(
                             '${survey.questions.length}問',
                             style: AppTextStyles.caption2.copyWith(
-                              color: AppColors.textSecondary(theme.brightness),
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                           if (survey.deadline != null) ...[
@@ -168,9 +167,7 @@ class SurveyListScreen extends ConsumerWidget {
                             Text(
                               '締切: ${DateFormat('yyyy/MM/dd').format(survey.deadline!.toLocal())}',
                               style: AppTextStyles.caption2.copyWith(
-                                color: AppColors.textSecondary(
-                                  theme.brightness,
-                                ),
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                           ],

@@ -31,7 +31,6 @@ class AttendanceScreen extends ConsumerWidget {
     final workState = ref.watch(workStateProvider);
     final todayRecord = ref.watch(todayRecordProvider);
     final todayPunches = ref.watch(todayPunchesProvider);
-    final theme = Theme.of(context);
 
     return CommonScaffold(
       appBar: AppBar(
@@ -105,7 +104,7 @@ class AttendanceScreen extends ConsumerWidget {
               child: Text(
                 'タイムライン',
                 style: AppTextStyles.caption2.copyWith(
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.3,
                 ),
@@ -121,7 +120,7 @@ class AttendanceScreen extends ConsumerWidget {
                         child: Text(
                           'まだ打刻がありません',
                           style: AppTextStyles.caption1.copyWith(
-                            color: AppColors.textSecondary(theme.brightness),
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ),
@@ -164,13 +163,9 @@ class _TimeStatusHero extends StatelessWidget {
     final now = DateTime.now();
     final dateFormat = DateFormat('M月d日（E）', 'ja');
     final timeFormat = DateFormat('HH:mm');
-    final theme = Theme.of(context);
 
     final (statusLabel, statusColor) = switch (workState) {
-      WorkState.notStarted => (
-        '未出勤',
-        AppColors.textSecondary(theme.brightness),
-      ),
+      WorkState.notStarted => ('未出勤', AppColors.textSecondary(context)),
       WorkState.working => ('勤務中', AppColors.success),
       WorkState.onBreak => ('休憩中', AppColors.warning),
       WorkState.finished => ('退勤済み', AppColors.brand),
@@ -182,7 +177,7 @@ class _TimeStatusHero extends StatelessWidget {
         Text(
           dateFormat.format(now),
           style: AppTextStyles.caption1.copyWith(
-            color: AppColors.textSecondary(theme.brightness),
+            color: AppColors.textSecondary(context),
           ),
         ),
         const SizedBox(height: 4),
@@ -191,7 +186,7 @@ class _TimeStatusHero extends StatelessWidget {
           timeFormat.format(now),
           style: AppTextStyles.display.copyWith(
             fontWeight: FontWeight.w200,
-            color: theme.colorScheme.onSurface,
+            color: AppColors.textPrimary(context),
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -315,20 +310,17 @@ class _PunchButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final iconColor = enabled
-        ? color
-        : AppColors.textTertiary(theme.brightness);
+    final iconColor = enabled ? color : AppColors.textTertiary(context);
 
     return SizedBox(
       height: 56,
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: AppRadius.radius120,
-          boxShadow: AppShadows.shadow4,
+          boxShadow: AppShadows.of4(context),
         ),
         child: Material(
-          color: theme.colorScheme.surface,
+          color: AppColors.surface(context),
           borderRadius: AppRadius.radius120,
           child: InkWell(
             onTap: enabled ? onPressed : null,
@@ -342,7 +334,7 @@ class _PunchButton extends StatelessWidget {
                 border: Border.all(
                   color: enabled
                       ? color.withValues(alpha: 0.15)
-                      : AppColors.border(theme.brightness),
+                      : AppColors.border(context),
                 ),
               ),
               child: Row(
@@ -375,14 +367,13 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.surface(context),
         borderRadius: AppRadius.radius120,
-        border: Border.all(color: AppColors.border(theme.brightness)),
-        boxShadow: AppShadows.shadow4,
+        border: Border.all(color: AppColors.border(context)),
+        boxShadow: AppShadows.of4(context),
       ),
       child: Row(
         children: [
@@ -431,7 +422,6 @@ class _KVItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Expanded(
       child: Column(
         children: [
@@ -443,7 +433,7 @@ class _KVItem extends StatelessWidget {
             label,
             style: AppTextStyles.caption1.copyWith(
               fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
           ),
         ],
@@ -455,11 +445,7 @@ class _KVItem extends StatelessWidget {
 class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 0.5,
-      height: 28,
-      color: Theme.of(context).colorScheme.outlineVariant,
-    );
+    return Container(width: 0.5, height: 28, color: AppColors.border(context));
   }
 }
 
@@ -515,14 +501,12 @@ class _TimelineItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     final (iconBuilder, iconColor) = switch (punch.punchType) {
       'clock_in' => (AppIcons.login, AppColors.success),
       'clock_out' => (AppIcons.logout, AppColors.error),
       'break_start' => (AppIcons.coffee, AppColors.warning),
       'break_end' => (AppIcons.pause, AppColors.brandLight),
-      _ => (AppIcons.clock, AppColors.textSecondary(theme.brightness)),
+      _ => (AppIcons.clock, AppColors.textSecondary(context)),
     };
 
     // 次の打刻までの経過時間
@@ -562,7 +546,7 @@ class _TimelineItem extends StatelessWidget {
                   _punchDescription(
                     punch,
                     AppTextStyles.footnote.copyWith(
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ),
@@ -583,7 +567,7 @@ class _TimelineItem extends StatelessWidget {
                     child: Container(
                       width: 1.5,
                       height: 36,
-                      color: theme.colorScheme.outlineVariant,
+                      color: AppColors.border(context),
                     ),
                   ),
                 ),
@@ -597,7 +581,7 @@ class _TimelineItem extends StatelessWidget {
                       nextPunch!.punchType,
                     ),
                     style: AppTextStyles.caption2.copyWith(
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
               ],

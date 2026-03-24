@@ -61,7 +61,6 @@ class _YearSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final currentYear = DateTime.now().year;
     final years = availableYears ?? [currentYear];
     final displayYears = years.contains(currentYear)
@@ -88,16 +87,14 @@ class _YearSelector extends StatelessWidget {
               onSelected: (_) => onYearChanged(year),
               labelStyle: AppTextStyles.caption1.copyWith(
                 color: isSelected
-                    ? theme.colorScheme.onPrimary
-                    : theme.colorScheme.onSurface,
+                    ? Colors.white
+                    : AppColors.textPrimary(context),
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),
               selectedColor: AppColors.brand,
-              backgroundColor: theme.colorScheme.surface,
+              backgroundColor: AppColors.surface(context),
               side: BorderSide(
-                color: isSelected
-                    ? AppColors.brand
-                    : theme.colorScheme.outlineVariant,
+                color: isSelected ? AppColors.brand : AppColors.border(context),
               ),
               visualDensity: VisualDensity.compact,
             );
@@ -121,7 +118,7 @@ class _Body extends StatelessWidget {
         icon: Icon(
           Icons.receipt_long,
           size: 48,
-          color: AppColors.textTertiary(Theme.of(context).brightness),
+          color: AppColors.textTertiary(context),
         ),
         title: '給与明細がありません',
       );
@@ -149,12 +146,10 @@ class _PayslipCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Material(
-        color: theme.colorScheme.surface,
+        color: AppColors.surface(context),
         borderRadius: AppRadius.radius120,
         child: InkWell(
           onTap: () {
@@ -166,10 +161,10 @@ class _PayslipCard extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: AppRadius.radius120,
               border: Border.all(
-                color: theme.dividerColor,
+                color: AppColors.divider(context),
                 width: AppStroke.strokeWidth05,
               ),
-              boxShadow: AppShadows.shadow4,
+              boxShadow: AppShadows.of4(context),
             ),
             child: Row(
               children: [
@@ -200,14 +195,14 @@ class _PayslipCard extends StatelessWidget {
                       Text(
                         '${payslip.year}年${payslip.month}月',
                         style: AppTextStyles.caption1.copyWith(
-                          color: AppColors.textSecondary(theme.brightness),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         _formatCurrency(payslip.netPay),
                         style: AppTextStyles.headline.copyWith(
-                          color: theme.colorScheme.onSurface,
+                          color: AppColors.textPrimary(context),
                         ),
                       ),
                     ],
@@ -218,7 +213,7 @@ class _PayslipCard extends StatelessWidget {
                 Icon(
                   Icons.chevron_right,
                   size: 20,
-                  color: AppColors.textTertiary(theme.brightness),
+                  color: AppColors.textTertiary(context),
                 ),
               ],
             ),

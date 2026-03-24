@@ -37,12 +37,10 @@ class CommonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     final card = Container(
       padding: padding ?? const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: highlighted && highlightColor != null
             ? Border.all(
@@ -50,7 +48,7 @@ class CommonCard extends StatelessWidget {
                 width: 0.5,
               )
             : Border.all(
-                color: theme.dividerColor,
+                color: AppColors.divider(context),
                 width: 0.5,
               ),
         boxShadow: const [

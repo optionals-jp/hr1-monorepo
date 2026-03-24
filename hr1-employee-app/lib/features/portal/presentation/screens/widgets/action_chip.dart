@@ -18,8 +18,6 @@ class PortalActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -28,14 +26,14 @@ class PortalActionChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: Color.alphaBlend(
             color.withValues(alpha: 0.1),
-            theme.colorScheme.surface,
+            AppColors.surface(context),
           ),
           borderRadius: AppRadius.radius160,
           border: Border.all(
             color: color.withValues(alpha: 0.15),
             width: AppStroke.strokeWidth05,
           ),
-          boxShadow: AppShadows.shadow4,
+          boxShadow: AppShadows.of4(context),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -46,7 +44,7 @@ class PortalActionChip extends StatelessWidget {
               label,
               style: AppTextStyles.caption1.copyWith(
                 fontWeight: FontWeight.w500,
-                color: theme.colorScheme.onSurface,
+                color: AppColors.textPrimary(context),
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

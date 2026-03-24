@@ -18,7 +18,6 @@ class ServiceRequestCreateScreen extends HookConsumerWidget {
     final descriptionController = useTextEditingController();
     final formKey = useMemoized(GlobalKey<FormState>.new);
 
-    final theme = Theme.of(context);
     final controllerState = ref.watch(serviceRequestControllerProvider);
     final isLoading = controllerState is AsyncLoading;
 
@@ -55,7 +54,7 @@ class ServiceRequestCreateScreen extends HookConsumerWidget {
                   ? '不具合の内容を教えてください'
                   : 'ご要望の内容を教えてください',
               style: AppTextStyles.body2.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -69,7 +68,7 @@ class ServiceRequestCreateScreen extends HookConsumerWidget {
                     ? '例: ログインできない'
                     : '例: ダークモードに対応してほしい',
                 hintStyle: AppTextStyles.body2.copyWith(
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
               validator: (value) {
@@ -92,7 +91,7 @@ class ServiceRequestCreateScreen extends HookConsumerWidget {
                     ? '発生した状況や手順を詳しく教えてください'
                     : '具体的にどのような機能があると嬉しいですか？',
                 hintStyle: AppTextStyles.body2.copyWith(
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                 ),
                 alignLabelWithHint: true,
               ),

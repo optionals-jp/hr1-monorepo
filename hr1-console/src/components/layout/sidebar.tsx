@@ -27,6 +27,7 @@ import {
   CalendarOff,
   Receipt,
   ShieldCheck,
+  ShieldAlert,
   Megaphone,
   BookOpen,
 } from "lucide-react";
@@ -191,6 +192,13 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         )}
       </div>
       <div className="border-t pt-2 mt-2 space-y-0.5">
+        <NavLink
+          href="/compliance"
+          labelKey="nav.compliance"
+          icon={ShieldAlert}
+          pathname={pathname}
+          onNavigate={onNavigate}
+        />
         <NavLink
           href="/audit-logs"
           labelKey="nav.auditLogs"

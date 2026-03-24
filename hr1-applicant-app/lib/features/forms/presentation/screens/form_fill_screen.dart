@@ -64,7 +64,7 @@ class FormFillScreen extends HookConsumerWidget {
       body: asyncForm.when(
         data: (form) {
           if (form == null) {
-            return const Center(child: Text('フォームが見つかりません'));
+            return const ErrorState(message: 'フォームが見つかりません');
           }
 
           return Form(
@@ -127,16 +127,15 @@ class _FormFieldWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final answers = ref.watch(formAnswersProvider(formId));
     final notifier = ref.read(formAnswersProvider(formId).notifier);
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.surface(context),
         borderRadius: AppRadius.radius120,
-        border: Border.all(color: AppColors.divider(theme.brightness)),
+        border: Border.all(color: AppColors.divider(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,7 +171,7 @@ class _FormFieldWidget extends ConsumerWidget {
             Text(
               field.description!,
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ),
           ],
@@ -306,7 +305,6 @@ class _FileUploadField extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final isUploading = useState(false);
     final fileName = useState<String?>(null);
 
@@ -365,7 +363,7 @@ class _FileUploadField extends HookConsumerWidget {
             child: Text(
               fileName.value!,
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
               overflow: TextOverflow.ellipsis,
             ),

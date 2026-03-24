@@ -18,8 +18,6 @@ class NoticeListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return InkWell(
       onTap: () {},
       child: Padding(
@@ -37,7 +35,7 @@ class NoticeListItem extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isNew
                     ? AppColors.brand.withValues(alpha: 0.1)
-                    : AppColors.divider(theme.brightness),
+                    : AppColors.divider(context),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -45,7 +43,7 @@ class NoticeListItem extends StatelessWidget {
                 size: 20,
                 color: isNew
                     ? AppColors.brand
-                    : AppColors.textSecondary(theme.brightness),
+                    : AppColors.textSecondary(context),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -72,7 +70,7 @@ class NoticeListItem extends StatelessWidget {
                       Text(
                         date,
                         style: AppTextStyles.caption2.copyWith(
-                          color: AppColors.textSecondary(theme.brightness),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ],
@@ -81,7 +79,7 @@ class NoticeListItem extends StatelessWidget {
                   Text(
                     subtitle,
                     style: AppTextStyles.caption2.copyWith(
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],

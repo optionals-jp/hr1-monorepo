@@ -11,6 +11,8 @@ import 'package:hr1_employee_app/features/notifications/presentation/providers/n
 import 'package:hr1_employee_app/features/announcements/domain/entities/announcement.dart';
 import 'package:hr1_employee_app/features/announcements/presentation/providers/announcement_providers.dart';
 import 'package:hr1_employee_app/features/portal/presentation/screens/widgets/action_chip.dart';
+import 'package:hr1_employee_app/features/compliance/domain/entities/compliance_alert.dart';
+import 'package:hr1_employee_app/features/compliance/presentation/providers/compliance_providers.dart';
 import 'package:intl/intl.dart';
 
 /// 社内ポータル画面 — Teams / Outlook モバイルスタイル
@@ -20,7 +22,6 @@ class PortalScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(appUserProvider);
-    final theme = Theme.of(context);
 
     return CommonScaffold(
       appBar: AppBar(
@@ -49,7 +50,7 @@ class PortalScreen extends ConsumerWidget {
                   clipBehavior: Clip.none,
                   children: [
                     AppIcons.notification(
-                      color: theme.appBarTheme.foregroundColor,
+                      color: AppColors.textPrimary(context),
                       size: 22,
                     ),
                     if (count > 0)
@@ -141,7 +142,7 @@ class PortalScreen extends ConsumerWidget {
                       child: Text(
                         '${user!.department} / ${user.position ?? ''}',
                         style: AppTextStyles.caption1.copyWith(
-                          color: AppColors.textSecondary(theme.brightness),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ),
@@ -267,6 +268,40 @@ class PortalScreen extends ConsumerWidget {
             ),
           ),
 
+          // コンプライアンスアラート
+          Consumer(
+            builder: (context, ref, _) {
+              final alertsAsync = ref.watch(myComplianceAlertsProvider);
+              return alertsAsync.when(
+                loading: () =>
+                    const SliverToBoxAdapter(child: SizedBox.shrink()),
+                error: (_, __) =>
+                    const SliverToBoxAdapter(child: SizedBox.shrink()),
+                data: (alerts) {
+                  if (alerts.isEmpty) {
+                    return const SliverToBoxAdapter(child: SizedBox.shrink());
+                  }
+                  return SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.screenHorizontal,
+                        AppSpacing.xxl,
+                        AppSpacing.screenHorizontal,
+                        0,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: alerts
+                            .map((alert) => _ComplianceAlertCard(alert: alert))
+                            .toList(),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+
           // セクションヘッダー: 全社お知らせ
           Consumer(
             builder: (context, ref, _) {
@@ -297,9 +332,7 @@ class PortalScreen extends ConsumerWidget {
                                 child: Text(
                                   '全社お知らせ',
                                   style: AppTextStyles.caption2.copyWith(
-                                    color: AppColors.textSecondary(
-                                      theme.brightness,
-                                    ),
+                                    color: AppColors.textSecondary(context),
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.3,
                                   ),
@@ -351,7 +384,7 @@ class PortalScreen extends ConsumerWidget {
                     child: Text(
                       '通知',
                       style: AppTextStyles.caption2.copyWith(
-                        color: AppColors.textSecondary(theme.brightness),
+                        color: AppColors.textSecondary(context),
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.3,
                       ),
@@ -401,7 +434,7 @@ class PortalScreen extends ConsumerWidget {
                         child: Text(
                           '新しい通知はありません',
                           style: AppTextStyles.caption1.copyWith(
-                            color: AppColors.textSecondary(theme.brightness),
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ),
@@ -432,7 +465,6 @@ class _PinnedAnnouncementTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final dateStr = DateFormat(
       'MM/dd',
     ).format(announcement.publishedAt.toLocal());
@@ -477,7 +509,7 @@ class _PinnedAnnouncementTile extends StatelessWidget {
                   Text(
                     dateStr,
                     style: AppTextStyles.caption2.copyWith(
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],
@@ -490,6 +522,67 @@ class _PinnedAnnouncementTile extends StatelessWidget {
   }
 }
 
+class _ComplianceAlertCard extends StatelessWidget {
+  const _ComplianceAlertCard({required this.alert});
+
+  final ComplianceAlert alert;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCritical = alert.severity == 'critical';
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: isCritical
+            ? AppColors.error.withValues(alpha: 0.08)
+            : AppColors.warning.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isCritical
+              ? AppColors.error.withValues(alpha: 0.3)
+              : AppColors.warning.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            isCritical ? Icons.error_rounded : Icons.warning_amber_rounded,
+            size: 20,
+            color: isCritical ? AppColors.error : AppColors.warning,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  alert.title,
+                  style: AppTextStyles.caption1.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  alert.description,
+                  style: AppTextStyles.caption2.copyWith(
+                    color: AppColors.textSecondary(context),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _NotificationPreviewTile extends ConsumerWidget {
   const _NotificationPreviewTile({required this.item});
 
@@ -497,7 +590,6 @@ class _NotificationPreviewTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final iconData = item.type.icon;
     final iconColor = item.type.color;
 
@@ -524,7 +616,7 @@ class _NotificationPreviewTile extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: !item.isRead
                     ? iconColor.withValues(alpha: 0.1)
-                    : AppColors.divider(theme.brightness),
+                    : AppColors.divider(context),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -532,7 +624,7 @@ class _NotificationPreviewTile extends ConsumerWidget {
                 size: 20,
                 color: !item.isRead
                     ? iconColor
-                    : AppColors.textSecondary(theme.brightness),
+                    : AppColors.textSecondary(context),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -555,7 +647,7 @@ class _NotificationPreviewTile extends ConsumerWidget {
                     Text(
                       item.body!,
                       style: AppTextStyles.caption2.copyWith(
-                        color: AppColors.textSecondary(theme.brightness),
+                        color: AppColors.textSecondary(context),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

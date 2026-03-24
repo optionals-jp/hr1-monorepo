@@ -25,8 +25,6 @@ class LoginScreen extends HookConsumerWidget {
     final otpSent = useState(false);
     final resendCooldown = useState(0);
 
-    final theme = Theme.of(context);
-
     useEffect(() {
       if (resendCooldown.value <= 0) return null;
       final timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -148,7 +146,7 @@ class LoginScreen extends HookConsumerWidget {
                           ? '${emailController.text.trim()} に送信された\n6桁のコードを入力してください'
                           : 'メールアドレスを入力してください',
                       style: AppTextStyles.caption1.copyWith(
-                        color: AppColors.textSecondary(theme.brightness),
+                        color: AppColors.textSecondary(context),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -216,7 +214,7 @@ class LoginScreen extends HookConsumerWidget {
                       child: Text(
                         'ログインでお困りの場合は support@hr1.jp までご連絡ください',
                         style: AppTextStyles.caption1.copyWith(
-                          color: AppColors.textSecondary(theme.brightness),
+                          color: AppColors.textSecondary(context),
                         ),
                         textAlign: TextAlign.center,
                       ),

@@ -14,7 +14,6 @@ class WorkflowDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final isSubmitting = ref.watch(workflowControllerProvider);
 
     return CommonScaffold(
@@ -47,20 +46,20 @@ class WorkflowDetailScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.xl),
-          Divider(color: AppColors.divider(theme.brightness)),
+          Divider(color: AppColors.divider(context)),
           const SizedBox(height: AppSpacing.lg),
 
           // 種別ごとの詳細
-          ..._buildDetailRows(theme),
+          ..._buildDetailRows(),
           const SizedBox(height: AppSpacing.lg),
-          Divider(color: AppColors.divider(theme.brightness)),
+          Divider(color: AppColors.divider(context)),
           const SizedBox(height: AppSpacing.lg),
 
           // 申請理由
           Text(
             '申請理由',
             style: AppTextStyles.body2.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -69,12 +68,12 @@ class WorkflowDetailScreen extends ConsumerWidget {
           // レビュー情報
           if (request.reviewedAt != null) ...[
             const SizedBox(height: AppSpacing.lg),
-            Divider(color: AppColors.divider(theme.brightness)),
+            Divider(color: AppColors.divider(context)),
             const SizedBox(height: AppSpacing.lg),
             Text(
               'レビュー',
               style: AppTextStyles.body2.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -88,7 +87,7 @@ class WorkflowDetailScreen extends ConsumerWidget {
               Text(
                 'コメント',
                 style: AppTextStyles.body2.copyWith(
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
               const SizedBox(height: AppSpacing.xs),
@@ -99,7 +98,7 @@ class WorkflowDetailScreen extends ConsumerWidget {
           // 申請日時
           if (request.createdAt != null) ...[
             const SizedBox(height: AppSpacing.lg),
-            Divider(color: AppColors.divider(theme.brightness)),
+            Divider(color: AppColors.divider(context)),
             const SizedBox(height: AppSpacing.lg),
             DetailRow(
               label: '申請日時',
@@ -142,7 +141,7 @@ class WorkflowDetailScreen extends ConsumerWidget {
     }
   }
 
-  List<Widget> _buildDetailRows(ThemeData theme) {
+  List<Widget> _buildDetailRows() {
     switch (request.requestType) {
       case WorkflowRequestType.paidLeave:
         return [

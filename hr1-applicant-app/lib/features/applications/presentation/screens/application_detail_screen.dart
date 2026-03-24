@@ -33,7 +33,7 @@ class ApplicationDetailScreen extends ConsumerWidget {
       body: asyncApplication.when(
         data: (application) {
           if (application == null) {
-            return const Center(child: Text('応募情報が見つかりません'));
+            return const ErrorState(message: '応募情報が見つかりません');
           }
           return _Body(application: application);
         },
@@ -105,7 +105,6 @@ class _OverviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final job = application.job;
     final currentStep = application.currentStep;
     final completedCount = application.steps
@@ -141,7 +140,7 @@ class _OverviewTab extends StatelessWidget {
                   Text(
                     '$completedCount / $totalSteps ステップ完了',
                     style: AppTextStyles.caption2.copyWith(
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],
@@ -289,7 +288,6 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
@@ -300,7 +298,7 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               label,
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ),
           ),
@@ -321,14 +319,13 @@ class _StepsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final steps = application.steps;
     if (steps.isEmpty) {
       return Center(
         child: Text(
           '選考ステップがありません',
           style: AppTextStyles.body2.copyWith(
-            color: AppColors.textSecondary(theme.brightness),
+            color: AppColors.textSecondary(context),
           ),
         ),
       );
@@ -353,8 +350,6 @@ class _StepCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -370,7 +365,7 @@ class _StepCard extends StatelessWidget {
                       width: 2,
                       color: step.status == StepStatus.completed
                           ? AppColors.success
-                          : AppColors.divider(theme.brightness),
+                          : AppColors.divider(context),
                     ),
                   ),
               ],
@@ -384,12 +379,12 @@ class _StepCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: step.status == StepStatus.inProgress
                     ? AppColors.brand.withValues(alpha: 0.05)
-                    : theme.colorScheme.surface,
+                    : AppColors.surface(context),
                 borderRadius: AppRadius.radius120,
                 border: Border.all(
                   color: step.status == StepStatus.inProgress
                       ? AppColors.brand.withValues(alpha: 0.2)
-                      : AppColors.divider(theme.brightness),
+                      : AppColors.divider(context),
                 ),
               ),
               child: Column(
@@ -405,8 +400,8 @@ class _StepCard extends StatelessWidget {
                                 ? FontWeight.w600
                                 : FontWeight.w400,
                             color: step.status == StepStatus.pending
-                                ? AppColors.textSecondary(theme.brightness)
-                                : AppColors.textPrimary(theme.brightness),
+                                ? AppColors.textSecondary(context)
+                                : AppColors.textPrimary(context),
                           ),
                         ),
                       ),
@@ -418,14 +413,14 @@ class _StepCard extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.textSecondary(
-                              theme.brightness,
+                              context,
                             ).withValues(alpha: 0.1),
                             borderRadius: AppRadius.radius40,
                           ),
                           child: Text(
                             '外部',
                             style: AppTextStyles.caption2.copyWith(
-                              color: AppColors.textSecondary(theme.brightness),
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                         ),
@@ -474,8 +469,6 @@ class _StepDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     final (Color bg, Widget? icon) = switch (step.status) {
       StepStatus.completed => (
         AppColors.success,
@@ -493,14 +486,10 @@ class _StepDot extends StatelessWidget {
         ),
       ),
       StepStatus.skipped => (
-        AppColors.divider(theme.brightness),
-        Icon(
-          Icons.remove,
-          size: 14,
-          color: AppColors.textSecondary(theme.brightness),
-        ),
+        AppColors.divider(context),
+        Icon(Icons.remove, size: 14, color: AppColors.textSecondary(context)),
       ),
-      StepStatus.pending => (AppColors.divider(theme.brightness), null),
+      StepStatus.pending => (AppColors.divider(context), null),
     };
 
     return Container(
@@ -522,15 +511,14 @@ class _HistoryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final events = _buildHistoryEvents(application, theme);
+    final events = _buildHistoryEvents(application, context);
 
     if (events.isEmpty) {
       return Center(
         child: Text(
           '履歴がありません',
           style: AppTextStyles.body2.copyWith(
-            color: AppColors.textSecondary(theme.brightness),
+            color: AppColors.textSecondary(context),
           ),
         ),
       );
@@ -594,7 +582,7 @@ class _HistoryTab extends StatelessWidget {
                           Text(
                             DateFormatter.toDateTime(event.dateTime),
                             style: AppTextStyles.caption2.copyWith(
-                              color: AppColors.textSecondary(theme.brightness),
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                         ],
@@ -603,7 +591,7 @@ class _HistoryTab extends StatelessWidget {
                       Text(
                         event.subtitle,
                         style: AppTextStyles.caption1.copyWith(
-                          color: AppColors.textSecondary(theme.brightness),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ],
@@ -619,7 +607,7 @@ class _HistoryTab extends StatelessWidget {
 
   List<_HistoryEvent> _buildHistoryEvents(
     Application application,
-    ThemeData theme,
+    BuildContext context,
   ) {
     final events = <_HistoryEvent>[];
 
@@ -662,7 +650,7 @@ class _HistoryTab extends StatelessWidget {
             subtitle: _stepTypeLabel(step.stepType),
             dateTime:
                 step.completedAt ?? step.startedAt ?? application.appliedAt,
-            color: AppColors.textSecondary(theme.brightness),
+            color: AppColors.textSecondary(context),
           ),
         );
       }
@@ -693,7 +681,6 @@ class _TasksTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final todosAsync = ref.watch(allTodosProvider);
 
     return todosAsync.when(
@@ -718,13 +705,13 @@ class _TasksTab extends ConsumerWidget {
                 Icon(
                   Icons.task_alt,
                   size: 48,
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   'この応募に関連するタスクはありません',
                   style: AppTextStyles.body2.copyWith(
-                    color: AppColors.textSecondary(theme.brightness),
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
               ],
@@ -749,7 +736,7 @@ class _TasksTab extends ConsumerWidget {
                     size: 22,
                     color: todo.isCompleted
                         ? AppColors.success
-                        : AppColors.textSecondary(theme.brightness),
+                        : AppColors.textSecondary(context),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -763,7 +750,7 @@ class _TasksTab extends ConsumerWidget {
                                 ? TextDecoration.lineThrough
                                 : null,
                             color: todo.isCompleted
-                                ? AppColors.textSecondary(theme.brightness)
+                                ? AppColors.textSecondary(context)
                                 : null,
                           ),
                         ),
@@ -772,7 +759,7 @@ class _TasksTab extends ConsumerWidget {
                           Text(
                             '期限: ${DateFormat('yyyy/MM/dd').format(todo.dueDate!)}',
                             style: AppTextStyles.caption2.copyWith(
-                              color: AppColors.textSecondary(theme.brightness),
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                         ],
@@ -849,7 +836,6 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final job = application.job;
     final color = _applicationColor(application, context);
 
@@ -885,7 +871,7 @@ class _Header extends StatelessWidget {
                       Text(
                         job!.department!,
                         style: AppTextStyles.caption1.copyWith(
-                          color: AppColors.textSecondary(theme.brightness),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                   ],
@@ -901,7 +887,7 @@ class _Header extends StatelessWidget {
               Text(
                 '応募日 ${DateFormatter.toShortDate(application.appliedAt)}',
                 style: AppTextStyles.caption2.copyWith(
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
             ],
@@ -933,7 +919,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     return Material(
-      color: Theme.of(context).colorScheme.surface,
+      color: AppColors.surface(context),
       child: tabBar,
     );
   }
@@ -960,9 +946,7 @@ Color _applicationColor(Application application, BuildContext context) {
   return switch (application.status) {
     ApplicationStatus.offered => AppColors.success,
     ApplicationStatus.rejected => AppColors.error,
-    ApplicationStatus.withdrawn => AppColors.textSecondary(
-      Theme.of(context).brightness,
-    ),
+    ApplicationStatus.withdrawn => AppColors.textSecondary(context),
     ApplicationStatus.active => () {
       if (application.requiresAction) return AppColors.warning;
       return AppColors.brand;

@@ -15,7 +15,6 @@ class TodoDetailScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final titleController = useTextEditingController(text: todo.title);
     final noteController = useTextEditingController(text: todo.note ?? '');
     final dueDate = useState<DateTime?>(todo.dueDate);
@@ -94,7 +93,7 @@ class TodoDetailScreen extends HookConsumerWidget {
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,
               hintStyle: AppTextStyles.title3.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ),
           ),
@@ -102,14 +101,12 @@ class TodoDetailScreen extends HookConsumerWidget {
 
           // システム生成の場合、アクションボタン表示
           if (isSystemGenerated && todo.actionUrl != null) ...[
-            FilledButton.icon(
+            CommonButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 context.push(todo.actionUrl!);
               },
-              icon: const Icon(Icons.open_in_new_rounded, size: 18),
-              label: const Text('アクションへ移動'),
-              style: FilledButton.styleFrom(backgroundColor: AppColors.brand),
+              child: const Text('アクションへ移動'),
             ),
             const SizedBox(height: AppSpacing.lg),
           ],
@@ -121,7 +118,7 @@ class TodoDetailScreen extends HookConsumerWidget {
               size: 20,
               color: dueDate.value != null
                   ? AppColors.brand
-                  : AppColors.textSecondary(theme.brightness),
+                  : AppColors.textSecondary(context),
             ),
             label: dueDate.value != null
                 ? '期限: ${DateFormat('M/d').format(dueDate.value!)}'
@@ -133,7 +130,7 @@ class TodoDetailScreen extends HookConsumerWidget {
                     icon: Icon(
                       Icons.close_rounded,
                       size: 16,
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                     onPressed: () => dueDate.value = null,
                   )
@@ -150,7 +147,7 @@ class TodoDetailScreen extends HookConsumerWidget {
                 child: Icon(
                   Icons.notes_rounded,
                   size: 20,
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
               const SizedBox(width: 14),
@@ -163,7 +160,7 @@ class TodoDetailScreen extends HookConsumerWidget {
                   decoration: InputDecoration(
                     hintText: 'メモを追加',
                     hintStyle: AppTextStyles.body2.copyWith(
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
@@ -209,7 +206,7 @@ class _DetailActionRow extends StatelessWidget {
                 style: AppTextStyles.body2.copyWith(
                   color: isActive
                       ? AppColors.brand
-                      : Theme.of(context).colorScheme.onSurface,
+                      : AppColors.textPrimary(context),
                 ),
               ),
             ),

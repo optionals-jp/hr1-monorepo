@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
 import 'package:hr1_employee_app/shared/widgets/widgets.dart';
@@ -7,134 +8,123 @@ import 'package:hr1_employee_app/features/shifts/domain/entities/shift_type.dart
 import 'package:hr1_employee_app/features/shifts/presentation/controllers/shift_request_controller.dart';
 import 'package:hr1_employee_app/features/shifts/presentation/providers/shift_providers.dart';
 
-/// シフト希望提出画面
-class ShiftRequestScreen extends ConsumerStatefulWidget {
+class ShiftRequestScreen extends HookConsumerWidget {
   const ShiftRequestScreen({super.key});
 
   @override
-  ConsumerState<ShiftRequestScreen> createState() => _ShiftRequestScreenState();
-}
-
-class _ShiftRequestScreenState extends ConsumerState<ShiftRequestScreen> {
-  late int _year;
-  late int _month;
-  final Map<String, DayShift> _edits = {};
-  bool _hasExistingSubmission = false;
-  bool _loaded = false;
-
-  @override
-  void initState() {
-    super.initState();
+  Widget build(BuildContext context, WidgetRef ref) {
     final now = DateTime.now();
     final next = DateTime(now.year, now.month + 1);
-    _year = next.year;
-    _month = next.month;
-  }
+    final year = useState(next.year);
+    final month = useState(next.month);
+    final edits = useState<Map<String, DayShift>>({});
+    final hasExistingSubmission = useRef(false);
+    final loaded = useRef(false);
 
-  void _onDataLoaded(List<dynamic> requests) {
-    if (_loaded) return;
-    _loaded = true;
-    _hasExistingSubmission = requests.any((r) => r.isSubmitted);
-    for (final r in requests) {
-      _edits[r.targetDate] = DayShift(
-        type: r.isAvailable ? ShiftType.work : ShiftType.dayOff,
-        startTime: r.startTime,
-        endTime: r.endTime,
-      );
-    }
-  }
-
-  void _selectMonth(BuildContext context) {
-    final now = DateTime.now();
-    final months = List.generate(7, (i) {
-      final d = DateTime(now.year, now.month + i);
-      return (year: d.year, month: d.month);
-    });
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: AppSpacing.md),
-            ...months.map((m) {
-              final selected = m.year == _year && m.month == _month;
-              return ListTile(
-                title: Text(
-                  '${m.year}年${m.month}月',
-                  style: AppTextStyles.body1.copyWith(
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    color: selected ? AppColors.brand : null,
-                  ),
-                ),
-                trailing: selected
-                    ? const Icon(Icons.check, color: AppColors.brand)
-                    : null,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  if (m.year != _year || m.month != _month) {
-                    setState(() {
-                      _year = m.year;
-                      _month = m.month;
-                      _edits.clear();
-                      _loaded = false;
-                    });
-                  }
-                },
-              );
-            }),
-            const SizedBox(height: AppSpacing.md),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _submit() async {
-    await ref
-        .read(shiftRequestControllerProvider.notifier)
-        .submit(year: _year, month: _month, edits: _edits);
-
-    final state = ref.read(shiftRequestControllerProvider);
-    if (!mounted) return;
-    if (state.submitted) {
-      CommonSnackBar.show(context, 'シフト希望を提出しました');
-      Navigator.of(context).pop();
-    } else if (state.error != null) {
-      CommonSnackBar.error(context, '提出に失敗しました: ${state.error}');
-    }
-  }
-
-  DayShift _shiftFor(String dateStr, DateTime date) {
-    return _edits[dateStr] ?? defaultShiftForDate(date);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final requestsAsync = ref.watch(
-      shiftRequestsProvider((year: _year, month: _month)),
+      shiftRequestsProvider((year: year.value, month: month.value)),
     );
     final controllerState = ref.watch(shiftRequestControllerProvider);
-    final lastDay = DateTime(_year, _month + 1, 0).day;
+    final lastDay = DateTime(year.value, month.value + 1, 0).day;
+
+    void onDataLoaded(List<dynamic> requests) {
+      if (loaded.value) return;
+      loaded.value = true;
+      hasExistingSubmission.value = requests.any((r) => r.isSubmitted);
+      final newEdits = <String, DayShift>{};
+      for (final r in requests) {
+        newEdits[r.targetDate] = DayShift(
+          type: r.isAvailable ? ShiftType.work : ShiftType.dayOff,
+          startTime: r.startTime,
+          endTime: r.endTime,
+        );
+      }
+      edits.value = newEdits;
+    }
+
+    void selectMonth(BuildContext context) {
+      final now = DateTime.now();
+      final months = List.generate(7, (i) {
+        final d = DateTime(now.year, now.month + i);
+        return (year: d.year, month: d.month);
+      });
+
+      showModalBottomSheet(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: AppSpacing.md),
+              ...months.map((m) {
+                final selected = m.year == year.value && m.month == month.value;
+                return ListTile(
+                  title: Text(
+                    '${m.year}年${m.month}月',
+                    style: AppTextStyles.body1.copyWith(
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                      color: selected ? AppColors.brand : null,
+                    ),
+                  ),
+                  trailing: selected
+                      ? const Icon(Icons.check, color: AppColors.brand)
+                      : null,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    if (m.year != year.value || m.month != month.value) {
+                      year.value = m.year;
+                      month.value = m.month;
+                      edits.value = {};
+                      loaded.value = false;
+                    }
+                  },
+                );
+              }),
+              const SizedBox(height: AppSpacing.md),
+            ],
+          ),
+        ),
+      );
+    }
+
+    Future<void> submit() async {
+      await ref
+          .read(shiftRequestControllerProvider.notifier)
+          .submit(year: year.value, month: month.value, edits: edits.value);
+
+      final state = ref.read(shiftRequestControllerProvider);
+      if (!context.mounted) return;
+      if (state.submitted) {
+        CommonSnackBar.show(context, 'シフト希望を提出しました');
+        Navigator.of(context).pop();
+      } else if (state.error != null) {
+        CommonSnackBar.error(context, '提出に失敗しました: ${state.error}');
+      }
+    }
+
+    DayShift shiftFor(String dateStr, DateTime date) {
+      return edits.value[dateStr] ?? defaultShiftForDate(date);
+    }
 
     return CommonScaffold(
       appBar: AppBar(
         title: GestureDetector(
-          onTap: () => _selectMonth(context),
+          onTap: () => selectMonth(context),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('$_year年$_month月', style: AppTextStyles.headline),
+              Text(
+                '${year.value}年${month.value}月',
+                style: AppTextStyles.headline,
+              ),
               const SizedBox(width: AppSpacing.xs),
               Icon(
                 Icons.keyboard_arrow_down,
                 size: 20,
-                color: theme.colorScheme.onSurface,
+                color: AppColors.textPrimary(context),
               ),
             ],
           ),
@@ -143,11 +133,10 @@ class _ShiftRequestScreenState extends ConsumerState<ShiftRequestScreen> {
       ),
       body: requestsAsync.when(
         data: (requests) {
-          _onDataLoaded(requests);
+          onDataLoaded(requests);
           return Column(
             children: [
-              // 提出済みバナー
-              if (_hasExistingSubmission)
+              if (hasExistingSubmission.value)
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.screenHorizontal,
@@ -177,15 +166,12 @@ class _ShiftRequestScreenState extends ConsumerState<ShiftRequestScreen> {
                   ),
                 ),
 
-              // サマリー
               _ShiftSummaryBar(
-                year: _year,
-                month: _month,
-                edits: _edits,
-                theme: theme,
+                year: year.value,
+                month: month.value,
+                edits: edits.value,
               ),
 
-              // 日別リスト
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(
@@ -194,30 +180,29 @@ class _ShiftRequestScreenState extends ConsumerState<ShiftRequestScreen> {
                   itemCount: lastDay,
                   itemBuilder: (context, index) {
                     final day = index + 1;
-                    final date = DateTime(_year, _month, day);
-                    final dateStr = formatDateStr(_year, _month, day);
-                    final dayShift = _shiftFor(dateStr, date);
+                    final date = DateTime(year.value, month.value, day);
+                    final dateStr = formatDateStr(year.value, month.value, day);
+                    final dayShift = shiftFor(dateStr, date);
 
                     return _DayShiftTile(
                       date: date,
                       dayShift: dayShift,
                       onChanged: (updated) {
-                        setState(() => _edits[dateStr] = updated);
+                        edits.value = {...edits.value, dateStr: updated};
                       },
                     );
                   },
                 ),
               ),
 
-              // 提出ボタン
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
                   child: CommonButton(
-                    onPressed: _submit,
+                    onPressed: submit,
                     loading: controllerState.isSubmitting,
                     enabled: !controllerState.isSubmitting,
-                    child: Text(_hasExistingSubmission ? '再提出' : '提出'),
+                    child: Text(hasExistingSubmission.value ? '再提出' : '提出'),
                   ),
                 ),
               ),
@@ -227,7 +212,7 @@ class _ShiftRequestScreenState extends ConsumerState<ShiftRequestScreen> {
         loading: () => const LoadingIndicator(),
         error: (e, _) => ErrorState(
           onRetry: () => ref.invalidate(
-            shiftRequestsProvider((year: _year, month: _month)),
+            shiftRequestsProvider((year: year.value, month: month.value)),
           ),
         ),
       ),
@@ -244,13 +229,11 @@ class _ShiftSummaryBar extends StatelessWidget {
     required this.year,
     required this.month,
     required this.edits,
-    required this.theme,
   });
 
   final int year;
   final int month;
   final Map<String, DayShift> edits;
-  final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {
@@ -278,7 +261,6 @@ class _ShiftSummaryBar extends StatelessWidget {
       }
     }
 
-    final isDark = theme.brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.screenHorizontal,
@@ -289,7 +271,7 @@ class _ShiftSummaryBar extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: isDark
+          color: AppColors.isDark(context)
               ? AppColors.darkSurfaceSecondary
               : AppColors.lightSurfaceSecondary,
           borderRadius: BorderRadius.circular(10),
@@ -305,7 +287,7 @@ class _ShiftSummaryBar extends StatelessWidget {
             _SummaryItem(
               icon: Icons.weekend_outlined,
               label: '休み $offDays日',
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
             if (leaveDays > 0) ...[
               const SizedBox(width: AppSpacing.sm),
@@ -369,7 +351,6 @@ class _DayShiftTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final dateLabel = DateFormat('d（E）', 'ja').format(date);
     final isWeekend =
         date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
@@ -381,15 +362,11 @@ class _DayShiftTile extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(
-            color: AppColors.divider(theme.brightness),
-            width: 0.5,
-          ),
+          bottom: BorderSide(color: AppColors.divider(context), width: 0.5),
         ),
       ),
       child: Row(
         children: [
-          // 日付
           SizedBox(
             width: 64,
             child: Text(
@@ -397,7 +374,7 @@ class _DayShiftTile extends StatelessWidget {
               style: AppTextStyles.body2.copyWith(
                 color: isWeekend
                     ? AppColors.error.withValues(alpha: 0.7)
-                    : theme.colorScheme.onSurface,
+                    : AppColors.textPrimary(context),
                 fontWeight: date.weekday == DateTime.sunday
                     ? FontWeight.w600
                     : null,
@@ -405,7 +382,6 @@ class _DayShiftTile extends StatelessWidget {
             ),
           ),
 
-          // シフト種別 Chip
           FluentChip(
             label: Text(dayShift.type.label),
             color: dayShift.type.chipColor,
@@ -414,7 +390,6 @@ class _DayShiftTile extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.md),
 
-          // 時間選択エリア
           Expanded(
             child: dayShift.type.hasTime
                 ? Row(
@@ -444,7 +419,7 @@ class _DayShiftTile extends StatelessWidget {
                         child: Text(
                           '~',
                           style: AppTextStyles.body2.copyWith(
-                            color: theme.colorScheme.onSurface,
+                            color: AppColors.textPrimary(context),
                           ),
                         ),
                       ),
@@ -476,7 +451,6 @@ class _DayShiftTile extends StatelessWidget {
   }
 
   void _showShiftTypePicker(BuildContext context) {
-    final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -494,7 +468,7 @@ class _DayShiftTile extends StatelessWidget {
                   t.icon,
                   color: selected
                       ? AppColors.brand
-                      : AppColors.textSecondary(theme.brightness),
+                      : AppColors.textSecondary(context),
                 ),
                 title: Text(t.label, style: AppTextStyles.body1),
                 trailing: selected
@@ -556,14 +530,13 @@ class _TimeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(6),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.border(theme.brightness)),
+          border: Border.all(color: AppColors.border(context)),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(

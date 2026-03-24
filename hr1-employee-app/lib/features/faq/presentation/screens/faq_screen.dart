@@ -85,7 +85,7 @@ class _Body extends StatelessWidget {
         icon: Icon(
           Icons.help_outline_rounded,
           size: 48,
-          color: AppColors.textTertiary(Theme.of(context).brightness),
+          color: AppColors.textTertiary(context),
         ),
         title: 'FAQはまだありません',
       );
@@ -97,7 +97,7 @@ class _Body extends StatelessWidget {
         icon: Icon(
           Icons.search_off_rounded,
           size: 48,
-          color: AppColors.textTertiary(Theme.of(context).brightness),
+          color: AppColors.textTertiary(context),
         ),
         title: '「$query」に一致するFAQはありません',
       );
@@ -139,7 +139,6 @@ class _FaqCategorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -152,7 +151,7 @@ class _FaqCategorySection extends StatelessWidget {
             FaqCategory.label(category),
             style: AppTextStyles.caption1.copyWith(
               fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
               letterSpacing: 0.3,
             ),
           ),
@@ -182,19 +181,12 @@ class _FaqTileState extends State<_FaqTile> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(
-          color: isDark
-              ? theme.colorScheme.outline.withValues(alpha: 0.35)
-              : theme.colorScheme.outlineVariant,
-        ),
-        boxShadow: AppShadows.shadow4,
+        border: Border.all(color: AppColors.border(context)),
+        boxShadow: AppShadows.of4(context),
       ),
       child: Column(
         children: [
@@ -235,7 +227,7 @@ class _FaqTileState extends State<_FaqTile> {
                     duration: const Duration(milliseconds: 200),
                     child: Icon(
                       Icons.expand_more,
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],
@@ -261,7 +253,7 @@ class _FaqTileState extends State<_FaqTile> {
                   data: widget.faq.answer,
                   styleSheet: MarkdownStyleSheet(
                     p: AppTextStyles.body2.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: AppColors.textSecondary(context),
                       height: 1.6,
                     ),
                     h1: AppTextStyles.headline,
@@ -272,11 +264,10 @@ class _FaqTileState extends State<_FaqTile> {
                       fontWeight: FontWeight.w500,
                     ),
                     listBullet: AppTextStyles.body2.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: AppColors.textSecondary(context),
                     ),
                     code: AppTextStyles.caption1.copyWith(
-                      backgroundColor:
-                          theme.colorScheme.surfaceContainerHighest,
+                      backgroundColor: AppColors.surfaceTertiary(context),
                     ),
                   ),
                   shrinkWrap: true,

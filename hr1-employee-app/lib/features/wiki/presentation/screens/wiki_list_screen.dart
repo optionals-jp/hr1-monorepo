@@ -85,7 +85,7 @@ class _Body extends StatelessWidget {
         icon: Icon(
           Icons.menu_book_rounded,
           size: 48,
-          color: AppColors.textTertiary(Theme.of(context).brightness),
+          color: AppColors.textTertiary(context),
         ),
         title: 'Wikiページはまだありません',
       );
@@ -97,7 +97,7 @@ class _Body extends StatelessWidget {
         icon: Icon(
           Icons.search_off_rounded,
           size: 48,
-          color: AppColors.textTertiary(Theme.of(context).brightness),
+          color: AppColors.textTertiary(context),
         ),
         title: '「$query」に一致するページはありません',
       );
@@ -131,7 +131,6 @@ class _WikiCategorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -144,7 +143,7 @@ class _WikiCategorySection extends StatelessWidget {
             category,
             style: AppTextStyles.caption1.copyWith(
               fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
               letterSpacing: 0.3,
             ),
           ),
@@ -166,8 +165,6 @@ class _WikiPageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     final snippet = page.content.length > 100
         ? '${page.content.substring(0, 100)}...'
         : page.content;
@@ -178,12 +175,10 @@ class _WikiPageCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          border: Border.all(color: AppColors.border(theme.brightness)),
-          boxShadow: theme.brightness == Brightness.dark
-              ? null
-              : AppShadows.shadow4,
+          border: Border.all(color: AppColors.border(context)),
+          boxShadow: AppShadows.of4(context),
         ),
         child: Row(
           children: [
@@ -220,7 +215,7 @@ class _WikiPageCard extends StatelessWidget {
                     Text(
                       snippet.replaceAll('\n', ' '),
                       style: AppTextStyles.caption1.copyWith(
-                        color: AppColors.textSecondary(theme.brightness),
+                        color: AppColors.textSecondary(context),
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -229,10 +224,7 @@ class _WikiPageCard extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: AppColors.textTertiary(theme.brightness),
-            ),
+            Icon(Icons.chevron_right, color: AppColors.textTertiary(context)),
           ],
         ),
       ),

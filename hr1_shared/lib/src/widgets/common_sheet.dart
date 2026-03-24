@@ -54,9 +54,6 @@ class _CommonSheetContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final brightness = theme.brightness;
-
     return SizedBox(
       height: MediaQuery.of(context).size.height * heightFactor,
       child: Scaffold(
@@ -72,7 +69,7 @@ class _CommonSheetContent extends StatelessWidget {
               icon: Icon(
                 Icons.close_rounded,
                 size: AppSpacing.iconMd,
-                color: AppColors.textSecondary(brightness),
+                color: AppColors.textSecondary(context),
               ),
               onPressed: () => Navigator.pop(context),
             ),

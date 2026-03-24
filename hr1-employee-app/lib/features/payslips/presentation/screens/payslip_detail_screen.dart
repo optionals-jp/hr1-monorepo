@@ -11,8 +11,6 @@ class PayslipDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return CommonScaffold(
       appBar: AppBar(title: Text(payslip.monthLabel)),
       body: ListView(
@@ -41,7 +39,7 @@ class PayslipDetailScreen extends StatelessWidget {
                 label: '支給合計',
                 value: _formatCurrency(payslip.grossPay),
                 valueStyle: AppTextStyles.body2.copyWith(
-                  color: theme.colorScheme.onSurface,
+                  color: AppColors.textPrimary(context),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -65,7 +63,7 @@ class PayslipDetailScreen extends StatelessWidget {
                 label: '控除合計',
                 value: _formatCurrency(payslip.totalDeductions),
                 valueStyle: AppTextStyles.body2.copyWith(
-                  color: theme.colorScheme.onSurface,
+                  color: AppColors.textPrimary(context),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -100,7 +98,7 @@ class PayslipDetailScreen extends StatelessWidget {
                 Text(
                   payslip.note!,
                   style: AppTextStyles.body2.copyWith(
-                    color: theme.colorScheme.onSurface,
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
               ],
@@ -121,17 +119,16 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.surface(context),
         borderRadius: AppRadius.radius120,
         border: Border.all(
-          color: AppColors.border(theme.brightness),
+          color: AppColors.border(context),
           width: AppStroke.strokeWidth05,
         ),
-        boxShadow: AppShadows.shadow4,
+        boxShadow: AppShadows.of4(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,11 +146,10 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Text(
       title,
       style: AppTextStyles.caption2.copyWith(
-        color: AppColors.textSecondary(theme.brightness),
+        color: AppColors.textSecondary(context),
         fontWeight: FontWeight.w600,
         letterSpacing: 0.3,
       ),

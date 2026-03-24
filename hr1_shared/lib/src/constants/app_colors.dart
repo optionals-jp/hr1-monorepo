@@ -114,26 +114,38 @@ class AppColors {
   static const Color darkDivider = Color(0xFF525252);
 
   // =========================================================================
-  // テーマ対応ヘルパー
+  // テーマ対応ヘルパー（BuildContext を受け取り、内部で brightness を判定）
   // =========================================================================
 
-  static Color textPrimary(Brightness brightness) =>
-      brightness == Brightness.dark ? darkTextPrimary : lightTextPrimary;
+  static bool isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
 
-  static Color textSecondary(Brightness brightness) =>
-      brightness == Brightness.dark ? darkTextSecondary : lightTextSecondary;
+  static Color textPrimary(BuildContext context) =>
+      isDark(context) ? darkTextPrimary : lightTextPrimary;
 
-  static Color textTertiary(Brightness brightness) =>
-      brightness == Brightness.dark ? darkTextTertiary : lightTextTertiary;
+  static Color textSecondary(BuildContext context) =>
+      isDark(context) ? darkTextSecondary : lightTextSecondary;
 
-  static Color border(Brightness brightness) =>
-      brightness == Brightness.dark ? darkBorder : lightBorder;
+  static Color textTertiary(BuildContext context) =>
+      isDark(context) ? darkTextTertiary : lightTextTertiary;
 
-  static Color divider(Brightness brightness) =>
-      brightness == Brightness.dark ? darkDivider : lightDivider;
+  static Color border(BuildContext context) =>
+      isDark(context) ? darkBorder : lightBorder;
 
-  static Color surfaceTertiary(Brightness brightness) =>
-      brightness == Brightness.dark ? darkSurfaceTertiary : lightSurfaceTertiary;
+  static Color divider(BuildContext context) =>
+      isDark(context) ? darkDivider : lightDivider;
+
+  static Color surface(BuildContext context) =>
+      isDark(context) ? darkSurface : lightSurface;
+
+  static Color surfaceTertiary(BuildContext context) =>
+      isDark(context) ? darkSurfaceTertiary : lightSurfaceTertiary;
+
+  static Color inverseSurface(BuildContext context) =>
+      isDark(context) ? lightSurface : darkSurface;
+
+  static Color onInverseSurface(BuildContext context) =>
+      isDark(context) ? lightTextPrimary : darkTextPrimary;
 
   // =========================================================================
   // MaterialColor

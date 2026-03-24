@@ -120,7 +120,7 @@ class _Body extends StatelessWidget {
                   icon: Icon(
                     Icons.people_outline_rounded,
                     size: 48,
-                    color: AppColors.textTertiary(Theme.of(context).brightness),
+                    color: AppColors.textTertiary(context),
                   ),
                   title: '社員が見つかりません',
                   description: '検索条件を変更してください',
@@ -150,24 +150,17 @@ class _EmployeeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return GestureDetector(
       onTap: () => context.push(AppRoutes.employeeDetail, extra: employee),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(12),
-          border: theme.brightness == Brightness.dark
-              ? Border.all(
-                  color: AppColors.border(theme.brightness),
-                  width: 0.5,
-                )
+          border: AppColors.isDark(context)
+              ? Border.all(color: AppColors.border(context), width: 0.5)
               : null,
-          boxShadow: theme.brightness == Brightness.dark
-              ? null
-              : AppShadows.shadow4,
+          boxShadow: AppShadows.of4(context),
         ),
         child: Row(
           children: [
@@ -196,7 +189,7 @@ class _EmployeeCard extends StatelessWidget {
                       employee.position,
                     ].where((s) => s.isNotEmpty).join(' / '),
                     style: AppTextStyles.caption2.copyWith(
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -207,7 +200,7 @@ class _EmployeeCard extends StatelessWidget {
             Icon(
               Icons.chevron_right_rounded,
               size: 20,
-              color: AppColors.textTertiary(theme.brightness),
+              color: AppColors.textTertiary(context),
             ),
           ],
         ),

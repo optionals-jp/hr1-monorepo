@@ -18,10 +18,8 @@ class MessageInputBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Container(
-      color: theme.colorScheme.surface,
+      color: AppColors.surface(context),
       padding: EdgeInsets.fromLTRB(
         AppSpacing.screenHorizontal,
         AppSpacing.sm,
@@ -32,7 +30,7 @@ class MessageInputBar extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 48),
         padding: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
-          color: AppColors.surfaceTertiary(theme.brightness),
+          color: AppColors.surfaceTertiary(context),
           borderRadius: BorderRadius.circular(9999),
         ),
         child: Row(
@@ -45,7 +43,7 @@ class MessageInputBar extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: hintText,
                   hintStyle: AppTextStyles.body1.copyWith(
-                    color: AppColors.textSecondary(theme.brightness),
+                    color: AppColors.textSecondary(context),
                   ),
                   filled: false,
                   border: InputBorder.none,
@@ -71,7 +69,7 @@ class MessageInputBar extends StatelessWidget {
                   height: 36,
                   decoration: BoxDecoration(
                     color: isSending
-                        ? theme.colorScheme.onSurface.withValues(alpha: 0.1)
+                        ? AppColors.divider(context)
                         : AppColors.brand,
                     shape: BoxShape.circle,
                   ),
@@ -79,7 +77,7 @@ class MessageInputBar extends StatelessWidget {
                     child: Icon(
                       Icons.send,
                       color: isSending
-                          ? AppColors.textTertiary(theme.brightness)
+                          ? AppColors.textTertiary(context)
                           : Colors.white,
                       size: 22,
                     ),

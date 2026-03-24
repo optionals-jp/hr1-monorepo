@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
 import 'package:hr1_employee_app/core/router/app_router.dart';
@@ -8,40 +9,26 @@ import 'package:hr1_employee_app/features/surveys/presentation/providers/survey_
 import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
-/// パルスサーベイ一覧画面
-class SurveyListScreen extends ConsumerStatefulWidget {
+class SurveyListScreen extends HookConsumerWidget {
   const SurveyListScreen({super.key});
 
   @override
-  ConsumerState<SurveyListScreen> createState() => _SurveyListScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tabController = useTabController(initialLength: 2);
 
-class _SurveyListScreenState extends ConsumerState<SurveyListScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     final pendingAsync = ref.watch(pendingSurveysProvider);
     final completedAsync = ref.watch(completedSurveysProvider);
     final completedIds =
         ref.watch(completedSurveyIdsProvider).valueOrNull ?? <String>{};
 
-    // 両方のプロバイダーの状態を統合
     final isLoading = pendingAsync.isLoading || completedAsync.isLoading;
     final error = pendingAsync.error ?? completedAsync.error;
+
+    Future<void> refresh(WidgetRef ref) async {
+      ref.invalidate(activeSurveysProvider);
+      ref.invalidate(completedSurveyIdsProvider);
+      await ref.read(activeSurveysProvider.future);
+    }
 
     return CommonScaffold(
       appBar: AppBar(
@@ -49,7 +36,7 @@ class _SurveyListScreenState extends ConsumerState<SurveyListScreen>
         bottom: TabBar(
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          controller: _tabController,
+          controller: tabController,
           labelStyle: AppTextStyles.body2,
           tabs: const [
             Tab(text: '未回答'),
@@ -67,31 +54,25 @@ class _SurveyListScreenState extends ConsumerState<SurveyListScreen>
               },
             )
           : TabBarView(
-              controller: _tabController,
+              controller: tabController,
               children: [
                 _SurveyList(
                   surveys: pendingAsync.valueOrNull ?? [],
                   completedIds: completedIds,
                   emptyIcon: Icons.assignment_outlined,
                   emptyMessage: '未回答のサーベイはありません',
-                  onRefresh: () => _refresh(ref),
+                  onRefresh: () => refresh(ref),
                 ),
                 _SurveyList(
                   surveys: completedAsync.valueOrNull ?? [],
                   completedIds: completedIds,
                   emptyIcon: Icons.check_circle_outline,
                   emptyMessage: '回答済みのサーベイはありません',
-                  onRefresh: () => _refresh(ref),
+                  onRefresh: () => refresh(ref),
                 ),
               ],
             ),
     );
-  }
-
-  Future<void> _refresh(WidgetRef ref) async {
-    ref.invalidate(activeSurveysProvider);
-    ref.invalidate(completedSurveyIdsProvider);
-    await ref.read(activeSurveysProvider.future);
   }
 }
 
@@ -99,13 +80,11 @@ class _SurveyListScreenState extends ConsumerState<SurveyListScreen>
 // サーベイ種別アイコン判定
 // ---------------------------------------------------------------------------
 
-/// サーベイの質問構成から代表アイコンと色を決定
 ({IconData icon, Color color}) _surveyTypeIcon(PulseSurvey survey) {
   if (survey.questions.isEmpty) {
     return (icon: Icons.poll_outlined, color: AppColors.brand);
   }
 
-  // 最も多い質問タイプで代表アイコンを決定
   final typeCounts = <String, int>{};
   for (final q in survey.questions) {
     typeCounts[q.type] = (typeCounts[q.type] ?? 0) + 1;
@@ -152,23 +131,17 @@ class _SurveyList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-
     if (surveys.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              emptyIcon,
-              size: 48,
-              color: AppColors.textTertiary(theme.brightness),
-            ),
+            Icon(emptyIcon, size: 48, color: AppColors.textTertiary(context)),
             const SizedBox(height: AppSpacing.md),
             Text(
               emptyMessage,
               style: AppTextStyles.body2.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ),
           ],
@@ -206,7 +179,6 @@ class _SurveyList extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      // 未読インジケーター
                       if (!isCompleted)
                         Container(
                           width: 6,
@@ -218,7 +190,6 @@ class _SurveyList extends ConsumerWidget {
                           ),
                         ),
 
-                      // アイコン
                       Container(
                         width: 40,
                         height: 40,
@@ -237,12 +208,10 @@ class _SurveyList extends ConsumerWidget {
 
                   const SizedBox(width: AppSpacing.md),
 
-                  // コンテンツ
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // タイトル行
                         Row(
                           children: [
                             Expanded(
@@ -257,25 +226,21 @@ class _SurveyList extends ConsumerWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            // 日付
                             Text(
                               _formatDate(survey.createdAt),
                               style: AppTextStyles.body2.copyWith(
-                                color: AppColors.textSecondary(
-                                  theme.brightness,
-                                ),
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 2),
 
-                        // 説明文（プレビュー行）
                         if (survey.description != null) ...[
                           Text(
                             survey.description!,
                             style: AppTextStyles.body2.copyWith(
-                              color: AppColors.textTertiary(theme.brightness),
+                              color: AppColors.textTertiary(context),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -283,11 +248,10 @@ class _SurveyList extends ConsumerWidget {
                           const SizedBox(height: 2),
                         ],
 
-                        // メタ情報（問数 + 種別）
                         Text(
                           _surveyMeta(survey),
                           style: AppTextStyles.body2.copyWith(
-                            color: AppColors.textSecondary(theme.brightness),
+                            color: AppColors.textSecondary(context),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -327,7 +291,6 @@ String _surveyMeta(PulseSurvey survey) {
   final parts = <String>[];
   parts.add('${survey.questions.length}問');
 
-  // 質問タイプの内訳
   final types = <String, int>{};
   for (final q in survey.questions) {
     types[q.type] = (types[q.type] ?? 0) + 1;

@@ -25,8 +25,6 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xxl),
@@ -41,7 +39,7 @@ class EmptyState extends StatelessWidget {
               Text(
                 description!,
                 style: AppTextStyles.caption1.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: AppColors.textSecondary(context),
                 ),
                 textAlign: TextAlign.center,
               ),

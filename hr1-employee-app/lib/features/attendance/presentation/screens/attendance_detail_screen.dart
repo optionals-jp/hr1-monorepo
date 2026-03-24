@@ -62,8 +62,6 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return ListView(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.screenHorizontal,
@@ -77,7 +75,7 @@ class _Body extends StatelessWidget {
           child: Text(
             '日別明細',
             style: AppTextStyles.headline.copyWith(
-              color: theme.colorScheme.onSurface,
+              color: AppColors.textPrimary(context),
             ),
           ),
         ),
@@ -103,7 +101,6 @@ class _Body extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (sheetContext) {
-        final theme = Theme.of(sheetContext);
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
@@ -116,7 +113,7 @@ class _Body extends StatelessWidget {
                     Text(
                       dateLabel,
                       style: AppTextStyles.headline.copyWith(
-                        color: theme.colorScheme.onSurface,
+                        color: AppColors.textPrimary(context),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
@@ -164,7 +161,7 @@ class _Body extends StatelessWidget {
                   Text(
                     '備考',
                     style: AppTextStyles.caption1.copyWith(
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
@@ -202,7 +199,6 @@ class _MonthSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.screenHorizontal,
@@ -215,16 +211,14 @@ class _MonthSelector extends StatelessWidget {
           Text(
             '$year年$month月',
             style: AppTextStyles.headline.copyWith(
-              color: theme.colorScheme.onSurface,
+              color: AppColors.textPrimary(context),
             ),
           ),
           IconButton(
             onPressed: isCurrentMonth ? null : onNext,
             icon: Icon(
               Icons.chevron_right,
-              color: isCurrentMonth
-                  ? AppColors.textTertiary(theme.brightness)
-                  : null,
+              color: isCurrentMonth ? AppColors.textTertiary(context) : null,
             ),
           ),
         ],
@@ -241,15 +235,13 @@ class _SummarySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final brightness = theme.brightness;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: AppColors.border(brightness), width: 0.5),
-        boxShadow: brightness == Brightness.dark ? null : AppShadows.shadow8,
+        border: Border.all(color: AppColors.border(context), width: 0.5),
+        boxShadow: AppShadows.of8(context),
       ),
       child: Column(
         children: [
@@ -317,7 +309,6 @@ class _SummaryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Expanded(
       child: Column(
         children: [
@@ -326,14 +317,14 @@ class _SummaryItem extends StatelessWidget {
           Text(
             value,
             style: AppTextStyles.headline.copyWith(
-              color: theme.colorScheme.onSurface,
+              color: AppColors.textPrimary(context),
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
             style: AppTextStyles.caption2.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
           ),
         ],
@@ -351,12 +342,11 @@ class _DayTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final dateLabel = DateFormat('d（E）', 'ja').format(day.date);
     final record = day.record;
     final textColor = day.isWeekend && record == null
-        ? AppColors.textTertiary(theme.brightness)
-        : theme.colorScheme.onSurface;
+        ? AppColors.textTertiary(context)
+        : AppColors.textPrimary(context);
 
     return InkWell(
       onTap: onTap,
@@ -368,10 +358,7 @@ class _DayTile extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           border: Border(
-            bottom: BorderSide(
-              color: AppColors.divider(theme.brightness),
-              width: 0.5,
-            ),
+            bottom: BorderSide(color: AppColors.divider(context), width: 0.5),
           ),
         ),
         child: Row(
@@ -403,7 +390,7 @@ class _DayTile extends StatelessWidget {
                   : Text(
                       day.isWeekend ? '休日' : '-',
                       style: AppTextStyles.body2.copyWith(
-                        color: AppColors.textTertiary(theme.brightness),
+                        color: AppColors.textTertiary(context),
                       ),
                     ),
             ),
@@ -411,14 +398,14 @@ class _DayTile extends StatelessWidget {
               Text(
                 record.workDurationFormatted,
                 style: AppTextStyles.body2.copyWith(
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
             if (record != null)
               Icon(
                 Icons.chevron_right,
                 size: 16,
-                color: AppColors.textTertiary(theme.brightness),
+                color: AppColors.textTertiary(context),
               ),
           ],
         ),

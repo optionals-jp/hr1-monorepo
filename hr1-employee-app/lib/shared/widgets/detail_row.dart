@@ -18,7 +18,6 @@ class DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
@@ -27,7 +26,7 @@ class DetailRow extends StatelessWidget {
           Text(
             label,
             style: AppTextStyles.body2.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
           ),
           Text(
@@ -35,7 +34,7 @@ class DetailRow extends StatelessWidget {
             style:
                 valueStyle ??
                 AppTextStyles.body2.copyWith(
-                  color: valueColor ?? theme.colorScheme.onSurface,
+                  color: valueColor ?? AppColors.textPrimary(context),
                   fontWeight: FontWeight.w600,
                 ),
           ),

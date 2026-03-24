@@ -71,15 +71,15 @@ class _MarkdownSection extends StatelessWidget {
         strong: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w700),
         horizontalRuleDecoration: BoxDecoration(
           border: Border(
-            top: BorderSide(color: Theme.of(context).dividerColor, width: 1),
+            top: BorderSide(color: AppColors.divider(context), width: 1),
           ),
         ),
         code: AppTextStyles.caption1.copyWith(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          backgroundColor: AppColors.surface(context),
           fontFamily: 'monospace',
         ),
         codeblockDecoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
+          color: AppColors.surface(context),
           borderRadius: AppRadius.radius80,
         ),
       ),
@@ -105,14 +105,14 @@ class _JobListSection extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(AppSpacing.xl),
             decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
+              color: AppColors.surface(context),
               borderRadius: AppRadius.radius120,
             ),
             child: Center(
               child: Text(
                 '現在募集中のポジションはありません',
                 style: AppTextStyles.caption1.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: AppColors.textSecondary(context),
                 ),
               ),
             ),
@@ -141,7 +141,7 @@ class _JobListSection extends ConsumerWidget {
         );
       },
       loading: () => const LoadingIndicator(),
-      error: (e, _) => const Center(child: Text('エラーが発生しました')),
+      error: (e, _) => const ErrorState(),
     );
   }
 }
@@ -195,7 +195,6 @@ class _BenefitListSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
       children: items.map((item) {
         final icon = item['icon'] as String? ?? '✓';
@@ -209,7 +208,7 @@ class _BenefitListSection extends StatelessWidget {
               vertical: AppSpacing.md,
             ),
             decoration: BoxDecoration(
-              color: theme.scaffoldBackgroundColor,
+              color: AppColors.surface(context),
               borderRadius: AppRadius.radius80,
             ),
             child: Row(
@@ -243,7 +242,6 @@ class _ValueListSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
       children: items.asMap().entries.map((entry) {
         final index = entry.key;
@@ -289,7 +287,7 @@ class _ValueListSection extends StatelessWidget {
                         item['description'] as String? ?? '',
                         style: AppTextStyles.caption1.copyWith(
                           height: 1.5,
-                          color: theme.colorScheme.onSurfaceVariant,
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ],
@@ -314,12 +312,11 @@ class _StatsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
+        color: AppColors.surface(context),
         borderRadius: AppRadius.radius120,
       ),
       child: Wrap(
@@ -332,15 +329,13 @@ class _StatsSection extends StatelessWidget {
               children: [
                 Text(
                   item['value'] as String? ?? '-',
-                  style: AppTextStyles.callout.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
+                  style: AppTextStyles.callout.copyWith(color: AppColors.brand),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   item['label'] as String? ?? '',
                   style: AppTextStyles.caption2.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
               ],
@@ -362,7 +357,6 @@ class _MembersSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
       children: items.map((item) {
         return CommonCard(
@@ -371,13 +365,11 @@ class _MembersSection extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: theme.colorScheme.primary.withValues(
-                  alpha: 0.1,
-                ),
+                backgroundColor: AppColors.brand.withValues(alpha: 0.1),
                 child: Text(
                   (item['name'] as String? ?? '?').characters.first,
                   style: AppTextStyles.body2.copyWith(
-                    color: theme.colorScheme.primary,
+                    color: AppColors.brand,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -397,7 +389,7 @@ class _MembersSection extends StatelessWidget {
                       Text(
                         item['role'] as String? ?? '',
                         style: AppTextStyles.caption2.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                   ],
@@ -421,13 +413,12 @@ class _GallerySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     if (items.isEmpty) {
       return Center(
         child: Text(
           '画像はまだ登録されていません',
           style: AppTextStyles.caption1.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+            color: AppColors.textSecondary(context),
           ),
         ),
       );
@@ -445,18 +436,18 @@ class _GallerySection extends StatelessWidget {
             borderRadius: AppRadius.radius120,
             child: Container(
               width: 240,
-              color: theme.scaffoldBackgroundColor,
+              color: AppColors.surface(context),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Container(
                       width: double.infinity,
-                      color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                      color: AppColors.brand.withValues(alpha: 0.08),
                       child: Icon(
                         Icons.image_outlined,
                         size: 40,
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                   ),
@@ -466,7 +457,7 @@ class _GallerySection extends StatelessWidget {
                       child: Text(
                         item['caption'] as String? ?? '',
                         style: AppTextStyles.caption2.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                          color: AppColors.textSecondary(context),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -520,7 +511,6 @@ class _FaqTileState extends State<_FaqTile> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return CommonCard(
       padding: EdgeInsets.zero,
       margin: EdgeInsets.zero,
@@ -564,7 +554,7 @@ class _FaqTileState extends State<_FaqTile> {
                     duration: const Duration(milliseconds: 200),
                     child: Icon(
                       Icons.expand_more,
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],
@@ -584,7 +574,7 @@ class _FaqTileState extends State<_FaqTile> {
               child: Text(
                 widget.answer,
                 style: AppTextStyles.body2.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: AppColors.textSecondary(context),
                   height: 1.6,
                 ),
               ),

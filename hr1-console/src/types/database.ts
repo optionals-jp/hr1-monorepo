@@ -661,6 +661,21 @@ export interface Announcement {
   updated_at: string;
 }
 
+export interface ComplianceAlert {
+  id: string;
+  organization_id: string;
+  user_id: string | null;
+  alert_type: string;
+  severity: string;
+  title: string;
+  description: string;
+  metadata: Record<string, unknown> | null;
+  is_resolved: boolean;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  created_at: string;
+}
+
 export interface Payslip {
   id: string;
   organization_id: string;

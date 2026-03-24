@@ -57,7 +57,7 @@ class _Body extends StatelessWidget {
         child: Text(
           '休暇データがありません',
           style: AppTextStyles.body1.copyWith(
-            color: AppColors.textSecondary(Theme.of(context).brightness),
+            color: AppColors.textSecondary(context),
           ),
         ),
       );
@@ -97,29 +97,23 @@ class _CurrentBalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final totalDays = balance.grantedDays + balance.carriedOverDays;
     final progress = totalDays > 0 ? balance.usedDays / totalDays : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.surface(context),
         borderRadius: AppRadius.radius120,
-        border: Border.all(
-          color: isDark
-              ? theme.colorScheme.outline.withValues(alpha: 0.35)
-              : theme.colorScheme.outlineVariant,
-        ),
-        boxShadow: AppShadows.shadow4,
+        border: Border.all(color: AppColors.border(context)),
+        boxShadow: AppShadows.of4(context),
       ),
       child: Column(
         children: [
           Text(
             '${balance.fiscalYear}年度',
             style: AppTextStyles.caption1.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -134,7 +128,7 @@ class _CurrentBalanceCard extends StatelessWidget {
           Text(
             '残り有給日数',
             style: AppTextStyles.caption2.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -151,7 +145,7 @@ class _CurrentBalanceCard extends StatelessWidget {
           Text(
             '消化率 ${balance.usageRate.toStringAsFixed(0)}%',
             style: AppTextStyles.caption2.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -187,7 +181,6 @@ class _StatItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Expanded(
       child: Column(
         children: [
@@ -196,7 +189,7 @@ class _StatItem extends StatelessWidget {
           Text(
             label,
             style: AppTextStyles.caption2.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
           ),
         ],
@@ -208,22 +201,17 @@ class _StatItem extends StatelessWidget {
 class _VerticalDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 0.5,
-      height: 28,
-      color: Theme.of(context).colorScheme.outlineVariant,
-    );
+    return Container(width: 0.5, height: 28, color: AppColors.border(context));
   }
 }
 
 class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Text(
       '過去の年度',
       style: AppTextStyles.caption2.copyWith(
-        color: AppColors.textSecondary(theme.brightness),
+        color: AppColors.textSecondary(context),
         fontWeight: FontWeight.w600,
         letterSpacing: 0.3,
       ),
@@ -238,20 +226,13 @@ class _PastBalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.surface(context),
         borderRadius: AppRadius.radius120,
-        border: Border.all(
-          color: isDark
-              ? theme.colorScheme.outline.withValues(alpha: 0.35)
-              : theme.colorScheme.outlineVariant,
-        ),
-        boxShadow: AppShadows.shadow4,
+        border: Border.all(color: AppColors.border(context)),
+        boxShadow: AppShadows.of4(context),
       ),
       child: Row(
         children: [
@@ -263,14 +244,14 @@ class _PastBalanceCard extends StatelessWidget {
           Text(
             '付与 ${balance.grantedDays.toStringAsFixed(1)}',
             style: AppTextStyles.caption2.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(width: AppSpacing.md),
           Text(
             '使用 ${balance.usedDays.toStringAsFixed(1)}',
             style: AppTextStyles.caption2.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(width: AppSpacing.md),

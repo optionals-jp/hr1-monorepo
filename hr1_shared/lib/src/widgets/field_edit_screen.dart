@@ -72,8 +72,6 @@ class _FieldEditScreenState extends State<FieldEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return CommonScaffold(
       appBar: AppBar(title: Text(widget.title)),
       body: Form(
@@ -87,7 +85,7 @@ class _FieldEditScreenState extends State<FieldEditScreen> {
               Text(
                 widget.title,
                 style: AppTextStyles.caption1.copyWith(
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),

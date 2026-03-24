@@ -48,18 +48,14 @@ class ProfileScreen extends ConsumerWidget {
                           Text(
                             user?.email ?? '',
                             style: AppTextStyles.body2.copyWith(
-                              color: AppColors.textSecondary(
-                                Theme.of(context).brightness,
-                              ),
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                           if (user?.department != null)
                             Text(
                               '${user!.department}${user.position != null ? ' / ${user.position}' : ''}',
                               style: AppTextStyles.body2.copyWith(
-                                color: AppColors.textSecondary(
-                                  Theme.of(context).brightness,
-                                ),
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                         ],

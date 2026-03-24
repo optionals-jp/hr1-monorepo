@@ -220,7 +220,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final contact = state.extra as EmployeeContact?;
           if (contact == null) {
-            return const Scaffold(body: Center(child: Text('社員情報が見つかりません')));
+            return const Scaffold(body: ErrorState(message: '社員情報が見つかりません'));
           }
           return EmployeeDetailScreen(contact: contact);
         },
@@ -233,7 +233,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final thread = state.extra as MessageThread?;
           if (thread == null) {
-            return const Scaffold(body: Center(child: Text('スレッド情報が見つかりません')));
+            return const Scaffold(body: ErrorState(message: 'スレッド情報が見つかりません'));
           }
           return ThreadChatScreen(thread: thread);
         },
@@ -295,7 +295,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final page = state.extra as WikiPage?;
           if (page == null) {
-            return const Scaffold(body: Center(child: Text('ページが見つかりません')));
+            return const Scaffold(body: ErrorState(message: 'ページが見つかりません'));
           }
           return WikiDetailScreen(page: page);
         },
@@ -367,7 +367,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final request = state.extra as WorkflowRequest?;
           if (request == null) {
-            return const Scaffold(body: Center(child: Text('申請情報が見つかりません')));
+            return const Scaffold(body: ErrorState(message: '申請情報が見つかりません'));
           }
           return WorkflowDetailScreen(request: request);
         },
@@ -394,7 +394,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final payslip = state.extra as Payslip?;
           if (payslip == null) {
-            return const Scaffold(body: Center(child: Text('給与明細が見つかりません')));
+            return const Scaffold(body: ErrorState(message: '給与明細が見つかりません'));
           }
           return PayslipDetailScreen(payslip: payslip);
         },
@@ -485,13 +485,13 @@ class _SurveyLoaderScreen extends ConsumerWidget {
       loading: () => const Scaffold(body: LoadingIndicator()),
       error: (_, __) => Scaffold(
         appBar: AppBar(),
-        body: const Center(child: Text('サーベイの読み込みに失敗しました')),
+        body: const ErrorState(message: 'サーベイの読み込みに失敗しました'),
       ),
       data: (survey) {
         if (survey == null) {
           return Scaffold(
             appBar: AppBar(),
-            body: const Center(child: Text('サーベイが見つかりません')),
+            body: const ErrorState(message: 'サーベイが見つかりません'),
           );
         }
         return SurveyAnswerScreen(survey: survey);

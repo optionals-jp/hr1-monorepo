@@ -38,7 +38,7 @@ class _Body extends StatelessWidget {
         icon: Icon(
           Icons.campaign_outlined,
           size: 48,
-          color: AppColors.textTertiary(Theme.of(context).brightness),
+          color: AppColors.textTertiary(context),
         ),
         title: 'お知らせはありません',
       );
@@ -73,13 +73,12 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.sm),
       child: Text(
         label,
         style: AppTextStyles.caption2.copyWith(
-          color: AppColors.textSecondary(theme.brightness),
+          color: AppColors.textSecondary(context),
           fontWeight: FontWeight.w600,
           letterSpacing: 0.3,
         ),
@@ -101,7 +100,6 @@ class _AnnouncementTileState extends State<_AnnouncementTile> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final a = widget.announcement;
     final dateStr = DateFormat('yyyy/MM/dd').format(a.publishedAt.toLocal());
 
@@ -109,14 +107,10 @@ class _AnnouncementTileState extends State<_AnnouncementTile> {
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Container(
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          border: Border.all(
-            color: theme.brightness == Brightness.dark
-                ? theme.colorScheme.outline.withValues(alpha: 0.35)
-                : theme.colorScheme.outlineVariant,
-          ),
-          boxShadow: AppShadows.shadow4,
+          border: Border.all(color: AppColors.border(context)),
+          boxShadow: AppShadows.of4(context),
         ),
         child: Column(
           children: [
@@ -152,7 +146,7 @@ class _AnnouncementTileState extends State<_AnnouncementTile> {
                           Text(
                             dateStr,
                             style: AppTextStyles.caption2.copyWith(
-                              color: AppColors.textSecondary(theme.brightness),
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                         ],
@@ -163,7 +157,7 @@ class _AnnouncementTileState extends State<_AnnouncementTile> {
                       duration: const Duration(milliseconds: 200),
                       child: Icon(
                         Icons.expand_more,
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                   ],
@@ -189,7 +183,7 @@ class _AnnouncementTileState extends State<_AnnouncementTile> {
                     data: a.body,
                     styleSheet: MarkdownStyleSheet(
                       p: AppTextStyles.body2.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: AppColors.textSecondary(context),
                         height: 1.6,
                       ),
                       h1: AppTextStyles.headline,
@@ -200,11 +194,10 @@ class _AnnouncementTileState extends State<_AnnouncementTile> {
                         fontWeight: FontWeight.w500,
                       ),
                       listBullet: AppTextStyles.body2.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: AppColors.textSecondary(context),
                       ),
                       code: AppTextStyles.caption1.copyWith(
-                        backgroundColor:
-                            theme.colorScheme.surfaceContainerHighest,
+                        backgroundColor: AppColors.surfaceTertiary(context),
                       ),
                     ),
                     shrinkWrap: true,
