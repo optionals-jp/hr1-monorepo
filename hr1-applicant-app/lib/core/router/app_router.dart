@@ -29,6 +29,7 @@ import 'package:hr1_applicant_app/features/service_requests/domain/entities/serv
 import 'package:hr1_applicant_app/features/service_requests/presentation/screens/service_request_list_screen.dart';
 import 'package:hr1_applicant_app/features/service_requests/presentation/screens/service_request_create_screen.dart';
 import 'package:hr1_applicant_app/features/notifications/presentation/screens/notifications_screen.dart';
+import 'package:hr1_applicant_app/features/announcements/presentation/screens/announcements_screen.dart';
 import 'package:hr1_applicant_app/features/surveys/presentation/providers/survey_providers.dart';
 import 'package:hr1_applicant_app/features/surveys/domain/entities/pulse_survey.dart';
 
@@ -53,6 +54,7 @@ class AppRoutes {
   static const String profileEdit = '/profile-edit';
   static const String serviceRequests = '/service-requests';
   static const String serviceRequestCreate = '/service-request-create';
+  static const String announcements = '/announcements';
 }
 
 /// 認証不要なルート
@@ -164,6 +166,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.faq,
         builder: (context, state) => const FaqScreen(),
+      ),
+
+      /// お知らせ画面（シェル外 → BottomNav非表示）
+      GoRoute(
+        path: AppRoutes.announcements,
+        builder: (context, state) => const AnnouncementsScreen(),
       ),
 
       /// パルスサーベイ一覧画面（シェル外 → BottomNav非表示）

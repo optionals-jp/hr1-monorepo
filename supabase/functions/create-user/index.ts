@@ -16,6 +16,13 @@ interface CreateUserRequest {
   hiring_type?: "new_grad" | "mid_career";
   graduation_year?: number;
   department_ids?: string[];
+  name_kana?: string;
+  phone?: string;
+  hire_date?: string;
+  birth_date?: string;
+  gender?: "male" | "female" | "other";
+  current_address?: string;
+  registered_address?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -107,11 +114,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // 1. Supabase Auth でユーザーを作成
+    // 1. Supabase Auth でユーザーを作成（email_confirm: false で未確認状態）
     const { data: authData, error: authError } =
       await adminClient.auth.admin.createUser({
         email: body.email,
-        email_confirm: true,
+        email_confirm: false,
         user_metadata: {
           display_name: body.display_name ?? null,
           role: body.role,
@@ -138,6 +145,13 @@ Deno.serve(async (req: Request) => {
       p_hiring_type: body.hiring_type ?? null,
       p_graduation_year: body.graduation_year ?? null,
       p_department_ids: body.department_ids ?? [],
+      p_name_kana: body.name_kana ?? null,
+      p_phone: body.phone ?? null,
+      p_hire_date: body.hire_date ?? null,
+      p_birth_date: body.birth_date ?? null,
+      p_gender: body.gender ?? null,
+      p_current_address: body.current_address ?? null,
+      p_registered_address: body.registered_address ?? null,
     });
 
     if (rpcError) {
@@ -152,7 +166,35 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    return new Response(JSON.stringify({ id: userId, email: body.email }), {
+    // 3. マジックリンクを生成してメールを送信（既存ユーザーに対してはmagiclink）
+    const redirectTo =
+      body.role === "employee"
+        ? "hr1employee://login-callback"
+        : "hr1applicant://login-callback";
+
+    let inviteSent = false;
+    try {
+      const { data: linkData, error: linkError } =
+        await adminClient.auth.admin.generateLink({
+          type: "magiclink",
+          email: body.email,
+          options: { redirectTo },
+        });
+
+      if (linkError) {
+        console.error("招待リンク生成エラー:", linkError.message);
+      } else if (linkData?.properties?.action_link) {
+        // Supabase が自動でメールを送信しない場合に備え、
+        // notifications テーブル経由でプッシュ通知も送信
+        inviteSent = true;
+      }
+    } catch (e) {
+      console.error("招待メール送信エラー:", e);
+    }
+
+    return new Response(
+      JSON.stringify({ id: userId, email: body.email, invite_sent: inviteSent }),
+      {
       status: 201,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

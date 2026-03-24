@@ -799,7 +799,8 @@ function ThreadChat({
     const { error } = await getSupabase()
       .from("messages")
       .update({ content, edited_at: new Date().toISOString() })
-      .eq("id", editingId);
+      .eq("id", editingId)
+      .eq("sender_id", user!.id);
 
     if (error) {
       console.error("メッセージ編集エラー:", error);
@@ -819,7 +820,11 @@ function ThreadChat({
   const handleDelete = async (msgId: string) => {
     if (!window.confirm("削除してもよろしいですか？")) return;
     setDeletingId(null);
-    const { error } = await getSupabase().from("messages").delete().eq("id", msgId);
+    const { error } = await getSupabase()
+      .from("messages")
+      .delete()
+      .eq("id", msgId)
+      .eq("sender_id", user!.id);
     if (error) {
       console.error("メッセージ削除エラー:", error);
     }
