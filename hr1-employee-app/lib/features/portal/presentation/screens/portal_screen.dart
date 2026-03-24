@@ -116,7 +116,7 @@ class PortalScreen extends ConsumerWidget {
                 AppSpacing.screenHorizontal,
                 AppSpacing.sm,
               ),
-              child: const SearchBox(),
+              child: SearchBox(onTap: () => context.push(AppRoutes.search)),
             ),
           ),
 

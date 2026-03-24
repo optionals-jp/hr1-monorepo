@@ -79,7 +79,7 @@ class AppTheme {
         backgroundColor: surface,
         foregroundColor: textPrimary,
         elevation: 0,
-        scrolledUnderElevation: 0.5,
+        scrolledUnderElevation: 0,
         centerTitle: true,
         systemOverlayStyle: isDark
             ? SystemUiOverlayStyle.light

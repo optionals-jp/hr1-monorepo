@@ -74,7 +74,7 @@ export default function ApplicantsPage() {
   } = useQuery<Profile[]>(organization ? `applicants-${organization.id}` : null, async () => {
     const { data } = await getSupabase()
       .from("user_organizations")
-      .select("profiles(*)")
+      .select("profiles!inner(*)")
       .eq("organization_id", organization!.id)
       .eq("profiles.role", "applicant");
 

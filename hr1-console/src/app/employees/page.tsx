@@ -206,7 +206,7 @@ export default function EmployeesPage() {
       const { data } = await getSupabase()
         .from("user_organizations")
         .select(
-          "profiles(id, email, display_name, name_kana, position, phone, hire_date, birth_date, gender, current_postal_code, current_prefecture, current_city, current_street_address, current_building, registered_postal_code, registered_prefecture, registered_city, registered_street_address, registered_building)"
+          "profiles!inner(id, email, display_name, name_kana, position, phone, hire_date, birth_date, gender, current_postal_code, current_prefecture, current_city, current_street_address, current_building, registered_postal_code, registered_prefecture, registered_city, registered_street_address, registered_building)"
         )
         .eq("organization_id", organization!.id)
         .eq("profiles.role", "employee");

@@ -234,7 +234,7 @@ export default function ProjectDetailPage() {
     if (organization) {
       const { data } = await getSupabase()
         .from("user_organizations")
-        .select("profiles(id, email, display_name, position)")
+        .select("profiles!inner(id, email, display_name, position)")
         .eq("organization_id", organization.id)
         .eq("profiles.role", "employee");
 
