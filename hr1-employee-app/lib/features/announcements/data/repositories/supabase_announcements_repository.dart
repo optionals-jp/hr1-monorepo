@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hr1_employee_app/core/utils/query_utils.dart';
 import 'package:hr1_employee_app/features/announcements/domain/entities/announcement.dart';
 
 class SupabaseAnnouncementsRepository {
@@ -6,6 +7,7 @@ class SupabaseAnnouncementsRepository {
 
   final SupabaseClient _client;
   final String? overrideUserId;
+  String? _cachedOrgId;
 
   String get _userId {
     final id = overrideUserId ?? _client.auth.currentUser?.id;
@@ -14,13 +16,15 @@ class SupabaseAnnouncementsRepository {
   }
 
   Future<String> _getOrganizationId() async {
+    if (_cachedOrgId != null) return _cachedOrgId!;
     final row = await _client
         .from('user_organizations')
         .select('organization_id')
         .eq('user_id', _userId)
         .limit(1)
         .single();
-    return row['organization_id'] as String;
+    _cachedOrgId = row['organization_id'] as String;
+    return _cachedOrgId!;
   }
 
   Future<List<Announcement>> getPublishedAnnouncements() async {
@@ -51,6 +55,26 @@ class SupabaseAnnouncementsRepository {
         .inFilter('target', ['all', 'employee'])
         .order('published_at', ascending: false)
         .limit(5);
+
+    return (response as List)
+        .map((json) => Announcement.fromJson(json))
+        .toList();
+  }
+
+  /// タイトル・本文でお知らせを検索
+  Future<List<Announcement>> searchAnnouncements(String query) async {
+    final orgId = await _getOrganizationId();
+    final sanitized = sanitizeForLike(query);
+    final pattern = '%$sanitized%';
+    final response = await _client
+        .from('announcements')
+        .select()
+        .eq('organization_id', orgId)
+        .not('published_at', 'is', null)
+        .inFilter('target', ['all', 'employee'])
+        .or('title.ilike.$pattern,body.ilike.$pattern')
+        .order('published_at', ascending: false)
+        .limit(20);
 
     return (response as List)
         .map((json) => Announcement.fromJson(json))

@@ -58,6 +58,9 @@ dependencies:
   # 画像選択
   image_picker: ^1.1.0
 
+  # URL起動
+  url_launcher: ^6.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

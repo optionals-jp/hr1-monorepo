@@ -8,7 +8,10 @@ import 'package:hr1_employee_app/features/announcements/presentation/providers/a
 import 'package:intl/intl.dart';
 
 class AnnouncementsScreen extends ConsumerWidget {
-  const AnnouncementsScreen({super.key});
+  const AnnouncementsScreen({super.key, this.highlightId});
+
+  /// 横断検索から遷移時に自動展開するお知らせID
+  final String? highlightId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -17,7 +20,8 @@ class AnnouncementsScreen extends ConsumerWidget {
     return CommonScaffold(
       appBar: AppBar(title: const Text('お知らせ')),
       body: announcementsAsync.when(
-        data: (announcements) => _Body(announcements: announcements),
+        data: (announcements) =>
+            _Body(announcements: announcements, highlightId: highlightId),
         loading: () => const LoadingIndicator(),
         error: (e, _) =>
             ErrorState(onRetry: () => ref.invalidate(allAnnouncementsProvider)),
@@ -27,9 +31,10 @@ class AnnouncementsScreen extends ConsumerWidget {
 }
 
 class _Body extends StatelessWidget {
-  const _Body({required this.announcements});
+  const _Body({required this.announcements, this.highlightId});
 
   final List<Announcement> announcements;
+  final String? highlightId;
 
   @override
   Widget build(BuildContext context) {
@@ -55,12 +60,22 @@ class _Body extends StatelessWidget {
       children: [
         if (pinned.isNotEmpty) ...[
           _SectionHeader(label: '固定'),
-          ...pinned.map((a) => _AnnouncementTile(announcement: a)),
+          ...pinned.map(
+            (a) => _AnnouncementTile(
+              announcement: a,
+              initiallyExpanded: a.id == highlightId,
+            ),
+          ),
           const SizedBox(height: AppSpacing.lg),
         ],
         if (others.isNotEmpty) ...[
           _SectionHeader(label: 'すべて'),
-          ...others.map((a) => _AnnouncementTile(announcement: a)),
+          ...others.map(
+            (a) => _AnnouncementTile(
+              announcement: a,
+              initiallyExpanded: a.id == highlightId,
+            ),
+          ),
         ],
       ],
     );
@@ -88,15 +103,19 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _AnnouncementTile extends StatefulWidget {
-  const _AnnouncementTile({required this.announcement});
+  const _AnnouncementTile({
+    required this.announcement,
+    this.initiallyExpanded = false,
+  });
   final Announcement announcement;
+  final bool initiallyExpanded;
 
   @override
   State<_AnnouncementTile> createState() => _AnnouncementTileState();
 }
 
 class _AnnouncementTileState extends State<_AnnouncementTile> {
-  bool _expanded = false;
+  late bool _expanded = widget.initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {

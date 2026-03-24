@@ -271,14 +271,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.announcements,
-        builder: (context, state) => const AnnouncementsScreen(),
+        builder: (context, state) {
+          final highlightId = state.extra as String?;
+          return AnnouncementsScreen(highlightId: highlightId);
+        },
       ),
 
       /// FAQ画面（フルスクリーン）
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.faq,
-        builder: (context, state) => const FaqScreen(),
+        builder: (context, state) {
+          final initialQuery = state.extra as String?;
+          return FaqScreen(initialQuery: initialQuery);
+        },
       ),
 
       /// 社内Wiki一覧画面（フルスクリーン）
