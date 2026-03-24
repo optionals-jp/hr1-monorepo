@@ -13,16 +13,35 @@ interface CreateUserRequest {
   role: "employee" | "applicant";
   organization_id: string;
   position?: string;
-  hiring_type?: "new_grad" | "mid_career";
-  graduation_year?: number;
   department_ids?: string[];
   name_kana?: string;
   phone?: string;
   hire_date?: string;
   birth_date?: string;
   gender?: "male" | "female" | "other";
-  current_address?: string;
-  registered_address?: string;
+  current_postal_code?: string;
+  current_prefecture?: string;
+  current_city?: string;
+  current_street_address?: string;
+  current_building?: string;
+  registered_postal_code?: string;
+  registered_prefecture?: string;
+  registered_city?: string;
+  registered_street_address?: string;
+  registered_building?: string;
+  hiring_type?: "new_grad" | "mid_career";
+  graduation_year?: number;
+  send_invite?: boolean;
+}
+
+function localizeAuthError(message: string): string {
+  if (/already been registered|already exists/i.test(message)) {
+    return "このメールアドレスは既に登録されています";
+  }
+  if (/invalid.*email/i.test(message)) {
+    return "メールアドレスの形式が不正です";
+  }
+  return message;
 }
 
 Deno.serve(async (req: Request) => {
@@ -114,25 +133,62 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // 1. Supabase Auth でユーザーを作成（email_confirm: false で未確認状態）
-    const { data: authData, error: authError } =
-      await adminClient.auth.admin.createUser({
-        email: body.email,
-        email_confirm: false,
-        user_metadata: {
-          display_name: body.display_name ?? null,
-          role: body.role,
-        },
-      });
+    // 1. Supabase Auth でユーザーを作成
+    const redirectTo =
+      body.role === "employee"
+        ? "hr1employee://login-callback"
+        : "hr1applicant://login-callback";
 
-    if (authError) {
-      return new Response(JSON.stringify({ error: authError.message }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    let userId: string;
+    let inviteSent = false;
+
+    if (body.send_invite) {
+      // 招待メール送信あり: inviteUserByEmail で作成+招待メール送信
+      const { data: inviteData, error: inviteError } =
+        await adminClient.auth.admin.inviteUserByEmail(body.email, {
+          data: {
+            display_name: body.display_name ?? null,
+            role: body.role,
+          },
+          redirectTo,
+        });
+
+      if (inviteError) {
+        return new Response(
+          JSON.stringify({ error: localizeAuthError(inviteError.message) }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      userId = inviteData.user.id;
+      inviteSent = true;
+    } else {
+      // 招待メールなし: createUser で作成のみ
+      const { data: authData, error: authError } =
+        await adminClient.auth.admin.createUser({
+          email: body.email,
+          email_confirm: false,
+          user_metadata: {
+            display_name: body.display_name ?? null,
+            role: body.role,
+          },
+        });
+
+      if (authError) {
+        return new Response(
+          JSON.stringify({ error: localizeAuthError(authError.message) }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      userId = authData.user.id;
     }
-
-    const userId = authData.user.id;
 
     // 2. RPC でプロフィール・組織・部署を一括作成（トランザクション保証）
     const { error: rpcError } = await adminClient.rpc("create_user_with_org", {
@@ -142,16 +198,24 @@ Deno.serve(async (req: Request) => {
       p_role: body.role,
       p_organization_id: body.organization_id,
       p_position: body.position ?? null,
-      p_hiring_type: body.hiring_type ?? null,
-      p_graduation_year: body.graduation_year ?? null,
       p_department_ids: body.department_ids ?? [],
       p_name_kana: body.name_kana ?? null,
       p_phone: body.phone ?? null,
       p_hire_date: body.hire_date ?? null,
       p_birth_date: body.birth_date ?? null,
       p_gender: body.gender ?? null,
-      p_current_address: body.current_address ?? null,
-      p_registered_address: body.registered_address ?? null,
+      p_current_postal_code: body.current_postal_code ?? null,
+      p_current_prefecture: body.current_prefecture ?? null,
+      p_current_city: body.current_city ?? null,
+      p_current_street_address: body.current_street_address ?? null,
+      p_current_building: body.current_building ?? null,
+      p_registered_postal_code: body.registered_postal_code ?? null,
+      p_registered_prefecture: body.registered_prefecture ?? null,
+      p_registered_city: body.registered_city ?? null,
+      p_registered_street_address: body.registered_street_address ?? null,
+      p_registered_building: body.registered_building ?? null,
+      p_hiring_type: body.hiring_type ?? null,
+      p_graduation_year: body.graduation_year ?? null,
     });
 
     if (rpcError) {
@@ -164,32 +228,6 @@ Deno.serve(async (req: Request) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
-    }
-
-    // 3. マジックリンクを生成してメールを送信（既存ユーザーに対してはmagiclink）
-    const redirectTo =
-      body.role === "employee"
-        ? "hr1employee://login-callback"
-        : "hr1applicant://login-callback";
-
-    let inviteSent = false;
-    try {
-      const { data: linkData, error: linkError } =
-        await adminClient.auth.admin.generateLink({
-          type: "magiclink",
-          email: body.email,
-          options: { redirectTo },
-        });
-
-      if (linkError) {
-        console.error("招待リンク生成エラー:", linkError.message);
-      } else if (linkData?.properties?.action_link) {
-        // Supabase が自動でメールを送信しない場合に備え、
-        // notifications テーブル経由でプッシュ通知も送信
-        inviteSent = true;
-      }
-    } catch (e) {
-      console.error("招待メール送信エラー:", e);
     }
 
     return new Response(

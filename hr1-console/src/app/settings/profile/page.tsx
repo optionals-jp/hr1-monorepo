@@ -70,8 +70,16 @@ export default function ProfileSettingsPage() {
   const [editGender, setEditGender] = useState("");
   const [editHireDate, setEditHireDate] = useState("");
   const [editPhone, setEditPhone] = useState("");
-  const [editRegisteredAddress, setEditRegisteredAddress] = useState("");
-  const [editCurrentAddress, setEditCurrentAddress] = useState("");
+  const [editCurrentPostalCode, setEditCurrentPostalCode] = useState("");
+  const [editCurrentPrefecture, setEditCurrentPrefecture] = useState("");
+  const [editCurrentCity, setEditCurrentCity] = useState("");
+  const [editCurrentStreetAddress, setEditCurrentStreetAddress] = useState("");
+  const [editCurrentBuilding, setEditCurrentBuilding] = useState("");
+  const [editRegisteredPostalCode, setEditRegisteredPostalCode] = useState("");
+  const [editRegisteredPrefecture, setEditRegisteredPrefecture] = useState("");
+  const [editRegisteredCity, setEditRegisteredCity] = useState("");
+  const [editRegisteredStreetAddress, setEditRegisteredStreetAddress] = useState("");
+  const [editRegisteredBuilding, setEditRegisteredBuilding] = useState("");
   const [editDeptIds, setEditDeptIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -114,8 +122,16 @@ export default function ProfileSettingsPage() {
     setEditGender(profile.gender ?? "");
     setEditHireDate(profile.hire_date ?? "");
     setEditPhone(profile.phone ?? "");
-    setEditRegisteredAddress(profile.registered_address ?? "");
-    setEditCurrentAddress(profile.current_address ?? "");
+    setEditCurrentPostalCode(profile.current_postal_code ?? "");
+    setEditCurrentPrefecture(profile.current_prefecture ?? "");
+    setEditCurrentCity(profile.current_city ?? "");
+    setEditCurrentStreetAddress(profile.current_street_address ?? "");
+    setEditCurrentBuilding(profile.current_building ?? "");
+    setEditRegisteredPostalCode(profile.registered_postal_code ?? "");
+    setEditRegisteredPrefecture(profile.registered_prefecture ?? "");
+    setEditRegisteredCity(profile.registered_city ?? "");
+    setEditRegisteredStreetAddress(profile.registered_street_address ?? "");
+    setEditRegisteredBuilding(profile.registered_building ?? "");
     setEditDeptIds([...assignedDeptIds]);
     setEditTab("basic");
     setEditing(true);
@@ -135,8 +151,16 @@ export default function ProfileSettingsPage() {
         gender: editGender || null,
         hire_date: editHireDate || null,
         phone: editPhone.trim() || null,
-        registered_address: editRegisteredAddress.trim() || null,
-        current_address: editCurrentAddress.trim() || null,
+        current_postal_code: editCurrentPostalCode.trim() || null,
+        current_prefecture: editCurrentPrefecture.trim() || null,
+        current_city: editCurrentCity.trim() || null,
+        current_street_address: editCurrentStreetAddress.trim() || null,
+        current_building: editCurrentBuilding.trim() || null,
+        registered_postal_code: editRegisteredPostalCode.trim() || null,
+        registered_prefecture: editRegisteredPrefecture.trim() || null,
+        registered_city: editRegisteredCity.trim() || null,
+        registered_street_address: editRegisteredStreetAddress.trim() || null,
+        registered_building: editRegisteredBuilding.trim() || null,
       })
       .eq("id", profile.id);
 
@@ -279,14 +303,32 @@ export default function ProfileSettingsPage() {
                   <span>{profile.phone ?? "-"}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">住民票住所</span>
+                  <span className="text-muted-foreground">現住所</span>
                   <span className="text-right max-w-[60%]">
-                    {profile.registered_address ?? "-"}
+                    {[
+                      profile.current_postal_code && `〒${profile.current_postal_code}`,
+                      profile.current_prefecture,
+                      profile.current_city,
+                      profile.current_street_address,
+                      profile.current_building,
+                    ]
+                      .filter(Boolean)
+                      .join(" ") || "-"}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">現住所</span>
-                  <span className="text-right max-w-[60%]">{profile.current_address ?? "-"}</span>
+                  <span className="text-muted-foreground">住民票住所</span>
+                  <span className="text-right max-w-[60%]">
+                    {[
+                      profile.registered_postal_code && `〒${profile.registered_postal_code}`,
+                      profile.registered_prefecture,
+                      profile.registered_city,
+                      profile.registered_street_address,
+                      profile.registered_building,
+                    ]
+                      .filter(Boolean)
+                      .join(" ") || "-"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">登録日</span>
@@ -383,21 +425,95 @@ export default function ProfileSettingsPage() {
                 placeholder="090-1234-5678"
               />
             </div>
-            <div className="space-y-2">
-              <Label>住民票住所</Label>
-              <Input
-                value={editRegisteredAddress}
-                onChange={(e) => setEditRegisteredAddress(e.target.value)}
-                placeholder="東京都渋谷区..."
-              />
+            <div className="space-y-3">
+              <Label className="text-muted-foreground text-xs font-semibold">現住所</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">郵便番号</Label>
+                  <Input
+                    value={editCurrentPostalCode}
+                    onChange={(e) => setEditCurrentPostalCode(e.target.value)}
+                    placeholder="100-0001"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">都道府県</Label>
+                  <Input
+                    value={editCurrentPrefecture}
+                    onChange={(e) => setEditCurrentPrefecture(e.target.value)}
+                    placeholder="東京都"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">市区町村</Label>
+                <Input
+                  value={editCurrentCity}
+                  onChange={(e) => setEditCurrentCity(e.target.value)}
+                  placeholder="千代田区丸の内"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">番地</Label>
+                <Input
+                  value={editCurrentStreetAddress}
+                  onChange={(e) => setEditCurrentStreetAddress(e.target.value)}
+                  placeholder="1-1-1"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">建物名・部屋番号</Label>
+                <Input
+                  value={editCurrentBuilding}
+                  onChange={(e) => setEditCurrentBuilding(e.target.value)}
+                  placeholder="○○ビル 3F"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>現住所</Label>
-              <Input
-                value={editCurrentAddress}
-                onChange={(e) => setEditCurrentAddress(e.target.value)}
-                placeholder="東京都渋谷区..."
-              />
+            <div className="space-y-3 pt-2">
+              <Label className="text-muted-foreground text-xs font-semibold">住民票住所</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">郵便番号</Label>
+                  <Input
+                    value={editRegisteredPostalCode}
+                    onChange={(e) => setEditRegisteredPostalCode(e.target.value)}
+                    placeholder="100-0001"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">都道府県</Label>
+                  <Input
+                    value={editRegisteredPrefecture}
+                    onChange={(e) => setEditRegisteredPrefecture(e.target.value)}
+                    placeholder="東京都"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">市区町村</Label>
+                <Input
+                  value={editRegisteredCity}
+                  onChange={(e) => setEditRegisteredCity(e.target.value)}
+                  placeholder="千代田区丸の内"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">番地</Label>
+                <Input
+                  value={editRegisteredStreetAddress}
+                  onChange={(e) => setEditRegisteredStreetAddress(e.target.value)}
+                  placeholder="1-1-1"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">建物名・部屋番号</Label>
+                <Input
+                  value={editRegisteredBuilding}
+                  onChange={(e) => setEditRegisteredBuilding(e.target.value)}
+                  placeholder="○○ビル 3F"
+                />
+              </div>
             </div>
           </div>
         )}

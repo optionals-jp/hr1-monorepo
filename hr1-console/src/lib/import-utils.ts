@@ -83,10 +83,16 @@ export const HR1_FIELDS: ColumnMapping[] = [
   { key: "hire_date", label: "入社日" },
   { key: "birth_date", label: "生年月日" },
   { key: "gender", label: "性別" },
-  { key: "current_address", label: "現住所" },
-  { key: "registered_address", label: "本籍住所" },
-  { key: "hiring_type", label: "採用区分" },
-  { key: "graduation_year", label: "卒業年度" },
+  { key: "current_postal_code", label: "現住所 郵便番号" },
+  { key: "current_prefecture", label: "現住所 都道府県" },
+  { key: "current_city", label: "現住所 市区町村" },
+  { key: "current_street_address", label: "現住所 番地" },
+  { key: "current_building", label: "現住所 建物名" },
+  { key: "registered_postal_code", label: "住民票 郵便番号" },
+  { key: "registered_prefecture", label: "住民票 都道府県" },
+  { key: "registered_city", label: "住民票 市区町村" },
+  { key: "registered_street_address", label: "住民票 番地" },
+  { key: "registered_building", label: "住民票 建物名" },
 ];
 
 const HEADER_PATTERNS: Record<string, RegExp[]> = {
@@ -101,20 +107,30 @@ const HEADER_PATTERNS: Record<string, RegExp[]> = {
   hire_date: [/入社日/, /hire.?date/i, /joining.?date/i],
   birth_date: [/生年月日/, /誕生日/, /birth.?date/i, /birthday/i],
   gender: [/性別/, /gender/i, /sex/i],
-  current_address: [/現住所/, /住所/, /address/i],
-  registered_address: [/本籍/, /住民票/],
-  hiring_type: [/採用区分/, /採用種別/],
-  graduation_year: [/卒業年/, /graduation/i],
+  current_postal_code: [/現住所.*郵便/, /郵便番号/],
+  current_prefecture: [/現住所.*都道府県/, /都道府県/],
+  current_city: [/現住所.*市区町村/, /市区町村/],
+  current_street_address: [/現住所.*番地/, /^番地$/],
+  current_building: [/現住所.*建物/, /建物名/],
+  registered_postal_code: [/住民票.*郵便/, /本籍.*郵便/],
+  registered_prefecture: [/住民票.*都道府県/, /本籍.*都道府県/],
+  registered_city: [/住民票.*市区町村/, /本籍.*市区町村/],
+  registered_street_address: [/住民票.*番地/, /本籍.*番地/],
+  registered_building: [/住民票.*建物/, /本籍.*建物/],
 };
 
-export function autoDetectMapping(headers: string[]): Record<string, number | null> {
+export function autoDetectMapping(
+  headers: string[],
+  fields: ColumnMapping[] = HR1_FIELDS,
+  patterns: Record<string, RegExp[]> = HEADER_PATTERNS
+): Record<string, number | null> {
   const mapping: Record<string, number | null> = {};
   const usedIndices = new Set<number>();
 
-  for (const field of HR1_FIELDS) {
-    const patterns = HEADER_PATTERNS[field.key] ?? [];
+  for (const field of fields) {
+    const fieldPatterns = patterns[field.key] ?? [];
     let found = false;
-    for (const pattern of patterns) {
+    for (const pattern of fieldPatterns) {
       const idx = headers.findIndex((h, i) => !usedIndices.has(i) && pattern.test(h.trim()));
       if (idx !== -1) {
         mapping[field.key] = idx;
@@ -142,7 +158,8 @@ export interface ValidatedRow {
 
 export function validateRows(
   rows: string[][],
-  mapping: Record<string, number | null>
+  mapping: Record<string, number | null>,
+  fields: ColumnMapping[] = HR1_FIELDS
 ): ValidatedRow[] {
   const seenEmails = new Set<string>();
 
@@ -150,7 +167,7 @@ export function validateRows(
     const values: Record<string, string> = {};
     const errors: string[] = [];
 
-    for (const field of HR1_FIELDS) {
+    for (const field of fields) {
       const colIdx = mapping[field.key];
       values[field.key] = colIdx != null ? (row[colIdx] ?? "").trim() : "";
     }

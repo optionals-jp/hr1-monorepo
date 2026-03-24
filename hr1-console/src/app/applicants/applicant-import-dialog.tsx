@@ -28,7 +28,7 @@ import {
   parseFile,
   autoDetectMapping,
   validateRows,
-  HR1_FIELDS,
+  type ColumnMapping,
   type ParsedFile,
   type ValidatedRow,
 } from "@/lib/import-utils";
@@ -39,30 +39,39 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationId: string;
-  departments: { id: string; name: string }[];
   onComplete: () => void;
 }
 
-const ADDRESS_FIELDS = [
-  "current_postal_code",
-  "current_prefecture",
-  "current_city",
-  "current_street_address",
-  "current_building",
-  "registered_postal_code",
-  "registered_prefecture",
-  "registered_city",
-  "registered_street_address",
-  "registered_building",
+const APPLICANT_FIELDS: ColumnMapping[] = [
+  { key: "email", label: "メールアドレス", required: true },
+  { key: "last_name", label: "姓" },
+  { key: "first_name", label: "名" },
+  { key: "display_name", label: "氏名（フルネーム）" },
+  { key: "name_kana", label: "ふりがな" },
+  { key: "hiring_type", label: "採用区分" },
+  { key: "graduation_year", label: "卒業年" },
 ];
 
-export function EmployeeImportDialog({
-  open,
-  onOpenChange,
-  organizationId,
-  departments,
-  onComplete,
-}: Props) {
+const APPLICANT_HEADER_PATTERNS: Record<string, RegExp[]> = {
+  email: [/メール/i, /email/i, /e-mail/i, /mail/i],
+  last_name: [/^姓$/, /last.?name/i, /family.?name/i],
+  first_name: [/^名$/, /first.?name/i, /given.?name/i],
+  display_name: [/氏名/, /名前/, /フルネーム/, /full.?name/i, /display.?name/i],
+  name_kana: [/ふりがな/, /フリガナ/, /カナ/, /kana/i],
+  hiring_type: [/採用区分/, /採用種別/, /hiring.?type/i],
+  graduation_year: [/卒業年/, /卒年/, /graduation/i],
+};
+
+const HIRING_TYPE_MAP: Record<string, string> = {
+  新卒: "new_grad",
+  新卒採用: "new_grad",
+  中途: "mid_career",
+  中途採用: "mid_career",
+  new_grad: "new_grad",
+  mid_career: "mid_career",
+};
+
+export function ApplicantImportDialog({ open, onOpenChange, organizationId, onComplete }: Props) {
   const { showToast } = useToast();
   const [step, setStep] = useState<Step>("upload");
   const [parsedFile, setParsedFile] = useState<ParsedFile | null>(null);
@@ -82,7 +91,6 @@ export function EmployeeImportDialog({
     setParsedFile(null);
     setMapping({});
     setValidatedRows([]);
-
     setProgress({ current: 0, total: 0 });
     setResults({ success: 0, errors: [] });
     setDragOver(false);
@@ -102,7 +110,11 @@ export function EmployeeImportDialog({
       try {
         const parsed = await parseFile(file);
         setParsedFile(parsed);
-        const detected = autoDetectMapping(parsed.headers);
+        const detected = autoDetectMapping(
+          parsed.headers,
+          APPLICANT_FIELDS,
+          APPLICANT_HEADER_PATTERNS
+        );
         setMapping(detected);
         setStep("mapping");
       } catch {
@@ -139,7 +151,7 @@ export function EmployeeImportDialog({
 
   const goToPreview = useCallback(() => {
     if (!parsedFile) return;
-    const rows = validateRows(parsedFile.rows, mapping);
+    const rows = validateRows(parsedFile.rows, mapping, APPLICANT_FIELDS);
     setValidatedRows(rows);
     setStep("preview");
   }, [parsedFile, mapping]);
@@ -154,50 +166,26 @@ export function EmployeeImportDialog({
     const errors: string[] = [];
     let successCount = 0;
 
-    const deptNameMap = new Map(departments.map((d) => [d.name, d.id]));
-
-    const genderMap: Record<string, string> = {
-      男: "male",
-      男性: "male",
-      女: "female",
-      女性: "female",
-      その他: "other",
-      male: "male",
-      female: "female",
-      other: "other",
-    };
-
     for (let i = 0; i < validRows.length; i++) {
       const row = validRows[i];
       const v = row.values;
 
-      const deptIds: string[] = [];
-      if (v.department) {
-        const names = v.department.split(/[,、]/).map((s) => s.trim());
-        for (const name of names) {
-          const id = deptNameMap.get(name);
-          if (id) deptIds.push(id);
-        }
-      }
-
       try {
         const body: Record<string, unknown> = {
           email: v.email,
-          role: "employee",
+          role: "applicant",
           organization_id: organizationId,
           send_invite: sendInvite,
         };
         if (v.display_name) body.display_name = v.display_name;
         if (v.name_kana) body.name_kana = v.name_kana;
-        if (v.position) body.position = v.position;
-        if (v.phone) body.phone = v.phone;
-        if (v.hire_date) body.hire_date = v.hire_date;
-        if (v.birth_date) body.birth_date = v.birth_date;
-        if (v.gender && genderMap[v.gender]) body.gender = genderMap[v.gender];
-        if (deptIds.length > 0) body.department_ids = deptIds;
 
-        for (const key of ADDRESS_FIELDS) {
-          if (v[key]) body[key] = v[key];
+        const hiringType = v.hiring_type ? HIRING_TYPE_MAP[v.hiring_type] : null;
+        if (hiringType) body.hiring_type = hiringType;
+
+        if (v.graduation_year) {
+          const year = Number(v.graduation_year);
+          if (!isNaN(year)) body.graduation_year = year;
         }
 
         const { data, error } = await getSupabase().functions.invoke("create-user", { body });
@@ -213,10 +201,9 @@ export function EmployeeImportDialog({
     }
 
     setResults({ success: successCount, errors });
-
     setStep("done");
     if (successCount > 0) onComplete();
-  }, [validatedRows, organizationId, departments, onComplete, sendInvite]);
+  }, [validatedRows, organizationId, onComplete, sendInvite]);
 
   const validCount = validatedRows.filter((r) => r.valid).length;
   const invalidCount = validatedRows.filter((r) => !r.valid).length;
@@ -228,7 +215,7 @@ export function EmployeeImportDialog({
         <DialogPrimitive.Popup className="fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl rounded-xl bg-background ring-1 ring-foreground/10 shadow-lg outline-none flex flex-col data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 duration-100 max-h-[80vh]">
           <div className="px-6 py-4 border-b shrink-0">
             <DialogPrimitive.Title className="text-base font-semibold">
-              社員一括インポート
+              応募者一括インポート
             </DialogPrimitive.Title>
           </div>
 
@@ -275,7 +262,7 @@ export function EmployeeImportDialog({
                   <span>（{parsedFile.rows.length}行）</span>
                 </div>
                 <div className="space-y-3">
-                  {HR1_FIELDS.map((field) => {
+                  {APPLICANT_FIELDS.map((field) => {
                     const usedByOthers = new Set(
                       Object.entries(mapping)
                         .filter(([k, v]) => k !== field.key && v != null)
@@ -339,7 +326,7 @@ export function EmployeeImportDialog({
                         <TableHead className="w-10">#</TableHead>
                         <TableHead>メール</TableHead>
                         <TableHead>氏名</TableHead>
-                        <TableHead>部署</TableHead>
+                        <TableHead>採用区分</TableHead>
                         <TableHead>状態</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -353,7 +340,7 @@ export function EmployeeImportDialog({
                           <TableCell className="text-sm">
                             {row.values.display_name || "-"}
                           </TableCell>
-                          <TableCell className="text-sm">{row.values.department || "-"}</TableCell>
+                          <TableCell className="text-sm">{row.values.hiring_type || "-"}</TableCell>
                           <TableCell>
                             {row.valid ? (
                               <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -377,7 +364,7 @@ export function EmployeeImportDialog({
                   <div className="flex-1">
                     <Label className="text-sm font-medium">招待メールを送信</Label>
                     <p className="text-xs text-muted-foreground">
-                      ONにすると、インポートした社員に招待メールが送信されます
+                      ONにすると、インポートした応募者に招待メールが送信されます
                     </p>
                   </div>
                   <Switch checked={sendInvite} onCheckedChange={setSendInvite} />

@@ -40,9 +40,10 @@ import { cn } from "@/lib/utils";
 import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
-import { SlidersHorizontal, X, Download } from "lucide-react";
+import { SlidersHorizontal, X, Download, Upload } from "lucide-react";
 import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
 import { useRouter } from "next/navigation";
+import { ApplicantImportDialog } from "./applicant-import-dialog";
 
 const addTabs: EditPanelTab[] = [
   { value: "basic", label: "基本情報" },
@@ -56,6 +57,7 @@ export default function ApplicantsPage() {
   const [search, setSearch] = useState("");
   const [filterHiringType, setFilterHiringType] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [addTab, setAddTab] = useState("basic");
   const [newEmail, setNewEmail] = useState("");
   const [newName, setNewName] = useState("");
@@ -185,6 +187,10 @@ export default function ApplicantsPage() {
             >
               <Download className="mr-1.5 h-4 w-4" />
               CSV出力
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+              <Upload className="mr-1.5 h-4 w-4" />
+              インポート
             </Button>
             <Button onClick={openAddDialog}>応募者を追加</Button>
           </div>
@@ -376,6 +382,15 @@ export default function ApplicantsPage() {
           </div>
         )}
       </EditPanel>
+
+      {organization && (
+        <ApplicantImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          organizationId={organization.id}
+          onComplete={() => mutate()}
+        />
+      )}
     </div>
   );
 }

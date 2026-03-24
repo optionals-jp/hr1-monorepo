@@ -37,7 +37,7 @@ import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { SlidersHorizontal, X, Download, Upload, ChevronDown } from "lucide-react";
 import { exportToCSV } from "@/lib/export-csv";
-import { genderLabels, hiringTypeLabels } from "@/lib/constants";
+import { genderLabels } from "@/lib/constants";
 import { useRouter } from "next/navigation";
 import { EmployeeImportDialog } from "./employee-import-dialog";
 
@@ -51,10 +51,16 @@ interface EmployeeWithDepts {
   hire_date: string | null;
   birth_date: string | null;
   gender: Profile["gender"];
-  current_address: string | null;
-  registered_address: string | null;
-  hiring_type: Profile["hiring_type"];
-  graduation_year: number | null;
+  current_postal_code: string | null;
+  current_prefecture: string | null;
+  current_city: string | null;
+  current_street_address: string | null;
+  current_building: string | null;
+  registered_postal_code: string | null;
+  registered_prefecture: string | null;
+  registered_city: string | null;
+  registered_street_address: string | null;
+  registered_building: string | null;
   departments: { id: string; name: string }[];
 }
 
@@ -87,21 +93,43 @@ const exportColumns: ExportColumn[] = [
     label: "性別",
     getValue: (e) => (e.gender ? (genderLabels[e.gender] ?? e.gender) : ""),
   },
-  { key: "current_address", label: "現住所", getValue: (e) => e.current_address ?? "" },
   {
-    key: "registered_address",
-    label: "本籍住所",
-    getValue: (e) => e.registered_address ?? "",
+    key: "current_postal_code",
+    label: "現住所 郵便番号",
+    getValue: (e) => e.current_postal_code ?? "",
   },
   {
-    key: "hiring_type",
-    label: "採用区分",
-    getValue: (e) => (e.hiring_type ? (hiringTypeLabels[e.hiring_type] ?? e.hiring_type) : ""),
+    key: "current_prefecture",
+    label: "現住所 都道府県",
+    getValue: (e) => e.current_prefecture ?? "",
+  },
+  { key: "current_city", label: "現住所 市区町村", getValue: (e) => e.current_city ?? "" },
+  {
+    key: "current_street_address",
+    label: "現住所 番地",
+    getValue: (e) => e.current_street_address ?? "",
+  },
+  { key: "current_building", label: "現住所 建物名", getValue: (e) => e.current_building ?? "" },
+  {
+    key: "registered_postal_code",
+    label: "住民票 郵便番号",
+    getValue: (e) => e.registered_postal_code ?? "",
   },
   {
-    key: "graduation_year",
-    label: "卒業年度",
-    getValue: (e) => (e.graduation_year != null ? String(e.graduation_year) : ""),
+    key: "registered_prefecture",
+    label: "住民票 都道府県",
+    getValue: (e) => e.registered_prefecture ?? "",
+  },
+  { key: "registered_city", label: "住民票 市区町村", getValue: (e) => e.registered_city ?? "" },
+  {
+    key: "registered_street_address",
+    label: "住民票 番地",
+    getValue: (e) => e.registered_street_address ?? "",
+  },
+  {
+    key: "registered_building",
+    label: "住民票 建物名",
+    getValue: (e) => e.registered_building ?? "",
   },
 ];
 
@@ -177,7 +205,7 @@ export default function EmployeesPage() {
       const { data } = await getSupabase()
         .from("user_organizations")
         .select(
-          "profiles(id, email, display_name, name_kana, position, phone, hire_date, birth_date, gender, current_address, registered_address, hiring_type, graduation_year)"
+          "profiles(id, email, display_name, name_kana, position, phone, hire_date, birth_date, gender, current_postal_code, current_prefecture, current_city, current_street_address, current_building, registered_postal_code, registered_prefecture, registered_city, registered_street_address, registered_building)"
         )
         .eq("organization_id", organization!.id)
         .eq("profiles.role", "employee");
@@ -197,10 +225,16 @@ export default function EmployeesPage() {
                   hire_date: string | null;
                   birth_date: string | null;
                   gender: Profile["gender"];
-                  current_address: string | null;
-                  registered_address: string | null;
-                  hiring_type: Profile["hiring_type"];
-                  graduation_year: number | null;
+                  current_postal_code: string | null;
+                  current_prefecture: string | null;
+                  current_city: string | null;
+                  current_street_address: string | null;
+                  current_building: string | null;
+                  registered_postal_code: string | null;
+                  registered_prefecture: string | null;
+                  registered_city: string | null;
+                  registered_street_address: string | null;
+                  registered_building: string | null;
                 };
               }
             ).profiles

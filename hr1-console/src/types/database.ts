@@ -26,8 +26,16 @@ export interface Profile {
   gender: "male" | "female" | "other" | null;
   hire_date: string | null;
   phone: string | null;
-  registered_address: string | null;
-  current_address: string | null;
+  current_postal_code: string | null;
+  current_prefecture: string | null;
+  current_city: string | null;
+  current_street_address: string | null;
+  current_building: string | null;
+  registered_postal_code: string | null;
+  registered_prefecture: string | null;
+  registered_city: string | null;
+  registered_street_address: string | null;
+  registered_building: string | null;
   created_at: string;
 }
 
