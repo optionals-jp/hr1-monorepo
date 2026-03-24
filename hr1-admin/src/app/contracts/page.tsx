@@ -34,7 +34,7 @@ import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { formatCurrency } from "@/lib/utils";
 import { contractStatusLabels, contractStatusColors } from "@/lib/constants";
 import { useAuth } from "@/lib/auth-context";
-import { Plus } from "lucide-react";
+import { Plus, AlertCircle } from "lucide-react";
 import type { Contract, Plan, Organization } from "@/types/database";
 
 export default function ContractsPage() {
@@ -84,8 +84,11 @@ export default function ContractsPage() {
     status: "active" as string,
   });
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const openCreate = () => {
+    setFormError(null);
     setForm({
       organization_id: "",
       plan_id: "",
@@ -111,6 +114,7 @@ export default function ContractsPage() {
 
   const handleSave = async () => {
     setSaving(true);
+    setFormError(null);
     try {
       const payload = {
         organization_id: form.organization_id,
@@ -123,11 +127,16 @@ export default function ContractsPage() {
         status: form.status,
       };
 
-      const { data: newContract } = await getSupabase()
+      const { data: newContract, error: insertError } = await getSupabase()
         .from("contracts")
         .insert(payload)
         .select()
         .single();
+
+      if (insertError) {
+        setFormError("契約の作成に失敗しました。");
+        return;
+      }
 
       // 変更履歴に記録
       if (newContract) {
@@ -150,11 +159,17 @@ export default function ContractsPage() {
   };
 
   const handleStatusChange = async (contract: Contract, newStatus: string) => {
+    setStatusError(null);
     const oldStatus = contract.status;
-    await getSupabase()
+    const { error: updateError } = await getSupabase()
       .from("contracts")
       .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq("id", contract.id);
+
+    if (updateError) {
+      setStatusError("ステータスの変更に失敗しました。");
+      return;
+    }
 
     // 変更履歴に記録
     const changeType =
@@ -191,6 +206,12 @@ export default function ContractsPage() {
       />
       <PageContent>
         <QueryErrorBanner error={error} onRetry={() => mutate()} />
+        {statusError && (
+          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 mb-4">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{statusError}</span>
+          </div>
+        )}
 
         <div className="rounded-lg border bg-white">
           <Table>
@@ -272,6 +293,12 @@ export default function ContractsPage() {
             <DialogTitle>新規契約作成</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {formError && (
+              <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>企業</Label>
               <Select

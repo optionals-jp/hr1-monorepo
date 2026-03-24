@@ -18,7 +18,7 @@ import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, AlertCircle } from "lucide-react";
 import type { Plan } from "@/types/database";
 
 export default function PlansPage() {
@@ -43,9 +43,12 @@ export default function PlansPage() {
     description: "",
   });
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [toggleError, setToggleError] = useState<string | null>(null);
 
   const openCreate = () => {
     setEditing(null);
+    setFormError(null);
     setForm({
       name: "",
       price_monthly: "",
@@ -57,6 +60,7 @@ export default function PlansPage() {
 
   const openEdit = (plan: Plan) => {
     setEditing(plan);
+    setFormError(null);
     setForm({
       name: plan.name,
       price_monthly: String(plan.price_monthly),
@@ -68,6 +72,7 @@ export default function PlansPage() {
 
   const handleSave = async () => {
     setSaving(true);
+    setFormError(null);
     try {
       const payload = {
         name: form.name,
@@ -80,9 +85,22 @@ export default function PlansPage() {
       };
 
       if (editing) {
-        await getSupabase().from("plans").update(payload).eq("id", editing.id);
+        const { error: updateError } = await getSupabase()
+          .from("plans")
+          .update(payload)
+          .eq("id", editing.id);
+        if (updateError) {
+          setFormError("プランの更新に失敗しました。");
+          return;
+        }
       } else {
-        await getSupabase().from("plans").insert(payload);
+        const { error: insertError } = await getSupabase()
+          .from("plans")
+          .insert(payload);
+        if (insertError) {
+          setFormError("プランの作成に失敗しました。");
+          return;
+        }
       }
       setDialogOpen(false);
       mutate();
@@ -92,13 +110,18 @@ export default function PlansPage() {
   };
 
   const toggleActive = async (plan: Plan) => {
-    await getSupabase()
+    setToggleError(null);
+    const { error: updateError } = await getSupabase()
       .from("plans")
       .update({
         is_active: !plan.is_active,
         updated_at: new Date().toISOString(),
       })
       .eq("id", plan.id);
+    if (updateError) {
+      setToggleError("プランの状態変更に失敗しました。");
+      return;
+    }
     mutate();
   };
 
@@ -116,6 +139,12 @@ export default function PlansPage() {
       />
       <PageContent>
         <QueryErrorBanner error={error} onRetry={() => mutate()} />
+        {toggleError && (
+          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 mb-4">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{toggleError}</span>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {(plans ?? []).map((plan) => (
@@ -188,6 +217,12 @@ export default function PlansPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {formError && (
+              <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>プラン名</Label>
               <Input
