@@ -38,4 +38,21 @@ class SupabaseFaqRepository {
 
     return (response as List).map((json) => FaqItem.fromJson(json)).toList();
   }
+
+  /// 質問・回答でFAQを検索
+  Future<List<FaqItem>> searchFaqs(String query) async {
+    final orgId = await _getOrganizationId();
+    final pattern = '%$query%';
+    final response = await _client
+        .from('faqs')
+        .select()
+        .eq('organization_id', orgId)
+        .eq('is_published', true)
+        .inFilter('target', ['employee', 'both'])
+        .or('question.ilike.$pattern,answer.ilike.$pattern')
+        .order('sort_order', ascending: true)
+        .limit(20);
+
+    return (response as List).map((json) => FaqItem.fromJson(json)).toList();
+  }
 }

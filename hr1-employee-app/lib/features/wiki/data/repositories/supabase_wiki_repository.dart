@@ -36,4 +36,20 @@ class SupabaseWikiRepository {
 
     return (response as List).map((json) => WikiPage.fromJson(json)).toList();
   }
+
+  /// タイトル・本文でWikiページを検索
+  Future<List<WikiPage>> searchPages(String query) async {
+    final orgId = await _getOrganizationId();
+    final pattern = '%$query%';
+    final response = await _client
+        .from('wiki_pages')
+        .select()
+        .eq('organization_id', orgId)
+        .eq('is_published', true)
+        .or('title.ilike.$pattern,content.ilike.$pattern')
+        .order('updated_at', ascending: false)
+        .limit(20);
+
+    return (response as List).map((json) => WikiPage.fromJson(json)).toList();
+  }
 }

@@ -56,4 +56,23 @@ class SupabaseAnnouncementsRepository {
         .map((json) => Announcement.fromJson(json))
         .toList();
   }
+
+  /// タイトル・本文でお知らせを検索
+  Future<List<Announcement>> searchAnnouncements(String query) async {
+    final orgId = await _getOrganizationId();
+    final pattern = '%$query%';
+    final response = await _client
+        .from('announcements')
+        .select()
+        .eq('organization_id', orgId)
+        .not('published_at', 'is', null)
+        .inFilter('target', ['all', 'employee'])
+        .or('title.ilike.$pattern,body.ilike.$pattern')
+        .order('published_at', ascending: false)
+        .limit(20);
+
+    return (response as List)
+        .map((json) => Announcement.fromJson(json))
+        .toList();
+  }
 }
