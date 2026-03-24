@@ -265,6 +265,14 @@ class _ProfileHeader extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: _ActionButton(
+                      icon: Icons.campaign_outlined,
+                      label: 'お知らせ',
+                      onTap: () => context.push(AppRoutes.announcements),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _ActionButton(
                       icon: Icons.help_outline_rounded,
                       label: 'FAQ',
                       onTap: () => context.push(AppRoutes.faq),

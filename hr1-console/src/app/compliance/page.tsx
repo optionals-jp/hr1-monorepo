@@ -157,7 +157,8 @@ export default function CompliancePage() {
           resolved_at: new Date().toISOString(),
           resolved_by: (await supabase.auth.getUser()).data.user?.id ?? null,
         })
-        .eq("id", alertId);
+        .eq("id", alertId)
+        .eq("organization_id", organization!.id);
       if (error) throw error;
       await mutateAlerts();
       showToast("対応済みにしました", "success");

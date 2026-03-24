@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR1 招待</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    .card {
+      background-color: #ffffff;
+      border-radius: 12px;
+      padding: 40px 32px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .logo-text {
+      display: inline-block;
+      background-color: #6366f1;
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 800;
+      padding: 8px 16px;
+      border-radius: 8px;
+      letter-spacing: -0.5px;
+    }
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0 0 16px 0;
+      text-align: center;
+    }
+    p {
+      font-size: 14px;
+      line-height: 1.8;
+      margin: 0 0 16px 0;
+      color: #555;
+    }
+    .button-container {
+      text-align: center;
+      margin: 32px 0;
+    }
+    .button {
+      display: inline-block;
+      background-color: #6366f1;
+      color: #ffffff;
+      text-decoration: none;
+      padding: 14px 48px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .note {
+      font-size: 12px;
+      color: #999;
+      text-align: center;
+      margin-top: 24px;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 32px;
+      font-size: 12px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="logo">
+        <span class="logo-text">HR1</span>
+      </div>
+      <h2>HR1 へようこそ</h2>
+      <p>HR1 に招待されました。以下のボタンをクリックしてログインしてください。</p>
+      <div class="button-container">
+        <a href="{{ .ConfirmationURL }}" class="button">ログインする</a>
+      </div>
+      <p class="note">このリンクには有効期限があります。期限切れの場合はアプリからOTPログインをお試しください。<br>心当たりがない場合は、このメールを無視してください。</p>
+    </div>
+    <div class="footer">
+      <p>&copy; HR1 - AI-Native HR SaaS</p>
+    </div>
+  </div>
+</body>
+</html>

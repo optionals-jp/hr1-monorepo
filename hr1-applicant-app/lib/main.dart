@@ -31,10 +31,13 @@ void main() async {
     debugPrint('Firebase 初期化エラー: $e');
   }
 
-  // Supabase 初期化
+  // Supabase 初期化（招待メールのディープリンク対応）
   await Supabase.initialize(
     url: AppConfig.current.supabaseUrl,
     anonKey: AppConfig.current.supabaseAnonKey,
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce,
+    ),
   );
 
   // プッシュ通知初期化

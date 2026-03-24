@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import * as XLSX from "xlsx";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
-import type { Department } from "@/types/database";
+import type { Department, Profile } from "@/types/database";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -34,15 +35,32 @@ import { cn } from "@/lib/utils";
 import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
-import { SlidersHorizontal, X, Download } from "lucide-react";
+import { SlidersHorizontal, X, Download, Upload, ChevronDown } from "lucide-react";
 import { exportToCSV } from "@/lib/export-csv";
+import { genderLabels } from "@/lib/constants";
 import { useRouter } from "next/navigation";
+import { EmployeeImportDialog } from "./employee-import-dialog";
 
 interface EmployeeWithDepts {
   id: string;
   email: string;
   display_name: string | null;
+  name_kana: string | null;
   position: string | null;
+  phone: string | null;
+  hire_date: string | null;
+  birth_date: string | null;
+  gender: Profile["gender"];
+  current_postal_code: string | null;
+  current_prefecture: string | null;
+  current_city: string | null;
+  current_street_address: string | null;
+  current_building: string | null;
+  registered_postal_code: string | null;
+  registered_prefecture: string | null;
+  registered_city: string | null;
+  registered_street_address: string | null;
+  registered_building: string | null;
   departments: { id: string; name: string }[];
 }
 
@@ -51,6 +69,103 @@ const addTabs: EditPanelTab[] = [
   { value: "departments", label: "部署" },
 ];
 
+type ExportColumn = {
+  key: string;
+  label: string;
+  getValue: (e: EmployeeWithDepts) => string;
+};
+
+const exportColumns: ExportColumn[] = [
+  { key: "display_name", label: "氏名", getValue: (e) => e.display_name ?? "" },
+  { key: "name_kana", label: "ふりがな", getValue: (e) => e.name_kana ?? "" },
+  { key: "email", label: "メール", getValue: (e) => e.email },
+  { key: "phone", label: "電話番号", getValue: (e) => e.phone ?? "" },
+  { key: "position", label: "役職", getValue: (e) => e.position ?? "" },
+  {
+    key: "departments",
+    label: "部署",
+    getValue: (e) => e.departments.map((d) => d.name).join(", "),
+  },
+  { key: "hire_date", label: "入社日", getValue: (e) => e.hire_date ?? "" },
+  { key: "birth_date", label: "生年月日", getValue: (e) => e.birth_date ?? "" },
+  {
+    key: "gender",
+    label: "性別",
+    getValue: (e) => (e.gender ? (genderLabels[e.gender] ?? e.gender) : ""),
+  },
+  {
+    key: "current_postal_code",
+    label: "現住所 郵便番号",
+    getValue: (e) => e.current_postal_code ?? "",
+  },
+  {
+    key: "current_prefecture",
+    label: "現住所 都道府県",
+    getValue: (e) => e.current_prefecture ?? "",
+  },
+  { key: "current_city", label: "現住所 市区町村", getValue: (e) => e.current_city ?? "" },
+  {
+    key: "current_street_address",
+    label: "現住所 番地",
+    getValue: (e) => e.current_street_address ?? "",
+  },
+  { key: "current_building", label: "現住所 建物名", getValue: (e) => e.current_building ?? "" },
+  {
+    key: "registered_postal_code",
+    label: "住民票 郵便番号",
+    getValue: (e) => e.registered_postal_code ?? "",
+  },
+  {
+    key: "registered_prefecture",
+    label: "住民票 都道府県",
+    getValue: (e) => e.registered_prefecture ?? "",
+  },
+  { key: "registered_city", label: "住民票 市区町村", getValue: (e) => e.registered_city ?? "" },
+  {
+    key: "registered_street_address",
+    label: "住民票 番地",
+    getValue: (e) => e.registered_street_address ?? "",
+  },
+  {
+    key: "registered_building",
+    label: "住民票 建物名",
+    getValue: (e) => e.registered_building ?? "",
+  },
+];
+
+function exportFilename() {
+  const now = new Date();
+  return `社員名簿_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function exportAsXlsx(employees: EmployeeWithDepts[]) {
+  const rows = employees.map((e) => {
+    const obj: Record<string, string> = {};
+    exportColumns.forEach((col) => {
+      obj[col.label] = col.getValue(e);
+    });
+    return obj;
+  });
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "社員名簿");
+  XLSX.writeFile(wb, `${exportFilename()}.xlsx`);
+}
+
+function exportAsCsv(employees: EmployeeWithDepts[]) {
+  exportToCSV(
+    employees.map((e) => {
+      const obj: Record<string, string> = {};
+      exportColumns.forEach((col) => {
+        obj[col.key] = col.getValue(e);
+      });
+      return obj;
+    }),
+    exportColumns.map((col) => ({ key: col.key, label: col.label })),
+    exportFilename()
+  );
+}
+
 export default function EmployeesPage() {
   const router = useRouter();
   const { showToast } = useToast();
@@ -58,6 +173,7 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState("");
   const [filterDeptId, setFilterDeptId] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [addTab, setAddTab] = useState("basic");
   const [newEmail, setNewEmail] = useState("");
   const [newName, setNewName] = useState("");
@@ -88,7 +204,9 @@ export default function EmployeesPage() {
     async () => {
       const { data } = await getSupabase()
         .from("user_organizations")
-        .select("profiles(id, email, display_name, position)")
+        .select(
+          "profiles(id, email, display_name, name_kana, position, phone, hire_date, birth_date, gender, current_postal_code, current_prefecture, current_city, current_street_address, current_building, registered_postal_code, registered_prefecture, registered_city, registered_street_address, registered_building)"
+        )
         .eq("organization_id", organization!.id)
         .eq("profiles.role", "employee");
 
@@ -101,7 +219,22 @@ export default function EmployeesPage() {
                   id: string;
                   email: string;
                   display_name: string | null;
+                  name_kana: string | null;
                   position: string | null;
+                  phone: string | null;
+                  hire_date: string | null;
+                  birth_date: string | null;
+                  gender: Profile["gender"];
+                  current_postal_code: string | null;
+                  current_prefecture: string | null;
+                  current_city: string | null;
+                  current_street_address: string | null;
+                  current_building: string | null;
+                  registered_postal_code: string | null;
+                  registered_prefecture: string | null;
+                  registered_city: string | null;
+                  registered_street_address: string | null;
+                  registered_building: string | null;
                 };
               }
             ).profiles
@@ -221,30 +354,24 @@ export default function EmployeesPage() {
         border={false}
         action={
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (employees.length === 0) return;
-                exportToCSV(
-                  employees.map((e) => ({
-                    ...e,
-                    _name: e.display_name ?? "",
-                    _departments: e.departments.map((d) => d.name).join(", "),
-                    _position: e.position ?? "",
-                  })),
-                  [
-                    { key: "_name", label: "氏名" },
-                    { key: "email", label: "メール" },
-                    { key: "_departments", label: "部署" },
-                    { key: "_position", label: "役職" },
-                  ],
-                  `社員名簿_${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}${String(new Date().getDate()).padStart(2, "0")}`
-                );
-              }}
-            >
-              <Download className="mr-1.5 h-4 w-4" />
-              CSV出力
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={<Button variant="outline" size="sm" disabled={employees.length === 0} />}
+              >
+                <Download className="mr-1.5 h-4 w-4" />
+                エクスポート
+                <ChevronDown className="ml-1 h-3 w-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => exportAsCsv(employees)}>CSV出力</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportAsXlsx(employees)}>
+                  スプレッドシート出力 (.xlsx)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+              <Upload className="mr-1.5 h-4 w-4" />
+              インポート
             </Button>
             <Button onClick={openAddDialog}>社員を追加</Button>
           </div>
@@ -429,6 +556,16 @@ export default function EmployeesPage() {
           </div>
         )}
       </EditPanel>
+
+      {organization && (
+        <EmployeeImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          organizationId={organization.id}
+          departments={departments}
+          onComplete={() => mutate()}
+        />
+      )}
     </div>
   );
 }
