@@ -35,9 +35,15 @@ class PortalScreen extends ConsumerWidget {
         titleSpacing: AppSpacing.screenHorizontal,
         title: Row(
           children: [
-            OrgIcon(initial: (user?.organizationName ?? 'H').substring(0, 1), size: 32),
+            OrgIcon(
+              initial: (user?.organizationName ?? 'H').substring(0, 1),
+              size: 32,
+            ),
             const SizedBox(width: 10),
-            Text(user?.organizationName ?? 'HR1', style: AppTextStyles.title1.copyWith(letterSpacing: -0.2)),
+            Text(
+              user?.organizationName ?? 'HR1',
+              style: AppTextStyles.title1.copyWith(letterSpacing: -0.2),
+            ),
           ],
         ),
         centerTitle: false,
@@ -50,19 +56,34 @@ class PortalScreen extends ConsumerWidget {
                 return Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    AppIcons.notification(color: AppColors.textPrimary(context), size: 22),
+                    AppIcons.notification(
+                      color: AppColors.textPrimary(context),
+                      size: 22,
+                    ),
                     if (count > 0)
                       Positioned(
                         right: -6,
                         top: -4,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                          decoration: const BoxDecoration(color: AppColors.error, shape: BoxShape.circle),
-                          constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 1,
+                          ),
+                          decoration: const BoxDecoration(
+                            color: AppColors.error,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
                           child: Center(
                             child: Text(
                               count > 99 ? '99+' : '$count',
-                              style: AppTextStyles.caption2.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+                              style: AppTextStyles.caption2.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ),
@@ -76,9 +97,14 @@ class PortalScreen extends ConsumerWidget {
           GestureDetector(
             onTap: () => context.push(AppRoutes.profileFullscreen),
             child: Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.screenHorizontal),
+              padding: const EdgeInsets.only(
+                right: AppSpacing.screenHorizontal,
+              ),
               child: UserAvatar(
-                initial: (user?.displayName ?? user?.email ?? 'U').substring(0, 1),
+                initial: (user?.displayName ?? user?.email ?? 'U').substring(
+                  0,
+                  1,
+                ),
                 size: 32,
                 imageUrl: user?.avatarUrl,
               ),
@@ -113,13 +139,18 @@ class PortalScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('こんにちは、${user?.displayName ?? 'ゲスト'}さん', style: AppTextStyles.title1),
+                  Text(
+                    'こんにちは、${user?.displayName ?? 'ゲスト'}さん',
+                    style: AppTextStyles.title1,
+                  ),
                   if (user?.department != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
                         '${user!.department} / ${user.position ?? ''}',
-                        style: AppTextStyles.caption1.copyWith(color: AppColors.textSecondary(context)),
+                        style: AppTextStyles.caption1.copyWith(
+                          color: AppColors.textSecondary(context),
+                        ),
                       ),
                     ),
                 ],
@@ -137,7 +168,10 @@ class PortalScreen extends ConsumerWidget {
               child: SingleChildScrollView(
                 clipBehavior: Clip.none,
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenHorizontal,
+                  vertical: 4,
+                ),
                 child: IntrinsicHeight(
                   child: Row(
                     children: [
@@ -156,42 +190,65 @@ class PortalScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: Icon(Icons.help_outline_rounded, size: 24, color: AppColors.brandLight),
+                        icon: Icon(
+                          Icons.help_outline_rounded,
+                          size: 24,
+                          color: AppColors.brandLight,
+                        ),
                         label: 'FAQ',
                         color: AppColors.brandLight,
                         onTap: () => context.push(AppRoutes.faq),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: const Icon(Icons.menu_book_rounded, size: 24, color: AppColors.brandSecondary),
+                        icon: const Icon(
+                          Icons.menu_book_rounded,
+                          size: 24,
+                          color: AppColors.brandSecondary,
+                        ),
                         label: '社内Wiki',
                         color: AppColors.brandSecondary,
                         onTap: () => context.push(AppRoutes.wiki),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: AppIcons.calendar(size: 24, color: AppColors.success),
+                        icon: AppIcons.calendar(
+                          size: 24,
+                          color: AppColors.success,
+                        ),
                         label: '希望シフト',
                         color: AppColors.success,
                         onTap: () => context.push(AppRoutes.shiftRequest),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: const Icon(Icons.poll_outlined, size: 24, color: AppColors.purple),
+                        icon: const Icon(
+                          Icons.poll_outlined,
+                          size: 24,
+                          color: AppColors.purple,
+                        ),
                         label: 'サーベイ',
                         color: AppColors.purple,
                         onTap: () => context.push(AppRoutes.surveys),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: const Icon(Icons.beach_access_rounded, size: 24, color: AppColors.success),
+                        icon: const Icon(
+                          Icons.beach_access_rounded,
+                          size: 24,
+                          color: AppColors.success,
+                        ),
                         label: '有給管理',
                         color: AppColors.success,
                         onTap: () => context.push(AppRoutes.leaveBalance),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: const Icon(Icons.receipt_long_rounded, size: 24, color: AppColors.brandSecondary),
+                        icon: const Icon(
+                          Icons.receipt_long_rounded,
+                          size: 24,
+                          color: AppColors.brandSecondary,
+                        ),
                         label: '給与明細',
                         color: AppColors.brandSecondary,
                         onTap: () => context.push(AppRoutes.payslips),
@@ -205,7 +262,11 @@ class PortalScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: AppSpacing.md),
                       PortalActionChip(
-                        icon: const Icon(Icons.campaign_outlined, size: 24, color: AppColors.warning),
+                        icon: const Icon(
+                          Icons.campaign_outlined,
+                          size: 24,
+                          color: AppColors.warning,
+                        ),
                         label: 'お知らせ',
                         color: AppColors.warning,
                         onTap: () => context.push(AppRoutes.announcements),
@@ -220,7 +281,8 @@ class PortalScreen extends ConsumerWidget {
           // コンプライアンスアラート
           Consumer(
             builder: (context, ref, _) {
-              final alerts = ref.watch(myComplianceAlertsProvider).valueOrNull ?? [];
+              final alerts =
+                  ref.watch(myComplianceAlertsProvider).valueOrNull ?? [];
               if (alerts.isEmpty) {
                 return const SliverToBoxAdapter(child: SizedBox.shrink());
               }
@@ -234,7 +296,9 @@ class PortalScreen extends ConsumerWidget {
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: alerts.map((alert) => _ComplianceAlertCard(alert: alert)).toList(),
+                    children: alerts
+                        .map((alert) => _ComplianceAlertCard(alert: alert))
+                        .toList(),
                   ),
                 ),
               );
@@ -250,7 +314,8 @@ class PortalScreen extends ConsumerWidget {
           // 全社お知らせ
           Consumer(
             builder: (context, ref, _) {
-              final pinned = ref.watch(pinnedAnnouncementsProvider).valueOrNull ?? [];
+              final pinned =
+                  ref.watch(pinnedAnnouncementsProvider).valueOrNull ?? [];
               if (pinned.isEmpty) {
                 return const SliverToBoxAdapter(child: SizedBox.shrink());
               }
@@ -258,8 +323,13 @@ class PortalScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _SectionHeader(title: '全社お知らせ', onShowAll: () => context.push(AppRoutes.announcements)),
-                    ...pinned.map((a) => _PinnedAnnouncementTile(announcement: a)),
+                    _SectionHeader(
+                      title: '全社お知らせ',
+                      onShowAll: () => context.push(AppRoutes.announcements),
+                    ),
+                    ...pinned.map(
+                      (a) => _PinnedAnnouncementTile(announcement: a),
+                    ),
                   ],
                 ),
               );
@@ -268,16 +338,24 @@ class PortalScreen extends ConsumerWidget {
 
           // 通知
           SliverToBoxAdapter(
-            child: _SectionHeader(title: '通知', onShowAll: () => context.push(AppRoutes.notifications)),
+            child: _SectionHeader(
+              title: '通知',
+              onShowAll: () => context.push(AppRoutes.notifications),
+            ),
           ),
 
           Consumer(
             builder: (context, ref, _) {
               final notificationsAsync = ref.watch(latestNotificationsProvider);
               return notificationsAsync.when(
-                loading: () => const SliverToBoxAdapter(child: SizedBox(height: 60, child: LoadingIndicator())),
-                error: (_, __) =>
-                    SliverToBoxAdapter(child: ErrorState(onRetry: () => ref.invalidate(latestNotificationsProvider))),
+                loading: () => const SliverToBoxAdapter(
+                  child: SizedBox(height: 60, child: LoadingIndicator()),
+                ),
+                error: (_, __) => SliverToBoxAdapter(
+                  child: ErrorState(
+                    onRetry: () => ref.invalidate(latestNotificationsProvider),
+                  ),
+                ),
                 data: (notifications) {
                   if (notifications.isEmpty) {
                     return SliverToBoxAdapter(
@@ -288,14 +366,18 @@ class PortalScreen extends ConsumerWidget {
                         ),
                         child: Text(
                           '新しい通知はありません',
-                          style: AppTextStyles.caption1.copyWith(color: AppColors.textSecondary(context)),
+                          style: AppTextStyles.caption1.copyWith(
+                            color: AppColors.textSecondary(context),
+                          ),
                         ),
                       ),
                     );
                   }
                   return SliverList(
                     delegate: SliverChildListDelegate([
-                      ...notifications.map((n) => _NotificationPreviewTile(item: n)),
+                      ...notifications.map(
+                        (n) => _NotificationPreviewTile(item: n),
+                      ),
                       const SizedBox(height: AppSpacing.xxl),
                     ]),
                   );
@@ -350,7 +432,10 @@ class _SectionHeader extends StatelessWidget {
               ),
               child: Text(
                 'すべて表示',
-                style: AppTextStyles.caption2.copyWith(color: AppColors.brand, fontWeight: FontWeight.w600),
+                style: AppTextStyles.caption2.copyWith(
+                  color: AppColors.brand,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
         ],
@@ -374,7 +459,12 @@ class _AttendanceStatusCard extends ConsumerWidget {
 
     return CommonCard(
       onTap: () => context.push(AppRoutes.attendance),
-      margin: const EdgeInsets.fromLTRB(AppSpacing.screenHorizontal, AppSpacing.xl, AppSpacing.screenHorizontal, 0),
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.screenHorizontal,
+        AppSpacing.xl,
+        AppSpacing.screenHorizontal,
+        0,
+      ),
       child: Row(
         children: [
           _workStateIcon(context, workState),
@@ -384,10 +474,17 @@ class _AttendanceStatusCard extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: AppSpacing.xs,
               children: [
-                Text(_workStateLabel(workState), style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  _workStateLabel(workState),
+                  style: AppTextStyles.body2.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 Text(
                   _workStateDescription(workState, record),
-                  style: AppTextStyles.caption1.copyWith(color: AppColors.textSecondary(context)),
+                  style: AppTextStyles.caption1.copyWith(
+                    color: AppColors.textSecondary(context),
+                  ),
                 ),
               ],
             ),
@@ -404,29 +501,57 @@ class _AttendanceStatusCard extends ConsumerWidget {
         return Container(
           width: 40,
           height: 40,
-          decoration: BoxDecoration(color: AppColors.brand.withValues(alpha: 0.1), shape: BoxShape.circle),
-          child: const Icon(Icons.login_rounded, size: 20, color: AppColors.brand),
+          decoration: BoxDecoration(
+            color: AppColors.brand.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.login_rounded,
+            size: 20,
+            color: AppColors.brand,
+          ),
         );
       case WorkState.working:
         return Container(
           width: 40,
           height: 40,
-          decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.1), shape: BoxShape.circle),
-          child: const Icon(Icons.work_outline_rounded, size: 20, color: AppColors.success),
+          decoration: BoxDecoration(
+            color: AppColors.success.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.work_outline_rounded,
+            size: 20,
+            color: AppColors.success,
+          ),
         );
       case WorkState.onBreak:
         return Container(
           width: 40,
           height: 40,
-          decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.1), shape: BoxShape.circle),
-          child: const Icon(Icons.coffee_rounded, size: 20, color: AppColors.warning),
+          decoration: BoxDecoration(
+            color: AppColors.warning.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.coffee_rounded,
+            size: 20,
+            color: AppColors.warning,
+          ),
         );
       case WorkState.finished:
         return Container(
           width: 40,
           height: 40,
-          decoration: BoxDecoration(color: AppColors.divider(context).withValues(alpha: 0.3), shape: BoxShape.circle),
-          child: Icon(Icons.check_circle_outline_rounded, size: 20, color: AppColors.textSecondary(context)),
+          decoration: BoxDecoration(
+            color: AppColors.divider(context).withValues(alpha: 0.3),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.check_circle_outline_rounded,
+            size: 20,
+            color: AppColors.textSecondary(context),
+          ),
         );
     }
   }
@@ -454,7 +579,9 @@ class _AttendanceStatusCard extends ConsumerWidget {
         return '$dateStr — タップして打刻';
       case WorkState.working:
         if (record?.clockIn != null) {
-          final clockInStr = DateFormat('HH:mm').format(record!.clockIn!.toLocal());
+          final clockInStr = DateFormat(
+            'HH:mm',
+          ).format(record!.clockIn!.toLocal());
           return '$clockInStr に出勤';
         }
         return dateStr;
@@ -468,9 +595,17 @@ class _AttendanceStatusCard extends ConsumerWidget {
     }
   }
 
-  Widget _buildActionButton(BuildContext context, WidgetRef ref, WorkState state, PunchState punchState) {
+  Widget _buildActionButton(
+    BuildContext context,
+    WidgetRef ref,
+    WorkState state,
+    PunchState punchState,
+  ) {
     if (state == WorkState.finished) {
-      return Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary(context));
+      return Icon(
+        Icons.chevron_right_rounded,
+        color: AppColors.textTertiary(context),
+      );
     }
 
     final (label, action, color) = switch (state) {
@@ -483,7 +618,10 @@ class _AttendanceStatusCard extends ConsumerWidget {
     return SizedBox(
       height: 36,
       child: FilledButton(
-        onPressed: punchState.isLoading ? null : () => ref.read(attendanceControllerProvider.notifier).punch(action),
+        onPressed: punchState.isLoading
+            ? null
+            : () =>
+                  ref.read(attendanceControllerProvider.notifier).punch(action),
         style: FilledButton.styleFrom(
           backgroundColor: color,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -493,11 +631,17 @@ class _AttendanceStatusCard extends ConsumerWidget {
             ? const SizedBox(
                 width: 16,
                 height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               )
             : Text(
                 label,
-                style: AppTextStyles.caption1.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+                style: AppTextStyles.caption1.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
       ),
     );
@@ -526,7 +670,10 @@ class _TodayTasksSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionHeader(title: '今日のタスク（${incompleteTasks.length}件）', onShowAll: () => context.push(AppRoutes.tasks)),
+          _SectionHeader(
+            title: '今日のタスク（${incompleteTasks.length}件）',
+            onShowAll: () => context.push(AppRoutes.tasks),
+          ),
           ...displayTasks.map((task) => _TaskTile(task: task)),
         ],
       ),
@@ -544,13 +691,18 @@ class _TaskTile extends StatelessWidget {
     return InkWell(
       onTap: () => context.push(AppRoutes.tasks),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+          vertical: 12,
+        ),
         child: Row(
           children: [
             Icon(
               Icons.radio_button_unchecked_rounded,
               size: 20,
-              color: task.isImportant ? AppColors.error : AppColors.textSecondary(context),
+              color: task.isImportant
+                  ? AppColors.error
+                  : AppColors.textSecondary(context),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -559,7 +711,9 @@ class _TaskTile extends StatelessWidget {
                 children: [
                   Text(
                     task.title,
-                    style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500),
+                    style: AppTextStyles.caption1.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -567,13 +721,16 @@ class _TaskTile extends StatelessWidget {
                     Text(
                       _dueDateLabel(task),
                       style: AppTextStyles.caption2.copyWith(
-                        color: task.isOverdue ? AppColors.error : AppColors.textSecondary(context),
+                        color: task.isOverdue
+                            ? AppColors.error
+                            : AppColors.textSecondary(context),
                       ),
                     ),
                 ],
               ),
             ),
-            if (task.isImportant) Icon(Icons.star_rounded, size: 18, color: AppColors.warning),
+            if (task.isImportant)
+              Icon(Icons.star_rounded, size: 18, color: AppColors.warning),
           ],
         ),
       ),
@@ -584,7 +741,11 @@ class _TaskTile extends StatelessWidget {
     if (task.dueDate == null) return '';
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final due = DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day);
+    final due = DateTime(
+      task.dueDate!.year,
+      task.dueDate!.month,
+      task.dueDate!.day,
+    );
 
     if (due == today) return '今日まで';
     if (due == today.add(const Duration(days: 1))) return '明日まで';
@@ -612,7 +773,10 @@ class _PendingSurveysSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionHeader(title: '未回答サーベイ（${surveys.length}件）', onShowAll: () => context.push(AppRoutes.surveys)),
+          _SectionHeader(
+            title: '未回答サーベイ（${surveys.length}件）',
+            onShowAll: () => context.push(AppRoutes.surveys),
+          ),
           ...surveys.take(3).map((s) => _SurveyTile(survey: s)),
         ],
       ),
@@ -628,19 +792,30 @@ class _SurveyTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasDeadline = survey.deadline != null;
-    final isUrgent = hasDeadline && survey.deadline!.difference(DateTime.now()).inDays <= 3;
+    final isUrgent =
+        hasDeadline && survey.deadline!.difference(DateTime.now()).inDays <= 3;
 
     return InkWell(
       onTap: () => context.push(AppRoutes.surveys),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+          vertical: 12,
+        ),
         child: Row(
           children: [
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(color: AppColors.purple.withValues(alpha: 0.1), shape: BoxShape.circle),
-              child: const Icon(Icons.poll_outlined, size: 20, color: AppColors.purple),
+              decoration: BoxDecoration(
+                color: AppColors.purple.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.poll_outlined,
+                size: 20,
+                color: AppColors.purple,
+              ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -649,7 +824,9 @@ class _SurveyTile extends StatelessWidget {
                 children: [
                   Text(
                     survey.title,
-                    style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w500),
+                    style: AppTextStyles.caption1.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -657,13 +834,19 @@ class _SurveyTile extends StatelessWidget {
                     Text(
                       '${DateFormat('M/d').format(survey.deadline!)}まで',
                       style: AppTextStyles.caption2.copyWith(
-                        color: isUrgent ? AppColors.error : AppColors.textSecondary(context),
+                        color: isUrgent
+                            ? AppColors.error
+                            : AppColors.textSecondary(context),
                       ),
                     ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.textTertiary(context)),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: AppColors.textTertiary(context),
+            ),
           ],
         ),
       ),
@@ -682,20 +865,32 @@ class _PinnedAnnouncementTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('MM/dd').format(announcement.publishedAt.toLocal());
+    final dateStr = DateFormat(
+      'MM/dd',
+    ).format(announcement.publishedAt.toLocal());
 
     return InkWell(
       onTap: () => context.push(AppRoutes.announcements),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: 14),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+          vertical: 14,
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.1), shape: BoxShape.circle),
-              child: const Icon(Icons.push_pin, size: 20, color: AppColors.warning),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.push_pin,
+                size: 20,
+                color: AppColors.warning,
+              ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -704,12 +899,19 @@ class _PinnedAnnouncementTile extends StatelessWidget {
                 children: [
                   Text(
                     announcement.title,
-                    style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w600),
+                    style: AppTextStyles.caption1.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
-                  Text(dateStr, style: AppTextStyles.caption2.copyWith(color: AppColors.textSecondary(context))),
+                  Text(
+                    dateStr,
+                    style: AppTextStyles.caption2.copyWith(
+                      color: AppColors.textSecondary(context),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -738,10 +940,14 @@ class _ComplianceAlertCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: isCritical ? AppColors.error.withValues(alpha: 0.08) : AppColors.warning.withValues(alpha: 0.08),
+        color: isCritical
+            ? AppColors.error.withValues(alpha: 0.08)
+            : AppColors.warning.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isCritical ? AppColors.error.withValues(alpha: 0.3) : AppColors.warning.withValues(alpha: 0.3),
+          color: isCritical
+              ? AppColors.error.withValues(alpha: 0.3)
+              : AppColors.warning.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -757,11 +963,18 @@ class _ComplianceAlertCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(alert.title, style: AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  alert.title,
+                  style: AppTextStyles.caption1.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   alert.description,
-                  style: AppTextStyles.caption2.copyWith(color: AppColors.textSecondary(context)),
+                  style: AppTextStyles.caption2.copyWith(
+                    color: AppColors.textSecondary(context),
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -798,7 +1011,10 @@ class _NotificationPreviewTile extends ConsumerWidget {
         }
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal, vertical: 14),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+          vertical: 14,
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -806,10 +1022,18 @@ class _NotificationPreviewTile extends ConsumerWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: !item.isRead ? iconColor.withValues(alpha: 0.1) : AppColors.divider(context),
+                color: !item.isRead
+                    ? iconColor.withValues(alpha: 0.1)
+                    : AppColors.divider(context),
                 shape: BoxShape.circle,
               ),
-              child: Icon(iconData, size: 20, color: !item.isRead ? iconColor : AppColors.textSecondary(context)),
+              child: Icon(
+                iconData,
+                size: 20,
+                color: !item.isRead
+                    ? iconColor
+                    : AppColors.textSecondary(context),
+              ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -819,7 +1043,9 @@ class _NotificationPreviewTile extends ConsumerWidget {
                   Text(
                     item.title,
                     style: AppTextStyles.caption1.copyWith(
-                      fontWeight: !item.isRead ? FontWeight.w600 : FontWeight.w400,
+                      fontWeight: !item.isRead
+                          ? FontWeight.w600
+                          : FontWeight.w400,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -828,7 +1054,9 @@ class _NotificationPreviewTile extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       item.body!,
-                      style: AppTextStyles.caption2.copyWith(color: AppColors.textSecondary(context)),
+                      style: AppTextStyles.caption2.copyWith(
+                        color: AppColors.textSecondary(context),
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -841,7 +1069,10 @@ class _NotificationPreviewTile extends ConsumerWidget {
                 margin: const EdgeInsets.only(left: AppSpacing.sm, top: 6),
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(color: AppColors.brand, shape: BoxShape.circle),
+                decoration: const BoxDecoration(
+                  color: AppColors.brand,
+                  shape: BoxShape.circle,
+                ),
               ),
           ],
         ),

@@ -184,13 +184,9 @@ class _FaqTileState extends State<_FaqTile> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: AppColors.border(context)),
-        boxShadow: AppShadows.of4(context),
-      ),
+    return CommonCard(
+      margin: EdgeInsets.zero,
+      padding: EdgeInsets.zero,
       child: Column(
         children: [
           InkWell(

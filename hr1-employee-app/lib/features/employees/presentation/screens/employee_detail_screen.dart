@@ -472,18 +472,11 @@ class _InfoSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (title != null) _SectionHeader(title: title!),
-        Container(
+        CommonCard(
           margin: const EdgeInsets.symmetric(
             horizontal: AppSpacing.screenHorizontal,
           ),
-          decoration: BoxDecoration(
-            color: AppColors.surface(context),
-            borderRadius: BorderRadius.circular(12),
-            border: AppColors.isDark(context)
-                ? Border.all(color: AppColors.border(context), width: 0.5)
-                : null,
-            boxShadow: AppShadows.of4(context),
-          ),
+          padding: EdgeInsets.zero,
           child: Column(
             children: [
               for (var i = 0; i < children.length; i++) ...[
@@ -593,21 +586,12 @@ class _ProjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return CommonCard(
       margin: const EdgeInsets.fromLTRB(
         AppSpacing.screenHorizontal,
         0,
         AppSpacing.screenHorizontal,
         AppSpacing.md,
-      ),
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: BorderRadius.circular(12),
-        border: AppColors.isDark(context)
-            ? Border.all(color: AppColors.border(context), width: 0.5)
-            : null,
-        boxShadow: AppShadows.of4(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

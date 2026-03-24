@@ -119,17 +119,8 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.cardPadding),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: AppRadius.radius120,
-        border: Border.all(
-          color: AppColors.border(context),
-          width: AppStroke.strokeWidth05,
-        ),
-        boxShadow: AppShadows.of4(context),
-      ),
+    return CommonCard(
+      margin: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: children,

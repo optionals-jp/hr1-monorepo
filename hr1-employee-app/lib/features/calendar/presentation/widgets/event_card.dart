@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
 import 'package:hr1_employee_app/features/calendar/domain/entities/calendar_event.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 
 /// Outlook スタイルのイベントカード（左カラーバー付き）
 class EventCard extends StatelessWidget {
@@ -28,108 +29,95 @@ class EventCard extends StatelessWidget {
         horizontal: AppSpacing.screenHorizontal,
         vertical: 3,
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface(context),
-              borderRadius: BorderRadius.circular(8),
-              border: AppColors.isDark(context)
-                  ? Border.all(color: AppColors.border(context), width: 0.5)
-                  : null,
-              boxShadow: AppShadows.of2(context),
-            ),
-            child: Row(
-              children: [
-                // 左カラーバー
-                Container(
-                  width: 4,
-                  height: event.isAllDay ? 44 : 64,
-                  decoration: BoxDecoration(
-                    color: _categoryColor,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(8),
-                      bottomLeft: Radius.circular(8),
-                    ),
-                  ),
+      child: CommonCard(
+        onTap: onTap,
+        margin: EdgeInsets.zero,
+        padding: EdgeInsets.zero,
+        child: Row(
+          children: [
+            // 左カラーバー
+            Container(
+              width: 4,
+              height: event.isAllDay ? 44 : 64,
+              decoration: BoxDecoration(
+                color: _categoryColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(8),
+                  bottomLeft: Radius.circular(8),
                 ),
-                // コンテンツ
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // 時間
-                        if (!event.isAllDay)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 2),
-                            child: Text(
-                              '${timeFormat.format(event.startAt.toLocal())} - ${timeFormat.format(event.endAt.toLocal())}',
-                              style: AppTextStyles.caption2.copyWith(
-                                color: AppColors.textSecondary(context),
-                              ),
-                            ),
-                          )
-                        else
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 2),
-                            child: Text(
-                              '終日',
-                              style: AppTextStyles.caption2.copyWith(
-                                color: _categoryColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+              ),
+            ),
+            // コンテンツ
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 時間
+                    if (!event.isAllDay)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          '${timeFormat.format(event.startAt.toLocal())} - ${timeFormat.format(event.endAt.toLocal())}',
+                          style: AppTextStyles.caption2.copyWith(
+                            color: AppColors.textSecondary(context),
                           ),
-                        // タイトル
-                        Text(
-                          event.title,
-                          style: AppTextStyles.caption1.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                        // 場所
-                        if (event.location != null &&
-                            event.location!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Row(
-                              children: [
-                                AppIcons.location(
-                                  size: 13,
+                      )
+                    else
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          '終日',
+                          style: AppTextStyles.caption2.copyWith(
+                            color: _categoryColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    // タイトル
+                    Text(
+                      event.title,
+                      style: AppTextStyles.caption1.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    // 場所
+                    if (event.location != null && event.location!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Row(
+                          children: [
+                            AppIcons.location(
+                              size: 13,
+                              color: AppColors.textTertiary(context),
+                            ),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                event.location!,
+                                style: AppTextStyles.caption1.copyWith(
+                                  fontWeight: FontWeight.w500,
                                   color: AppColors.textTertiary(context),
                                 ),
-                                const SizedBox(width: 3),
-                                Expanded(
-                                  child: Text(
-                                    event.location!,
-                                    style: AppTextStyles.caption1.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColors.textTertiary(context),
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                      ],
-                    ),
-                  ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

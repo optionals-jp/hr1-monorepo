@@ -238,55 +238,52 @@ class _PunchButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final buttons = switch (workState) {
+      WorkState.notStarted => [
+        _PunchButton(
+          label: '出勤',
+          iconBuilder: AppIcons.login,
+          color: AppColors.success,
+          enabled: !isLoading,
+          onPressed: () => onPunch('clock_in'),
+        ),
+      ],
+      WorkState.working => [
+        _PunchButton(
+          label: '退勤',
+          iconBuilder: AppIcons.logout,
+          color: AppColors.error,
+          enabled: !isLoading,
+          onPressed: () => onPunch('clock_out'),
+        ),
+        _PunchButton(
+          label: '休憩開始',
+          iconBuilder: AppIcons.coffee,
+          color: AppColors.warning,
+          enabled: !isLoading,
+          onPressed: () => onPunch('break_start'),
+        ),
+      ],
+      WorkState.onBreak => [
+        _PunchButton(
+          label: '休憩終了',
+          iconBuilder: AppIcons.pause,
+          color: AppColors.brandLight,
+          enabled: !isLoading,
+          onPressed: () => onPunch('break_end'),
+        ),
+      ],
+      WorkState.finished => <Widget>[],
+    };
+
+    if (buttons.isEmpty) return const SizedBox.shrink();
+
+    return Row(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _PunchButton(
-                label: '出勤',
-                iconBuilder: AppIcons.login,
-                color: AppColors.success,
-                enabled: !isLoading && workState == WorkState.notStarted,
-                onPressed: () => onPunch('clock_in'),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: _PunchButton(
-                label: '退勤',
-                iconBuilder: AppIcons.logout,
-                color: AppColors.error,
-                enabled: !isLoading && workState == WorkState.working,
-                onPressed: () => onPunch('clock_out'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Row(
-          children: [
-            Expanded(
-              child: _PunchButton(
-                label: '休憩開始',
-                iconBuilder: AppIcons.coffee,
-                color: AppColors.warning,
-                enabled: !isLoading && workState == WorkState.working,
-                onPressed: () => onPunch('break_start'),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: _PunchButton(
-                label: '休憩終了',
-                iconBuilder: AppIcons.pause,
-                color: AppColors.brandLight,
-                enabled: !isLoading && workState == WorkState.onBreak,
-                onPressed: () => onPunch('break_end'),
-              ),
-            ),
-          ],
-        ),
+        for (var i = 0; i < buttons.length; i++) ...[
+          if (i > 0) const SizedBox(width: AppSpacing.md),
+          Expanded(child: buttons[i]),
+        ],
       ],
     );
   }
@@ -314,45 +311,24 @@ class _PunchButton extends StatelessWidget {
 
     return SizedBox(
       height: 56,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: AppRadius.radius120,
-          boxShadow: AppShadows.of4(context),
-        ),
-        child: Material(
-          color: AppColors.surface(context),
-          borderRadius: AppRadius.radius120,
-          child: InkWell(
-            onTap: enabled ? onPressed : null,
-            borderRadius: AppRadius.radius120,
-            child: Container(
-              decoration: BoxDecoration(
-                color: enabled
-                    ? color.withValues(alpha: 0.15)
-                    : Colors.transparent,
-                borderRadius: AppRadius.radius120,
-                border: Border.all(
-                  color: enabled
-                      ? color.withValues(alpha: 0.15)
-                      : AppColors.border(context),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  iconBuilder(size: 20, color: iconColor),
-                  const SizedBox(width: 8),
-                  Text(
-                    label,
-                    style: AppTextStyles.caption1.copyWith(
-                      color: iconColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+      child: CommonCard(
+        onTap: enabled ? onPressed : null,
+        margin: EdgeInsets.zero,
+        highlighted: enabled,
+        highlightColor: color,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            iconBuilder(size: 20, color: iconColor),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: AppTextStyles.caption1.copyWith(
+                color: iconColor,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -367,14 +343,8 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: AppRadius.radius120,
-        border: Border.all(color: AppColors.border(context)),
-        boxShadow: AppShadows.of4(context),
-      ),
+    return CommonCard(
+      margin: EdgeInsets.zero,
       child: Row(
         children: [
           _KVItem(

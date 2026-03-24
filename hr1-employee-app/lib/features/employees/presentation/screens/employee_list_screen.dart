@@ -142,15 +142,15 @@ class _Body extends StatelessWidget {
                   description: '検索条件を変更してください',
                 )
               : ListView.separated(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenHorizontal,
-                    vertical: AppSpacing.sm,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                   itemCount: filtered.length,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(height: AppSpacing.sm),
+                  separatorBuilder: (_, __) => Divider(
+                    height: 1,
+                    indent: AppSpacing.screenHorizontal + 44 + AppSpacing.md,
+                    color: AppColors.divider(context),
+                  ),
                   itemBuilder: (context, index) {
-                    return _EmployeeCard(employee: filtered[index]);
+                    return _EmployeeTile(employee: filtered[index]);
                   },
                 ),
         ),
@@ -260,10 +260,7 @@ class _FilterChipButton extends StatelessWidget {
                 ),
               ),
               const Divider(height: 1),
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.5,
-                ),
+              Flexible(
                 child: ListView.builder(
                   shrinkWrap: true,
                   itemCount: options.length,
@@ -305,24 +302,19 @@ class _FilterChipButton extends StatelessWidget {
   }
 }
 
-class _EmployeeCard extends StatelessWidget {
-  const _EmployeeCard({required this.employee});
+class _EmployeeTile extends StatelessWidget {
+  const _EmployeeTile({required this.employee});
 
   final EmployeeContact employee;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: () => context.push(AppRoutes.employeeDetail, extra: employee),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: AppColors.surface(context),
-          borderRadius: BorderRadius.circular(12),
-          border: AppColors.isDark(context)
-              ? Border.all(color: AppColors.border(context), width: 0.5)
-              : null,
-          boxShadow: AppShadows.of4(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+          vertical: AppSpacing.sm,
         ),
         child: Row(
           children: [
@@ -337,20 +329,20 @@ class _EmployeeCard extends StatelessWidget {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: AppSpacing.xs,
                 children: [
                   Text(
                     employee.name,
-                    style: AppTextStyles.caption1.copyWith(
+                    style: AppTextStyles.body2.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 2),
                   Text(
                     [
                       employee.department,
                       employee.position,
                     ].where((s) => s.isNotEmpty).join(' / '),
-                    style: AppTextStyles.caption2.copyWith(
+                    style: AppTextStyles.caption1.copyWith(
                       color: AppColors.textSecondary(context),
                     ),
                     maxLines: 1,

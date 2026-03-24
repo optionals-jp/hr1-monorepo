@@ -124,13 +124,9 @@ class _AnnouncementTileState extends State<_AnnouncementTile> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface(context),
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          border: Border.all(color: AppColors.border(context)),
-          boxShadow: AppShadows.of4(context),
-        ),
+      child: CommonCard(
+        margin: EdgeInsets.zero,
+        padding: EdgeInsets.zero,
         child: Column(
           children: [
             InkWell(
