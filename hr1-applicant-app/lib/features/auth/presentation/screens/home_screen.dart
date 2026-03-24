@@ -38,9 +38,8 @@ class HomeScreen extends ConsumerWidget {
       body: navigationShell,
       bottomNavigationBar: Builder(
         builder: (context) {
-          final navTheme = Theme.of(context).bottomNavigationBarTheme;
-          final selectedColor = navTheme.selectedItemColor!;
-          final unselectedColor = navTheme.unselectedItemColor!;
+          final selectedColor = AppColors.brand;
+          final unselectedColor = AppColors.textTertiary(context);
           return BottomNavigationBar(
             type: BottomNavigationBarType.fixed,
             currentIndex: navigationShell.currentIndex,
@@ -133,7 +132,7 @@ class _NotificationIconButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final unreadCount = ref.watch(unreadNotificationCountProvider);
-    final iconColor = Theme.of(context).appBarTheme.foregroundColor;
+    final iconColor = AppColors.textPrimary(context);
 
     return IconButton(
       icon: Stack(

@@ -120,7 +120,6 @@ class _MiniCalendarState extends State<MiniCalendar> {
   }
 
   Widget _buildDateGrid(BuildContext context, DateTime month) {
-    final theme = Theme.of(context);
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
 
@@ -152,7 +151,6 @@ class _MiniCalendarState extends State<MiniCalendar> {
                   startDate.add(Duration(days: row * 7 + col)),
                   todayDate,
                   month,
-                  theme,
                 ),
             ],
           ),
@@ -165,7 +163,6 @@ class _MiniCalendarState extends State<MiniCalendar> {
     DateTime date,
     DateTime today,
     DateTime month,
-    ThemeData theme,
   ) {
     final isToday = date == today;
     final isSelected = date == widget.selectedDate;
@@ -174,15 +171,15 @@ class _MiniCalendarState extends State<MiniCalendar> {
 
     Color textColor;
     if (!isCurrentMonth) {
-      textColor = AppColors.textTertiary(theme.brightness);
+      textColor = AppColors.textTertiary(context);
     } else if (isToday) {
       textColor = Colors.white;
     } else if (isSelected) {
       textColor = AppColors.brand;
     } else if (date.weekday == 6 || date.weekday == 7) {
-      textColor = AppColors.textSecondary(theme.brightness);
+      textColor = AppColors.textSecondary(context);
     } else {
-      textColor = theme.colorScheme.onSurface;
+      textColor = AppColors.textPrimary(context);
     }
 
     return Expanded(
@@ -247,7 +244,6 @@ class _WeekdayHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
@@ -260,8 +256,8 @@ class _WeekdayHeader extends StatelessWidget {
                 style: AppTextStyles.caption1.copyWith(
                   fontWeight: FontWeight.w500,
                   color: isWeekend
-                      ? AppColors.textTertiary(theme.brightness)
-                      : AppColors.textSecondary(theme.brightness),
+                      ? AppColors.textTertiary(context)
+                      : AppColors.textSecondary(context),
                 ),
               ),
             ),
@@ -281,7 +277,6 @@ class _ExpandHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -294,7 +289,7 @@ class _ExpandHandle extends StatelessWidget {
                 ? Icons.keyboard_arrow_up_rounded
                 : Icons.keyboard_arrow_down_rounded,
             size: 20,
-            color: AppColors.textTertiary(theme.brightness),
+            color: AppColors.textTertiary(context),
           ),
         ),
       ),

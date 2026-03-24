@@ -94,7 +94,7 @@ class UserAvatar extends StatelessWidget {
                 color: _presenceColor,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Theme.of(context).scaffoldBackgroundColor,
+                  color: AppColors.surface(context),
                   width: borderWidth,
                 ),
               ),

@@ -133,13 +133,12 @@ class _CreateOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return ListTile(
       leading: Icon(icon, color: AppColors.brand),
       title: Text(label, style: AppTextStyles.body1),
       trailing: Icon(
         Icons.chevron_right_rounded,
-        color: AppColors.textTertiary(theme.brightness),
+        color: AppColors.textTertiary(context),
       ),
       onTap: onTap,
     );
@@ -174,7 +173,7 @@ class _RequestTab extends ConsumerWidget {
             icon: Icon(
               Icons.description_outlined,
               size: 48,
-              color: AppColors.textTertiary(Theme.of(context).brightness),
+              color: AppColors.textTertiary(context),
             ),
             title: '申請はありません',
           );
@@ -197,7 +196,6 @@ class _RequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final dateFormat = DateFormat('yyyy/MM/dd');
 
     return CommonCard(
@@ -238,7 +236,7 @@ class _RequestCard extends StatelessWidget {
                 Text(
                   request.summary,
                   style: AppTextStyles.caption1.copyWith(
-                    color: AppColors.textSecondary(theme.brightness),
+                    color: AppColors.textSecondary(context),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -250,7 +248,7 @@ class _RequestCard extends StatelessWidget {
             Text(
               dateFormat.format(request.createdAt!),
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.textTertiary(theme.brightness),
+                color: AppColors.textTertiary(context),
               ),
             ),
         ],

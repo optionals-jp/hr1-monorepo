@@ -24,7 +24,7 @@ class JobDetailScreen extends ConsumerWidget {
         if (job == null) {
           return Scaffold(
             appBar: AppBar(title: const Text('求人詳細')),
-            body: const Center(child: Text('求人情報が見つかりません')),
+            body: const ErrorState(message: '求人情報が見つかりません'),
           );
         }
 
@@ -80,7 +80,7 @@ class JobDetailScreen extends ConsumerWidget {
       ),
       error: (e, _) => Scaffold(
         appBar: AppBar(title: const Text('求人詳細')),
-        body: const Center(child: Text('エラーが発生しました')),
+        body: const ErrorState(),
       ),
     );
   }
@@ -96,14 +96,13 @@ class _SelectionFlowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.surface(context),
         borderRadius: AppRadius.radius120,
-        border: Border.all(color: AppColors.divider(theme.brightness)),
+        border: Border.all(color: AppColors.divider(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,7 +139,7 @@ class _SelectionFlowCard extends StatelessWidget {
                       Container(
                         width: 2,
                         height: 20,
-                        color: AppColors.divider(theme.brightness),
+                        color: AppColors.divider(context),
                       ),
                   ],
                 ),
@@ -160,16 +159,14 @@ class _SelectionFlowCard extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: AppColors.textTertiary(
-                                theme.brightness,
+                                context,
                               ).withValues(alpha: 0.1),
                               borderRadius: AppRadius.radius40,
                             ),
                             child: Text(
                               '外部',
                               style: AppTextStyles.caption2.copyWith(
-                                color: AppColors.textSecondary(
-                                  theme.brightness,
-                                ),
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                           ),
@@ -290,7 +287,6 @@ class _ApplyBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final asyncApplications = ref.watch(applicationsProvider);
     final alreadyApplied =
         asyncApplications.whenOrNull(
@@ -306,8 +302,8 @@ class _ApplyBar extends ConsumerWidget {
         MediaQuery.of(context).padding.bottom + AppSpacing.md,
       ),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        boxShadow: AppShadows.shadow4,
+        color: AppColors.surface(context),
+        boxShadow: AppShadows.of4(context),
       ),
       child: CommonButton(
         onPressed: alreadyApplied ? null : () => _showApplyDialog(context, ref),

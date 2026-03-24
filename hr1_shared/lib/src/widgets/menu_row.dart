@@ -44,9 +44,8 @@ class MenuRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final textColor =
-        isDestructive ? AppColors.error : theme.colorScheme.onSurface;
+        isDestructive ? AppColors.error : AppColors.textPrimary(context);
     final hasLabel = label != null;
     final isEditable = onTap != null;
 
@@ -65,7 +64,7 @@ class MenuRow extends StatelessWidget {
                   size: 22,
                   color: isDestructive
                       ? AppColors.error
-                      : AppColors.textSecondary(theme.brightness),
+                      : AppColors.textSecondary(context),
                 ),
                 child: icon!,
               ),
@@ -79,7 +78,7 @@ class MenuRow extends StatelessWidget {
                     Text(
                       label!,
                       style: AppTextStyles.caption2.copyWith(
-                        color: AppColors.textSecondary(theme.brightness),
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -100,7 +99,7 @@ class MenuRow extends StatelessWidget {
                       Text(
                         subtitle!,
                         style: AppTextStyles.caption2.copyWith(
-                          color: AppColors.textSecondary(theme.brightness),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                   ],
@@ -111,7 +110,7 @@ class MenuRow extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: 20,
-                color: AppColors.textTertiary(theme.brightness),
+                color: AppColors.textTertiary(context),
               ),
           ],
         ),

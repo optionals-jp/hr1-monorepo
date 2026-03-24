@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
@@ -14,150 +15,138 @@ import 'package:hr1_employee_app/features/calendar/presentation/widgets/day_view
 import 'package:hr1_employee_app/features/calendar/presentation/widgets/event_card.dart';
 import 'package:hr1_employee_app/features/calendar/presentation/widgets/mini_calendar.dart';
 
-/// カレンダー画面 — Outlook モバイルスタイル
-class CalendarScreen extends ConsumerStatefulWidget {
+class CalendarScreen extends HookConsumerWidget {
   const CalendarScreen({super.key});
 
-  @override
-  ConsumerState<CalendarScreen> createState() => _CalendarScreenState();
-}
-
-class _CalendarScreenState extends ConsumerState<CalendarScreen> {
-  bool _isCalendarExpanded = false;
-
-  // コンテンツエリア用 PageView
   static const _pageCenter = 10000;
-  final PageController _dayPageController = PageController(
-    initialPage: _pageCenter,
-  );
-  DateTime? _baseDate; // PageView の基準日
-  bool _isSyncing = false; // 外部からのPageView同期中フラグ
 
   @override
-  void dispose() {
-    _dayPageController.dispose();
-    super.dispose();
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isCalendarExpanded = useState(false);
+    final dayPageController = useMemoized(
+      () => PageController(initialPage: _pageCenter),
+    );
+    final baseDate = useRef<DateTime?>(null);
+    final isSyncing = useRef(false);
 
-  DateTime _dateForPage(int page) {
-    _baseDate ??= ref.read(selectedDateProvider);
-    return _baseDate!.add(Duration(days: page - _pageCenter));
-  }
+    useEffect(() => dayPageController.dispose, [dayPageController]);
 
-  void _showMonthPicker(BuildContext context, DateTime current) {
-    var selectedYear = current.year;
-    showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            final theme = Theme.of(ctx);
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 年選択
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.chevron_left_rounded),
-                          onPressed: () => setSheetState(() => selectedYear--),
-                        ),
-                        Text('$selectedYear年', style: AppTextStyles.headline),
-                        IconButton(
-                          icon: const Icon(Icons.chevron_right_rounded),
-                          onPressed: () => setSheetState(() => selectedYear++),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // 月グリッド
-                    GridView.count(
-                      crossAxisCount: 4,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      childAspectRatio: 2,
-                      children: List.generate(12, (i) {
-                        final month = i + 1;
-                        final isCurrent =
-                            selectedYear == current.year &&
-                            month == current.month;
-                        return GestureDetector(
-                          onTap: () {
-                            final controller = ref.read(
-                              calendarControllerProvider.notifier,
-                            );
-                            controller.changeFocusedMonth(
-                              DateTime(selectedYear, month),
-                            );
-                            controller.selectDate(
-                              DateTime(selectedYear, month, 1),
-                            );
-                            Navigator.pop(ctx);
-                          },
-                          child: Container(
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: isCurrent
-                                  ? AppColors.brand.withValues(alpha: 0.1)
-                                  : null,
-                              borderRadius: AppRadius.radius80,
-                              border: isCurrent
-                                  ? Border.all(
-                                      color: AppColors.brand,
-                                      width: 1.5,
-                                    )
-                                  : null,
-                            ),
-                            child: Text(
-                              '$month月',
-                              style: AppTextStyles.body2.copyWith(
+    DateTime dateForPage(int page) {
+      baseDate.value ??= ref.read(selectedDateProvider);
+      return baseDate.value!.add(Duration(days: page - _pageCenter));
+    }
+
+    void showMonthPicker(BuildContext context, DateTime current) {
+      var selectedYear = current.year;
+      showModalBottomSheet<void>(
+        context: context,
+        useRootNavigator: true,
+        builder: (ctx) {
+          return StatefulBuilder(
+            builder: (ctx, setSheetState) {
+              return SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.chevron_left_rounded),
+                            onPressed: () =>
+                                setSheetState(() => selectedYear--),
+                          ),
+                          Text('$selectedYear年', style: AppTextStyles.headline),
+                          IconButton(
+                            icon: const Icon(Icons.chevron_right_rounded),
+                            onPressed: () =>
+                                setSheetState(() => selectedYear++),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      GridView.count(
+                        crossAxisCount: 4,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        childAspectRatio: 2,
+                        children: List.generate(12, (i) {
+                          final month = i + 1;
+                          final isCurrent =
+                              selectedYear == current.year &&
+                              month == current.month;
+                          return GestureDetector(
+                            onTap: () {
+                              final controller = ref.read(
+                                calendarControllerProvider.notifier,
+                              );
+                              controller.changeFocusedMonth(
+                                DateTime(selectedYear, month),
+                              );
+                              controller.selectDate(
+                                DateTime(selectedYear, month, 1),
+                              );
+                              Navigator.pop(ctx);
+                            },
+                            child: Container(
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
                                 color: isCurrent
-                                    ? AppColors.brand
-                                    : theme.colorScheme.onSurface,
-                                fontWeight: isCurrent ? FontWeight.w600 : null,
+                                    ? AppColors.brand.withValues(alpha: 0.1)
+                                    : null,
+                                borderRadius: AppRadius.radius80,
+                                border: isCurrent
+                                    ? Border.all(
+                                        color: AppColors.brand,
+                                        width: 1.5,
+                                      )
+                                    : null,
+                              ),
+                              child: Text(
+                                '$month月',
+                                style: AppTextStyles.body2.copyWith(
+                                  color: isCurrent
+                                      ? AppColors.brand
+                                      : AppColors.textPrimary(context),
+                                  fontWeight: isCurrent
+                                      ? FontWeight.w600
+                                      : null,
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      }),
-                    ),
-                  ],
+                          );
+                        }),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+              );
+            },
+          );
+        },
+      );
+    }
 
-  void _navigateToEventForm({CalendarEvent? event}) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => _EventFormSheet(event: event),
-        fullscreenDialog: true,
-      ),
-    );
-  }
+    void navigateToEventForm({CalendarEvent? event}) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => _EventFormSheet(event: event),
+          fullscreenDialog: true,
+        ),
+      );
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    // ミニカレンダーや「今日」ボタンから日付が変わった時にPageViewを同期
     ref.listen<DateTime>(selectedDateProvider, (prev, next) {
-      _baseDate ??= next;
-      final targetPage = _pageCenter + next.difference(_baseDate!).inDays;
-      if (_dayPageController.hasClients &&
-          _dayPageController.page?.round() != targetPage) {
-        _isSyncing = true;
-        // jumpToPage を使用して中間ページのウィジェット構築（API呼び出し）を防止
-        _dayPageController.jumpToPage(targetPage);
-        _isSyncing = false;
+      baseDate.value ??= next;
+      final targetPage = _pageCenter + next.difference(baseDate.value!).inDays;
+      if (dayPageController.hasClients &&
+          dayPageController.page?.round() != targetPage) {
+        isSyncing.value = true;
+        dayPageController.jumpToPage(targetPage);
+        isSyncing.value = false;
       }
     });
 
@@ -165,11 +154,34 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final focusedMonth = ref.watch(focusedMonthProvider);
     final viewMode = ref.watch(calendarViewModeProvider);
     final eventDatesAsync = ref.watch(eventDatesProvider(focusedMonth));
-    final theme = Theme.of(context);
-
     final monthLabel = DateFormat('yyyy年M月', 'ja').format(focusedMonth);
 
     final user = ref.watch(appUserProvider);
+
+    PopupMenuItem<CalendarViewMode> viewMenuItem(
+      CalendarViewMode mode,
+      String label,
+      Widget Function({double size, Color? color}) iconBuilder,
+      CalendarViewMode current,
+    ) {
+      final isSelected = mode == current;
+      return PopupMenuItem(
+        value: mode,
+        child: Row(
+          children: [
+            iconBuilder(size: 20, color: isSelected ? AppColors.brand : null),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: AppTextStyles.caption1.copyWith(
+                color: isSelected ? AppColors.brand : null,
+                fontWeight: isSelected ? FontWeight.w600 : null,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return CommonScaffold(
       appBar: AppBar(
@@ -182,7 +194,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             ),
             const SizedBox(width: 10),
             GestureDetector(
-              onTap: () => _showMonthPicker(context, focusedMonth),
+              onTap: () => showMonthPicker(context, focusedMonth),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -196,7 +208,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   Icon(
                     Icons.keyboard_arrow_down_rounded,
                     size: 20,
-                    color: AppColors.textSecondary(theme.brightness),
+                    color: AppColors.textSecondary(context),
                   ),
                 ],
               ),
@@ -224,7 +236,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           PopupMenuButton<CalendarViewMode>(
             icon: AppIcons.nemuBoard(
               size: 20,
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
             onSelected: (mode) {
               ref
@@ -232,19 +244,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   .changeViewMode(mode);
             },
             itemBuilder: (_) => [
-              _viewMenuItem(
+              viewMenuItem(
                 CalendarViewMode.agenda,
                 'アジェンダ',
                 AppIcons.rowHorizontal,
                 viewMode,
               ),
-              _viewMenuItem(
+              viewMenuItem(
                 CalendarViewMode.day,
                 '日',
                 AppIcons.rowVertical,
                 viewMode,
               ),
-              _viewMenuItem(
+              viewMenuItem(
                 CalendarViewMode.threeDay,
                 '3日',
                 AppIcons.sliderVertical,
@@ -272,7 +284,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       ),
       body: Column(
         children: [
-          // ミニカレンダー
           MiniCalendar(
             focusedMonth: focusedMonth,
             selectedDate: selectedDate,
@@ -284,38 +295,37 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   .read(calendarControllerProvider.notifier)
                   .changeFocusedMonth(month);
             },
-            isExpanded: _isCalendarExpanded,
+            isExpanded: isCalendarExpanded.value,
             onToggleExpand: () {
-              setState(() => _isCalendarExpanded = !_isCalendarExpanded);
+              isCalendarExpanded.value = !isCalendarExpanded.value;
             },
             eventDates: eventDatesAsync.valueOrNull ?? {},
           ),
-          Divider(height: 0.5, color: theme.colorScheme.outlineVariant),
-          // コンテンツ（ビューモードに応じて切替）— PageView でスワイプ
+          Divider(height: 0.5, color: AppColors.border(context)),
           Expanded(
             child: PageView.builder(
-              controller: _dayPageController,
+              controller: dayPageController,
               onPageChanged: (page) {
-                if (_isSyncing) return;
-                final newDate = _dateForPage(page);
+                if (isSyncing.value) return;
+                final newDate = dateForPage(page);
                 ref
                     .read(calendarControllerProvider.notifier)
                     .selectDate(newDate);
               },
               itemBuilder: (context, page) {
-                final pageDate = _dateForPage(page);
+                final pageDate = dateForPage(page);
                 return switch (viewMode) {
                   CalendarViewMode.agenda => _DayEventListView(
                     selectedDate: pageDate,
-                    onEventTap: (event) => _navigateToEventForm(event: event),
+                    onEventTap: (event) => navigateToEventForm(event: event),
                   ),
                   CalendarViewMode.day => _DayViewWrapper(
                     selectedDate: pageDate,
-                    onEventTap: (event) => _navigateToEventForm(event: event),
+                    onEventTap: (event) => navigateToEventForm(event: event),
                   ),
                   CalendarViewMode.threeDay => _ThreeDayViewWrapper(
                     selectedDate: pageDate,
-                    onEventTap: (event) => _navigateToEventForm(event: event),
+                    onEventTap: (event) => navigateToEventForm(event: event),
                   ),
                 };
               },
@@ -323,9 +333,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ),
         ],
       ),
-      // FAB: イベント作成
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateToEventForm(),
+        onPressed: () => navigateToEventForm(),
         backgroundColor: AppColors.brand,
         foregroundColor: Colors.white,
         elevation: 2,
@@ -333,34 +342,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       ),
     );
   }
-
-  PopupMenuItem<CalendarViewMode> _viewMenuItem(
-    CalendarViewMode mode,
-    String label,
-    Widget Function({double size, Color? color}) iconBuilder,
-    CalendarViewMode current,
-  ) {
-    final isSelected = mode == current;
-    return PopupMenuItem(
-      value: mode,
-      child: Row(
-        children: [
-          iconBuilder(size: 20, color: isSelected ? AppColors.brand : null),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: AppTextStyles.caption1.copyWith(
-              color: isSelected ? AppColors.brand : null,
-              fontWeight: isSelected ? FontWeight.w600 : null,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-/// 日別イベントリストビュー — 選択日のイベント一覧を表示
 class _DayEventListView extends ConsumerWidget {
   const _DayEventListView({
     required this.selectedDate,
@@ -373,22 +356,18 @@ class _DayEventListView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final events = ref.watch(dayEventsProvider(selectedDate)).valueOrNull ?? [];
-    final theme = Theme.of(context);
 
     if (events.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppIcons.calendar(
-              size: 48,
-              color: AppColors.textTertiary(theme.brightness),
-            ),
+            AppIcons.calendar(size: 48, color: AppColors.textTertiary(context)),
             const SizedBox(height: AppSpacing.md),
             Text(
               '予定はありません',
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ),
           ],
@@ -396,7 +375,6 @@ class _DayEventListView extends ConsumerWidget {
       );
     }
 
-    // 日付ごとにグループ化
     final grouped = <DateTime, List<CalendarEvent>>{};
     for (final event in events) {
       final date = event.startAt.toLocal();
@@ -412,7 +390,6 @@ class _DayEventListView extends ConsumerWidget {
       itemBuilder: (context, index) {
         final date = sortedDates[index];
         final dayEvents = grouped[date]!;
-        // 終日イベントを先に
         dayEvents.sort((a, b) {
           if (a.isAllDay && !b.isAllDay) return -1;
           if (!a.isAllDay && b.isAllDay) return 1;
@@ -422,9 +399,7 @@ class _DayEventListView extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 日付ヘッダー（sticky風）
             _DateHeader(date: date),
-            // イベントカード
             for (final event in dayEvents)
               EventCard(event: event, onTap: () => onEventTap(event)),
             const SizedBox(height: AppSpacing.sm),
@@ -435,14 +410,12 @@ class _DayEventListView extends ConsumerWidget {
   }
 }
 
-/// 日付ヘッダー — Outlook スタイル
 class _DateHeader extends StatelessWidget {
   const _DateHeader({required this.date});
   final DateTime date;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final isToday = date == today;
@@ -467,9 +440,7 @@ class _DateHeader extends StatelessWidget {
       child: Text(
         label,
         style: AppTextStyles.caption2.copyWith(
-          color: isToday
-              ? AppColors.brand
-              : AppColors.textSecondary(theme.brightness),
+          color: isToday ? AppColors.brand : AppColors.textSecondary(context),
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -477,7 +448,6 @@ class _DateHeader extends StatelessWidget {
   }
 }
 
-/// デイビューラッパー
 class _DayViewWrapper extends ConsumerWidget {
   const _DayViewWrapper({required this.selectedDate, required this.onEventTap});
 
@@ -498,7 +468,6 @@ class _DayViewWrapper extends ConsumerWidget {
   }
 }
 
-/// 3日ビューラッパー
 class _ThreeDayViewWrapper extends ConsumerWidget {
   const _ThreeDayViewWrapper({
     required this.selectedDate,
@@ -510,7 +479,6 @@ class _ThreeDayViewWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final dates = List.generate(3, (i) => selectedDate.add(Duration(days: i)));
 
     return Row(
@@ -520,13 +488,12 @@ class _ThreeDayViewWrapper extends ConsumerWidget {
         return Expanded(
           child: Column(
             children: [
-              // 日付ラベル
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
-                      color: theme.colorScheme.outlineVariant,
+                      color: AppColors.border(context),
                       width: 0.5,
                     ),
                   ),
@@ -538,12 +505,11 @@ class _ThreeDayViewWrapper extends ConsumerWidget {
                       fontWeight: FontWeight.w600,
                       color: _isToday(date)
                           ? AppColors.brand
-                          : theme.colorScheme.onSurface,
+                          : AppColors.textPrimary(context),
                     ),
                   ),
                 ),
               ),
-              // デイビュー
               Expanded(
                 child: DayView(
                   date: date,
@@ -566,166 +532,155 @@ class _ThreeDayViewWrapper extends ConsumerWidget {
   }
 }
 
-/// イベント作成/編集シート
-class _EventFormSheet extends ConsumerStatefulWidget {
+class _EventFormSheet extends HookConsumerWidget {
   const _EventFormSheet({this.event});
   final CalendarEvent? event;
 
   @override
-  ConsumerState<_EventFormSheet> createState() => _EventFormSheetState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isEditing = event != null;
 
-class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
-  late final TextEditingController _titleController;
-  late final TextEditingController _descriptionController;
-  late final TextEditingController _locationController;
-  late DateTime _startDate;
-  late TimeOfDay _startTime;
-  late DateTime _endDate;
-  late TimeOfDay _endTime;
-  late bool _isAllDay;
-  late String _categoryColor;
-
-  bool get _isEditing => widget.event != null;
-
-  @override
-  void initState() {
-    super.initState();
-    final event = widget.event;
-    _titleController = TextEditingController(text: event?.title ?? '');
-    _descriptionController = TextEditingController(
+    final titleController = useTextEditingController(text: event?.title ?? '');
+    final descriptionController = useTextEditingController(
       text: event?.description ?? '',
     );
-    _locationController = TextEditingController(text: event?.location ?? '');
+    final locationController = useTextEditingController(
+      text: event?.location ?? '',
+    );
 
-    if (event != null) {
-      final start = event.startAt.toLocal();
-      final end = event.endAt.toLocal();
-      _startDate = DateTime(start.year, start.month, start.day);
-      _startTime = TimeOfDay(hour: start.hour, minute: start.minute);
-      _endDate = DateTime(end.year, end.month, end.day);
-      _endTime = TimeOfDay(hour: end.hour, minute: end.minute);
-      _isAllDay = event.isAllDay;
-      _categoryColor = event.categoryColor;
-    } else {
-      final selectedDate = ref.read(selectedDateProvider);
+    final startDateState = useState<DateTime>(() {
+      if (event != null) {
+        final start = event!.startAt.toLocal();
+        return DateTime(start.year, start.month, start.day);
+      }
+      return ref.read(selectedDateProvider);
+    }());
+    final startTimeState = useState<TimeOfDay>(() {
+      if (event != null) {
+        final start = event!.startAt.toLocal();
+        return TimeOfDay(hour: start.hour, minute: start.minute);
+      }
       final now = DateTime.now();
-      final startHour = (now.hour + 1) % 24;
-      final endHour = (now.hour + 2) % 24;
-      _startDate = selectedDate;
-      _startTime = TimeOfDay(hour: startHour, minute: 0);
-      _endDate = selectedDate;
-      _endTime = TimeOfDay(hour: endHour, minute: 0);
-      _isAllDay = false;
-      _categoryColor = '#0F6CBD';
-    }
-  }
+      return TimeOfDay(hour: (now.hour + 1) % 24, minute: 0);
+    }());
+    final endDateState = useState<DateTime>(() {
+      if (event != null) {
+        final end = event!.endAt.toLocal();
+        return DateTime(end.year, end.month, end.day);
+      }
+      return ref.read(selectedDateProvider);
+    }());
+    final endTimeState = useState<TimeOfDay>(() {
+      if (event != null) {
+        final end = event!.endAt.toLocal();
+        return TimeOfDay(hour: end.hour, minute: end.minute);
+      }
+      final now = DateTime.now();
+      return TimeOfDay(hour: (now.hour + 2) % 24, minute: 0);
+    }());
+    final isAllDay = useState(event?.isAllDay ?? false);
+    final categoryColor = useState(event?.categoryColor ?? '#0F6CBD');
 
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    _locationController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickDate(bool isStart) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: isStart ? _startDate : _endDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-    );
-    if (picked != null) {
-      setState(() {
-        if (isStart) {
-          _startDate = picked;
-          if (_startDate.isAfter(_endDate)) _endDate = _startDate;
-        } else {
-          _endDate = picked;
-        }
-      });
-    }
-  }
-
-  Future<void> _pickTime(bool isStart) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: isStart ? _startTime : _endTime,
-    );
-    if (picked != null) {
-      setState(() {
-        if (isStart) {
-          _startTime = picked;
-        } else {
-          _endTime = picked;
-        }
-      });
-    }
-  }
-
-  Future<void> _save() async {
-    final title = _titleController.text.trim();
-    if (title.isEmpty) return;
-
-    try {
-      await ref
-          .read(eventFormControllerProvider.notifier)
-          .saveFromForm(
-            existingEvent: widget.event,
-            title: title,
-            description: _descriptionController.text,
-            location: _locationController.text,
-            startDate: _startDate,
-            startTime: _startTime,
-            endDate: _endDate,
-            endTime: _endTime,
-            isAllDay: _isAllDay,
-            categoryColor: _categoryColor,
-          );
-
-      if (mounted) Navigator.of(context).pop();
-    } catch (e) {
-      if (mounted) CommonSnackBar.error(context, 'エラーが発生しました: $e');
-    }
-  }
-
-  Future<void> _delete() async {
-    if (!_isEditing) return;
-    final confirmed = await CommonDialog.confirm(
-      context: context,
-      title: '予定の削除',
-      message: 'この予定を削除しますか？',
-      confirmLabel: '削除',
-      isDestructive: true,
-    );
-
-    if (confirmed) {
-      await ref
-          .read(eventFormControllerProvider.notifier)
-          .deleteEvent(widget.event!.id);
-      if (mounted) Navigator.of(context).pop();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
     final isSaving = ref.watch(eventFormControllerProvider);
-    final theme = Theme.of(context);
     final dateFormat = DateFormat('yyyy/MM/dd（E）', 'ja');
+
+    Future<void> pickDate(bool isStart) async {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: isStart ? startDateState.value : endDateState.value,
+        firstDate: DateTime(2020),
+        lastDate: DateTime(2030),
+      );
+      if (picked != null) {
+        if (isStart) {
+          startDateState.value = picked;
+          if (startDateState.value.isAfter(endDateState.value)) {
+            endDateState.value = startDateState.value;
+          }
+        } else {
+          endDateState.value = picked;
+        }
+      }
+    }
+
+    Future<void> pickTime(bool isStart) async {
+      final picked = await showTimePicker(
+        context: context,
+        initialTime: isStart ? startTimeState.value : endTimeState.value,
+      );
+      if (picked != null) {
+        if (isStart) {
+          startTimeState.value = picked;
+        } else {
+          endTimeState.value = picked;
+        }
+      }
+    }
+
+    Future<void> save() async {
+      final title = titleController.text.trim();
+      if (title.isEmpty) return;
+
+      try {
+        await ref
+            .read(eventFormControllerProvider.notifier)
+            .saveFromForm(
+              existingEvent: event,
+              title: title,
+              description: descriptionController.text,
+              location: locationController.text,
+              startDate: startDateState.value,
+              startTime: startTimeState.value,
+              endDate: endDateState.value,
+              endTime: endTimeState.value,
+              isAllDay: isAllDay.value,
+              categoryColor: categoryColor.value,
+            );
+
+        if (context.mounted) Navigator.of(context).pop();
+      } catch (e) {
+        if (context.mounted) CommonSnackBar.error(context, 'エラーが発生しました: $e');
+      }
+    }
+
+    Future<void> delete() async {
+      if (!isEditing) return;
+      final confirmed = await CommonDialog.confirm(
+        context: context,
+        title: '予定の削除',
+        message: 'この予定を削除しますか？',
+        confirmLabel: '削除',
+        isDestructive: true,
+      );
+
+      if (confirmed) {
+        await ref
+            .read(eventFormControllerProvider.notifier)
+            .deleteEvent(event!.id);
+        if (context.mounted) Navigator.of(context).pop();
+      }
+    }
+
+    Color parseColor(String hex) {
+      try {
+        return Color(int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
+      } catch (_) {
+        return AppColors.brand;
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? '予定の編集' : '新しい予定'),
+        title: Text(isEditing ? '予定の編集' : '新しい予定'),
         leading: IconButton(
           icon: const Icon(Icons.close_rounded),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
-          if (_isEditing)
-            IconButton(icon: AppIcons.trash(size: 24), onPressed: _delete),
+          if (isEditing)
+            IconButton(icon: AppIcons.trash(size: 24), onPressed: delete),
           TextButton(
-            onPressed: isSaving ? null : _save,
+            onPressed: isSaving ? null : save,
             child: isSaving
                 ? const SizedBox(
                     width: 16,
@@ -746,14 +701,13 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
         children: [
-          // タイトル
           TextField(
-            controller: _titleController,
+            controller: titleController,
             style: AppTextStyles.title3,
             decoration: InputDecoration(
               hintText: 'タイトルを追加',
               hintStyle: AppTextStyles.title3.copyWith(
-                color: AppColors.textTertiary(theme.brightness),
+                color: AppColors.textTertiary(context),
               ),
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,
@@ -761,60 +715,53 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
           ),
           const SizedBox(height: AppSpacing.xl),
 
-          // 終日スイッチ
           Row(
             children: [
-              AppIcons.clock(
-                size: 20,
-                color: AppColors.textSecondary(theme.brightness),
-              ),
+              AppIcons.clock(size: 20, color: AppColors.textSecondary(context)),
               const SizedBox(width: 14),
               Text('終日', style: AppTextStyles.caption1),
               const Spacer(),
               Switch.adaptive(
-                value: _isAllDay,
-                onChanged: (v) => setState(() => _isAllDay = v),
+                value: isAllDay.value,
+                onChanged: (v) => isAllDay.value = v,
                 activeTrackColor: AppColors.brand,
               ),
             ],
           ),
           const Divider(height: 1),
 
-          // 開始日時
           _DateTimeRow(
             label: '開始',
-            date: dateFormat.format(_startDate),
-            time: _isAllDay ? null : _startTime.format(context),
-            onDateTap: () => _pickDate(true),
-            onTimeTap: _isAllDay ? null : () => _pickTime(true),
+            date: dateFormat.format(startDateState.value),
+            time: isAllDay.value ? null : startTimeState.value.format(context),
+            onDateTap: () => pickDate(true),
+            onTimeTap: isAllDay.value ? null : () => pickTime(true),
           ),
-          // 終了日時
           _DateTimeRow(
             label: '終了',
-            date: dateFormat.format(_endDate),
-            time: _isAllDay ? null : _endTime.format(context),
-            onDateTap: () => _pickDate(false),
-            onTimeTap: _isAllDay ? null : () => _pickTime(false),
+            date: dateFormat.format(endDateState.value),
+            time: isAllDay.value ? null : endTimeState.value.format(context),
+            onDateTap: () => pickDate(false),
+            onTimeTap: isAllDay.value ? null : () => pickTime(false),
           ),
           const Divider(height: 1),
           const SizedBox(height: AppSpacing.md),
 
-          // 場所
           Row(
             children: [
               AppIcons.location(
                 size: 20,
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: TextField(
-                  controller: _locationController,
+                  controller: locationController,
                   style: AppTextStyles.caption1,
                   decoration: InputDecoration(
                     hintText: '場所を追加',
                     hintStyle: AppTextStyles.caption1.copyWith(
-                      color: AppColors.textTertiary(theme.brightness),
+                      color: AppColors.textTertiary(context),
                     ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
@@ -826,23 +773,25 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
           const Divider(height: 1),
           const SizedBox(height: AppSpacing.md),
 
-          // カテゴリ色
           Row(
             children: [
-              Icon(Icons.circle, size: 20, color: _parseColor(_categoryColor)),
+              Icon(
+                Icons.circle,
+                size: 20,
+                color: parseColor(categoryColor.value),
+              ),
               const SizedBox(width: 14),
               Text('カテゴリ', style: AppTextStyles.caption1),
               const Spacer(),
               _ColorPicker(
-                selected: _categoryColor,
-                onChanged: (c) => setState(() => _categoryColor = c),
+                selected: categoryColor.value,
+                onChanged: (c) => categoryColor.value = c,
               ),
             ],
           ),
           const Divider(height: 1),
           const SizedBox(height: AppSpacing.md),
 
-          // 説明
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -850,20 +799,20 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                 padding: const EdgeInsets.only(top: 2),
                 child: AppIcons.doc(
                   size: 20,
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: TextField(
-                  controller: _descriptionController,
+                  controller: descriptionController,
                   style: AppTextStyles.caption1,
                   maxLines: 5,
                   minLines: 2,
                   decoration: InputDecoration(
                     hintText: '説明を追加',
                     hintStyle: AppTextStyles.caption1.copyWith(
-                      color: AppColors.textTertiary(theme.brightness),
+                      color: AppColors.textTertiary(context),
                     ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
@@ -876,17 +825,8 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
       ),
     );
   }
-
-  Color _parseColor(String hex) {
-    try {
-      return Color(int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
-    } catch (_) {
-      return AppColors.brand;
-    }
-  }
 }
 
-/// 日時選択行
 class _DateTimeRow extends StatelessWidget {
   const _DateTimeRow({
     required this.label,
@@ -904,7 +844,6 @@ class _DateTimeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
@@ -914,7 +853,7 @@ class _DateTimeRow extends StatelessWidget {
             child: Text(
               label,
               style: AppTextStyles.caption2.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ),
           ),
@@ -923,7 +862,7 @@ class _DateTimeRow extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.divider(theme.brightness),
+                color: AppColors.divider(context),
                 borderRadius: AppRadius.radius80,
               ),
               child: Text(date, style: AppTextStyles.caption1),
@@ -939,7 +878,7 @@ class _DateTimeRow extends StatelessWidget {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.divider(theme.brightness),
+                  color: AppColors.divider(context),
                   borderRadius: AppRadius.radius80,
                 ),
                 child: Text(time!, style: AppTextStyles.caption1),
@@ -952,7 +891,6 @@ class _DateTimeRow extends StatelessWidget {
   }
 }
 
-/// カテゴリ色ピッカー
 class _ColorPicker extends StatelessWidget {
   const _ColorPicker({required this.selected, required this.onChanged});
   final String selected;
@@ -982,7 +920,7 @@ class _ColorPicker extends StatelessWidget {
                       width: AppStroke.strokeWidth20,
                     )
                   : null,
-              boxShadow: isSelected ? AppShadows.shadow4 : null,
+              boxShadow: isSelected ? AppShadows.of4(context) : null,
             ),
           ),
         );

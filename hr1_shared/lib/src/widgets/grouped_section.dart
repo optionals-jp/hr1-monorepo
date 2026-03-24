@@ -16,8 +16,6 @@ class GroupedSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -32,7 +30,7 @@ class GroupedSection extends StatelessWidget {
             child: Text(
               title!,
               style: AppTextStyles.caption2.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.3,
               ),
@@ -46,7 +44,7 @@ class GroupedSection extends StatelessWidget {
                 Divider(
                   height: 0.5,
                   indent: dividerIndent,
-                  color: theme.colorScheme.outlineVariant,
+                  color: AppColors.border(context),
                 ),
             ],
           ],

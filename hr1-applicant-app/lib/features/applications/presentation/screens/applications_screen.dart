@@ -24,7 +24,7 @@ class ApplicationsScreen extends ConsumerWidget {
     final asyncAvailableJobs = ref.watch(availableJobsProvider);
 
     if (currentOrg == null) {
-      return const Scaffold(body: Center(child: Text('企業が選択されていません')));
+      return const Scaffold(body: ErrorState(message: '企業が選択されていません'));
     }
 
     return CommonScaffold(
@@ -72,7 +72,6 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final hasApplications = inProgress.isNotEmpty || completed.isNotEmpty;
 
     return ListView(
@@ -94,7 +93,7 @@ class _Body extends StatelessWidget {
           _SectionHeader(
             title: '完了',
             count: completed.length,
-            color: AppColors.textSecondary(theme.brightness),
+            color: AppColors.textSecondary(context),
           ),
           ...completed.map((a) => _ApplicationCard(application: a)),
           const SizedBox(height: AppSpacing.xl),
@@ -128,7 +127,6 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.xxl),
       child: Column(
@@ -154,7 +152,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             '$organizationNameの求人を探して\n応募してみましょう',
             style: AppTextStyles.body2.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
             textAlign: TextAlign.center,
           ),
@@ -230,7 +228,6 @@ class _ApplicationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final job = application.job;
     final statusColor = _statusColor(application, context);
     final steps = application.steps;
@@ -273,7 +270,7 @@ class _ApplicationCard extends StatelessWidget {
                       Text(
                         job!.department!,
                         style: AppTextStyles.caption1.copyWith(
-                          color: AppColors.textSecondary(theme.brightness),
+                          color: AppColors.textSecondary(context),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -302,7 +299,7 @@ class _ApplicationCard extends StatelessWidget {
                       value: progress,
                       minHeight: 4,
                       backgroundColor: AppColors.divider(
-                        theme.brightness,
+                        context,
                       ).withValues(alpha: 0.5),
                       valueColor: AlwaysStoppedAnimation<Color>(
                         application.requiresAction
@@ -316,7 +313,7 @@ class _ApplicationCard extends StatelessWidget {
                 Text(
                   '$completedSteps/$totalSteps',
                   style: AppTextStyles.caption2.copyWith(
-                    color: AppColors.textSecondary(theme.brightness),
+                    color: AppColors.textSecondary(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -330,13 +327,13 @@ class _ApplicationCard extends StatelessWidget {
               Icon(
                 Icons.schedule_rounded,
                 size: 14,
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
               const SizedBox(width: 4),
               Text(
                 DateFormatter.toDateSlash(application.appliedAt),
                 style: AppTextStyles.caption2.copyWith(
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
               const Spacer(),
@@ -375,7 +372,7 @@ class _ApplicationCard extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: 20,
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ],
           ),
@@ -395,7 +392,6 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return CommonCard(
       onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
       child: Row(
@@ -426,7 +422,7 @@ class _JobCard extends StatelessWidget {
                     if (job.employmentType != null) job.employmentType!,
                   ].join(' · '),
                   style: AppTextStyles.caption1.copyWith(
-                    color: AppColors.textSecondary(theme.brightness),
+                    color: AppColors.textSecondary(context),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -463,9 +459,7 @@ Color _statusColor(Application application, BuildContext context) {
   return switch (application.status) {
     ApplicationStatus.offered => AppColors.success,
     ApplicationStatus.rejected => AppColors.error,
-    ApplicationStatus.withdrawn => AppColors.textSecondary(
-      Theme.of(context).brightness,
-    ),
+    ApplicationStatus.withdrawn => AppColors.textSecondary(context),
     ApplicationStatus.active =>
       application.requiresAction ? AppColors.warning : AppColors.brand,
   };

@@ -42,7 +42,7 @@ class InterviewScheduleScreen extends ConsumerWidget {
       body: asyncInterview.when(
         data: (interview) {
           if (interview == null) {
-            return const Center(child: Text('面接情報が見つかりません'));
+            return const ErrorState(message: '面接情報が見つかりません');
           }
 
           final selectedSlotId = ref.watch(selectedSlotProvider(interviewId));
@@ -63,7 +63,7 @@ class InterviewScheduleScreen extends ConsumerWidget {
                     Text(
                       'ご都合の良い日時を1つ選択してください',
                       style: AppTextStyles.caption1.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
@@ -115,7 +115,9 @@ class InterviewScheduleScreen extends ConsumerWidget {
           );
         },
         loading: () => const LoadingIndicator(),
-        error: (e, _) => const Center(child: Text('エラーが発生しました')),
+        error: (e, _) => ErrorState(
+          onRetry: () => ref.invalidate(interviewDetailProvider(interviewId)),
+        ),
       ),
     );
   }
@@ -188,7 +190,7 @@ class _InterviewInfoCard extends StatelessWidget {
             Text(
               interview.notes!,
               style: AppTextStyles.caption1.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: AppColors.textSecondary(context),
               ),
             ),
           ],
@@ -211,7 +213,6 @@ class _SlotCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final dateFormat = DateFormat('M月d日(E)', 'ja');
     final timeFormat = DateFormat('HH:mm');
 
@@ -223,12 +224,10 @@ class _SlotCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.brand.withValues(alpha: 0.08)
-              : theme.colorScheme.surface,
+              : AppColors.surface(context),
           borderRadius: AppRadius.radius120,
           border: Border.all(
-            color: isSelected
-                ? AppColors.brand
-                : AppColors.divider(theme.brightness),
+            color: isSelected ? AppColors.brand : AppColors.divider(context),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -242,7 +241,7 @@ class _SlotCard extends StatelessWidget {
                 border: Border.all(
                   color: isSelected
                       ? AppColors.brand
-                      : AppColors.divider(theme.brightness),
+                      : AppColors.divider(context),
                   width: 2,
                 ),
                 color: isSelected ? AppColors.brand : Colors.transparent,
@@ -264,7 +263,7 @@ class _SlotCard extends StatelessWidget {
                   Text(
                     '${timeFormat.format(slot.startAt)} 〜 ${timeFormat.format(slot.endAt)}',
                     style: AppTextStyles.body2.copyWith(
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],

@@ -13,7 +13,6 @@ class NotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final state = ref.watch(notificationControllerProvider);
 
     return CommonScaffold(
@@ -56,13 +55,13 @@ class NotificationsScreen extends ConsumerWidget {
                 children: [
                   AppIcons.notification(
                     size: 48,
-                    color: AppColors.textTertiary(theme.brightness),
+                    color: AppColors.textTertiary(context),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     '通知はありません',
                     style: AppTextStyles.body2.copyWith(
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],
@@ -116,7 +115,6 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final iconData = item.type.icon;
     final iconColor = item.type.color;
 
@@ -173,7 +171,7 @@ class _NotificationTile extends StatelessWidget {
                         Text(
                           _formatDate(item.createdAt),
                           style: AppTextStyles.caption2.copyWith(
-                            color: AppColors.textSecondary(theme.brightness),
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -183,7 +181,7 @@ class _NotificationTile extends StatelessWidget {
                       Text(
                         item.body!,
                         style: AppTextStyles.caption2.copyWith(
-                          color: AppColors.textSecondary(theme.brightness),
+                          color: AppColors.textSecondary(context),
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,

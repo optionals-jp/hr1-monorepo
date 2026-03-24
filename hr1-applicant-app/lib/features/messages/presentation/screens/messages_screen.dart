@@ -20,6 +20,15 @@ class MessagesScreen extends ConsumerWidget {
 
     final threadsAsync = ref.watch(messageThreadsProvider);
 
+    ref.listen<AsyncValue<List<MessageThread>>>(messageThreadsProvider, (
+      prev,
+      next,
+    ) {
+      if (next.hasError && prev?.hasError != true) {
+        CommonSnackBar.error(context, 'メッセージの取得に失敗しました');
+      }
+    });
+
     return threadsAsync.when(
       loading: () => const LoadingIndicator(),
       error: (e, _) =>
@@ -35,7 +44,7 @@ class MessagesScreen extends ConsumerWidget {
                   Icon(
                     Icons.chat_bubble_outline_rounded,
                     size: 48,
-                    color: AppColors.textTertiary(Theme.of(context).brightness),
+                    color: AppColors.textTertiary(context),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   Text('メッセージはありません', style: AppTextStyles.callout),
@@ -43,9 +52,7 @@ class MessagesScreen extends ConsumerWidget {
                   Text(
                     '気になることがあれば聞いてみましょう！',
                     style: AppTextStyles.body2.copyWith(
-                      color: AppColors.textSecondary(
-                        Theme.of(context).brightness,
-                      ),
+                      color: AppColors.textSecondary(context),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -77,7 +84,6 @@ class _ThreadTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final hasUnread = thread.unreadCount > 0;
     final displayName = thread.organizationName ?? '企業';
     final initial = displayName.isNotEmpty ? displayName[0] : '?';
@@ -97,8 +103,8 @@ class _ThreadTile extends StatelessWidget {
               thread.latestMessage!.content,
               style: AppTextStyles.caption1.copyWith(
                 color: hasUnread
-                    ? theme.colorScheme.onSurface
-                    : AppColors.textSecondary(theme.brightness),
+                    ? AppColors.textPrimary(context)
+                    : AppColors.textSecondary(context),
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -106,7 +112,7 @@ class _ThreadTile extends StatelessWidget {
           : Text(
               'メッセージはありません',
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ),
       trailing: Column(
@@ -117,7 +123,7 @@ class _ThreadTile extends StatelessWidget {
             Text(
               DateFormatter.toMessageDate(thread.latestMessage!.createdAt),
               style: AppTextStyles.caption2.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ),
           if (hasUnread) ...[

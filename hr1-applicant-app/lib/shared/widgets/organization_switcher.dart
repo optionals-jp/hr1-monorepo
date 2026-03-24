@@ -136,15 +136,14 @@ class _OrganizationListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return ListTile(
       leading: OrgIcon(
         initial: organization.name.substring(0, 1),
         size: 40,
         borderRadius: 10,
         color: isSelected
-            ? theme.colorScheme.primary
-            : theme.colorScheme.primary.withValues(alpha: 0.3),
+            ? AppColors.brand
+            : AppColors.brand.withValues(alpha: 0.3),
       ),
       title: Text(
         organization.name,
@@ -156,12 +155,12 @@ class _OrganizationListTile extends StatelessWidget {
           ? Text(
               organization.industry!,
               style: AppTextStyles.caption2.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+                color: AppColors.textSecondary(context),
               ),
             )
           : null,
       trailing: isSelected
-          ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
+          ? Icon(Icons.check_circle, color: AppColors.brand)
           : null,
       onTap: onTap,
     );

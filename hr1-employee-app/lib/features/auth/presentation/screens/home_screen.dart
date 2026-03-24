@@ -11,24 +11,18 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           border: Border(
-            top: BorderSide(
-              color: theme.colorScheme.outlineVariant,
-              width: 0.5,
-            ),
+            top: BorderSide(color: AppColors.border(context), width: 0.5),
           ),
         ),
         child: Builder(
           builder: (context) {
-            final navTheme = theme.bottomNavigationBarTheme;
-            final selectedColor = navTheme.selectedItemColor!;
-            final unselectedColor = navTheme.unselectedItemColor!;
+            final selectedColor = AppColors.brand;
+            final unselectedColor = AppColors.textTertiary(context);
             return BottomNavigationBar(
               currentIndex: navigationShell.currentIndex,
               onTap: (index) {

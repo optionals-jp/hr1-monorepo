@@ -20,13 +20,14 @@ function applyInline(text: string): string {
       const isAllowedUrl =
         /^https?:\/\//i.test(url) || /^mailto:/i.test(url) || url.startsWith("/");
       if (isAllowedUrl) {
-        return `<a href="${url}" target="_blank" rel="noopener">${label}</a>`;
+        const safeUrl = url.replace(/"/g, "&quot;");
+        return `<a href="${safeUrl}" target="_blank" rel="noopener">${label}</a>`;
       }
       return label;
     });
 }
 
-function markdownToHtml(md: string): string {
+export function markdownToHtml(md: string): string {
   const lines = md.split("\n");
   let html = "";
   let inUl = false;

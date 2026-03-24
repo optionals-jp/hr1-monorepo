@@ -39,7 +39,6 @@ class _CompletedView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final answersAsync = ref.watch(myAnswersProvider(survey.id));
 
     return CommonScaffold(
@@ -83,7 +82,7 @@ class _CompletedView extends ConsumerWidget {
               Text(
                 survey.description!,
                 style: AppTextStyles.caption1.copyWith(
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
             ],
@@ -106,7 +105,6 @@ class _EditView extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final answers = useRef(<String, String>{});
     final revision = useState(0);
     final controllerState = ref.watch(surveyAnswerControllerProvider);
@@ -160,7 +158,7 @@ class _EditView extends HookConsumerWidget {
           child: Text(
             '質問が設定されていません',
             style: AppTextStyles.body2.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
           ),
         ),
@@ -181,7 +179,7 @@ class _EditView extends HookConsumerWidget {
             Text(
               survey.description!,
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -218,7 +216,6 @@ class _ReadOnlyQuestion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       child: Column(
@@ -233,23 +230,23 @@ class _ReadOnlyQuestion extends StatelessWidget {
             Text(
               question.description!,
               style: AppTextStyles.caption2.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ),
           ],
           const SizedBox(height: AppSpacing.sm),
-          _buildAnswer(theme),
+          _buildAnswer(context),
         ],
       ),
     );
   }
 
-  Widget _buildAnswer(ThemeData theme) {
+  Widget _buildAnswer(BuildContext context) {
     if (answer == null || answer!.isEmpty) {
       return Text(
         '未回答',
         style: AppTextStyles.body2.copyWith(
-          color: AppColors.textSecondary(theme.brightness),
+          color: AppColors.textSecondary(context),
         ),
       );
     }
@@ -268,12 +265,12 @@ class _ReadOnlyQuestion extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: v <= value
                       ? AppColors.brand.withValues(alpha: 0.15)
-                      : theme.colorScheme.surface,
+                      : AppColors.surface(context),
                   borderRadius: AppRadius.radius80,
                   border: Border.all(
                     color: v <= value
                         ? AppColors.brand
-                        : theme.colorScheme.outlineVariant,
+                        : AppColors.border(context),
                   ),
                 ),
                 child: Center(
@@ -283,7 +280,7 @@ class _ReadOnlyQuestion extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       color: v <= value
                           ? AppColors.brand
-                          : AppColors.textSecondary(theme.brightness),
+                          : AppColors.textSecondary(context),
                     ),
                   ),
                 ),
@@ -321,9 +318,7 @@ class _ReadOnlyQuestion extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(
-              alpha: 0.3,
-            ),
+            color: AppColors.surfaceTertiary(context).withValues(alpha: 0.3),
             borderRadius: AppRadius.radius80,
           ),
           child: Text(answer!, style: AppTextStyles.body2),
@@ -349,7 +344,6 @@ class _QuestionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       child: Column(
@@ -379,21 +373,21 @@ class _QuestionWidget extends StatelessWidget {
             Text(
               question.description!,
               style: AppTextStyles.caption2.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ),
           ],
           const SizedBox(height: AppSpacing.sm),
-          _buildInput(theme),
+          _buildInput(context),
         ],
       ),
     );
   }
 
-  Widget _buildInput(ThemeData theme) {
+  Widget _buildInput(BuildContext context) {
     switch (question.type) {
       case 'rating':
-        return _buildRating(theme);
+        return _buildRating(context);
       case 'text':
         return _buildTextField();
       case 'single_choice':
@@ -405,7 +399,7 @@ class _QuestionWidget extends StatelessWidget {
     }
   }
 
-  Widget _buildRating(ThemeData theme) {
+  Widget _buildRating(BuildContext context) {
     final currentValue = int.tryParse(currentAnswer ?? '') ?? 0;
     return Row(
       children: List.generate(5, (i) {
@@ -421,12 +415,12 @@ class _QuestionWidget extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.brand.withValues(alpha: 0.15)
-                    : theme.colorScheme.surface,
+                    : AppColors.surface(context),
                 borderRadius: AppRadius.radius80,
                 border: Border.all(
                   color: isSelected
                       ? AppColors.brand
-                      : theme.colorScheme.outlineVariant,
+                      : AppColors.border(context),
                 ),
               ),
               child: Center(
@@ -436,7 +430,7 @@ class _QuestionWidget extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     color: isSelected
                         ? AppColors.brand
-                        : AppColors.textSecondary(theme.brightness),
+                        : AppColors.textSecondary(context),
                   ),
                 ),
               ),

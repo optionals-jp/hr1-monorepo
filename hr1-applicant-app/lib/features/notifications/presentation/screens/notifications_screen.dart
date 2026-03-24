@@ -55,16 +55,14 @@ class NotificationsScreen extends ConsumerWidget {
                   AppIcons.notification(
                     size: 48,
                     color: AppColors.textSecondary(
-                      Theme.of(context).brightness,
+                      context,
                     ).withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     '通知はありません',
                     style: AppTextStyles.body2.copyWith(
-                      color: AppColors.textSecondary(
-                        Theme.of(context).brightness,
-                      ),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],
@@ -118,7 +116,6 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final iconData = item.type.icon;
     final iconColor = item.type.color;
 
@@ -175,7 +172,7 @@ class _NotificationTile extends StatelessWidget {
                         Text(
                           _formatDate(item.createdAt),
                           style: AppTextStyles.caption2.copyWith(
-                            color: AppColors.textSecondary(theme.brightness),
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -185,7 +182,7 @@ class _NotificationTile extends StatelessWidget {
                       Text(
                         item.body!,
                         style: AppTextStyles.caption2.copyWith(
-                          color: AppColors.textSecondary(theme.brightness),
+                          color: AppColors.textSecondary(context),
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,

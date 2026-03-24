@@ -22,7 +22,7 @@ class CompanyHomeScreen extends ConsumerWidget {
     final asyncConfig = ref.watch(companyPageConfigProvider);
 
     if (currentOrg == null) {
-      return const Center(child: Text('企業が選択されていません'));
+      return const ErrorState(message: '企業が選択されていません');
     }
 
     return asyncConfig.when(
@@ -49,8 +49,6 @@ class _NoConfigState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(child: _ProfileHeader(org: org)),
@@ -60,7 +58,7 @@ class _NoConfigState extends StatelessWidget {
             child: Text(
               'ページが設定されていません',
               style: AppTextStyles.caption1.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
             ),
           ),
@@ -140,7 +138,6 @@ class _ProfileHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final jobCount = ref.watch(jobsProvider).valueOrNull?.length ?? 0;
 
     return Column(
@@ -173,10 +170,10 @@ class _ProfileHeader extends ConsumerWidget {
                 decoration: BoxDecoration(
                   borderRadius: AppRadius.radius160,
                   border: Border.all(
-                    color: theme.colorScheme.surface,
+                    color: AppColors.surface(context),
                     width: 3,
                   ),
-                  boxShadow: AppShadows.shadow4,
+                  boxShadow: AppShadows.of4(context),
                 ),
                 child: OrgIcon(
                   initial: org.name.characters.first,
@@ -209,14 +206,14 @@ class _ProfileHeader extends ConsumerWidget {
                     Text(
                       org.industry!,
                       style: AppTextStyles.caption1.copyWith(
-                        color: AppColors.textSecondary(theme.brightness),
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                     if (org.location != null)
                       Text(
                         ' · ',
                         style: AppTextStyles.caption1.copyWith(
-                          color: AppColors.textSecondary(theme.brightness),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                   ],
@@ -224,7 +221,7 @@ class _ProfileHeader extends ConsumerWidget {
                     Text(
                       org.location!,
                       style: AppTextStyles.caption1.copyWith(
-                        color: AppColors.textSecondary(theme.brightness),
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                 ],
@@ -309,14 +306,12 @@ class _StatPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: highlighted
             ? AppColors.brand.withValues(alpha: 0.08)
-            : AppColors.surfaceTertiary(theme.brightness),
+            : AppColors.surfaceTertiary(context),
         borderRadius: AppRadius.radius80,
       ),
       child: Column(
@@ -332,7 +327,7 @@ class _StatPill extends StatelessWidget {
           Text(
             label,
             style: AppTextStyles.caption2.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
           ),
         ],
@@ -357,24 +352,18 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.divider(theme.brightness)),
+          border: Border.all(color: AppColors.divider(context)),
           borderRadius: AppRadius.radius80,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 18,
-              color: AppColors.textSecondary(theme.brightness),
-            ),
+            Icon(icon, size: 18, color: AppColors.textSecondary(context)),
             const SizedBox(width: 6),
             Text(
               label,
@@ -411,18 +400,17 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    final theme = Theme.of(context);
     return Material(
-      color: theme.colorScheme.surface,
+      color: AppColors.surface(context),
       child: TabBar(
         isScrollable: true,
         tabAlignment: TabAlignment.start,
         controller: tabController,
-        labelColor: theme.colorScheme.primary,
-        unselectedLabelColor: AppColors.textSecondary(theme.brightness),
+        labelColor: AppColors.brand,
+        unselectedLabelColor: AppColors.textSecondary(context),
         labelStyle: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600),
         unselectedLabelStyle: AppTextStyles.body2,
-        indicatorColor: theme.colorScheme.primary,
+        indicatorColor: AppColors.brand,
         indicatorWeight: 2.5,
         indicatorSize: TabBarIndicatorSize.label,
         tabs: tabs.map((t) => Tab(text: t)).toList(),

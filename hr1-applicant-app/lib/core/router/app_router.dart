@@ -291,13 +291,13 @@ class _SurveyLoaderScreen extends ConsumerWidget {
       loading: () => const Scaffold(body: LoadingIndicator()),
       error: (_, __) => Scaffold(
         appBar: AppBar(),
-        body: const Center(child: Text('サーベイの読み込みに失敗しました')),
+        body: const ErrorState(message: 'サーベイの読み込みに失敗しました'),
       ),
       data: (survey) {
         if (survey == null) {
           return Scaffold(
             appBar: AppBar(),
-            body: const Center(child: Text('サーベイが見つかりません')),
+            body: const ErrorState(message: 'サーベイが見つかりません'),
           );
         }
         return SurveyAnswerScreen(survey: survey);

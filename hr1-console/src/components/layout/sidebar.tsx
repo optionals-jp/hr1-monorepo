@@ -27,6 +27,9 @@ import {
   CalendarOff,
   Receipt,
   ShieldCheck,
+  ShieldAlert,
+  Megaphone,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { t } from "@/lib/i18n";
@@ -73,6 +76,8 @@ const navSections: NavSection[] = [
       { href: "/evaluations", labelKey: "nav.evaluations", icon: Star },
       { href: "/surveys", labelKey: "nav.surveys", icon: HeartPulse },
       { href: "/faqs", labelKey: "nav.faqs", icon: CircleHelp },
+      { href: "/wiki", labelKey: "nav.wiki", icon: BookOpen },
+      { href: "/announcements", labelKey: "nav.announcements", icon: Megaphone },
     ],
   },
 ];
@@ -187,6 +192,13 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         )}
       </div>
       <div className="border-t pt-2 mt-2 space-y-0.5">
+        <NavLink
+          href="/compliance"
+          labelKey="nav.compliance"
+          icon={ShieldAlert}
+          pathname={pathname}
+          onNavigate={onNavigate}
+        />
         <NavLink
           href="/audit-logs"
           labelKey="nav.auditLogs"

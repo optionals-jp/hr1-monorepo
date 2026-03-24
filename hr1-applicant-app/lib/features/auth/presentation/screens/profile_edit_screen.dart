@@ -16,7 +16,6 @@ class ProfileEditScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(appUserProvider);
-    final theme = Theme.of(context);
 
     return CommonScaffold(
       appBar: AppBar(title: const Text('プロフィール編集')),
@@ -45,7 +44,7 @@ class ProfileEditScreen extends ConsumerWidget {
                         color: AppColors.brand,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: theme.scaffoldBackgroundColor,
+                          color: AppColors.surface(context),
                           width: 2,
                         ),
                       ),

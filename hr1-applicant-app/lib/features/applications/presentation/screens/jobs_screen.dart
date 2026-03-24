@@ -25,7 +25,7 @@ class JobsScreen extends ConsumerWidget {
                 child: Text(
                   '現在募集中の求人はありません',
                   style: AppTextStyles.body2.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
               )
@@ -52,7 +52,6 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return CommonCard(
       onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
       margin: EdgeInsets.zero,
@@ -64,7 +63,7 @@ class _JobCard extends StatelessWidget {
           Text(
             job.description,
             style: AppTextStyles.caption1.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -116,20 +115,19 @@ class _Tag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
         vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
+        color: AppColors.surface(context),
         borderRadius: AppRadius.radius40,
       ),
       child: Text(
         text,
         style: AppTextStyles.caption2.copyWith(
-          color: AppColors.textSecondary(theme.brightness),
+          color: AppColors.textSecondary(context),
         ),
       ),
     );

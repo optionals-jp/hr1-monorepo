@@ -118,8 +118,6 @@ class _ThreadTile extends StatelessWidget {
     final hasUnread = thread.unreadCount > 0;
     final displayName = thread.participantName ?? thread.title ?? '相手';
     final initial = displayName.isNotEmpty ? displayName[0] : '?';
-    final theme = Theme.of(context);
-
     return InkWell(
       onTap: () {
         context.push(AppRoutes.messageThread, extra: thread);
@@ -175,7 +173,7 @@ class _ThreadTile extends StatelessWidget {
                             thread.latestMessage!.createdAt,
                           ),
                           style: AppTextStyles.body2.copyWith(
-                            color: AppColors.textTertiary(theme.brightness),
+                            color: AppColors.textTertiary(context),
                           ),
                         ),
                       ],
@@ -189,8 +187,8 @@ class _ThreadTile extends StatelessWidget {
                             thread.latestMessage!.content,
                             style: AppTextStyles.body2.copyWith(
                               color: hasUnread
-                                  ? theme.colorScheme.onSurface
-                                  : AppColors.textSecondary(theme.brightness),
+                                  ? AppColors.textPrimary(context)
+                                  : AppColors.textSecondary(context),
                               fontWeight: hasUnread
                                   ? FontWeight.w500
                                   : FontWeight.w400,

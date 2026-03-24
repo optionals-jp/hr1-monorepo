@@ -25,7 +25,7 @@ class SkeletonContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = AppColors.isDark(context);
     return Shimmer.fromColors(
       baseColor: isDark ? AppColors.darkSurfaceTertiary : AppColors.lightBorder,
       highlightColor: isDark

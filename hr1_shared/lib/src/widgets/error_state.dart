@@ -31,8 +31,6 @@ class ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -44,13 +42,13 @@ class ErrorState extends StatelessWidget {
             Icon(
               icon,
               size: 48,
-              color: AppColors.textTertiary(theme.brightness),
+              color: AppColors.textTertiary(context),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               message,
               style: AppTextStyles.body2.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
               textAlign: TextAlign.center,
             ),

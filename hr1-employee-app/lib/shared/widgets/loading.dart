@@ -49,17 +49,15 @@ class _LoadingOverlay extends StatelessWidget {
     return PopScope(
       canPop: false,
       child: Material(
-        color: AppColors.textPrimary(
-          Theme.of(context).brightness,
-        ).withValues(alpha: 0.3),
+        color: AppColors.textPrimary(context).withValues(alpha: 0.3),
         child: Center(
           child: Container(
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(16),
-              boxShadow: AppShadows.shadow16,
+              boxShadow: AppShadows.of16(context),
             ),
             child: Center(
               child: Lottie.asset(

@@ -54,9 +54,7 @@ class EmployeeDetailScreen extends StatelessWidget {
                     unselectedLabelStyle: AppTextStyles.caption1,
                     indicatorColor: AppColors.brand,
                     labelColor: AppColors.brand,
-                    unselectedLabelColor: AppColors.textSecondary(
-                      Theme.of(context).brightness,
-                    ),
+                    unselectedLabelColor: AppColors.textSecondary(context),
                     dividerHeight: 0.5,
                   ),
                 ),
@@ -84,8 +82,6 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       child: Column(
@@ -103,7 +99,7 @@ class _ProfileHeader extends StatelessWidget {
           Text(
             '${contact.department} / ${contact.position}',
             style: AppTextStyles.caption1.copyWith(
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -173,8 +169,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    final theme = Theme.of(context);
-    return Container(color: theme.scaffoldBackgroundColor, child: tabBar);
+    return Container(color: AppColors.surface(context), child: tabBar);
   }
 
   @override
@@ -192,8 +187,6 @@ class _ContactTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
       children: [
@@ -203,7 +196,7 @@ class _ContactTab extends StatelessWidget {
             _InfoRow(
               icon: AppIcons.briefcase(
                 size: 22,
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
               label: '部署',
               value: contact.department,
@@ -212,7 +205,7 @@ class _ContactTab extends StatelessWidget {
               icon: Icon(
                 Icons.badge_outlined,
                 size: 22,
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
               label: '役職',
               value: contact.position,
@@ -228,7 +221,7 @@ class _ContactTab extends StatelessWidget {
                 icon: Icon(
                   Icons.email_outlined,
                   size: 22,
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                 ),
                 label: 'メール',
                 value: contact.email!,
@@ -238,7 +231,7 @@ class _ContactTab extends StatelessWidget {
                 icon: Icon(
                   Icons.phone_outlined,
                   size: 22,
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                 ),
                 label: '電話番号',
                 value: contact.phone!,
@@ -314,7 +307,6 @@ class _SkillsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final skillsAsync = ref.watch(userSkillsProvider(userId));
     final certsAsync = ref.watch(userCertificationsProvider(userId));
 
@@ -327,9 +319,9 @@ class _SkillsTab extends ConsumerWidget {
             padding: EdgeInsets.all(AppSpacing.xl),
             child: LoadingIndicator(),
           ),
-          error: (e, _) => Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Center(child: Text('エラー: $e')),
+          error: (e, _) => const Padding(
+            padding: EdgeInsets.all(AppSpacing.xl),
+            child: ErrorState(),
           ),
           data: (skills) {
             if (skills.isEmpty) {
@@ -339,7 +331,7 @@ class _SkillsTab extends ConsumerWidget {
                   child: Text(
                     'スキルが登録されていません',
                     style: AppTextStyles.caption1.copyWith(
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ),
@@ -358,7 +350,7 @@ class _SkillsTab extends ConsumerWidget {
                       skill.name,
                       style: AppTextStyles.caption1.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: theme.colorScheme.onSurface,
+                        color: AppColors.textPrimary(context),
                       ),
                     ),
                     backgroundColor: AppColors.brand.withValues(alpha: 0.08),
@@ -382,9 +374,9 @@ class _SkillsTab extends ConsumerWidget {
             padding: EdgeInsets.all(AppSpacing.xl),
             child: LoadingIndicator(),
           ),
-          error: (e, _) => Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Center(child: Text('エラー: $e')),
+          error: (e, _) => const Padding(
+            padding: EdgeInsets.all(AppSpacing.xl),
+            child: ErrorState(),
           ),
           data: (certs) {
             if (certs.isEmpty) {
@@ -394,7 +386,7 @@ class _SkillsTab extends ConsumerWidget {
                   child: Text(
                     '資格が登録されていません',
                     style: AppTextStyles.caption1.copyWith(
-                      color: AppColors.textSecondary(theme.brightness),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ),
@@ -406,7 +398,7 @@ class _SkillsTab extends ConsumerWidget {
                     (c) => _InfoRow(
                       icon: AppIcons.award(
                         size: 22,
-                        color: AppColors.textSecondary(theme.brightness),
+                        color: AppColors.textSecondary(context),
                       ),
                       label: c.acquiredDate != null
                           ? DateFormat('yyyy/MM').format(c.acquiredDate!)
@@ -434,7 +426,6 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.screenHorizontal + 4,
@@ -445,7 +436,7 @@ class _SectionHeader extends StatelessWidget {
       child: Text(
         title,
         style: AppTextStyles.caption2.copyWith(
-          color: AppColors.textSecondary(theme.brightness),
+          color: AppColors.textSecondary(context),
           fontWeight: FontWeight.w600,
           letterSpacing: 0.3,
         ),
@@ -462,9 +453,6 @@ class _InfoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -474,15 +462,12 @@ class _InfoSection extends StatelessWidget {
             horizontal: AppSpacing.screenHorizontal,
           ),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
+            color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(12),
-            border: isDark
-                ? Border.all(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                    width: 0.5,
-                  )
+            border: AppColors.isDark(context)
+                ? Border.all(color: AppColors.border(context), width: 0.5)
                 : null,
-            boxShadow: isDark ? null : AppShadows.shadow4,
+            boxShadow: AppShadows.of4(context),
           ),
           child: Column(
             children: [
@@ -492,7 +477,7 @@ class _InfoSection extends StatelessWidget {
                   Divider(
                     height: 0.5,
                     indent: 52,
-                    color: theme.colorScheme.outlineVariant,
+                    color: AppColors.border(context),
                   ),
               ],
             ],
@@ -516,8 +501,6 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       child: Row(
@@ -531,7 +514,7 @@ class _InfoRow extends StatelessWidget {
                 Text(
                   label,
                   style: AppTextStyles.caption2.copyWith(
-                    color: AppColors.textSecondary(theme.brightness),
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -560,8 +543,6 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -580,7 +561,7 @@ class _ActionButton extends StatelessWidget {
             label,
             style: AppTextStyles.caption1.copyWith(
               fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary(theme.brightness),
+              color: AppColors.textSecondary(context),
             ),
           ),
         ],
@@ -597,9 +578,6 @@ class _ProjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Container(
       margin: const EdgeInsets.fromLTRB(
         AppSpacing.screenHorizontal,
@@ -609,15 +587,12 @@ class _ProjectCard extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: isDark
-            ? Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                width: 0.5,
-              )
+        border: AppColors.isDark(context)
+            ? Border.all(color: AppColors.border(context), width: 0.5)
             : null,
-        boxShadow: isDark ? null : AppShadows.shadow4,
+        boxShadow: AppShadows.of4(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -629,10 +604,7 @@ class _ProjectCard extends StatelessWidget {
           const SizedBox(height: 6),
           Row(
             children: [
-              AppIcons.user(
-                size: 14,
-                color: AppColors.textSecondary(theme.brightness),
-              ),
+              AppIcons.user(size: 14, color: AppColors.textSecondary(context)),
               const SizedBox(width: 4),
               Text(
                 project.role,
@@ -644,13 +616,13 @@ class _ProjectCard extends StatelessWidget {
               const SizedBox(width: AppSpacing.md),
               AppIcons.calendar(
                 size: 12,
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
               ),
               const SizedBox(width: 4),
               Text(
                 project.period,
                 style: AppTextStyles.caption2.copyWith(
-                  color: AppColors.textSecondary(theme.brightness),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
             ],
@@ -660,7 +632,7 @@ class _ProjectCard extends StatelessWidget {
             Text(
               project.description!,
               style: AppTextStyles.caption2.copyWith(
-                color: AppColors.textSecondary(theme.brightness),
+                color: AppColors.textSecondary(context),
                 height: 1.5,
               ),
             ),
@@ -679,8 +651,6 @@ class _CareerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       child: Row(
@@ -703,7 +673,7 @@ class _CareerRow extends StatelessWidget {
                 Text(
                   career.period,
                   style: AppTextStyles.caption2.copyWith(
-                    color: AppColors.textSecondary(theme.brightness),
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
               ],

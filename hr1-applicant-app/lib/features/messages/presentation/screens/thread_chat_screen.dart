@@ -152,7 +152,6 @@ class ThreadChatScreen extends HookConsumerWidget {
     });
 
     final chatState = ref.watch(threadChatControllerProvider(controllerArg));
-    final theme = Theme.of(context);
     final displayName = thread.organizationName ?? '企業';
 
     return CommonScaffold(
@@ -174,7 +173,7 @@ class ThreadChatScreen extends HookConsumerWidget {
                     Text(
                       thread.jobTitle!,
                       style: AppTextStyles.caption2.copyWith(
-                        color: AppColors.textSecondary(theme.brightness),
+                        color: AppColors.textSecondary(context),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -211,7 +210,7 @@ class ThreadChatScreen extends HookConsumerWidget {
                         Text(
                           'メッセージを送ってみましょう',
                           style: AppTextStyles.caption1.copyWith(
-                            color: AppColors.textSecondary(theme.brightness),
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -328,15 +327,13 @@ class _DateSeparator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Center(
         child: Text(
           DateFormatter.toRelativeDate(date),
           style: AppTextStyles.caption2.copyWith(
-            color: AppColors.textSecondary(theme.brightness),
+            color: AppColors.textSecondary(context),
           ),
         ),
       ),
@@ -371,14 +368,10 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     final bubbleColor = isMe
         ? AppColors.brand
-        : AppColors.surfaceTertiary(theme.brightness);
-    final textColor = isMe
-        ? Colors.white
-        : AppColors.textPrimary(theme.brightness);
+        : AppColors.surfaceTertiary(context);
+    final textColor = isMe ? Colors.white : AppColors.textPrimary(context);
 
     final bottomPadding = isLastInGroup ? 12.0 : 2.0;
 
@@ -453,7 +446,7 @@ class _MessageBubble extends StatelessWidget {
                       child: Text(
                         _formatTime(message),
                         style: AppTextStyles.caption2.copyWith(
-                          color: AppColors.textSecondary(theme.brightness),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ),
@@ -474,8 +467,6 @@ class _MessageBubble extends StatelessWidget {
   }
 
   Widget _buildEditingContent(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
@@ -485,9 +476,7 @@ class _MessageBubble extends StatelessWidget {
           autofocus: true,
           maxLines: null,
           style: AppTextStyles.body1.copyWith(
-            color: isMe
-                ? Colors.white
-                : AppColors.textPrimary(theme.brightness),
+            color: isMe ? Colors.white : AppColors.textPrimary(context),
           ),
           decoration: InputDecoration(
             isDense: true,
@@ -497,7 +486,7 @@ class _MessageBubble extends StatelessWidget {
             hintStyle: AppTextStyles.body1.copyWith(
               color: isMe
                   ? Colors.white.withValues(alpha: 0.6)
-                  : AppColors.textSecondary(theme.brightness),
+                  : AppColors.textSecondary(context),
             ),
           ),
         ),
@@ -512,7 +501,7 @@ class _MessageBubble extends StatelessWidget {
                 style: AppTextStyles.caption2.copyWith(
                   color: isMe
                       ? Colors.white.withValues(alpha: 0.8)
-                      : AppColors.textSecondary(theme.brightness),
+                      : AppColors.textSecondary(context),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -567,8 +556,6 @@ class _TypingIndicatorState extends State<_TypingIndicator>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -576,7 +563,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: AppColors.surfaceTertiary(theme.brightness),
+            color: AppColors.surfaceTertiary(context),
             borderRadius: AppRadius.radius160,
           ),
           child: AnimatedBuilder(
@@ -596,7 +583,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: AppColors.textSecondary(theme.brightness),
+                          color: AppColors.textSecondary(context),
                           shape: BoxShape.circle,
                         ),
                       ),

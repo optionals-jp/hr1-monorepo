@@ -443,6 +443,13 @@ export const workflowStatusColors: Record<string, BadgeVariant> = {
   cancelled: "secondary",
 };
 
+// --- お知らせ対象 ---
+export const announcementTargetLabels: Record<string, string> = {
+  all: "全員",
+  employee: "社員向け",
+  applicant: "応募者向け",
+};
+
 // --- FAQ カテゴリ ---
 export const faqCategoryLabels: Record<string, string> = {
   general: "一般",
