@@ -228,10 +228,7 @@ class SearchScreen extends HookConsumerWidget {
               final contact = contacts[index];
               return GestureDetector(
                 onTap: () {
-                  context.push(
-                    AppRoutes.employeeDetail,
-                    extra: contact,
-                  );
+                  context.push(AppRoutes.employeeDetail, extra: contact);
                 },
                 child: SizedBox(
                   width: 80,
@@ -422,9 +419,7 @@ class _SearchResultsView extends StatelessWidget {
             label: '社員',
             count: results.employees.length,
           ),
-          ...results.employees.map(
-            (c) => _EmployeeResultTile(contact: c),
-          ),
+          ...results.employees.map((c) => _EmployeeResultTile(contact: c)),
         ],
 
         // Wiki
@@ -434,9 +429,7 @@ class _SearchResultsView extends StatelessWidget {
             label: '社内Wiki',
             count: results.wikiPages.length,
           ),
-          ...results.wikiPages.map(
-            (p) => _WikiResultTile(page: p),
-          ),
+          ...results.wikiPages.map((p) => _WikiResultTile(page: p)),
         ],
 
         // お知らせ
@@ -554,9 +547,10 @@ class _EmployeeResultTile extends StatelessWidget {
                   if (contact.department.isNotEmpty ||
                       contact.position.isNotEmpty)
                     Text(
-                      [contact.department, contact.position]
-                          .where((s) => s.isNotEmpty)
-                          .join(' / '),
+                      [
+                        contact.department,
+                        contact.position,
+                      ].where((s) => s.isNotEmpty).join(' / '),
                       style: AppTextStyles.caption2.copyWith(
                         color: AppColors.textSecondary(context),
                       ),
@@ -638,8 +632,7 @@ class _WikiResultTile extends StatelessWidget {
             if (page.category != null)
               Container(
                 margin: const EdgeInsets.only(left: 8),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppColors.divider(context),
                   borderRadius: AppRadius.radius40,
@@ -709,8 +702,9 @@ class _AnnouncementResultTile extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        DateFormat('yyyy/MM/dd')
-                            .format(announcement.publishedAt),
+                        DateFormat(
+                          'yyyy/MM/dd',
+                        ).format(announcement.publishedAt),
                         style: AppTextStyles.caption2.copyWith(
                           color: AppColors.textSecondary(context),
                         ),

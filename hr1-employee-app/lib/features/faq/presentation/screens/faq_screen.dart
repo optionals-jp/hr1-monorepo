@@ -16,9 +16,7 @@ class FaqScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final searchController = useTextEditingController(
-      text: initialQuery ?? '',
-    );
+    final searchController = useTextEditingController(text: initialQuery ?? '');
     final focusNode = useFocusNode();
     final query = useValueListenable(searchController).text.trim();
     final faqsAsync = ref.watch(employeeFaqsProvider);

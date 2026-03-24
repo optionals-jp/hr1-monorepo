@@ -20,10 +20,8 @@ class AnnouncementsScreen extends ConsumerWidget {
     return CommonScaffold(
       appBar: AppBar(title: const Text('お知らせ')),
       body: announcementsAsync.when(
-        data: (announcements) => _Body(
-          announcements: announcements,
-          highlightId: highlightId,
-        ),
+        data: (announcements) =>
+            _Body(announcements: announcements, highlightId: highlightId),
         loading: () => const LoadingIndicator(),
         error: (e, _) =>
             ErrorState(onRetry: () => ref.invalidate(allAnnouncementsProvider)),
@@ -62,18 +60,22 @@ class _Body extends StatelessWidget {
       children: [
         if (pinned.isNotEmpty) ...[
           _SectionHeader(label: '固定'),
-          ...pinned.map((a) => _AnnouncementTile(
-                announcement: a,
-                initiallyExpanded: a.id == highlightId,
-              )),
+          ...pinned.map(
+            (a) => _AnnouncementTile(
+              announcement: a,
+              initiallyExpanded: a.id == highlightId,
+            ),
+          ),
           const SizedBox(height: AppSpacing.lg),
         ],
         if (others.isNotEmpty) ...[
           _SectionHeader(label: 'すべて'),
-          ...others.map((a) => _AnnouncementTile(
-                announcement: a,
-                initiallyExpanded: a.id == highlightId,
-              )),
+          ...others.map(
+            (a) => _AnnouncementTile(
+              announcement: a,
+              initiallyExpanded: a.id == highlightId,
+            ),
+          ),
         ],
       ],
     );

@@ -12,8 +12,10 @@ import 'package:hr1_employee_app/features/faq/presentation/providers/faq_provide
 import 'package:hr1_employee_app/features/search/domain/entities/portal_search_results.dart';
 
 /// 横断検索コントローラー
-final searchControllerProvider = AutoDisposeAsyncNotifierProvider<
-    SearchController, PortalSearchResults?>(SearchController.new);
+final searchControllerProvider =
+    AutoDisposeAsyncNotifierProvider<SearchController, PortalSearchResults?>(
+      SearchController.new,
+    );
 
 class SearchController extends AutoDisposeAsyncNotifier<PortalSearchResults?> {
   @override

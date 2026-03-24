@@ -73,15 +73,15 @@ class _Body extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasApplications = inProgress.isNotEmpty || completed.isNotEmpty;
-    final offeredApps =
-        completed.where((a) => a.status == ApplicationStatus.offered).toList();
+    final offeredApps = completed
+        .where((a) => a.status == ApplicationStatus.offered)
+        .toList();
 
     return ListView(
       padding: const EdgeInsets.only(top: AppSpacing.md, bottom: 40),
       children: [
         // 内定バナー
-        if (offeredApps.isNotEmpty)
-          _OfferedBanner(count: offeredApps.length),
+        if (offeredApps.isNotEmpty) _OfferedBanner(count: offeredApps.length),
 
         // 進行中セクション
         if (inProgress.isNotEmpty) ...[
