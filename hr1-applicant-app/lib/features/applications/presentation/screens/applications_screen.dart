@@ -73,10 +73,16 @@ class _Body extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasApplications = inProgress.isNotEmpty || completed.isNotEmpty;
+    final offeredApps =
+        completed.where((a) => a.status == ApplicationStatus.offered).toList();
 
     return ListView(
       padding: const EdgeInsets.only(top: AppSpacing.md, bottom: 40),
       children: [
+        // 内定バナー
+        if (offeredApps.isNotEmpty)
+          _OfferedBanner(count: offeredApps.length),
+
         // 進行中セクション
         if (inProgress.isNotEmpty) ...[
           _SectionHeader(
@@ -443,6 +449,82 @@ class _JobCard extends StatelessWidget {
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Offered Banner
+// =============================================================================
+
+class _OfferedBanner extends StatelessWidget {
+  const _OfferedBanner({required this.count});
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.screenHorizontal,
+        0,
+        AppSpacing.screenHorizontal,
+        AppSpacing.lg,
+      ),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.success.withValues(alpha: 0.1),
+            AppColors.brand.withValues(alpha: 0.08),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.success.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.celebration_rounded,
+              color: AppColors.success,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '内定を獲得しました！',
+                  style: AppTextStyles.body1.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.success,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  count == 1
+                      ? '入社手続きについては企業からのご連絡をお待ちください。'
+                      : '$count件の内定があります。詳細は各応募をご確認ください。',
+                  style: AppTextStyles.caption1.copyWith(
+                    color: AppColors.textSecondary(context),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

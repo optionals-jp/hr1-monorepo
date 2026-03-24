@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,7 @@ import { useQuery } from "@/lib/use-query";
 import { cn } from "@/lib/utils";
 import type { Job } from "@/types/database";
 import { jobStatusLabels as statusLabels, jobStatusColors as statusColors } from "@/lib/constants";
+import { Trash2 } from "lucide-react";
 
 const pageTabs = [
   { value: "open", label: "公開中" },
@@ -38,9 +40,11 @@ interface AppCounts {
 
 export default function JobsPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { organization } = useOrg();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("open");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const {
     data: jobs = [],
@@ -78,6 +82,26 @@ export default function JobsPage() {
     ...tab,
     count: jobs.filter((j) => j.status === tab.value).length,
   }));
+
+  const handleDeleteJob = async (job: Job) => {
+    if (!organization) return;
+    if (!window.confirm(`「${job.title}」を削除しますか？`)) return;
+    setDeletingId(job.id);
+    try {
+      const { error } = await getSupabase()
+        .from("jobs")
+        .delete()
+        .eq("id", job.id)
+        .eq("organization_id", organization.id);
+      if (error) throw error;
+      mutateJobs();
+      showToast("求人を削除しました");
+    } catch {
+      showToast("削除に失敗しました", "error");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filtered = jobs.filter((job) => {
     if (job.status !== activeTab) return false;
@@ -148,11 +172,12 @@ export default function JobsPage() {
               <TableHead>ステータス</TableHead>
               <TableHead className="text-right">応募数</TableHead>
               <TableHead className="text-right">内定数</TableHead>
+              <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableEmptyState
-              colSpan={7}
+              colSpan={8}
               isLoading={isLoading}
               isEmpty={filtered.length === 0}
               emptyMessage={jobs.length === 0 ? "求人がありません" : "該当する求人がありません"}
@@ -185,6 +210,19 @@ export default function JobsPage() {
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <button
+                        type="button"
+                        disabled={deletingId === job.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteJob(job);
+                        }}
+                        className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </TableCell>
                   </TableRow>
                 );

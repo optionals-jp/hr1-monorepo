@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
 import 'package:hr1_employee_app/core/router/app_router.dart';
 import 'package:hr1_employee_app/shared/widgets/widgets.dart';
@@ -130,7 +131,14 @@ class _ProfileHeader extends StatelessWidget {
                 icon: AppIcons.call(size: 22, color: AppColors.success),
                 label: '電話',
                 color: AppColors.success,
-                onTap: () {},
+                onTap: () {
+                  final phone = contact.phone;
+                  if (phone != null && phone.isNotEmpty) {
+                    launchUrl(Uri.parse('tel:$phone'));
+                  } else {
+                    CommonSnackBar.show(context, '電話番号が登録されていません');
+                  }
+                },
               ),
               const SizedBox(width: AppSpacing.xxl),
               _ActionButton(
@@ -141,7 +149,14 @@ class _ProfileHeader extends StatelessWidget {
                 ),
                 label: 'メール',
                 color: AppColors.warning,
-                onTap: () {},
+                onTap: () {
+                  final email = contact.email;
+                  if (email != null && email.isNotEmpty) {
+                    launchUrl(Uri.parse('mailto:$email'));
+                  } else {
+                    CommonSnackBar.show(context, 'メールアドレスが登録されていません');
+                  }
+                },
               ),
             ],
           ),

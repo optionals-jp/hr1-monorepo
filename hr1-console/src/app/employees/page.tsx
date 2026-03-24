@@ -35,7 +35,7 @@ import { cn } from "@/lib/utils";
 import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
-import { SlidersHorizontal, X, Download, Upload, ChevronDown } from "lucide-react";
+import { SlidersHorizontal, X, Download, Upload, ChevronDown, Trash2 } from "lucide-react";
 import { exportToCSV } from "@/lib/export-csv";
 import { genderLabels } from "@/lib/constants";
 import { useRouter } from "next/navigation";
@@ -181,6 +181,7 @@ export default function EmployeesPage() {
   const [selectedDeptIds, setSelectedDeptIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [formErrors, setFormErrors] = useState<ValidationErrors>({});
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: departments = [] } = useQuery<Department[]>(
     organization ? `departments-${organization.id}` : null,
@@ -324,6 +325,31 @@ export default function EmployeesPage() {
     }
   };
 
+  const handleDelete = async (emp: EmployeeWithDepts) => {
+    if (!organization) return;
+    if (!window.confirm(`${emp.display_name ?? emp.email} を組織から削除しますか？`)) return;
+    setDeletingId(emp.id);
+    try {
+      await getSupabase()
+        .from("employee_departments")
+        .delete()
+        .eq("user_id", emp.id)
+        .eq("organization_id", organization.id);
+      const { error } = await getSupabase()
+        .from("user_organizations")
+        .delete()
+        .eq("user_id", emp.id)
+        .eq("organization_id", organization.id);
+      if (error) throw error;
+      mutate();
+      showToast("社員を削除しました");
+    } catch {
+      showToast("削除に失敗しました", "error");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const toggleDept = (deptId: string) => {
     setSelectedDeptIds((prev) =>
       prev.includes(deptId) ? prev.filter((id) => id !== deptId) : [...prev, deptId]
@@ -435,11 +461,12 @@ export default function EmployeesPage() {
               <TableHead>メールアドレス</TableHead>
               <TableHead>部署</TableHead>
               <TableHead>役職</TableHead>
+              <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableEmptyState
-              colSpan={4}
+              colSpan={5}
               isLoading={isLoading}
               isEmpty={filtered.length === 0}
               emptyMessage="社員がいません"
@@ -475,6 +502,19 @@ export default function EmployeesPage() {
                     )}
                   </TableCell>
                   <TableCell>{emp.position ?? "-"}</TableCell>
+                  <TableCell>
+                    <button
+                      type="button"
+                      disabled={deletingId === emp.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(emp);
+                      }}
+                      className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableEmptyState>

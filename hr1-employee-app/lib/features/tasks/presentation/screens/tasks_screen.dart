@@ -127,6 +127,8 @@ class TasksScreen extends HookConsumerWidget {
                       _CompletedSection(
                         tasks: completed,
                         onToggleComplete: toggleComplete,
+                        onToggleImportant: toggleImportant,
+                        onDelete: deleteTask,
                         onTap: showTaskDetail,
                       ),
                   ],
@@ -496,11 +498,15 @@ class _CompletedSection extends StatefulWidget {
   const _CompletedSection({
     required this.tasks,
     required this.onToggleComplete,
+    required this.onToggleImportant,
+    required this.onDelete,
     required this.onTap,
   });
 
   final List<Task> tasks;
   final ValueChanged<Task> onToggleComplete;
+  final ValueChanged<Task> onToggleImportant;
+  final ValueChanged<Task> onDelete;
   final ValueChanged<Task> onTap;
 
   @override
@@ -547,9 +553,9 @@ class _CompletedSectionState extends State<_CompletedSection> {
             (task) => _TaskItem(
               task: task,
               onToggleComplete: () => widget.onToggleComplete(task),
-              onToggleImportant: () {},
+              onToggleImportant: () => widget.onToggleImportant(task),
               onTap: () => widget.onTap(task),
-              onDismissed: () {},
+              onDismissed: () => widget.onDelete(task),
             ),
           ),
       ],

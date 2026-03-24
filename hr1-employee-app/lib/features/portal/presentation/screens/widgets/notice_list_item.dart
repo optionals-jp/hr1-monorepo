@@ -9,17 +9,19 @@ class NoticeListItem extends StatelessWidget {
     required this.subtitle,
     required this.date,
     required this.isNew,
+    this.onTap,
   });
 
   final String title;
   final String subtitle;
   final String date;
   final bool isNew;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {},
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.screenHorizontal,
