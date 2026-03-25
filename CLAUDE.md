@@ -2,12 +2,14 @@
 
 ## Project Structure
 
-Monorepo with three apps:
-- `hr1-console/` — Next.js (App Router) admin console (TypeScript)
+Monorepo with four apps:
+- `hr1-console/` — Next.js (App Router) tenant admin console (TypeScript) — 各テナント企業の管理画面
+- `hr1-admin/` — Next.js (App Router) platform admin (TypeScript) — HR1運営側の管理画面（契約・プラン・MRR管理）
 - `hr1-applicant-app/` — Flutter applicant app (Dart)
 - `hr1-employee-app/` — Flutter employee app (Dart)
 
 Backend: Supabase (Auth, Database, Edge Functions)
+Deploy: Console/Admin → Vercel (main merge), Mobile → TestFlight (manual via `./scripts/build-all-ipa.sh`)
 
 ## Commands
 
@@ -20,10 +22,24 @@ Backend: Supabase (Auth, Database, Edge Functions)
 - `npm run test` — Vitest run
 - `npm run test:watch` — Vitest watch
 
+### hr1-admin (run from `hr1-admin/`)
+- `npm run dev` — Start dev server (port 3001)
+- `npm run build` — Production build
+- `npm run lint` — ESLint
+- `npm run format` — Prettier format (write)
+- `npm run format:check` — Prettier format check
+- `npm run test` — Vitest run
+
 ### Flutter apps (run from each app directory)
 - `flutter run` — Run app
 - `flutter build` — Build app
 - `flutter test` — Run tests
+
+## Supabase Safety Rules（絶対遵守）
+
+- **auth スキーマへの直接 SQL 操作は絶対禁止**: `auth.users` / `auth.identities` への INSERT/UPDATE/DELETE を直接実行しない。GoTrue の内部エラーで全ユーザーのログインが壊れる。ユーザー作成は Supabase Dashboard または `supabase.auth.admin` API のみ使用する。
+- **profiles RLS ポリシーで profiles を直接参照しない**: `USING ((SELECT role FROM profiles ...) = 'xxx')` は無限再帰を引き起こす。必ず `USING (public.get_my_role() = 'xxx')` のように SECURITY DEFINER ヘルパー関数を使う。
+- **DB スキーマ変更はマイグレーションファイル経由**: 本番 DB への DDL/DML 変更は `supabase/migrations/` にファイルとして記録し、レビュー後に適用する。
 
 ## Code Style
 
