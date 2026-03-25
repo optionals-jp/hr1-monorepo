@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
+import { InfoItem } from "@/components/ui/info-item";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
@@ -18,7 +19,12 @@ export default function CrmCompanyDetailPage() {
   const { data: company, error } = useQuery<BcCompany | null>(
     organization ? `crm-company-${id}` : null,
     async () => {
-      const { data } = await getSupabase().from("bc_companies").select("*").eq("id", id).single();
+      const { data } = await getSupabase()
+        .from("bc_companies")
+        .select("*")
+        .eq("id", id)
+        .eq("organization_id", organization!.id)
+        .single();
       return data;
     }
   );
@@ -30,6 +36,7 @@ export default function CrmCompanyDetailPage() {
         .from("bc_contacts")
         .select("*")
         .eq("company_id", id)
+        .eq("organization_id", organization!.id)
         .order("last_name");
       return data ?? [];
     }
@@ -42,14 +49,11 @@ export default function CrmCompanyDetailPage() {
         .from("bc_deals")
         .select("*")
         .eq("company_id", id)
+        .eq("organization_id", organization!.id)
         .order("created_at", { ascending: false });
       return data ?? [];
     }
   );
-
-  if (!company && !error) {
-    return <div className="p-8 text-center text-muted-foreground">読み込み中...</div>;
-  }
 
   return (
     <div>
@@ -127,15 +131,6 @@ export default function CrmCompanyDetailPage() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function InfoItem({ label, value }: { label: string; value: string | null | undefined }) {
-  return (
-    <div>
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="font-medium">{value || "—"}</p>
     </div>
   );
 }

@@ -78,7 +78,8 @@ export default function CrmCompaniesPage() {
             industry: editData.industry || null,
             notes: editData.notes || null,
           })
-          .eq("id", editData.id);
+          .eq("id", editData.id)
+          .eq("organization_id", organization!.id);
         showToast("企業情報を更新しました");
       } else {
         await getSupabase()
@@ -106,7 +107,11 @@ export default function CrmCompaniesPage() {
   const handleDelete = async () => {
     if (!editData.id) return;
     try {
-      await getSupabase().from("bc_companies").delete().eq("id", editData.id);
+      await getSupabase()
+        .from("bc_companies")
+        .delete()
+        .eq("id", editData.id)
+        .eq("organization_id", organization!.id);
       showToast("企業を削除しました");
       setEditOpen(false);
       mutate();

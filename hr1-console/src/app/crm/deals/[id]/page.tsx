@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
+import { InfoItem } from "@/components/ui/info-item";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
@@ -27,6 +28,7 @@ export default function CrmDealDetailPage() {
         .from("bc_deals")
         .select("*, bc_companies(*), bc_contacts(*)")
         .eq("id", id)
+        .eq("organization_id", organization!.id)
         .single();
       return data;
     }
@@ -39,6 +41,7 @@ export default function CrmDealDetailPage() {
         .from("bc_activities")
         .select("*")
         .eq("deal_id", id)
+        .eq("organization_id", organization!.id)
         .order("created_at", { ascending: false });
       return data ?? [];
     }
@@ -51,6 +54,7 @@ export default function CrmDealDetailPage() {
         .from("bc_todos")
         .select("*")
         .eq("deal_id", id)
+        .eq("organization_id", organization!.id)
         .order("due_date");
       return data ?? [];
     }
@@ -166,15 +170,6 @@ export default function CrmDealDetailPage() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function InfoItem({ label, value }: { label: string; value: string | number | null | undefined }) {
-  return (
-    <div>
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="font-medium">{value ?? "—"}</p>
     </div>
   );
 }

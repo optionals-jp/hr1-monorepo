@@ -256,6 +256,7 @@ CREATE INDEX IF NOT EXISTS idx_bc_activities_company ON public.bc_activities(com
 CREATE INDEX IF NOT EXISTS idx_bc_activities_contact ON public.bc_activities(contact_id);
 CREATE INDEX IF NOT EXISTS idx_bc_activities_deal ON public.bc_activities(deal_id);
 CREATE INDEX IF NOT EXISTS idx_bc_activities_type ON public.bc_activities(organization_id, activity_type);
+CREATE INDEX IF NOT EXISTS idx_bc_activities_date ON public.bc_activities(organization_id, activity_date DESC);
 
 ALTER TABLE public.bc_activities ENABLE ROW LEVEL SECURITY;
 
@@ -304,7 +305,7 @@ CREATE TABLE IF NOT EXISTS public.bc_todos (
   due_date date,
   is_completed boolean NOT NULL DEFAULT false,
   completed_at timestamptz,
-  assigned_to text NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  assigned_to text NOT NULL REFERENCES public.profiles(id) ON DELETE SET NULL,
   created_by text REFERENCES public.profiles(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()

@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
+import { InfoItem } from "@/components/ui/info-item";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
@@ -22,6 +23,7 @@ export default function CrmContactDetailPage() {
         .from("bc_contacts")
         .select("*, bc_companies(*)")
         .eq("id", id)
+        .eq("organization_id", organization!.id)
         .single();
       return data;
     }
@@ -34,6 +36,7 @@ export default function CrmContactDetailPage() {
         .from("bc_deals")
         .select("*")
         .eq("contact_id", id)
+        .eq("organization_id", organization!.id)
         .order("created_at", { ascending: false });
       return data ?? [];
     }
@@ -46,6 +49,7 @@ export default function CrmContactDetailPage() {
         .from("bc_activities")
         .select("*")
         .eq("contact_id", id)
+        .eq("organization_id", organization!.id)
         .order("created_at", { ascending: false });
       return data ?? [];
     }
@@ -58,6 +62,7 @@ export default function CrmContactDetailPage() {
         .from("bc_cards")
         .select("*")
         .eq("contact_id", id)
+        .eq("organization_id", organization!.id)
         .order("scanned_at", { ascending: false });
       return data ?? [];
     }
@@ -96,8 +101,8 @@ export default function CrmContactDetailPage() {
             <div>
               <h2 className="text-lg font-semibold mb-3">名刺画像</h2>
               <div className="flex gap-4 flex-wrap">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 {cards!.map((card) => (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     key={card.id}
                     src={card.image_url}
@@ -155,15 +160,6 @@ export default function CrmContactDetailPage() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function InfoItem({ label, value }: { label: string; value: string | null | undefined }) {
-  return (
-    <div>
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="font-medium">{value || "—"}</p>
     </div>
   );
 }

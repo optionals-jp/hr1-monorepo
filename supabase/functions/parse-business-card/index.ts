@@ -7,6 +7,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const MAX_RAW_TEXT_LENGTH = 10000;
+const CLAUDE_API_TIMEOUT_MS = 30000;
+
 interface ParsedBusinessCard {
   company_name: string | null;
   company_name_kana: string | null;
@@ -25,6 +28,16 @@ interface ParsedBusinessCard {
   website: string | null;
 }
 
+function jsonResponse(
+  body: Record<string, unknown>,
+  status: number
+): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -34,10 +47,7 @@ serve(async (req: Request) => {
     // JWT認証
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "認証が必要です" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "認証が必要です" }, 401);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -51,45 +61,49 @@ serve(async (req: Request) => {
       error: authError,
     } = await supabase.auth.getUser(token);
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "認証に失敗しました" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "認証に失敗しました" }, 401);
     }
 
     const { raw_text } = await req.json();
 
     if (!raw_text || typeof raw_text !== "string") {
-      return new Response(
-        JSON.stringify({ error: "raw_text が必要です" }),
+      return jsonResponse({ error: "raw_text が必要です" }, 400);
+    }
+
+    if (raw_text.length > MAX_RAW_TEXT_LENGTH) {
+      return jsonResponse(
         {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+          error: `raw_text が長すぎます（最大${MAX_RAW_TEXT_LENGTH}文字）`,
+        },
+        400
       );
     }
 
     // Claude APIで構造化データ抽出
     const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!anthropicApiKey) {
-      return new Response(
-        JSON.stringify({ error: "ANTHROPIC_API_KEY が設定されていません" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+      return jsonResponse(
+        { error: "ANTHROPIC_API_KEY が設定されていません" },
+        500
       );
     }
 
-    const claudeResponse = await fetch(
-      "https://api.anthropic.com/v1/messages",
-      {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      CLAUDE_API_TIMEOUT_MS
+    );
+
+    let claudeResponse: Response;
+    try {
+      claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-api-key": anthropicApiKey,
           "anthropic-version": "2023-06-01",
         },
+        signal: controller.signal,
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 1024,
@@ -124,19 +138,37 @@ JSONのみを返し、他のテキストは含めないでください。
             },
           ],
         }),
+      });
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") {
+        return jsonResponse({ error: "解析がタイムアウトしました" }, 504);
       }
-    );
+      throw e;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!claudeResponse.ok) {
-      const errorText = await claudeResponse.text();
-      console.error("Claude API error:", errorText);
-      return new Response(
-        JSON.stringify({ error: "名刺の解析に失敗しました" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+      const status = claudeResponse.status;
+      console.error(
+        "Claude API error:",
+        status,
+        await claudeResponse.text()
       );
+
+      if (status === 429) {
+        return jsonResponse(
+          { error: "APIレート制限に達しました。しばらくしてからお試しください" },
+          429
+        );
+      }
+      if (status === 401) {
+        return jsonResponse(
+          { error: "API認証に失敗しました" },
+          500
+        );
+      }
+      return jsonResponse({ error: "名刺の解析に失敗しました" }, 500);
     }
 
     const claudeResult = await claudeResponse.json();
@@ -154,30 +186,15 @@ JSONのみを返し、他のテキストは含めないでください。
       parsed = JSON.parse(jsonStr);
     } catch {
       console.error("JSON parse error:", jsonStr);
-      return new Response(
-        JSON.stringify({
-          error: "解析結果のパースに失敗しました",
-          raw_response: assistantMessage,
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+      return jsonResponse(
+        { error: "解析結果のパースに失敗しました" },
+        500
       );
     }
 
-    return new Response(JSON.stringify(parsed), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse(parsed as unknown as Record<string, unknown>, 200);
   } catch (error) {
     console.error("Unexpected error:", error);
-    return new Response(
-      JSON.stringify({ error: "予期しないエラーが発生しました" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return jsonResponse({ error: "予期しないエラーが発生しました" }, 500);
   }
 });
