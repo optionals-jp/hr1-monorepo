@@ -20,8 +20,8 @@ function AuthGuard({ children }: { children: ReactNode }) {
     }
   }, [loading, user, pathname, router]);
 
-  // ログインページは認証不要
-  if (pathname === "/login") {
+  // 公開ページは認証不要
+  if (pathname === "/login" || pathname === "/signup") {
     return <>{children}</>;
   }
 
