@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>HR1</string>
+	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -52,6 +52,12 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>プロフィール画像や書類の添付に写真ライブラリを使用します</string>
+	<key>NSCameraUsageDescription</key>
+	<string>プロフィール画像の撮影や書類のスキャンにカメラを使用します</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ビデオ面接時にマイクを使用します</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
