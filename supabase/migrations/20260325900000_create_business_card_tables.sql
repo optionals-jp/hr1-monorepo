@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS public.bc_cards (
   contact_id uuid REFERENCES public.bc_contacts(id) ON DELETE SET NULL,
   image_url text NOT NULL,
   raw_text text,
-  scanned_by text NOT NULL REFERENCES public.profiles(id) ON DELETE SET NULL,
+  scanned_by text REFERENCES public.profiles(id) ON DELETE SET NULL,
   scanned_at timestamptz NOT NULL DEFAULT now(),
   created_at timestamptz NOT NULL DEFAULT now()
 );
@@ -246,7 +246,7 @@ CREATE TABLE IF NOT EXISTS public.bc_activities (
   title text NOT NULL,
   description text,
   activity_date timestamptz,
-  created_by text NOT NULL REFERENCES public.profiles(id) ON DELETE SET NULL,
+  created_by text REFERENCES public.profiles(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -305,7 +305,7 @@ CREATE TABLE IF NOT EXISTS public.bc_todos (
   due_date date,
   is_completed boolean NOT NULL DEFAULT false,
   completed_at timestamptz,
-  assigned_to text NOT NULL REFERENCES public.profiles(id) ON DELETE SET NULL,
+  assigned_to text REFERENCES public.profiles(id) ON DELETE SET NULL,
   created_by text REFERENCES public.profiles(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
