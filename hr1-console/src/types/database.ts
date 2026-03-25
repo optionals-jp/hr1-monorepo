@@ -701,3 +701,107 @@ export interface Payslip {
   updated_at: string;
   profiles?: Profile;
 }
+
+// ==========================================================
+// CRM（名刺管理）
+// ==========================================================
+
+export interface BcCompany {
+  id: string;
+  organization_id: string;
+  name: string;
+  name_kana: string | null;
+  corporate_number: string | null;
+  postal_code: string | null;
+  address: string | null;
+  phone: string | null;
+  website: string | null;
+  industry: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BcContact {
+  id: string;
+  organization_id: string;
+  company_id: string | null;
+  last_name: string;
+  first_name: string | null;
+  last_name_kana: string | null;
+  first_name_kana: string | null;
+  department: string | null;
+  position: string | null;
+  email: string | null;
+  phone: string | null;
+  mobile_phone: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  bc_companies?: BcCompany;
+}
+
+export interface BcCard {
+  id: string;
+  organization_id: string;
+  contact_id: string | null;
+  image_url: string;
+  raw_text: string | null;
+  scanned_by: string;
+  scanned_at: string;
+  created_at: string;
+}
+
+export interface BcDeal {
+  id: string;
+  organization_id: string;
+  company_id: string | null;
+  contact_id: string | null;
+  title: string;
+  amount: number | null;
+  status: "open" | "won" | "lost";
+  stage: "initial" | "proposal" | "negotiation" | "closing";
+  expected_close_date: string | null;
+  description: string | null;
+  assigned_to: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  bc_companies?: BcCompany;
+  bc_contacts?: BcContact;
+  profiles?: Profile;
+}
+
+export interface BcActivity {
+  id: string;
+  organization_id: string;
+  company_id: string | null;
+  contact_id: string | null;
+  deal_id: string | null;
+  activity_type: "appointment" | "memo" | "call" | "email" | "visit";
+  title: string;
+  description: string | null;
+  activity_date: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BcTodo {
+  id: string;
+  organization_id: string;
+  company_id: string | null;
+  contact_id: string | null;
+  deal_id: string | null;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  is_completed: boolean;
+  completed_at: string | null;
+  assigned_to: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}

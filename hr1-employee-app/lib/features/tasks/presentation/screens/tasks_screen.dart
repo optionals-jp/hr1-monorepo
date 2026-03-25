@@ -10,6 +10,8 @@ import 'package:hr1_employee_app/features/auth/presentation/providers/auth_provi
 import 'package:hr1_employee_app/features/tasks/domain/entities/task.dart';
 import 'package:hr1_employee_app/features/tasks/presentation/controllers/task_controller.dart';
 import 'package:hr1_employee_app/features/tasks/presentation/providers/task_providers.dart';
+import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_todo.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/providers/business_card_providers.dart';
 
 class TasksScreen extends HookConsumerWidget {
   const TasksScreen({super.key});
@@ -99,60 +101,66 @@ class TasksScreen extends HookConsumerWidget {
           ),
           _FilterHeader(filter: filter),
           Expanded(
-            child: tasksAsync.when(
-              loading: () => const LoadingIndicator(),
-              error: (e, _) => ErrorState(
-                onRetry: () => ref.invalidate(taskListControllerProvider),
-              ),
-              data: (tasks) {
-                final incomplete = tasks.where((t) => !t.isCompleted).toList();
-                final completed = tasks.where((t) => t.isCompleted).toList();
+            child: filter == TaskFilter.crm
+                ? _CrmTodoList()
+                : tasksAsync.when(
+                    loading: () => const LoadingIndicator(),
+                    error: (e, _) => ErrorState(
+                      onRetry: () =>
+                          ref.invalidate(taskListControllerProvider),
+                    ),
+                    data: (tasks) {
+                      final incomplete =
+                          tasks.where((t) => !t.isCompleted).toList();
+                      final completed =
+                          tasks.where((t) => t.isCompleted).toList();
 
-                if (incomplete.isEmpty && completed.isEmpty) {
-                  return _EmptyTaskState(filter: filter);
-                }
+                      if (incomplete.isEmpty && completed.isEmpty) {
+                        return _EmptyTaskState(filter: filter);
+                      }
 
-                return ListView(
-                  padding: const EdgeInsets.only(bottom: 100),
-                  children: [
-                    for (final task in incomplete)
-                      _TaskItem(
-                        task: task,
-                        onToggleComplete: () => toggleComplete(task),
-                        onToggleImportant: () => toggleImportant(task),
-                        onTap: () => showTaskDetail(task),
-                        onDismissed: () => deleteTask(task),
-                      ),
-                    if (completed.isNotEmpty)
-                      _CompletedSection(
-                        tasks: completed,
-                        onToggleComplete: toggleComplete,
-                        onToggleImportant: toggleImportant,
-                        onDelete: deleteTask,
-                        onTap: showTaskDetail,
-                      ),
-                  ],
-                );
+                      return ListView(
+                        padding: const EdgeInsets.only(bottom: 100),
+                        children: [
+                          for (final task in incomplete)
+                            _TaskItem(
+                              task: task,
+                              onToggleComplete: () => toggleComplete(task),
+                              onToggleImportant: () => toggleImportant(task),
+                              onTap: () => showTaskDetail(task),
+                              onDismissed: () => deleteTask(task),
+                            ),
+                          if (completed.isNotEmpty)
+                            _CompletedSection(
+                              tasks: completed,
+                              onToggleComplete: toggleComplete,
+                              onToggleImportant: toggleImportant,
+                              onDelete: deleteTask,
+                              onTap: showTaskDetail,
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+          ),
+          if (filter != TaskFilter.crm)
+            _AddTaskBar(
+              controller: addController,
+              focusNode: addFocusNode,
+              showField: showAddField.value,
+              onTap: () {
+                showAddField.value = true;
+                addFocusNode.requestFocus();
+              },
+              onSubmit: () async {
+                await addTask();
+                showAddField.value = false;
+              },
+              onCancel: () {
+                showAddField.value = false;
+                addController.clear();
               },
             ),
-          ),
-          _AddTaskBar(
-            controller: addController,
-            focusNode: addFocusNode,
-            showField: showAddField.value,
-            onTap: () {
-              showAddField.value = true;
-              addFocusNode.requestFocus();
-            },
-            onSubmit: () async {
-              await addTask();
-              showAddField.value = false;
-            },
-            onCancel: () {
-              showAddField.value = false;
-              addController.clear();
-            },
-          ),
         ],
       ),
     );
@@ -187,6 +195,7 @@ class _FilterTabs extends StatelessWidget {
               AppColors.success,
             ),
             TaskFilter.all => (Icons.list_rounded, AppColors.brand),
+            TaskFilter.crm => (Icons.credit_card_rounded, AppColors.warning),
           };
 
           return Padding(
@@ -252,6 +261,7 @@ class _FilterHeader extends StatelessWidget {
       TaskFilter.important => ('重要', null),
       TaskFilter.planned => ('計画済み', null),
       TaskFilter.all => ('すべてのタスク', null),
+      TaskFilter.crm => ('CRM TODO', null),
     };
 
     return Padding(
@@ -684,6 +694,11 @@ class _EmptyTaskState extends StatelessWidget {
         'タスクはありません',
         '下の「+ タスクを追加」から始めましょう',
       ),
+      TaskFilter.crm => (
+        Icon(Icons.credit_card_rounded, size: 48, color: emptyColor) as Widget,
+        'CRM TODOはありません',
+        'CRM画面からTODOを追加できます',
+      ),
     };
 
     return Center(
@@ -1005,6 +1020,160 @@ class _StepRow extends StatelessWidget {
               Icons.close_rounded,
               size: 16,
               color: AppColors.textTertiary(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// CRM TODO リスト
+// =============================================================================
+
+class _CrmTodoList extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final todosAsync = ref.watch(bcMyTodosProvider);
+
+    return todosAsync.when(
+      loading: () => const LoadingIndicator(),
+      error: (e, _) => ErrorState(
+        onRetry: () => ref.invalidate(bcMyTodosProvider),
+      ),
+      data: (todos) {
+        final incomplete = todos.where((t) => !t.isCompleted).toList();
+        final completed = todos.where((t) => t.isCompleted).toList();
+
+        if (incomplete.isEmpty && completed.isEmpty) {
+          return const _EmptyTaskState(filter: TaskFilter.crm);
+        }
+
+        return ListView(
+          padding: const EdgeInsets.only(bottom: 100),
+          children: [
+            for (final todo in incomplete)
+              _CrmTodoItem(todo: todo),
+            if (completed.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenHorizontal,
+                  vertical: AppSpacing.md,
+                ),
+                child: Text(
+                  '完了済み (${completed.length})',
+                  style: AppTextStyles.caption2.copyWith(
+                    color: AppColors.textSecondary(context),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              for (final todo in completed)
+                _CrmTodoItem(todo: todo),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _CrmTodoItem extends StatelessWidget {
+  const _CrmTodoItem({required this.todo});
+  final BcTodo todo;
+
+  @override
+  Widget build(BuildContext context) {
+    final linkedParts = <String>[
+      if (todo.companyName != null) todo.companyName!,
+      if (todo.contactName != null) todo.contactName!,
+      if (todo.dealTitle != null) todo.dealTitle!,
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenHorizontal,
+        vertical: 10,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            margin: const EdgeInsets.only(top: 1),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: todo.isCompleted
+                    ? AppColors.brand
+                    : AppColors.textTertiary(context),
+                width: 1.5,
+              ),
+              color: todo.isCompleted ? AppColors.brand : Colors.transparent,
+            ),
+            child: todo.isCompleted
+                ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                : null,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  todo.title,
+                  style: AppTextStyles.caption1.copyWith(
+                    decoration: todo.isCompleted
+                        ? TextDecoration.lineThrough
+                        : null,
+                    color: todo.isCompleted
+                        ? AppColors.textSecondary(context)
+                        : null,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (linkedParts.isNotEmpty || todo.dueDate != null) ...[
+                  const SizedBox(height: 3),
+                  Wrap(
+                    spacing: 10,
+                    children: [
+                      if (todo.dueDate != null)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AppIcons.calendar(
+                              size: 12,
+                              color: todo.isOverdue
+                                  ? AppColors.error
+                                  : AppColors.textSecondary(context),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              DateFormat('M/d').format(todo.dueDate!),
+                              style: AppTextStyles.caption1.copyWith(
+                                fontWeight: FontWeight.w500,
+                                color: todo.isOverdue
+                                    ? AppColors.error
+                                    : AppColors.textSecondary(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      if (linkedParts.isNotEmpty)
+                        Text(
+                          linkedParts.join(' / '),
+                          style: AppTextStyles.caption1.copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary(context),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
             ),
           ),
         ],

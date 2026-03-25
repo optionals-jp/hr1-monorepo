@@ -15,3 +15,4 @@ export * from "./shifts";
 export * from "./workflows";
 export * from "./announcements";
 export * from "./faqs";
+export * from "./crm";

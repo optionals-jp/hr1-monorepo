@@ -204,7 +204,8 @@ enum TaskFilter {
   myDay('My Day'),
   important('重要'),
   planned('計画済み'),
-  all('すべて');
+  all('すべて'),
+  crm('CRM');
 
   const TaskFilter(this.label);
   final String label;

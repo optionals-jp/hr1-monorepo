@@ -30,6 +30,9 @@ import {
   ShieldAlert,
   Megaphone,
   BookOpen,
+  CreditCard,
+  Contact,
+  Handshake,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { t } from "@/lib/i18n";
@@ -64,6 +67,15 @@ const navSections: NavSection[] = [
       { href: "/workflows", labelKey: "nav.workflows", icon: FileCheck },
       { href: "/leave", labelKey: "nav.leave", icon: CalendarOff },
       { href: "/payslips", labelKey: "nav.payslips", icon: Receipt },
+    ],
+  },
+  {
+    labelKey: "nav.section.crm",
+    items: [
+      { href: "/crm", labelKey: "nav.crm.dashboard", icon: CreditCard },
+      { href: "/crm/contacts", labelKey: "nav.crm.contacts", icon: Contact },
+      { href: "/crm/companies", labelKey: "nav.crm.companies", icon: Building2 },
+      { href: "/crm/deals", labelKey: "nav.crm.deals", icon: Handshake },
     ],
   },
   {

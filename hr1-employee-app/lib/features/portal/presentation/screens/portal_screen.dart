@@ -18,6 +18,8 @@ import 'package:hr1_employee_app/features/attendance/presentation/providers/atte
 import 'package:hr1_employee_app/features/attendance/presentation/controllers/attendance_controller.dart';
 import 'package:hr1_employee_app/features/tasks/domain/entities/task.dart';
 import 'package:hr1_employee_app/features/tasks/presentation/providers/task_providers.dart';
+import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_todo.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/providers/business_card_providers.dart';
 import 'package:hr1_employee_app/features/surveys/domain/entities/pulse_survey.dart';
 import 'package:hr1_employee_app/features/surveys/presentation/providers/survey_providers.dart';
 import 'package:intl/intl.dart';
@@ -271,6 +273,50 @@ class PortalScreen extends ConsumerWidget {
                         color: AppColors.warning,
                         onTap: () => context.push(AppRoutes.announcements),
                       ),
+                      const SizedBox(width: AppSpacing.md),
+                      PortalActionChip(
+                        icon: const Icon(
+                          Icons.camera_alt_rounded,
+                          size: 24,
+                          color: AppColors.brand,
+                        ),
+                        label: '名刺スキャン',
+                        color: AppColors.brand,
+                        onTap: () => context.push(AppRoutes.bcScan),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      PortalActionChip(
+                        icon: const Icon(
+                          Icons.contacts_rounded,
+                          size: 24,
+                          color: AppColors.brandSecondary,
+                        ),
+                        label: '連絡先',
+                        color: AppColors.brandSecondary,
+                        onTap: () => context.push(AppRoutes.bcContacts),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      PortalActionChip(
+                        icon: const Icon(
+                          Icons.business_rounded,
+                          size: 24,
+                          color: AppColors.purple,
+                        ),
+                        label: '取引先',
+                        color: AppColors.purple,
+                        onTap: () => context.push(AppRoutes.bcCompanies),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      PortalActionChip(
+                        icon: const Icon(
+                          Icons.handshake_rounded,
+                          size: 24,
+                          color: AppColors.success,
+                        ),
+                        label: '商談',
+                        color: AppColors.success,
+                        onTap: () => context.push(AppRoutes.bcDeals),
+                      ),
                     ],
                   ),
                 ),
@@ -307,6 +353,9 @@ class PortalScreen extends ConsumerWidget {
 
           // 今日のタスク
           const _TodayTasksSection(),
+
+          // CRM TODO
+          const _CrmTodosSection(),
 
           // 未回答サーベイ
           const _PendingSurveysSection(),
@@ -1074,6 +1123,103 @@ class _NotificationPreviewTile extends ConsumerWidget {
                   shape: BoxShape.circle,
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// CRM TODO セクション
+// =============================================================================
+
+class _CrmTodosSection extends ConsumerWidget {
+  const _CrmTodosSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final todosAsync = ref.watch(bcMyTodosProvider);
+    final todos = todosAsync.valueOrNull ?? [];
+    final incompleteTodos = todos.where((t) => !t.isCompleted).toList();
+
+    if (incompleteTodos.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    final displayTodos = incompleteTodos.take(3).toList();
+
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(
+            title: 'CRM TODO（${incompleteTodos.length}件）',
+            onShowAll: () => context.push(AppRoutes.tasks),
+          ),
+          ...displayTodos.map((todo) => _CrmTodoTile(todo: todo)),
+        ],
+      ),
+    );
+  }
+}
+
+class _CrmTodoTile extends StatelessWidget {
+  const _CrmTodoTile({required this.todo});
+
+  final BcTodo todo;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => context.push(AppRoutes.tasks),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+          vertical: 12,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.radio_button_unchecked_rounded,
+              size: 20,
+              color: AppColors.brand,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    todo.title,
+                    style: AppTextStyles.caption1.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (todo.contactName != null || todo.companyName != null)
+                    Text(
+                      [todo.contactName, todo.companyName]
+                          .where((e) => e != null)
+                          .join(' / '),
+                      style: AppTextStyles.caption2.copyWith(
+                        color: AppColors.textSecondary(context),
+                      ),
+                    ),
+                  if (todo.dueDate != null)
+                    Text(
+                      '${todo.dueDate!.month}/${todo.dueDate!.day}',
+                      style: AppTextStyles.caption2.copyWith(
+                        color: todo.isOverdue
+                            ? AppColors.error
+                            : AppColors.textSecondary(context),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const Icon(Icons.handshake, size: 16, color: AppColors.brand),
           ],
         ),
       ),

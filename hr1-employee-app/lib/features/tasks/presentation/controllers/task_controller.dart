@@ -18,6 +18,7 @@ class TaskListController extends AutoDisposeAsyncNotifier<List<Task>> {
       TaskFilter.important => _repo.getImportantTasks(),
       TaskFilter.planned => _repo.getPlannedTasks(),
       TaskFilter.all => _repo.getTasks(includeCompleted: true),
+      TaskFilter.crm => <Task>[], // CRM TODOは別プロバイダーで管理
     };
   }
 

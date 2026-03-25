@@ -43,6 +43,17 @@ import 'package:hr1_employee_app/features/leave/presentation/screens/leave_balan
 import 'package:hr1_employee_app/features/payslips/domain/entities/payslip.dart';
 import 'package:hr1_employee_app/features/payslips/presentation/screens/payslip_list_screen.dart';
 import 'package:hr1_employee_app/features/payslips/presentation/screens/payslip_detail_screen.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/screens/card_scan_screen.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/screens/card_scan_review_screen.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/screens/contacts_screen.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/screens/contact_detail_screen.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/screens/companies_screen.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/screens/company_detail_screen.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/screens/deals_screen.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/screens/deal_detail_screen.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/screens/deal_form_screen.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/screens/activity_form_screen.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/screens/bc_todo_form_screen.dart';
 import 'package:hr1_employee_app/shared/screens/search_screen.dart';
 import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 
@@ -88,6 +99,17 @@ class AppRoutes {
   static const String _payslipDetail = 'payslip-detail';
   static const String _wiki = 'wiki';
   static const String _wikiDetail = 'wiki-detail';
+  static const String _bcScan = 'bc-scan';
+  static const String _bcScanReview = 'bc-scan-review';
+  static const String _bcContacts = 'bc-contacts';
+  static const String _bcContactDetail = 'bc-contact-detail';
+  static const String _bcCompanies = 'bc-companies';
+  static const String _bcCompanyDetail = 'bc-company-detail';
+  static const String _bcDeals = 'bc-deals';
+  static const String _bcDealDetail = 'bc-deal-detail';
+  static const String _bcDealForm = 'bc-deal-form';
+  static const String _bcActivityForm = 'bc-activity-form';
+  static const String _bcTodoForm = 'bc-todo-form';
   // フルパス（画面遷移用）
   static const String faq = '/$_faq';
   static const String wiki = '/$_wiki';
@@ -118,6 +140,19 @@ class AppRoutes {
   static const String leaveBalance = '/$_leaveBalance';
   static const String payslips = '/$_payslips';
   static const String payslipDetail = '/$_payslipDetail';
+
+  // CRM（名刺管理）
+  static const String bcScan = '/$_bcScan';
+  static const String bcScanReview = '/$_bcScanReview';
+  static const String bcContacts = '/$_bcContacts';
+  static const String bcContactDetail = '/$_bcContactDetail';
+  static const String bcCompanies = '/$_bcCompanies';
+  static const String bcCompanyDetail = '/$_bcCompanyDetail';
+  static const String bcDeals = '/$_bcDeals';
+  static const String bcDealDetail = '/$_bcDealDetail';
+  static const String bcDealForm = '/$_bcDealForm';
+  static const String bcActivityForm = '/$_bcActivityForm';
+  static const String bcTodoForm = '/$_bcTodoForm';
 }
 
 /// ルートナビゲーターキー（フルスクリーン遷移用 + プッシュ通知からの遷移用）
@@ -403,6 +438,128 @@ final routerProvider = Provider<GoRouter>((ref) {
             return const Scaffold(body: ErrorState(message: '給与明細が見つかりません'));
           }
           return PayslipDetailScreen(payslip: payslip);
+        },
+      ),
+
+      /// 名刺スキャン画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.bcScan,
+        builder: (context, state) => const CardScanScreen(),
+      ),
+
+      /// 名刺スキャン結果確認画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.bcScanReview,
+        builder: (context, state) => const CardScanReviewScreen(),
+      ),
+
+      /// CRM連絡先一覧画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.bcContacts,
+        builder: (context, state) => const BcContactsScreen(),
+      ),
+
+      /// CRM連絡先詳細画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.bcContactDetail,
+        builder: (context, state) {
+          final contactId = state.extra as String?;
+          if (contactId == null) {
+            return const Scaffold(
+              body: ErrorState(message: '連絡先IDが見つかりません'),
+            );
+          }
+          return BcContactDetailScreen(contactId: contactId);
+        },
+      ),
+
+      /// CRM企業一覧画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.bcCompanies,
+        builder: (context, state) => const BcCompaniesScreen(),
+      ),
+
+      /// CRM企業詳細画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.bcCompanyDetail,
+        builder: (context, state) {
+          final companyId = state.extra as String?;
+          if (companyId == null) {
+            return const Scaffold(
+              body: ErrorState(message: '企業IDが見つかりません'),
+            );
+          }
+          return BcCompanyDetailScreen(companyId: companyId);
+        },
+      ),
+
+      /// CRM商談一覧画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.bcDeals,
+        builder: (context, state) => const BcDealsScreen(),
+      ),
+
+      /// CRM商談詳細画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.bcDealDetail,
+        builder: (context, state) {
+          final dealId = state.extra as String?;
+          if (dealId == null) {
+            return const Scaffold(
+              body: ErrorState(message: '商談IDが見つかりません'),
+            );
+          }
+          return BcDealDetailScreen(dealId: dealId);
+        },
+      ),
+
+      /// CRM商談登録画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.bcDealForm,
+        builder: (context, state) {
+          final extra = state.extra as Map<String, String?>?;
+          return DealFormScreen(
+            companyId: extra?['companyId'],
+            contactId: extra?['contactId'],
+          );
+        },
+      ),
+
+      /// CRM活動登録画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.bcActivityForm,
+        builder: (context, state) {
+          final extra = state.extra as Map<String, String?>?;
+          return ActivityFormScreen(
+            companyId: extra?['companyId'],
+            contactId: extra?['contactId'],
+            dealId: extra?['dealId'],
+            initialType: extra?['type'] ?? 'memo',
+          );
+        },
+      ),
+
+      /// CRM TODO登録画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.bcTodoForm,
+        builder: (context, state) {
+          final extra = state.extra as Map<String, String?>?;
+          return BcTodoFormScreen(
+            companyId: extra?['companyId'],
+            contactId: extra?['contactId'],
+            dealId: extra?['dealId'],
+          );
         },
       ),
 
