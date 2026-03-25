@@ -86,6 +86,7 @@ export default function ContractsPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [changingStatusId, setChangingStatusId] = useState<string | null>(null);
 
   const openCreate = () => {
     setFormError(null);
@@ -116,11 +117,23 @@ export default function ContractsPage() {
     setSaving(true);
     setFormError(null);
     try {
+      const employees = parseInt(form.contracted_employees, 10);
+      const price = parseInt(form.monthly_price, 10);
+
+      if (isNaN(employees) || employees <= 0) {
+        setFormError("契約社員数は1以上の数値を入力してください。");
+        return;
+      }
+      if (isNaN(price) || price < 0) {
+        setFormError("月額料金は0以上の数値を入力してください。");
+        return;
+      }
+
       const payload = {
         organization_id: form.organization_id,
         plan_id: form.plan_id,
-        contracted_employees: parseInt(form.contracted_employees, 10),
-        monthly_price: parseInt(form.monthly_price, 10),
+        contracted_employees: employees,
+        monthly_price: price,
         start_date: form.start_date,
         trial_end_date: form.trial_end_date || null,
         notes: form.notes || null,
@@ -140,7 +153,7 @@ export default function ContractsPage() {
 
       // 変更履歴に記録
       if (newContract) {
-        await getSupabase()
+        const { error: changeError } = await getSupabase()
           .from("contract_changes")
           .insert({
             contract_id: newContract.id,
@@ -149,6 +162,9 @@ export default function ContractsPage() {
             new_values: payload,
             notes: "新規契約作成",
           });
+        if (changeError) {
+          console.error("変更履歴の記録に失敗:", changeError);
+        }
       }
 
       setDialogOpen(false);
@@ -159,37 +175,46 @@ export default function ContractsPage() {
   };
 
   const handleStatusChange = async (contract: Contract, newStatus: string) => {
+    if (changingStatusId) return;
+    setChangingStatusId(contract.id);
     setStatusError(null);
-    const oldStatus = contract.status;
-    const { error: updateError } = await getSupabase()
-      .from("contracts")
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
-      .eq("id", contract.id);
+    try {
+      const oldStatus = contract.status;
+      const { error: updateError } = await getSupabase()
+        .from("contracts")
+        .update({ status: newStatus })
+        .eq("id", contract.id);
 
-    if (updateError) {
-      setStatusError("ステータスの変更に失敗しました。");
-      return;
+      if (updateError) {
+        setStatusError("ステータスの変更に失敗しました。");
+        return;
+      }
+
+      // 変更履歴に記録
+      const changeType =
+        newStatus === "cancelled"
+          ? "cancelled"
+          : newStatus === "suspended"
+            ? "suspended"
+            : "updated";
+      const { error: changeError } = await getSupabase()
+        .from("contract_changes")
+        .insert({
+          contract_id: contract.id,
+          changed_by: user?.id ?? null,
+          change_type: changeType,
+          old_values: { status: oldStatus },
+          new_values: { status: newStatus },
+          notes: `ステータスを${contractStatusLabels[newStatus] ?? newStatus}に変更`,
+        });
+      if (changeError) {
+        console.error("変更履歴の記録に失敗:", changeError);
+      }
+
+      mutate();
+    } finally {
+      setChangingStatusId(null);
     }
-
-    // 変更履歴に記録
-    const changeType =
-      newStatus === "cancelled"
-        ? "cancelled"
-        : newStatus === "suspended"
-          ? "suspended"
-          : "updated";
-    await getSupabase()
-      .from("contract_changes")
-      .insert({
-        contract_id: contract.id,
-        changed_by: user?.id ?? null,
-        change_type: changeType,
-        old_values: { status: oldStatus },
-        new_values: { status: newStatus },
-        notes: `ステータスを${contractStatusLabels[newStatus] ?? newStatus}に変更`,
-      });
-
-    mutate();
   };
 
   return (
@@ -257,6 +282,7 @@ export default function ContractsPage() {
                       onValueChange={(v) =>
                         v && handleStatusChange(contract, v)
                       }
+                      disabled={changingStatusId === contract.id}
                     >
                       <SelectTrigger className="h-8 w-28 text-xs">
                         <SelectValue />
