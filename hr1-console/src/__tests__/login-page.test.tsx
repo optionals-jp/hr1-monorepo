@@ -26,6 +26,12 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+vi.mock("next/link", () => ({
+  default: ({ children, ...props }: { children: React.ReactNode; href: string }) => (
+    <a {...props}>{children}</a>
+  ),
+}));
+
 import LoginPage from "@/app/login/page";
 
 describe("LoginPage", () => {
@@ -44,7 +50,7 @@ describe("LoginPage", () => {
     expect(screen.getByLabelText("メールアドレス")).toBeInTheDocument();
     expect(screen.getByLabelText("パスワード")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /ログイン/ })).toBeInTheDocument();
-    expect(screen.getByText("HR1 Console")).toBeInTheDocument();
+    expect(screen.getByText("おかえりなさい")).toBeInTheDocument();
   });
 
   it("ログイン成功時はエラーが表示されない", async () => {

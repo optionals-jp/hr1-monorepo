@@ -45,6 +45,11 @@ Thumbs.db
 app.*.symbols
 app.*.map.json
 
+# Node.js
+**/node_modules/
+**/.next/
+**/out/
+
 # Misc
 *.log
 *.pyc

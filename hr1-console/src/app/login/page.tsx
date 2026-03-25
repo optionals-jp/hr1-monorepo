@@ -2,33 +2,116 @@
 
 import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, Lock } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowRight,
+  Building2,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  Loader2,
+  Users,
+  BarChart3,
+  Shield,
+} from "lucide-react";
 
 const SERVER_ERRORS: Record<string, string> = {
   unauthorized: "このアカウントにはコンソールへのアクセス権限がありません。",
 };
 
-export default function LoginPage() {
+/* ─── Left Panel ─── */
+function LeftPanel() {
+  return (
+    <div className="relative hidden flex-col justify-between overflow-hidden bg-linear-to-br from-gray-900 via-gray-900 to-gray-800 p-10 lg:flex lg:w-120 xl:w-130">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-red-500/10 blur-3xl" />
+        <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-orange-500/5 blur-3xl" />
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+          }}
+        />
+      </div>
+
+      <div className="relative">
+        <Link href="/" className="mb-16 inline-flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-linear-to-br from-red-600 to-red-500 shadow-lg shadow-red-600/20">
+            <span className="text-sm font-bold text-white">H</span>
+          </div>
+          <span className="text-lg font-bold text-white">
+            HR1 <span className="font-normal text-gray-400">Console</span>
+          </span>
+        </Link>
+
+        <h2 className="text-2xl leading-snug font-bold text-white xl:text-3xl">
+          人事の
+          <span className="bg-linear-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
+            すべて
+          </span>
+          を、
+          <br />
+          ひとつのコンソールで
+        </h2>
+        <p className="mt-4 text-sm leading-relaxed text-gray-400">
+          採用・勤怠・評価・給与を一元管理。
+          <br />
+          リアルタイムダッシュボードで組織を可視化します。
+        </p>
+
+        <div className="mt-10 space-y-5">
+          {[
+            { icon: Users, text: "採用・社員管理をワンストップで" },
+            { icon: BarChart3, text: "リアルタイムダッシュボードで組織を可視化" },
+            { icon: Shield, text: "エンタープライズ級のセキュリティ" },
+            { icon: Building2, text: "マルチ組織対応で拡張性抜群" },
+          ].map((b) => (
+            <div key={b.text} className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-800">
+                <b.icon className="h-4 w-4 text-red-400" />
+              </div>
+              <span className="text-sm text-gray-300">{b.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="relative mt-12 rounded-xl border border-gray-800 bg-gray-800/50 p-5 backdrop-blur">
+        <p className="text-sm leading-relaxed text-gray-300">
+          &ldquo;導入初日からチーム全員が使いこなせました。UIが直感的で、研修コストがほぼゼロです。&rdquo;
+        </p>
+        <div className="mt-3 flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-red-100 to-orange-100">
+            <Building2 className="h-3.5 w-3.5 text-red-600" />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-gray-200">鈴木 美穂</p>
+            <p className="text-xs text-gray-500">HR部門マネージャー / ABC株式会社</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Login Form ─── */
+function LoginForm() {
   const { signIn, user } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  // 認証済みならトップへリダイレクト
   useEffect(() => {
-    if (user) {
-      router.replace("/");
-    }
+    if (user) router.replace("/");
   }, [user, router]);
 
-  // サーバーサイド（middleware）からのエラーパラメータを表示
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const serverError = params.get("error");
@@ -41,90 +124,138 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-
     try {
       const result = await signIn(email, password);
-      if (result.error) {
-        setError(result.error);
-      }
-      // 成功時は onAuthStateChange → user 更新 → useEffect でリダイレクト
+      if (result.error) setError(result.error);
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-linear-to-br from-slate-50 via-white to-red-50/30 px-4">
-      {/* 装飾 */}
-      <div className="pointer-events-none absolute -top-40 -right-40 h-80 w-80 rounded-full bg-red-100/40 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-slate-200/40 blur-3xl" />
-
-      <div className="relative w-full max-w-sm py-8">
-        {/* ロゴ・タイトル */}
-        <div className="mb-6 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-red-600 shadow-lg shadow-red-600/20">
-            <span className="text-base font-bold text-white">H</span>
+    <div className="flex min-h-screen flex-1 flex-col overflow-y-auto bg-white">
+      {/* Mobile header */}
+      <div className="flex items-center justify-between px-6 pt-6 lg:hidden">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-red-600 to-red-500">
+            <span className="text-xs font-bold text-white">H</span>
           </div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">HR1 Console</h1>
-          <p className="mt-1 text-sm text-muted-foreground">管理者アカウントでログイン</p>
-        </div>
+          <span className="text-base font-bold text-gray-900">
+            HR1 <span className="font-normal text-gray-400">Console</span>
+          </span>
+        </Link>
+        <Link href="/signup" className="text-sm font-medium text-gray-500 hover:text-gray-700">
+          新規登録
+        </Link>
+      </div>
 
-        {/* ログインカード */}
-        <Card>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
+      <div className="flex flex-1 flex-col justify-center px-6 py-12 sm:px-12 lg:px-16 xl:px-24">
+        <div className="mx-auto w-full max-w-sm">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+              おかえりなさい
+            </h1>
+            <p className="mt-2 text-sm text-gray-500">管理者アカウントでログインしてください</p>
+          </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="email">メールアドレス</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@example.com"
-                  required
-                  autoComplete="email"
-                />
-              </div>
+          {error && (
+            <div className="mb-6 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
 
-              <div className="space-y-1.5">
-                <Label htmlFor="password">パスワード</Label>
-                <Input
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-700">
+                メールアドレス
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@example.com"
+                required
+                autoComplete="email"
+                className="block w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-red-400 focus:ring-2 focus:ring-red-100"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-700">
+                パスワード
+              </label>
+              <div className="relative">
+                <input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
                   autoComplete="current-password"
+                  className="block w-full rounded-lg border border-gray-300 px-3.5 py-2.5 pr-10 text-sm text-gray-900 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-red-400 focus:ring-2 focus:ring-red-100"
                 />
+                <button
+                  type="button"
+                  className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
+            </div>
 
-              <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? (
-                  "ログイン中..."
-                ) : (
-                  <>
-                    <Lock className="mr-2 h-4 w-4" />
-                    ログイン
-                  </>
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-linear-to-r from-red-600 to-red-500 text-sm font-semibold text-white shadow-lg shadow-red-600/25 transition-all hover:shadow-xl hover:shadow-red-600/30 disabled:opacity-60 disabled:shadow-none sm:h-13"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  ログイン中...
+                </>
+              ) : (
+                <>
+                  ログイン
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </button>
+          </form>
 
-        {/* フッター */}
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          &copy; 2026 HR1 Studio. All rights reserved.
-        </p>
+          <p className="mt-6 text-center text-sm text-gray-500">
+            アカウントをお持ちでないですか？{" "}
+            <Link href="/signup" className="font-medium text-red-600 hover:underline">
+              無料で登録
+            </Link>
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4 border-t border-gray-100 pt-6 text-xs text-gray-400">
+            <span className="flex items-center gap-1">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+              SSL暗号化通信
+            </span>
+            <span className="flex items-center gap-1">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+              データ安全保護
+            </span>
+          </div>
+        </div>
       </div>
+    </div>
+  );
+}
+
+/* ─── Main Page ─── */
+export default function LoginPage() {
+  return (
+    <div className="flex min-h-screen">
+      <LeftPanel />
+      <LoginForm />
     </div>
   );
 }

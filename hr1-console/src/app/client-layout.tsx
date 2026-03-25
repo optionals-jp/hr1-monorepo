@@ -15,13 +15,13 @@ function AuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user && pathname !== "/login") {
+    if (!loading && !user && pathname !== "/login" && pathname !== "/signup") {
       router.replace("/login");
     }
   }, [loading, user, pathname, router]);
 
-  // ログインページは認証不要
-  if (pathname === "/login") {
+  // 公開ページは認証不要
+  if (pathname === "/login" || pathname === "/signup") {
     return <>{children}</>;
   }
 
