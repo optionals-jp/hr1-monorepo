@@ -207,10 +207,10 @@ export default function ApplicationDetailPage() {
           .eq("id", step.id);
         if (error) throw error;
 
-        // 次のステップを自動開始
-        const nextStep = steps.find(
-          (s) => s.step_order === step.step_order + 1 && s.status === "pending"
-        );
+        // 次のステップを自動開始（step_order が連番でない場合にも対応）
+        const nextStep = steps
+          .filter((s) => s.step_order > step.step_order && s.status === "pending")
+          .sort((a, b) => a.step_order - b.step_order)[0];
         if (nextStep) {
           // 次ステップがリソース選択を必要としない場合のみ自動開始
           if (!isResourceStepType(nextStep.step_type)) {

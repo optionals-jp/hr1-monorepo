@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
 import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
-import 'package:hr1_applicant_app/core/router/app_router.dart';
 import 'package:hr1_applicant_app/features/applications/domain/entities/application.dart';
 import 'package:hr1_applicant_app/features/applications/domain/entities/application_status.dart';
 import 'package:hr1_applicant_app/features/applications/domain/entities/application_step.dart';
 import 'package:hr1_applicant_app/features/applications/presentation/controllers/application_detail_controller.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/controllers/withdraw_controller.dart';
 import 'package:hr1_applicant_app/features/applications/presentation/providers/applications_providers.dart';
 import 'package:hr1_applicant_app/features/forms/presentation/screens/form_fill_screen.dart';
+import 'package:hr1_applicant_app/features/interviews/presentation/screens/interview_schedule_screen.dart';
 import 'package:hr1_applicant_app/features/interviews/presentation/providers/interviews_providers.dart';
 import 'package:hr1_applicant_app/features/todos/presentation/providers/todo_providers.dart';
 
@@ -99,12 +99,12 @@ class _Body extends StatelessWidget {
 // 概要タブ
 // =============================================================================
 
-class _OverviewTab extends StatelessWidget {
+class _OverviewTab extends ConsumerWidget {
   const _OverviewTab({required this.application});
   final Application application;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final job = application.job;
     final currentStep = application.currentStep;
     final completedCount = application.steps
@@ -112,15 +112,22 @@ class _OverviewTab extends StatelessWidget {
         .length;
     final totalSteps = application.steps.length;
 
+    final isActive = application.status.isActive;
+
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
       children: [
-        // 次のアクション
-        if (currentStep != null && currentStep.requiresAction)
-          _NextActionCard(application: application, step: currentStep),
-
-        if (currentStep != null && currentStep.requiresAction)
+        // 終了ステータスバナー（辞退・不採用・内定）
+        if (!isActive) ...[
+          _TerminalStatusBanner(application: application),
           const SizedBox(height: AppSpacing.lg),
+        ],
+
+        // 次のアクション（選考中のみ）
+        if (isActive && currentStep != null && currentStep.requiresAction) ...[
+          _NextActionCard(application: application, step: currentStep),
+          const SizedBox(height: AppSpacing.lg),
+        ],
 
         // ステータスカード
         CommonCard(
@@ -136,16 +143,18 @@ class _OverviewTab extends StatelessWidget {
                     label: application.currentStepLabel,
                     color: _applicationColor(application, context),
                   ),
-                  const Spacer(),
-                  Text(
-                    '$completedCount / $totalSteps ステップ完了',
-                    style: AppTextStyles.caption2.copyWith(
-                      color: AppColors.textSecondary(context),
+                  if (isActive) ...[
+                    const Spacer(),
+                    Text(
+                      '$completedCount / $totalSteps ステップ完了',
+                      style: AppTextStyles.caption2.copyWith(
+                        color: AppColors.textSecondary(context),
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
-              if (totalSteps > 0) ...[
+              if (isActive && totalSteps > 0) ...[
                 const SizedBox(height: AppSpacing.md),
                 ClipRRect(
                   borderRadius: AppRadius.radius80,
@@ -185,8 +194,93 @@ class _OverviewTab extends StatelessWidget {
           ),
         ),
 
+        // 辞退ボタン（選考中・内定の場合のみ表示）
+        if (application.status == ApplicationStatus.active ||
+            application.status == ApplicationStatus.offered) ...[
+          const SizedBox(height: AppSpacing.xxxl),
+          Center(
+            child: TextButton(
+              onPressed: () => _confirmWithdraw(context, ref),
+              child: Text(
+                'この応募を辞退する',
+                style: AppTextStyles.body2.copyWith(color: AppColors.error),
+              ),
+            ),
+          ),
+        ],
+
         const SizedBox(height: AppSpacing.xxxl),
       ],
+    );
+  }
+
+  Future<void> _confirmWithdraw(BuildContext context, WidgetRef ref) async {
+    final confirmed = await CommonDialog.confirm(
+      context: context,
+      title: '応募辞退',
+      message: 'この応募を辞退しますか？\nこの操作は取り消せません。',
+      confirmLabel: '辞退する',
+      isDestructive: true,
+    );
+    if (!confirmed || !context.mounted) return;
+
+    try {
+      await ref
+          .read(withdrawControllerProvider.notifier)
+          .withdraw(applicationId: application.id);
+      if (!context.mounted) return;
+      CommonSnackBar.show(context, '応募を辞退しました');
+      context.pop();
+    } catch (e) {
+      if (!context.mounted) return;
+      CommonSnackBar.error(context, '辞退に失敗しました');
+    }
+  }
+}
+
+class _TerminalStatusBanner extends StatelessWidget {
+  const _TerminalStatusBanner({required this.application});
+  final Application application;
+
+  @override
+  Widget build(BuildContext context) {
+    final (
+      String label,
+      Color color,
+      IconData icon,
+    ) = switch (application.status) {
+      ApplicationStatus.withdrawn => (
+        '辞退済みです',
+        AppColors.textSecondary(context),
+        Icons.block_rounded,
+      ),
+      ApplicationStatus.rejected => (
+        '不採用となりました',
+        AppColors.error,
+        Icons.cancel_outlined,
+      ),
+      ApplicationStatus.offered => (
+        '内定を獲得しました',
+        AppColors.success,
+        Icons.celebration_rounded,
+      ),
+      _ => ('', AppColors.textSecondary(context), Icons.info_outline),
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: AppRadius.radius120,
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 22, color: color),
+          const SizedBox(width: AppSpacing.md),
+          Text(label, style: AppTextStyles.callout.copyWith(color: color)),
+        ],
+      ),
     );
   }
 }
@@ -260,21 +354,59 @@ class _NextActionCard extends StatelessWidget {
   ) {
     if (step.relatedId == null) return;
 
-    final basePath = '${AppRoutes.applications}/${application.id}';
     switch (step.stepType) {
       case StepType.form:
-        showModalBottomSheet<void>(
-          context: context,
-          isScrollControlled: true,
-          useSafeArea: true,
-          builder: (sheetContext) => FormFillScreen(
-            formId: step.relatedId!,
-            applicationId: application.id,
-            stepId: step.id,
+        Navigator.of(context).push(
+          PageRouteBuilder<void>(
+            fullscreenDialog: true,
+            pageBuilder: (_, __, ___) => FormFillScreen(
+              formId: step.relatedId!,
+              applicationId: application.id,
+              stepId: step.id,
+            ),
+            transitionsBuilder: (_, animation, __, child) {
+              return SlideTransition(
+                position:
+                    Tween<Offset>(
+                      begin: const Offset(0, 1),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      ),
+                    ),
+                child: child,
+              );
+            },
           ),
         );
       case StepType.interview:
-        context.push('$basePath/interview/${step.relatedId}', extra: step.id);
+        Navigator.of(context).push(
+          PageRouteBuilder<void>(
+            fullscreenDialog: true,
+            pageBuilder: (_, __, ___) => InterviewScheduleScreen(
+              interviewId: step.relatedId!,
+              applicationId: application.id,
+              stepId: step.id,
+            ),
+            transitionsBuilder: (_, animation, __, child) {
+              return SlideTransition(
+                position:
+                    Tween<Offset>(
+                      begin: const Offset(0, 1),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      ),
+                    ),
+                child: child,
+              );
+            },
+          ),
+        );
       default:
         break;
     }
@@ -452,7 +584,10 @@ class _StepCard extends StatelessWidget {
                   if (step.stepType == StepType.interview &&
                       step.relatedId != null &&
                       step.status != StepStatus.pending)
-                    _InterviewDateLabel(interviewId: step.relatedId!),
+                    _InterviewDateLabel(
+                      interviewId: step.relatedId!,
+                      applicationId: step.applicationId,
+                    ),
                 ],
               ),
             ),
@@ -656,6 +791,17 @@ class _HistoryTab extends StatelessWidget {
       }
     }
 
+    if (application.status == ApplicationStatus.withdrawn) {
+      events.add(
+        _HistoryEvent(
+          title: '応募を辞退しました',
+          subtitle: application.job?.title ?? '求人',
+          dateTime: application.updatedAt ?? application.appliedAt,
+          color: AppColors.textSecondary(context),
+        ),
+      );
+    }
+
     events.sort((a, b) => b.dateTime.compareTo(a.dateTime));
     return events;
   }
@@ -757,7 +903,7 @@ class _TasksTab extends ConsumerWidget {
                         if (todo.dueDate != null) ...[
                           const SizedBox(height: 2),
                           Text(
-                            '期限: ${DateFormat('yyyy/MM/dd').format(todo.dueDate!)}',
+                            '期限: ${DateFormatter.toShortDate(todo.dueDate!)}',
                             style: AppTextStyles.caption2.copyWith(
                               color: AppColors.textSecondary(context),
                             ),
@@ -781,8 +927,12 @@ class _TasksTab extends ConsumerWidget {
 // =============================================================================
 
 class _InterviewDateLabel extends ConsumerWidget {
-  const _InterviewDateLabel({required this.interviewId});
+  const _InterviewDateLabel({
+    required this.interviewId,
+    required this.applicationId,
+  });
   final String interviewId;
+  final String applicationId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -791,8 +941,11 @@ class _InterviewDateLabel extends ConsumerWidget {
     return asyncInterview.when(
       data: (interview) {
         if (interview == null) return const SizedBox.shrink();
-        final confirmedSlot = interview.confirmedSlot;
-        if (confirmedSlot == null) {
+        // 自分の応募で選択したスロットのみ表示
+        final mySlot = interview.slots
+            .where((s) => s.applicationId == applicationId && s.isSelected)
+            .firstOrNull;
+        if (mySlot == null) {
           return Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
@@ -801,8 +954,6 @@ class _InterviewDateLabel extends ConsumerWidget {
             ),
           );
         }
-        final dateFormat = DateFormat('M月d日(E) HH:mm', 'ja');
-        final timeFormat = DateFormat('HH:mm');
         return Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Row(
@@ -810,7 +961,7 @@ class _InterviewDateLabel extends ConsumerWidget {
               Icon(Icons.event_rounded, size: 14, color: AppColors.success),
               const SizedBox(width: 4),
               Text(
-                '${dateFormat.format(confirmedSlot.startAt)} 〜 ${timeFormat.format(confirmedSlot.endAt)}',
+                '${DateFormatter.toDateTimeWithWeekday(mySlot.startAt)} 〜 ${DateFormatter.toTime(mySlot.endAt)}',
                 style: AppTextStyles.caption2.copyWith(
                   color: AppColors.success,
                   fontWeight: FontWeight.w600,

@@ -97,7 +97,7 @@ class _Body extends StatelessWidget {
         // 完了セクション
         if (completed.isNotEmpty) ...[
           _SectionHeader(
-            title: '完了',
+            title: '終了',
             count: completed.length,
             color: AppColors.textSecondary(context),
           ),
@@ -202,7 +202,7 @@ class _SectionHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(title, style: AppTextStyles.footnote),
+          Text(title, style: AppTextStyles.headline),
           const SizedBox(width: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),

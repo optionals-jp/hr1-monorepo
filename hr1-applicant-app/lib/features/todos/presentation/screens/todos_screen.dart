@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
 import 'package:hr1_applicant_app/core/router/app_router.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
@@ -450,7 +450,7 @@ class _MetadataRow extends StatelessWidget {
     if (diff < 0) return '期限切れ';
     if (diff == 0) return '今日';
     if (diff == 1) return '明日';
-    return DateFormat('M/d').format(date);
+    return DateFormatter.toMonthDay(date);
   }
 }
 

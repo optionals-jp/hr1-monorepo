@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
 import 'package:hr1_applicant_app/core/router/app_router.dart';
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
@@ -165,7 +165,7 @@ class SurveyListScreen extends ConsumerWidget {
                           if (survey.deadline != null) ...[
                             const SizedBox(width: AppSpacing.md),
                             Text(
-                              '締切: ${DateFormat('yyyy/MM/dd').format(survey.deadline!.toLocal())}',
+                              '締切: ${DateFormatter.toShortDate(survey.deadline!)}',
                               style: AppTextStyles.caption2.copyWith(
                                 color: AppColors.textSecondary(context),
                               ),

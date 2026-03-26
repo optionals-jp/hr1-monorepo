@@ -27,4 +27,7 @@ abstract class ApplicationsRepository {
 
   /// 選考ステップを完了し、次のステップを自動的に開始する
   Future<void> completeStep(String stepId, String applicationId);
+
+  /// 応募を辞退する
+  Future<void> withdraw(String applicationId);
 }

@@ -33,7 +33,7 @@ class AppSpacing {
   static const double cardPadding = 16.0;
 
   /// カードの角丸
-  static const double cardRadius = 12.0;
+  static const double cardRadius = 18.0;
 
   /// ボタンの角丸
   static const double buttonRadius = 10.0;

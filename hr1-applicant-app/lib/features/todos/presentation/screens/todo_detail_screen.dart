@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 import 'package:hr1_applicant_app/features/todos/domain/entities/todo.dart';
@@ -121,7 +121,7 @@ class TodoDetailScreen extends HookConsumerWidget {
                   : AppColors.textSecondary(context),
             ),
             label: dueDate.value != null
-                ? '期限: ${DateFormat('M/d').format(dueDate.value!)}'
+                ? '期限: ${DateFormatter.toMonthDay(dueDate.value!)}'
                 : '期限日を追加',
             isActive: dueDate.value != null,
             onTap: pickDueDate,

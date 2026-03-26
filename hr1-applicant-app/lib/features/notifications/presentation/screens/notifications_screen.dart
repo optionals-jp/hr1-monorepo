@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
-import 'package:intl/intl.dart';
+import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
 import 'package:hr1_applicant_app/features/notifications/domain/entities/notification_item.dart';
 import 'package:hr1_applicant_app/features/notifications/presentation/controllers/notification_controller.dart';
 
@@ -215,6 +215,6 @@ class _NotificationTile extends StatelessWidget {
     if (diff.inMinutes < 60) return '${diff.inMinutes}分前';
     if (diff.inHours < 24) return '${diff.inHours}時間前';
     if (diff.inDays < 7) return '${diff.inDays}日前';
-    return DateFormat('M/d').format(date.toLocal());
+    return DateFormatter.toMonthDay(date);
   }
 }

@@ -47,6 +47,7 @@ class ApplicationStep {
     this.relatedId,
     this.startedAt,
     this.completedAt,
+    this.applicantActionAt,
   });
 
   final String id;
@@ -59,9 +60,19 @@ class ApplicationStep {
   final DateTime? startedAt;
   final DateTime? completedAt;
 
+  /// 応募者がアクション（フォーム送信・面接予約）を完了した日時
+  final DateTime? applicantActionAt;
+
   /// 応募者側のアクションが必要か
+  ///
+  /// - form: フォーム送信が必要（送信後 completeStep でステップ完了）
+  /// - interview: 面接日程の選択が必要（選択後 applicantActionAt がセットされる）
+  /// - relatedId が未設定の場合はアクション不可（管理者がリソース未リンク）
+  /// - applicantActionAt がセット済みの場合はアクション済み
   bool get requiresAction =>
       status == StepStatus.inProgress &&
+      relatedId != null &&
+      applicantActionAt == null &&
       (stepType == StepType.form || stepType == StepType.interview);
 
   factory ApplicationStep.fromJson(Map<String, dynamic> json) {
@@ -78,6 +89,9 @@ class ApplicationStep {
           : null,
       completedAt: json['completed_at'] != null
           ? DateTime.parse(json['completed_at'] as String)
+          : null,
+      applicantActionAt: json['applicant_action_at'] != null
+          ? DateTime.parse(json['applicant_action_at'] as String)
           : null,
     );
   }

@@ -34,7 +34,8 @@ class Application {
       steps.where((s) => s.status == StepStatus.inProgress).firstOrNull;
 
   /// 応募者側のアクションが必要なステップがあるか
-  bool get requiresAction => steps.any((s) => s.requiresAction);
+  bool get requiresAction =>
+      status.isActive && steps.any((s) => s.requiresAction);
 
   /// 現在のステップのラベル（一覧画面用）
   String get currentStepLabel {
