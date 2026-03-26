@@ -82,7 +82,7 @@ class ActivityFormScreen extends HookConsumerWidget {
         firstDate: DateTime(2020),
         lastDate: DateTime(2030),
       );
-      if (picked != null) {
+      if (picked != null && context.mounted) {
         final time = await showTimePicker(
           context: context,
           initialTime: TimeOfDay.now(),
