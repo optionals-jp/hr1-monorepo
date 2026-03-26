@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
 import { useQuery } from "@/lib/use-query";
-import { getSupabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,

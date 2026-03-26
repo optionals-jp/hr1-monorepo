@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
-import { getSupabase } from "./supabase";
+import { getSupabase } from "./supabase/browser";
 import { useAuth } from "./auth-context";
 import type { Organization } from "@/types/database";
 

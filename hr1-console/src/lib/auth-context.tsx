@@ -9,7 +9,7 @@ import {
   useRef,
   ReactNode,
 } from "react";
-import { getSupabase } from "./supabase";
+import { getSupabase } from "./supabase/browser";
 import type { Profile } from "@/types/database";
 
 interface AuthContextValue {

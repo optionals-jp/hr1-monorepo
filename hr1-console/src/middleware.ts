@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createSupabaseMiddlewareClient } from "@/lib/supabase-server";
+import { createSupabaseMiddlewareClient } from "@/lib/supabase/middleware";
 
 const PUBLIC_PATHS = new Set(["/login", "/signup"]);
 
