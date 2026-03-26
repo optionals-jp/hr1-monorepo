@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
@@ -26,6 +27,7 @@ class HomeScreen extends ConsumerWidget {
             return BottomNavigationBar(
               currentIndex: navigationShell.currentIndex,
               onTap: (index) {
+                HapticFeedback.lightImpact();
                 navigationShell.goBranch(
                   index,
                   initialLocation: index == navigationShell.currentIndex,

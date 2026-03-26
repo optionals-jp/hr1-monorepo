@@ -90,6 +90,7 @@ export interface ApplicationStep {
   related_id: string | null;
   started_at: string | null;
   completed_at: string | null;
+  applicant_action_at: string | null;
 }
 
 export interface CustomForm {

@@ -32,7 +32,7 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-import LoginPage from "@/app/login/page";
+import LoginPage from "@/app/(auth)/login/page";
 
 describe("LoginPage", () => {
   beforeEach(() => {

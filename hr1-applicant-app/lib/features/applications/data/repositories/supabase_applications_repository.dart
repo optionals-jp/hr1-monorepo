@@ -63,11 +63,15 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
         .from('job_steps')
         .select()
         .eq('job_id', jobId)
-        .order('step_order');
+        .order('step_order', ascending: true);
 
     if ((jobSteps as List).isNotEmpty) {
-      final steps = jobSteps.asMap().entries.map((entry) {
-        final s = entry.value;
+      final minOrder = jobSteps
+          .map((s) => s['step_order'] as int)
+          .reduce((a, b) => a < b ? a : b);
+
+      final steps = jobSteps.map((s) {
+        final isFirst = (s['step_order'] as int) == minOrder;
         return {
           'id': '$appId-step-${s['step_order']}',
           'application_id': appId,
@@ -75,10 +79,8 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
           'step_order': s['step_order'],
           'label': s['label'],
           'related_id': s['related_id'],
-          'status': entry.key == 0 ? 'in_progress' : 'pending',
-          'started_at': entry.key == 0
-              ? DateTime.now().toIso8601String()
-              : null,
+          'status': isFirst ? 'in_progress' : 'pending',
+          'started_at': isFirst ? DateTime.now().toIso8601String() : null,
         };
       }).toList();
 
@@ -92,11 +94,13 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
   @override
   Future<void> completeStep(String stepId, String applicationId) async {
     // 1. 現在のステップを完了にする
+    final now = DateTime.now().toIso8601String();
     await _client
         .from('application_steps')
         .update({
           'status': 'completed',
-          'completed_at': DateTime.now().toIso8601String(),
+          'completed_at': now,
+          'applicant_action_at': now,
         })
         .eq('id', stepId);
 
@@ -105,7 +109,7 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
         .from('application_steps')
         .select()
         .eq('application_id', applicationId)
-        .order('step_order');
+        .order('step_order', ascending: true);
 
     // 3. 完了したステップの次のpendingステップを in_progress にする
     final completedStep = (allSteps as List).firstWhere(
@@ -113,10 +117,14 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
     );
     final completedOrder = completedStep['step_order'] as int;
 
-    final nextStep = allSteps.cast<Map<String, dynamic>>().where((s) {
-      return (s['step_order'] as int) > completedOrder &&
-          s['status'] == 'pending';
-    }).firstOrNull;
+    final pendingSteps =
+        allSteps.cast<Map<String, dynamic>>().where((s) {
+          return (s['step_order'] as int) > completedOrder &&
+              s['status'] == 'pending';
+        }).toList()..sort(
+          (a, b) => (a['step_order'] as int).compareTo(b['step_order'] as int),
+        );
+    final nextStep = pendingSteps.firstOrNull;
 
     if (nextStep != null) {
       await _client
@@ -127,6 +135,14 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
           })
           .eq('id', nextStep['id']);
     }
+  }
+
+  @override
+  Future<void> withdraw(String applicationId) async {
+    await _client
+        .from('applications')
+        .update({'status': 'withdrawn'})
+        .eq('id', applicationId);
   }
 
   Application _mapApplication(Map<String, dynamic> map) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { getSupabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase/browser";
 import { getAuditActionLabel } from "@/lib/constants";
 import type { AuditLog } from "@/types/database";
 import { format } from "date-fns";

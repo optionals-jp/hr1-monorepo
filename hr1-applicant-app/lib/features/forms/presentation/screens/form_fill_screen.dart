@@ -61,6 +61,13 @@ class FormFillScreen extends HookConsumerWidget {
 
     return CommonScaffold(
       appBar: AppBar(title: Text(asyncForm.valueOrNull?.title ?? 'フォーム')),
+      bottomAction: asyncForm.valueOrNull != null
+          ? CommonButton(
+              onPressed: submit,
+              loading: controllerState.isSubmitting,
+              child: const Text('回答を送信'),
+            )
+          : null,
       body: asyncForm.when(
         data: (form) {
           if (form == null) {
@@ -96,16 +103,6 @@ class FormFillScreen extends HookConsumerWidget {
                     child: _FormFieldWidget(field: field, formId: formId),
                   ),
                 ),
-
-                const SizedBox(height: AppSpacing.lg),
-
-                // 送信ボタン
-                CommonButton(
-                  onPressed: submit,
-                  loading: controllerState.isSubmitting,
-                  child: const Text('回答を送信'),
-                ),
-                const SizedBox(height: AppSpacing.xxl),
               ],
             ),
           );

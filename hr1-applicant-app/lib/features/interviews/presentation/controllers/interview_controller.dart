@@ -32,13 +32,11 @@ class InterviewController
 
     try {
       final repo = ref.read(interviewsRepositoryProvider);
-      await repo.confirmSlot(slotId: slotId, applicationId: applicationId);
-
-      // ステップを完了に更新し、次のステップを自動開始
-      if (stepId != null) {
-        final appRepo = ref.read(applicationsRepositoryProvider);
-        await appRepo.completeStep(stepId, applicationId);
-      }
+      await repo.confirmSlot(
+        slotId: slotId,
+        applicationId: applicationId,
+        stepId: stepId,
+      );
 
       // 関連プロバイダーを無効化して再取得
       ref.invalidate(selectedSlotProvider(interviewId));

@@ -22,6 +22,7 @@ let mockAuthValue = {
   loading: true,
   signIn: vi.fn(),
   signOut: vi.fn(),
+  refreshProfile: vi.fn(),
 };
 
 vi.mock("@/lib/auth-context", () => ({
@@ -48,6 +49,7 @@ vi.mock("@/components/layout/header", () => ({
   Header: () => <header data-testid="header">Header</header>,
 }));
 
+import DashboardLayout from "@/app/(dashboard)/layout";
 import { ClientLayout } from "@/app/client-layout";
 
 describe("AuthGuard", () => {
@@ -60,6 +62,7 @@ describe("AuthGuard", () => {
       loading: true,
       signIn: vi.fn(),
       signOut: vi.fn(),
+      refreshProfile: vi.fn(),
     };
   });
 
@@ -67,9 +70,9 @@ describe("AuthGuard", () => {
     mockAuthValue.loading = true;
 
     render(
-      <ClientLayout>
+      <DashboardLayout>
         <div>Protected Content</div>
-      </ClientLayout>
+      </DashboardLayout>
     );
 
     expect(screen.getByText("読み込み中...")).toBeInTheDocument();
@@ -81,9 +84,9 @@ describe("AuthGuard", () => {
     mockAuthValue.user = null;
 
     render(
-      <ClientLayout>
+      <DashboardLayout>
         <div>Protected Content</div>
-      </ClientLayout>
+      </DashboardLayout>
     );
 
     await waitFor(() => {
@@ -98,9 +101,9 @@ describe("AuthGuard", () => {
     mockAuthValue.profile = { role: "admin" };
 
     render(
-      <ClientLayout>
+      <DashboardLayout>
         <div>Protected Content</div>
-      </ClientLayout>
+      </DashboardLayout>
     );
 
     expect(screen.getByText("Protected Content")).toBeInTheDocument();
@@ -109,8 +112,22 @@ describe("AuthGuard", () => {
     expect(mockReplace).not.toHaveBeenCalled();
   });
 
-  it("/login パスでは認証チェックをスキップして子要素を表示する", () => {
-    mockPathname = "/login";
+  it("user はあるが profile がない場合は読み込み画面を表示する", () => {
+    mockAuthValue.loading = false;
+    mockAuthValue.user = { id: "user-1", email: "test@example.com" };
+    mockAuthValue.profile = null;
+
+    render(
+      <DashboardLayout>
+        <div>Protected Content</div>
+      </DashboardLayout>
+    );
+
+    expect(screen.getByText("読み込み中...")).toBeInTheDocument();
+    expect(screen.queryByText("Protected Content")).not.toBeInTheDocument();
+  });
+
+  it("公開ページ（login等）は ClientLayout 経由で認証チェックなしにレンダリングされる", () => {
     mockAuthValue.loading = false;
     mockAuthValue.user = null;
 
@@ -122,20 +139,5 @@ describe("AuthGuard", () => {
 
     expect(screen.getByText("Login Form")).toBeInTheDocument();
     expect(mockReplace).not.toHaveBeenCalled();
-  });
-
-  it("user はあるが profile がない場合は読み込み画面を表示する", () => {
-    mockAuthValue.loading = false;
-    mockAuthValue.user = { id: "user-1", email: "test@example.com" };
-    mockAuthValue.profile = null;
-
-    render(
-      <ClientLayout>
-        <div>Protected Content</div>
-      </ClientLayout>
-    );
-
-    expect(screen.getByText("読み込み中...")).toBeInTheDocument();
-    expect(screen.queryByText("Protected Content")).not.toBeInTheDocument();
   });
 });

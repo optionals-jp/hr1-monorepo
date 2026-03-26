@@ -29,7 +29,7 @@ const mockSupabase = vi.hoisted(() => {
   };
 });
 
-vi.mock("@/lib/supabase", () => ({
+vi.mock("@/lib/supabase/browser", () => ({
   getSupabase: () => mockSupabase,
 }));
 

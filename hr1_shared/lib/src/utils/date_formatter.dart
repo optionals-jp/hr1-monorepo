@@ -1,33 +1,36 @@
 import 'package:intl/intl.dart';
 
 /// 日付フォーマットユーティリティ
+///
+/// Supabase の timestamptz は UTC で返されるため、
+/// 全メソッドで `.toLocal()` を適用してからフォーマットする。
 class DateFormatter {
   DateFormatter._();
 
   /// 年月日（例: 2024年1月15日）
   static String toJapaneseDate(DateTime date) {
-    return DateFormat('yyyy年M月d日').format(date);
+    return DateFormat('yyyy年M月d日').format(date.toLocal());
   }
 
   /// 年月日 短縮（例: 2024/01/15）
   static String toShortDate(DateTime date) {
-    return DateFormat('yyyy/MM/dd').format(date);
+    return DateFormat('yyyy/MM/dd').format(date.toLocal());
   }
 
   /// 年月日時分（例: 2024/01/15 14:30）
   static String toDateTime(DateTime date) {
-    return DateFormat('yyyy/MM/dd HH:mm').format(date);
+    return DateFormat('yyyy/MM/dd HH:mm').format(date.toLocal());
   }
 
   /// 時刻のみ（例: 14:30）
   static String toTime(DateTime date) {
-    return DateFormat('HH:mm').format(date);
+    return DateFormat('HH:mm').format(date.toLocal());
   }
 
   /// 相対時間（例: 3分前、1時間前、昨日）
   static String toRelative(DateTime date) {
     final now = DateTime.now();
-    final diff = now.difference(date);
+    final diff = now.difference(date.toLocal());
 
     if (diff.inMinutes < 1) return 'たった今';
     if (diff.inMinutes < 60) return '${diff.inMinutes}分前';
@@ -38,7 +41,7 @@ class DateFormatter {
 
   /// 年月（例: 2024年1月）
   static String toYearMonth(DateTime date) {
-    return DateFormat('yyyy年M月').format(date);
+    return DateFormat('yyyy年M月').format(date.toLocal());
   }
 
   /// 相対日付（今日/昨日/M月d日/yyyy年M月d日）
@@ -75,6 +78,28 @@ class DateFormatter {
 
   /// 短い日付（yyyy/MM/dd）
   static String toDateSlash(DateTime date) {
-    return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
+    final local = date.toLocal();
+    return '${local.year}/${local.month.toString().padLeft(2, '0')}/${local.day.toString().padLeft(2, '0')}';
+  }
+
+  /// 日付と曜日（例: 3月26日(木)）
+  static String toDateWithWeekday(DateTime date) {
+    return DateFormat('M月d日(E)', 'ja').format(date.toLocal());
+  }
+
+  /// 日付・曜日・時刻（例: 3月26日(木) 14:30）
+  static String toDateTimeWithWeekday(DateTime date) {
+    return DateFormat('M月d日(E) HH:mm', 'ja').format(date.toLocal());
+  }
+
+  /// 時間帯（例: 14:30 〜 15:30）
+  static String toTimeRange(DateTime start, DateTime end) {
+    return '${toTime(start)} 〜 ${toTime(end)}';
+  }
+
+  /// 短い月日（例: 3/26）
+  static String toMonthDay(DateTime date) {
+    final local = date.toLocal();
+    return '${local.month}/${local.day}';
   }
 }

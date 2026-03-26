@@ -30,11 +30,11 @@ const mockSupabase = vi.hoisted(() => {
   };
 });
 
-vi.mock("@/lib/supabase", () => ({
+vi.mock("@/lib/supabase/browser", () => ({
   getSupabase: () => mockSupabase,
 }));
 
-import { useCreateMessageThread } from "@/lib/use-create-message-thread";
+import { useCreateMessageThread } from "@/lib/hooks/use-create-message-thread";
 
 beforeEach(() => {
   vi.clearAllMocks();

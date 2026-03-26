@@ -6,8 +6,10 @@ abstract class InterviewsRepository {
   Future<Interview?> getInterview(String interviewId);
 
   /// スロットを確定（application_id をセットして予約）
+  /// [stepId] が指定された場合、該当ステップの applicant_action_at もセットする
   Future<void> confirmSlot({
     required String slotId,
     required String applicationId,
+    String? stepId,
   });
 }

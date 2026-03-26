@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:hr1_applicant_app/core/constants/constants.dart';
+import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 import 'package:hr1_applicant_app/features/interviews/domain/entities/interview.dart';
 import 'package:hr1_applicant_app/features/interviews/domain/entities/interview_slot.dart';
@@ -37,80 +37,63 @@ class InterviewScheduleScreen extends ConsumerWidget {
       }
     });
 
+    final selectedSlotId = ref.watch(selectedSlotProvider(interviewId));
+    final interview = asyncInterview.valueOrNull;
+
     return CommonScaffold(
       appBar: AppBar(title: const Text('面接日程の選択')),
+      bottomAction: interview != null
+          ? CommonButton(
+              onPressed: selectedSlotId != null
+                  ? () => _confirm(context, ref, interview, selectedSlotId)
+                  : null,
+              loading: controllerState.isSubmitting,
+              enabled: !controllerState.isSubmitting,
+              child: const Text('この日程で確定する'),
+            )
+          : null,
       body: asyncInterview.when(
-        data: (interview) {
-          if (interview == null) {
+        data: (data) {
+          if (data == null) {
             return const ErrorState(message: '面接情報が見つかりません');
           }
 
-          final selectedSlotId = ref.watch(selectedSlotProvider(interviewId));
-
-          return Column(
+          return ListView(
+            padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
             children: [
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
-                  children: [
-                    // 面接情報
-                    _InterviewInfoCard(interview: interview),
-                    const SizedBox(height: AppSpacing.xl),
+              // 面接情報
+              _InterviewInfoCard(interview: data),
+              const SizedBox(height: AppSpacing.xl),
 
-                    // 候補日時セクション
-                    Text('候補日時を選択してください', style: AppTextStyles.callout),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      'ご都合の良い日時を1つ選択してください',
-                      style: AppTextStyles.caption1.copyWith(
-                        color: AppColors.textSecondary(context),
+              // 候補日時セクション
+              Text('候補日時を選択してください', style: AppTextStyles.callout),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'ご都合の良い日時を1つ選択してください',
+                style: AppTextStyles.caption1.copyWith(
+                  color: AppColors.textSecondary(context),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              // スロット一覧（未予約のスロットのみ表示）
+              ...data.slots
+                  .where((slot) => !slot.isBooked)
+                  .map(
+                    (slot) => Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      child: _SlotCard(
+                        slot: slot,
+                        isSelected: selectedSlotId == slot.id,
+                        onTap: () {
+                          ref
+                              .read(selectedSlotProvider(interviewId).notifier)
+                              .state = slot
+                              .id;
+                        },
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // スロット一覧（未予約のスロットのみ表示）
-                    ...interview.slots
-                        .where((slot) => !slot.isBooked)
-                        .map(
-                          (slot) => Padding(
-                            padding: const EdgeInsets.only(
-                              bottom: AppSpacing.md,
-                            ),
-                            child: _SlotCard(
-                              slot: slot,
-                              isSelected: selectedSlotId == slot.id,
-                              onTap: () {
-                                ref
-                                        .read(
-                                          selectedSlotProvider(
-                                            interviewId,
-                                          ).notifier,
-                                        )
-                                        .state =
-                                    slot.id;
-                              },
-                            ),
-                          ),
-                        ),
-                  ],
-                ),
-              ),
-
-              // 確定ボタン
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
-                  child: CommonButton(
-                    onPressed: selectedSlotId != null
-                        ? () =>
-                              _confirm(context, ref, interview, selectedSlotId)
-                        : null,
-                    loading: controllerState.isSubmitting,
-                    enabled: !controllerState.isSubmitting,
-                    child: const Text('この日程で確定する'),
                   ),
-                ),
-              ),
             ],
           );
         },
@@ -131,13 +114,11 @@ class InterviewScheduleScreen extends ConsumerWidget {
     final slot = interview.slots.where((s) => s.id == slotId).firstOrNull;
     if (slot == null) return;
 
-    final dateFormat = DateFormat('M月d日(E) HH:mm', 'ja');
-
     final confirmed = await CommonDialog.confirm(
       context: screenContext,
       title: '日程確定',
       message:
-          '${dateFormat.format(slot.startAt)} 〜 ${DateFormat('HH:mm').format(slot.endAt)}\n\nこの日程で確定しますか？',
+          '${DateFormatter.toDateTimeWithWeekday(slot.startAt)} 〜 ${DateFormatter.toTime(slot.endAt)}\n\nこの日程で確定しますか？',
       confirmLabel: '確定する',
     );
     if (!confirmed) return;
@@ -213,9 +194,6 @@ class _SlotCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('M月d日(E)', 'ja');
-    final timeFormat = DateFormat('HH:mm');
-
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadius.radius120,
@@ -256,12 +234,12 @@ class _SlotCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    dateFormat.format(slot.startAt),
+                    DateFormatter.toDateWithWeekday(slot.startAt),
                     style: AppTextStyles.callout,
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    '${timeFormat.format(slot.startAt)} 〜 ${timeFormat.format(slot.endAt)}',
+                    DateFormatter.toTimeRange(slot.startAt, slot.endAt),
                     style: AppTextStyles.body2.copyWith(
                       color: AppColors.textSecondary(context),
                     ),

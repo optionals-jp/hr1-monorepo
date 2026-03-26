@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:hr1_shared/src/constants/app_spacing.dart';
 
 /// 共通 Scaffold — 全画面で使用する基底 Scaffold
 ///
 /// 標準の [Scaffold] をラップし、以下の共通処理を提供する:
 /// - 余白タップでキーボードを閉じる
+/// - [bottomAction] で下部固定アクションボタンを SafeArea + 余白付きで配置
 ///
 /// ```dart
 /// CommonScaffold(
 ///   appBar: AppBar(title: const Text('タイトル')),
 ///   body: const Center(child: Text('内容')),
+///   bottomAction: CommonButton(
+///     onPressed: () {},
+///     child: const Text('送信'),
+///   ),
 /// )
 /// ```
 class CommonScaffold extends StatelessWidget {
@@ -19,6 +25,7 @@ class CommonScaffold extends StatelessWidget {
     this.floatingActionButton,
     this.floatingActionButtonLocation,
     this.bottomNavigationBar,
+    this.bottomAction,
     this.bottomSheet,
     this.backgroundColor,
     this.resizeToAvoidBottomInset,
@@ -31,6 +38,10 @@ class CommonScaffold extends StatelessWidget {
   final Widget? floatingActionButton;
   final FloatingActionButtonLocation? floatingActionButtonLocation;
   final Widget? bottomNavigationBar;
+
+  /// 下部固定アクション。SafeArea + 標準余白で自動ラップされる。
+  final Widget? bottomAction;
+
   final Widget? bottomSheet;
   final Color? backgroundColor;
   final bool? resizeToAvoidBottomInset;
@@ -46,7 +57,19 @@ class CommonScaffold extends StatelessWidget {
         body: body,
         floatingActionButton: floatingActionButton,
         floatingActionButtonLocation: floatingActionButtonLocation,
-        bottomNavigationBar: bottomNavigationBar,
+        bottomNavigationBar: bottomAction != null
+            ? SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screenHorizontal,
+                    AppSpacing.md,
+                    AppSpacing.screenHorizontal,
+                    AppSpacing.md,
+                  ),
+                  child: bottomAction,
+                ),
+              )
+            : bottomNavigationBar,
         bottomSheet: bottomSheet,
         backgroundColor: backgroundColor,
         resizeToAvoidBottomInset: resizeToAvoidBottomInset,

@@ -13,6 +13,7 @@ class AppRadius {
   static const double cornerRadius80 = 8.0;
   static const double cornerRadius120 = 12.0;
   static const double cornerRadius160 = 16.0;
+  static const double cornerRadius200 = 20.0;
   static const double cornerRadiusCircular = 9999.0;
 
   // ── BorderRadius (convenience) ───────────────────────────────
@@ -21,7 +22,6 @@ class AppRadius {
   static final BorderRadius radius80 = BorderRadius.circular(cornerRadius80);
   static final BorderRadius radius120 = BorderRadius.circular(cornerRadius120);
   static final BorderRadius radius160 = BorderRadius.circular(cornerRadius160);
-  static final BorderRadius radiusCircular = BorderRadius.circular(
-    cornerRadiusCircular,
-  );
+  static final BorderRadius radius200 = BorderRadius.circular(cornerRadius200);
+  static final BorderRadius radiusCircular = BorderRadius.circular(cornerRadiusCircular);
 }

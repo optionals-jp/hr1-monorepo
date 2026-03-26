@@ -5,7 +5,7 @@ import 'package:hr1_applicant_app/core/constants/constants.dart';
 import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 import 'package:hr1_applicant_app/features/announcements/domain/entities/announcement.dart';
 import 'package:hr1_applicant_app/features/announcements/presentation/providers/announcement_providers.dart';
-import 'package:intl/intl.dart';
+import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
 
 class AnnouncementsScreen extends ConsumerWidget {
   const AnnouncementsScreen({super.key});
@@ -101,7 +101,7 @@ class _AnnouncementTileState extends State<_AnnouncementTile> {
   @override
   Widget build(BuildContext context) {
     final a = widget.announcement;
-    final dateStr = DateFormat('yyyy/MM/dd').format(a.publishedAt.toLocal());
+    final dateStr = DateFormatter.toShortDate(a.publishedAt);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
