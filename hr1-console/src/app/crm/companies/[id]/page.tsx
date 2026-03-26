@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { InfoItem } from "@/components/ui/info-item";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase/browser";
 import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { Badge } from "@/components/ui/badge";

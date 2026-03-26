@@ -2,7 +2,7 @@
 
 import { PageHeader } from "@/components/layout/page-header";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase/browser";
 import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { dealStatusLabels, dealStatusColors, dealStageLabels } from "@/lib/constants";
