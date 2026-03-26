@@ -7,6 +7,7 @@ import { getSupabase } from "@/lib/supabase/browser";
 import type { Job, JobStep, AuditLog, Application, Interview } from "@/types/database";
 import { useOrg } from "@/lib/org-context";
 import { applicationStatusLabels as appStatusLabels, stepStatusLabels } from "@/lib/constants";
+import { fetchJobDetail } from "@/lib/repositories/job-repository";
 import type { HistoryEvent } from "@/features/jobs/types";
 
 export function useJobDetail() {
@@ -68,38 +69,16 @@ export function useJobDetail() {
   const load = async () => {
     if (!organization) return;
     setLoading(true);
-    const [{ data: jobData }, { data: stepsData }, { data: appsData }, { data: logsData }] =
-      await Promise.all([
-        getSupabase()
-          .from("jobs")
-          .select("*")
-          .eq("id", id)
-          .eq("organization_id", organization.id)
-          .single(),
-        getSupabase().from("job_steps").select("*").eq("job_id", id).order("step_order"),
-        getSupabase()
-          .from("applications")
-          .select("*, profiles:applicant_id(display_name, email), application_steps(*)")
-          .eq("job_id", id)
-          .order("applied_at", { ascending: false }),
-        getSupabase()
-          .from("audit_logs")
-          .select("*")
-          .eq("organization_id", organization.id)
-          .eq("table_name", "jobs")
-          .eq("record_id", id)
-          .order("created_at", { ascending: false })
-          .limit(50),
-      ]);
+    const result = await fetchJobDetail(getSupabase(), id, organization.id);
 
-    setJob(jobData);
-    setSteps(stepsData ?? []);
-    setApplications((appsData as Application[]) ?? []);
-    setChangeLogs(logsData ?? []);
+    setJob(result.job);
+    setSteps(result.steps);
+    setApplications(result.applications);
+    setChangeLogs(result.auditLogs);
 
     // Build timeline events
     const events: HistoryEvent[] = [];
-    for (const app of appsData ?? []) {
+    for (const app of result.applications ?? []) {
       const profile = app.profiles as unknown as {
         display_name: string | null;
         email: string;

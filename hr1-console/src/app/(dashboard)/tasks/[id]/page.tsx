@@ -134,6 +134,7 @@ export default function TaskDetailPage() {
           "*, creator:profiles!tasks_created_by_fkey(display_name, email), projects(id, name), project_teams(id, name)"
         )
         .eq("id", id)
+        .eq("organization_id", organization!.id)
         .single();
       if (!taskData) {
         router.push("/tasks");
