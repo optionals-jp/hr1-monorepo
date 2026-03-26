@@ -61,6 +61,10 @@ class AppIcons {
       _svg('ic-buliding', size: size, color: color);
   static Widget bulidingFill({double size = 24, Color? color}) =>
       _svg('ic-buliding-fill', size: size, color: color);
+  static Widget buildings({double size = 24, Color? color}) =>
+      _svg('ic-buildings', size: size, color: color);
+  static Widget buildingsFill({double size = 24, Color? color}) =>
+      _svg('ic-buildings-fill', size: size, color: color);
 
   // ── カレンダー・時間 ──
   static Widget calendar({double size = 24, Color? color}) =>

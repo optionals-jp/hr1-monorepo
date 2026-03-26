@@ -58,6 +58,9 @@ dependencies:
   # 画像選択
   image_picker: ^1.1.0
 
+  # OCR（名刺読み取り）
+  google_mlkit_text_recognition: ^0.14.0
+
   # URL起動
   url_launcher: ^6.3.1
 

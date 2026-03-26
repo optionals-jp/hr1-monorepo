@@ -13,6 +13,8 @@ import 'package:hr1_employee_app/features/announcements/domain/entities/announce
 import 'package:hr1_employee_app/features/faq/domain/entities/faq_item.dart';
 import 'package:hr1_employee_app/features/search/domain/entities/portal_search_results.dart';
 import 'package:hr1_employee_app/features/search/presentation/providers/search_providers.dart';
+import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_contact.dart';
+import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_company.dart';
 import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
@@ -420,6 +422,26 @@ class _SearchResultsView extends StatelessWidget {
             (f) => _FaqResultTile(faq: f, searchQuery: query),
           ),
         ],
+
+        // CRM 連絡先
+        if (results.bcContacts.isNotEmpty) ...[
+          _SectionLabel(
+            icon: Icons.contact_phone_outlined,
+            label: 'CRM連絡先',
+            count: results.bcContacts.length,
+          ),
+          ...results.bcContacts.map((c) => _BcContactResultTile(contact: c)),
+        ],
+
+        // CRM 企業
+        if (results.bcCompanies.isNotEmpty) ...[
+          _SectionLabel(
+            icon: Icons.business_outlined,
+            label: 'CRM企業',
+            count: results.bcCompanies.length,
+          ),
+          ...results.bcCompanies.map((c) => _BcCompanyResultTile(company: c)),
+        ],
       ],
     );
   }
@@ -782,6 +804,147 @@ class _FaqResultTile extends StatelessWidget {
                   color: AppColors.textSecondary(context),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// CRM連絡先結果タイル
+// =============================================================================
+
+class _BcContactResultTile extends StatelessWidget {
+  const _BcContactResultTile({required this.contact});
+  final BcContact contact;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => context.push(AppRoutes.bcContactDetail, extra: contact.id),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.brand.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.contact_phone_outlined,
+                size: 22,
+                color: AppColors.brand,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    contact.fullName,
+                    style: AppTextStyles.caption1.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    [
+                      contact.company?.name,
+                      contact.department,
+                      contact.position,
+                    ].where((s) => s != null && s.isNotEmpty).join(' / '),
+                    style: AppTextStyles.caption2.copyWith(
+                      color: AppColors.textSecondary(context),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: AppColors.textTertiary(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// CRM企業結果タイル
+// =============================================================================
+
+class _BcCompanyResultTile extends StatelessWidget {
+  const _BcCompanyResultTile({required this.company});
+  final BcCompany company;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => context.push(AppRoutes.bcCompanyDetail, extra: company.id),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.business_outlined,
+                size: 22,
+                color: AppColors.warning,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    company.name,
+                    style: AppTextStyles.caption1.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (company.industry != null && company.industry!.isNotEmpty)
+                    Text(
+                      company.industry!,
+                      style: AppTextStyles.caption2.copyWith(
+                        color: AppColors.textSecondary(context),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: AppColors.textTertiary(context),
             ),
           ],
         ),

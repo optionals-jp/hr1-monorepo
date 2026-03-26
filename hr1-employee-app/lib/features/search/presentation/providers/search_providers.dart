@@ -9,6 +9,9 @@ import 'package:hr1_employee_app/features/announcements/domain/entities/announce
 import 'package:hr1_employee_app/features/announcements/presentation/providers/announcement_providers.dart';
 import 'package:hr1_employee_app/features/faq/domain/entities/faq_item.dart';
 import 'package:hr1_employee_app/features/faq/presentation/providers/faq_providers.dart';
+import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_contact.dart';
+import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_company.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/providers/business_card_providers.dart';
 import 'package:hr1_employee_app/features/search/domain/entities/portal_search_results.dart';
 
 /// 横断検索コントローラー
@@ -31,12 +34,15 @@ class SearchController extends AutoDisposeAsyncNotifier<PortalSearchResults?> {
       final wikiRepo = ref.read(wikiRepositoryProvider);
       final announcementsRepo = ref.read(announcementsRepositoryProvider);
       final faqRepo = ref.read(faqRepositoryProvider);
+      final bcRepo = ref.read(bcRepositoryProvider);
 
       final results = await Future.wait([
         employeeRepo.searchEmployees(query),
         wikiRepo.searchPages(query),
         announcementsRepo.searchAnnouncements(query),
         faqRepo.searchFaqs(query),
+        bcRepo.searchContacts(query),
+        bcRepo.searchCompanies(query),
       ]);
 
       return PortalSearchResults(
@@ -44,6 +50,8 @@ class SearchController extends AutoDisposeAsyncNotifier<PortalSearchResults?> {
         wikiPages: results[1] as List<WikiPage>,
         announcements: results[2] as List<Announcement>,
         faqs: results[3] as List<FaqItem>,
+        bcContacts: results[4] as List<BcContact>,
+        bcCompanies: results[5] as List<BcCompany>,
       );
     });
   }

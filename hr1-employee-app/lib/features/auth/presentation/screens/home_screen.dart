@@ -94,13 +94,16 @@ class HomeScreen extends ConsumerWidget {
                 BottomNavigationBarItem(
                   icon: Padding(
                     padding: const EdgeInsets.only(bottom: 2),
-                    child: AppIcons.user(color: unselectedColor, size: 24),
+                    child: AppIcons.buildings(color: unselectedColor, size: 24),
                   ),
                   activeIcon: Padding(
                     padding: const EdgeInsets.only(bottom: 2),
-                    child: AppIcons.userFill(color: selectedColor, size: 24),
+                    child: AppIcons.buildingsFill(
+                      color: selectedColor,
+                      size: 24,
+                    ),
                   ),
-                  label: 'その他',
+                  label: '取引先',
                 ),
               ],
             );

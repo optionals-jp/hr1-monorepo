@@ -40,6 +40,12 @@ final allTasksProvider = FutureProvider.autoDispose<List<Task>>((ref) async {
   return repo.getTasks(includeCompleted: true);
 });
 
+/// CRMタスク
+final crmTasksProvider = FutureProvider.autoDispose<List<Task>>((ref) async {
+  final repo = ref.watch(taskRepositoryProvider);
+  return repo.getCrmTasks();
+});
+
 /// 完了済みタスク数
 final completedTaskCountProvider = FutureProvider.autoDispose<int>((ref) async {
   final tasks = await ref.watch(allTasksProvider.future);
@@ -60,6 +66,8 @@ final filteredTasksProvider = FutureProvider.autoDispose<List<Task>>((
       return ref.watch(plannedTasksProvider.future);
     case TaskFilter.all:
       return ref.watch(allTasksProvider.future);
+    case TaskFilter.crm:
+      return ref.watch(crmTasksProvider.future);
   }
 });
 

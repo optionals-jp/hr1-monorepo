@@ -85,6 +85,21 @@ class SupabaseTaskRepository implements TaskRepository {
   }
 
   @override
+  Future<List<Task>> getCrmTasks() async {
+    final response = await _client
+        .from('employee_tasks')
+        .select()
+        .eq('user_id', _userId)
+        .eq('is_completed', false)
+        .or('company_id.not.is.null,contact_id.not.is.null,deal_id.not.is.null')
+        .order('sort_order')
+        .order('created_at')
+        .limit(200);
+
+    return response.map((e) => Task.fromJson(e)).toList();
+  }
+
+  @override
   Future<Task?> getTask(String id) async {
     final response = await _client
         .from('employee_tasks')
