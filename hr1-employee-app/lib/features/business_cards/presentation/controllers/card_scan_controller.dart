@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_card.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_company.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_contact.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/repositories/business_card_repository.dart';
@@ -23,8 +22,8 @@ class ScanResult {
 /// 名刺スキャンコントローラー
 final cardScanControllerProvider =
     AutoDisposeAsyncNotifierProvider<CardScanController, ScanResult?>(
-  CardScanController.new,
-);
+      CardScanController.new,
+    );
 
 class CardScanController extends AutoDisposeAsyncNotifier<ScanResult?> {
   @override
@@ -82,21 +81,17 @@ class CardScanController extends AutoDisposeAsyncNotifier<ScanResult?> {
         company = await _repo.findCompanyByCorporateNumber(corporateNumber);
       }
       // 会社名で検索
-      if (company == null) {
-        company = await _repo.findCompanyByName(companyName);
-      }
+      company ??= await _repo.findCompanyByName(companyName);
       // 新規作成
-      if (company == null) {
-        company = await _repo.createCompany({
-          'name': companyName,
-          'name_kana': companyNameKana,
-          'corporate_number': corporateNumber,
-          'postal_code': companyPostalCode,
-          'address': companyAddress,
-          'phone': companyPhone,
-          'website': companyWebsite,
-        });
-      }
+      company ??= await _repo.createCompany({
+        'name': companyName,
+        'name_kana': companyNameKana,
+        'corporate_number': corporateNumber,
+        'postal_code': companyPostalCode,
+        'address': companyAddress,
+        'phone': companyPhone,
+        'website': companyWebsite,
+      });
     }
 
     // 2. 連絡先の重複チェック・作成
@@ -136,17 +131,19 @@ class CardScanController extends AutoDisposeAsyncNotifier<ScanResult?> {
       });
     }
 
-    // 3. 名刺画像を保存
-    await _repo.saveCard(
-      imageUrl: imageUrl,
-      rawText: rawText,
-      contactId: contact!.id,
-    );
+    // 3. 名刺画像を保存（画像がある場合のみ）
+    if (imageUrl.isNotEmpty) {
+      await _repo.saveCard(
+        imageUrl: imageUrl,
+        rawText: rawText,
+        contactId: contact!.id,
+      );
+    }
 
     // プロバイダーを無効化して再取得を促す
     ref.invalidate(bcContactsProvider);
     ref.invalidate(bcCompaniesProvider);
 
-    return (contact: contact, company: company);
+    return (contact: contact!, company: company);
   }
 }

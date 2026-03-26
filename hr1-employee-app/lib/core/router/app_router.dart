@@ -43,6 +43,7 @@ import 'package:hr1_employee_app/features/leave/presentation/screens/leave_balan
 import 'package:hr1_employee_app/features/payslips/domain/entities/payslip.dart';
 import 'package:hr1_employee_app/features/payslips/presentation/screens/payslip_list_screen.dart';
 import 'package:hr1_employee_app/features/payslips/presentation/screens/payslip_detail_screen.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/screens/crm_screen.dart';
 import 'package:hr1_employee_app/features/business_cards/presentation/screens/card_scan_screen.dart';
 import 'package:hr1_employee_app/features/business_cards/presentation/screens/card_scan_review_screen.dart';
 import 'package:hr1_employee_app/features/business_cards/presentation/screens/contacts_screen.dart';
@@ -72,6 +73,7 @@ class AppRoutes {
   static const String messages = '/messages';
   static const String tasks = '/tasks';
   static const String profile = '/profile';
+  static const String crm = '/crm';
 
   // サブルートセグメント（相対パス）
   static const String _attendance = 'attendance';
@@ -110,6 +112,7 @@ class AppRoutes {
   static const String _bcDealForm = 'bc-deal-form';
   static const String _bcActivityForm = 'bc-activity-form';
   static const String _bcTodoForm = 'bc-todo-form';
+  static const String _bcContactForm = 'bc-contact-form';
   // フルパス（画面遷移用）
   static const String faq = '/$_faq';
   static const String wiki = '/$_wiki';
@@ -153,6 +156,7 @@ class AppRoutes {
   static const String bcDealForm = '/$_bcDealForm';
   static const String bcActivityForm = '/$_bcActivityForm';
   static const String bcTodoForm = '/$_bcTodoForm';
+  static const String bcContactForm = '/$_bcContactForm';
 }
 
 /// ルートナビゲーターキー（フルスクリーン遷移用 + プッシュ通知からの遷移用）
@@ -448,10 +452,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const CardScanScreen(),
       ),
 
-      /// 名刺スキャン結果確認画面（フルスクリーン）
+      /// 名刺撮影後の確認・入力画面（フルスクリーン）
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.bcScanReview,
+        builder: (context, state) =>
+            CardScanReviewScreen(imagePath: state.extra as String?),
+      ),
+
+      /// 連絡先手動登録画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.bcContactForm,
         builder: (context, state) => const CardScanReviewScreen(),
       ),
 
@@ -469,9 +481,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final contactId = state.extra as String?;
           if (contactId == null) {
-            return const Scaffold(
-              body: ErrorState(message: '連絡先IDが見つかりません'),
-            );
+            return const Scaffold(body: ErrorState(message: '連絡先IDが見つかりません'));
           }
           return BcContactDetailScreen(contactId: contactId);
         },
@@ -491,9 +501,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final companyId = state.extra as String?;
           if (companyId == null) {
-            return const Scaffold(
-              body: ErrorState(message: '企業IDが見つかりません'),
-            );
+            return const Scaffold(body: ErrorState(message: '企業IDが見つかりません'));
           }
           return BcCompanyDetailScreen(companyId: companyId);
         },
@@ -513,9 +521,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final dealId = state.extra as String?;
           if (dealId == null) {
-            return const Scaffold(
-              body: ErrorState(message: '商談IDが見つかりません'),
-            );
+            return const Scaffold(body: ErrorState(message: '商談IDが見つかりません'));
           }
           return BcDealDetailScreen(dealId: dealId);
         },
@@ -623,8 +629,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.profile,
-                builder: (context, state) => const ProfileScreen(),
+                path: AppRoutes.crm,
+                builder: (context, state) => const CrmScreen(),
               ),
             ],
           ),

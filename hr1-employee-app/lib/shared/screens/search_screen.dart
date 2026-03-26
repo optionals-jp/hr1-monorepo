@@ -430,9 +430,7 @@ class _SearchResultsView extends StatelessWidget {
             label: 'CRM連絡先',
             count: results.bcContacts.length,
           ),
-          ...results.bcContacts.map(
-            (c) => _BcContactResultTile(contact: c),
-          ),
+          ...results.bcContacts.map((c) => _BcContactResultTile(contact: c)),
         ],
 
         // CRM 企業
@@ -442,9 +440,7 @@ class _SearchResultsView extends StatelessWidget {
             label: 'CRM企業',
             count: results.bcCompanies.length,
           ),
-          ...results.bcCompanies.map(
-            (c) => _BcCompanyResultTile(company: c),
-          ),
+          ...results.bcCompanies.map((c) => _BcCompanyResultTile(company: c)),
         ],
       ],
     );

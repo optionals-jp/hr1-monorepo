@@ -54,8 +54,9 @@ class BcActivity {
       companyId: json['company_id'] as String?,
       contactId: json['contact_id'] as String?,
       dealId: json['deal_id'] as String?,
-      activityType:
-          ActivityType.fromString(json['activity_type'] as String? ?? 'memo'),
+      activityType: ActivityType.fromString(
+        json['activity_type'] as String? ?? 'memo',
+      ),
       title: json['title'] as String,
       description: json['description'] as String?,
       activityDate: json['activity_date'] != null

@@ -7,8 +7,8 @@ import 'package:hr1_employee_app/features/business_cards/presentation/providers/
 /// CRM TODOコントローラー
 final bcTodoControllerProvider =
     AutoDisposeAsyncNotifierProvider<BcTodoController, List<BcTodo>>(
-  BcTodoController.new,
-);
+      BcTodoController.new,
+    );
 
 class BcTodoController extends AutoDisposeAsyncNotifier<List<BcTodo>> {
   @override

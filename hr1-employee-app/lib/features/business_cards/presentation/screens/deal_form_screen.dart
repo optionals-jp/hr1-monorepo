@@ -9,11 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// 商談登録画面
 class DealFormScreen extends HookConsumerWidget {
-  const DealFormScreen({
-    super.key,
-    this.companyId,
-    this.contactId,
-  });
+  const DealFormScreen({super.key, this.companyId, this.contactId});
 
   final String? companyId;
   final String? contactId;
@@ -54,8 +50,10 @@ class DealFormScreen extends HookConsumerWidget {
               ? int.tryParse(amountCtl.text.replaceAll(',', ''))
               : null,
           'stage': selectedStage.value.name,
-          'expected_close_date':
-              closeDate.value?.toIso8601String().split('T').first,
+          'expected_close_date': closeDate.value
+              ?.toIso8601String()
+              .split('T')
+              .first,
           'description': descriptionCtl.text.trim().isEmpty
               ? null
               : descriptionCtl.text.trim(),
@@ -155,7 +153,7 @@ class DealFormScreen extends HookConsumerWidget {
           padding: const EdgeInsets.all(AppSpacing.md),
           child: CommonButton(
             onPressed: isSaving.value ? null : save,
-            label: isSaving.value ? '保存中...' : '保存',
+            child: Text(isSaving.value ? '保存中...' : '保存'),
           ),
         ),
       ),

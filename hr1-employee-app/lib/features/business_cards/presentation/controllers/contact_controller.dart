@@ -7,11 +7,10 @@ import 'package:hr1_employee_app/features/business_cards/presentation/providers/
 /// 連絡先リストコントローラー
 final contactListControllerProvider =
     AutoDisposeAsyncNotifierProvider<ContactListController, List<BcContact>>(
-  ContactListController.new,
-);
+      ContactListController.new,
+    );
 
-class ContactListController
-    extends AutoDisposeAsyncNotifier<List<BcContact>> {
+class ContactListController extends AutoDisposeAsyncNotifier<List<BcContact>> {
   @override
   FutureOr<List<BcContact>> build() async {
     final repo = ref.watch(bcRepositoryProvider);
@@ -33,10 +32,12 @@ class ContactListController
 }
 
 /// 連絡先詳細コントローラー
-final contactDetailControllerProvider = AutoDisposeAsyncNotifierProviderFamily<
-    ContactDetailController, BcContact?, String>(
-  ContactDetailController.new,
-);
+final contactDetailControllerProvider =
+    AutoDisposeAsyncNotifierProviderFamily<
+      ContactDetailController,
+      BcContact?,
+      String
+    >(ContactDetailController.new);
 
 class ContactDetailController
     extends AutoDisposeFamilyAsyncNotifier<BcContact?, String> {

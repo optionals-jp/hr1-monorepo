@@ -22,8 +22,7 @@ class BcDealDetailScreen extends ConsumerWidget {
       body: dealAsync.when(
         loading: () => const LoadingIndicator(),
         error: (e, _) => ErrorState(
-          onRetry: () =>
-              ref.invalidate(dealDetailControllerProvider(dealId)),
+          onRetry: () => ref.invalidate(dealDetailControllerProvider(dealId)),
         ),
         data: (deal) {
           if (deal == null) {
@@ -77,7 +76,7 @@ class _Body extends ConsumerWidget {
             children: [
               if (deal.company != null)
                 MenuRow(
-                  icon: Icons.business,
+                  icon: const Icon(Icons.business),
                   label: '企業',
                   title: deal.company!.name,
                   onTap: () => context.push(
@@ -87,7 +86,7 @@ class _Body extends ConsumerWidget {
                 ),
               if (deal.contact != null)
                 MenuRow(
-                  icon: Icons.person,
+                  icon: const Icon(Icons.person),
                   label: '連絡先',
                   title: deal.contact!.fullName,
                   onTap: () => context.push(
@@ -97,21 +96,20 @@ class _Body extends ConsumerWidget {
                 ),
               if (deal.amount != null)
                 MenuRow(
-                  icon: Icons.attach_money,
+                  icon: const Icon(Icons.attach_money),
                   label: '金額',
                   title: '¥${_formatAmount(deal.amount!)}',
                 ),
               if (deal.expectedCloseDate != null)
                 MenuRow(
-                  icon: Icons.calendar_today,
+                  icon: const Icon(Icons.calendar_today),
                   label: '見込み日',
                   title:
                       '${deal.expectedCloseDate!.year}/${deal.expectedCloseDate!.month}/${deal.expectedCloseDate!.day}',
                 ),
-              if (deal.description != null &&
-                  deal.description!.isNotEmpty)
+              if (deal.description != null && deal.description!.isNotEmpty)
                 MenuRow(
-                  icon: Icons.description,
+                  icon: const Icon(Icons.description),
                   label: '説明',
                   title: deal.description!,
                 ),
@@ -128,8 +126,10 @@ class _Body extends ConsumerWidget {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('活動履歴（${activities.length}件）',
-                      style: AppTextStyles.headline),
+                  Text(
+                    '活動履歴（${activities.length}件）',
+                    style: AppTextStyles.headline,
+                  ),
                   const SizedBox(height: AppSpacing.xs),
                   if (activities.isEmpty)
                     Padding(
@@ -156,9 +156,9 @@ class _Body extends ConsumerWidget {
 
   String _formatAmount(int amount) {
     return amount.toString().replaceAllMapped(
-          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]},',
-        );
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]},',
+    );
   }
 }
 
@@ -183,12 +183,9 @@ class _StatusChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(AppRadius.cornerRadius80),
       ),
-      child: Text(
-        label,
-        style: AppTextStyles.caption1.copyWith(color: color),
-      ),
+      child: Text(label, style: AppTextStyles.caption1.copyWith(color: color)),
     );
   }
 }
@@ -207,7 +204,7 @@ class _StageChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.textTertiary(context)),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(AppRadius.cornerRadius80),
       ),
       child: Text(label, style: AppTextStyles.caption1),
     );
@@ -223,16 +220,13 @@ class _ActivityTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return CommonCard(
       child: ListTile(
-        leading: Icon(
-          switch (activity.activityType) {
-            ActivityType.appointment => Icons.event,
-            ActivityType.memo => Icons.note,
-            ActivityType.call => Icons.phone,
-            ActivityType.email => Icons.email,
-            ActivityType.visit => Icons.directions_walk,
-          },
-          color: AppColors.brand,
-        ),
+        leading: Icon(switch (activity.activityType) {
+          ActivityType.appointment => Icons.event,
+          ActivityType.memo => Icons.note,
+          ActivityType.call => Icons.phone,
+          ActivityType.email => Icons.email,
+          ActivityType.visit => Icons.directions_walk,
+        }, color: AppColors.brand),
         title: Text(activity.title, style: AppTextStyles.body1),
         subtitle: Text(
           activity.activityType.label,

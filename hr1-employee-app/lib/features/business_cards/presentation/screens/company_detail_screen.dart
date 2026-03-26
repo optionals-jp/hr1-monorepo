@@ -16,8 +16,7 @@ class BcCompanyDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final companyAsync =
-        ref.watch(companyDetailControllerProvider(companyId));
+    final companyAsync = ref.watch(companyDetailControllerProvider(companyId));
 
     return Scaffold(
       appBar: AppBar(title: const Text('企業詳細')),
@@ -58,7 +57,10 @@ class _Body extends ConsumerWidget {
           Center(
             child: Column(
               children: [
-                OrgIcon(name: company.name, size: 64),
+                OrgIcon(
+                  initial: company.name.isNotEmpty ? company.name[0] : '?',
+                  size: 64,
+                ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(company.name, style: AppTextStyles.title2),
                 if (company.industry != null)
@@ -80,25 +82,25 @@ class _Body extends ConsumerWidget {
             children: [
               if (company.corporateNumber != null)
                 MenuRow(
-                  icon: Icons.tag,
+                  icon: const Icon(Icons.tag),
                   label: '法人番号',
                   title: company.corporateNumber!,
                 ),
               if (company.phone != null)
                 MenuRow(
-                  icon: Icons.phone,
+                  icon: const Icon(Icons.phone),
                   label: '電話',
                   title: company.phone!,
                 ),
               if (company.address != null)
                 MenuRow(
-                  icon: Icons.location_on,
+                  icon: const Icon(Icons.location_on),
                   label: '住所',
                   title: company.address!,
                 ),
               if (company.website != null)
                 MenuRow(
-                  icon: Icons.language,
+                  icon: const Icon(Icons.language),
                   label: 'Web',
                   title: company.website!,
                 ),
@@ -154,23 +156,19 @@ class _ContactsSection extends StatelessWidget {
             ),
           )
         else
-          ...contacts.map((contact) => CommonCard(
-                child: ListTile(
-                  leading: UserAvatar(
-                    initial: contact.lastName[0],
-                    size: 36,
-                  ),
-                  title: Text(contact.fullName, style: AppTextStyles.body1),
-                  subtitle: contact.position != null
-                      ? Text(contact.position!,
-                          style: AppTextStyles.caption1)
-                      : null,
-                  onTap: () => context.push(
-                    AppRoutes.bcContactDetail,
-                    extra: contact.id,
-                  ),
-                ),
-              )),
+          ...contacts.map(
+            (contact) => CommonCard(
+              child: ListTile(
+                leading: UserAvatar(initial: contact.lastName[0], size: 36),
+                title: Text(contact.fullName, style: AppTextStyles.body1),
+                subtitle: contact.position != null
+                    ? Text(contact.position!, style: AppTextStyles.caption1)
+                    : null,
+                onTap: () =>
+                    context.push(AppRoutes.bcContactDetail, extra: contact.id),
+              ),
+            ),
+          ),
         const SizedBox(height: AppSpacing.md),
       ],
     );
@@ -189,19 +187,18 @@ class _CompanyDealsSection extends StatelessWidget {
       children: [
         Text('商談（${deals.length}件）', style: AppTextStyles.headline),
         const SizedBox(height: AppSpacing.xs),
-        ...deals.map((deal) => CommonCard(
-              child: ListTile(
-                title: Text(deal.title, style: AppTextStyles.body1),
-                subtitle: Text(
-                  '${deal.status.label} / ${deal.stage.label}',
-                  style: AppTextStyles.caption1,
-                ),
-                onTap: () => context.push(
-                  AppRoutes.bcDealDetail,
-                  extra: deal.id,
-                ),
+        ...deals.map(
+          (deal) => CommonCard(
+            child: ListTile(
+              title: Text(deal.title, style: AppTextStyles.body1),
+              subtitle: Text(
+                '${deal.status.label} / ${deal.stage.label}',
+                style: AppTextStyles.caption1,
               ),
-            )),
+              onTap: () => context.push(AppRoutes.bcDealDetail, extra: deal.id),
+            ),
+          ),
+        ),
         const SizedBox(height: AppSpacing.md),
       ],
     );

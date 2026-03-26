@@ -14,6 +14,9 @@ abstract class TaskRepository {
   /// 計画済み（期限付き）タスクを取得
   Future<List<Task>> getPlannedTasks();
 
+  /// CRM関連タスクを取得（company_id/contact_id/deal_idが設定されているもの）
+  Future<List<Task>> getCrmTasks();
+
   /// タスクIDで取得（ステップ含む）
   Future<Task?> getTask(String id);
 

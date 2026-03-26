@@ -1200,9 +1200,10 @@ class _CrmTodoTile extends StatelessWidget {
                   ),
                   if (todo.contactName != null || todo.companyName != null)
                     Text(
-                      [todo.contactName, todo.companyName]
-                          .where((e) => e != null)
-                          .join(' / '),
+                      [
+                        todo.contactName,
+                        todo.companyName,
+                      ].where((e) => e != null).join(' / '),
                       style: AppTextStyles.caption2.copyWith(
                         color: AppColors.textSecondary(context),
                       ),

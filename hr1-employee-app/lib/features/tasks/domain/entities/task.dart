@@ -18,6 +18,9 @@ class Task {
     required this.createdAt,
     required this.updatedAt,
     this.steps,
+    this.companyId,
+    this.contactId,
+    this.dealId,
   });
 
   final String id;
@@ -37,6 +40,9 @@ class Task {
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<TaskStep>? steps;
+  final String? companyId;
+  final String? contactId;
+  final String? dealId;
 
   factory Task.fromJson(Map<String, dynamic> json, {List<TaskStep>? steps}) {
     return Task(
@@ -65,6 +71,9 @@ class Task {
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
       steps: steps,
+      companyId: json['company_id'] as String?,
+      contactId: json['contact_id'] as String?,
+      dealId: json['deal_id'] as String?,
     );
   }
 
@@ -81,6 +90,9 @@ class Task {
       'reminder_at': reminderAt?.toIso8601String(),
       'list_name': listName,
       'sort_order': sortOrder,
+      'company_id': companyId,
+      'contact_id': contactId,
+      'deal_id': dealId,
     };
   }
 
@@ -102,6 +114,9 @@ class Task {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<TaskStep>? steps,
+    String? companyId,
+    String? contactId,
+    String? dealId,
   }) {
     return Task(
       id: id ?? this.id,
@@ -121,6 +136,9 @@ class Task {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       steps: steps ?? this.steps,
+      companyId: companyId ?? this.companyId,
+      contactId: contactId ?? this.contactId,
+      dealId: dealId ?? this.dealId,
     );
   }
 

@@ -4,9 +4,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hr1_employee_app/core/router/app_router.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_activity.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_deal.dart';
-import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_todo.dart';
 import 'package:hr1_employee_app/features/business_cards/presentation/controllers/contact_controller.dart';
 import 'package:hr1_employee_app/features/business_cards/presentation/providers/business_card_providers.dart';
+import 'package:hr1_employee_app/features/tasks/domain/entities/task.dart';
+import 'package:hr1_employee_app/features/tasks/presentation/providers/task_providers.dart';
 import 'package:hr1_shared/hr1_shared.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -21,15 +22,12 @@ class BcContactDetailScreen extends ConsumerWidget {
     final contactAsync = ref.watch(contactDetailControllerProvider(contactId));
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('連絡先詳細'),
-      ),
+      appBar: AppBar(title: const Text('連絡先詳細')),
       body: contactAsync.when(
         loading: () => const LoadingIndicator(),
         error: (e, _) => ErrorState(
-          onRetry: () => ref.invalidate(
-            contactDetailControllerProvider(contactId),
-          ),
+          onRetry: () =>
+              ref.invalidate(contactDetailControllerProvider(contactId)),
         ),
         data: (contact) {
           if (contact == null) {
@@ -50,10 +48,9 @@ class _Body extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final activitiesAsync =
-        ref.watch(bcActivitiesByContactProvider(contactId));
+    final activitiesAsync = ref.watch(bcActivitiesByContactProvider(contactId));
     final dealsAsync = ref.watch(bcDealsByContactProvider(contactId));
-    final todosAsync = ref.watch(bcMyTodosProvider);
+    final tasksAsync = ref.watch(crmTasksProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -64,10 +61,7 @@ class _Body extends ConsumerWidget {
           Center(
             child: Column(
               children: [
-                UserAvatar(
-                  initial: contact.lastName[0],
-                  size: 64,
-                ),
+                UserAvatar(initial: contact.lastName[0], size: 64),
                 const SizedBox(height: AppSpacing.sm),
                 Text(contact.fullName, style: AppTextStyles.title2),
                 if (contact.company?.name != null)
@@ -79,9 +73,10 @@ class _Body extends ConsumerWidget {
                   ),
                 if (contact.position != null || contact.department != null)
                   Text(
-                    [contact.department, contact.position]
-                        .where((e) => e != null)
-                        .join(' / '),
+                    [
+                      contact.department,
+                      contact.position,
+                    ].where((e) => e != null).join(' / '),
                     style: AppTextStyles.caption1.copyWith(
                       color: AppColors.textSecondary(context),
                     ),
@@ -100,15 +95,13 @@ class _Body extends ConsumerWidget {
                 _ActionButton(
                   icon: Icons.phone,
                   label: '電話',
-                  onTap: () =>
-                      launchUrl(Uri.parse('tel:${contact.phone}')),
+                  onTap: () => launchUrl(Uri.parse('tel:${contact.phone}')),
                 ),
               if (contact.email != null)
                 _ActionButton(
                   icon: Icons.email,
                   label: 'メール',
-                  onTap: () =>
-                      launchUrl(Uri.parse('mailto:${contact.email}')),
+                  onTap: () => launchUrl(Uri.parse('mailto:${contact.email}')),
                 ),
               _ActionButton(
                 icon: Icons.note_add,
@@ -137,25 +130,25 @@ class _Body extends ConsumerWidget {
             children: [
               if (contact.email != null)
                 MenuRow(
-                  icon: Icons.email,
+                  icon: const Icon(Icons.email),
                   label: 'メール',
                   title: contact.email!,
                 ),
               if (contact.phone != null)
                 MenuRow(
-                  icon: Icons.phone,
+                  icon: const Icon(Icons.phone),
                   label: '電話',
                   title: contact.phone!,
                 ),
               if (contact.mobilePhone != null)
                 MenuRow(
-                  icon: Icons.smartphone,
+                  icon: const Icon(Icons.smartphone),
                   label: '携帯',
                   title: contact.mobilePhone!,
                 ),
               if (contact.company != null)
                 MenuRow(
-                  icon: Icons.business,
+                  icon: const Icon(Icons.business),
                   label: '会社',
                   title: contact.company!.name,
                   onTap: () => context.push(
@@ -188,16 +181,16 @@ class _Body extends ConsumerWidget {
             },
           ),
 
-          // TODO
-          todosAsync.when(
+          // タスク
+          tasksAsync.when(
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
-            data: (todos) {
-              final contactTodos = todos
+            data: (tasks) {
+              final contactTasks = tasks
                   .where((t) => t.contactId == contactId)
                   .toList();
-              if (contactTodos.isEmpty) return const SizedBox.shrink();
-              return _TodosSection(todos: contactTodos);
+              if (contactTasks.isEmpty) return const SizedBox.shrink();
+              return _TasksSection(tasks: contactTasks);
             },
           ),
 
@@ -223,7 +216,7 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.md),
+      borderRadius: BorderRadius.circular(AppRadius.cornerRadius120),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.sm),
         child: Column(
@@ -258,25 +251,24 @@ class _DealsSection extends StatelessWidget {
       children: [
         Text('商談（${deals.length}件）', style: AppTextStyles.headline),
         const SizedBox(height: AppSpacing.xs),
-        ...deals.map((deal) => CommonCard(
-              child: ListTile(
-                title: Text(deal.title, style: AppTextStyles.body1),
-                subtitle: Text(
-                  '${deal.status.label} / ${deal.stage.label}',
-                  style: AppTextStyles.caption1,
-                ),
-                trailing: deal.amount != null
-                    ? Text(
-                        '¥${_formatAmount(deal.amount!)}',
-                        style: AppTextStyles.body1,
-                      )
-                    : null,
-                onTap: () => context.push(
-                  AppRoutes.bcDealDetail,
-                  extra: deal.id,
-                ),
+        ...deals.map(
+          (deal) => CommonCard(
+            child: ListTile(
+              title: Text(deal.title, style: AppTextStyles.body1),
+              subtitle: Text(
+                '${deal.status.label} / ${deal.stage.label}',
+                style: AppTextStyles.caption1,
               ),
-            )),
+              trailing: deal.amount != null
+                  ? Text(
+                      '¥${_formatAmount(deal.amount!)}',
+                      style: AppTextStyles.body1,
+                    )
+                  : null,
+              onTap: () => context.push(AppRoutes.bcDealDetail, extra: deal.id),
+            ),
+          ),
+        ),
         const SizedBox(height: AppSpacing.md),
       ],
     );
@@ -284,9 +276,9 @@ class _DealsSection extends StatelessWidget {
 
   String _formatAmount(int amount) {
     return amount.toString().replaceAllMapped(
-          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]},',
-        );
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]},',
+    );
   }
 }
 
@@ -300,22 +292,25 @@ class _ActivitiesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('活動履歴（${activities.length}件）',
-            style: AppTextStyles.headline),
+        Text('活動履歴（${activities.length}件）', style: AppTextStyles.headline),
         const SizedBox(height: AppSpacing.xs),
-        ...activities.take(5).map((activity) => CommonCard(
-              child: ListTile(
-                leading: Icon(
-                  _activityIcon(activity.activityType),
-                  color: AppColors.brand,
-                ),
-                title: Text(activity.title, style: AppTextStyles.body1),
-                subtitle: Text(
-                  activity.activityType.label,
-                  style: AppTextStyles.caption1,
+        ...activities
+            .take(5)
+            .map(
+              (activity) => CommonCard(
+                child: ListTile(
+                  leading: Icon(
+                    _activityIcon(activity.activityType),
+                    color: AppColors.brand,
+                  ),
+                  title: Text(activity.title, style: AppTextStyles.body1),
+                  subtitle: Text(
+                    activity.activityType.label,
+                    style: AppTextStyles.caption1,
+                  ),
                 ),
               ),
-            )),
+            ),
         const SizedBox(height: AppSpacing.md),
       ],
     );
@@ -337,44 +332,46 @@ class _ActivitiesSection extends StatelessWidget {
   }
 }
 
-class _TodosSection extends StatelessWidget {
-  const _TodosSection({required this.todos});
+class _TasksSection extends StatelessWidget {
+  const _TasksSection({required this.tasks});
 
-  final List<BcTodo> todos;
+  final List<Task> tasks;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('TODO（${todos.length}件）', style: AppTextStyles.headline),
+        Text('タスク（${tasks.length}件）', style: AppTextStyles.headline),
         const SizedBox(height: AppSpacing.xs),
-        ...todos.map((todo) => CommonCard(
-              child: ListTile(
-                leading: Icon(
-                  todo.isCompleted
-                      ? Icons.check_circle
-                      : Icons.radio_button_unchecked,
-                  color: todo.isCompleted ? AppColors.success : null,
-                ),
-                title: Text(
-                  todo.title,
-                  style: AppTextStyles.body1.copyWith(
-                    decoration: todo.isCompleted
-                        ? TextDecoration.lineThrough
-                        : null,
-                  ),
-                ),
-                subtitle: todo.dueDate != null
-                    ? Text(
-                        '期限: ${todo.dueDate!.month}/${todo.dueDate!.day}',
-                        style: AppTextStyles.caption1.copyWith(
-                          color: todo.isOverdue ? AppColors.error : null,
-                        ),
-                      )
-                    : null,
+        ...tasks.map(
+          (task) => CommonCard(
+            child: ListTile(
+              leading: Icon(
+                task.isCompleted
+                    ? Icons.check_circle
+                    : Icons.radio_button_unchecked,
+                color: task.isCompleted ? AppColors.success : null,
               ),
-            )),
+              title: Text(
+                task.title,
+                style: AppTextStyles.body1.copyWith(
+                  decoration: task.isCompleted
+                      ? TextDecoration.lineThrough
+                      : null,
+                ),
+              ),
+              subtitle: task.dueDate != null
+                  ? Text(
+                      '期限: ${task.dueDate!.month}/${task.dueDate!.day}',
+                      style: AppTextStyles.caption1.copyWith(
+                        color: task.isOverdue ? AppColors.error : null,
+                      ),
+                    )
+                  : null,
+            ),
+          ),
+        ),
         const SizedBox(height: AppSpacing.md),
       ],
     );

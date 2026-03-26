@@ -72,8 +72,7 @@ class BcTodo {
           ? (json['bc_companies'] as Map<String, dynamic>)['name'] as String?
           : null,
       contactName: json['bc_contacts'] != null
-          ? _buildContactName(
-              json['bc_contacts'] as Map<String, dynamic>)
+          ? _buildContactName(json['bc_contacts'] as Map<String, dynamic>)
           : null,
       dealTitle: json['bc_deals'] != null
           ? (json['bc_deals'] as Map<String, dynamic>)['title'] as String?

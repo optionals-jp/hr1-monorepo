@@ -106,14 +106,15 @@ class TasksScreen extends HookConsumerWidget {
                 : tasksAsync.when(
                     loading: () => const LoadingIndicator(),
                     error: (e, _) => ErrorState(
-                      onRetry: () =>
-                          ref.invalidate(taskListControllerProvider),
+                      onRetry: () => ref.invalidate(taskListControllerProvider),
                     ),
                     data: (tasks) {
-                      final incomplete =
-                          tasks.where((t) => !t.isCompleted).toList();
-                      final completed =
-                          tasks.where((t) => t.isCompleted).toList();
+                      final incomplete = tasks
+                          .where((t) => !t.isCompleted)
+                          .toList();
+                      final completed = tasks
+                          .where((t) => t.isCompleted)
+                          .toList();
 
                       if (incomplete.isEmpty && completed.isEmpty) {
                         return _EmptyTaskState(filter: filter);
@@ -1039,9 +1040,8 @@ class _CrmTodoList extends ConsumerWidget {
 
     return todosAsync.when(
       loading: () => const LoadingIndicator(),
-      error: (e, _) => ErrorState(
-        onRetry: () => ref.invalidate(bcMyTodosProvider),
-      ),
+      error: (e, _) =>
+          ErrorState(onRetry: () => ref.invalidate(bcMyTodosProvider)),
       data: (todos) {
         final incomplete = todos.where((t) => !t.isCompleted).toList();
         final completed = todos.where((t) => t.isCompleted).toList();
@@ -1053,8 +1053,7 @@ class _CrmTodoList extends ConsumerWidget {
         return ListView(
           padding: const EdgeInsets.only(bottom: 100),
           children: [
-            for (final todo in incomplete)
-              _CrmTodoItem(todo: todo),
+            for (final todo in incomplete) _CrmTodoItem(todo: todo),
             if (completed.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(
@@ -1069,8 +1068,7 @@ class _CrmTodoList extends ConsumerWidget {
                   ),
                 ),
               ),
-              for (final todo in completed)
-                _CrmTodoItem(todo: todo),
+              for (final todo in completed) _CrmTodoItem(todo: todo),
             ],
           ],
         );

@@ -7,8 +7,8 @@ import 'package:hr1_employee_app/features/business_cards/presentation/providers/
 /// 商談リストコントローラー
 final dealListControllerProvider =
     AutoDisposeAsyncNotifierProvider<DealListController, List<BcDeal>>(
-  DealListController.new,
-);
+      DealListController.new,
+    );
 
 class DealListController extends AutoDisposeAsyncNotifier<List<BcDeal>> {
   @override
@@ -41,10 +41,12 @@ class DealListController extends AutoDisposeAsyncNotifier<List<BcDeal>> {
 }
 
 /// 商談詳細コントローラー
-final dealDetailControllerProvider = AutoDisposeAsyncNotifierProviderFamily<
-    DealDetailController, BcDeal?, String>(
-  DealDetailController.new,
-);
+final dealDetailControllerProvider =
+    AutoDisposeAsyncNotifierProviderFamily<
+      DealDetailController,
+      BcDeal?,
+      String
+    >(DealDetailController.new);
 
 class DealDetailController
     extends AutoDisposeFamilyAsyncNotifier<BcDeal?, String> {

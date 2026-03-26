@@ -32,9 +32,9 @@ class BcDealsScreen extends ConsumerWidget {
         data: (deals) {
           if (deals.isEmpty) {
             return const EmptyState(
-              icon: Icons.handshake,
+              icon: Icon(Icons.handshake, size: 48),
               title: '商談がありません',
-              subtitle: '新しい商談を追加しましょう',
+              description: '新しい商談を追加しましょう',
             );
           }
           return _DealsList(deals: deals);
@@ -52,12 +52,9 @@ class _DealsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // ステータス別にグループ化
-    final openDeals =
-        deals.where((d) => d.status == DealStatus.open).toList();
-    final wonDeals =
-        deals.where((d) => d.status == DealStatus.won).toList();
-    final lostDeals =
-        deals.where((d) => d.status == DealStatus.lost).toList();
+    final openDeals = deals.where((d) => d.status == DealStatus.open).toList();
+    final wonDeals = deals.where((d) => d.status == DealStatus.won).toList();
+    final lostDeals = deals.where((d) => d.status == DealStatus.lost).toList();
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.sm),
@@ -141,10 +138,7 @@ class _DealCard extends StatelessWidget {
                   color: AppColors.textSecondary(context),
                 ),
               ),
-            Text(
-              deal.stage.label,
-              style: AppTextStyles.caption1,
-            ),
+            Text(deal.stage.label, style: AppTextStyles.caption1),
           ],
         ),
         trailing: deal.amount != null
@@ -153,18 +147,15 @@ class _DealCard extends StatelessWidget {
                 style: AppTextStyles.body1,
               )
             : null,
-        onTap: () => context.push(
-          AppRoutes.bcDealDetail,
-          extra: deal.id,
-        ),
+        onTap: () => context.push(AppRoutes.bcDealDetail, extra: deal.id),
       ),
     );
   }
 
   String _formatAmount(int amount) {
     return amount.toString().replaceAllMapped(
-          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]},',
-        );
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]},',
+    );
   }
 }

@@ -33,8 +33,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   Future<String> uploadCardImage(String filePath) async {
     final orgId = await _getOrganizationId();
     final fileExt = filePath.split('.').last;
-    final fileName =
-        '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+    final fileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
     final storagePath = '$orgId/$fileName';
 
     await _client.storage
@@ -89,17 +88,13 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<List<BcCompany>> getCompanies({String? query}) async {
     final orgId = await _getOrganizationId();
-    var q = _client
-        .from('bc_companies')
-        .select()
-        .eq('organization_id', orgId)
-        .order('name');
+    var q = _client.from('bc_companies').select().eq('organization_id', orgId);
 
     if (query != null && query.isNotEmpty) {
       q = q.or('name.ilike.%$query%,name_kana.ilike.%$query%');
     }
 
-    final data = await q;
+    final data = await q.order('name');
     return data.map((e) => BcCompany.fromJson(e)).toList();
   }
 
@@ -144,11 +139,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
     final orgId = await _getOrganizationId();
     final result = await _client
         .from('bc_companies')
-        .insert({
-          ...data,
-          'organization_id': orgId,
-          'created_by': _userId,
-        })
+        .insert({...data, 'organization_id': orgId, 'created_by': _userId})
         .select()
         .single();
     return BcCompany.fromJson(result);
@@ -177,8 +168,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
     var q = _client
         .from('bc_contacts')
         .select('*, bc_companies(*)')
-        .eq('organization_id', orgId)
-        .order('last_name');
+        .eq('organization_id', orgId);
 
     if (companyId != null) {
       q = q.eq('company_id', companyId);
@@ -190,7 +180,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
       );
     }
 
-    final data = await q;
+    final data = await q.order('last_name');
     return data.map((e) => BcContact.fromJson(e)).toList();
   }
 
@@ -221,11 +211,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
     final orgId = await _getOrganizationId();
     final result = await _client
         .from('bc_contacts')
-        .insert({
-          ...data,
-          'organization_id': orgId,
-          'created_by': _userId,
-        })
+        .insert({...data, 'organization_id': orgId, 'created_by': _userId})
         .select('*, bc_companies(*)')
         .single();
     return BcContact.fromJson(result);
@@ -246,21 +232,17 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   // ==========================================================
 
   @override
-  Future<List<BcDeal>> getDeals({
-    String? companyId,
-    String? contactId,
-  }) async {
+  Future<List<BcDeal>> getDeals({String? companyId, String? contactId}) async {
     final orgId = await _getOrganizationId();
     var q = _client
         .from('bc_deals')
         .select('*, bc_companies(*), bc_contacts(*)')
-        .eq('organization_id', orgId)
-        .order('created_at', ascending: false);
+        .eq('organization_id', orgId);
 
     if (companyId != null) q = q.eq('company_id', companyId);
     if (contactId != null) q = q.eq('contact_id', contactId);
 
-    final data = await q;
+    final data = await q.order('created_at', ascending: false);
     return data.map((e) => BcDeal.fromJson(e)).toList();
   }
 
@@ -279,11 +261,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
     final orgId = await _getOrganizationId();
     final result = await _client
         .from('bc_deals')
-        .insert({
-          ...data,
-          'organization_id': orgId,
-          'created_by': _userId,
-        })
+        .insert({...data, 'organization_id': orgId, 'created_by': _userId})
         .select('*, bc_companies(*), bc_contacts(*)')
         .single();
     return BcDeal.fromJson(result);
@@ -310,17 +288,13 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
     String? dealId,
   }) async {
     final orgId = await _getOrganizationId();
-    var q = _client
-        .from('bc_activities')
-        .select()
-        .eq('organization_id', orgId)
-        .order('created_at', ascending: false);
+    var q = _client.from('bc_activities').select().eq('organization_id', orgId);
 
     if (companyId != null) q = q.eq('company_id', companyId);
     if (contactId != null) q = q.eq('contact_id', contactId);
     if (dealId != null) q = q.eq('deal_id', dealId);
 
-    final data = await q;
+    final data = await q.order('created_at', ascending: false);
     return data.map((e) => BcActivity.fromJson(e)).toList();
   }
 
@@ -329,11 +303,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
     final orgId = await _getOrganizationId();
     final result = await _client
         .from('bc_activities')
-        .insert({
-          ...data,
-          'organization_id': orgId,
-          'created_by': _userId,
-        })
+        .insert({...data, 'organization_id': orgId, 'created_by': _userId})
         .select()
         .single();
     return BcActivity.fromJson(result);
@@ -358,15 +328,16 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
     final orgId = await _getOrganizationId();
     var q = _client
         .from('bc_todos')
-        .select('*, bc_companies(name), bc_contacts(last_name, first_name), bc_deals(title)')
-        .eq('organization_id', orgId)
-        .order('due_date', ascending: true);
+        .select(
+          '*, bc_companies(name), bc_contacts(last_name, first_name), bc_deals(title)',
+        )
+        .eq('organization_id', orgId);
 
     if (!includeCompleted) {
       q = q.eq('is_completed', false);
     }
 
-    final data = await q;
+    final data = await q.order('due_date', ascending: true);
     return data.map((e) => BcTodo.fromJson(e)).toList();
   }
 
@@ -374,15 +345,16 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   Future<List<BcTodo>> getMyTodos({bool includeCompleted = false}) async {
     var q = _client
         .from('bc_todos')
-        .select('*, bc_companies(name), bc_contacts(last_name, first_name), bc_deals(title)')
-        .eq('assigned_to', _userId)
-        .order('due_date', ascending: true);
+        .select(
+          '*, bc_companies(name), bc_contacts(last_name, first_name), bc_deals(title)',
+        )
+        .eq('assigned_to', _userId);
 
     if (!includeCompleted) {
       q = q.eq('is_completed', false);
     }
 
-    final data = await q;
+    final data = await q.order('due_date', ascending: true);
     return data.map((e) => BcTodo.fromJson(e)).toList();
   }
 
@@ -391,12 +363,10 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
     final orgId = await _getOrganizationId();
     final result = await _client
         .from('bc_todos')
-        .insert({
-          ...data,
-          'organization_id': orgId,
-          'created_by': _userId,
-        })
-        .select('*, bc_companies(name), bc_contacts(last_name, first_name), bc_deals(title)')
+        .insert({...data, 'organization_id': orgId, 'created_by': _userId})
+        .select(
+          '*, bc_companies(name), bc_contacts(last_name, first_name), bc_deals(title)',
+        )
         .single();
     return BcTodo.fromJson(result);
   }
@@ -408,10 +378,13 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<void> toggleTodoComplete(String id, bool isCompleted) async {
-    await _client.from('bc_todos').update({
-      'is_completed': isCompleted,
-      'completed_at': isCompleted ? DateTime.now().toIso8601String() : null,
-    }).eq('id', id);
+    await _client
+        .from('bc_todos')
+        .update({
+          'is_completed': isCompleted,
+          'completed_at': isCompleted ? DateTime.now().toIso8601String() : null,
+        })
+        .eq('id', id);
   }
 
   @override
@@ -426,15 +399,11 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<List<BcCard>> getCards({String? contactId}) async {
     final orgId = await _getOrganizationId();
-    var q = _client
-        .from('bc_cards')
-        .select()
-        .eq('organization_id', orgId)
-        .order('scanned_at', ascending: false);
+    var q = _client.from('bc_cards').select().eq('organization_id', orgId);
 
     if (contactId != null) q = q.eq('contact_id', contactId);
 
-    final data = await q;
+    final data = await q.order('scanned_at', ascending: false);
     return data.map((e) => BcCard.fromJson(e)).toList();
   }
 

@@ -102,9 +102,7 @@ class ActivityFormScreen extends HookConsumerWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('活動登録'),
-      ),
+      appBar: AppBar(title: const Text('活動登録')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
@@ -177,7 +175,7 @@ class ActivityFormScreen extends HookConsumerWidget {
           padding: const EdgeInsets.all(AppSpacing.md),
           child: CommonButton(
             onPressed: isSaving.value ? null : save,
-            label: isSaving.value ? '保存中...' : '保存',
+            child: Text(isSaving.value ? '保存中...' : '保存'),
           ),
         ),
       ),

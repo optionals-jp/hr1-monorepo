@@ -27,9 +27,7 @@ class BcCompaniesScreen extends HookConsumerWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('取引先企業'),
-      ),
+      appBar: AppBar(title: const Text('取引先企業')),
       body: Column(
         children: [
           Padding(
@@ -44,15 +42,14 @@ class BcCompaniesScreen extends HookConsumerWidget {
             child: companiesAsync.when(
               loading: () => const LoadingIndicator(),
               error: (e, _) => ErrorState(
-                onRetry: () =>
-                    ref.invalidate(companyListControllerProvider),
+                onRetry: () => ref.invalidate(companyListControllerProvider),
               ),
               data: (companies) {
                 if (companies.isEmpty) {
                   return const EmptyState(
-                    icon: Icons.business,
+                    icon: Icon(Icons.business, size: 48),
                     title: '企業がありません',
-                    subtitle: '名刺をスキャンすると自動で企業が登録されます',
+                    description: '名刺をスキャンすると自動で企業が登録されます',
                   );
                 }
                 return ListView.builder(
@@ -78,7 +75,7 @@ class _CompanyTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: OrgIcon(
-        name: company.name,
+        initial: company.name.isNotEmpty ? company.name[0] : '?',
         size: 40,
       ),
       title: Text(company.name, style: AppTextStyles.body1),
@@ -97,10 +94,7 @@ class _CompanyTile extends StatelessWidget {
         Icons.chevron_right,
         color: AppColors.textTertiary(context),
       ),
-      onTap: () => context.push(
-        AppRoutes.bcCompanyDetail,
-        extra: company.id,
-      ),
+      onTap: () => context.push(AppRoutes.bcCompanyDetail, extra: company.id),
     );
   }
 }

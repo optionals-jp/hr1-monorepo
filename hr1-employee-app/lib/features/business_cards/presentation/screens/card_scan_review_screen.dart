@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
@@ -6,56 +8,36 @@ import 'package:hr1_employee_app/features/business_cards/presentation/controller
 import 'package:hr1_employee_app/features/business_cards/presentation/providers/business_card_providers.dart';
 import 'package:hr1_shared/hr1_shared.dart';
 
-/// OCR結果確認・編集画面
+/// 名刺情報の確認・手動入力画面
+///
+/// [imagePath] が渡された場合は撮影画像を表示する。
+/// いずれの場合も手動で情報を入力・編集して登録できる。
 class CardScanReviewScreen extends HookConsumerWidget {
-  const CardScanReviewScreen({super.key});
+  const CardScanReviewScreen({super.key, this.imagePath});
+
+  final String? imagePath;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scanState = ref.watch(cardScanControllerProvider);
-    final scanResult = scanState.valueOrNull;
-
-    if (scanResult == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('名刺情報確認')),
-        body: const ErrorState(message: 'スキャン結果がありません'),
-      );
-    }
-
-    final parsed = scanResult.parsedData;
+    final hasImage = imagePath != null && imagePath!.isNotEmpty;
     final isSaving = useState(false);
 
     // フォームコントローラー
-    final companyNameCtl =
-        useTextEditingController(text: parsed.companyName ?? '');
-    final companyNameKanaCtl =
-        useTextEditingController(text: parsed.companyNameKana ?? '');
-    final corporateNumberCtl =
-        useTextEditingController(text: parsed.corporateNumber ?? '');
-    final departmentCtl =
-        useTextEditingController(text: parsed.department ?? '');
-    final positionCtl =
-        useTextEditingController(text: parsed.position ?? '');
-    final lastNameCtl =
-        useTextEditingController(text: parsed.lastName ?? '');
-    final firstNameCtl =
-        useTextEditingController(text: parsed.firstName ?? '');
-    final lastNameKanaCtl =
-        useTextEditingController(text: parsed.lastNameKana ?? '');
-    final firstNameKanaCtl =
-        useTextEditingController(text: parsed.firstNameKana ?? '');
-    final emailCtl =
-        useTextEditingController(text: parsed.email ?? '');
-    final phoneCtl =
-        useTextEditingController(text: parsed.phone ?? '');
-    final mobilePhoneCtl =
-        useTextEditingController(text: parsed.mobilePhone ?? '');
-    final postalCodeCtl =
-        useTextEditingController(text: parsed.postalCode ?? '');
-    final addressCtl =
-        useTextEditingController(text: parsed.address ?? '');
-    final websiteCtl =
-        useTextEditingController(text: parsed.website ?? '');
+    final companyNameCtl = useTextEditingController();
+    final companyNameKanaCtl = useTextEditingController();
+    final corporateNumberCtl = useTextEditingController();
+    final departmentCtl = useTextEditingController();
+    final positionCtl = useTextEditingController();
+    final lastNameCtl = useTextEditingController();
+    final firstNameCtl = useTextEditingController();
+    final lastNameKanaCtl = useTextEditingController();
+    final firstNameKanaCtl = useTextEditingController();
+    final emailCtl = useTextEditingController();
+    final phoneCtl = useTextEditingController();
+    final mobilePhoneCtl = useTextEditingController();
+    final postalCodeCtl = useTextEditingController();
+    final addressCtl = useTextEditingController();
+    final websiteCtl = useTextEditingController();
 
     Future<void> save() async {
       if (lastNameCtl.text.trim().isEmpty) {
@@ -65,10 +47,16 @@ class CardScanReviewScreen extends HookConsumerWidget {
 
       isSaving.value = true;
       try {
+        // 画像がある場合はアップロード
+        String imageUrl = '';
+        if (hasImage) {
+          final repo = ref.read(bcRepositoryProvider);
+          imageUrl = await repo.uploadCardImage(imagePath!);
+        }
+
         final controller = ref.read(cardScanControllerProvider.notifier);
         final result = await controller.saveContact(
-          imageUrl: scanResult.imageUrl,
-          rawText: scanResult.rawText,
+          imageUrl: imageUrl,
           companyName: companyNameCtl.text.trim(),
           companyNameKana: companyNameKanaCtl.text.trim(),
           corporateNumber: corporateNumberCtl.text.trim(),
@@ -88,12 +76,16 @@ class CardScanReviewScreen extends HookConsumerWidget {
         );
 
         if (context.mounted && result != null) {
-          CommonSnackBar.show(context, '名刺を保存しました');
+          CommonSnackBar.show(context, '連絡先を登録しました');
           ref.invalidate(bcContactsProvider);
           ref.invalidate(bcCompaniesProvider);
-          // スキャン画面まで戻る
-          context.pop();
-          context.pop();
+          if (hasImage) {
+            // スキャン画面まで戻る
+            context.pop();
+            context.pop();
+          } else {
+            context.pop();
+          }
         }
       } catch (e) {
         if (context.mounted) {
@@ -105,22 +97,26 @@ class CardScanReviewScreen extends HookConsumerWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('名刺情報確認'),
-        actions: [
-          TextButton(
-            onPressed: isSaving.value ? null : save,
-            child: isSaving.value
-                ? const LoadingIndicator(size: 20)
-                : const Text('保存'),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: Text(hasImage ? '名刺情報を入力' : '連絡先を登録')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 撮影画像プレビュー
+            if (hasImage) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.cornerRadius120),
+                child: Image.file(
+                  File(imagePath!),
+                  height: 200,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+
             // 会社情報セクション
             _SectionHeader(title: '会社情報', icon: Icons.business),
             const SizedBox(height: AppSpacing.sm),
@@ -143,8 +139,7 @@ class CardScanReviewScreen extends HookConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child:
-                      _FormField(controller: lastNameCtl, label: '姓 *'),
+                  child: _FormField(controller: lastNameCtl, label: '姓 *'),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
@@ -156,12 +151,16 @@ class CardScanReviewScreen extends HookConsumerWidget {
               children: [
                 Expanded(
                   child: _FormField(
-                      controller: lastNameKanaCtl, label: '姓（カナ）'),
+                    controller: lastNameKanaCtl,
+                    label: '姓（カナ）',
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: _FormField(
-                      controller: firstNameKanaCtl, label: '名（カナ）'),
+                    controller: firstNameKanaCtl,
+                    label: '名（カナ）',
+                  ),
                 ),
               ],
             ),
@@ -198,7 +197,7 @@ class CardScanReviewScreen extends HookConsumerWidget {
           padding: const EdgeInsets.all(AppSpacing.md),
           child: CommonButton(
             onPressed: isSaving.value ? null : save,
-            label: isSaving.value ? '保存中...' : '保存',
+            child: Text(isSaving.value ? '保存中...' : '保存'),
           ),
         ),
       ),

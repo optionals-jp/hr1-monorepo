@@ -122,7 +122,7 @@ class BcTodoFormScreen extends HookConsumerWidget {
           padding: const EdgeInsets.all(AppSpacing.md),
           child: CommonButton(
             onPressed: isSaving.value ? null : save,
-            label: isSaving.value ? '保存中...' : '保存',
+            child: Text(isSaving.value ? '保存中...' : '保存'),
           ),
         ),
       ),

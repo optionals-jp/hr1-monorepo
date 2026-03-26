@@ -31,6 +31,11 @@ class BcContactsScreen extends HookConsumerWidget {
         title: const Text('連絡先'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.person_add),
+            onPressed: () => context.push(AppRoutes.bcContactForm),
+            tooltip: '手動登録',
+          ),
+          IconButton(
             icon: const Icon(Icons.camera_alt),
             onPressed: () => context.push(AppRoutes.bcScan),
             tooltip: '名刺スキャン',
@@ -51,15 +56,14 @@ class BcContactsScreen extends HookConsumerWidget {
             child: contactsAsync.when(
               loading: () => const LoadingIndicator(),
               error: (e, _) => ErrorState(
-                onRetry: () =>
-                    ref.invalidate(contactListControllerProvider),
+                onRetry: () => ref.invalidate(contactListControllerProvider),
               ),
               data: (contacts) {
                 if (contacts.isEmpty) {
                   return const EmptyState(
-                    icon: Icons.contacts,
+                    icon: Icon(Icons.contacts, size: 48),
                     title: '連絡先がありません',
-                    subtitle: '名刺をスキャンして連絡先を追加しましょう',
+                    description: '名刺をスキャンして連絡先を追加しましょう',
                   );
                 }
                 return ListView.builder(
@@ -88,10 +92,7 @@ class _ContactTile extends StatelessWidget {
         initial: contact.lastName.isNotEmpty ? contact.lastName[0] : '?',
         size: 40,
       ),
-      title: Text(
-        contact.fullName,
-        style: AppTextStyles.body1,
-      ),
+      title: Text(contact.fullName, style: AppTextStyles.body1),
       subtitle: Text(
         [
           if (contact.company?.name != null) contact.company!.name,
@@ -107,10 +108,7 @@ class _ContactTile extends StatelessWidget {
         Icons.chevron_right,
         color: AppColors.textTertiary(context),
       ),
-      onTap: () => context.push(
-        AppRoutes.bcContactDetail,
-        extra: contact.id,
-      ),
+      onTap: () => context.push(AppRoutes.bcContactDetail, extra: contact.id),
     );
   }
 }

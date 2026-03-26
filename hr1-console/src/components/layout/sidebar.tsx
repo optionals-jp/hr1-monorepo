@@ -107,7 +107,7 @@ function NavLink({
   pathname: string;
   onNavigate?: () => void;
 }) {
-  const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const isActive = href === "/" || href === "/crm" ? pathname === href : pathname.startsWith(href);
   return (
     <Link
       href={href}
@@ -138,7 +138,7 @@ function CollapsibleSection({
   onNavigate?: () => void;
 }) {
   const hasActiveItem = section.items.some(({ href }) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href)
+    href === "/" || href === "/crm" ? pathname === href : pathname.startsWith(href)
   );
   const [open, setOpen] = useState(true);
 

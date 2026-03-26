@@ -107,8 +107,10 @@ class BcDeal {
       'amount': amount,
       'status': status.name,
       'stage': stage.name,
-      'expected_close_date':
-          expectedCloseDate?.toIso8601String().split('T').first,
+      'expected_close_date': expectedCloseDate
+          ?.toIso8601String()
+          .split('T')
+          .first,
       'description': description,
       'company_id': companyId,
       'contact_id': contactId,
