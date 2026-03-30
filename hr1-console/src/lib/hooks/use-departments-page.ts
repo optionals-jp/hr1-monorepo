@@ -64,7 +64,7 @@ export function useDepartmentsPage(activeTab: string) {
     parentId: string | null
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      await departmentRepository.update(getSupabase(), id, {
+      await departmentRepository.update(getSupabase(), id, organization!.id, {
         name,
         parent_id: parentId,
       });
@@ -78,7 +78,7 @@ export function useDepartmentsPage(activeTab: string) {
 
   const deleteDepartment = async (id: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      await departmentRepository.remove(getSupabase(), id);
+      await departmentRepository.remove(getSupabase(), id, organization!.id);
       mutate();
       mutateOrg();
       return { success: true };

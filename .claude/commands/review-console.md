@@ -107,6 +107,8 @@ lib/repositories/
 - メソッドは CRUD + 汎用クエリ（`findByOrg`, `findById` 等）
 - 関連テーブルの JOIN クエリも Repository に配置してよい
 - RPC 呼び出しも Repository に配置する
+- Supabase Edge Function 呼び出しも Repository に配置する（hooks から `functions.invoke()` を直接呼ばない）
+- Supabase Realtime subscription の作成も Repository に配置する（hooks から `channel()` / `on()` を直接呼ばない）
 - Supabase クライアントは引数で受け取る（テスト容易性のため）
 
 ```typescript
@@ -114,7 +116,25 @@ lib/repositories/
 export async function skipStep(client: SupabaseClient, stepId: string) {
   return client.from("application_steps").update({ status: "skipped" }).eq("id", stepId);
 }
+
+// Realtime subscription もリポジトリに配置
+export function subscribeToStepChanges(
+  client: SupabaseClient, applicationId: string, onUpdate: () => void
+) {
+  return client.channel(`application_steps:${applicationId}`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "application_steps",
+      filter: `application_id=eq.${applicationId}` }, onUpdate)
+    .subscribe();
+}
 ```
+
+#### page.tsx のサイズガイドライン
+
+- page.tsx は **hooks の呼び出し + JSX レンダリングのみ** に留める
+- 目安: **300行以下**。超える場合はコンポーネント分割または hook 抽出を検討する
+- useState を page.tsx 内に直接書かない。状態管理は Page Hook に集約する
+- page.tsx 内にサブコンポーネント（`function SubComponent()` 等）を定義しない。`features/*/components/` に分割する
+- ビジネスロジック（フィルタリング、ソート、計算）は page.tsx に書かず `rules.ts` または hooks に移す
 
 #### 依存方向チェック（内向きのみ許可）
 - ❌ **Components が Supabase を直接呼んでいないか**: コンポーネントから `createBrowserClient()` や `supabase.from()` を直接呼ばない。必ず hooks 経由にする

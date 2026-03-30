@@ -22,9 +22,14 @@ export async function insertForm(client: SupabaseClient, row: Record<string, unk
 export async function updateForm(
   client: SupabaseClient,
   id: string,
+  organizationId: string,
   data: Record<string, unknown>
 ) {
-  return client.from("custom_forms").update(data).eq("id", id);
+  return client
+    .from("custom_forms")
+    .update(data)
+    .eq("id", id)
+    .eq("organization_id", organizationId);
 }
 
 export async function deleteForm(client: SupabaseClient, id: string, orgId: string) {

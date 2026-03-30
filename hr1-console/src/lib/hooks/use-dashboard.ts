@@ -6,12 +6,14 @@ import { getSupabase } from "@/lib/supabase/browser";
 import * as dashboardRepository from "@/lib/repositories/dashboard-repository";
 import { StepStatus, ApplicationStatus } from "@/lib/constants";
 import { format, subMonths } from "date-fns";
-import type { PipelineStage } from "@/components/dashboard/pipeline-chart";
-import type { KpiTrendPoint } from "@/components/dashboard/kpi-trend-chart";
-import type { DepartmentStat } from "@/components/dashboard/department-chart";
-import type { EmployeeDepartmentStat } from "@/components/dashboard/employee-department-chart";
-import type { HiringTypeStat } from "@/components/dashboard/hiring-type-chart";
-import type { OpenJobStat } from "@/components/dashboard/open-jobs-chart";
+import type {
+  PipelineStage,
+  KpiTrendPoint,
+  DepartmentStat,
+  EmployeeDepartmentStat,
+  HiringTypeStat,
+  OpenJobStat,
+} from "@/types/dashboard";
 
 export interface DashboardStats {
   applicants: number;

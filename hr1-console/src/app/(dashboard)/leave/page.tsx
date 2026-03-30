@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React from "react";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -34,10 +34,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useOrg } from "@/lib/org-context";
-import { useLeave } from "@/lib/hooks/use-leave";
+import { useLeavePage } from "@/lib/hooks/use-leave-page";
 import { cn } from "@/lib/utils";
-import type { LeaveBalance } from "@/types/database";
 import { CalendarOff, Plus, Calculator, Users, Download } from "lucide-react";
 import { exportToCSV } from "@/lib/export-csv";
 
@@ -48,31 +46,6 @@ const tabList: { value: TabValue; label: string; icon: React.ElementType }[] = [
   { value: "grant", label: "有給付与", icon: Plus },
 ];
 
-type MemberRow = {
-  user_id: string;
-  profiles: {
-    id: string;
-    display_name: string | null;
-    email: string;
-    avatar_url: string | null;
-    hire_date: string | null;
-  };
-};
-
-const calculateGrantDays = (hireDate: string): number => {
-  const hire = new Date(hireDate);
-  const now = new Date();
-  const years = (now.getTime() - hire.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
-  if (years < 0.5) return 0;
-  if (years < 1.5) return 10;
-  if (years < 2.5) return 11;
-  if (years < 3.5) return 12;
-  if (years < 4.5) return 14;
-  if (years < 5.5) return 16;
-  if (years < 6.5) return 18;
-  return 20;
-};
-
 function formatDays(n: number): string {
   return `${n.toFixed(1)}日`;
 }
@@ -82,250 +55,43 @@ function formatDateJa(dateStr: string): string {
   return d.toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
-function formatDateInput(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
 export default function LeavePage() {
   const { showToast } = useToast();
-  const { organization } = useOrg();
-  const [activeTab, setActiveTab] = useState<TabValue>("balances");
-
-  // --- 残日数タブ ---
-  const currentYear = new Date().getFullYear();
-  const [filterYear, setFilterYear] = useState(currentYear);
-  const [search, setSearch] = useState("");
-  const [editPanelOpen, setEditPanelOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<LeaveBalance | null>(null);
-  const [editGrantedDays, setEditGrantedDays] = useState("");
-  const [editUsedDays, setEditUsedDays] = useState("");
-  const [editCarriedOverDays, setEditCarriedOverDays] = useState("");
-  const [editExpiredDays, setEditExpiredDays] = useState("");
-  const [editGrantDate, setEditGrantDate] = useState("");
-  const [editExpiryDate, setEditExpiryDate] = useState("");
-  const [savingEdit, setSavingEdit] = useState(false);
-
-  // --- 付与タブ ---
-  const [manualPanelOpen, setManualPanelOpen] = useState(false);
-  const [manualUserId, setManualUserId] = useState("");
-  const [manualFiscalYear, setManualFiscalYear] = useState(String(currentYear));
-  const [manualGrantedDays, setManualGrantedDays] = useState("");
-  const [manualCarriedOverDays, setManualCarriedOverDays] = useState("0");
-  const [manualGrantDate, setManualGrantDate] = useState(formatDateInput(new Date()));
-  const [manualExpiryDate, setManualExpiryDate] = useState(
-    formatDateInput(new Date(new Date().setFullYear(new Date().getFullYear() + 2)))
-  );
-  const [savingManual, setSavingManual] = useState(false);
-
-  // --- 自動付与 ---
-  const [autoGrantDialogOpen, setAutoGrantDialogOpen] = useState(false);
-  const [autoGrantPreview, setAutoGrantPreview] = useState<
-    { userId: string; name: string; hireDate: string; days: number }[]
-  >([]);
-  const [savingAutoGrant, setSavingAutoGrant] = useState(false);
-
-  // ---------- データ取得 ----------
-
-  const {
-    balances,
-    balancesError,
-    mutateBalances,
-    members,
-    updateBalance: updateBalanceApi,
-    grantManual: grantManualApi,
-    grantAuto: grantAutoApi,
-  } = useLeave();
-
-  // ---------- プロフィール検索ヘルパー ----------
-
-  const profileMap = useMemo(() => {
-    const map = new Map<string, MemberRow["profiles"]>();
-    for (const m of members ?? []) {
-      if (m.profiles) {
-        map.set(m.user_id, m.profiles);
-      }
-    }
-    return map;
-  }, [members]);
-
-  // ---------- 残日数フィルタ ----------
-
-  const filteredBalances = useMemo(() => {
-    let rows = balances ?? [];
-    rows = rows.filter((b) => b.fiscal_year === filterYear);
-    if (search) {
-      const q = search.toLowerCase();
-      rows = rows.filter((b) => {
-        const profile = profileMap.get(b.user_id);
-        const name = profile?.display_name ?? "";
-        const email = profile?.email ?? "";
-        return name.toLowerCase().includes(q) || email.toLowerCase().includes(q);
-      });
-    }
-    return rows;
-  }, [balances, filterYear, search, profileMap]);
-
-  // ---------- 年度選択肢 ----------
-
-  const yearOptions = useMemo(() => {
-    const years = new Set<number>();
-    for (const b of balances ?? []) {
-      years.add(b.fiscal_year);
-    }
-    years.add(currentYear);
-    return Array.from(years).sort((a, b) => b - a);
-  }, [balances, currentYear]);
-
-  // ---------- 残日数計算 ----------
-
-  const calcRemaining = (b: LeaveBalance): number => {
-    return b.granted_days + b.carried_over_days - b.used_days - b.expired_days;
-  };
-
-  // ---------- 編集パネル ----------
-
-  const openEditPanel = (b: LeaveBalance) => {
-    setEditTarget(b);
-    setEditGrantedDays(String(b.granted_days));
-    setEditUsedDays(String(b.used_days));
-    setEditCarriedOverDays(String(b.carried_over_days));
-    setEditExpiredDays(String(b.expired_days));
-    setEditGrantDate(b.grant_date);
-    setEditExpiryDate(b.expiry_date);
-    setEditPanelOpen(true);
-  };
+  const h = useLeavePage();
 
   const handleSaveEdit = async () => {
-    if (!organization || !editTarget) return;
-    setSavingEdit(true);
-    const result = await updateBalanceApi(editTarget.id, {
-      granted_days: parseFloat(editGrantedDays) || 0,
-      used_days: parseFloat(editUsedDays) || 0,
-      carried_over_days: parseFloat(editCarriedOverDays) || 0,
-      expired_days: parseFloat(editExpiredDays) || 0,
-      grant_date: editGrantDate,
-      expiry_date: editExpiryDate,
-    });
-    if (result.success) {
-      showToast("有給残日数を更新しました", "success");
-      setEditPanelOpen(false);
-    } else {
-      showToast(result.error ?? "更新に失敗しました", "error");
+    const result = await h.handleSaveEdit();
+    if (result.success && result.message) {
+      showToast(result.message, "success");
+    } else if (!result.success && result.error) {
+      showToast(result.error, "error");
     }
-    setSavingEdit(false);
-  };
-
-  const editRemaining =
-    (parseFloat(editGrantedDays) || 0) +
-    (parseFloat(editCarriedOverDays) || 0) -
-    (parseFloat(editUsedDays) || 0) -
-    (parseFloat(editExpiredDays) || 0);
-
-  // ---------- 手動付与 ----------
-
-  const openManualPanel = () => {
-    setManualUserId("");
-    setManualFiscalYear(String(currentYear));
-    setManualGrantedDays("");
-    setManualCarriedOverDays("0");
-    setManualGrantDate(formatDateInput(new Date()));
-    setManualExpiryDate(
-      formatDateInput(new Date(new Date().setFullYear(new Date().getFullYear() + 2)))
-    );
-    setManualPanelOpen(true);
   };
 
   const handleSaveManual = async () => {
-    if (!organization) return;
-    if (!manualUserId) {
-      showToast("社員を選択してください", "error");
-      return;
+    const result = await h.handleSaveManual();
+    if (result.success && result.message) {
+      showToast(result.message, "success");
+    } else if (!result.success && result.error) {
+      showToast(result.error, "error");
     }
-    if (!manualGrantedDays) {
-      showToast("付与日数を入力してください", "error");
-      return;
-    }
-    setSavingManual(true);
-    const result = await grantManualApi(organization.id, {
-      organization_id: organization.id,
-      user_id: manualUserId,
-      fiscal_year: parseInt(manualFiscalYear, 10),
-      granted_days: parseFloat(manualGrantedDays) || 0,
-      carried_over_days: parseFloat(manualCarriedOverDays) || 0,
-      used_days: 0,
-      expired_days: 0,
-      grant_date: manualGrantDate,
-      expiry_date: manualExpiryDate,
-    });
-    if (result.success) {
-      showToast("有給を付与しました", "success");
-      setManualPanelOpen(false);
-    } else {
-      showToast(result.error ?? "付与に失敗しました", "error");
-    }
-    setSavingManual(false);
   };
 
-  // ---------- 自動付与 ----------
-
   const handleOpenAutoGrant = () => {
-    if (!members || members.length === 0) {
-      showToast("社員情報がありません", "error");
-      return;
+    const result = h.handleOpenAutoGrant();
+    if (!result.success && result.error) {
+      showToast(result.error, "error");
     }
-    const preview = members
-      .filter((m) => m.profiles?.hire_date)
-      .map((m) => {
-        const days = calculateGrantDays(m.profiles.hire_date!);
-        return {
-          userId: m.user_id,
-          name: m.profiles.display_name ?? m.profiles.email,
-          hireDate: m.profiles.hire_date!,
-          days,
-        };
-      })
-      .filter((p) => p.days > 0)
-      .sort((a, b) => a.name.localeCompare(b.name, "ja"));
-    if (preview.length === 0) {
-      showToast("付与対象の社員がいません", "error");
-      return;
-    }
-    setAutoGrantPreview(preview);
-    setAutoGrantDialogOpen(true);
   };
 
   const handleConfirmAutoGrant = async () => {
-    if (!organization) return;
-    setSavingAutoGrant(true);
-    const today = formatDateInput(new Date());
-    const expiryDate = formatDateInput(
-      new Date(new Date().setFullYear(new Date().getFullYear() + 2))
-    );
-    const rows = autoGrantPreview.map((p) => ({
-      organization_id: organization.id,
-      user_id: p.userId,
-      fiscal_year: currentYear,
-      granted_days: p.days,
-      carried_over_days: 0,
-      used_days: 0,
-      expired_days: 0,
-      grant_date: today,
-      expiry_date: expiryDate,
-    }));
-    const result = await grantAutoApi(rows);
-    if (result.success) {
-      showToast(`${autoGrantPreview.length}名に有給を付与しました`, "success");
-      setAutoGrantDialogOpen(false);
-    } else {
-      showToast(result.error ?? "自動付与に失敗しました", "error");
+    const result = await h.handleConfirmAutoGrant();
+    if (result.success && result.message) {
+      showToast(result.message, "success");
+    } else if (!result.success && result.error) {
+      showToast(result.error, "error");
     }
-    setSavingAutoGrant(false);
   };
-
-  // ---------- レンダリング ----------
 
   return (
     <div className="flex flex-col">
@@ -341,10 +107,10 @@ export default function LeavePage() {
               return (
                 <button
                   key={t.value}
-                  onClick={() => setActiveTab(t.value)}
+                  onClick={() => h.setActiveTab(t.value)}
                   className={cn(
                     "flex items-center gap-1.5 px-4 pb-2.5 pt-1 text-sm font-medium border-b-2 transition-colors -mb-px",
-                    activeTab === t.value
+                    h.activeTab === t.value
                       ? "border-primary text-primary"
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
@@ -358,24 +124,24 @@ export default function LeavePage() {
         }
       />
 
-      <QueryErrorBanner error={balancesError} onRetry={() => mutateBalances()} />
+      <QueryErrorBanner error={h.balancesError} onRetry={() => h.mutateBalances()} />
 
       {/* ========= 残日数一覧タブ ========= */}
-      {activeTab === "balances" && (
+      {h.activeTab === "balances" && (
         <>
-          <SearchBar value={search} onChange={setSearch} placeholder="社員名で検索" />
+          <SearchBar value={h.search} onChange={h.setSearch} placeholder="社員名で検索" />
           <div className="px-4 py-3 sm:px-6 md:px-8">
             <div className="flex items-center gap-3 mb-4">
               <Label className="text-sm text-muted-foreground">年度</Label>
               <Select
-                value={String(filterYear)}
-                onValueChange={(v) => v && setFilterYear(parseInt(v, 10))}
+                value={String(h.filterYear)}
+                onValueChange={(v) => v && h.setFilterYear(parseInt(v, 10))}
               >
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {yearOptions.map((y) => (
+                  {h.yearOptions.map((y) => (
                     <SelectItem key={y} value={String(y)}>
                       {y}年度
                     </SelectItem>
@@ -387,15 +153,15 @@ export default function LeavePage() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  if (filteredBalances.length === 0) return;
+                  if (h.filteredBalances.length === 0) return;
                   exportToCSV(
-                    filteredBalances.map((b) => ({
+                    h.filteredBalances.map((b) => ({
                       ...b,
                       _name:
-                        profileMap.get(b.user_id)?.display_name ??
-                        profileMap.get(b.user_id)?.email ??
+                        h.profileMap.get(b.user_id)?.display_name ??
+                        h.profileMap.get(b.user_id)?.email ??
                         b.user_id,
-                      _remaining: calcRemaining(b),
+                      _remaining: h.calcRemaining(b),
                     })),
                     [
                       { key: "_name", label: "社員名" },
@@ -429,18 +195,18 @@ export default function LeavePage() {
                 <TableBody>
                   <TableEmptyState
                     colSpan={6}
-                    isLoading={!balances}
-                    isEmpty={filteredBalances.length === 0}
+                    isLoading={!h.balances}
+                    isEmpty={h.filteredBalances.length === 0}
                     emptyMessage="有給データがありません"
                   >
-                    {filteredBalances.map((b) => {
-                      const profile = profileMap.get(b.user_id);
-                      const remaining = calcRemaining(b);
+                    {h.filteredBalances.map((b) => {
+                      const profile = h.profileMap.get(b.user_id);
+                      const remaining = h.calcRemaining(b);
                       return (
                         <TableRow
                           key={b.id}
                           className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => openEditPanel(b)}
+                          onClick={() => h.openEditPanel(b)}
                         >
                           <TableCell>
                             <div className="flex items-center gap-2">
@@ -481,14 +247,14 @@ export default function LeavePage() {
       )}
 
       {/* ========= 有給付与タブ ========= */}
-      {activeTab === "grant" && (
+      {h.activeTab === "grant" && (
         <div className="px-4 py-3 sm:px-6 md:px-8 space-y-6">
           <div className="flex flex-col sm:flex-row gap-3">
             <Button onClick={handleOpenAutoGrant}>
               <Calculator className="h-4 w-4 mr-1.5" />
               労基法に基づく自動付与
             </Button>
-            <Button variant="outline" onClick={openManualPanel}>
+            <Button variant="outline" onClick={h.openManualPanel}>
               <Plus className="h-4 w-4 mr-1.5" />
               個別付与
             </Button>
@@ -531,30 +297,30 @@ export default function LeavePage() {
 
       {/* ========= 残日数編集パネル ========= */}
       <EditPanel
-        open={editPanelOpen}
-        onOpenChange={setEditPanelOpen}
+        open={h.editPanelOpen}
+        onOpenChange={h.setEditPanelOpen}
         title="有給残日数の編集"
         onSave={handleSaveEdit}
-        saving={savingEdit}
+        saving={h.savingEdit}
       >
-        {editTarget && (
+        {h.editTarget && (
           <div className="space-y-4">
             <div className="flex items-center gap-3 pb-3 border-b">
               <Avatar>
-                {profileMap.get(editTarget.user_id)?.avatar_url && (
-                  <AvatarImage src={profileMap.get(editTarget.user_id)!.avatar_url!} />
+                {h.profileMap.get(h.editTarget.user_id)?.avatar_url && (
+                  <AvatarImage src={h.profileMap.get(h.editTarget.user_id)!.avatar_url!} />
                 )}
                 <AvatarFallback>
-                  {(profileMap.get(editTarget.user_id)?.display_name ?? "?").charAt(0)}
+                  {(h.profileMap.get(h.editTarget.user_id)?.display_name ?? "?").charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <p className="font-medium">
-                  {profileMap.get(editTarget.user_id)?.display_name ??
-                    profileMap.get(editTarget.user_id)?.email ??
-                    editTarget.user_id}
+                  {h.profileMap.get(h.editTarget.user_id)?.display_name ??
+                    h.profileMap.get(h.editTarget.user_id)?.email ??
+                    h.editTarget.user_id}
                 </p>
-                <p className="text-sm text-muted-foreground">{editTarget.fiscal_year}年度</p>
+                <p className="text-sm text-muted-foreground">{h.editTarget.fiscal_year}年度</p>
               </div>
             </div>
 
@@ -564,8 +330,8 @@ export default function LeavePage() {
                 <Input
                   type="number"
                   step="0.5"
-                  value={editGrantedDays}
-                  onChange={(e) => setEditGrantedDays(e.target.value)}
+                  value={h.editGrantedDays}
+                  onChange={(e) => h.setEditGrantedDays(e.target.value)}
                 />
               </div>
               <div>
@@ -573,8 +339,8 @@ export default function LeavePage() {
                 <Input
                   type="number"
                   step="0.5"
-                  value={editUsedDays}
-                  onChange={(e) => setEditUsedDays(e.target.value)}
+                  value={h.editUsedDays}
+                  onChange={(e) => h.setEditUsedDays(e.target.value)}
                 />
               </div>
               <div>
@@ -582,8 +348,8 @@ export default function LeavePage() {
                 <Input
                   type="number"
                   step="0.5"
-                  value={editCarriedOverDays}
-                  onChange={(e) => setEditCarriedOverDays(e.target.value)}
+                  value={h.editCarriedOverDays}
+                  onChange={(e) => h.setEditCarriedOverDays(e.target.value)}
                 />
               </div>
               <div>
@@ -591,24 +357,24 @@ export default function LeavePage() {
                 <Input
                   type="number"
                   step="0.5"
-                  value={editExpiredDays}
-                  onChange={(e) => setEditExpiredDays(e.target.value)}
+                  value={h.editExpiredDays}
+                  onChange={(e) => h.setEditExpiredDays(e.target.value)}
                 />
               </div>
               <div>
                 <Label>付与日</Label>
                 <Input
                   type="date"
-                  value={editGrantDate}
-                  onChange={(e) => setEditGrantDate(e.target.value)}
+                  value={h.editGrantDate}
+                  onChange={(e) => h.setEditGrantDate(e.target.value)}
                 />
               </div>
               <div>
                 <Label>有効期限</Label>
                 <Input
                   type="date"
-                  value={editExpiryDate}
-                  onChange={(e) => setEditExpiryDate(e.target.value)}
+                  value={h.editExpiryDate}
+                  onChange={(e) => h.setEditExpiryDate(e.target.value)}
                 />
               </div>
               <div className="rounded-lg bg-muted/50 p-3">
@@ -616,10 +382,10 @@ export default function LeavePage() {
                 <p
                   className={cn(
                     "text-lg font-semibold",
-                    editRemaining < 5 ? "text-red-600" : "text-green-600"
+                    h.editRemaining < 5 ? "text-red-600" : "text-green-600"
                   )}
                 >
-                  {formatDays(editRemaining)}
+                  {formatDays(h.editRemaining)}
                 </p>
               </div>
             </div>
@@ -629,22 +395,22 @@ export default function LeavePage() {
 
       {/* ========= 手動付与パネル ========= */}
       <EditPanel
-        open={manualPanelOpen}
-        onOpenChange={setManualPanelOpen}
+        open={h.manualPanelOpen}
+        onOpenChange={h.setManualPanelOpen}
         title="有給の個別付与"
         onSave={handleSaveManual}
-        saving={savingManual}
+        saving={h.savingManual}
         saveLabel="付与"
       >
         <div className="space-y-4">
           <div>
             <Label>社員</Label>
-            <Select value={manualUserId} onValueChange={(v) => v && setManualUserId(v)}>
+            <Select value={h.manualUserId} onValueChange={(v) => v && h.setManualUserId(v)}>
               <SelectTrigger>
                 <SelectValue placeholder="社員を選択" />
               </SelectTrigger>
               <SelectContent>
-                {(members ?? []).map((m) => (
+                {(h.members ?? []).map((m) => (
                   <SelectItem key={m.user_id} value={m.user_id}>
                     {m.profiles?.display_name ?? m.profiles?.email ?? m.user_id}
                   </SelectItem>
@@ -656,8 +422,8 @@ export default function LeavePage() {
             <Label>年度</Label>
             <Input
               type="number"
-              value={manualFiscalYear}
-              onChange={(e) => setManualFiscalYear(e.target.value)}
+              value={h.manualFiscalYear}
+              onChange={(e) => h.setManualFiscalYear(e.target.value)}
             />
           </div>
           <div>
@@ -665,8 +431,8 @@ export default function LeavePage() {
             <Input
               type="number"
               step="0.5"
-              value={manualGrantedDays}
-              onChange={(e) => setManualGrantedDays(e.target.value)}
+              value={h.manualGrantedDays}
+              onChange={(e) => h.setManualGrantedDays(e.target.value)}
             />
           </div>
           <div>
@@ -674,21 +440,24 @@ export default function LeavePage() {
             <Input
               type="number"
               step="0.5"
-              value={manualCarriedOverDays}
-              onChange={(e) => setManualCarriedOverDays(e.target.value)}
+              value={h.manualCarriedOverDays}
+              onChange={(e) => h.setManualCarriedOverDays(e.target.value)}
             />
           </div>
           <div>
             <Label>付与日</Label>
             <Input
               type="date"
-              value={manualGrantDate}
+              value={h.manualGrantDate}
               onChange={(e) => {
-                setManualGrantDate(e.target.value);
+                h.setManualGrantDate(e.target.value);
                 if (e.target.value) {
                   const d = new Date(e.target.value);
                   d.setFullYear(d.getFullYear() + 2);
-                  setManualExpiryDate(formatDateInput(d));
+                  const y = d.getFullYear();
+                  const m = String(d.getMonth() + 1).padStart(2, "0");
+                  const day = String(d.getDate()).padStart(2, "0");
+                  h.setManualExpiryDate(`${y}-${m}-${day}`);
                 }
               }}
             />
@@ -697,18 +466,18 @@ export default function LeavePage() {
             <Label>有効期限</Label>
             <Input
               type="date"
-              value={manualExpiryDate}
-              onChange={(e) => setManualExpiryDate(e.target.value)}
+              value={h.manualExpiryDate}
+              onChange={(e) => h.setManualExpiryDate(e.target.value)}
             />
           </div>
         </div>
       </EditPanel>
 
       {/* ========= 自動付与確認ダイアログ ========= */}
-      <Dialog open={autoGrantDialogOpen} onOpenChange={setAutoGrantDialogOpen}>
+      <Dialog open={h.autoGrantDialogOpen} onOpenChange={h.setAutoGrantDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>労基法に基づく自動付与（{currentYear}年度）</DialogTitle>
+            <DialogTitle>労基法に基づく自動付与（{h.currentYear}年度）</DialogTitle>
           </DialogHeader>
           <div className="max-h-80 overflow-y-auto rounded-lg border">
             <Table>
@@ -720,7 +489,7 @@ export default function LeavePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {autoGrantPreview.map((p) => (
+                {h.autoGrantPreview.map((p) => (
                   <TableRow key={p.userId}>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>{formatDateJa(p.hireDate)}</TableCell>
@@ -731,18 +500,19 @@ export default function LeavePage() {
             </Table>
           </div>
           <p className="text-sm text-muted-foreground">
-            {autoGrantPreview.length}名に有給を付与します。既存のデータがある場合は上書きされます。
+            {h.autoGrantPreview.length}
+            名に有給を付与します。既存のデータがある場合は上書きされます。
           </p>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setAutoGrantDialogOpen(false)}
-              disabled={savingAutoGrant}
+              onClick={() => h.setAutoGrantDialogOpen(false)}
+              disabled={h.savingAutoGrant}
             >
               キャンセル
             </Button>
-            <Button onClick={handleConfirmAutoGrant} disabled={savingAutoGrant}>
-              {savingAutoGrant ? "付与中..." : "付与を実行"}
+            <Button onClick={handleConfirmAutoGrant} disabled={h.savingAutoGrant}>
+              {h.savingAutoGrant ? "付与中..." : "付与を実行"}
             </Button>
           </DialogFooter>
         </DialogContent>

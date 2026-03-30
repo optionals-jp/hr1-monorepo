@@ -12,11 +12,9 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2 } from "lucide-react";
+import type { EmployeeDepartmentStat } from "@/types/dashboard";
 
-export interface EmployeeDepartmentStat {
-  department: string;
-  count: number;
-}
+export type { EmployeeDepartmentStat };
 
 interface EmployeeDepartmentChartProps {
   data: EmployeeDepartmentStat[];

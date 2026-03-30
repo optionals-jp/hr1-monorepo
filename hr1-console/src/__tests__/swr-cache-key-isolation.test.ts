@@ -31,10 +31,7 @@ function collectFiles(dir: string, ext: string[] = [".ts", ".tsx"]): string[] {
  * useQuery / useSWR のキャッシュキー文字列を抽出する。
  * テンプレートリテラル内の変数名を解析し、org 系のトークンが含まれるかチェック。
  */
-function extractCacheKeys(
-  content: string,
-  _filePath: string
-): { line: number; key: string; hasOrgId: boolean }[] {
+function extractCacheKeys(content: string): { line: number; key: string; hasOrgId: boolean }[] {
   const results: { line: number; key: string; hasOrgId: boolean }[] = [];
   const lines = content.split("\n");
 
@@ -100,7 +97,7 @@ describe("SWR キャッシュキーのテナント分離", () => {
 
     if (usesOnlyOrgQuery) continue;
 
-    const keys = extractCacheKeys(content, file);
+    const keys = extractCacheKeys(content);
     const insecureKeys = keys.filter((k) => !k.hasOrgId);
 
     it(`${rel}: すべての useQuery キーに organization ID が含まれている`, () => {

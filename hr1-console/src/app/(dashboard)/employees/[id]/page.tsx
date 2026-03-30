@@ -84,25 +84,30 @@ export default function EmployeeDetailPage() {
   // Editing state
   const [editing, setEditing] = useState(false);
   const [editTab, setEditTab] = useState("basic");
-  const [editName, setEditName] = useState("");
-  const [editNameKana, setEditNameKana] = useState("");
-  const [editPosition, setEditPosition] = useState("");
-  const [editBirthDate, setEditBirthDate] = useState("");
-  const [editGender, setEditGender] = useState("");
-  const [editHireDate, setEditHireDate] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editCurrentPostalCode, setEditCurrentPostalCode] = useState("");
-  const [editCurrentPrefecture, setEditCurrentPrefecture] = useState("");
-  const [editCurrentCity, setEditCurrentCity] = useState("");
-  const [editCurrentStreetAddress, setEditCurrentStreetAddress] = useState("");
-  const [editCurrentBuilding, setEditCurrentBuilding] = useState("");
-  const [editRegisteredPostalCode, setEditRegisteredPostalCode] = useState("");
-  const [editRegisteredPrefecture, setEditRegisteredPrefecture] = useState("");
-  const [editRegisteredCity, setEditRegisteredCity] = useState("");
-  const [editRegisteredStreetAddress, setEditRegisteredStreetAddress] = useState("");
-  const [editRegisteredBuilding, setEditRegisteredBuilding] = useState("");
+  const [editForm, setEditForm] = useState({
+    name: "",
+    nameKana: "",
+    position: "",
+    birthDate: "",
+    gender: "",
+    hireDate: "",
+    phone: "",
+    currentPostalCode: "",
+    currentPrefecture: "",
+    currentCity: "",
+    currentStreetAddress: "",
+    currentBuilding: "",
+    registeredPostalCode: "",
+    registeredPrefecture: "",
+    registeredCity: "",
+    registeredStreetAddress: "",
+    registeredBuilding: "",
+  });
   const [editDeptIds, setEditDeptIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  const updateField = (field: keyof typeof editForm, value: string) =>
+    setEditForm((prev) => ({ ...prev, [field]: value }));
 
   const { handleOpenMessage, creatingThread } = useCreateMessageThread({
     participantId: profile?.id,
@@ -112,23 +117,25 @@ export default function EmployeeDetailPage() {
 
   const startEditing = () => {
     if (!profile) return;
-    setEditName(profile.display_name ?? "");
-    setEditNameKana(profile.name_kana ?? "");
-    setEditPosition(profile.position ?? "");
-    setEditBirthDate(profile.birth_date ?? "");
-    setEditGender(profile.gender ?? "");
-    setEditHireDate(profile.hire_date ?? "");
-    setEditPhone(profile.phone ?? "");
-    setEditCurrentPostalCode(profile.current_postal_code ?? "");
-    setEditCurrentPrefecture(profile.current_prefecture ?? "");
-    setEditCurrentCity(profile.current_city ?? "");
-    setEditCurrentStreetAddress(profile.current_street_address ?? "");
-    setEditCurrentBuilding(profile.current_building ?? "");
-    setEditRegisteredPostalCode(profile.registered_postal_code ?? "");
-    setEditRegisteredPrefecture(profile.registered_prefecture ?? "");
-    setEditRegisteredCity(profile.registered_city ?? "");
-    setEditRegisteredStreetAddress(profile.registered_street_address ?? "");
-    setEditRegisteredBuilding(profile.registered_building ?? "");
+    setEditForm({
+      name: profile.display_name ?? "",
+      nameKana: profile.name_kana ?? "",
+      position: profile.position ?? "",
+      birthDate: profile.birth_date ?? "",
+      gender: profile.gender ?? "",
+      hireDate: profile.hire_date ?? "",
+      phone: profile.phone ?? "",
+      currentPostalCode: profile.current_postal_code ?? "",
+      currentPrefecture: profile.current_prefecture ?? "",
+      currentCity: profile.current_city ?? "",
+      currentStreetAddress: profile.current_street_address ?? "",
+      currentBuilding: profile.current_building ?? "",
+      registeredPostalCode: profile.registered_postal_code ?? "",
+      registeredPrefecture: profile.registered_prefecture ?? "",
+      registeredCity: profile.registered_city ?? "",
+      registeredStreetAddress: profile.registered_street_address ?? "",
+      registeredBuilding: profile.registered_building ?? "",
+    });
     setEditDeptIds([...assignedDeptIds]);
     setEditTab("basic");
     setEditing(true);
@@ -140,23 +147,23 @@ export default function EmployeeDetailPage() {
 
     await saveProfile(
       {
-        display_name: editName.trim() || null,
-        name_kana: editNameKana.trim() || null,
-        position: editPosition.trim() || null,
-        birth_date: editBirthDate || null,
-        gender: editGender || null,
-        hire_date: editHireDate || null,
-        phone: editPhone.trim() || null,
-        current_postal_code: editCurrentPostalCode.trim() || null,
-        current_prefecture: editCurrentPrefecture.trim() || null,
-        current_city: editCurrentCity.trim() || null,
-        current_street_address: editCurrentStreetAddress.trim() || null,
-        current_building: editCurrentBuilding.trim() || null,
-        registered_postal_code: editRegisteredPostalCode.trim() || null,
-        registered_prefecture: editRegisteredPrefecture.trim() || null,
-        registered_city: editRegisteredCity.trim() || null,
-        registered_street_address: editRegisteredStreetAddress.trim() || null,
-        registered_building: editRegisteredBuilding.trim() || null,
+        display_name: editForm.name.trim() || null,
+        name_kana: editForm.nameKana.trim() || null,
+        position: editForm.position.trim() || null,
+        birth_date: editForm.birthDate || null,
+        gender: editForm.gender || null,
+        hire_date: editForm.hireDate || null,
+        phone: editForm.phone.trim() || null,
+        current_postal_code: editForm.currentPostalCode.trim() || null,
+        current_prefecture: editForm.currentPrefecture.trim() || null,
+        current_city: editForm.currentCity.trim() || null,
+        current_street_address: editForm.currentStreetAddress.trim() || null,
+        current_building: editForm.currentBuilding.trim() || null,
+        registered_postal_code: editForm.registeredPostalCode.trim() || null,
+        registered_prefecture: editForm.registeredPrefecture.trim() || null,
+        registered_city: editForm.registeredCity.trim() || null,
+        registered_street_address: editForm.registeredStreetAddress.trim() || null,
+        registered_building: editForm.registeredBuilding.trim() || null,
       },
       editDeptIds
     );
@@ -568,16 +575,16 @@ export default function EmployeeDetailPage() {
             <div className="space-y-2">
               <Label>氏名</Label>
               <Input
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
+                value={editForm.name}
+                onChange={(e) => updateField("name", e.target.value)}
                 placeholder="山田 太郎"
               />
             </div>
             <div className="space-y-2">
               <Label>氏名（カナ）</Label>
               <Input
-                value={editNameKana}
-                onChange={(e) => setEditNameKana(e.target.value)}
+                value={editForm.nameKana}
+                onChange={(e) => updateField("nameKana", e.target.value)}
                 placeholder="ヤマダ タロウ"
               />
             </div>
@@ -588,8 +595,8 @@ export default function EmployeeDetailPage() {
             <div className="space-y-2">
               <Label>役職</Label>
               <Input
-                value={editPosition}
-                onChange={(e) => setEditPosition(e.target.value)}
+                value={editForm.position}
+                onChange={(e) => updateField("position", e.target.value)}
                 placeholder="エンジニア"
               />
             </div>
@@ -601,13 +608,13 @@ export default function EmployeeDetailPage() {
               <Label>生年月日</Label>
               <Input
                 type="date"
-                value={editBirthDate}
-                onChange={(e) => setEditBirthDate(e.target.value)}
+                value={editForm.birthDate}
+                onChange={(e) => updateField("birthDate", e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label>性別</Label>
-              <Select value={editGender} onValueChange={(v) => v && setEditGender(v)}>
+              <Select value={editForm.gender} onValueChange={(v) => v && updateField("gender", v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="選択してください">
                     {(v: string) => (v ? (genderLabels[v] ?? v) : "選択してください")}
@@ -626,15 +633,15 @@ export default function EmployeeDetailPage() {
               <Label>入社日</Label>
               <Input
                 type="date"
-                value={editHireDate}
-                onChange={(e) => setEditHireDate(e.target.value)}
+                value={editForm.hireDate}
+                onChange={(e) => updateField("hireDate", e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label>電話番号</Label>
               <Input
-                value={editPhone}
-                onChange={(e) => setEditPhone(e.target.value)}
+                value={editForm.phone}
+                onChange={(e) => updateField("phone", e.target.value)}
                 placeholder="090-1234-5678"
               />
             </div>
@@ -644,16 +651,16 @@ export default function EmployeeDetailPage() {
                 <div className="space-y-1">
                   <Label className="text-xs">郵便番号</Label>
                   <Input
-                    value={editCurrentPostalCode}
-                    onChange={(e) => setEditCurrentPostalCode(e.target.value)}
+                    value={editForm.currentPostalCode}
+                    onChange={(e) => updateField("currentPostalCode", e.target.value)}
                     placeholder="100-0001"
                   />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">都道府県</Label>
                   <Input
-                    value={editCurrentPrefecture}
-                    onChange={(e) => setEditCurrentPrefecture(e.target.value)}
+                    value={editForm.currentPrefecture}
+                    onChange={(e) => updateField("currentPrefecture", e.target.value)}
                     placeholder="東京都"
                   />
                 </div>
@@ -661,24 +668,24 @@ export default function EmployeeDetailPage() {
               <div className="space-y-1">
                 <Label className="text-xs">市区町村</Label>
                 <Input
-                  value={editCurrentCity}
-                  onChange={(e) => setEditCurrentCity(e.target.value)}
+                  value={editForm.currentCity}
+                  onChange={(e) => updateField("currentCity", e.target.value)}
                   placeholder="千代田区丸の内"
                 />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">番地</Label>
                 <Input
-                  value={editCurrentStreetAddress}
-                  onChange={(e) => setEditCurrentStreetAddress(e.target.value)}
+                  value={editForm.currentStreetAddress}
+                  onChange={(e) => updateField("currentStreetAddress", e.target.value)}
                   placeholder="1-1-1"
                 />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">建物名・部屋番号</Label>
                 <Input
-                  value={editCurrentBuilding}
-                  onChange={(e) => setEditCurrentBuilding(e.target.value)}
+                  value={editForm.currentBuilding}
+                  onChange={(e) => updateField("currentBuilding", e.target.value)}
                   placeholder="○○ビル 3F"
                 />
               </div>
@@ -689,16 +696,16 @@ export default function EmployeeDetailPage() {
                 <div className="space-y-1">
                   <Label className="text-xs">郵便番号</Label>
                   <Input
-                    value={editRegisteredPostalCode}
-                    onChange={(e) => setEditRegisteredPostalCode(e.target.value)}
+                    value={editForm.registeredPostalCode}
+                    onChange={(e) => updateField("registeredPostalCode", e.target.value)}
                     placeholder="100-0001"
                   />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">都道府県</Label>
                   <Input
-                    value={editRegisteredPrefecture}
-                    onChange={(e) => setEditRegisteredPrefecture(e.target.value)}
+                    value={editForm.registeredPrefecture}
+                    onChange={(e) => updateField("registeredPrefecture", e.target.value)}
                     placeholder="東京都"
                   />
                 </div>
@@ -706,24 +713,24 @@ export default function EmployeeDetailPage() {
               <div className="space-y-1">
                 <Label className="text-xs">市区町村</Label>
                 <Input
-                  value={editRegisteredCity}
-                  onChange={(e) => setEditRegisteredCity(e.target.value)}
+                  value={editForm.registeredCity}
+                  onChange={(e) => updateField("registeredCity", e.target.value)}
                   placeholder="千代田区丸の内"
                 />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">番地</Label>
                 <Input
-                  value={editRegisteredStreetAddress}
-                  onChange={(e) => setEditRegisteredStreetAddress(e.target.value)}
+                  value={editForm.registeredStreetAddress}
+                  onChange={(e) => updateField("registeredStreetAddress", e.target.value)}
                   placeholder="1-1-1"
                 />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">建物名・部屋番号</Label>
                 <Input
-                  value={editRegisteredBuilding}
-                  onChange={(e) => setEditRegisteredBuilding(e.target.value)}
+                  value={editForm.registeredBuilding}
+                  onChange={(e) => updateField("registeredBuilding", e.target.value)}
                   placeholder="○○ビル 3F"
                 />
               </div>

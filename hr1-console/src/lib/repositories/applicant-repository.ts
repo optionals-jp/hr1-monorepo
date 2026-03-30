@@ -94,7 +94,8 @@ export async function deleteJob(client: SupabaseClient, jobId: string, organizat
   const { count } = await client
     .from("applications")
     .select("id", { count: "exact", head: true })
-    .eq("job_id", jobId);
+    .eq("job_id", jobId)
+    .eq("organization_id", organizationId);
 
   if (count && count > 0) {
     return { error: { message: `この求人には${count}件の応募があるため削除できません` } };
@@ -131,6 +132,19 @@ export async function createJobSteps(
   }[]
 ) {
   return client.from("job_steps").insert(steps);
+}
+
+export async function fetchLinkedForms(client: SupabaseClient, formIds: string[]) {
+  const { data } = await client.from("custom_forms").select("id, title").in("id", formIds);
+  return new Map((data ?? []).map((f) => [f.id, f.title]));
+}
+
+export async function fetchLinkedInterviews(client: SupabaseClient, interviewIds: string[]) {
+  const { data } = await client
+    .from("interviews")
+    .select("id, title, status")
+    .in("id", interviewIds);
+  return new Map((data ?? []).map((i) => [i.id, i]));
 }
 
 export async function fetchApplications(client: SupabaseClient, organizationId: string) {

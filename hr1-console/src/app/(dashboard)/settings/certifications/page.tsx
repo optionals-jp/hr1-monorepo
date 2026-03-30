@@ -25,7 +25,7 @@ export default function CertificationsSettingsPage() {
   const load = async () => {
     if (!organization) return;
     setLoading(true);
-    const data = await loadCertificationMasters();
+    const data = await loadCertificationMasters(organization!.id);
     setMasters(data);
     setLoading(false);
   };
@@ -51,7 +51,7 @@ export default function CertificationsSettingsPage() {
 
   const handleDelete = async (master: CertificationMaster) => {
     if (!window.confirm("削除してもよろしいですか？")) return;
-    await removeCertificationMaster(master.id);
+    await removeCertificationMaster(master.id, organization!.id);
     await load();
   };
 

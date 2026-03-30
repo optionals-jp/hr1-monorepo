@@ -67,6 +67,38 @@ export async function findSettings(client: SupabaseClient, organizationId: strin
   return data as AttendanceSettingsRow | null;
 }
 
+// --- Attendance data (employees, departments, projects) ---
+
+export async function findEmployees(client: SupabaseClient, organizationId: string) {
+  const { data } = await client
+    .from("user_organizations")
+    .select("user_id, profiles!user_organizations_user_id_fkey(id, email, display_name)")
+    .eq("organization_id", organizationId);
+  return (data ?? []).map((d) => {
+    const p = d.profiles as unknown as { id: string; email: string; display_name: string | null };
+    return { id: p.id, email: p.email, display_name: p.display_name };
+  });
+}
+
+export async function findDepartments(client: SupabaseClient, organizationId: string) {
+  const { data } = await client
+    .from("departments")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("name");
+  return data ?? [];
+}
+
+export async function findActiveProjects(client: SupabaseClient, organizationId: string) {
+  const { data } = await client
+    .from("projects")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .in("status", ["active"])
+    .order("name");
+  return data ?? [];
+}
+
 // --- Monthly summary (RPC) ---
 
 export async function getMonthlySummary(

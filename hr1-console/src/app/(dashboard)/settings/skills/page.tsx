@@ -21,7 +21,7 @@ export default function SkillsSettingsPage() {
   const load = async () => {
     if (!organization) return;
     setLoading(true);
-    const data = await loadSkillMasters();
+    const data = await loadSkillMasters(organization!.id);
     setMasters(data);
     setLoading(false);
   };
@@ -47,7 +47,7 @@ export default function SkillsSettingsPage() {
 
   const handleDelete = async (master: SkillMaster) => {
     if (!window.confirm("削除してもよろしいですか？")) return;
-    await removeSkillMaster(master.id);
+    await removeSkillMaster(master.id, organization!.id);
     await load();
   };
 

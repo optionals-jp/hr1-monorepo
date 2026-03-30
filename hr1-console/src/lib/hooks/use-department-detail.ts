@@ -40,7 +40,7 @@ export function useDepartmentDetail(id: string) {
 
   const updateName = async (name: string) => {
     if (!department) return;
-    await departmentRepository.updateName(getSupabase(), department.id, name);
+    await departmentRepository.updateName(getSupabase(), department.id, organization!.id, name);
     await load();
   };
 

@@ -55,9 +55,14 @@ export async function insertTemplate(client: SupabaseClient, row: Record<string,
 export async function updateTemplate(
   client: SupabaseClient,
   id: string,
+  organizationId: string,
   data: Record<string, unknown>
 ) {
-  return client.from("evaluation_templates").update(data).eq("id", id);
+  return client
+    .from("evaluation_templates")
+    .update(data)
+    .eq("id", id)
+    .eq("organization_id", organizationId);
 }
 
 // ─── Criteria ───
@@ -187,9 +192,14 @@ export async function insertCycle(client: SupabaseClient, row: Record<string, un
 export async function updateCycle(
   client: SupabaseClient,
   id: string,
+  organizationId: string,
   data: Record<string, unknown>
 ) {
-  return client.from("evaluation_cycles").update(data).eq("id", id);
+  return client
+    .from("evaluation_cycles")
+    .update(data)
+    .eq("id", id)
+    .eq("organization_id", organizationId);
 }
 
 // ─── Assignments ───

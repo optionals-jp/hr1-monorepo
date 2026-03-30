@@ -4,14 +4,9 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Briefcase } from "lucide-react";
+import type { OpenJobStat } from "@/types/dashboard";
 
-export interface OpenJobStat {
-  id: string;
-  title: string;
-  department: string | null;
-  applicantCount: number;
-  offeredCount: number;
-}
+export type { OpenJobStat };
 
 interface OpenJobsChartProps {
   data: OpenJobStat[];

@@ -1,7 +1,13 @@
 "use client";
 
+import { useEffect, useState, useCallback } from "react";
+import { useParams } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as schedulingRepo from "@/lib/repositories/scheduling-repository";
+import { getCurrentUserId } from "@/lib/get-current-user-id";
+import { autoFillEndAt } from "@/lib/utils";
+import { useOrg } from "@/lib/org-context";
+import type { Interview, InterviewSlot, AuditLog } from "@/types/database";
 
 export async function loadSchedulingDetail(id: string, organizationId: string) {
   const client = getSupabase();
@@ -104,8 +110,7 @@ export async function saveSchedulingDetail(params: {
   }
 
   if (slotLogs.length > 0) {
-    const userId = (await client.auth.getUser()).data.user?.id;
-    if (!userId) throw new Error("認証ユーザーが取得できません");
+    const userId = await getCurrentUserId();
     await schedulingRepo.insertAuditLogs(
       client,
       slotLogs.map((log) => ({
@@ -123,4 +128,222 @@ export async function saveSchedulingDetail(params: {
       }))
     );
   }
+}
+
+// datetime-local用のフォーマット (yyyy-MM-ddTHH:mm)
+function toLocalDatetime(isoString: string): string {
+  const d = new Date(isoString);
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+export interface BookedApplication {
+  slotId: string;
+  applicationId: string;
+  applicantName: string;
+  applicantEmail: string;
+  startAt: string;
+  endAt: string;
+}
+
+export interface EditSlot {
+  id: string;
+  startAt: string;
+  endAt: string;
+  maxApplicants: number;
+  isNew?: boolean;
+  applicationId?: string | null;
+}
+
+export function useSchedulingDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const { organization } = useOrg();
+  const [interview, setInterview] = useState<Interview | null>(null);
+  const [slots, setSlots] = useState<InterviewSlot[]>([]);
+  const [changeLogs, setChangeLogs] = useState<AuditLog[]>([]);
+  const [bookedApps, setBookedApps] = useState<BookedApplication[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("detail");
+
+  const [historySearch, setHistorySearch] = useState("");
+
+  // Edit states
+  const [editing, setEditing] = useState(false);
+  const [editTab, setEditTab] = useState("info");
+  const [editTitle, setEditTitle] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editSlots, setEditSlots] = useState<EditSlot[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!organization) return;
+    setLoading(true);
+    const { data, logsData } = await loadSchedulingDetail(id, organization.id);
+
+    if (data) {
+      const { interview_slots, ...rest } = data;
+      setInterview(rest as Interview);
+      const sortedSlots = (interview_slots ?? []).sort(
+        (a: InterviewSlot, b: InterviewSlot) =>
+          new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+      );
+      setSlots(sortedSlots);
+
+      const apps: BookedApplication[] = [];
+      for (const slot of sortedSlots) {
+        if (slot.application_id) {
+          const app = slot.applications as unknown as {
+            id: string;
+            profiles?: { display_name: string | null; email: string };
+          } | null;
+          apps.push({
+            slotId: slot.id,
+            applicationId: slot.application_id,
+            applicantName: app?.profiles?.display_name ?? "-",
+            applicantEmail: app?.profiles?.email ?? "-",
+            startAt: slot.start_at,
+            endAt: slot.end_at,
+          });
+        }
+      }
+      setBookedApps(apps);
+    }
+    setChangeLogs(logsData ?? []);
+    setLoading(false);
+  }, [id, organization]);
+
+  useEffect(() => {
+    if (!organization) return;
+    load();
+  }, [load, organization]);
+
+  const updateStatus = async (status: string): Promise<{ success: boolean; error?: string }> => {
+    if (!organization) return { success: false, error: "No organization" };
+    try {
+      const oldStatus = interview?.status;
+      await updateInterviewStatus(id, organization.id, status);
+      setInterview((prev) => (prev ? { ...prev, status: status as Interview["status"] } : prev));
+
+      if (oldStatus && oldStatus !== status) {
+        const logs = await fetchSchedulingAuditLogs(organization.id, id);
+        setChangeLogs(logs);
+      }
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: (e as Error).message };
+    }
+  };
+
+  const startEditing = () => {
+    if (!interview) return;
+    setEditTitle(interview.title);
+    setEditLocation(interview.location ?? "");
+    setEditNotes(interview.notes ?? "");
+    setEditSlots(
+      slots.map((s) => ({
+        id: s.id,
+        startAt: toLocalDatetime(s.start_at),
+        endAt: toLocalDatetime(s.end_at),
+        maxApplicants: Math.max(1, s.max_applicants ?? 1),
+        applicationId: s.application_id,
+      }))
+    );
+    setEditTab("info");
+    setEditing(true);
+  };
+
+  const addSlot = () => {
+    setEditSlots([
+      ...editSlots,
+      {
+        id: `new-${Date.now()}`,
+        startAt: "",
+        endAt: "",
+        maxApplicants: 1,
+        isNew: true,
+      },
+    ]);
+  };
+
+  const removeSlot = (slotId: string) => {
+    setEditSlots(editSlots.filter((s) => s.id !== slotId));
+  };
+
+  const updateSlot = (
+    slotId: string,
+    field: "startAt" | "endAt" | "maxApplicants",
+    value: string | number
+  ) => {
+    setEditSlots(
+      editSlots.map((s) => {
+        if (s.id !== slotId) return s;
+        const updated = { ...s, [field]: value };
+        if (field === "startAt" && value && !s.endAt) {
+          updated.endAt = autoFillEndAt(value as string);
+        }
+        return updated;
+      })
+    );
+  };
+
+  const handleSave = async (): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    if (!interview || !organization)
+      return { success: false, error: "No interview or organization" };
+    try {
+      setSaving(true);
+
+      await saveSchedulingDetail({
+        interviewId: interview.id,
+        organizationId: organization.id,
+        title: editTitle,
+        location: editLocation || null,
+        notes: editNotes || null,
+        existingSlots: slots,
+        editSlots,
+        toLocalDatetime,
+      });
+
+      setSaving(false);
+      setEditing(false);
+      await load();
+      return { success: true };
+    } catch (e) {
+      setSaving(false);
+      return { success: false, error: (e as Error).message };
+    }
+  };
+
+  return {
+    interview,
+    slots,
+    changeLogs,
+    bookedApps,
+    loading,
+    activeTab,
+    setActiveTab,
+    historySearch,
+    setHistorySearch,
+    editing,
+    setEditing,
+    editTab,
+    setEditTab,
+    editTitle,
+    setEditTitle,
+    editLocation,
+    setEditLocation,
+    editNotes,
+    setEditNotes,
+    editSlots,
+    saving,
+    updateStatus,
+    startEditing,
+    addSlot,
+    removeSlot,
+    updateSlot,
+    handleSave,
+  };
 }

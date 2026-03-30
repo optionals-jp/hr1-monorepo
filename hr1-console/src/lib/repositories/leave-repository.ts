@@ -32,6 +32,7 @@ export async function findMembers(client: SupabaseClient, organizationId: string
 export async function updateBalance(
   client: SupabaseClient,
   id: string,
+  organizationId: string,
   data: {
     granted_days: number;
     used_days: number;
@@ -41,7 +42,11 @@ export async function updateBalance(
     expiry_date: string;
   }
 ) {
-  const { error } = await client.from("leave_balances").update(data).eq("id", id);
+  const { error } = await client
+    .from("leave_balances")
+    .update(data)
+    .eq("id", id)
+    .eq("organization_id", organizationId);
   if (error) throw error;
 }
 

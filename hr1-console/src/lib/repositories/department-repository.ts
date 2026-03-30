@@ -71,14 +71,23 @@ export async function create(
 export async function update(
   client: SupabaseClient,
   id: string,
+  organizationId: string,
   params: { name: string; parent_id: string | null }
 ) {
-  const { error } = await client.from("departments").update(params).eq("id", id);
+  const { error } = await client
+    .from("departments")
+    .update(params)
+    .eq("id", id)
+    .eq("organization_id", organizationId);
   if (error) throw error;
 }
 
-export async function remove(client: SupabaseClient, id: string) {
-  const { error } = await client.from("departments").delete().eq("id", id);
+export async function remove(client: SupabaseClient, id: string, organizationId: string) {
+  const { error } = await client
+    .from("departments")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", organizationId);
   if (error) throw error;
 }
 
@@ -122,6 +131,15 @@ export async function findDetailWithMembers(
   return { department: dept as Department | null, members };
 }
 
-export async function updateName(client: SupabaseClient, departmentId: string, name: string) {
-  return client.from("departments").update({ name }).eq("id", departmentId);
+export async function updateName(
+  client: SupabaseClient,
+  departmentId: string,
+  organizationId: string,
+  name: string
+) {
+  return client
+    .from("departments")
+    .update({ name })
+    .eq("id", departmentId)
+    .eq("organization_id", organizationId);
 }

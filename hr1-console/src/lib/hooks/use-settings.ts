@@ -53,11 +53,14 @@ export async function loadPageTabs(organizationId: string) {
 
 export async function savePageTab(
   editingTabId: string | null,
+  organizationId: string,
   data: { organization_id?: string; label: string; sort_order?: number }
 ) {
   const client = getSupabase();
   if (editingTabId) {
-    return settingsRepo.updatePageTab(client, editingTabId, { label: data.label });
+    return settingsRepo.updatePageTab(client, editingTabId, organizationId, {
+      label: data.label,
+    });
   }
   return settingsRepo.createPageTab(
     client,
@@ -65,15 +68,21 @@ export async function savePageTab(
   );
 }
 
-export async function removePageTab(tabId: string) {
-  return settingsRepo.deletePageTab(getSupabase(), tabId);
+export async function removePageTab(tabId: string, organizationId: string) {
+  return settingsRepo.deletePageTab(getSupabase(), tabId, organizationId);
 }
 
-export async function swapPageTabOrder(aId: string, aOrder: number, bId: string, bOrder: number) {
+export async function swapPageTabOrder(
+  organizationId: string,
+  aId: string,
+  aOrder: number,
+  bId: string,
+  bOrder: number
+) {
   const client = getSupabase();
   await Promise.all([
-    settingsRepo.updatePageTabSortOrder(client, aId, bOrder),
-    settingsRepo.updatePageTabSortOrder(client, bId, aOrder),
+    settingsRepo.updatePageTabSortOrder(client, aId, organizationId, bOrder),
+    settingsRepo.updatePageTabSortOrder(client, bId, organizationId, aOrder),
   ]);
 }
 
@@ -129,8 +138,8 @@ export async function swapPageSectionOrder(
 
 // --- Skills ---
 
-export async function loadSkillMasters() {
-  return settingsRepo.fetchSkillMasters(getSupabase());
+export async function loadSkillMasters(organizationId: string) {
+  return settingsRepo.fetchSkillMasters(getSupabase(), organizationId);
 }
 
 export async function addSkillMaster(data: {
@@ -141,14 +150,14 @@ export async function addSkillMaster(data: {
   return settingsRepo.createSkillMaster(getSupabase(), data);
 }
 
-export async function removeSkillMaster(id: string) {
-  return settingsRepo.deleteSkillMaster(getSupabase(), id);
+export async function removeSkillMaster(id: string, organizationId: string) {
+  return settingsRepo.deleteSkillMaster(getSupabase(), id, organizationId);
 }
 
 // --- Certifications ---
 
-export async function loadCertificationMasters() {
-  return settingsRepo.fetchCertificationMasters(getSupabase());
+export async function loadCertificationMasters(organizationId: string) {
+  return settingsRepo.fetchCertificationMasters(getSupabase(), organizationId);
 }
 
 export async function addCertificationMaster(data: {
@@ -159,6 +168,6 @@ export async function addCertificationMaster(data: {
   return settingsRepo.createCertificationMaster(getSupabase(), data);
 }
 
-export async function removeCertificationMaster(id: string) {
-  return settingsRepo.deleteCertificationMaster(getSupabase(), id);
+export async function removeCertificationMaster(id: string, organizationId: string) {
+  return settingsRepo.deleteCertificationMaster(getSupabase(), id, organizationId);
 }

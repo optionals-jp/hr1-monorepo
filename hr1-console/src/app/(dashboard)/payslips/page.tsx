@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React from "react";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -26,10 +26,8 @@ import {
 } from "@/components/ui/select";
 import { SearchBar } from "@/components/ui/search-bar";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { useOrg } from "@/lib/org-context";
-import { usePayslips } from "@/lib/hooks/use-payslips";
+import { usePayslipsPage } from "@/lib/hooks/use-payslips-page";
 import { cn } from "@/lib/utils";
-import type { Payslip } from "@/types/database";
 import { Receipt, Upload, Plus, Trash2, FileDown, Download } from "lucide-react";
 import { exportToCSV } from "@/lib/export-csv";
 
@@ -40,293 +38,40 @@ const tabList: { value: TabValue; label: string; icon: React.ElementType }[] = [
   { value: "upload", label: "CSV取込", icon: Upload },
 ];
 
-interface MemberRow {
-  user_id: string;
-  profiles: {
-    id: string;
-    display_name: string | null;
-    email: string;
-    avatar_url: string | null;
-  };
-}
-
 function formatCurrency(amount: number): string {
   return `¥${amount.toLocaleString("ja-JP")}`;
 }
 
 export default function PayslipsPage() {
   const { showToast } = useToast();
-  const { organization } = useOrg();
-  const [activeTab, setActiveTab] = useState<TabValue>("list");
-
-  // --- 一覧タブ ---
-  const today = new Date();
-  const [filterYear, setFilterYear] = useState(today.getFullYear().toString());
-  const [filterMonth, setFilterMonth] = useState("all");
-  const [search, setSearch] = useState("");
-
-  // --- EditPanel ---
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [editingPayslip, setEditingPayslip] = useState<Payslip | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  // --- フォーム ---
-  const [formUserId, setFormUserId] = useState("");
-  const [formYear, setFormYear] = useState(today.getFullYear().toString());
-  const [formMonth, setFormMonth] = useState((today.getMonth() + 1).toString());
-  const [formBaseSalary, setFormBaseSalary] = useState("");
-  const [formAllowances, setFormAllowances] = useState<{ label: string; amount: string }[]>([]);
-  const [formDeductions, setFormDeductions] = useState<{ label: string; amount: string }[]>([]);
-  const [formGrossPay, setFormGrossPay] = useState("");
-  const [formNetPay, setFormNetPay] = useState("");
-  const [formNote, setFormNote] = useState("");
-
-  // --- CSV取込タブ ---
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_csvFile, setCsvFile] = useState<File | null>(null);
-  const [csvPreview, setCsvPreview] = useState<
-    {
-      email: string;
-      year: number;
-      month: number;
-      base_salary: number;
-      gross_pay: number;
-      net_pay: number;
-    }[]
-  >([]);
-  const [csvErrors, setCsvErrors] = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
-
-  // ---------- データ取得 ----------
-
-  const {
-    payslips,
-    payslipsError,
-    mutate,
-    members,
-    createPayslip,
-    updatePayslip,
-    deletePayslip,
-    uploadCsv,
-  } = usePayslips();
-
-  // ---------- プロフィール参照 ----------
-
-  const profileMap = useMemo(() => {
-    const map = new Map<string, MemberRow["profiles"]>();
-    for (const m of members ?? []) {
-      if (m.profiles) map.set(m.user_id, m.profiles);
-    }
-    return map;
-  }, [members]);
-
-  // ---------- フィルタ ----------
-
-  const filteredPayslips = useMemo(() => {
-    let rows = payslips ?? [];
-    if (filterYear !== "all") {
-      rows = rows.filter((r) => r.year === parseInt(filterYear, 10));
-    }
-    if (filterMonth !== "all") {
-      rows = rows.filter((r) => r.month === parseInt(filterMonth, 10));
-    }
-    if (search) {
-      const q = search.toLowerCase();
-      rows = rows.filter((r) => {
-        const profile = profileMap.get(r.user_id);
-        return (
-          (profile?.display_name ?? "").toLowerCase().includes(q) ||
-          (profile?.email ?? "").toLowerCase().includes(q)
-        );
-      });
-    }
-    return rows;
-  }, [payslips, filterYear, filterMonth, search, profileMap]);
-
-  // ---------- EditPanel ----------
-
-  const openCreatePanel = () => {
-    setIsCreating(true);
-    setEditingPayslip(null);
-    setFormUserId("");
-    setFormYear(today.getFullYear().toString());
-    setFormMonth((today.getMonth() + 1).toString());
-    setFormBaseSalary("");
-    setFormAllowances([]);
-    setFormDeductions([]);
-    setFormGrossPay("");
-    setFormNetPay("");
-    setFormNote("");
-    setPanelOpen(true);
-  };
-
-  const openEditPanel = (payslip: Payslip) => {
-    setIsCreating(false);
-    setEditingPayslip(payslip);
-    setFormUserId(payslip.user_id);
-    setFormYear(payslip.year.toString());
-    setFormMonth(payslip.month.toString());
-    setFormBaseSalary(payslip.base_salary.toString());
-    setFormAllowances(
-      (payslip.allowances ?? []).map((a) => ({ label: a.label, amount: a.amount.toString() }))
-    );
-    setFormDeductions(
-      (payslip.deductions ?? []).map((d) => ({ label: d.label, amount: d.amount.toString() }))
-    );
-    setFormGrossPay(payslip.gross_pay.toString());
-    setFormNetPay(payslip.net_pay.toString());
-    setFormNote(payslip.note ?? "");
-    setPanelOpen(true);
-  };
+  const h = usePayslipsPage();
 
   const handleSave = async () => {
-    if (!organization) return;
-    if (!formUserId) {
-      showToast("社員を選択してください", "error");
-      return;
+    const result = await h.handleSave();
+    if (result.success && result.message) {
+      showToast(result.message, "success");
+    } else if (!result.success && result.error) {
+      showToast(result.error, "error");
     }
-    setSaving(true);
-    const allowances = formAllowances
-      .filter((a) => a.label.trim())
-      .map((a) => ({ label: a.label.trim(), amount: parseInt(a.amount, 10) || 0 }));
-    const deductions = formDeductions
-      .filter((d) => d.label.trim())
-      .map((d) => ({ label: d.label.trim(), amount: parseInt(d.amount, 10) || 0 }));
-
-    const payload = {
-      organization_id: organization.id,
-      user_id: formUserId,
-      year: parseInt(formYear, 10),
-      month: parseInt(formMonth, 10),
-      base_salary: parseInt(formBaseSalary, 10) || 0,
-      allowances,
-      deductions,
-      gross_pay: parseInt(formGrossPay, 10) || 0,
-      net_pay: parseInt(formNetPay, 10) || 0,
-      note: formNote.trim() || null,
-      updated_at: new Date().toISOString(),
-    };
-
-    let result: { success: boolean; error?: string };
-    if (isCreating) {
-      result = await createPayslip(payload);
-      if (result.success) showToast("給与明細を作成しました", "success");
-    } else if (editingPayslip) {
-      result = await updatePayslip(editingPayslip.id, payload);
-      if (result.success) showToast("給与明細を更新しました", "success");
-    } else {
-      result = { success: false };
-    }
-    if (result.success) {
-      setPanelOpen(false);
-    } else {
-      showToast(result.error ?? "保存に失敗しました", "error");
-    }
-    setSaving(false);
   };
 
   const handleDelete = async () => {
-    if (!editingPayslip) return;
-    setSaving(true);
-    const result = await deletePayslip(editingPayslip.id);
-    if (result.success) {
-      showToast("給与明細を削除しました", "success");
-      setPanelOpen(false);
-    } else {
-      showToast(result.error ?? "削除に失敗しました", "error");
+    const result = await h.handleDelete();
+    if (result.success && result.message) {
+      showToast(result.message, "success");
+    } else if (!result.success && result.error) {
+      showToast(result.error, "error");
     }
-    setSaving(false);
-  };
-
-  // ---------- CSV ----------
-
-  const parseCSV = (text: string) => {
-    const lines = text.trim().split("\n");
-    const headers = lines[0].split(",").map((h) => h.trim());
-    return lines.slice(1).map((line) => {
-      const values = line.split(",").map((v) => v.trim());
-      const row: Record<string, string> = {};
-      headers.forEach((h, i) => {
-        row[h] = values[i] || "";
-      });
-      return row;
-    });
-  };
-
-  const handleCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    setCsvFile(file);
-    setCsvPreview([]);
-    setCsvErrors([]);
-
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const text = ev.target?.result as string;
-        const rows = parseCSV(text);
-        const errors: string[] = [];
-        const preview: typeof csvPreview = [];
-
-        for (let i = 0; i < rows.length; i++) {
-          const row = rows[i];
-          if (!row.email) {
-            errors.push(`${i + 2}行目: メールアドレスが空です`);
-            continue;
-          }
-          if (!row.year || !row.month) {
-            errors.push(`${i + 2}行目: 年または月が空です`);
-            continue;
-          }
-          preview.push({
-            email: row.email,
-            year: parseInt(row.year, 10),
-            month: parseInt(row.month, 10),
-            base_salary: parseInt(row.base_salary, 10) || 0,
-            gross_pay: parseInt(row.gross_pay, 10) || 0,
-            net_pay: parseInt(row.net_pay, 10) || 0,
-          });
-        }
-
-        setCsvPreview(preview);
-        setCsvErrors(errors);
-      } catch {
-        setCsvErrors(["CSVの解析に失敗しました"]);
-      }
-    };
-    reader.readAsText(file);
   };
 
   const handleCsvUpload = async () => {
-    if (!organization || csvPreview.length === 0) return;
-    setUploading(true);
-    const result = await uploadCsv(organization.id, csvPreview);
-    if (result.success) {
-      showToast(`${result.count}件の給与明細を取り込みました`, "success");
-      setCsvFile(null);
-      setCsvPreview([]);
-      if (result.errors) setCsvErrors(result.errors);
-    } else if (result.errors) {
-      setCsvErrors(result.errors);
-    } else {
-      showToast(result.error ?? "取り込みに失敗しました", "error");
+    const result = await h.handleCsvUpload();
+    if (result.success && result.message) {
+      showToast(result.message, "success");
+    } else if (!result.success && result.error) {
+      showToast(result.error, "error");
     }
-    setUploading(false);
   };
-
-  // ---------- 年リスト ----------
-  const yearOptions = useMemo(() => {
-    const currentYear = new Date().getFullYear();
-    const years: number[] = [];
-    for (let y = currentYear - 3; y <= currentYear + 1; y++) {
-      years.push(y);
-    }
-    return years;
-  }, []);
-
-  const isLoading = !payslips;
 
   return (
     <div className="flex flex-col">
@@ -336,7 +81,7 @@ export default function PayslipsPage() {
         sticky={false}
         border={false}
         action={
-          <Button size="sm" onClick={openCreatePanel}>
+          <Button size="sm" onClick={h.openCreatePanel}>
             <Plus className="h-4 w-4 mr-1" />
             新規作成
           </Button>
@@ -348,10 +93,10 @@ export default function PayslipsPage() {
               return (
                 <button
                   key={t.value}
-                  onClick={() => setActiveTab(t.value)}
+                  onClick={() => h.setActiveTab(t.value)}
                   className={cn(
                     "flex items-center gap-1.5 px-4 pb-2.5 pt-1 text-sm font-medium border-b-2 transition-colors -mb-px",
-                    activeTab === t.value
+                    h.activeTab === t.value
                       ? "border-primary text-primary"
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
@@ -365,28 +110,28 @@ export default function PayslipsPage() {
         }
       />
 
-      <QueryErrorBanner error={payslipsError} onRetry={() => mutate()} />
+      <QueryErrorBanner error={h.payslipsError} onRetry={() => h.mutate()} />
 
       {/* ========= 明細一覧タブ ========= */}
-      {activeTab === "list" && (
+      {h.activeTab === "list" && (
         <>
-          <SearchBar value={search} onChange={setSearch} placeholder="社員名で検索" />
+          <SearchBar value={h.search} onChange={h.setSearch} placeholder="社員名で検索" />
           <div className="px-4 py-3 sm:px-6 md:px-8">
             <div className="flex items-center gap-2 flex-wrap">
-              <Select value={filterYear} onValueChange={(v) => v && setFilterYear(v)}>
+              <Select value={h.filterYear} onValueChange={(v) => v && h.setFilterYear(v)}>
                 <SelectTrigger className="w-28">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">全年</SelectItem>
-                  {yearOptions.map((y) => (
+                  {h.yearOptions.map((y) => (
                     <SelectItem key={y} value={y.toString()}>
                       {y}年
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={filterMonth} onValueChange={(v) => v && setFilterMonth(v)}>
+              <Select value={h.filterMonth} onValueChange={(v) => v && h.setFilterMonth(v)}>
                 <SelectTrigger className="w-24">
                   <SelectValue />
                 </SelectTrigger>
@@ -404,10 +149,10 @@ export default function PayslipsPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  if (filteredPayslips.length === 0) return;
+                  if (h.filteredPayslips.length === 0) return;
                   exportToCSV(
-                    filteredPayslips.map((p) => {
-                      const profile = profileMap.get(p.user_id);
+                    h.filteredPayslips.map((p) => {
+                      const profile = h.profileMap.get(p.user_id);
                       const totalDeductions = (p.deductions ?? []).reduce(
                         (sum, d) => sum + d.amount,
                         0
@@ -427,7 +172,7 @@ export default function PayslipsPage() {
                       { key: "_totalDeductions", label: "控除合計" },
                       { key: "net_pay", label: "差引支給額" },
                     ],
-                    `給与明細_${filterYear !== "all" ? filterYear : "全年"}${filterMonth !== "all" ? `_${filterMonth}月` : ""}`
+                    `給与明細_${h.filterYear !== "all" ? h.filterYear : "全年"}${h.filterMonth !== "all" ? `_${h.filterMonth}月` : ""}`
                   );
                 }}
               >
@@ -452,12 +197,12 @@ export default function PayslipsPage() {
               <TableBody>
                 <TableEmptyState
                   colSpan={6}
-                  isLoading={isLoading}
-                  isEmpty={filteredPayslips.length === 0}
+                  isLoading={h.isLoading}
+                  isEmpty={h.filteredPayslips.length === 0}
                   emptyMessage="給与明細がありません"
                 >
-                  {filteredPayslips.map((p) => {
-                    const profile = profileMap.get(p.user_id);
+                  {h.filteredPayslips.map((p) => {
+                    const profile = h.profileMap.get(p.user_id);
                     const displayName = profile?.display_name ?? profile?.email ?? "-";
                     const totalDeductions = (p.deductions ?? []).reduce(
                       (sum, d) => sum + d.amount,
@@ -467,7 +212,7 @@ export default function PayslipsPage() {
                       <TableRow
                         key={p.id}
                         className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => openEditPanel(p)}
+                        onClick={() => h.openEditPanel(p)}
                       >
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -505,12 +250,12 @@ export default function PayslipsPage() {
       )}
 
       {/* ========= CSV取込タブ ========= */}
-      {activeTab === "upload" && (
+      {h.activeTab === "upload" && (
         <div className="px-4 py-4 sm:px-6 md:px-8 space-y-6">
           <div className="max-w-2xl space-y-4">
             <div>
               <Label>CSVファイル</Label>
-              <Input type="file" accept=".csv" className="mt-1" onChange={handleCsvFileChange} />
+              <Input type="file" accept=".csv" className="mt-1" onChange={h.handleCsvFileChange} />
             </div>
             <div className="text-sm text-muted-foreground space-y-1">
               <p className="font-medium">CSVフォーマット:</p>
@@ -521,9 +266,9 @@ export default function PayslipsPage() {
             </div>
           </div>
 
-          {csvErrors.length > 0 && (
+          {h.csvErrors.length > 0 && (
             <div className="max-w-2xl bg-destructive/10 border border-destructive/20 rounded-lg p-4 space-y-1">
-              {csvErrors.map((err, i) => (
+              {h.csvErrors.map((err, i) => (
                 <p key={i} className="text-sm text-destructive">
                   {err}
                 </p>
@@ -531,9 +276,9 @@ export default function PayslipsPage() {
             </div>
           )}
 
-          {csvPreview.length > 0 && (
+          {h.csvPreview.length > 0 && (
             <div className="space-y-4">
-              <h3 className="text-sm font-medium">プレビュー（{csvPreview.length}件）</h3>
+              <h3 className="text-sm font-medium">プレビュー（{h.csvPreview.length}件）</h3>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -545,7 +290,7 @@ export default function PayslipsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {csvPreview.map((row, i) => (
+                  {h.csvPreview.map((row, i) => (
                     <TableRow key={i}>
                       <TableCell className="text-sm">{row.email}</TableCell>
                       <TableCell className="text-sm">
@@ -564,9 +309,9 @@ export default function PayslipsPage() {
                   ))}
                 </TableBody>
               </Table>
-              <Button onClick={handleCsvUpload} disabled={uploading}>
+              <Button onClick={handleCsvUpload} disabled={h.uploading}>
                 <FileDown className="h-4 w-4 mr-1" />
-                {uploading ? "取り込み中..." : `${csvPreview.length}件を取り込む`}
+                {h.uploading ? "取り込み中..." : `${h.csvPreview.length}件を取り込む`}
               </Button>
             </div>
           )}
@@ -575,28 +320,28 @@ export default function PayslipsPage() {
 
       {/* ========= EditPanel ========= */}
       <EditPanel
-        open={panelOpen}
-        onOpenChange={setPanelOpen}
-        title={isCreating ? "給与明細を作成" : "給与明細を編集"}
+        open={h.panelOpen}
+        onOpenChange={h.setPanelOpen}
+        title={h.isCreating ? "給与明細を作成" : "給与明細を編集"}
         onSave={handleSave}
-        saving={saving}
+        saving={h.saving}
         saveLabel="保存"
-        onDelete={!isCreating && editingPayslip ? handleDelete : undefined}
+        onDelete={!h.isCreating && h.editingPayslip ? handleDelete : undefined}
         deleteLabel="削除"
       >
         <div className="space-y-4">
           <div>
             <Label>社員</Label>
             <Select
-              value={formUserId}
-              onValueChange={(v) => v && setFormUserId(v)}
-              disabled={!isCreating}
+              value={h.formUserId}
+              onValueChange={(v) => v && h.setFormUserId(v)}
+              disabled={!h.isCreating}
             >
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="社員を選択" />
               </SelectTrigger>
               <SelectContent>
-                {(members ?? []).map((m) => (
+                {(h.members ?? []).map((m) => (
                   <SelectItem key={m.user_id} value={m.user_id}>
                     {m.profiles?.display_name ?? m.profiles?.email ?? m.user_id}
                   </SelectItem>
@@ -608,12 +353,12 @@ export default function PayslipsPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>年</Label>
-              <Select value={formYear} onValueChange={(v) => v && setFormYear(v)}>
+              <Select value={h.formYear} onValueChange={(v) => v && h.setFormYear(v)}>
                 <SelectTrigger className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {yearOptions.map((y) => (
+                  {h.yearOptions.map((y) => (
                     <SelectItem key={y} value={y.toString()}>
                       {y}年
                     </SelectItem>
@@ -623,7 +368,7 @@ export default function PayslipsPage() {
             </div>
             <div>
               <Label>月</Label>
-              <Select value={formMonth} onValueChange={(v) => v && setFormMonth(v)}>
+              <Select value={h.formMonth} onValueChange={(v) => v && h.setFormMonth(v)}>
                 <SelectTrigger className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
@@ -642,8 +387,8 @@ export default function PayslipsPage() {
             <Label>基本給</Label>
             <Input
               type="number"
-              value={formBaseSalary}
-              onChange={(e) => setFormBaseSalary(e.target.value)}
+              value={h.formBaseSalary}
+              onChange={(e) => h.setFormBaseSalary(e.target.value)}
               className="mt-1"
               placeholder="0"
             />
@@ -657,21 +402,23 @@ export default function PayslipsPage() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setFormAllowances([...formAllowances, { label: "", amount: "" }])}
+                onClick={() =>
+                  h.setFormAllowances([...h.formAllowances, { label: "", amount: "" }])
+                }
               >
                 <Plus className="h-3.5 w-3.5 mr-1" />
                 項目を追加
               </Button>
             </div>
-            {formAllowances.map((item, i) => (
+            {h.formAllowances.map((item, i) => (
               <div key={i} className="flex items-center gap-2 mb-2">
                 <Input
                   placeholder="項目名"
                   value={item.label}
                   onChange={(e) => {
-                    const next = [...formAllowances];
+                    const next = [...h.formAllowances];
                     next[i] = { ...next[i], label: e.target.value };
-                    setFormAllowances(next);
+                    h.setFormAllowances(next);
                   }}
                   className="flex-1"
                 />
@@ -680,9 +427,9 @@ export default function PayslipsPage() {
                   placeholder="金額"
                   value={item.amount}
                   onChange={(e) => {
-                    const next = [...formAllowances];
+                    const next = [...h.formAllowances];
                     next[i] = { ...next[i], amount: e.target.value };
-                    setFormAllowances(next);
+                    h.setFormAllowances(next);
                   }}
                   className="w-28"
                 />
@@ -690,7 +437,7 @@ export default function PayslipsPage() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  onClick={() => setFormAllowances(formAllowances.filter((_, j) => j !== i))}
+                  onClick={() => h.setFormAllowances(h.formAllowances.filter((_, j) => j !== i))}
                 >
                   <Trash2 className="h-4 w-4 text-muted-foreground" />
                 </Button>
@@ -706,21 +453,23 @@ export default function PayslipsPage() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setFormDeductions([...formDeductions, { label: "", amount: "" }])}
+                onClick={() =>
+                  h.setFormDeductions([...h.formDeductions, { label: "", amount: "" }])
+                }
               >
                 <Plus className="h-3.5 w-3.5 mr-1" />
                 項目を追加
               </Button>
             </div>
-            {formDeductions.map((item, i) => (
+            {h.formDeductions.map((item, i) => (
               <div key={i} className="flex items-center gap-2 mb-2">
                 <Input
                   placeholder="項目名"
                   value={item.label}
                   onChange={(e) => {
-                    const next = [...formDeductions];
+                    const next = [...h.formDeductions];
                     next[i] = { ...next[i], label: e.target.value };
-                    setFormDeductions(next);
+                    h.setFormDeductions(next);
                   }}
                   className="flex-1"
                 />
@@ -729,9 +478,9 @@ export default function PayslipsPage() {
                   placeholder="金額"
                   value={item.amount}
                   onChange={(e) => {
-                    const next = [...formDeductions];
+                    const next = [...h.formDeductions];
                     next[i] = { ...next[i], amount: e.target.value };
-                    setFormDeductions(next);
+                    h.setFormDeductions(next);
                   }}
                   className="w-28"
                 />
@@ -739,7 +488,7 @@ export default function PayslipsPage() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  onClick={() => setFormDeductions(formDeductions.filter((_, j) => j !== i))}
+                  onClick={() => h.setFormDeductions(h.formDeductions.filter((_, j) => j !== i))}
                 >
                   <Trash2 className="h-4 w-4 text-muted-foreground" />
                 </Button>
@@ -752,8 +501,8 @@ export default function PayslipsPage() {
               <Label>総支給額</Label>
               <Input
                 type="number"
-                value={formGrossPay}
-                onChange={(e) => setFormGrossPay(e.target.value)}
+                value={h.formGrossPay}
+                onChange={(e) => h.setFormGrossPay(e.target.value)}
                 className="mt-1"
                 placeholder="0"
               />
@@ -762,8 +511,8 @@ export default function PayslipsPage() {
               <Label>差引支給額</Label>
               <Input
                 type="number"
-                value={formNetPay}
-                onChange={(e) => setFormNetPay(e.target.value)}
+                value={h.formNetPay}
+                onChange={(e) => h.setFormNetPay(e.target.value)}
                 className="mt-1"
                 placeholder="0"
               />
@@ -773,8 +522,8 @@ export default function PayslipsPage() {
           <div>
             <Label>備考</Label>
             <Input
-              value={formNote}
-              onChange={(e) => setFormNote(e.target.value)}
+              value={h.formNote}
+              onChange={(e) => h.setFormNote(e.target.value)}
               className="mt-1"
               placeholder="備考（任意）"
             />

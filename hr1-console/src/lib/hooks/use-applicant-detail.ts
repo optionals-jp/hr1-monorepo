@@ -21,14 +21,9 @@ export async function loadApplicantDetail(applicantId: string, organizationId: s
 }
 
 export async function fetchLinkedForms(formIds: string[]) {
-  const { data } = await getSupabase().from("custom_forms").select("id, title").in("id", formIds);
-  return new Map((data ?? []).map((f) => [f.id, f.title]));
+  return applicantRepo.fetchLinkedForms(getSupabase(), formIds);
 }
 
 export async function fetchLinkedInterviews(interviewIds: string[]) {
-  const { data } = await getSupabase()
-    .from("interviews")
-    .select("id, title, status")
-    .in("id", interviewIds);
-  return new Map((data ?? []).map((i) => [i.id, i]));
+  return applicantRepo.fetchLinkedInterviews(getSupabase(), interviewIds);
 }

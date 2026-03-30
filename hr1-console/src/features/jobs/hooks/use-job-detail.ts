@@ -9,6 +9,7 @@ import { useOrg } from "@/lib/org-context";
 import { StepType, FORM_STEP_TYPES } from "@/lib/constants";
 import * as jobRepository from "@/lib/repositories/job-repository";
 import * as auditRepository from "@/lib/repositories/audit-repository";
+import { getCurrentUserId } from "@/lib/get-current-user-id";
 import { buildHistoryEvents, resolveRelatedId } from "@/features/jobs/rules";
 import type { HistoryEvent } from "@/features/jobs/types";
 
@@ -142,8 +143,7 @@ export function useJobDetail() {
     }
 
     if (organization) {
-      const userId = (await client.auth.getUser()).data.user?.id;
-      if (!userId) throw new Error("認証ユーザーが取得できません");
+      const userId = await getCurrentUserId();
       await auditRepository.insertAuditLog(client, {
         organization_id: organization.id,
         table_name: "jobs",
@@ -182,8 +182,7 @@ export function useJobDetail() {
     await jobRepository.deleteJobStep(client, stepId);
 
     if (step && organization) {
-      const userId = (await client.auth.getUser()).data.user?.id;
-      if (!userId) throw new Error("認証ユーザーが取得できません");
+      const userId = await getCurrentUserId();
       await auditRepository.insertAuditLog(client, {
         organization_id: organization.id,
         table_name: "jobs",

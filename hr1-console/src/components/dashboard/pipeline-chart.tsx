@@ -2,11 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowDown, GitCommitHorizontal } from "lucide-react";
+import type { PipelineStage } from "@/types/dashboard";
 
-export interface PipelineStage {
-  name: string;
-  count: number;
-}
+export type { PipelineStage };
 
 interface PipelineChartProps {
   data: PipelineStage[];

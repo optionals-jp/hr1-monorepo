@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
+import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as leaveRepository from "@/lib/repositories/leave-repository";
 import type { LeaveBalance } from "@/types/database";
@@ -17,6 +18,8 @@ type MemberRow = {
 };
 
 export function useLeave() {
+  const { organization } = useOrg();
+
   const {
     data: balances,
     error: balancesError,
@@ -41,7 +44,7 @@ export function useLeave() {
     }
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      await leaveRepository.updateBalance(getSupabase(), id, data);
+      await leaveRepository.updateBalance(getSupabase(), id, organization!.id, data);
       await mutateBalances();
       return { success: true };
     } catch {

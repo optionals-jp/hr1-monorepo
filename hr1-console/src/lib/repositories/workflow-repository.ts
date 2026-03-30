@@ -61,6 +61,7 @@ export async function approveLeaveRequest(
 export async function updateRequestStatus(
   client: SupabaseClient,
   requestId: string,
+  organizationId: string,
   data: {
     status: string;
     reviewed_by: string | null;
@@ -69,7 +70,11 @@ export async function updateRequestStatus(
     updated_at: string;
   }
 ) {
-  return client.from("workflow_requests").update(data).eq("id", requestId);
+  return client
+    .from("workflow_requests")
+    .update(data)
+    .eq("id", requestId)
+    .eq("organization_id", organizationId);
 }
 
 export async function insertNotification(
@@ -102,7 +107,8 @@ export async function upsertRule(
     return client
       .from("workflow_rules")
       .update({ conditions: data.conditions, is_active: data.is_active })
-      .eq("id", existingId);
+      .eq("id", existingId)
+      .eq("organization_id", data.organization_id);
   }
   return client.from("workflow_rules").insert(data);
 }

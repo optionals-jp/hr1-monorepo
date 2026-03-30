@@ -68,10 +68,11 @@ export async function replaceEmployeeDepartments(
 
 // --- Skills ---
 
-export async function fetchSkillMasters(client: SupabaseClient) {
+export async function fetchSkillMasters(client: SupabaseClient, organizationId: string) {
   const { data } = await client
     .from("skill_masters")
     .select("*")
+    .eq("organization_id", organizationId)
     .order("category", { nullsFirst: false })
     .order("name");
   return (data ?? []) as SkillMaster[];
@@ -84,16 +85,21 @@ export async function createSkillMaster(
   return client.from("skill_masters").insert(data);
 }
 
-export async function deleteSkillMaster(client: SupabaseClient, id: string) {
-  return client.from("skill_masters").delete().eq("id", id);
+export async function deleteSkillMaster(
+  client: SupabaseClient,
+  id: string,
+  organizationId: string
+) {
+  return client.from("skill_masters").delete().eq("id", id).eq("organization_id", organizationId);
 }
 
 // --- Certifications ---
 
-export async function fetchCertificationMasters(client: SupabaseClient) {
+export async function fetchCertificationMasters(client: SupabaseClient, organizationId: string) {
   const { data } = await client
     .from("certification_masters")
     .select("*")
+    .eq("organization_id", organizationId)
     .order("category", { nullsFirst: false })
     .order("name");
   return (data ?? []) as CertificationMaster[];
@@ -106,8 +112,16 @@ export async function createCertificationMaster(
   return client.from("certification_masters").insert(data);
 }
 
-export async function deleteCertificationMaster(client: SupabaseClient, id: string) {
-  return client.from("certification_masters").delete().eq("id", id);
+export async function deleteCertificationMaster(
+  client: SupabaseClient,
+  id: string,
+  organizationId: string
+) {
+  return client
+    .from("certification_masters")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", organizationId);
 }
 
 // --- Home Design ---
@@ -128,20 +142,35 @@ export async function createPageTab(
   return client.from("page_tabs").insert(data).select().single();
 }
 
-export async function updatePageTab(client: SupabaseClient, id: string, data: { label: string }) {
-  return client.from("page_tabs").update(data).eq("id", id).select("id");
+export async function updatePageTab(
+  client: SupabaseClient,
+  id: string,
+  organizationId: string,
+  data: { label: string }
+) {
+  return client
+    .from("page_tabs")
+    .update(data)
+    .eq("id", id)
+    .eq("organization_id", organizationId)
+    .select("id");
 }
 
-export async function deletePageTab(client: SupabaseClient, id: string) {
-  return client.from("page_tabs").delete().eq("id", id);
+export async function deletePageTab(client: SupabaseClient, id: string, organizationId: string) {
+  return client.from("page_tabs").delete().eq("id", id).eq("organization_id", organizationId);
 }
 
 export async function updatePageTabSortOrder(
   client: SupabaseClient,
   id: string,
+  organizationId: string,
   sortOrder: number
 ) {
-  return client.from("page_tabs").update({ sort_order: sortOrder }).eq("id", id);
+  return client
+    .from("page_tabs")
+    .update({ sort_order: sortOrder })
+    .eq("id", id)
+    .eq("organization_id", organizationId);
 }
 
 export async function createPageSection(

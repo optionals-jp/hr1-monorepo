@@ -1,7 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -25,26 +23,13 @@ import {
 } from "@/components/ui/select";
 import { EditPanel } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
-import { useOrg } from "@/lib/org-context";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  loadProjectDetail,
-  updateProjectById,
-  deleteProjectById,
-  addTeam,
-  deleteTeamById,
-  addTeamMembers,
-  updateTeamMember as repoUpdateTeamMember,
-  removeTeamMember,
-  fetchOrgEmployeesForTeam,
-  type TeamWithMembers,
-} from "@/lib/hooks/use-projects";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { projectStatusLabels, projectStatusColors, teamMemberRoleLabels } from "@/lib/constants";
-import type { Project, ProjectTeamMember, Profile } from "@/types/database";
 import { format } from "date-fns";
 import { Trash2, Plus, Users, Pencil } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useProjectDetail } from "@/lib/hooks/use-project-detail";
 
 const tabs = [
   { value: "overview", label: "概要" },
@@ -52,219 +37,73 @@ const tabs = [
 ];
 
 export default function ProjectDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const { showToast } = useToast();
-  const { organization } = useOrg();
-  const [project, setProject] = useState<Project | null>(null);
-  const [teams, setTeams] = useState<TeamWithMembers[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
-
-  // 編集パネル
-  const [editOpen, setEditOpen] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editStatus, setEditStatus] = useState("active");
-  const [editStartDate, setEditStartDate] = useState("");
-  const [editEndDate, setEditEndDate] = useState("");
-  const [savingEdit, setSavingEdit] = useState(false);
-
-  // チーム追加パネル
-  const [teamDialogOpen, setTeamDialogOpen] = useState(false);
-  const [newTeamName, setNewTeamName] = useState("");
-  const [newTeamDescription, setNewTeamDescription] = useState("");
-  const [savingTeam, setSavingTeam] = useState(false);
-
-  // メンバー追加パネル
-  const [memberDialogOpen, setMemberDialogOpen] = useState(false);
-  const [memberTeamId, setMemberTeamId] = useState<string | null>(null);
-  const [allEmployees, setAllEmployees] = useState<Profile[]>([]);
-  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
-  const [memberRole, setMemberRole] = useState<string>("member");
-  const [memberJoinedAt, setMemberJoinedAt] = useState("");
-  const [savingMember, setSavingMember] = useState(false);
-
-  // メンバー編集パネル
-  const [editMemberOpen, setEditMemberOpen] = useState(false);
-  const [editMemberId, setEditMemberId] = useState<string | null>(null);
-  const [editMemberRole, setEditMemberRole] = useState<string>("member");
-  const [editMemberJoinedAt, setEditMemberJoinedAt] = useState("");
-  const [editMemberLeftAt, setEditMemberLeftAt] = useState("");
-  const [savingMemberEdit, setSavingMemberEdit] = useState(false);
-
-  const load = async () => {
-    if (!organization) return;
-    setLoading(true);
-
-    const result = await loadProjectDetail(id, organization.id);
-    setProject(result.project);
-    setTeams(result.teams);
-
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    if (!organization) return;
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, organization]);
-
-  const startEditing = () => {
-    if (!project) return;
-    setEditName(project.name);
-    setEditDescription(project.description ?? "");
-    setEditStatus(project.status);
-    setEditStartDate(project.start_date ?? "");
-    setEditEndDate(project.end_date ?? "");
-    setEditOpen(true);
-  };
+  const h = useProjectDetail();
 
   const saveEdit = async () => {
-    if (!project || !editName.trim() || !organization) return;
-    setSavingEdit(true);
-    const result = await updateProjectById(project.id, organization.id, {
-      name: editName,
-      description: editDescription,
-      status: editStatus,
-      startDate: editStartDate,
-      endDate: editEndDate,
-    });
+    const result = await h.saveEdit();
     if (result.success) {
-      setEditOpen(false);
-      await load();
       showToast("プロジェクトを更新しました");
-    } else {
-      showToast(result.error ?? "プロジェクトの更新に失敗しました", "error");
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
-    setSavingEdit(false);
   };
 
   const handleDeleteProject = async () => {
-    if (!project || !organization) return;
-    if (!window.confirm("削除してもよろしいですか？")) return;
-    const result = await deleteProjectById(project.id, organization.id);
+    const result = await h.handleDeleteProject();
     if (result.success) {
       showToast("プロジェクトを削除しました");
-      router.push("/projects");
-    } else {
-      showToast(result.error ?? "プロジェクトの削除に失敗しました", "error");
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
-  };
-
-  const openTeamDialog = () => {
-    setNewTeamName("");
-    setNewTeamDescription("");
-    setTeamDialogOpen(true);
   };
 
   const handleAddTeam = async () => {
-    if (!project || !newTeamName.trim()) return;
-    setSavingTeam(true);
-    const result = await addTeam(project.id, {
-      name: newTeamName,
-      description: newTeamDescription,
-    });
+    const result = await h.handleAddTeam();
     if (result.success) {
-      setTeamDialogOpen(false);
-      await load();
       showToast("チームを追加しました");
-    } else {
-      showToast(result.error ?? "チームの追加に失敗しました", "error");
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
-    setSavingTeam(false);
   };
 
   const handleDeleteTeam = async (teamId: string) => {
-    if (!window.confirm("削除してもよろしいですか？")) return;
-    const result = await deleteTeamById(teamId);
+    const result = await h.handleDeleteTeam(teamId);
     if (result.success) {
-      await load();
       showToast("チームを削除しました");
-    } else {
-      showToast(result.error ?? "チームの削除に失敗しました", "error");
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
-  };
-
-  const openMemberDialog = async (teamId: string) => {
-    setMemberTeamId(teamId);
-    setSelectedEmployeeIds([]);
-    setMemberRole("member");
-    setMemberJoinedAt(new Date().toISOString().slice(0, 10));
-
-    if (organization) {
-      const team = teams.find((t) => t.id === teamId);
-      const existingIds = new Set((team?.members ?? []).map((m) => m.user_id));
-      const emps = await fetchOrgEmployeesForTeam(organization.id, existingIds);
-      setAllEmployees(emps);
-    }
-
-    setMemberDialogOpen(true);
   };
 
   const handleAddMembers = async () => {
-    if (!memberTeamId || selectedEmployeeIds.length === 0) return;
-    setSavingMember(true);
-    const result = await addTeamMembers(
-      memberTeamId,
-      selectedEmployeeIds,
-      memberRole,
-      memberJoinedAt
-    );
+    const result = await h.handleAddMembers();
     if (result.success) {
-      setMemberDialogOpen(false);
-      await load();
       showToast("メンバーを追加しました");
-    } else {
-      showToast(result.error ?? "メンバーの追加に失敗しました", "error");
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
-    setSavingMember(false);
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    if (!window.confirm("削除してもよろしいですか？")) return;
-    const result = await removeTeamMember(memberId);
+    const result = await h.handleRemoveMember(memberId);
     if (result.success) {
-      await load();
       showToast("メンバーを削除しました");
-    } else {
-      showToast(result.error ?? "メンバーの削除に失敗しました", "error");
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
-  };
-
-  const openEditMember = (member: ProjectTeamMember & { profiles: Profile }) => {
-    setEditMemberId(member.id);
-    setEditMemberRole(member.role);
-    setEditMemberJoinedAt(member.joined_at ? member.joined_at.slice(0, 10) : "");
-    setEditMemberLeftAt(member.left_at ? member.left_at.slice(0, 10) : "");
-    setEditMemberOpen(true);
   };
 
   const saveEditMember = async () => {
-    if (!editMemberId) return;
-    setSavingMemberEdit(true);
-    const result = await repoUpdateTeamMember(editMemberId, {
-      role: editMemberRole,
-      joinedAt: editMemberJoinedAt,
-      leftAt: editMemberLeftAt,
-    });
+    const result = await h.saveEditMember();
     if (result.success) {
-      setEditMemberOpen(false);
-      await load();
       showToast("メンバー情報を更新しました");
-    } else {
-      showToast(result.error ?? "メンバー情報の更新に失敗しました", "error");
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
-    setSavingMemberEdit(false);
   };
 
-  const toggleEmployee = (employeeId: string) => {
-    setSelectedEmployeeIds((prev) =>
-      prev.includes(employeeId) ? prev.filter((id) => id !== employeeId) : [...prev, employeeId]
-    );
-  };
-
-  if (loading) {
+  if (h.loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
         読み込み中...
@@ -272,7 +111,7 @@ export default function ProjectDetailPage() {
     );
   }
 
-  if (!project) {
+  if (!h.project) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
         プロジェクトが見つかりません
@@ -280,12 +119,10 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const totalMembers = teams.reduce((sum, t) => sum + t.members.length, 0);
-
   return (
     <div className="flex flex-col">
       <PageHeader
-        title={project.name}
+        title={h.project.name}
         description="プロジェクト詳細"
         sticky={false}
         breadcrumb={[{ label: "プロジェクト", href: "/projects" }]}
@@ -294,15 +131,15 @@ export default function ProjectDetailPage() {
       <div className="sticky top-14 z-10 bg-white">
         <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8">
           {tabs.map((tab) => {
-            const count = tab.value === "teams" ? teams.length : undefined;
+            const count = tab.value === "teams" ? h.teams.length : undefined;
             return (
               <button
                 key={tab.value}
                 type="button"
-                onClick={() => setActiveTab(tab.value)}
+                onClick={() => h.setActiveTab(tab.value)}
                 className={cn(
                   "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-                  activeTab === tab.value
+                  h.activeTab === tab.value
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 )}
@@ -311,7 +148,7 @@ export default function ProjectDetailPage() {
                 {count !== undefined && (
                   <span className="ml-1.5 text-xs text-muted-foreground">{count}</span>
                 )}
-                {activeTab === tab.value && (
+                {h.activeTab === tab.value && (
                   <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
                 )}
               </button>
@@ -320,57 +157,57 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      {activeTab === "overview" && (
+      {h.activeTab === "overview" && (
         <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
           <div className="space-y-4 max-w-3xl">
             <Card>
               <CardContent>
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold text-muted-foreground">プロジェクト情報</h2>
-                  <Button variant="outline" size="sm" onClick={startEditing}>
+                  <Button variant="outline" size="sm" onClick={h.startEditing}>
                     編集
                   </Button>
                 </div>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">プロジェクト名</span>
-                    <span className="font-medium">{project.name}</span>
+                    <span className="font-medium">{h.project.name}</span>
                   </div>
-                  {project.description && (
+                  {h.project.description && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">説明</span>
-                      <span className="text-right max-w-xs">{project.description}</span>
+                      <span className="text-right max-w-xs">{h.project.description}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">ステータス</span>
-                    <Badge variant={projectStatusColors[project.status]}>
-                      {projectStatusLabels[project.status]}
+                    <Badge variant={projectStatusColors[h.project.status]}>
+                      {projectStatusLabels[h.project.status]}
                     </Badge>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">チーム数</span>
-                    <span>{teams.length}</span>
+                    <span>{h.teams.length}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">総メンバー数</span>
-                    <span>{totalMembers} 名</span>
+                    <span>{h.totalMembers} 名</span>
                   </div>
-                  {project.start_date && (
+                  {h.project.start_date && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">開始日</span>
-                      <span>{format(new Date(project.start_date), "yyyy/MM/dd")}</span>
+                      <span>{format(new Date(h.project.start_date), "yyyy/MM/dd")}</span>
                     </div>
                   )}
-                  {project.end_date && (
+                  {h.project.end_date && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">終了日</span>
-                      <span>{format(new Date(project.end_date), "yyyy/MM/dd")}</span>
+                      <span>{format(new Date(h.project.end_date), "yyyy/MM/dd")}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">作成日</span>
-                    <span>{format(new Date(project.created_at), "yyyy/MM/dd")}</span>
+                    <span>{format(new Date(h.project.created_at), "yyyy/MM/dd")}</span>
                   </div>
                 </div>
               </CardContent>
@@ -379,20 +216,20 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
-      {activeTab === "teams" && (
+      {h.activeTab === "teams" && (
         <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
           <div className="max-w-4xl space-y-4">
             <div className="flex justify-end">
-              <Button onClick={openTeamDialog}>
+              <Button onClick={h.openTeamDialog}>
                 <Plus className="h-4 w-4 mr-1" />
                 チームを追加
               </Button>
             </div>
 
-            {teams.length === 0 ? (
+            {h.teams.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">チームがありません</div>
             ) : (
-              teams.map((team) => (
+              h.teams.map((team) => (
                 <Card key={team.id}>
                   <CardContent>
                     <div className="flex items-center justify-between mb-4">
@@ -411,7 +248,7 @@ export default function ProjectDetailPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => openMemberDialog(team.id)}
+                          onClick={() => h.openMemberDialog(team.id)}
                         >
                           <Plus className="h-3.5 w-3.5 mr-1" />
                           メンバー追加
@@ -446,7 +283,7 @@ export default function ProjectDetailPage() {
                             <TableRow
                               key={member.id}
                               className="cursor-pointer"
-                              onClick={() => router.push(`/employees/${member.user_id}`)}
+                              onClick={() => h.router.push(`/employees/${member.user_id}`)}
                             >
                               <TableCell>
                                 <div className="flex items-center gap-3">
@@ -494,7 +331,7 @@ export default function ProjectDetailPage() {
                                     variant="ghost"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      openEditMember(member);
+                                      h.openEditMember(member);
                                     }}
                                   >
                                     <Pencil className="h-4 w-4" />
@@ -527,27 +364,30 @@ export default function ProjectDetailPage() {
 
       {/* プロジェクト編集パネル */}
       <EditPanel
-        open={editOpen}
-        onOpenChange={setEditOpen}
+        open={h.editOpen}
+        onOpenChange={h.setEditOpen}
         title="プロジェクトを編集"
         onSave={saveEdit}
-        saving={savingEdit}
-        saveDisabled={!editName.trim()}
+        saving={h.savingEdit}
+        saveDisabled={!h.editName.trim()}
         onDelete={handleDeleteProject}
         deleteLabel="プロジェクトを削除"
       >
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>プロジェクト名 *</Label>
-            <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+            <Input value={h.editName} onChange={(e) => h.setEditName(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>説明</Label>
-            <Input value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+            <Input
+              value={h.editDescription}
+              onChange={(e) => h.setEditDescription(e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label>ステータス</Label>
-            <Select value={editStatus} onValueChange={(v) => v && setEditStatus(v)}>
+            <Select value={h.editStatus} onValueChange={(v) => v && h.setEditStatus(v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -563,17 +403,17 @@ export default function ProjectDetailPage() {
               <Label>開始日</Label>
               <Input
                 type="date"
-                value={editStartDate}
-                onChange={(e) => setEditStartDate(e.target.value)}
+                value={h.editStartDate}
+                onChange={(e) => h.setEditStartDate(e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label>終了日</Label>
               <Input
                 type="date"
-                value={editEndDate}
-                onChange={(e) => setEditEndDate(e.target.value)}
-                min={editStartDate || undefined}
+                value={h.editEndDate}
+                onChange={(e) => h.setEditEndDate(e.target.value)}
+                min={h.editStartDate || undefined}
               />
             </div>
           </div>
@@ -582,28 +422,28 @@ export default function ProjectDetailPage() {
 
       {/* チーム追加パネル */}
       <EditPanel
-        open={teamDialogOpen}
-        onOpenChange={setTeamDialogOpen}
+        open={h.teamDialogOpen}
+        onOpenChange={h.setTeamDialogOpen}
         title="チームを追加"
         onSave={handleAddTeam}
-        saving={savingTeam}
-        saveDisabled={!newTeamName.trim()}
+        saving={h.savingTeam}
+        saveDisabled={!h.newTeamName.trim()}
         saveLabel="追加"
       >
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>チーム名 *</Label>
             <Input
-              value={newTeamName}
-              onChange={(e) => setNewTeamName(e.target.value)}
+              value={h.newTeamName}
+              onChange={(e) => h.setNewTeamName(e.target.value)}
               placeholder="フロントエンドチーム"
             />
           </div>
           <div className="space-y-2">
             <Label>説明</Label>
             <Input
-              value={newTeamDescription}
-              onChange={(e) => setNewTeamDescription(e.target.value)}
+              value={h.newTeamDescription}
+              onChange={(e) => h.setNewTeamDescription(e.target.value)}
               placeholder="チームの役割"
             />
           </div>
@@ -612,18 +452,18 @@ export default function ProjectDetailPage() {
 
       {/* メンバー追加パネル */}
       <EditPanel
-        open={memberDialogOpen}
-        onOpenChange={setMemberDialogOpen}
+        open={h.memberDialogOpen}
+        onOpenChange={h.setMemberDialogOpen}
         title="メンバーを追加"
         onSave={handleAddMembers}
-        saving={savingMember}
-        saveDisabled={selectedEmployeeIds.length === 0}
+        saving={h.savingMember}
+        saveDisabled={h.selectedEmployeeIds.length === 0}
         saveLabel="追加"
       >
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>役割</Label>
-            <Select value={memberRole} onValueChange={(v) => v && setMemberRole(v)}>
+            <Select value={h.memberRole} onValueChange={(v) => v && h.setMemberRole(v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -637,21 +477,21 @@ export default function ProjectDetailPage() {
             <Label>参加日</Label>
             <Input
               type="date"
-              value={memberJoinedAt}
-              onChange={(e) => setMemberJoinedAt(e.target.value)}
+              value={h.memberJoinedAt}
+              onChange={(e) => h.setMemberJoinedAt(e.target.value)}
             />
           </div>
           <div className="space-y-2">
             <Label>社員を選択</Label>
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {allEmployees.length === 0 ? (
+              {h.allEmployees.length === 0 ? (
                 <p className="text-sm text-muted-foreground">追加できる社員がいません</p>
               ) : (
-                allEmployees.map((emp) => (
+                h.allEmployees.map((emp) => (
                   <label key={emp.id} className="flex items-center gap-3 cursor-pointer py-1">
                     <Checkbox
-                      checked={selectedEmployeeIds.includes(emp.id)}
-                      onCheckedChange={() => toggleEmployee(emp.id)}
+                      checked={h.selectedEmployeeIds.includes(emp.id)}
+                      onCheckedChange={() => h.toggleEmployee(emp.id)}
                     />
                     <Avatar className="h-7 w-7">
                       <AvatarFallback className="bg-green-100 text-green-700 text-xs font-medium">
@@ -676,16 +516,16 @@ export default function ProjectDetailPage() {
 
       {/* メンバー編集パネル */}
       <EditPanel
-        open={editMemberOpen}
-        onOpenChange={setEditMemberOpen}
+        open={h.editMemberOpen}
+        onOpenChange={h.setEditMemberOpen}
         title="メンバー情報を編集"
         onSave={saveEditMember}
-        saving={savingMemberEdit}
+        saving={h.savingMemberEdit}
       >
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>役割</Label>
-            <Select value={editMemberRole} onValueChange={(v) => v && setEditMemberRole(v)}>
+            <Select value={h.editMemberRole} onValueChange={(v) => v && h.setEditMemberRole(v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -699,17 +539,17 @@ export default function ProjectDetailPage() {
             <Label>参加日</Label>
             <Input
               type="date"
-              value={editMemberJoinedAt}
-              onChange={(e) => setEditMemberJoinedAt(e.target.value)}
+              value={h.editMemberJoinedAt}
+              onChange={(e) => h.setEditMemberJoinedAt(e.target.value)}
             />
           </div>
           <div className="space-y-2">
             <Label>離脱日</Label>
             <Input
               type="date"
-              value={editMemberLeftAt}
-              onChange={(e) => setEditMemberLeftAt(e.target.value)}
-              min={editMemberJoinedAt || undefined}
+              value={h.editMemberLeftAt}
+              onChange={(e) => h.setEditMemberLeftAt(e.target.value)}
+              min={h.editMemberJoinedAt || undefined}
             />
             <p className="text-xs text-muted-foreground">
               空欄の場合は現在も在籍中として扱われます

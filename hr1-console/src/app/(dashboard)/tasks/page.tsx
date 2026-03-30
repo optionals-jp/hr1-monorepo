@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useMemo } from "react";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -36,17 +35,8 @@ import {
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { useRouter } from "next/navigation";
-import { useOrg } from "@/lib/org-context";
-import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
-import {
-  useTasks,
-  useTaskEmployees,
-  useTaskProjects,
-  useTaskTeams,
-  createTask,
-  updateTaskStatus,
-} from "@/lib/hooks/use-tasks";
+import { useTasksPage } from "@/lib/hooks/use-tasks-page";
 import {
   taskStatusLabels,
   taskPriorityLabels,
@@ -83,162 +73,47 @@ const statusIcons: Record<string, React.ElementType> = {
 
 export default function TasksPage() {
   const { showToast } = useToast();
-  const { organization } = useOrg();
-  const { user } = useAuth();
-  const [search, setSearch] = useState("");
   const router = useRouter();
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterSource, setFilterSource] = useState("all");
-  const [filterPriority, setFilterPriority] = useState("all");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [addTab, setAddTab] = useState("basic");
-  const [saving, setSaving] = useState(false);
-
-  // 新規作成フォーム
-  const [newTitle, setNewTitle] = useState("");
-  const [newDescription, setNewDescription] = useState("");
-  const [newPriority, setNewPriority] = useState<string>("medium");
-  const [newScope, setNewScope] = useState<string>("organization");
-  const [newProjectId, setNewProjectId] = useState("");
-  const [newTeamId, setNewTeamId] = useState("");
-  const [newDueDate, setNewDueDate] = useState("");
-  const [newAssignAll, setNewAssignAll] = useState(true);
-  const [newAssigneeIds, setNewAssigneeIds] = useState<string[]>([]);
-
-  // データ取得
-  const { data: tasks = [], isLoading, error: tasksError, mutate } = useTasks();
-
-  const { data: employees = [] } = useTaskEmployees();
-
-  const { data: projects = [] } = useTaskProjects();
-
-  const { data: teams = [] } = useTaskTeams(newProjectId, newScope);
-
-  // フィルター
-  const filtered = useMemo(() => {
-    let rows = tasks;
-    if (search) {
-      const q = search.toLowerCase();
-      rows = rows.filter(
-        (t) => t.title.toLowerCase().includes(q) || (t.description ?? "").toLowerCase().includes(q)
-      );
-    }
-    if (filterStatus !== "all") {
-      rows = rows.filter((t) => t.status === filterStatus);
-    }
-    if (filterSource !== "all") {
-      rows = rows.filter((t) => t.source === filterSource);
-    }
-    if (filterPriority !== "all") {
-      rows = rows.filter((t) => t.priority === filterPriority);
-    }
-    return rows;
-  }, [tasks, search, filterStatus, filterSource, filterPriority]);
-
-  const openAddDialog = () => {
-    setNewTitle("");
-    setNewDescription("");
-    setNewPriority("medium");
-    setNewScope("organization");
-    setNewProjectId("");
-    setNewTeamId("");
-    setNewDueDate("");
-    setNewAssignAll(true);
-    setNewAssigneeIds([]);
-    setAddTab("basic");
-    setDialogOpen(true);
-  };
+  const h = useTasksPage();
 
   const handleAdd = async () => {
-    if (!organization || !user || !newTitle.trim()) return;
-    setSaving(true);
-
-    const result = await createTask(
-      organization.id,
-      user.id,
-      {
-        title: newTitle,
-        description: newDescription,
-        priority: newPriority,
-        scope: newScope,
-        projectId: newProjectId,
-        teamId: newTeamId,
-        dueDate: newDueDate,
-        assignAll: newAssignAll,
-        assigneeIds: newAssigneeIds,
-      },
-      employees
-    );
-
+    const result = await h.handleAdd();
     if (result.success) {
-      setDialogOpen(false);
-      mutate();
       showToast("タスクを作成しました");
-    } else {
-      showToast(result.error ?? "タスクの作成に失敗しました", "error");
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
-    setSaving(false);
   };
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
-    if (!organization) return;
-    const result = await updateTaskStatus(taskId, organization.id, newStatus);
+    const result = await h.handleStatusChange(taskId, newStatus);
     if (result.success) {
-      mutate();
       showToast("ステータスを更新しました");
-    } else {
-      showToast(result.error ?? "更新に失敗しました", "error");
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
   };
 
-  const toggleAssignee = (id: string) => {
-    setNewAssigneeIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  };
-
-  const activeFilters = [
-    filterStatus !== "all"
-      ? {
-          key: "status",
-          label: `ステータス：${taskStatusLabels[filterStatus]}`,
-          clear: () => setFilterStatus("all"),
-        }
-      : null,
-    filterSource !== "all"
-      ? {
-          key: "source",
-          label: `作成者：${taskSourceLabels[filterSource]}`,
-          clear: () => setFilterSource("all"),
-        }
-      : null,
-    filterPriority !== "all"
-      ? {
-          key: "priority",
-          label: `優先度：${taskPriorityLabels[filterPriority]}`,
-          clear: () => setFilterPriority("all"),
-        }
-      : null,
-  ].filter(Boolean) as { key: string; label: string; clear: () => void }[];
-
   return (
     <div className="flex flex-col">
-      <QueryErrorBanner error={tasksError} onRetry={() => mutate()} />
+      <QueryErrorBanner error={h.tasksError} onRetry={() => h.mutate()} />
       <PageHeader
         title="タスク一覧"
         description="従業員へのタスク依頼・共有タスクの管理"
         sticky={false}
         border={false}
-        action={<Button onClick={openAddDialog}>タスクを作成</Button>}
+        action={<Button onClick={h.openAddDialog}>タスクを作成</Button>}
       />
 
       <div className="sticky top-14 z-10">
-        <SearchBar value={search} onChange={setSearch} placeholder="タスク名・説明で検索" />
+        <SearchBar value={h.search} onChange={h.setSearch} placeholder="タスク名・説明で検索" />
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
-            {activeFilters.length > 0 && (
+            {h.activeFilters.length > 0 && (
               <div className="flex items-center gap-1.5 overflow-x-auto">
-                {activeFilters.map((f) => (
+                {h.activeFilters.map((f) => (
                   <Badge
                     key={f.key}
                     variant="secondary"
@@ -264,35 +139,35 @@ export default function TasksPage() {
             <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
               ステータス
             </div>
-            <DropdownMenuItem className="py-2" onClick={() => setFilterStatus("all")}>
-              <span className={cn(filterStatus === "all" && "font-medium")}>すべて</span>
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterStatus("all")}>
+              <span className={cn(h.filterStatus === "all" && "font-medium")}>すべて</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             {Object.entries(taskStatusLabels).map(([k, v]) => (
-              <DropdownMenuItem className="py-2" key={k} onClick={() => setFilterStatus(k)}>
-                <span className={cn(filterStatus === k && "font-medium")}>{v}</span>
+              <DropdownMenuItem className="py-2" key={k} onClick={() => h.setFilterStatus(k)}>
+                <span className={cn(h.filterStatus === k && "font-medium")}>{v}</span>
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
             <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">作成者</div>
-            <DropdownMenuItem className="py-2" onClick={() => setFilterSource("all")}>
-              <span className={cn(filterSource === "all" && "font-medium")}>すべて</span>
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterSource("all")}>
+              <span className={cn(h.filterSource === "all" && "font-medium")}>すべて</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             {Object.entries(taskSourceLabels).map(([k, v]) => (
-              <DropdownMenuItem className="py-2" key={k} onClick={() => setFilterSource(k)}>
-                <span className={cn(filterSource === k && "font-medium")}>{v}</span>
+              <DropdownMenuItem className="py-2" key={k} onClick={() => h.setFilterSource(k)}>
+                <span className={cn(h.filterSource === k && "font-medium")}>{v}</span>
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
             <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">優先度</div>
-            <DropdownMenuItem className="py-2" onClick={() => setFilterPriority("all")}>
-              <span className={cn(filterPriority === "all" && "font-medium")}>すべて</span>
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterPriority("all")}>
+              <span className={cn(h.filterPriority === "all" && "font-medium")}>すべて</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             {Object.entries(taskPriorityLabels).map(([k, v]) => (
-              <DropdownMenuItem className="py-2" key={k} onClick={() => setFilterPriority(k)}>
-                <span className={cn(filterPriority === k && "font-medium")}>{v}</span>
+              <DropdownMenuItem className="py-2" key={k} onClick={() => h.setFilterPriority(k)}>
+                <span className={cn(h.filterPriority === k && "font-medium")}>{v}</span>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -315,11 +190,11 @@ export default function TasksPage() {
           <TableBody>
             <TableEmptyState
               colSpan={7}
-              isLoading={isLoading}
-              isEmpty={filtered.length === 0}
+              isLoading={h.isLoading}
+              isEmpty={h.filtered.length === 0}
               emptyMessage="タスクがありません"
             >
-              {filtered.map((task) => {
+              {h.filtered.map((task) => {
                 const StatusIcon = statusIcons[task.status] ?? Circle;
                 return (
                   <TableRow
@@ -440,32 +315,32 @@ export default function TasksPage() {
       </div>
 
       <EditPanel
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        open={h.dialogOpen}
+        onOpenChange={h.setDialogOpen}
         title="タスクを作成"
         tabs={addTabs}
-        activeTab={addTab}
-        onTabChange={setAddTab}
+        activeTab={h.addTab}
+        onTabChange={h.setAddTab}
         onSave={handleAdd}
-        saving={saving}
-        saveDisabled={!newTitle.trim()}
+        saving={h.saving}
+        saveDisabled={!h.newTitle.trim()}
         saveLabel="作成"
       >
-        {addTab === "basic" && (
+        {h.addTab === "basic" && (
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>タスク名 *</Label>
               <Input
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
+                value={h.newTitle}
+                onChange={(e) => h.setNewTitle(e.target.value)}
                 placeholder="例：サーベイに回答してください"
               />
             </div>
             <div className="space-y-2">
               <Label>説明</Label>
               <Textarea
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
+                value={h.newDescription}
+                onChange={(e) => h.setNewDescription(e.target.value)}
                 placeholder="タスクの詳細を入力"
                 rows={3}
               />
@@ -473,7 +348,7 @@ export default function TasksPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>優先度</Label>
-                <Select value={newPriority} onValueChange={(v) => v && setNewPriority(v)}>
+                <Select value={h.newPriority} onValueChange={(v) => v && h.setNewPriority(v)}>
                   <SelectTrigger>
                     <SelectValue>{(v: string) => taskPriorityLabels[v] ?? v}</SelectValue>
                   </SelectTrigger>
@@ -490,8 +365,8 @@ export default function TasksPage() {
                 <Label>期限</Label>
                 <Input
                   type="date"
-                  value={newDueDate}
-                  onChange={(e) => setNewDueDate(e.target.value)}
+                  value={h.newDueDate}
+                  onChange={(e) => h.setNewDueDate(e.target.value)}
                 />
               </div>
             </div>
@@ -508,17 +383,10 @@ export default function TasksPage() {
                   <button
                     key={scope}
                     type="button"
-                    onClick={() => {
-                      setNewScope(scope);
-                      if (scope !== "project" && scope !== "team") {
-                        setNewProjectId("");
-                        setNewTeamId("");
-                      }
-                      if (scope !== "team") setNewTeamId("");
-                    }}
+                    onClick={() => h.handleScopeChange(scope)}
                     className={cn(
                       "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors",
-                      newScope === scope
+                      h.newScope === scope
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground hover:text-foreground"
                     )}
@@ -530,23 +398,17 @@ export default function TasksPage() {
               </div>
             </div>
 
-            {(newScope === "project" || newScope === "team") && (
+            {(h.newScope === "project" || h.newScope === "team") && (
               <div className="space-y-2">
                 <Label>プロジェクト</Label>
-                <Select
-                  value={newProjectId}
-                  onValueChange={(v) => {
-                    if (v) setNewProjectId(v);
-                    setNewTeamId("");
-                  }}
-                >
+                <Select value={h.newProjectId} onValueChange={h.handleProjectChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="プロジェクトを選択">
-                      {(v: string) => projects.find((p) => p.id === v)?.name ?? v}
+                      {(v: string) => h.projects.find((p) => p.id === v)?.name ?? v}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.map((p) => (
+                    {h.projects.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.name}
                       </SelectItem>
@@ -556,22 +418,22 @@ export default function TasksPage() {
               </div>
             )}
 
-            {newScope === "team" && newProjectId && (
+            {h.newScope === "team" && h.newProjectId && (
               <div className="space-y-2">
                 <Label>チーム</Label>
-                <Select value={newTeamId} onValueChange={(v) => v && setNewTeamId(v)}>
+                <Select value={h.newTeamId} onValueChange={(v) => v && h.setNewTeamId(v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="チームを選択">
-                      {(v: string) => teams.find((t) => t.id === v)?.name ?? v}
+                      {(v: string) => h.teams.find((t) => t.id === v)?.name ?? v}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {teams.length === 0 ? (
+                    {h.teams.length === 0 ? (
                       <div className="py-2 px-3 text-sm text-muted-foreground">
                         チームがありません
                       </div>
                     ) : (
-                      teams.map((t) => (
+                      h.teams.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
                           {t.name}
                         </SelectItem>
@@ -583,20 +445,17 @@ export default function TasksPage() {
             )}
           </div>
         )}
-        {addTab === "assign" && (
+        {h.addTab === "assign" && (
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>担当者の割り当て</Label>
               <div className="flex gap-1.5">
                 <button
                   type="button"
-                  onClick={() => {
-                    setNewAssignAll(true);
-                    setNewAssigneeIds([]);
-                  }}
+                  onClick={() => h.handleAssignAllChange(true)}
                   className={cn(
                     "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors",
-                    newAssignAll
+                    h.newAssignAll
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground hover:text-foreground"
                   )}
@@ -606,10 +465,10 @@ export default function TasksPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setNewAssignAll(false)}
+                  onClick={() => h.handleAssignAllChange(false)}
                   className={cn(
                     "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors",
-                    !newAssignAll
+                    !h.newAssignAll
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground hover:text-foreground"
                   )}
@@ -620,21 +479,21 @@ export default function TasksPage() {
               </div>
             </div>
 
-            {newAssignAll ? (
+            {h.newAssignAll ? (
               <p className="text-sm text-muted-foreground">
-                組織の全従業員（{employees.length}名）にタスクが割り当てられます。
+                組織の全従業員（{h.employees.length}名）にタスクが割り当てられます。
               </p>
             ) : (
               <div className="space-y-2">
-                <Label>担当者を選択（{newAssigneeIds.length}名選択中）</Label>
+                <Label>担当者を選択（{h.newAssigneeIds.length}名選択中）</Label>
                 <div className="border rounded-lg max-h-64 overflow-y-auto">
-                  {employees.map((e) => {
-                    const selected = newAssigneeIds.includes(e.id);
+                  {h.employees.map((e) => {
+                    const selected = h.newAssigneeIds.includes(e.id);
                     return (
                       <button
                         key={e.id}
                         type="button"
-                        onClick={() => toggleAssignee(e.id)}
+                        onClick={() => h.toggleAssignee(e.id)}
                         className={cn(
                           "flex items-center gap-3 w-full px-3 py-2.5 text-left transition-colors",
                           selected ? "bg-primary/5" : "hover:bg-accent"

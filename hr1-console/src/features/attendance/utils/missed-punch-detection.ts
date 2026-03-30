@@ -6,6 +6,12 @@ export interface MissedPunchEmployee {
   expectedTime: string;
 }
 
+/** HH:MM 形式に正規化する（例: "9:30" → "09:30"） */
+function normalizeHHMM(time: string): string {
+  const [h, m] = time.split(":");
+  return `${h.padStart(2, "0")}:${(m ?? "00").padStart(2, "0")}`;
+}
+
 export function detectMissedPunches(
   employees: Array<{ id: string; display_name: string | null; email: string }>,
   todayRecords: Array<{
@@ -22,12 +28,14 @@ export function detectMissedPunches(
   const recordByUser = new Map(todayRecords.map((r) => [r.user_id, r]));
 
   const currentHHMM = `${String(currentTime.getHours()).padStart(2, "0")}:${String(currentTime.getMinutes()).padStart(2, "0")}`;
+  const normalizedStart = normalizeHHMM(settings.work_start_time);
+  const normalizedEnd = normalizeHHMM(settings.work_end_time);
 
   for (const emp of employees) {
     const record = recordByUser.get(emp.id);
 
     if (!record) {
-      if (currentHHMM > settings.work_start_time) {
+      if (currentHHMM > normalizedStart) {
         result.push({
           userId: emp.id,
           displayName: emp.display_name ?? emp.email,
@@ -39,7 +47,7 @@ export function detectMissedPunches(
       continue;
     }
 
-    if (record.clock_in && !record.clock_out && currentHHMM > settings.work_end_time) {
+    if (record.clock_in && !record.clock_out && currentHHMM > normalizedEnd) {
       result.push({
         userId: emp.id,
         displayName: emp.display_name ?? emp.email,

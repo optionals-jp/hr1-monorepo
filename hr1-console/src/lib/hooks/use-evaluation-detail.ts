@@ -74,6 +74,7 @@ export async function loadTemplateDetail(id: string, orgId: string): Promise<Tem
 export async function saveTemplateEdit(
   template: EvaluationTemplate,
   originalCriteria: EvaluationCriterion[],
+  organizationId: string,
   editTitle: string,
   editTarget: string,
   editDescription: string,
@@ -95,7 +96,7 @@ export async function saveTemplateEdit(
       editTarget !== template.target ||
       editDescription !== (template.description ?? "")
     ) {
-      await repo.updateTemplate(client, template.id, {
+      await repo.updateTemplate(client, template.id, organizationId, {
         title: editTitle,
         target: editTarget,
         description: editDescription || null,
@@ -294,9 +295,10 @@ export async function removeAssignments(
 
 export async function updateCycleStatus(
   cycleId: string,
+  organizationId: string,
   newStatus: string
 ): Promise<{ success: boolean; error?: string }> {
-  const { error } = await repo.updateCycle(getSupabase(), cycleId, {
+  const { error } = await repo.updateCycle(getSupabase(), cycleId, organizationId, {
     status: newStatus,
     updated_at: new Date().toISOString(),
   });

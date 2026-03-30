@@ -3,11 +3,9 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users } from "lucide-react";
+import type { HiringTypeStat } from "@/types/dashboard";
 
-export interface HiringTypeStat {
-  name: string;
-  value: number;
-}
+export type { HiringTypeStat };
 
 interface HiringTypeChartProps {
   data: HiringTypeStat[];

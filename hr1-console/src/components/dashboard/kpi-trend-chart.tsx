@@ -11,13 +11,9 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp } from "lucide-react";
+import type { KpiTrendPoint } from "@/types/dashboard";
 
-export interface KpiTrendPoint {
-  month: string;
-  applications: number;
-  offered: number;
-  withdrawn: number;
-}
+export type { KpiTrendPoint };
 
 interface KpiTrendChartProps {
   data: KpiTrendPoint[];

@@ -171,7 +171,7 @@ export async function saveFormEdit(
     const descChanged = editDescription !== (form.description ?? "");
 
     if (titleChanged || targetChanged || descChanged) {
-      await repo.updateForm(client, form.id, {
+      await repo.updateForm(client, form.id, orgId, {
         title: editTitle,
         target: editTarget,
         description: editDescription || null,

@@ -1,7 +1,5 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -34,21 +32,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { useOrg } from "@/lib/org-context";
 import { cn } from "@/lib/utils";
-import type { Task, TaskAssignee, Project, ProjectTeam } from "@/types/database";
-import {
-  loadTaskDetail,
-  updateTaskById,
-  deleteTaskById,
-  updateAssigneeStatus,
-  removeAssignee,
-  addAssignees,
-  fetchEmployeesForAssign,
-  fetchProjectsForEdit,
-  fetchTeamsForEdit,
-  updateTaskStatus,
-} from "@/lib/hooks/use-tasks";
+import { useTaskDetailPage } from "@/lib/hooks/use-task-detail-page";
 import {
   taskStatusLabels,
   taskPriorityLabels,
@@ -74,22 +59,6 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 
-type TaskWithRelations = Task & {
-  creator?: { display_name: string | null; email: string } | null;
-  projects?: { id: string; name: string } | null;
-  project_teams?: { id: string; name: string } | null;
-};
-
-type AssigneeRow = TaskAssignee & {
-  profiles?: { display_name: string | null; email: string; position: string | null } | null;
-};
-
-interface Employee {
-  id: string;
-  email: string;
-  display_name: string | null;
-}
-
 const statusIcons: Record<string, React.ElementType> = {
   open: Circle,
   in_progress: Clock,
@@ -105,191 +74,85 @@ const scopeIcons: Record<string, React.ElementType> = {
 };
 
 export default function TaskDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const { showToast } = useToast();
-  const { organization } = useOrg();
-  const [task, setTask] = useState<TaskWithRelations | null>(null);
-  const [assignees, setAssignees] = useState<AssigneeRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // 編集パネル
-  const [editOpen, setEditOpen] = useState(false);
-  const [editTitle, setEditTitle] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editPriority, setEditPriority] = useState("");
-  const [editDueDate, setEditDueDate] = useState("");
-  const [editScope, setEditScope] = useState("");
-  const [editProjectId, setEditProjectId] = useState("");
-  const [editTeamId, setEditTeamId] = useState("");
-  const [savingEdit, setSavingEdit] = useState(false);
-
-  // 担当者追加パネル
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
-  const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
-  const [savingAssign, setSavingAssign] = useState(false);
-
-  // プロジェクト・チーム一覧（編集用）
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [teams, setTeams] = useState<ProjectTeam[]>([]);
-
-  const fetchTask = useCallback(async () => {
-    if (!organization) return;
-    setLoading(true);
-    try {
-      const result = await loadTaskDetail(id, organization.id);
-      if (!result.task) {
-        router.push("/tasks");
-        return;
-      }
-      setTask(result.task as TaskWithRelations);
-      setAssignees((result.assignees ?? []) as AssigneeRow[]);
-    } catch {
-      showToast("タスクの取得に失敗しました", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [organization, id, router, showToast]);
-
-  useEffect(() => {
-    fetchTask();
-  }, [fetchTask]);
-
-  const openEditPanel = () => {
-    if (!task) return;
-    setEditTitle(task.title);
-    setEditDescription(task.description ?? "");
-    setEditPriority(task.priority);
-    setEditDueDate(task.due_date ?? "");
-    setEditScope(task.scope);
-    setEditProjectId(task.project_id ?? "");
-    setEditTeamId(task.team_id ?? "");
-    setEditOpen(true);
-
-    if (organization) {
-      fetchProjectsForEdit(organization.id).then((data) => setProjects(data));
-    }
-  };
+  const h = useTaskDetailPage();
 
   const handleSaveEdit = async () => {
-    if (!task || !editTitle.trim() || !organization) return;
-    setSavingEdit(true);
-    const result = await updateTaskById(task.id, organization.id, {
-      title: editTitle,
-      description: editDescription,
-      priority: editPriority,
-      dueDate: editDueDate,
-      scope: editScope,
-      projectId: editProjectId,
-      teamId: editTeamId,
-    });
+    const result = await h.handleSaveEdit();
     if (result.success) {
-      setEditOpen(false);
-      await fetchTask();
       showToast("タスクを更新しました");
-    } else {
-      showToast(result.error ?? "更新に失敗しました", "error");
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
-    setSavingEdit(false);
   };
 
   const handleStatusChange = async (newStatus: string) => {
-    if (!task || !organization) return;
-    const result = await updateTaskStatus(task.id, organization.id, newStatus);
+    const result = await h.handleStatusChange(newStatus);
     if (result.success) {
-      await fetchTask();
       showToast("ステータスを更新しました");
-    } else {
-      showToast(result.error ?? "更新に失敗しました", "error");
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
   };
 
   const handleDelete = async () => {
-    if (!task || !organization || !window.confirm("削除してもよろしいですか？")) return;
-    const result = await deleteTaskById(task.id, organization.id);
+    const result = await h.handleDelete();
     if (result.success) {
       showToast("タスクを削除しました");
-      router.push("/tasks");
-    } else {
-      showToast(result.error ?? "削除に失敗しました", "error");
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
   };
 
   const handleAssigneeStatusChange = async (assigneeId: string, newStatus: string) => {
-    const result = await updateAssigneeStatus(assigneeId, newStatus);
+    const result = await h.handleAssigneeStatusChange(assigneeId, newStatus);
     if (result.success) {
-      await fetchTask();
       showToast("ステータスを更新しました");
-    } else {
-      showToast(result.error ?? "更新に失敗しました", "error");
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
   };
 
   const handleRemoveAssignee = async (assigneeId: string) => {
-    if (!window.confirm("削除してもよろしいですか？")) return;
-    const result = await removeAssignee(assigneeId);
+    const result = await h.handleRemoveAssignee(assigneeId);
     if (result.success) {
-      await fetchTask();
       showToast("担当者を削除しました");
-    } else {
-      showToast(result.error ?? "削除に失敗しました", "error");
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
-  };
-
-  const openAssignDialog = async () => {
-    if (!organization) return;
-    const existingIds = new Set(assignees.map((a) => a.user_id));
-    const emps = await fetchEmployeesForAssign(organization.id, existingIds);
-    setAllEmployees(emps);
-    setSelectedEmployeeIds([]);
-    setAssignDialogOpen(true);
   };
 
   const handleAddAssignees = async () => {
-    if (!task || selectedEmployeeIds.length === 0) return;
-    setSavingAssign(true);
-    const result = await addAssignees(task.id, selectedEmployeeIds);
+    const result = await h.handleAddAssignees();
     if (result.success) {
-      setAssignDialogOpen(false);
-      await fetchTask();
       showToast("担当者を追加しました");
-    } else {
-      showToast(result.error ?? "追加に失敗しました", "error");
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
-    setSavingAssign(false);
   };
 
-  // チーム一覧取得（editScope=team時）
-  useEffect(() => {
-    if (editScope === "team" && editProjectId) {
-      fetchTeamsForEdit(editProjectId).then((data) => setTeams(data));
-    }
-  }, [editScope, editProjectId]);
-
-  if (loading || !task) {
+  if (h.loading || !h.task) {
     return (
       <>
         <PageHeader title="タスク詳細" breadcrumb={[{ label: "タスク", href: "/tasks" }]} />
         <div className="px-4 py-8 sm:px-6 md:px-8 text-center text-muted-foreground">
-          {loading ? "読み込み中..." : "タスクが見つかりません"}
+          {h.loading ? "読み込み中..." : "タスクが見つかりません"}
         </div>
       </>
     );
   }
 
-  const StatusIcon = statusIcons[task.status] ?? Circle;
-  const ScopeIcon = scopeIcons[task.scope] ?? Globe;
-  const completedCount = assignees.filter((a) => a.status === "completed").length;
+  const StatusIcon = statusIcons[h.task.status] ?? Circle;
+  const ScopeIcon = scopeIcons[h.task.scope] ?? Globe;
 
   return (
     <>
       <PageHeader
-        title={task.title}
+        title={h.task.title}
         breadcrumb={[{ label: "タスク", href: "/tasks" }]}
         action={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={openEditPanel}>
+            <Button variant="outline" size="sm" onClick={h.openEditPanel}>
               <Pencil className="h-4 w-4 mr-1.5" />
               編集
             </Button>
@@ -321,13 +184,13 @@ export default function TaskDetailPage() {
                     <StatusIcon
                       className={cn(
                         "h-4 w-4",
-                        task.status === "completed" && "text-green-600",
-                        task.status === "in_progress" && "text-blue-600",
-                        task.status === "cancelled" && "text-muted-foreground",
-                        task.status === "open" && "text-muted-foreground"
+                        h.task.status === "completed" && "text-green-600",
+                        h.task.status === "in_progress" && "text-blue-600",
+                        h.task.status === "cancelled" && "text-muted-foreground",
+                        h.task.status === "open" && "text-muted-foreground"
                       )}
                     />
-                    <span className="text-sm font-medium">{taskStatusLabels[task.status]}</span>
+                    <span className="text-sm font-medium">{taskStatusLabels[h.task.status]}</span>
                     <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -335,7 +198,7 @@ export default function TaskDetailPage() {
                       <DropdownMenuItem
                         key={k}
                         onClick={() => handleStatusChange(k)}
-                        className={cn(task.status === k && "font-medium")}
+                        className={cn(h.task!.status === k && "font-medium")}
                       >
                         {v}
                       </DropdownMenuItem>
@@ -345,28 +208,28 @@ export default function TaskDetailPage() {
               </div>
               <div className="flex items-center justify-between">
                 <Label className="text-sm text-muted-foreground">優先度</Label>
-                <Badge variant={taskPriorityColors[task.priority]}>
-                  {taskPriorityLabels[task.priority]}
+                <Badge variant={taskPriorityColors[h.task.priority]}>
+                  {taskPriorityLabels[h.task.priority]}
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
                 <Label className="text-sm text-muted-foreground">期限</Label>
                 <span className="text-sm">
-                  {task.due_date ? format(new Date(task.due_date), "yyyy/MM/dd") : "未設定"}
+                  {h.task.due_date ? format(new Date(h.task.due_date), "yyyy/MM/dd") : "未設定"}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <Label className="text-sm text-muted-foreground">作成者</Label>
                 <span className="text-sm">
-                  {task.source === "console"
+                  {h.task.source === "console"
                     ? "管理者"
-                    : (task.creator?.display_name ?? task.creator?.email)}
+                    : (h.task.creator?.display_name ?? h.task.creator?.email)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <Label className="text-sm text-muted-foreground">作成日</Label>
                 <span className="text-sm">
-                  {format(new Date(task.created_at), "yyyy/MM/dd HH:mm")}
+                  {format(new Date(h.task.created_at), "yyyy/MM/dd HH:mm")}
                 </span>
               </div>
             </CardContent>
@@ -382,23 +245,23 @@ export default function TaskDetailPage() {
                 <div className="flex items-center gap-1.5 text-sm">
                   <ScopeIcon className="h-4 w-4 text-muted-foreground" />
                   <span>
-                    {task.scope === "project" && task.projects?.name
-                      ? task.projects.name
-                      : task.scope === "team" && task.project_teams?.name
-                        ? task.project_teams.name
-                        : taskScopeLabels[task.scope]}
+                    {h.task.scope === "project" && h.task.projects?.name
+                      ? h.task.projects.name
+                      : h.task.scope === "team" && h.task.project_teams?.name
+                        ? h.task.project_teams.name
+                        : taskScopeLabels[h.task.scope]}
                   </span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
                 <Label className="text-sm text-muted-foreground">ソース</Label>
-                <span className="text-sm">{taskSourceLabels[task.source]}</span>
+                <span className="text-sm">{taskSourceLabels[h.task.source]}</span>
               </div>
               <div className="flex items-center justify-between">
                 <Label className="text-sm text-muted-foreground">担当者数</Label>
                 <span className="text-sm">
-                  {assignees.length}名
-                  {task.assign_to_all && (
+                  {h.assignees.length}名
+                  {h.task.assign_to_all && (
                     <Badge variant="outline" className="ml-1.5 text-[10px] px-1.5 py-0">
                       全員
                     </Badge>
@@ -408,16 +271,16 @@ export default function TaskDetailPage() {
               <div className="flex items-center justify-between">
                 <Label className="text-sm text-muted-foreground">進捗</Label>
                 <span className="text-sm font-medium">
-                  {completedCount}/{assignees.length} 完了
+                  {h.completedCount}/{h.assignees.length} 完了
                 </span>
               </div>
-              {assignees.length > 0 && (
+              {h.assignees.length > 0 && (
                 <div className="pt-1">
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-green-500 rounded-full transition-all"
                       style={{
-                        width: `${assignees.length > 0 ? (completedCount / assignees.length) * 100 : 0}%`,
+                        width: `${h.assignees.length > 0 ? (h.completedCount / h.assignees.length) * 100 : 0}%`,
                       }}
                     />
                   </div>
@@ -428,13 +291,13 @@ export default function TaskDetailPage() {
         </div>
 
         {/* 説明 */}
-        {task.description && (
+        {h.task.description && (
           <Card>
             <CardHeader>
               <CardTitle className="text-base">説明</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm whitespace-pre-wrap">{task.description}</p>
+              <p className="text-sm whitespace-pre-wrap">{h.task.description}</p>
             </CardContent>
           </Card>
         )}
@@ -443,7 +306,7 @@ export default function TaskDetailPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold">担当者一覧</h3>
-            <Button variant="outline" size="sm" onClick={openAssignDialog}>
+            <Button variant="outline" size="sm" onClick={h.openAssignDialog}>
               <Plus className="h-4 w-4 mr-1.5" />
               担当者を追加
             </Button>
@@ -463,10 +326,10 @@ export default function TaskDetailPage() {
                 <TableEmptyState
                   colSpan={5}
                   isLoading={false}
-                  isEmpty={assignees.length === 0}
+                  isEmpty={h.assignees.length === 0}
                   emptyMessage="担当者が割り当てられていません"
                 >
-                  {assignees.map((a) => (
+                  {h.assignees.map((a) => (
                     <TableRow key={a.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -537,30 +400,30 @@ export default function TaskDetailPage() {
 
       {/* 編集パネル */}
       <EditPanel
-        open={editOpen}
-        onOpenChange={setEditOpen}
+        open={h.editOpen}
+        onOpenChange={h.setEditOpen}
         title="タスクを編集"
-        saving={savingEdit}
+        saving={h.savingEdit}
         onSave={handleSaveEdit}
-        saveDisabled={!editTitle.trim()}
+        saveDisabled={!h.editTitle.trim()}
       >
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>タスク名 *</Label>
-            <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+            <Input value={h.editTitle} onChange={(e) => h.setEditTitle(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>説明</Label>
             <Textarea
-              value={editDescription}
-              onChange={(e) => setEditDescription(e.target.value)}
+              value={h.editDescription}
+              onChange={(e) => h.setEditDescription(e.target.value)}
               rows={3}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>優先度</Label>
-              <Select value={editPriority} onValueChange={(v) => v && setEditPriority(v)}>
+              <Select value={h.editPriority} onValueChange={(v) => v && h.setEditPriority(v)}>
                 <SelectTrigger>
                   <SelectValue>{(v: string) => taskPriorityLabels[v] ?? v}</SelectValue>
                 </SelectTrigger>
@@ -577,8 +440,8 @@ export default function TaskDetailPage() {
               <Label>期限</Label>
               <Input
                 type="date"
-                value={editDueDate}
-                onChange={(e) => setEditDueDate(e.target.value)}
+                value={h.editDueDate}
+                onChange={(e) => h.setEditDueDate(e.target.value)}
               />
             </div>
           </div>
@@ -595,17 +458,10 @@ export default function TaskDetailPage() {
                 <button
                   key={scope}
                   type="button"
-                  onClick={() => {
-                    setEditScope(scope);
-                    if (scope !== "project" && scope !== "team") {
-                      setEditProjectId("");
-                      setEditTeamId("");
-                    }
-                    if (scope !== "team") setEditTeamId("");
-                  }}
+                  onClick={() => h.handleEditScopeChange(scope)}
                   className={cn(
                     "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors",
-                    editScope === scope
+                    h.editScope === scope
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground hover:text-foreground"
                   )}
@@ -616,23 +472,17 @@ export default function TaskDetailPage() {
               ))}
             </div>
           </div>
-          {(editScope === "project" || editScope === "team") && (
+          {(h.editScope === "project" || h.editScope === "team") && (
             <div className="space-y-2">
               <Label>プロジェクト</Label>
-              <Select
-                value={editProjectId}
-                onValueChange={(v) => {
-                  if (v) setEditProjectId(v);
-                  setEditTeamId("");
-                }}
-              >
+              <Select value={h.editProjectId} onValueChange={h.handleEditProjectChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="プロジェクトを選択">
-                    {(v: string) => projects.find((p) => p.id === v)?.name ?? v}
+                    {(v: string) => h.projects.find((p) => p.id === v)?.name ?? v}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {projects.map((p) => (
+                  {h.projects.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.name}
                     </SelectItem>
@@ -641,22 +491,22 @@ export default function TaskDetailPage() {
               </Select>
             </div>
           )}
-          {editScope === "team" && editProjectId && (
+          {h.editScope === "team" && h.editProjectId && (
             <div className="space-y-2">
               <Label>チーム</Label>
-              <Select value={editTeamId} onValueChange={(v) => v && setEditTeamId(v)}>
+              <Select value={h.editTeamId} onValueChange={(v) => v && h.setEditTeamId(v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="チームを選択">
-                    {(v: string) => teams.find((t) => t.id === v)?.name ?? v}
+                    {(v: string) => h.teams.find((t) => t.id === v)?.name ?? v}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {teams.length === 0 ? (
+                  {h.teams.length === 0 ? (
                     <div className="py-2 px-3 text-sm text-muted-foreground">
                       チームがありません
                     </div>
                   ) : (
-                    teams.map((t) => (
+                    h.teams.map((t) => (
                       <SelectItem key={t.id} value={t.id}>
                         {t.name}
                       </SelectItem>
@@ -671,33 +521,29 @@ export default function TaskDetailPage() {
 
       {/* 担当者追加パネル */}
       <EditPanel
-        open={assignDialogOpen}
-        onOpenChange={setAssignDialogOpen}
+        open={h.assignDialogOpen}
+        onOpenChange={h.setAssignDialogOpen}
         title="担当者を追加"
-        saving={savingAssign}
+        saving={h.savingAssign}
         onSave={handleAddAssignees}
-        saveDisabled={selectedEmployeeIds.length === 0}
+        saveDisabled={h.selectedEmployeeIds.length === 0}
         saveLabel="追加"
       >
         <div className="space-y-2">
-          <Label>担当者を選択（{selectedEmployeeIds.length}名選択中）</Label>
+          <Label>担当者を選択（{h.selectedEmployeeIds.length}名選択中）</Label>
           <div className="border rounded-lg max-h-72 overflow-y-auto">
-            {allEmployees.length === 0 ? (
+            {h.allEmployees.length === 0 ? (
               <div className="py-4 text-center text-sm text-muted-foreground">
                 追加可能な従業員がいません
               </div>
             ) : (
-              allEmployees.map((e) => {
-                const selected = selectedEmployeeIds.includes(e.id);
+              h.allEmployees.map((e) => {
+                const selected = h.selectedEmployeeIds.includes(e.id);
                 return (
                   <button
                     key={e.id}
                     type="button"
-                    onClick={() =>
-                      setSelectedEmployeeIds((prev) =>
-                        prev.includes(e.id) ? prev.filter((x) => x !== e.id) : [...prev, e.id]
-                      )
-                    }
+                    onClick={() => h.toggleSelectedEmployee(e.id)}
                     className={cn(
                       "flex items-center gap-3 w-full px-3 py-2.5 text-left transition-colors",
                       selected ? "bg-primary/5" : "hover:bg-accent"

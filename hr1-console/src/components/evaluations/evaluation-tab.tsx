@@ -78,20 +78,28 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
 
   useEffect(() => {
     if (!organization) return;
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [targetUserId, organization]);
+    let cancelled = false;
 
-  async function loadData() {
+    loadEvaluationTabData(organization.id, targetUserId, targetType).then((result) => {
+      if (cancelled) return;
+      setTemplates(result.templates);
+      setEvaluations(result.evaluations);
+      setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [organization, targetUserId, targetType]);
+
+  const loadData = async () => {
     if (!organization) return;
     setLoading(true);
-
     const result = await loadEvaluationTabData(organization.id, targetUserId, targetType);
     setTemplates(result.templates);
     setEvaluations(result.evaluations);
-
     setLoading(false);
-  }
+  };
 
   async function handleTemplateSelect(templateId: string | null) {
     if (!templateId) return;
