@@ -9,10 +9,35 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
-import { getSupabase } from "@/lib/supabase/browser";
+import {
+  useThreadsList,
+  useChannelsList,
+  getSupabaseClient,
+  fetchMessagesPage,
+  fetchMessagesSince,
+  markAsRead,
+  fetchOlderMessages,
+  sendMessage,
+  editMessage,
+  deleteMessage,
+  useUnthreadedApplicants,
+  useUnthreadedEmployees,
+  createThread,
+  useDepartmentsForChannel,
+  useProjectsForChannel,
+  createChannel,
+  addChannelMembers,
+  fetchDeptMembers,
+  createDepartmentChannels,
+  useChannelMembers,
+  useOrgUsersForChannel,
+  addChannelMember,
+  removeChannelMember,
+  fetchSenderProfile,
+  markSingleAsRead,
+} from "@/lib/hooks/use-messages-page";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { useQuery } from "@/lib/use-query";
-import type { MessageThread, Message, Profile, ChannelMember } from "@/types/database";
+import type { MessageThread, Message, Profile } from "@/types/database";
 import {
   Search,
   Send,
@@ -45,8 +70,6 @@ const PAGE_SIZE = 30;
 type MessageCache = Map<string, { messages: Message[]; hasMore: boolean }>;
 
 export default function MessagesPage() {
-  const { organization } = useOrg();
-  const { user } = useAuth();
   const searchParams = useSearchParams();
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(
     searchParams.get("thread")
@@ -64,49 +87,7 @@ export default function MessagesPage() {
     isLoading: threadsLoading,
     error: threadsError,
     mutate: mutateThreads,
-  } = useQuery<MessageThread[]>(
-    organization && user ? `message-threads-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase().rpc("get_threads_with_details", {
-        p_org_id: organization!.id,
-        p_user_id: user!.id,
-      });
-
-      if (!data) return [];
-
-      return (data as Record<string, unknown>[]).map((row) => ({
-        id: row.id as string,
-        organization_id: row.organization_id as string,
-        participant_id: row.participant_id as string,
-        participant_type: (row.participant_type as "applicant" | "employee") ?? "applicant",
-        title: row.title as string | null,
-        created_at: row.created_at as string,
-        updated_at: row.updated_at as string,
-        participant: {
-          id: row.participant_id as string,
-          display_name: row.participant_display_name as string | null,
-          email: row.participant_email as string,
-          avatar_url: row.participant_avatar_url as string | null,
-          department: row.participant_department as string | null,
-          position: row.participant_position as string | null,
-        },
-        job_titles: (row.job_titles as string | null) ?? null,
-        application_count: Number(row.application_count ?? 0),
-        latest_message: row.latest_message_id
-          ? {
-              id: row.latest_message_id as string,
-              thread_id: row.id as string,
-              sender_id: row.latest_message_sender_id as string,
-              content: row.latest_message_content as string,
-              read_at: null,
-              created_at: row.latest_message_created_at as string,
-              sender: { display_name: row.latest_message_sender_name as string | null },
-            }
-          : undefined,
-        unread_count: Number(row.unread_count ?? 0),
-      })) as MessageThread[];
-    }
-  );
+  } = useThreadsList();
 
   // --- チャンネル一覧 ---
   const {
@@ -114,38 +95,7 @@ export default function MessagesPage() {
     isLoading: channelsLoading,
     error: channelsError,
     mutate: mutateChannels,
-  } = useQuery<MessageThread[]>(organization ? `channels-${organization.id}` : null, async () => {
-    const { data } = await getSupabase().rpc("get_channels_with_details", {
-      p_org_id: organization!.id,
-    });
-    if (!data) return [];
-    return (data as Record<string, unknown>[]).map((row) => ({
-      id: row.id as string,
-      organization_id: row.organization_id as string,
-      participant_id: "",
-      participant_type: "employee" as const,
-      is_channel: true,
-      channel_name: row.channel_name as string | null,
-      channel_type: row.channel_type as "department" | "project" | "custom" | null,
-      channel_source_id: row.channel_source_id as string | null,
-      title: row.title as string | null,
-      created_at: row.created_at as string,
-      updated_at: row.updated_at as string,
-      member_count: Number(row.member_count ?? 0),
-      latest_message: row.latest_message_id
-        ? {
-            id: row.latest_message_id as string,
-            thread_id: row.id as string,
-            sender_id: "",
-            content: row.latest_message_content as string,
-            read_at: null,
-            edited_at: null,
-            created_at: row.latest_message_created_at as string,
-            sender: { display_name: row.latest_message_sender_name as string | null },
-          }
-        : undefined,
-    })) as MessageThread[];
-  });
+  } = useChannelsList();
 
   const filtered = threads.filter((t) => {
     if (!search) return true;
@@ -527,12 +477,7 @@ function ThreadChat({
       if (!hasCached) {
         // キャッシュなし: 最新 PAGE_SIZE 件をフルフェッチ
         setLoading(true);
-        const { data, count } = await getSupabase()
-          .from("messages")
-          .select("*, sender:sender_id(id, display_name, avatar_url, role)", { count: "exact" })
-          .eq("thread_id", thread.id)
-          .order("created_at", { ascending: false })
-          .range(0, PAGE_SIZE - 1);
+        const { data, count } = await fetchMessagesPage(thread.id, 0, PAGE_SIZE - 1);
 
         if (cancelled) return;
         const fetched = ((data ?? []) as Message[]).reverse();
@@ -544,12 +489,7 @@ function ThreadChat({
         // キャッシュあり: キャッシュ最終メッセージ以降の差分のみ取得
         const cachedMsgs = messageCache.current.get(thread.id)!.messages;
         const lastCreatedAt = cachedMsgs[cachedMsgs.length - 1].created_at;
-        const { data } = await getSupabase()
-          .from("messages")
-          .select("*, sender:sender_id(id, display_name, avatar_url, role)")
-          .eq("thread_id", thread.id)
-          .gt("created_at", lastCreatedAt)
-          .order("created_at", { ascending: true });
+        const { data } = await fetchMessagesSince(thread.id, lastCreatedAt);
 
         if (cancelled) return;
         const newMsgs = (data ?? []) as Message[];
@@ -563,15 +503,9 @@ function ThreadChat({
 
       // 未読を既読にする
       if (user) {
-        getSupabase()
-          .from("messages")
-          .update({ read_at: new Date().toISOString() })
-          .eq("thread_id", thread.id)
-          .neq("sender_id", user.id)
-          .is("read_at", null)
-          .then(({ error }) => {
-            if (error) console.error("既読更新エラー:", error);
-          });
+        markAsRead(thread.id, user.id).then(({ error }) => {
+          if (error) console.error("既読更新エラー:", error);
+        });
       }
     })();
     return () => {
@@ -586,13 +520,7 @@ function ThreadChat({
     setLoadingMore(true);
 
     const oldest = messages[0];
-    const { data } = await getSupabase()
-      .from("messages")
-      .select("*, sender:sender_id(id, display_name, avatar_url, role)")
-      .eq("thread_id", thread.id)
-      .lt("created_at", oldest.created_at)
-      .order("created_at", { ascending: false })
-      .range(0, PAGE_SIZE - 1);
+    const { data } = await fetchOlderMessages(thread.id, oldest.created_at, PAGE_SIZE - 1);
 
     const older = ((data ?? []) as Message[]).reverse();
 
@@ -621,7 +549,7 @@ function ThreadChat({
 
   // --- Realtime: INSERT / UPDATE / DELETE + Presence ---
   useEffect(() => {
-    const supabase = getSupabase();
+    const supabase = getSupabaseClient();
 
     const channel = supabase
       .channel(`chat:${thread.id}`)
@@ -635,11 +563,7 @@ function ThreadChat({
           filter: `thread_id=eq.${thread.id}`,
         },
         async (payload) => {
-          const { data: sender } = await supabase
-            .from("profiles")
-            .select("id, display_name, avatar_url, role")
-            .eq("id", (payload.new as Message).sender_id)
-            .single();
+          const { data: sender } = await fetchSenderProfile((payload.new as Message).sender_id);
 
           const msg = { ...payload.new, sender } as Message;
           setMessages((prev) => {
@@ -648,10 +572,7 @@ function ThreadChat({
           });
 
           if (user && msg.sender_id !== user.id) {
-            await supabase
-              .from("messages")
-              .update({ read_at: new Date().toISOString() })
-              .eq("id", msg.id);
+            await markSingleAsRead(msg.id);
           }
         }
       )
@@ -770,7 +691,7 @@ function ThreadChat({
     isTypingRef.current = false;
     broadcastTyping(false);
 
-    const { error } = await getSupabase().from("messages").insert({
+    const { error } = await sendMessage({
       thread_id: thread.id,
       content,
     });
@@ -796,11 +717,7 @@ function ThreadChat({
     const content = editContent.trim();
     if (content.length > 5000) return;
 
-    const { error } = await getSupabase()
-      .from("messages")
-      .update({ content, edited_at: new Date().toISOString() })
-      .eq("id", editingId)
-      .eq("sender_id", user!.id);
+    const { error } = await editMessage(editingId, user!.id, content);
 
     if (error) {
       console.error("メッセージ編集エラー:", error);
@@ -820,11 +737,7 @@ function ThreadChat({
   const handleDelete = async (msgId: string) => {
     if (!window.confirm("削除してもよろしいですか？")) return;
     setDeletingId(null);
-    const { error } = await getSupabase()
-      .from("messages")
-      .delete()
-      .eq("id", msgId)
-      .eq("sender_id", user!.id);
+    const { error } = await deleteMessage(msgId, user!.id);
     if (error) {
       console.error("メッセージ削除エラー:", error);
     }
@@ -1126,81 +1039,14 @@ function NewThreadPanel({
   const [appSearch, setAppSearch] = useState("");
   const [creating, setCreating] = useState(false);
 
-  // スレッドが未作成の応募者一覧を取得（応募者単位で重複排除）
   type ApplicantWithJobs = Profile & { job_titles: string };
-  const { data: applicants = [], isLoading: appsLoading } = useQuery<ApplicantWithJobs[]>(
-    organization ? `unthreaded-applicants-${organization.id}` : null,
-    async () => {
-      // 既存スレッドの participant_id を取得
-      const { data: existingThreads } = await getSupabase()
-        .from("message_threads")
-        .select("participant_id")
-        .eq("organization_id", organization!.id)
-        .eq("participant_type", "applicant");
-
-      const existingIds = (existingThreads ?? []).map((t) => t.participant_id);
-
-      // アクティブな応募を持つ応募者を取得
-      const { data: apps } = await getSupabase()
-        .from("applications")
-        .select(
-          "applicant_id, profiles:applicant_id(id, display_name, email, avatar_url, role), jobs(title)"
-        )
-        .eq("organization_id", organization!.id)
-        .eq("status", "active")
-        .order("applied_at", { ascending: false });
-
-      // 応募者単位で集約
-      const map = new Map<string, ApplicantWithJobs>();
-      for (const app of (apps ?? []) as unknown as {
-        applicant_id: string;
-        profiles: Profile;
-        jobs: { title: string };
-      }[]) {
-        if (!app.profiles || existingIds.includes(app.applicant_id)) continue;
-        const existing = map.get(app.applicant_id);
-        if (existing) {
-          existing.job_titles += `, ${app.jobs?.title ?? ""}`;
-        } else {
-          map.set(app.applicant_id, { ...app.profiles, job_titles: app.jobs?.title ?? "" });
-        }
-      }
-      return Array.from(map.values());
-    }
-  );
+  const { data: applicants = [], isLoading: appsLoading } = useUnthreadedApplicants() as {
+    data: ApplicantWithJobs[] | undefined;
+    isLoading: boolean;
+  };
 
   // スレッドが未作成の社員一覧を取得
-  const { data: employees = [], isLoading: empsLoading } = useQuery<Profile[]>(
-    organization ? `unthreaded-emps-${organization.id}` : null,
-    async () => {
-      // 既存の社員スレッドの participant_id を取得
-      const { data: existingThreads } = await getSupabase()
-        .from("message_threads")
-        .select("participant_id")
-        .eq("organization_id", organization!.id)
-        .eq("participant_type", "employee");
-
-      const existingParticipantIds = (existingThreads ?? []).map((t) => t.participant_id);
-
-      // 組織に所属する社員を取得
-      const { data: orgUsers } = await getSupabase()
-        .from("user_organizations")
-        .select(
-          "user_id, profiles:user_id(id, display_name, email, role, avatar_url, department, position)"
-        )
-        .eq("organization_id", organization!.id);
-
-      const empProfiles = (orgUsers ?? [])
-        .map((u) => (u as unknown as { profiles: Profile }).profiles)
-        .filter((p) => p && p.role === "employee");
-
-      // 既存スレッドがある社員を除外
-      if (existingParticipantIds.length > 0) {
-        return empProfiles.filter((p) => !existingParticipantIds.includes(p.id));
-      }
-      return empProfiles;
-    }
-  );
+  const { data: employees = [], isLoading: empsLoading } = useUnthreadedEmployees();
 
   const filteredApplicants = applicants.filter((a) => {
     if (!appSearch) return true;
@@ -1224,15 +1070,11 @@ function NewThreadPanel({
     if (!organization || creating) return;
     setCreating(true);
 
-    const { data: newThread } = await getSupabase()
-      .from("message_threads")
-      .insert({
-        organization_id: organization.id,
-        participant_id: applicantId,
-        participant_type: "applicant",
-      })
-      .select("id")
-      .single();
+    const { data: newThread } = await createThread({
+      organization_id: organization.id,
+      participant_id: applicantId,
+      participant_type: "applicant",
+    });
 
     setCreating(false);
     if (newThread) onCreated(newThread.id);
@@ -1242,15 +1084,11 @@ function NewThreadPanel({
     if (!organization || creating) return;
     setCreating(true);
 
-    const { data: newThread } = await getSupabase()
-      .from("message_threads")
-      .insert({
-        organization_id: organization.id,
-        participant_id: employeeId,
-        participant_type: "employee",
-      })
-      .select("id")
-      .single();
+    const { data: newThread } = await createThread({
+      organization_id: organization.id,
+      participant_id: employeeId,
+      participant_type: "employee",
+    });
 
     setCreating(false);
     if (newThread) onCreated(newThread.id);
@@ -1394,63 +1232,33 @@ function CreateChannelPanel({
   const [creating, setCreating] = useState(false);
   const [generatingDept, setGeneratingDept] = useState(false);
 
-  const { data: departments = [] } = useQuery<{ id: string; name: string }[]>(
-    organization && channelType === "department" ? `departments-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("departments")
-        .select("id, name")
-        .eq("organization_id", organization!.id)
-        .order("name");
-      return (data ?? []) as { id: string; name: string }[];
-    }
-  );
+  const { data: departments = [] } = useDepartmentsForChannel(channelType === "department");
 
-  const { data: projects = [] } = useQuery<{ id: string; name: string }[]>(
-    organization && channelType === "project" ? `projects-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("projects")
-        .select("id, name")
-        .eq("organization_id", organization!.id)
-        .eq("status", "active")
-        .order("name");
-      return (data ?? []) as { id: string; name: string }[];
-    }
-  );
+  const { data: projects = [] } = useProjectsForChannel(channelType === "project");
 
   const handleCreate = async () => {
     if (!organization || !channelName.trim() || creating) return;
     setCreating(true);
 
-    const { data: newThread } = await getSupabase()
-      .from("message_threads")
-      .insert({
-        organization_id: organization.id,
-        is_channel: true,
-        channel_name: channelName.trim(),
-        channel_type: channelType,
-        channel_source_id: sourceId || null,
-        title: channelName.trim() + " チャンネル",
-      })
-      .select("id")
-      .single();
+    const { data: newThread } = await createChannel({
+      organization_id: organization.id,
+      is_channel: true,
+      channel_name: channelName.trim(),
+      channel_type: channelType,
+      channel_source_id: sourceId || null,
+      title: channelName.trim() + " チャンネル",
+    });
 
     if (newThread && channelType === "department" && sourceId) {
-      const { data: deptMembers } = await getSupabase()
-        .from("employee_departments")
-        .select("user_id")
-        .eq("department_id", sourceId);
+      const deptMembers = await fetchDeptMembers(sourceId);
 
-      if (deptMembers && deptMembers.length > 0) {
-        await getSupabase()
-          .from("channel_members")
-          .insert(
-            deptMembers.map((m) => ({
-              thread_id: newThread.id,
-              user_id: m.user_id,
-            }))
-          );
+      if (deptMembers.length > 0) {
+        await addChannelMembers(
+          deptMembers.map((m) => ({
+            thread_id: newThread.id,
+            user_id: m.user_id,
+          }))
+        );
       }
     }
 
@@ -1461,9 +1269,7 @@ function CreateChannelPanel({
   const handleGenerateDeptChannels = async () => {
     if (!organization || generatingDept) return;
     setGeneratingDept(true);
-    await getSupabase().rpc("create_department_channels", {
-      p_organization_id: organization.id,
-    });
+    await createDepartmentChannels(organization.id);
     setGeneratingDept(false);
     onClose();
   };
@@ -1606,34 +1412,13 @@ function ChannelMembersPanel({
   onClose: () => void;
   onMembersChanged: () => void;
 }) {
-  const { organization } = useOrg();
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
 
-  const {
-    data: members = [],
-    isLoading,
-    mutate: mutateMembers,
-  } = useQuery<ChannelMember[]>(`channel-members-${thread.id}`, async () => {
-    const { data } = await getSupabase().rpc("get_channel_members", {
-      p_thread_id: thread.id,
-    });
-    return (data ?? []) as ChannelMember[];
-  });
+  const { data: members = [], isLoading, mutate: mutateMembers } = useChannelMembers(thread.id);
 
-  const { data: orgUsers = [] } = useQuery<Profile[]>(
-    showAddMember && organization ? `org-users-for-channel-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("user_organizations")
-        .select("user_id, profiles:user_id(id, display_name, email, avatar_url)")
-        .eq("organization_id", organization!.id);
-      return (
-        (data ?? []).map((u) => (u as unknown as { profiles: Profile }).profiles) as Profile[]
-      ).filter(Boolean);
-    }
-  );
+  const { data: orgUsers = [] } = useOrgUsersForChannel(showAddMember);
 
   const memberIds = new Set(members.map((m) => m.user_id));
   const availableUsers = orgUsers.filter((u) => !memberIds.has(u.id));
@@ -1650,7 +1435,7 @@ function ChannelMembersPanel({
   const handleAddMember = async (userId: string) => {
     if (adding) return;
     setAdding(true);
-    await getSupabase().from("channel_members").insert({ thread_id: thread.id, user_id: userId });
+    await addChannelMember(thread.id, userId);
     await mutateMembers();
     onMembersChanged();
     setAdding(false);
@@ -1658,11 +1443,7 @@ function ChannelMembersPanel({
 
   const handleRemoveMember = async (userId: string) => {
     if (!window.confirm("このメンバーをチャンネルから削除しますか？")) return;
-    await getSupabase()
-      .from("channel_members")
-      .delete()
-      .eq("thread_id", thread.id)
-      .eq("user_id", userId);
+    await removeChannelMember(thread.id, userId);
     await mutateMembers();
     onMembersChanged();
   };

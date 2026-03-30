@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { EditPanel } from "@/components/ui/edit-panel";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
+import { loadOrganization, saveOrganization } from "@/lib/hooks/use-settings";
 import type { Organization } from "@/types/database";
 
 export default function OrganizationSettingsPage() {
@@ -29,11 +29,7 @@ export default function OrganizationSettingsPage() {
   const load = async () => {
     if (!organization) return;
     setLoading(true);
-    const { data } = await getSupabase()
-      .from("organizations")
-      .select("*")
-      .eq("id", organization.id)
-      .single();
+    const data = await loadOrganization(organization.id);
     setOrg(data);
     setLoading(false);
   };
@@ -61,20 +57,15 @@ export default function OrganizationSettingsPage() {
 
     const foundedYear = editFoundedYear ? parseInt(editFoundedYear, 10) : null;
 
-    const { data } = await getSupabase()
-      .from("organizations")
-      .update({
-        name: editName.trim(),
-        industry: editIndustry.trim() || null,
-        location: editLocation.trim() || null,
-        mission: editMission.trim() || null,
-        employee_count: editEmployeeCount.trim() || null,
-        founded_year: foundedYear && !isNaN(foundedYear) ? foundedYear : null,
-        website_url: editWebsiteUrl.trim() || null,
-      })
-      .eq("id", org.id)
-      .select()
-      .single();
+    const { data } = await saveOrganization(org.id, {
+      name: editName.trim(),
+      industry: editIndustry.trim() || null,
+      location: editLocation.trim() || null,
+      mission: editMission.trim() || null,
+      employee_count: editEmployeeCount.trim() || null,
+      founded_year: foundedYear && !isNaN(foundedYear) ? foundedYear : null,
+      website_url: editWebsiteUrl.trim() || null,
+    });
 
     if (data) {
       setOrg(data);

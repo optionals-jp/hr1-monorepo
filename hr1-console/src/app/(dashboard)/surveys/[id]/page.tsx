@@ -14,9 +14,14 @@ import {
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
-import type { PulseSurvey, PulseSurveyQuestion, PulseSurveyResponse } from "@/types/database";
+import type { PulseSurveyQuestion } from "@/types/database";
+import {
+  useSurveyDetail,
+  saveQuestion,
+  deleteQuestionById,
+  updateSurveyStatus as repoUpdateSurveyStatus,
+  deleteSurveyById,
+} from "@/lib/hooks/use-surveys";
 import { Badge } from "@/components/ui/badge";
 import {
   surveyStatusLabels,
@@ -52,58 +57,20 @@ export default function SurveyDetailPage() {
   const { showToast } = useToast();
   const [tab, setTab] = useState<Tab>("questions");
 
-  const surveyCacheKey = organization ? `pulse-survey-${id}` : null;
-  const questionsCacheKey = organization ? `pulse-survey-questions-${id}` : null;
-  const responsesCacheKey = organization ? `pulse-survey-responses-${id}` : null;
-  const listCacheKey = organization ? `pulse-surveys-${organization.id}` : null;
-
   const {
-    data: survey,
-    isLoading: surveyLoading,
-    error: surveyError,
-    mutate: mutateSurvey,
-  } = useQuery<PulseSurvey>(surveyCacheKey, async () => {
-    const { data } = await getSupabase()
-      .from("pulse_surveys")
-      .select("*")
-      .eq("id", id)
-      .eq("organization_id", organization!.id)
-      .single();
-    return data;
-  });
-
-  const { data: questions = [], isLoading: questionsLoading } = useQuery<PulseSurveyQuestion[]>(
+    survey,
+    surveyLoading,
+    surveyError,
+    mutateSurvey,
+    questions,
+    questionsLoading,
+    responses,
+    responsesLoading,
+    totalTargetUsers,
+    surveyCacheKey,
     questionsCacheKey,
-    async () => {
-      const { data } = await getSupabase()
-        .from("pulse_survey_questions")
-        .select("*")
-        .eq("survey_id", id)
-        .order("sort_order", { ascending: true });
-      return data ?? [];
-    }
-  );
-
-  const { data: responses = [], isLoading: responsesLoading } = useQuery<PulseSurveyResponse[]>(
-    responsesCacheKey,
-    async () => {
-      const { data } = await getSupabase()
-        .from("pulse_survey_responses")
-        .select("*, pulse_survey_answers(*)")
-        .eq("survey_id", id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    }
-  );
-
-  const memberCountCacheKey = organization ? `org-member-count-${organization.id}` : null;
-  const { data: totalTargetUsers = 0 } = useQuery<number>(memberCountCacheKey, async () => {
-    const { count } = await getSupabase()
-      .from("user_organizations")
-      .select("*", { count: "exact", head: true })
-      .eq("organization_id", organization!.id);
-    return count ?? 0;
-  });
+    listCacheKey,
+  } = useSurveyDetail(id);
 
   // 質問編集パネル
   const [qEditOpen, setQEditOpen] = useState(false);
@@ -144,127 +111,71 @@ export default function SurveyDetailPage() {
   async function handleSaveQuestion() {
     if (!qLabel.trim()) return;
     setQSaving(true);
-    try {
-      const options =
-        qType === "single_choice" || qType === "multiple_choice"
-          ? qOptions
-              .split("\n")
-              .map((o) => o.trim())
-              .filter(Boolean)
-          : null;
-
-      if (
-        (qType === "single_choice" || qType === "multiple_choice") &&
-        (!options || options.length === 0)
-      ) {
-        showToast("選択肢を1つ以上入力してください", "error");
-        return;
-      }
-
-      if (editQuestion) {
-        const { error } = await getSupabase()
-          .from("pulse_survey_questions")
-          .update({
-            label: qLabel.trim(),
-            description: qDescription.trim() || null,
-            type: qType,
-            is_required: qRequired,
-            options,
-          })
-          .eq("id", editQuestion.id);
-        if (error) {
-          showToast("質問の更新に失敗しました", "error");
-          return;
-        }
-      } else {
-        const maxOrder =
-          questions.length > 0 ? Math.max(...questions.map((q) => q.sort_order)) + 1 : 0;
-        const { error } = await getSupabase()
-          .from("pulse_survey_questions")
-          .insert({
-            survey_id: id,
-            label: qLabel.trim(),
-            description: qDescription.trim() || null,
-            type: qType,
-            is_required: qRequired,
-            options,
-            sort_order: maxOrder,
-          });
-        if (error) {
-          showToast("質問の追加に失敗しました", "error");
-          return;
-        }
-      }
+    const maxOrder = questions.length > 0 ? Math.max(...questions.map((q) => q.sort_order)) : -1;
+    const result = await saveQuestion(
+      id,
+      editQuestion,
+      {
+        label: qLabel,
+        description: qDescription,
+        type: qType,
+        isRequired: qRequired,
+        options: qOptions,
+      },
+      maxOrder
+    );
+    if (result.success) {
       await mutate(questionsCacheKey);
       setQEditOpen(false);
       showToast(editQuestion ? "質問を更新しました" : "質問を追加しました");
-    } catch {
-      showToast("質問の保存に失敗しました", "error");
-    } finally {
-      setQSaving(false);
+    } else {
+      showToast(result.error ?? "質問の保存に失敗しました", "error");
     }
+    setQSaving(false);
   }
 
   async function handleDeleteQuestion() {
     if (!editQuestion) return;
     if (!window.confirm("削除してもよろしいですか？")) return;
     setQDeleting(true);
-    try {
-      const { error } = await getSupabase()
-        .from("pulse_survey_questions")
-        .delete()
-        .eq("id", editQuestion.id);
-      if (error) {
-        showToast("質問の削除に失敗しました", "error");
-        return;
-      }
+    const result = await deleteQuestionById(editQuestion.id);
+    if (result.success) {
       await mutate(questionsCacheKey);
       setQEditOpen(false);
       showToast("質問を削除しました");
-    } catch {
-      showToast("質問の削除に失敗しました", "error");
-    } finally {
-      setQDeleting(false);
+    } else {
+      showToast(result.error ?? "質問の削除に失敗しました", "error");
     }
+    setQDeleting(false);
   }
 
   // ステータス変更
   async function updateStatus(newStatus: "active" | "closed") {
     if (!survey || statusUpdating) return;
     setStatusUpdating(true);
-    try {
-      const { error } = await getSupabase()
-        .from("pulse_surveys")
-        .update({ status: newStatus })
-        .eq("id", survey.id);
-      if (error) {
-        showToast("ステータスの変更に失敗しました", "error");
-        return;
-      }
+    if (!organization) return;
+    const result = await repoUpdateSurveyStatus(survey.id, organization.id, newStatus);
+    if (result.success) {
       await mutate(surveyCacheKey);
       await mutate(listCacheKey);
       showToast(newStatus === "active" ? "配信を開始しました" : "サーベイを締め切りました");
-    } catch {
-      showToast("ステータスの変更に失敗しました", "error");
-    } finally {
-      setStatusUpdating(false);
+    } else {
+      showToast(result.error ?? "ステータスの変更に失敗しました", "error");
     }
+    setStatusUpdating(false);
   }
 
   // サーベイ削除
   async function handleDeleteSurvey() {
     if (!survey) return;
     if (!window.confirm("削除してもよろしいですか？")) return;
-    try {
-      const { error } = await getSupabase().from("pulse_surveys").delete().eq("id", survey.id);
-      if (error) {
-        showToast("サーベイの削除に失敗しました", "error");
-        return;
-      }
+    if (!organization) return;
+    const result = await deleteSurveyById(survey.id, organization.id);
+    if (result.success) {
       await mutate(listCacheKey);
       router.push("/surveys");
-    } catch {
-      showToast("サーベイの削除に失敗しました", "error");
+    } else {
+      showToast(result.error ?? "サーベイの削除に失敗しました", "error");
     }
   }
 

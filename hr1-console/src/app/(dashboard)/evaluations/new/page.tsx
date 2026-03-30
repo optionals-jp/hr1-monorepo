@@ -18,8 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
 import { Trash2, ChevronDown } from "lucide-react";
+import { createTemplate } from "@/lib/hooks/use-evaluations";
 import {
   formTargetLabels,
   scoreTypeLabels,
@@ -115,69 +115,30 @@ export default function NewEvaluationTemplatePage() {
     if (!organization || !title) return;
     setSaving(true);
 
-    try {
-      const templateId = `evaltpl-${Date.now()}`;
+    const result = await createTemplate(organization.id, {
+      title,
+      target,
+      evaluationType,
+      anonymityMode,
+      description,
+      criteria: criteria.map((c) => ({
+        label: c.label,
+        description: c.description,
+        score_type: c.score_type,
+        options: c.options,
+        weight: c.weight,
+        anchors: c.anchors,
+      })),
+    });
 
-      const { error: tplError } = await getSupabase()
-        .from("evaluation_templates")
-        .insert({
-          id: templateId,
-          organization_id: organization.id,
-          title,
-          target,
-          evaluation_type: evaluationType,
-          anonymity_mode: evaluationType === "multi_rater" ? anonymityMode : "none",
-          description: description || null,
-        });
-      if (tplError) throw tplError;
-
-      if (criteria.length > 0) {
-        const criteriaRows = criteria.map((c, index) => ({
-          id: `evalcr-${templateId}-${index + 1}`,
-          template_id: templateId,
-          label: c.label,
-          description: c.description || null,
-          score_type: c.score_type,
-          options:
-            c.options && c.score_type === "select" ? c.options.split("\n").filter(Boolean) : null,
-          sort_order: index + 1,
-          weight: parseFloat(c.weight) || 1.0,
-        }));
-
-        const { error: crError } = await getSupabase()
-          .from("evaluation_criteria")
-          .insert(criteriaRows);
-        if (crError) throw crError;
-
-        // 行動アンカーを保存
-        const anchorRows = criteria.flatMap((c, cIndex) =>
-          c.anchors
-            .filter((a) => a.description.trim())
-            .map((a, aIndex) => ({
-              id: `anchor-${criteriaRows[cIndex].id}-${a.score_value}`,
-              criterion_id: criteriaRows[cIndex].id,
-              score_value: a.score_value,
-              description: a.description,
-              sort_order: aIndex,
-            }))
-        );
-
-        if (anchorRows.length > 0) {
-          const { error: anchorError } = await getSupabase()
-            .from("evaluation_anchors")
-            .insert(anchorRows);
-          if (anchorError) throw anchorError;
-        }
-      }
-
+    if (result.success) {
       await mutate(`eval-templates-${organization.id}`);
       showToast("評価シートを作成しました");
       router.push("/evaluations");
-    } catch {
-      showToast("評価シートの作成に失敗しました", "error");
-    } finally {
-      setSaving(false);
+    } else {
+      showToast(result.error ?? "評価シートの作成に失敗しました", "error");
     }
+    setSaving(false);
   };
 
   const isNumericType = (type: string) => type === "five_star" || type === "ten_point";

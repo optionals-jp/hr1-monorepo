@@ -6,30 +6,10 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { useQuery } from "@/lib/use-query";
+import { useCalendarEvents } from "@/lib/hooks/use-calendar";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// ---------- Types ----------
-
-interface CalendarEvent {
-  id: string;
-  type: "interview";
-  title: string;
-  startAt: Date;
-  endAt: Date;
-  durationMin: number;
-  applicantName: string | null;
-  applicantEmail: string | null;
-  jobTitle: string | null;
-  location: string | null;
-  interviewId: string;
-  applicationId: string | null;
-  status: string;
-}
 
 // ---------- Helpers ----------
 
@@ -68,7 +48,6 @@ function formatMonth(d: Date) {
 
 export default function CalendarPage() {
   const router = useRouter();
-  const { organization } = useOrg();
   const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -90,55 +69,7 @@ export default function CalendarPage() {
     data: events = [],
     error: eventsError,
     mutate: mutateEvents,
-  } = useQuery<CalendarEvent[]>(
-    organization ? `calendar-${organization.id}-${currentMonth.toISOString()}` : null,
-    async () => {
-      // Fetch interview slots within range with applicant + job details
-      const { data: slotsData } = await getSupabase()
-        .from("interview_slots")
-        .select(
-          `*,
-           interviews!inner(id, title, organization_id, status, location, notes),
-           applications:application_id(
-             id,
-             job_id,
-             profiles:applicant_id(display_name, email),
-             jobs:job_id(title)
-           )`
-        )
-        .eq("interviews.organization_id", organization!.id)
-        .gte("start_at", rangeStart.toISOString())
-        .lte("start_at", rangeEnd.toISOString())
-        .order("start_at");
-
-      if (!slotsData) return [];
-
-      return slotsData.map((slot: Record<string, unknown>) => {
-        const interview = slot.interviews as Record<string, unknown>;
-        const app = slot.applications as Record<string, unknown> | null;
-        const profile = app?.profiles as Record<string, unknown> | null;
-        const job = app?.jobs as Record<string, unknown> | null;
-        const startAt = new Date(slot.start_at as string);
-        const endAt = new Date(slot.end_at as string);
-
-        return {
-          id: slot.id as string,
-          type: "interview" as const,
-          title: (interview?.title as string) ?? "面接",
-          startAt,
-          endAt,
-          durationMin: Math.round((endAt.getTime() - startAt.getTime()) / 60000),
-          applicantName: (profile?.display_name as string | null) ?? null,
-          applicantEmail: (profile?.email as string | null) ?? null,
-          jobTitle: (job?.title as string | null) ?? null,
-          location: (interview?.location as string | null) ?? null,
-          interviewId: interview?.id as string,
-          applicationId: (slot.application_id as string | null) ?? null,
-          status: slot.application_id ? "booked" : "available",
-        };
-      });
-    }
-  );
+  } = useCalendarEvents(currentMonth, rangeStart, rangeEnd);
 
   // Build calendar grid (6 weeks max)
   const weeks = useMemo(() => {

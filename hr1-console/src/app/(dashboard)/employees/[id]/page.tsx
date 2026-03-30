@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -19,9 +19,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
 import { cn } from "@/lib/utils";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
 import { useCreateMessageThread } from "@/lib/hooks/use-create-message-thread";
+import { useEmployeeDetail, type MembershipRecord } from "@/lib/hooks/use-employee-detail";
 import {
   genderLabels,
   projectStatusLabels,
@@ -29,19 +28,10 @@ import {
   teamMemberRoleLabels,
 } from "@/lib/constants";
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";
-import type { Profile, Department, EmployeeSkill, EmployeeCertification } from "@/types/database";
 import { useRouter } from "next/navigation";
 import { FolderKanban, Users, LogIn, LogOut } from "lucide-react";
 
 import { format, differenceInYears, differenceInMonths, parseISO } from "date-fns";
-
-interface MembershipRecord {
-  id: string;
-  role: "leader" | "member";
-  joined_at: string;
-  left_at: string | null;
-  team: { id: string; name: string; project: { id: string; name: string; status: string } };
-}
 
 const pageTabs = [
   { value: "profile", label: "プロフィール" },
@@ -77,15 +67,18 @@ function calcTenure(hireDate: string | null): string {
 export default function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { organization } = useOrg();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [assignedDeptIds, setAssignedDeptIds] = useState<string[]>([]);
-  const [allDepartments, setAllDepartments] = useState<Department[]>([]);
-  const [memberships, setMemberships] = useState<MembershipRecord[]>([]);
-  const [skills, setSkills] = useState<EmployeeSkill[]>([]);
-  const [certifications, setCertifications] = useState<EmployeeCertification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    organization,
+    profile,
+    departments,
+    assignedDeptIds,
+    allDepartments,
+    memberships,
+    skills,
+    certifications,
+    loading,
+    saveProfile,
+  } = useEmployeeDetail(id);
   const [activeTab, setActiveTab] = useState("profile");
 
   // Editing state
@@ -117,101 +110,6 @@ export default function EmployeeDetailPage() {
     organizationId: organization?.id,
   });
 
-  const load = async () => {
-    if (!organization) return;
-    setLoading(true);
-
-    // まず、このユーザーが自社に所属しているか確認
-    const { data: membership } = await getSupabase()
-      .from("user_organizations")
-      .select("user_id")
-      .eq("user_id", id)
-      .eq("organization_id", organization.id)
-      .maybeSingle();
-
-    if (!membership) {
-      setProfile(null);
-      setLoading(false);
-      return;
-    }
-
-    const [{ data: profileData }, { data: edData }] = await Promise.all([
-      getSupabase().from("profiles").select("*").eq("id", id).single(),
-      getSupabase()
-        .from("employee_departments")
-        .select("department_id, departments(id, name)")
-        .eq("user_id", id),
-    ]);
-
-    setProfile(profileData);
-
-    const depts = (edData ?? [])
-      .map((row) => (row as unknown as { departments: Department }).departments)
-      .filter(Boolean);
-    setDepartments(depts);
-    setAssignedDeptIds(depts.map((d) => d.id));
-
-    const { data: allDepts } = await getSupabase()
-      .from("departments")
-      .select("*")
-      .eq("organization_id", organization.id)
-      .order("name");
-    setAllDepartments(allDepts ?? []);
-
-    // プロジェクトチームメンバーシップを取得
-    const { data: memberData } = await getSupabase()
-      .from("project_team_members")
-      .select("id, role, joined_at, left_at, project_teams(id, name, projects(id, name, status))")
-      .eq("user_id", id)
-      .order("joined_at", { ascending: false });
-
-    const records: MembershipRecord[] = (memberData ?? []).map((row) => {
-      const r = row as unknown as {
-        id: string;
-        role: "leader" | "member";
-        joined_at: string;
-        left_at: string | null;
-        project_teams: {
-          id: string;
-          name: string;
-          projects: { id: string; name: string; status: string };
-        };
-      };
-      return {
-        id: r.id,
-        role: r.role,
-        joined_at: r.joined_at,
-        left_at: r.left_at,
-        team: {
-          id: r.project_teams.id,
-          name: r.project_teams.name,
-          project: r.project_teams.projects,
-        },
-      };
-    });
-    setMemberships(records);
-
-    // スキル・資格を取得
-    const [{ data: skillsData }, { data: certsData }] = await Promise.all([
-      getSupabase().from("employee_skills").select("*").eq("user_id", id).order("sort_order"),
-      getSupabase()
-        .from("employee_certifications")
-        .select("*")
-        .eq("user_id", id)
-        .order("sort_order"),
-    ]);
-    setSkills((skillsData as EmployeeSkill[]) ?? []);
-    setCertifications((certsData as EmployeeCertification[]) ?? []);
-
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    if (!organization) return;
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, organization]);
-
   const startEditing = () => {
     if (!profile) return;
     setEditName(profile.display_name ?? "");
@@ -240,9 +138,8 @@ export default function EmployeeDetailPage() {
     if (!profile) return;
     setSaving(true);
 
-    await getSupabase()
-      .from("profiles")
-      .update({
+    await saveProfile(
+      {
         display_name: editName.trim() || null,
         name_kana: editNameKana.trim() || null,
         position: editPosition.trim() || null,
@@ -260,19 +157,12 @@ export default function EmployeeDetailPage() {
         registered_city: editRegisteredCity.trim() || null,
         registered_street_address: editRegisteredStreetAddress.trim() || null,
         registered_building: editRegisteredBuilding.trim() || null,
-      })
-      .eq("id", profile.id);
-
-    await getSupabase().from("employee_departments").delete().eq("user_id", profile.id);
-    if (editDeptIds.length > 0) {
-      await getSupabase()
-        .from("employee_departments")
-        .insert(editDeptIds.map((deptId) => ({ user_id: profile.id, department_id: deptId })));
-    }
+      },
+      editDeptIds
+    );
 
     setSaving(false);
     setEditing(false);
-    await load();
   };
 
   const toggleDept = (deptId: string) => {

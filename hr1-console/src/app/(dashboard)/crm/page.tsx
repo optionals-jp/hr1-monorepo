@@ -1,51 +1,16 @@
 "use client";
 
 import { PageHeader } from "@/components/layout/page-header";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { dealStatusLabels, dealStatusColors, dealStageLabels } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import type { BcDeal } from "@/types/database";
+import { useCrmDeals, useCrmCompanyCount, useCrmContactCount } from "@/lib/hooks/use-crm";
 
 export default function CrmDashboardPage() {
-  const { organization } = useOrg();
-
-  const { data: deals, error: dealsError } = useQuery<BcDeal[]>(
-    organization ? `crm-deals-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("bc_deals")
-        .select("*, bc_companies(*), bc_contacts(*)")
-        .eq("organization_id", organization!.id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    }
-  );
-
-  const { data: companies } = useQuery<{ id: string }[]>(
-    organization ? `crm-companies-count-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("bc_companies")
-        .select("id")
-        .eq("organization_id", organization!.id);
-      return data ?? [];
-    }
-  );
-
-  const { data: contacts } = useQuery<{ id: string }[]>(
-    organization ? `crm-contacts-count-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("bc_contacts")
-        .select("id")
-        .eq("organization_id", organization!.id);
-      return data ?? [];
-    }
-  );
+  const { data: deals, error: dealsError } = useCrmDeals();
+  const { data: companies } = useCrmCompanyCount();
+  const { data: contacts } = useCrmContactCount();
 
   const openDeals = deals?.filter((d) => d.status === "open") ?? [];
   const wonDeals = deals?.filter((d) => d.status === "won") ?? [];

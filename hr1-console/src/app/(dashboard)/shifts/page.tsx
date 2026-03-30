@@ -4,7 +4,6 @@ import React, { useState, useMemo, useCallback } from "react";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -15,11 +14,10 @@ import {
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
-import { cn, formatYearMonth, weekdayLabel } from "@/lib/utils";
-import type { ShiftRequest, ShiftSchedule, Profile } from "@/types/database";
-import { shiftScheduleStatusLabels, shiftScheduleStatusColors } from "@/lib/constants";
+import { useShifts } from "@/lib/hooks/use-shifts";
+import { cn, weekdayLabel } from "@/lib/utils";
+import type { ShiftRequest, ShiftSchedule } from "@/types/database";
+
 import { ChevronLeft, ChevronRight, CalendarRange, ClipboardList, Send } from "lucide-react";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 
@@ -51,10 +49,6 @@ type ScheduleWithProfile = ShiftSchedule & {
 // ---------------------------------------------------------------------------
 // ヘルパー
 // ---------------------------------------------------------------------------
-
-function daysInMonth(year: number, month: number): number {
-  return new Date(year, month, 0).getDate();
-}
 
 function isWeekend(year: number, month: number, day: number): boolean {
   const d = new Date(year, month - 1, day);
@@ -94,62 +88,16 @@ export default function ShiftsPage() {
     } else setMonth((m) => m + 1);
   };
 
-  const ym = formatYearMonth(year, month);
-  const totalDays = daysInMonth(year, month);
-
-  // シフト希望取得
   const {
-    data: requests,
-    error: requestsError,
-    mutate: mutateReqs,
-  } = useQuery<RequestWithProfile[]>(orgId ? `shift-requests-${orgId}-${ym}` : null, async () => {
-    const sb = getSupabase();
-    const { data } = await sb
-      .from("shift_requests")
-      .select("*, profiles!shift_requests_user_id_fkey(display_name, email)")
-      .eq("organization_id", orgId!)
-      .gte("target_date", `${ym}-01`)
-      .lte("target_date", `${ym}-${totalDays}`)
-      .order("target_date");
-    return (data ?? []) as RequestWithProfile[];
-  });
-
-  // 確定シフト取得
-  const { data: schedules, mutate: mutateSch } = useQuery<ScheduleWithProfile[]>(
-    orgId ? `shift-schedules-${orgId}-${ym}` : null,
-    async () => {
-      const sb = getSupabase();
-      const { data } = await sb
-        .from("shift_schedules")
-        .select("*, profiles!shift_schedules_user_id_fkey(display_name, email)")
-        .eq("organization_id", orgId!)
-        .gte("target_date", `${ym}-01`)
-        .lte("target_date", `${ym}-${totalDays}`)
-        .order("target_date");
-      return (data ?? []) as ScheduleWithProfile[];
-    }
-  );
-
-  // 社員一覧取得
-  const { data: employees } = useQuery<Employee[]>(
-    orgId ? `shift-employees-${orgId}` : null,
-    async () => {
-      const sb = getSupabase();
-      const { data } = await sb
-        .from("user_organizations")
-        .select("user_id, profiles!user_organizations_user_id_fkey(id, display_name, email)")
-        .eq("organization_id", orgId!)
-        .in("role", ["employee", "admin", "owner"]);
-      return (data ?? []).map((row: Record<string, unknown>) => {
-        const p = row.profiles as Record<string, unknown> | null;
-        return {
-          id: row.user_id as string,
-          email: (p?.email as string) ?? "",
-          display_name: (p?.display_name as string | null) ?? null,
-        };
-      });
-    }
-  );
+    requests,
+    requestsError,
+    mutateReqs,
+    schedules,
+    employees,
+    totalDays,
+    autoFill,
+    publish,
+  } = useShifts(year, month);
 
   // 希望をグループ化: userId → dateStr → request
   const requestMap = useMemo(() => {
@@ -171,67 +119,27 @@ export default function ShiftsPage() {
     return map;
   }, [schedules]);
 
-  // 希望からシフト表を自動生成
   const handleAutoFill = useCallback(async () => {
-    if (!orgId || !requests) return;
-    const sb = getSupabase();
-    const userId = (await sb.auth.getUser()).data.user?.id;
-
-    const upserts = requests
-      .filter((r) => r.is_available && r.start_time && r.end_time)
-      .map((r) => ({
-        user_id: r.user_id,
-        organization_id: orgId,
-        target_date: r.target_date,
-        start_time: r.start_time!,
-        end_time: r.end_time!,
-        status: "draft",
-      }));
-
-    if (upserts.length === 0) {
-      showToast("反映するデータがありません", "error");
-      return;
-    }
-
-    const { error } = await sb
-      .from("shift_schedules")
-      .upsert(upserts, { onConflict: "user_id,organization_id,target_date" });
-
-    if (error) {
-      showToast(`反映に失敗しました: ${error.message}`, "error");
+    if (!orgId) return;
+    const result = await autoFill(orgId);
+    if (result.success) {
+      showToast(`${result.count}件のシフトを反映しました`);
     } else {
-      showToast(`${upserts.length}件のシフトを反映しました`);
-      mutateSch();
+      showToast(result.error ?? "反映に失敗しました", "error");
     }
-  }, [orgId, requests, showToast, mutateSch]);
+  }, [orgId, autoFill, showToast]);
 
-  // 公開
   const handlePublish = useCallback(async () => {
     if (!orgId) return;
     setPublishing(true);
-    const sb = getSupabase();
-    const userId = (await sb.auth.getUser()).data.user?.id;
-
-    const { error } = await sb
-      .from("shift_schedules")
-      .update({
-        status: "published",
-        published_at: new Date().toISOString(),
-        published_by: userId,
-      })
-      .eq("organization_id", orgId)
-      .eq("status", "draft")
-      .gte("target_date", `${ym}-01`)
-      .lte("target_date", `${ym}-${totalDays}`);
-
+    const result = await publish(orgId);
     setPublishing(false);
-    if (error) {
-      showToast(`公開に失敗しました: ${error.message}`, "error");
-    } else {
+    if (result.success) {
       showToast("シフトを公開しました");
-      mutateSch();
+    } else {
+      showToast(result.error ?? "公開に失敗しました", "error");
     }
-  }, [orgId, ym, totalDays, showToast, mutateSch]);
+  }, [orgId, publish, showToast]);
 
   const draftCount = (schedules ?? []).filter((s) => s.status === "draft").length;
 

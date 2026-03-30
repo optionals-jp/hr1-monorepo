@@ -46,9 +46,14 @@ class InterviewController
 
       state = const InterviewConfirmState(confirmed: true);
     } catch (e) {
-      state = const InterviewConfirmState(
-        error: '面接日程の確定に失敗しました。しばらくしてから再度お試しください',
-      );
+      final message = e.toString().contains('既に予約')
+          ? 'このスロットは既に他の方に予約されました。別の日程を選択してください。'
+          : '面接日程の確定に失敗しました。しばらくしてから再度お試しください。';
+
+      // スロット一覧を再取得して最新状態を反映
+      ref.invalidate(interviewDetailProvider(interviewId));
+
+      state = InterviewConfirmState(error: message);
     }
   }
 }

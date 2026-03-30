@@ -17,7 +17,11 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
+import {
+  loadApplicantDetail,
+  fetchLinkedForms,
+  fetchLinkedInterviews,
+} from "@/lib/hooks/use-applicant-detail";
 import { useCreateMessageThread } from "@/lib/hooks/use-create-message-thread";
 import type { Profile, Application, ApplicationStep } from "@/types/database";
 import {
@@ -39,6 +43,9 @@ import {
   applicationStatusColors as statusColors,
   stepStatusLabels,
   interviewStatusLabels,
+  StepStatus,
+  StepType,
+  ApplicationStatus,
 } from "@/lib/constants";
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 
@@ -75,26 +82,17 @@ export default function ApplicantDetailPage() {
     if (!organization) return;
     async function load() {
       setLoading(true);
-      const { data: appsData } = await getSupabase()
-        .from("applications")
-        .select("*, jobs(*), application_steps(*)")
-        .eq("applicant_id", id)
-        .eq("organization_id", organization!.id)
-        .order("applied_at", { ascending: false });
+      const { profile: profileData, applications: appsData } = await loadApplicantDetail(
+        id,
+        organization!.id
+      );
 
-      // この企業に応募がない場合は表示しない（他社の応募者情報の閲覧防止）
-      if (!appsData || appsData.length === 0) {
+      if (appsData.length === 0) {
         setProfile(null);
         setApplications([]);
         setLoading(false);
         return;
       }
-
-      const { data: profileData } = await getSupabase()
-        .from("profiles")
-        .select("*")
-        .eq("id", id)
-        .single();
 
       setProfile(profileData);
       setApplications(appsData);
@@ -110,7 +108,7 @@ export default function ApplicantDetailPage() {
           source: "-",
           eventType: "アカウント作成",
           label: "作成",
-          status: "completed",
+          status: StepStatus.Completed,
           date: profileData.created_at,
         });
       }
@@ -141,7 +139,7 @@ export default function ApplicantDetailPage() {
 
         // Step events
         for (const step of (app.application_steps ?? []) as ApplicationStep[]) {
-          if (step.status !== "pending") {
+          if (step.status !== StepStatus.Pending) {
             events.push({
               id: `step-${step.id}`,
               category: "選考",
@@ -154,7 +152,7 @@ export default function ApplicantDetailPage() {
           }
 
           // Collect related resources
-          if (step.related_id && step.step_type === "form") {
+          if (step.related_id && step.step_type === StepType.Form) {
             formStepIds.push({
               stepId: step.id,
               relatedId: step.related_id,
@@ -162,7 +160,7 @@ export default function ApplicantDetailPage() {
               date: step.completed_at ?? app.applied_at,
             });
           }
-          if (step.related_id && step.step_type === "interview") {
+          if (step.related_id && step.step_type === StepType.Interview) {
             interviewStepIds.push({
               stepId: step.id,
               relatedId: step.related_id,
@@ -176,11 +174,7 @@ export default function ApplicantDetailPage() {
       // Fetch linked forms
       if (formStepIds.length > 0) {
         const formIds = [...new Set(formStepIds.map((f) => f.relatedId))];
-        const { data: formsData } = await getSupabase()
-          .from("custom_forms")
-          .select("id, title")
-          .in("id", formIds);
-        const formMap = new Map((formsData ?? []).map((f) => [f.id, f.title]));
+        const formMap = await fetchLinkedForms(formIds);
 
         for (const fs of formStepIds) {
           const formTitle = formMap.get(fs.relatedId);
@@ -191,7 +185,7 @@ export default function ApplicantDetailPage() {
               source: fs.jobTitle,
               eventType: `フォーム: ${formTitle}`,
               label: "送信済み",
-              status: "completed",
+              status: StepStatus.Completed,
               date: fs.date,
             });
           }
@@ -201,11 +195,7 @@ export default function ApplicantDetailPage() {
       // Fetch linked interviews
       if (interviewStepIds.length > 0) {
         const intIds = [...new Set(interviewStepIds.map((i) => i.relatedId))];
-        const { data: intData } = await getSupabase()
-          .from("interviews")
-          .select("id, title, status")
-          .in("id", intIds);
-        const intMap = new Map((intData ?? []).map((i) => [i.id, i]));
+        const intMap = await fetchLinkedInterviews(intIds);
 
         for (const is_ of interviewStepIds) {
           const interview = intMap.get(is_.relatedId);
@@ -508,11 +498,13 @@ export default function ApplicantDetailPage() {
                       <TableCell>
                         <Badge
                           variant={
-                            ev.status === "completed" || ev.status === "offered"
+                            ev.status === StepStatus.Completed ||
+                            ev.status === ApplicationStatus.Offered
                               ? "secondary"
-                              : ev.status === "rejected"
+                              : ev.status === ApplicationStatus.Rejected
                                 ? "destructive"
-                                : ev.status === "withdrawn" || ev.status === "skipped"
+                                : ev.status === ApplicationStatus.Withdrawn ||
+                                    ev.status === StepStatus.Skipped
                                   ? "outline"
                                   : "default"
                           }

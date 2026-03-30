@@ -4,19 +4,14 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { cn } from "@/lib/utils";
-import { PipelineChart, PipelineStage } from "@/components/dashboard/pipeline-chart";
-import { KpiTrendChart, KpiTrendPoint } from "@/components/dashboard/kpi-trend-chart";
-import { DepartmentChart, DepartmentStat } from "@/components/dashboard/department-chart";
-import {
-  EmployeeDepartmentChart,
-  EmployeeDepartmentStat,
-} from "@/components/dashboard/employee-department-chart";
-import { HiringTypeChart, HiringTypeStat } from "@/components/dashboard/hiring-type-chart";
-import { OpenJobsChart, OpenJobStat } from "@/components/dashboard/open-jobs-chart";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
+import { PipelineChart } from "@/components/dashboard/pipeline-chart";
+import { KpiTrendChart } from "@/components/dashboard/kpi-trend-chart";
+import { DepartmentChart } from "@/components/dashboard/department-chart";
+import { EmployeeDepartmentChart } from "@/components/dashboard/employee-department-chart";
+import { HiringTypeChart } from "@/components/dashboard/hiring-type-chart";
+import { OpenJobsChart } from "@/components/dashboard/open-jobs-chart";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { useDashboard } from "@/lib/hooks/use-dashboard";
 import {
   Users,
   UserPlus,
@@ -29,7 +24,6 @@ import {
   AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
-import { format, subMonths } from "date-fns";
 
 const pageTabs = [
   { value: "recruiting", label: "採用" },
@@ -39,13 +33,6 @@ const pageTabs = [
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
-
-interface Stats {
-  applicants: number;
-  employees: number;
-  openJobs: number;
-  activeApplications: number;
-}
 
 interface KpiCardDef {
   title: string;
@@ -90,304 +77,22 @@ function KpiCard({ card }: { card: KpiCardDef }) {
 /* ------------------------------------------------------------------ */
 
 export default function DashboardPage() {
-  const { organization } = useOrg();
-  const orgId = organization?.id;
   const [activeTab, setActiveTab] = useState("recruiting");
-
-  // --- 共通 KPI ---
   const {
-    data: stats,
-    error: statsError,
-    mutate: mutateStats,
-  } = useQuery<Stats>(orgId ? `dashboard-stats-${orgId}` : null, async () => {
-    const [applicantsRes, employeesRes, jobsRes, appsRes] = await Promise.all([
-      getSupabase()
-        .from("user_organizations")
-        .select("user_id, profiles!inner(role)", { count: "exact" })
-        .eq("organization_id", orgId!)
-        .eq("profiles.role", "applicant"),
-      getSupabase()
-        .from("user_organizations")
-        .select("user_id, profiles!inner(role)", { count: "exact" })
-        .eq("organization_id", orgId!)
-        .eq("profiles.role", "employee"),
-      getSupabase()
-        .from("jobs")
-        .select("id", { count: "exact" })
-        .eq("organization_id", orgId!)
-        .eq("status", "open"),
-      getSupabase()
-        .from("applications")
-        .select("id", { count: "exact" })
-        .eq("organization_id", orgId!)
-        .eq("status", "active"),
-    ]);
-
-    return {
-      applicants: applicantsRes.count ?? 0,
-      employees: employeesRes.count ?? 0,
-      openJobs: jobsRes.count ?? 0,
-      activeApplications: appsRes.count ?? 0,
-    };
-  });
-
-  // --- 選考パイプライン ---
-  const { data: pipeline } = useQuery<PipelineStage[]>(
-    orgId ? `dashboard-pipeline-${orgId}` : null,
-    async () => {
-      const { data: applications } = await getSupabase()
-        .from("applications")
-        .select("id, status, application_steps(step_type, step_order, status, label)")
-        .eq("organization_id", orgId!);
-
-      if (!applications || applications.length === 0) return [];
-
-      const totalApplied = applications.length;
-      const stepMap = new Map<string, { order: number; label: string; count: number }>();
-
-      for (const app of applications) {
-        for (const step of app.application_steps ?? []) {
-          const key = `${step.step_order}-${step.step_type}`;
-          if (!stepMap.has(key)) {
-            stepMap.set(key, { order: step.step_order, label: step.label, count: 0 });
-          }
-          if (step.status === "completed" || step.status === "in_progress") {
-            stepMap.get(key)!.count++;
-          }
-        }
-      }
-
-      const stages: PipelineStage[] = [{ name: "応募", count: totalApplied }];
-      const sortedSteps = Array.from(stepMap.values()).sort((a, b) => a.order - b.order);
-
-      // application_stepsの最終ステップが内定相当なら、status="offered"の件数で上書き
-      const offeredCount = applications.filter((a) => a.status === "offered").length;
-      for (const step of sortedSteps) {
-        const isOfferStep = step.label === "内定" || step.label === "オファー";
-        stages.push({
-          name: step.label,
-          count: isOfferStep ? offeredCount : step.count,
-        });
-      }
-
-      // stepsに内定ステップがなければ末尾に追加
-      const hasOfferStep = sortedSteps.some((s) => s.label === "内定" || s.label === "オファー");
-      if (!hasOfferStep && (offeredCount > 0 || sortedSteps.length > 0)) {
-        stages.push({ name: "内定", count: offeredCount });
-      }
-
-      return stages;
-    }
-  );
-
-  // --- KPIトレンド（過去6ヶ月） ---
-  const { data: kpiTrend } = useQuery<KpiTrendPoint[]>(
-    orgId ? `dashboard-kpi-trend-${orgId}` : null,
-    async () => {
-      const now = new Date();
-      const sixMonthsAgo = subMonths(now, 5);
-      const startDate = format(
-        new Date(sixMonthsAgo.getFullYear(), sixMonthsAgo.getMonth(), 1),
-        "yyyy-MM-dd"
-      );
-
-      const { data: applications } = await getSupabase()
-        .from("applications")
-        .select("id, status, applied_at")
-        .eq("organization_id", orgId!)
-        .gte("applied_at", startDate);
-
-      if (!applications) return [];
-
-      const monthMap = new Map<
-        string,
-        { applications: number; offered: number; withdrawn: number }
-      >();
-
-      for (let i = 5; i >= 0; i--) {
-        const d = subMonths(now, i);
-        monthMap.set(format(d, "yyyy/MM"), { applications: 0, offered: 0, withdrawn: 0 });
-      }
-
-      for (const app of applications) {
-        const key = format(new Date(app.applied_at), "yyyy/MM");
-        if (!monthMap.has(key)) continue;
-        const entry = monthMap.get(key)!;
-        entry.applications++;
-        if (app.status === "offered") entry.offered++;
-        if (app.status === "withdrawn") entry.withdrawn++;
-      }
-
-      return Array.from(monthMap.entries()).map(([month, d]) => ({ month, ...d }));
-    }
-  );
-
-  // --- 部署別採用状況 ---
-  const { data: departmentStats } = useQuery<DepartmentStat[]>(
-    orgId ? `dashboard-dept-stats-${orgId}` : null,
-    async () => {
-      const { data: applications } = await getSupabase()
-        .from("applications")
-        .select("id, status, jobs(department)")
-        .eq("organization_id", orgId!);
-
-      if (!applications) return [];
-
-      const deptMap = new Map<string, { applications: number; offered: number }>();
-      for (const app of applications) {
-        const dept = (app.jobs as unknown as { department: string | null })?.department ?? "未設定";
-        if (!deptMap.has(dept)) deptMap.set(dept, { applications: 0, offered: 0 });
-        const entry = deptMap.get(dept)!;
-        entry.applications++;
-        if (app.status === "offered") entry.offered++;
-      }
-
-      return Array.from(deptMap.entries())
-        .map(([department, d]) => ({ department, ...d }))
-        .sort((a, b) => b.applications - a.applications);
-    }
-  );
-
-  // --- 公開中の求人 ---
-  const { data: openJobs } = useQuery<OpenJobStat[]>(
-    orgId ? `dashboard-open-jobs-${orgId}` : null,
-    async () => {
-      const { data: jobs } = await getSupabase()
-        .from("jobs")
-        .select("id, title, department")
-        .eq("organization_id", orgId!)
-        .eq("status", "open")
-        .order("created_at", { ascending: false });
-
-      if (!jobs || jobs.length === 0) return [];
-
-      const { data: apps } = await getSupabase()
-        .from("applications")
-        .select("job_id, status")
-        .eq("organization_id", orgId!)
-        .in(
-          "job_id",
-          jobs.map((j) => j.id)
-        );
-
-      const countMap = new Map<string, { total: number; offered: number }>();
-      for (const app of apps ?? []) {
-        if (!countMap.has(app.job_id)) countMap.set(app.job_id, { total: 0, offered: 0 });
-        const c = countMap.get(app.job_id)!;
-        c.total++;
-        if (app.status === "offered") c.offered++;
-      }
-
-      return jobs.map((job) => ({
-        id: job.id,
-        title: job.title,
-        department: job.department,
-        applicantCount: countMap.get(job.id)?.total ?? 0,
-        offeredCount: countMap.get(job.id)?.offered ?? 0,
-      }));
-    }
-  );
-
-  // --- 社員: 部署別社員数 ---
-  const { data: empDeptStats } = useQuery<EmployeeDepartmentStat[]>(
-    orgId ? `dashboard-emp-dept-${orgId}` : null,
-    async () => {
-      const { data: empDepts } = await getSupabase()
-        .from("employee_departments")
-        .select("user_id, departments!inner(name, organization_id)")
-        .eq("departments.organization_id", orgId!);
-
-      if (!empDepts) return [];
-
-      const deptMap = new Map<string, number>();
-      for (const ed of empDepts) {
-        const name = (ed.departments as unknown as { name: string }).name;
-        deptMap.set(name, (deptMap.get(name) ?? 0) + 1);
-      }
-
-      return Array.from(deptMap.entries())
-        .map(([department, count]) => ({ department, count }))
-        .sort((a, b) => b.count - a.count);
-    }
-  );
-
-  // --- 承認待ちワークフロー件数 ---
-  const { data: pendingWorkflows } = useQuery(
-    organization ? `pending-workflows-${organization.id}` : null,
-    async () => {
-      const { count } = await getSupabase()
-        .from("workflow_requests")
-        .select("*", { count: "exact", head: true })
-        .eq("organization_id", organization!.id)
-        .eq("status", "pending");
-      return count ?? 0;
-    }
-  );
-
-  // --- 有給取得率 ---
-  const { data: leaveUsageRate } = useQuery(
-    organization ? `leave-usage-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("leave_balances")
-        .select("granted_days, used_days, carried_over_days")
-        .eq("organization_id", organization!.id)
-        .eq("fiscal_year", new Date().getFullYear());
-      if (!data || data.length === 0) return 0;
-      const totalGranted = data.reduce(
-        (sum, b) => sum + (b.granted_days || 0) + (b.carried_over_days || 0),
-        0
-      );
-      const totalUsed = data.reduce((sum, b) => sum + (b.used_days || 0), 0);
-      return totalGranted > 0 ? Math.round((totalUsed / totalGranted) * 100) : 0;
-    }
-  );
-
-  // --- 勤怠異常（打刻漏れ）件数 ---
-  const { data: attendanceAnomalies } = useQuery(
-    organization ? `attendance-anomalies-${organization.id}` : null,
-    async () => {
-      const today = format(new Date(), "yyyy-MM-dd");
-      const { count } = await getSupabase()
-        .from("attendance_records")
-        .select("*", { count: "exact", head: true })
-        .eq("organization_id", organization!.id)
-        .is("clock_out", null)
-        .lt("date", today);
-      return count ?? 0;
-    }
-  );
-
-  // --- 社員: 採用区分 ---
-  const { data: hiringTypeStats } = useQuery<HiringTypeStat[]>(
-    orgId ? `dashboard-hiring-type-${orgId}` : null,
-    async () => {
-      const { data: employees } = await getSupabase()
-        .from("user_organizations")
-        .select("user_id, profiles!inner(role, hiring_type)")
-        .eq("organization_id", orgId!)
-        .eq("profiles.role", "employee");
-
-      if (!employees) return [];
-
-      let newGrad = 0;
-      let midCareer = 0;
-      let unknown = 0;
-
-      for (const emp of employees) {
-        const ht = (emp.profiles as unknown as { hiring_type: string | null }).hiring_type;
-        if (ht === "new_grad") newGrad++;
-        else if (ht === "mid_career") midCareer++;
-        else unknown++;
-      }
-
-      const result: HiringTypeStat[] = [];
-      if (newGrad > 0) result.push({ name: "新卒", value: newGrad });
-      if (midCareer > 0) result.push({ name: "中途", value: midCareer });
-      if (unknown > 0) result.push({ name: "未設定", value: unknown });
-      return result;
-    }
-  );
+    stats,
+    statsError,
+    mutateStats,
+    pipeline,
+    kpiTrend,
+    departmentStats,
+    openJobs,
+    empDeptStats,
+    pendingWorkflows,
+    leaveUsageRate,
+    attendanceAnomalies,
+    hiringTypeStats,
+    organization,
+  } = useDashboard();
 
   const d = stats ?? { applicants: 0, employees: 0, openJobs: 0, activeApplications: 0 };
 

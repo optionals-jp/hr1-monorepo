@@ -3,57 +3,18 @@
 import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { InfoItem } from "@/components/ui/info-item";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { Badge } from "@/components/ui/badge";
 import { dealStatusLabels, dealStatusColors } from "@/lib/constants";
 import Link from "next/link";
-import type { BcCompany, BcContact, BcDeal } from "@/types/database";
+import { useCrmCompany, useCrmCompanyContacts, useCrmCompanyDeals } from "@/lib/hooks/use-crm";
 
 export default function CrmCompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { organization } = useOrg();
 
-  const { data: company, error } = useQuery<BcCompany | null>(
-    organization ? `crm-company-${id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("bc_companies")
-        .select("*")
-        .eq("id", id)
-        .eq("organization_id", organization!.id)
-        .single();
-      return data;
-    }
-  );
-
-  const { data: contacts } = useQuery<BcContact[]>(
-    organization ? `crm-company-contacts-${id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("bc_contacts")
-        .select("*")
-        .eq("company_id", id)
-        .eq("organization_id", organization!.id)
-        .order("last_name");
-      return data ?? [];
-    }
-  );
-
-  const { data: deals } = useQuery<BcDeal[]>(
-    organization ? `crm-company-deals-${id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("bc_deals")
-        .select("*")
-        .eq("company_id", id)
-        .eq("organization_id", organization!.id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    }
-  );
+  const { data: company, error } = useCrmCompany(id);
+  const { data: contacts } = useCrmCompanyContacts(id);
+  const { data: deals } = useCrmCompanyDeals(id);
 
   return (
     <div>

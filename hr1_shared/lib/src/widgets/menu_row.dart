@@ -84,7 +84,7 @@ class MenuRow extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       title,
-                      style: AppTextStyles.caption1.copyWith(
+                      style: AppTextStyles.body2.copyWith(
                         color: isEditable && title == '編集する'
                             ? AppColors.brand
                             : textColor,
@@ -93,7 +93,7 @@ class MenuRow extends StatelessWidget {
                   ] else ...[
                     Text(
                       title,
-                      style: AppTextStyles.caption1.copyWith(color: textColor),
+                      style: AppTextStyles.body2.copyWith(color: textColor),
                     ),
                     if (subtitle != null)
                       Text(

@@ -666,32 +666,21 @@ class _AttendanceStatusCard extends ConsumerWidget {
 
     return SizedBox(
       height: 36,
-      child: FilledButton(
-        onPressed: punchState.isLoading
-            ? null
-            : () =>
-                  ref.read(attendanceControllerProvider.notifier).punch(action),
-        style: FilledButton.styleFrom(
+      child: CommonButton(
+        onPressed: () =>
+            ref.read(attendanceControllerProvider.notifier).punch(action),
+        loading: punchState.isLoading,
+        style: ElevatedButton.styleFrom(
           backgroundColor: color,
+          foregroundColor: Colors.white,
+          minimumSize: Size.zero,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.radius80),
+          textStyle: AppTextStyles.caption1.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        child: punchState.isLoading
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : Text(
-                label,
-                style: AppTextStyles.caption1.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+        child: Text(label),
       ),
     );
   }

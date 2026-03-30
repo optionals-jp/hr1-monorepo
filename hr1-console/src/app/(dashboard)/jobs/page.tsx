@@ -19,8 +19,11 @@ import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
+import {
+  useJobsList,
+  useJobAppCounts,
+  deleteJob as deleteJobAction,
+} from "@/lib/hooks/use-jobs-page";
 import { cn } from "@/lib/utils";
 import type { Job } from "@/types/database";
 import { jobStatusLabels as statusLabels, jobStatusColors as statusColors } from "@/lib/constants";
@@ -33,11 +36,6 @@ const pageTabs = [
   { value: "archived", label: "アーカイブ" },
 ];
 
-interface AppCounts {
-  total: number;
-  offered: number;
-}
-
 export default function JobsPage() {
   const router = useRouter();
   const { showToast } = useToast();
@@ -46,37 +44,9 @@ export default function JobsPage() {
   const [activeTab, setActiveTab] = useState("open");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const {
-    data: jobs = [],
-    isLoading,
-    error: jobsError,
-    mutate: mutateJobs,
-  } = useQuery<Job[]>(organization ? `jobs-${organization.id}` : null, async () => {
-    const { data } = await getSupabase()
-      .from("jobs")
-      .select("*")
-      .eq("organization_id", organization!.id)
-      .order("created_at", { ascending: false });
-    return data ?? [];
-  });
+  const { data: jobs = [], isLoading, error: jobsError, mutate: mutateJobs } = useJobsList();
 
-  const { data: appCounts = {} } = useQuery<Record<string, AppCounts>>(
-    organization ? `job-app-counts-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("applications")
-        .select("job_id, status")
-        .eq("organization_id", organization!.id);
-
-      const counts: Record<string, AppCounts> = {};
-      for (const row of data ?? []) {
-        if (!counts[row.job_id]) counts[row.job_id] = { total: 0, offered: 0 };
-        counts[row.job_id].total++;
-        if (row.status === "offered") counts[row.job_id].offered++;
-      }
-      return counts;
-    }
-  );
+  const { data: appCounts = {} } = useJobAppCounts();
 
   const tabCounts = pageTabs.map((tab) => ({
     ...tab,
@@ -88,20 +58,11 @@ export default function JobsPage() {
     if (!window.confirm(`「${job.title}」を削除しますか？`)) return;
     setDeletingId(job.id);
     try {
-      const { count } = await getSupabase()
-        .from("applications")
-        .select("id", { count: "exact", head: true })
-        .eq("job_id", job.id);
-      if (count && count > 0) {
-        showToast(`この求人には${count}件の応募があるため削除できません`, "error");
+      const result = await deleteJobAction(job.id, organization.id);
+      if (result.error) {
+        showToast(result.error.message, "error");
         return;
       }
-      const { error } = await getSupabase()
-        .from("jobs")
-        .delete()
-        .eq("id", job.id)
-        .eq("organization_id", organization.id);
-      if (error) throw error;
       mutateJobs();
       showToast("求人を削除しました");
     } catch {

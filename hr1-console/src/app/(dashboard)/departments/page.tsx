@@ -24,8 +24,7 @@ import {
 import { EditPanel } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
+import { useDepartmentsPage, type DeptWithMembers } from "@/lib/hooks/use-departments-page";
 import type { Department } from "@/types/database";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
@@ -33,17 +32,6 @@ import { SearchBar } from "@/components/ui/search-bar";
 import { Trash2, Pencil, Users, ZoomIn, ZoomOut, Maximize } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-
-interface DeptMember {
-  id: string;
-  email: string;
-  display_name: string | null;
-  position: string | null;
-}
-
-interface DeptWithMembers extends Department {
-  members: DeptMember[];
-}
 
 const pageTabs = [
   { value: "list", label: "一覧" },
@@ -55,6 +43,17 @@ export default function DepartmentsPage() {
   const { showToast } = useToast();
   const { organization } = useOrg();
   const [activeTab, setActiveTab] = useState("list");
+  const {
+    departments,
+    isLoading,
+    departmentsError,
+    mutate,
+    deptWithMembers,
+    orgLoading,
+    addDepartment,
+    updateDepartment,
+    deleteDepartment,
+  } = useDepartmentsPage(activeTab);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -110,63 +109,6 @@ export default function DepartmentsPage() {
     setPan({ x: 0, y: 0 });
   }, []);
 
-  const {
-    data: departments = [],
-    isLoading,
-    error: departmentsError,
-    mutate,
-  } = useQuery<Department[]>(organization ? `departments-${organization.id}` : null, async () => {
-    const { data } = await getSupabase()
-      .from("departments")
-      .select("*")
-      .eq("organization_id", organization!.id)
-      .order("name");
-    return data ?? [];
-  });
-
-  const {
-    data: deptWithMembers = [],
-    isLoading: orgLoading,
-    mutate: mutateOrg,
-  } = useQuery<DeptWithMembers[]>(
-    organization && activeTab === "orgchart" ? `dept-members-${organization.id}` : null,
-    async () => {
-      const [{ data: deptData }, { data: edData }] = await Promise.all([
-        getSupabase()
-          .from("departments")
-          .select("*")
-          .eq("organization_id", organization!.id)
-          .order("name"),
-        getSupabase()
-          .from("employee_departments")
-          .select("department_id, profiles:user_id(id, email, display_name, position)")
-          .in(
-            "department_id",
-            (
-              await getSupabase()
-                .from("departments")
-                .select("id")
-                .eq("organization_id", organization!.id)
-            ).data?.map((d) => d.id) ?? []
-          ),
-      ]);
-
-      const memberMap = new Map<string, DeptMember[]>();
-      for (const row of edData ?? []) {
-        const ed = row as unknown as { department_id: string; profiles: DeptMember };
-        if (!ed.profiles) continue;
-        const list = memberMap.get(ed.department_id) ?? [];
-        list.push(ed.profiles);
-        memberMap.set(ed.department_id, list);
-      }
-
-      return (deptData ?? []).map((dept) => ({
-        ...dept,
-        members: memberMap.get(dept.id) ?? [],
-      }));
-    }
-  );
-
   const openAddDialog = () => {
     setNewDeptName("");
     setNewParentId("none");
@@ -177,38 +119,26 @@ export default function DepartmentsPage() {
     if (!organization || !newDeptName.trim()) return;
     setSavingAdd(true);
 
-    try {
-      const { error } = await getSupabase()
-        .from("departments")
-        .insert({
-          id: crypto.randomUUID(),
-          organization_id: organization.id,
-          name: newDeptName.trim(),
-          parent_id: newParentId === "none" ? null : newParentId,
-        });
-      if (error) throw error;
-
+    const result = await addDepartment(
+      organization.id,
+      newDeptName.trim(),
+      newParentId === "none" ? null : newParentId
+    );
+    if (result.success) {
       setDialogOpen(false);
-      mutate();
-      mutateOrg();
       showToast("部署を追加しました");
-    } catch {
-      showToast("部署の追加に失敗しました", "error");
-    } finally {
-      setSavingAdd(false);
+    } else {
+      showToast(result.error ?? "部署の追加に失敗しました", "error");
     }
+    setSavingAdd(false);
   };
 
   const handleDelete = async (id: string) => {
-    try {
-      const { error } = await getSupabase().from("departments").delete().eq("id", id);
-      if (error) throw error;
-
-      mutate();
-      mutateOrg();
+    const result = await deleteDepartment(id);
+    if (result.success) {
       showToast("部署を削除しました");
-    } catch {
-      showToast("部署の削除に失敗しました", "error");
+    } else {
+      showToast(result.error ?? "部署の削除に失敗しました", "error");
     }
   };
 
@@ -223,26 +153,19 @@ export default function DepartmentsPage() {
     if (!editingId || !editName.trim()) return;
     setSavingEdit(true);
 
-    try {
-      const { error } = await getSupabase()
-        .from("departments")
-        .update({
-          name: editName.trim(),
-          parent_id: editParentId === "none" ? null : editParentId,
-        })
-        .eq("id", editingId);
-      if (error) throw error;
-
+    const result = await updateDepartment(
+      editingId,
+      editName.trim(),
+      editParentId === "none" ? null : editParentId
+    );
+    if (result.success) {
       setEditingId(null);
       setEditDialogOpen(false);
-      mutate();
-      mutateOrg();
       showToast("部署を更新しました");
-    } catch {
-      showToast("部署の更新に失敗しました", "error");
-    } finally {
-      setSavingEdit(false);
+    } else {
+      showToast(result.error ?? "部署の更新に失敗しました", "error");
     }
+    setSavingEdit(false);
   };
 
   const filtered = departments.filter(

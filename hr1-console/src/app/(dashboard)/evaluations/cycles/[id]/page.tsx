@@ -17,15 +17,21 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
-import { getSupabase } from "@/lib/supabase/browser";
 import { useOrg } from "@/lib/org-context";
+import {
+  loadCycleDetail,
+  bulkAddAssignments,
+  removeAssignment as repoRemoveAssignment,
+  removeAssignments as repoRemoveAssignments,
+  updateCycleStatus as repoUpdateCycleStatus,
+  type DepartmentWithMembers,
+} from "@/lib/hooks/use-evaluation-detail";
 import type {
   EvaluationCycle,
   EvaluationCriterion,
   EvaluationAssignment,
   EvaluationScore,
   Profile,
-  Department,
 } from "@/types/database";
 import { Star, Trash2, Plus, Users, UserPlus, Building2, Check } from "lucide-react";
 import {
@@ -45,10 +51,6 @@ const tabs = [
 ];
 
 type AddMode = "individual" | "department" | "all_mutual";
-
-interface DepartmentWithMembers extends Department {
-  members: Profile[];
-}
 
 export default function EvaluationCycleDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -94,111 +96,13 @@ export default function EvaluationCycleDetailPage() {
     if (!organization) return;
     setLoading(true);
 
-    const [{ data: cycleData }, { data: members }, { data: deptData }] = await Promise.all([
-      getSupabase()
-        .from("evaluation_cycles")
-        .select("*")
-        .eq("id", id)
-        .eq("organization_id", organization.id)
-        .single(),
-      getSupabase()
-        .from("user_organizations")
-        .select("profiles(id, display_name, email, role)")
-        .eq("organization_id", organization.id),
-      getSupabase()
-        .from("departments")
-        .select("*")
-        .eq("organization_id", organization.id)
-        .order("name"),
-    ]);
-
-    setCycle(cycleData);
-    const profiles = (members ?? [])
-      .map((m) => (m as unknown as { profiles: Profile }).profiles)
-      .filter(Boolean);
-    setOrgMembers(profiles);
-
-    // 部署メンバーマッピング
-    if (deptData && deptData.length > 0) {
-      const { data: empDepts } = await getSupabase()
-        .from("employee_departments")
-        .select("user_id, department_id")
-        .in(
-          "department_id",
-          deptData.map((d) => d.id)
-        );
-
-      const deptMembers = new Map<string, Profile[]>();
-      for (const ed of empDepts ?? []) {
-        const profile = profiles.find((p) => p.id === ed.user_id);
-        if (profile) {
-          if (!deptMembers.has(ed.department_id)) deptMembers.set(ed.department_id, []);
-          deptMembers.get(ed.department_id)!.push(profile);
-        }
-      }
-
-      setDepartments(
-        (deptData as Department[]).map((d) => ({
-          ...d,
-          members: deptMembers.get(d.id) ?? [],
-        }))
-      );
-    } else {
-      setDepartments([]);
-    }
-
-    if (cycleData) {
-      const [{ data: crData }, { data: assignData }] = await Promise.all([
-        getSupabase()
-          .from("evaluation_criteria")
-          .select("*")
-          .eq("template_id", cycleData.template_id)
-          .order("sort_order"),
-        getSupabase()
-          .from("evaluation_assignments")
-          .select("*")
-          .eq("cycle_id", id)
-          .order("created_at"),
-      ]);
-
-      setCriteria(crData ?? []);
-
-      const assignmentList = assignData ?? [];
-      const userIds = [
-        ...new Set(assignmentList.flatMap((a) => [a.target_user_id, a.evaluator_id])),
-      ];
-
-      const profileMap = new Map<string, Profile>();
-      if (userIds.length > 0) {
-        const { data: profileData } = await getSupabase()
-          .from("profiles")
-          .select("id, display_name, email, role")
-          .in("id", userIds);
-        for (const p of profileData ?? []) profileMap.set(p.id, p as Profile);
-      }
-
-      setAssignments(
-        assignmentList.map((a) => ({
-          ...a,
-          target_user: profileMap.get(a.target_user_id),
-          evaluator: profileMap.get(a.evaluator_id),
-        }))
-      );
-
-      // スコアデータ取得（提出済みの評価のみ）
-      const submittedEvalIds = assignmentList
-        .filter((a) => a.evaluation_id)
-        .map((a) => a.evaluation_id!);
-      if (submittedEvalIds.length > 0) {
-        const { data: scoreData } = await getSupabase()
-          .from("evaluation_scores")
-          .select("*")
-          .in("evaluation_id", submittedEvalIds);
-        setAllScores(scoreData ?? []);
-      } else {
-        setAllScores([]);
-      }
-    }
+    const result = await loadCycleDetail(id, organization.id);
+    setCycle(result.cycle);
+    setCriteria(result.criteria);
+    setAssignments(result.assignments);
+    setAllScores(result.allScores);
+    setOrgMembers(result.orgMembers);
+    setDepartments(result.departments);
 
     setLoading(false);
   }
@@ -209,7 +113,7 @@ export default function EvaluationCycleDetailPage() {
   }
 
   /** 複数アサインを一括追加 */
-  async function bulkAddAssignments(
+  async function handleBulkAddAssignments(
     pairs: { targetId: string; evaluatorId: string; raterType: string }[]
   ) {
     if (!cycle) return;
@@ -222,31 +126,19 @@ export default function EvaluationCycleDetailPage() {
     }
 
     setAddingSaving(true);
-    try {
-      const rows = newPairs.map((p, i) => ({
-        id: `assign-${Date.now()}-${i}`,
-        cycle_id: cycle.id,
-        target_user_id: p.targetId,
-        evaluator_id: p.evaluatorId,
-        rater_type: p.raterType,
-        due_date: cycle.end_date,
-      }));
-
-      const { error } = await getSupabase().from("evaluation_assignments").insert(rows);
-      if (error) throw error;
-
-      showToast(`${newPairs.length}件の評価を追加しました`);
+    const result = await bulkAddAssignments(cycle.id, cycle.end_date, newPairs);
+    if (result.success) {
+      showToast(`${result.count}件の評価を追加しました`);
       await loadData();
-    } catch {
-      showToast("追加に失敗しました", "error");
-    } finally {
-      setAddingSaving(false);
+    } else {
+      showToast(result.error ?? "追加に失敗しました", "error");
     }
+    setAddingSaving(false);
   }
 
   async function addIndividualAssignment() {
     if (!addTargetId || !addEvaluatorId) return;
-    await bulkAddAssignments([
+    await handleBulkAddAssignments([
       { targetId: addTargetId, evaluatorId: addEvaluatorId, raterType: addRaterType },
     ]);
     setAddTargetId("");
@@ -266,7 +158,7 @@ export default function EvaluationCycleDetailPage() {
         }
       }
     }
-    await bulkAddAssignments(pairs);
+    await handleBulkAddAssignments(pairs);
   }
 
   async function addMutualEvaluations() {
@@ -285,18 +177,15 @@ export default function EvaluationCycleDetailPage() {
         }
       }
     }
-    await bulkAddAssignments(pairs);
+    await handleBulkAddAssignments(pairs);
   }
 
-  async function removeAssignment(assignmentId: string) {
-    const { error } = await getSupabase()
-      .from("evaluation_assignments")
-      .delete()
-      .eq("id", assignmentId);
-    if (error) {
-      showToast("削除に失敗しました", "error");
-    } else {
+  async function handleRemoveAssignment(assignmentId: string) {
+    const result = await repoRemoveAssignment(assignmentId);
+    if (result.success) {
       await loadData();
+    } else {
+      showToast(result.error ?? "削除に失敗しました", "error");
     }
   }
 
@@ -306,32 +195,23 @@ export default function EvaluationCycleDetailPage() {
     );
     if (targetAssignments.length === 0) return;
 
-    const { error } = await getSupabase()
-      .from("evaluation_assignments")
-      .delete()
-      .in(
-        "id",
-        targetAssignments.map((a) => a.id)
-      );
-    if (error) {
-      showToast("削除に失敗しました", "error");
-    } else {
+    const result = await repoRemoveAssignments(targetAssignments.map((a) => a.id));
+    if (result.success) {
       showToast(`${targetAssignments.length}件を削除しました`);
       await loadData();
+    } else {
+      showToast(result.error ?? "削除に失敗しました", "error");
     }
   }
 
-  async function updateCycleStatus(newStatus: string) {
+  async function handleUpdateCycleStatus(newStatus: string) {
     if (!cycle) return;
-    const { error } = await getSupabase()
-      .from("evaluation_cycles")
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
-      .eq("id", cycle.id);
-    if (error) {
-      showToast("ステータスの更新に失敗しました", "error");
-    } else {
+    const result = await repoUpdateCycleStatus(cycle.id, newStatus);
+    if (result.success) {
       showToast(`ステータスを「${cycleStatusLabels[newStatus]}」に変更しました`);
       await loadData();
+    } else {
+      showToast(result.error ?? "ステータスの更新に失敗しました", "error");
     }
   }
 
@@ -506,7 +386,7 @@ export default function EvaluationCycleDetailPage() {
               {cycleStatusLabels[cycle.status]}
             </Badge>
             {nextAction && (
-              <Button size="sm" onClick={() => updateCycleStatus(nextAction.status)}>
+              <Button size="sm" onClick={() => handleUpdateCycleStatus(nextAction.status)}>
                 {nextAction.label}
               </Button>
             )}
@@ -949,7 +829,7 @@ export default function EvaluationCycleDetailPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => removeAssignment(a.id)}
+                                onClick={() => handleRemoveAssignment(a.id)}
                                 className="text-destructive hover:text-destructive h-7 w-7 p-0"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />

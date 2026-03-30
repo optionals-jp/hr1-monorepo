@@ -18,8 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
 import { Trash2 } from "lucide-react";
+import { createForm } from "@/lib/hooks/use-forms";
 import { fieldTypeLabels, formTargetLabels } from "@/lib/constants";
 
 interface FieldDraft {
@@ -70,50 +70,21 @@ export default function NewFormPage() {
     if (!organization || !title) return;
     setSaving(true);
 
-    try {
-      const formId = `form-${Date.now()}`;
+    const result = await createForm(organization.id, {
+      title,
+      target,
+      description,
+      fields,
+    });
 
-      const { error: formError } = await getSupabase()
-        .from("custom_forms")
-        .insert({
-          id: formId,
-          organization_id: organization.id,
-          title,
-          target,
-          description: description || null,
-        });
-      if (formError) throw formError;
-
-      if (fields.length > 0) {
-        const { error: fieldsError } = await getSupabase()
-          .from("form_fields")
-          .insert(
-            fields.map((field, index) => ({
-              id: `field-${formId}-${index + 1}`,
-              form_id: formId,
-              type: field.field_type,
-              label: field.label,
-              description: field.description || null,
-              placeholder: field.placeholder || null,
-              is_required: field.is_required,
-              options:
-                field.options && ["radio", "checkbox", "dropdown"].includes(field.field_type)
-                  ? field.options.split("\n").filter(Boolean)
-                  : null,
-              sort_order: index + 1,
-            }))
-          );
-        if (fieldsError) throw fieldsError;
-      }
-
+    if (result.success) {
       await mutate(`forms-${organization.id}`);
       showToast("フォームを作成しました");
       router.push("/forms");
-    } catch {
-      showToast("フォームの作成に失敗しました", "error");
-    } finally {
-      setSaving(false);
+    } else {
+      showToast(result.error ?? "フォームの作成に失敗しました", "error");
     }
+    setSaving(false);
   };
 
   return (

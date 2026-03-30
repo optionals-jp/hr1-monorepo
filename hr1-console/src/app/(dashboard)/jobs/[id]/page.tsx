@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { jobStatusLabels as statusLabels } from "@/lib/constants";
+import { jobStatusLabels as statusLabels, StepType } from "@/lib/constants";
 import { useJobDetail } from "@/features/jobs/hooks/use-job-detail";
 import { JobApplicantsTab } from "@/features/jobs/components/job-applicants-tab";
 import { JobDetailTab } from "@/features/jobs/components/job-detail-tab";
@@ -136,9 +136,10 @@ export default function JobDetailPage() {
               startEditStep={h.startEditStep}
               startEditingInfo={h.startEditingInfo}
               openAddStep={() => {
-                h.setNewStepType("interview");
+                h.setNewStepType(StepType.Interview);
                 h.setNewStepLabel("");
                 h.setNewStepFormId("");
+                h.setNewStepInterviewId("");
                 h.setDialogOpen(true);
               }}
             />
@@ -190,8 +191,8 @@ export default function JobDetailPage() {
         setStepLabel={h.setEditStepLabel}
         stepFormId={h.editStepFormId}
         setStepFormId={h.setEditStepFormId}
-        stepScheduleIds={h.editStepScheduleIds}
-        setStepScheduleIds={h.setEditStepScheduleIds}
+        stepInterviewId={h.editStepInterviewId}
+        setStepInterviewId={h.setEditStepInterviewId}
         forms={h.forms}
         interviews={h.interviews}
         saving={h.savingEditStep}
@@ -210,8 +211,8 @@ export default function JobDetailPage() {
         setStepLabel={h.setNewStepLabel}
         stepFormId={h.newStepFormId}
         setStepFormId={h.setNewStepFormId}
-        stepScheduleIds={h.newStepScheduleIds}
-        setStepScheduleIds={h.setNewStepScheduleIds}
+        stepInterviewId={h.newStepInterviewId}
+        setStepInterviewId={h.setNewStepInterviewId}
         forms={h.forms}
         interviews={h.interviews}
         saving={h.savingStep}

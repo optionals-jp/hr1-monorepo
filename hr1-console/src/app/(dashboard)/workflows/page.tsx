@@ -32,10 +32,16 @@ import {
 import { SearchBar } from "@/components/ui/search-bar";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
+import {
+  useWorkflowEmployees,
+  useWorkflowRequests,
+  useWorkflowRules,
+  reviewRequest,
+  sendReviewNotification,
+  saveWorkflowSettings,
+} from "@/lib/hooks/use-workflows-page";
 import { cn } from "@/lib/utils";
-import type { WorkflowRequest, WorkflowRule } from "@/types/database";
+import type { WorkflowRequest } from "@/types/database";
 import {
   workflowRequestTypeLabels,
   workflowRequestTypeColors,
@@ -143,58 +149,20 @@ export default function WorkflowsPage() {
   const [notifyAdmins, setNotifyAdmins] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
 
-  const { data: employees = [] } = useQuery<Employee[]>(
-    organization ? `employees-list-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("user_organizations")
-        .select(
-          "user_id, profiles!user_organizations_user_id_fkey(id, email, display_name, avatar_url)"
-        )
-        .eq("organization_id", organization!.id);
-      return (data ?? []).map((d) => {
-        const p = d.profiles as unknown as Employee;
-        return {
-          id: p.id,
-          email: p.email,
-          display_name: p.display_name,
-          avatar_url: p.avatar_url,
-        };
-      });
-    }
-  );
+  const { data: employees = [] } = useWorkflowEmployees();
 
   const {
     data: requests = [],
     isLoading: requestsLoading,
     error: requestsError,
     mutate,
-  } = useQuery<WorkflowRequest[]>(
-    organization && activeTab === "requests" ? `workflow-requests-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("workflow_requests")
-        .select("*")
-        .eq("organization_id", organization!.id)
-        .order("created_at", { ascending: false });
-      return (data ?? []) as WorkflowRequest[];
-    }
-  );
+  } = useWorkflowRequests(activeTab === "requests");
 
   const {
     data: rules = [],
     isLoading: rulesLoading,
     mutate: mutateRules,
-  } = useQuery<WorkflowRule[]>(
-    organization && activeTab === "settings" ? `workflow-rules-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("workflow_rules")
-        .select("*")
-        .eq("organization_id", organization!.id);
-      return (data ?? []) as WorkflowRule[];
-    }
-  );
+  } = useWorkflowRules(activeTab === "settings");
 
   useEffect(() => {
     if (rules.length === 0) return;
@@ -256,49 +224,27 @@ export default function WorkflowsPage() {
     if (!selectedRequest) return;
     setSavingReview(true);
     try {
-      const supabase = getSupabase();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const result = await reviewRequest(
+        selectedRequest.id,
+        status,
+        selectedRequest.request_type,
+        reviewComment || null
+      );
 
-      if (status === "approved" && selectedRequest.request_type === "paid_leave") {
-        const { data: result } = await supabase.rpc("approve_leave_request", {
-          p_request_id: selectedRequest.id,
-          p_reviewer_id: user?.id ?? "",
-          p_comment: reviewComment || null,
-        });
-
-        if (result?.error) {
-          showToast(result.error as string, "error");
-          setSavingReview(false);
-          return;
-        }
-      } else {
-        await supabase
-          .from("workflow_requests")
-          .update({
-            status,
-            reviewed_by: user?.id ?? null,
-            reviewed_at: new Date().toISOString(),
-            review_comment: reviewComment || null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", selectedRequest.id);
+      if (result.error) {
+        showToast(result.error, "error");
+        setSavingReview(false);
+        return;
       }
 
       const typeLabel =
         workflowRequestTypeLabels[selectedRequest.request_type] || selectedRequest.request_type;
-      await supabase.from("notifications").insert({
-        organization_id: organization!.id,
-        user_id: selectedRequest.user_id,
-        type: "general",
-        title: status === "approved" ? "申請が承認されました" : "申請が却下されました",
-        body:
-          status === "approved"
-            ? `${typeLabel}の申請が承認されました。`
-            : `${typeLabel}の申請が却下されました。${reviewComment ? `理由: ${reviewComment}` : ""}`,
-        is_read: false,
-        action_url: "/workflow",
+      await sendReviewNotification({
+        organizationId: organization!.id,
+        userId: selectedRequest.user_id,
+        status,
+        typeLabel,
+        reviewComment,
       });
 
       await mutate();
@@ -317,69 +263,47 @@ export default function WorkflowsPage() {
     if (!organization) return;
     setSavingSettings(true);
     try {
-      const supabase = getSupabase();
       const orgId = organization.id;
 
-      const upserts: {
-        organization_id: string;
-        request_type: string;
-        rule_type: string;
-        conditions: Record<string, unknown>;
-        is_active: boolean;
-      }[] = [];
+      const upserts = [
+        {
+          organization_id: orgId,
+          request_type: "paid_leave",
+          rule_type: "auto_approve",
+          conditions: { max_days: autoApproveConfig.paid_leave.max_days },
+          is_active: autoApproveConfig.paid_leave.is_active,
+        },
+        {
+          organization_id: orgId,
+          request_type: "overtime",
+          rule_type: "auto_approve",
+          conditions: { max_hours: autoApproveConfig.overtime.max_hours },
+          is_active: autoApproveConfig.overtime.is_active,
+        },
+        {
+          organization_id: orgId,
+          request_type: "expense",
+          rule_type: "auto_approve",
+          conditions: { max_amount: autoApproveConfig.expense.max_amount },
+          is_active: autoApproveConfig.expense.is_active,
+        },
+        {
+          organization_id: orgId,
+          request_type: "business_trip",
+          rule_type: "auto_approve",
+          conditions: {},
+          is_active: autoApproveConfig.business_trip.is_active,
+        },
+        {
+          organization_id: orgId,
+          request_type: "_all",
+          rule_type: "notify",
+          conditions: {},
+          is_active: notifyAdmins,
+        },
+      ];
 
-      upserts.push({
-        organization_id: orgId,
-        request_type: "paid_leave",
-        rule_type: "auto_approve",
-        conditions: { max_days: autoApproveConfig.paid_leave.max_days },
-        is_active: autoApproveConfig.paid_leave.is_active,
-      });
-      upserts.push({
-        organization_id: orgId,
-        request_type: "overtime",
-        rule_type: "auto_approve",
-        conditions: { max_hours: autoApproveConfig.overtime.max_hours },
-        is_active: autoApproveConfig.overtime.is_active,
-      });
-      upserts.push({
-        organization_id: orgId,
-        request_type: "expense",
-        rule_type: "auto_approve",
-        conditions: { max_amount: autoApproveConfig.expense.max_amount },
-        is_active: autoApproveConfig.expense.is_active,
-      });
-      upserts.push({
-        organization_id: orgId,
-        request_type: "business_trip",
-        rule_type: "auto_approve",
-        conditions: {},
-        is_active: autoApproveConfig.business_trip.is_active,
-      });
-      upserts.push({
-        organization_id: orgId,
-        request_type: "_all",
-        rule_type: "notify",
-        conditions: {},
-        is_active: notifyAdmins,
-      });
-
-      for (const upsert of upserts) {
-        const existing = rules.find(
-          (r) => r.request_type === upsert.request_type && r.rule_type === upsert.rule_type
-        );
-        if (existing) {
-          await supabase
-            .from("workflow_rules")
-            .update({
-              conditions: upsert.conditions,
-              is_active: upsert.is_active,
-            })
-            .eq("id", existing.id);
-        } else {
-          await supabase.from("workflow_rules").insert(upsert);
-        }
-      }
+      await saveWorkflowSettings({ organizationId: orgId, rules, upserts });
 
       await mutateRules();
       showToast("設定を保存しました", "success");

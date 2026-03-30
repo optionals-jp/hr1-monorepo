@@ -93,4 +93,5 @@ flutter:
 
   assets:
     - assets/
+    - assets/icon/
     - assets/animations/

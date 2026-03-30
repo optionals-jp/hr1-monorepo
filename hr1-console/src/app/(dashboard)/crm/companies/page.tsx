@@ -9,14 +9,13 @@ import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { EditPanel } from "@/components/ui/edit-panel";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { useToast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
 import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
 import type { BcCompany } from "@/types/database";
+import { useCrmCompanies, saveCompany, removeCompany } from "@/lib/hooks/use-crm";
 
 export default function CrmCompaniesPage() {
   const { organization } = useOrg();
@@ -27,18 +26,7 @@ export default function CrmCompaniesPage() {
   const [editData, setEditData] = useState<Partial<BcCompany>>({});
   const [errors, setErrors] = useState<ValidationErrors | null>(null);
 
-  const {
-    data: companies,
-    error,
-    mutate,
-  } = useQuery<BcCompany[]>(organization ? `crm-companies-${organization.id}` : null, async () => {
-    const { data } = await getSupabase()
-      .from("bc_companies")
-      .select("*")
-      .eq("organization_id", organization!.id)
-      .order("name");
-    return data ?? [];
-  });
+  const { data: companies, error, mutate } = useCrmCompanies();
 
   const filtered = (companies ?? []).filter((c) => {
     if (!search) return true;
@@ -64,59 +52,28 @@ export default function CrmCompaniesPage() {
       return;
     }
 
-    try {
-      if (editData.id) {
-        await getSupabase()
-          .from("bc_companies")
-          .update({
-            name: editData.name,
-            name_kana: editData.name_kana || null,
-            corporate_number: editData.corporate_number || null,
-            phone: editData.phone || null,
-            address: editData.address || null,
-            website: editData.website || null,
-            industry: editData.industry || null,
-            notes: editData.notes || null,
-          })
-          .eq("id", editData.id)
-          .eq("organization_id", organization!.id);
-        showToast("企業情報を更新しました");
-      } else {
-        await getSupabase()
-          .from("bc_companies")
-          .insert({
-            organization_id: organization!.id,
-            name: editData.name!,
-            name_kana: editData.name_kana || null,
-            corporate_number: editData.corporate_number || null,
-            phone: editData.phone || null,
-            address: editData.address || null,
-            website: editData.website || null,
-            industry: editData.industry || null,
-            notes: editData.notes || null,
-          });
-        showToast("企業を登録しました");
-      }
+    const result = await saveCompany({
+      organizationId: organization!.id,
+      data: editData,
+    });
+    if (result.success) {
+      showToast(editData.id ? "企業情報を更新しました" : "企業を登録しました");
       setEditOpen(false);
       mutate();
-    } catch {
-      showToast("保存に失敗しました", "error");
+    } else {
+      showToast(result.error!, "error");
     }
   };
 
   const handleDelete = async () => {
     if (!editData.id) return;
-    try {
-      await getSupabase()
-        .from("bc_companies")
-        .delete()
-        .eq("id", editData.id)
-        .eq("organization_id", organization!.id);
+    const result = await removeCompany(editData.id, organization!.id);
+    if (result.success) {
       showToast("企業を削除しました");
       setEditOpen(false);
       mutate();
-    } catch {
-      showToast("削除に失敗しました", "error");
+    } else {
+      showToast(result.error!, "error");
     }
   };
 

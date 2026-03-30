@@ -59,37 +59,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     return Scaffold(
-      backgroundColor: AppColors.brand,
+      backgroundColor: isDark
+          ? AppColors.darkBackground
+          : AppColors.lightBackground,
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Center(
-                  child: Text(
-                    'HR1',
-                    style: AppTextStyles.title2.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.brand,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Image.asset(
+                  'assets/icon/app_icon.png',
+                  width: 120,
+                  height: 120,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               Text(
                 'HR1',
                 style: AppTextStyles.title1.copyWith(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   letterSpacing: -0.5,
                 ),
               ),
@@ -97,7 +90,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               Text(
                 'AI-Native HR SaaS',
                 style: AppTextStyles.caption1.copyWith(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: AppColors.textSecondary(context),
                   letterSpacing: 0.5,
                 ),
               ),

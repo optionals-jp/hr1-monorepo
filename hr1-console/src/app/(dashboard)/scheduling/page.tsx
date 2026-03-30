@@ -25,9 +25,7 @@ import {
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
-import type { Interview, InterviewSlot } from "@/types/database";
+import { useSchedulingList, createInterview } from "@/lib/hooks/use-scheduling";
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -48,23 +46,7 @@ export default function SchedulingPage() {
     []
   );
 
-  const {
-    data: interviews = [],
-    isLoading,
-    error: interviewsError,
-    mutate,
-  } = useQuery<(Interview & { interview_slots: InterviewSlot[] })[]>(
-    organization ? `interviews-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("interviews")
-        .select("*, interview_slots(*)")
-        .eq("organization_id", organization!.id)
-        .order("created_at", { ascending: false });
-
-      return data ?? [];
-    }
-  );
+  const { data: interviews = [], isLoading, error: interviewsError, mutate } = useSchedulingList();
 
   const addSlot = () => {
     setSlots([...slots, { startAt: "", endAt: "", maxApplicants: 1 }]);
@@ -95,36 +77,13 @@ export default function SchedulingPage() {
   const handleCreate = async () => {
     if (!organization || !newTitle) return;
 
-    const interviewId = `interview-${Date.now()}`;
-
-    await getSupabase()
-      .from("interviews")
-      .insert({
-        id: interviewId,
-        organization_id: organization.id,
-        title: newTitle,
-        location: newLocation || null,
-        notes: newNotes || null,
-        status: "scheduling",
-      });
-
-    if (slots.length > 0) {
-      const validSlots = slots.filter((s) => s.startAt && s.endAt);
-      if (validSlots.length > 0) {
-        await getSupabase()
-          .from("interview_slots")
-          .insert(
-            validSlots.map((slot, i) => ({
-              id: `slot-${interviewId}-${i + 1}`,
-              interview_id: interviewId,
-              start_at: new Date(slot.startAt).toISOString(),
-              end_at: new Date(slot.endAt).toISOString(),
-              is_selected: false,
-              max_applicants: slot.maxApplicants,
-            }))
-          );
-      }
-    }
+    await createInterview({
+      organizationId: organization.id,
+      title: newTitle,
+      location: newLocation,
+      notes: newNotes,
+      slots,
+    });
 
     setNewTitle("");
     setNewLocation("");

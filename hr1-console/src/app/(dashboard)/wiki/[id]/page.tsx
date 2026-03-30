@@ -4,11 +4,9 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
-import type { WikiPage } from "@/types/database";
+import { useWikiPage, updateWikiPageInline } from "@/lib/hooks/use-wiki";
+import { useOrg } from "@/lib/org-context";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -33,22 +31,7 @@ export default function WikiDetailPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
 
-  const cacheKey = organization && id ? `wiki-page-${organization.id}-${id}` : null;
-
-  const {
-    data: page,
-    isLoading,
-    error: pageError,
-    mutate: mutatePage,
-  } = useQuery<WikiPage | null>(cacheKey, async () => {
-    const { data } = await getSupabase()
-      .from("wiki_pages")
-      .select("*")
-      .eq("id", id)
-      .eq("organization_id", organization!.id)
-      .single();
-    return data ?? null;
-  });
+  const { data: page, isLoading, error: pageError, mutate: mutatePage } = useWikiPage(id);
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -66,17 +49,13 @@ export default function WikiDetailPage() {
     if (!page || !user) return;
     setSaving(true);
     try {
-      const { error } = await getSupabase()
-        .from("wiki_pages")
-        .update({
-          title: editTitle.trim(),
-          content: editContent,
-          updated_by: user.id,
-        })
-        .eq("id", page.id)
-        .eq("organization_id", organization!.id);
-      if (error) {
-        showToast("操作に失敗しました", "error");
+      const result = await updateWikiPageInline(page.id, organization!.id, {
+        title: editTitle.trim(),
+        content: editContent,
+        updated_by: user.id,
+      });
+      if (!result.success) {
+        showToast(result.error!, "error");
         return;
       }
       await mutatePage();
@@ -88,13 +67,14 @@ export default function WikiDetailPage() {
 
   async function togglePublished() {
     if (!page || !user) return;
-    const { error } = await getSupabase()
-      .from("wiki_pages")
-      .update({ is_published: !page.is_published, updated_by: user.id })
-      .eq("id", page.id)
-      .eq("organization_id", organization!.id);
-    if (error) {
-      showToast("操作に失敗しました", "error");
+    const result = await updateWikiPageInline(page.id, organization!.id, {
+      title: page.title,
+      content: page.content,
+      is_published: !page.is_published,
+      updated_by: user.id,
+    });
+    if (!result.success) {
+      showToast(result.error!, "error");
       return;
     }
     await mutatePage();

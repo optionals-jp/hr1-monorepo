@@ -27,8 +27,7 @@ import {
 import { SearchBar } from "@/components/ui/search-bar";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
+import { usePayslips } from "@/lib/hooks/use-payslips";
 import { cn } from "@/lib/utils";
 import type { Payslip } from "@/types/database";
 import { Receipt, Upload, Plus, Trash2, FileDown, Download } from "lucide-react";
@@ -102,33 +101,15 @@ export default function PayslipsPage() {
   // ---------- データ取得 ----------
 
   const {
-    data: payslips,
-    error: payslipsError,
+    payslips,
+    payslipsError,
     mutate,
-  } = useQuery<Payslip[]>(organization ? `payslips-${organization.id}` : null, async () => {
-    const supabase = getSupabase();
-    const { data } = await supabase
-      .from("payslips")
-      .select("*")
-      .eq("organization_id", organization!.id)
-      .order("year", { ascending: false })
-      .order("month", { ascending: false });
-    return (data ?? []) as Payslip[];
-  });
-
-  const { data: members } = useQuery<MemberRow[]>(
-    organization ? `members-${organization.id}` : null,
-    async () => {
-      const supabase = getSupabase();
-      const { data } = await supabase
-        .from("user_organizations")
-        .select(
-          "user_id, profiles!user_organizations_user_id_fkey(id, display_name, email, avatar_url)"
-        )
-        .eq("organization_id", organization!.id);
-      return (data ?? []) as unknown as MemberRow[];
-    }
-  );
+    members,
+    createPayslip,
+    updatePayslip,
+    deletePayslip,
+    uploadCsv,
+  } = usePayslips();
 
   // ---------- プロフィール参照 ----------
 
@@ -206,64 +187,56 @@ export default function PayslipsPage() {
       return;
     }
     setSaving(true);
-    try {
-      const allowances = formAllowances
-        .filter((a) => a.label.trim())
-        .map((a) => ({ label: a.label.trim(), amount: parseInt(a.amount, 10) || 0 }));
-      const deductions = formDeductions
-        .filter((d) => d.label.trim())
-        .map((d) => ({ label: d.label.trim(), amount: parseInt(d.amount, 10) || 0 }));
+    const allowances = formAllowances
+      .filter((a) => a.label.trim())
+      .map((a) => ({ label: a.label.trim(), amount: parseInt(a.amount, 10) || 0 }));
+    const deductions = formDeductions
+      .filter((d) => d.label.trim())
+      .map((d) => ({ label: d.label.trim(), amount: parseInt(d.amount, 10) || 0 }));
 
-      const payload = {
-        organization_id: organization.id,
-        user_id: formUserId,
-        year: parseInt(formYear, 10),
-        month: parseInt(formMonth, 10),
-        base_salary: parseInt(formBaseSalary, 10) || 0,
-        allowances,
-        deductions,
-        gross_pay: parseInt(formGrossPay, 10) || 0,
-        net_pay: parseInt(formNetPay, 10) || 0,
-        note: formNote.trim() || null,
-        updated_at: new Date().toISOString(),
-      };
+    const payload = {
+      organization_id: organization.id,
+      user_id: formUserId,
+      year: parseInt(formYear, 10),
+      month: parseInt(formMonth, 10),
+      base_salary: parseInt(formBaseSalary, 10) || 0,
+      allowances,
+      deductions,
+      gross_pay: parseInt(formGrossPay, 10) || 0,
+      net_pay: parseInt(formNetPay, 10) || 0,
+      note: formNote.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
 
-      const supabase = getSupabase();
-      if (isCreating) {
-        const { error } = await supabase.from("payslips").insert(payload);
-        if (error) throw error;
-        showToast("給与明細を作成しました", "success");
-      } else if (editingPayslip) {
-        const { error } = await supabase
-          .from("payslips")
-          .update(payload)
-          .eq("id", editingPayslip.id);
-        if (error) throw error;
-        showToast("給与明細を更新しました", "success");
-      }
-      await mutate();
-      setPanelOpen(false);
-    } catch {
-      showToast("保存に失敗しました", "error");
-    } finally {
-      setSaving(false);
+    let result: { success: boolean; error?: string };
+    if (isCreating) {
+      result = await createPayslip(payload);
+      if (result.success) showToast("給与明細を作成しました", "success");
+    } else if (editingPayslip) {
+      result = await updatePayslip(editingPayslip.id, payload);
+      if (result.success) showToast("給与明細を更新しました", "success");
+    } else {
+      result = { success: false };
     }
+    if (result.success) {
+      setPanelOpen(false);
+    } else {
+      showToast(result.error ?? "保存に失敗しました", "error");
+    }
+    setSaving(false);
   };
 
   const handleDelete = async () => {
     if (!editingPayslip) return;
     setSaving(true);
-    try {
-      const { error } = await getSupabase().from("payslips").delete().eq("id", editingPayslip.id);
-      if (error) throw error;
-      await mutate();
+    const result = await deletePayslip(editingPayslip.id);
+    if (result.success) {
       showToast("給与明細を削除しました", "success");
       setPanelOpen(false);
-    } catch {
-      showToast("削除に失敗しました", "error");
-    } finally {
-      setSaving(false);
+    } else {
+      showToast(result.error ?? "削除に失敗しました", "error");
     }
+    setSaving(false);
   };
 
   // ---------- CSV ----------
@@ -329,81 +302,18 @@ export default function PayslipsPage() {
   const handleCsvUpload = async () => {
     if (!organization || csvPreview.length === 0) return;
     setUploading(true);
-    try {
-      const supabase = getSupabase();
-
-      // メールアドレスからuser_idを検索
-      const emails = [...new Set(csvPreview.map((r) => r.email))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, email")
-        .in("email", emails);
-
-      const emailToId = new Map<string, string>();
-      for (const p of profiles ?? []) {
-        emailToId.set(p.email, p.id);
-      }
-
-      const errors: string[] = [];
-      const records: {
-        organization_id: string;
-        user_id: string;
-        year: number;
-        month: number;
-        base_salary: number;
-        allowances: { label: string; amount: number }[];
-        deductions: { label: string; amount: number }[];
-        gross_pay: number;
-        net_pay: number;
-        note: null;
-        updated_at: string;
-      }[] = [];
-
-      for (const row of csvPreview) {
-        const userId = emailToId.get(row.email);
-        if (!userId) {
-          errors.push(`${row.email}: ユーザーが見つかりません`);
-          continue;
-        }
-        records.push({
-          organization_id: organization.id,
-          user_id: userId,
-          year: row.year,
-          month: row.month,
-          base_salary: row.base_salary,
-          allowances: [],
-          deductions: [],
-          gross_pay: row.gross_pay,
-          net_pay: row.net_pay,
-          note: null,
-          updated_at: new Date().toISOString(),
-        });
-      }
-
-      if (errors.length > 0) {
-        setCsvErrors(errors);
-        if (records.length === 0) {
-          setUploading(false);
-          return;
-        }
-      }
-
-      const { error } = await supabase
-        .from("payslips")
-        .upsert(records, { onConflict: "organization_id,user_id,year,month" });
-
-      if (error) throw error;
-
-      await mutate();
-      showToast(`${records.length}件の給与明細を取り込みました`, "success");
+    const result = await uploadCsv(organization.id, csvPreview);
+    if (result.success) {
+      showToast(`${result.count}件の給与明細を取り込みました`, "success");
       setCsvFile(null);
       setCsvPreview([]);
-      setCsvErrors(errors);
-    } catch {
-      showToast("取り込みに失敗しました", "error");
-    } finally {
-      setUploading(false);
+      if (result.errors) setCsvErrors(result.errors);
+    } else if (result.errors) {
+      setCsvErrors(result.errors);
+    } else {
+      showToast(result.error ?? "取り込みに失敗しました", "error");
     }
+    setUploading(false);
   };
 
   // ---------- 年リスト ----------

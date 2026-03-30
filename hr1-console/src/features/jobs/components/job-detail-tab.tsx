@@ -7,7 +7,12 @@ import { cn } from "@/lib/utils";
 import type { Job, JobStep, Interview } from "@/types/database";
 import { GripVertical } from "lucide-react";
 import { format } from "date-fns";
-import { stepTypeLabels, jobStatusLabels as statusLabels } from "@/lib/constants";
+import {
+  StepType,
+  FORM_STEP_TYPES,
+  stepTypeLabels,
+  jobStatusLabels as statusLabels,
+} from "@/lib/constants";
 import type { MutableRefObject } from "react";
 
 interface JobDetailTabProps {
@@ -118,7 +123,7 @@ export function JobDetailTab({
             <h2 className="text-sm font-semibold text-muted-foreground">
               選考ステップ
               <span className="ml-1.5 text-xs font-normal">
-                {steps.filter((s) => s.step_type !== "offer").length + 1}
+                {steps.filter((s) => s.step_type !== StepType.Offer).length + 1}
               </span>
             </h2>
             <div className="flex items-center gap-2">
@@ -180,7 +185,7 @@ export function JobDetailTab({
             }
           >
             {steps
-              .filter((s) => s.step_type !== "offer")
+              .filter((s) => s.step_type !== StepType.Offer)
               .map((step, index) => (
                 <div
                   key={step.id}
@@ -223,7 +228,7 @@ export function JobDetailTab({
                     <p className="text-xs text-muted-foreground">
                       {stepTypeLabels[step.step_type] ?? step.step_type}
                       {step.related_id &&
-                        ["screening", "form"].includes(step.step_type) &&
+                        FORM_STEP_TYPES.includes(step.step_type as StepType) &&
                         forms.find((f) => f.id === step.related_id) && (
                           <>
                             {" — "}
@@ -237,28 +242,20 @@ export function JobDetailTab({
                           </>
                         )}
                       {step.related_id &&
-                        step.step_type === "interview" &&
+                        step.step_type === StepType.Interview &&
                         (() => {
-                          const ids = step.related_id!.split(",").filter(Boolean);
-                          const linked = ids
-                            .map((sid) => interviews.find((iv) => iv.id === sid))
-                            .filter(Boolean);
-                          if (linked.length === 0) return null;
+                          const iv = interviews.find((i) => i.id === step.related_id);
+                          if (!iv) return null;
                           return (
                             <>
                               {" — "}
-                              {linked.map((iv, i) => (
-                                <span key={iv!.id}>
-                                  {i > 0 && "、"}
-                                  <Link
-                                    href={`/scheduling/${iv!.id}`}
-                                    className="text-primary hover:underline"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    {iv!.title}
-                                  </Link>
-                                </span>
-                              ))}
+                              <Link
+                                href={`/scheduling/${iv.id}`}
+                                className="text-primary hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {iv.title}
+                              </Link>
                             </>
                           );
                         })()}
@@ -272,13 +269,13 @@ export function JobDetailTab({
                 className={cn(
                   "h-10 border-b transition-colors",
                   dragOverIndex !== null &&
-                    dragOverIndex >= steps.filter((s) => s.step_type !== "offer").length &&
+                    dragOverIndex >= steps.filter((s) => s.step_type !== StepType.Offer).length &&
                     dragIndex !== null &&
                     "bg-accent/60"
                 )}
                 onDragOver={(e) => {
                   e.preventDefault();
-                  const count = steps.filter((s) => s.step_type !== "offer").length;
+                  const count = steps.filter((s) => s.step_type !== StepType.Offer).length;
                   setDragOverIndex(count);
                 }}
               />

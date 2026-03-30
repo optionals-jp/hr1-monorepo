@@ -1,0 +1,220 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { BcCompany, BcContact, BcDeal, BcActivity, BcCard, BcTodo } from "@/types/database";
+
+// --- Dashboard ---
+
+export async function fetchDeals(client: SupabaseClient, organizationId: string) {
+  const { data } = await client
+    .from("bc_deals")
+    .select("*, bc_companies(*), bc_contacts(*)")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+  return (data ?? []) as BcDeal[];
+}
+
+export async function fetchCompanyIds(client: SupabaseClient, organizationId: string) {
+  const { data } = await client
+    .from("bc_companies")
+    .select("id")
+    .eq("organization_id", organizationId);
+  return (data ?? []) as { id: string }[];
+}
+
+export async function fetchContactIds(client: SupabaseClient, organizationId: string) {
+  const { data } = await client
+    .from("bc_contacts")
+    .select("id")
+    .eq("organization_id", organizationId);
+  return (data ?? []) as { id: string }[];
+}
+
+// --- Companies ---
+
+export async function fetchCompanies(client: SupabaseClient, organizationId: string) {
+  const { data } = await client
+    .from("bc_companies")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("name");
+  return (data ?? []) as BcCompany[];
+}
+
+export async function fetchCompany(client: SupabaseClient, id: string, organizationId: string) {
+  const { data } = await client
+    .from("bc_companies")
+    .select("*")
+    .eq("id", id)
+    .eq("organization_id", organizationId)
+    .single();
+  return data as BcCompany | null;
+}
+
+export async function createCompany(
+  client: SupabaseClient,
+  data: Partial<BcCompany> & { organization_id: string; name: string }
+) {
+  return client.from("bc_companies").insert(data);
+}
+
+export async function updateCompany(
+  client: SupabaseClient,
+  id: string,
+  organizationId: string,
+  data: Partial<BcCompany>
+) {
+  return client
+    .from("bc_companies")
+    .update(data)
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+}
+
+export async function deleteCompany(client: SupabaseClient, id: string, organizationId: string) {
+  return client.from("bc_companies").delete().eq("id", id).eq("organization_id", organizationId);
+}
+
+// --- Contacts ---
+
+export async function fetchContacts(client: SupabaseClient, organizationId: string) {
+  const { data } = await client
+    .from("bc_contacts")
+    .select("*, bc_companies(name)")
+    .eq("organization_id", organizationId)
+    .order("last_name");
+  return (data ?? []) as BcContact[];
+}
+
+export async function fetchContact(client: SupabaseClient, id: string, organizationId: string) {
+  const { data } = await client
+    .from("bc_contacts")
+    .select("*, bc_companies(*)")
+    .eq("id", id)
+    .eq("organization_id", organizationId)
+    .single();
+  return data as BcContact | null;
+}
+
+export async function fetchContactsByCompany(
+  client: SupabaseClient,
+  companyId: string,
+  organizationId: string
+) {
+  const { data } = await client
+    .from("bc_contacts")
+    .select("*")
+    .eq("company_id", companyId)
+    .eq("organization_id", organizationId)
+    .order("last_name");
+  return (data ?? []) as BcContact[];
+}
+
+// --- Deals ---
+
+export async function fetchDealsAll(client: SupabaseClient, organizationId: string) {
+  const { data } = await client
+    .from("bc_deals")
+    .select("*, bc_companies(name), bc_contacts(last_name, first_name)")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+  return (data ?? []) as BcDeal[];
+}
+
+export async function fetchDeal(client: SupabaseClient, id: string, organizationId: string) {
+  const { data } = await client
+    .from("bc_deals")
+    .select("*, bc_companies(*), bc_contacts(*)")
+    .eq("id", id)
+    .eq("organization_id", organizationId)
+    .single();
+  return data as BcDeal | null;
+}
+
+export async function fetchDealsByCompany(
+  client: SupabaseClient,
+  companyId: string,
+  organizationId: string
+) {
+  const { data } = await client
+    .from("bc_deals")
+    .select("*")
+    .eq("company_id", companyId)
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+  return (data ?? []) as BcDeal[];
+}
+
+export async function fetchDealsByContact(
+  client: SupabaseClient,
+  contactId: string,
+  organizationId: string
+) {
+  const { data } = await client
+    .from("bc_deals")
+    .select("*")
+    .eq("contact_id", contactId)
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+  return (data ?? []) as BcDeal[];
+}
+
+// --- Activities ---
+
+export async function fetchActivitiesByContact(
+  client: SupabaseClient,
+  contactId: string,
+  organizationId: string
+) {
+  const { data } = await client
+    .from("bc_activities")
+    .select("*")
+    .eq("contact_id", contactId)
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+  return (data ?? []) as BcActivity[];
+}
+
+export async function fetchActivitiesByDeal(
+  client: SupabaseClient,
+  dealId: string,
+  organizationId: string
+) {
+  const { data } = await client
+    .from("bc_activities")
+    .select("*")
+    .eq("deal_id", dealId)
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+  return (data ?? []) as BcActivity[];
+}
+
+// --- Cards ---
+
+export async function fetchCardsByContact(
+  client: SupabaseClient,
+  contactId: string,
+  organizationId: string
+) {
+  const { data } = await client
+    .from("bc_cards")
+    .select("*")
+    .eq("contact_id", contactId)
+    .eq("organization_id", organizationId)
+    .order("scanned_at", { ascending: false });
+  return (data ?? []) as BcCard[];
+}
+
+// --- Todos ---
+
+export async function fetchTodosByDeal(
+  client: SupabaseClient,
+  dealId: string,
+  organizationId: string
+) {
+  const { data } = await client
+    .from("bc_todos")
+    .select("*")
+    .eq("deal_id", dealId)
+    .eq("organization_id", organizationId)
+    .order("due_date");
+  return (data ?? []) as BcTodo[];
+}

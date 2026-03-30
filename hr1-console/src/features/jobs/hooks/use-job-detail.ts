@@ -6,8 +6,10 @@ import { reorderSteps as reorderStepsUtil } from "@/lib/reorder-steps";
 import { getSupabase } from "@/lib/supabase/browser";
 import type { Job, JobStep, AuditLog, Application, Interview } from "@/types/database";
 import { useOrg } from "@/lib/org-context";
-import { applicationStatusLabels as appStatusLabels, stepStatusLabels } from "@/lib/constants";
-import { fetchJobDetail } from "@/lib/repositories/job-repository";
+import { StepType, FORM_STEP_TYPES } from "@/lib/constants";
+import * as jobRepository from "@/lib/repositories/job-repository";
+import * as auditRepository from "@/lib/repositories/audit-repository";
+import { buildHistoryEvents, resolveRelatedId } from "@/features/jobs/rules";
 import type { HistoryEvent } from "@/features/jobs/types";
 
 export function useJobDetail() {
@@ -30,10 +32,10 @@ export function useJobDetail() {
 
   // Step dialog (add)
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newStepType, setNewStepType] = useState("interview");
+  const [newStepType, setNewStepType] = useState<string>(StepType.Interview);
   const [newStepLabel, setNewStepLabel] = useState("");
   const [newStepFormId, setNewStepFormId] = useState<string>("");
-  const [newStepScheduleIds, setNewStepScheduleIds] = useState<string[]>([]);
+  const [newStepInterviewId, setNewStepInterviewId] = useState<string>("");
   const [savingStep, setSavingStep] = useState(false);
   const [forms, setForms] = useState<{ id: string; title: string }[]>([]);
   const [interviews, setInterviews] = useState<Interview[]>([]);
@@ -41,10 +43,10 @@ export function useJobDetail() {
   // Step edit
   const [editStepOpen, setEditStepOpen] = useState(false);
   const [editStepId, setEditStepId] = useState<string>("");
-  const [editStepType, setEditStepType] = useState("interview");
+  const [editStepType, setEditStepType] = useState<string>(StepType.Interview);
   const [editStepLabel, setEditStepLabel] = useState("");
   const [editStepFormId, setEditStepFormId] = useState<string>("");
-  const [editStepScheduleIds, setEditStepScheduleIds] = useState<string[]>([]);
+  const [editStepInterviewId, setEditStepInterviewId] = useState<string>("");
   const [savingEditStep, setSavingEditStep] = useState(false);
   const [deletingEditStep, setDeletingEditStep] = useState(false);
 
@@ -69,52 +71,14 @@ export function useJobDetail() {
   const load = async () => {
     if (!organization) return;
     setLoading(true);
-    const result = await fetchJobDetail(getSupabase(), id, organization.id);
+    const client = getSupabase();
+    const result = await jobRepository.fetchJobDetail(client, id, organization.id);
 
     setJob(result.job);
     setSteps(result.steps);
     setApplications(result.applications);
     setChangeLogs(result.auditLogs);
-
-    // Build timeline events
-    const events: HistoryEvent[] = [];
-    for (const app of result.applications ?? []) {
-      const profile = app.profiles as unknown as {
-        display_name: string | null;
-        email: string;
-      } | null;
-      const name = profile?.display_name ?? "-";
-      const email = profile?.email ?? "-";
-
-      // Application event
-      events.push({
-        id: `app-${app.id}`,
-        applicantName: name,
-        applicantEmail: email,
-        eventType: "応募",
-        label: appStatusLabels[app.status] ?? app.status,
-        status: app.status,
-        date: app.applied_at,
-      });
-
-      // Step events
-      for (const step of app.application_steps ?? []) {
-        if (step.status !== "pending") {
-          events.push({
-            id: `step-${step.id}`,
-            applicantName: name,
-            applicantEmail: email,
-            eventType: step.label,
-            label: stepStatusLabels[step.status] ?? step.status,
-            status: step.status,
-            date: step.completed_at ?? app.applied_at,
-          });
-        }
-      }
-    }
-    events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    setHistoryEvents(events);
-
+    setHistoryEvents(buildHistoryEvents(result.applications));
     setLoading(false);
   };
 
@@ -126,35 +90,24 @@ export function useJobDetail() {
 
   useEffect(() => {
     if (!organization) return;
-    getSupabase()
-      .from("custom_forms")
-      .select("id, title")
-      .eq("organization_id", organization.id)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => setForms(data ?? []));
-    getSupabase()
-      .from("interviews")
-      .select("*")
-      .eq("organization_id", organization.id)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => setInterviews((data as Interview[]) ?? []));
+    const client = getSupabase();
+    jobRepository.fetchForms(client, organization.id).then(setForms);
+    jobRepository.fetchInterviews(client, organization.id).then(setInterviews);
   }, [organization]);
 
   const updateJobStatus = async (status: string) => {
     if (!organization) return;
+    const client = getSupabase();
     const oldStatus = job?.status;
-    await getSupabase().from("jobs").update({ status }).eq("id", id);
+    await jobRepository.updateJobStatus(client, id, organization.id, status);
     setJob((prev) => (prev ? { ...prev, status: status as Job["status"] } : prev));
 
     if (oldStatus && oldStatus !== status) {
-      const { data: logsData } = await getSupabase()
-        .from("audit_logs")
-        .select("*")
-        .eq("organization_id", organization.id)
-        .eq("table_name", "jobs")
-        .eq("record_id", id)
-        .order("created_at", { ascending: false })
-        .limit(50);
+      const { data: logsData } = await auditRepository.fetchAuditLogs(client, {
+        organizationId: organization.id,
+        tableName: "jobs",
+        recordId: id,
+      });
       setChangeLogs(logsData ?? []);
     }
   };
@@ -163,16 +116,18 @@ export function useJobDetail() {
     if (!newStepLabel) return;
     setSavingStep(true);
 
+    const client = getSupabase();
     const nextOrder = steps.length + 1;
     const stepId = crypto.randomUUID();
-    const relatedId =
-      ["screening", "form"].includes(newStepType) && newStepFormId
-        ? newStepFormId
-        : newStepType === "interview" && newStepScheduleIds.length > 0
-          ? newStepScheduleIds.join(",")
-          : null;
+    const relatedId = resolveRelatedId(
+      newStepType,
+      FORM_STEP_TYPES,
+      newStepFormId,
+      StepType.Interview,
+      newStepInterviewId
+    );
 
-    const { error } = await getSupabase().from("job_steps").insert({
+    const { error } = await jobRepository.insertJobStep(client, {
       id: stepId,
       job_id: id,
       step_type: newStepType,
@@ -187,19 +142,20 @@ export function useJobDetail() {
     }
 
     if (organization) {
-      const userId = (await getSupabase().auth.getUser()).data.user?.id;
+      const userId = (await client.auth.getUser()).data.user?.id;
       if (!userId) throw new Error("認証ユーザーが取得できません");
-      await getSupabase()
-        .from("audit_logs")
-        .insert({
-          organization_id: organization.id,
+      await auditRepository.insertAuditLog(client, {
+        organization_id: organization.id,
+        table_name: "jobs",
+        record_id: id,
+        action: "create",
+        metadata: {
+          summary: `ステップ「${newStepLabel}」を追加`,
+          detail_action: "step_added",
           user_id: userId,
-          action: "create",
-          table_name: "jobs",
-          record_id: id,
-          metadata: { summary: `ステップ「${newStepLabel}」を追加`, detail_action: "step_added" },
-          source: "console",
-        });
+        },
+        performed_by: userId,
+      });
     }
 
     const newStep: JobStep = {
@@ -214,30 +170,32 @@ export function useJobDetail() {
     setSteps((prev) => [...prev, newStep]);
     setSavingStep(false);
     setDialogOpen(false);
-    setNewStepType("interview");
+    setNewStepType(StepType.Interview);
     setNewStepLabel("");
     setNewStepFormId("");
-    setNewStepScheduleIds([]);
+    setNewStepInterviewId("");
   };
 
   const removeStep = async (stepId: string) => {
+    const client = getSupabase();
     const step = steps.find((s) => s.id === stepId);
-    await getSupabase().from("job_steps").delete().eq("id", stepId);
+    await jobRepository.deleteJobStep(client, stepId);
 
     if (step && organization) {
-      const userId = (await getSupabase().auth.getUser()).data.user?.id;
+      const userId = (await client.auth.getUser()).data.user?.id;
       if (!userId) throw new Error("認証ユーザーが取得できません");
-      await getSupabase()
-        .from("audit_logs")
-        .insert({
-          organization_id: organization.id,
+      await auditRepository.insertAuditLog(client, {
+        organization_id: organization.id,
+        table_name: "jobs",
+        record_id: id,
+        action: "delete",
+        metadata: {
+          summary: `ステップ「${step.label}」を削除`,
+          detail_action: "step_deleted",
           user_id: userId,
-          action: "delete",
-          table_name: "jobs",
-          record_id: id,
-          metadata: { summary: `ステップ「${step.label}」を削除`, detail_action: "step_deleted" },
-          source: "console",
-        });
+        },
+        performed_by: userId,
+      });
     }
 
     load();
@@ -250,19 +208,17 @@ export function useJobDetail() {
 
   const confirmReorder = async () => {
     setConfirmingReorder(true);
-    await Promise.all(
-      steps.map((s) =>
-        getSupabase()
-          .from("job_steps")
-          .update({ step_order: s.step_order + 1000 })
-          .eq("id", s.id)
-      )
-    );
-    await Promise.all(
-      steps.map((s) =>
-        getSupabase().from("job_steps").update({ step_order: s.step_order }).eq("id", s.id)
-      )
-    );
+    try {
+      await jobRepository.reorderJobStepsRpc(
+        getSupabase(),
+        id,
+        steps.map((s) => s.id),
+        steps.map((s) => s.step_order)
+      );
+    } catch (err) {
+      console.error("並び替えエラー:", err);
+      await load();
+    }
     setConfirmingReorder(false);
     setReorderMode(false);
   };
@@ -271,12 +227,12 @@ export function useJobDetail() {
     setEditStepId(step.id);
     setEditStepType(step.step_type);
     setEditStepLabel(step.label);
-    if (step.step_type === "interview" && step.related_id) {
+    if (step.step_type === StepType.Interview) {
       setEditStepFormId("");
-      setEditStepScheduleIds(step.related_id.split(",").filter(Boolean));
+      setEditStepInterviewId(step.related_id ?? "");
     } else {
       setEditStepFormId(step.related_id ?? "");
-      setEditStepScheduleIds([]);
+      setEditStepInterviewId("");
     }
     setEditStepOpen(true);
   };
@@ -284,16 +240,18 @@ export function useJobDetail() {
   const saveEditStep = async () => {
     if (!editStepLabel) return;
     setSavingEditStep(true);
-    const relatedId =
-      ["screening", "form"].includes(editStepType) && editStepFormId
-        ? editStepFormId
-        : editStepType === "interview" && editStepScheduleIds.length > 0
-          ? editStepScheduleIds.join(",")
-          : null;
-    await getSupabase()
-      .from("job_steps")
-      .update({ step_type: editStepType, label: editStepLabel, related_id: relatedId })
-      .eq("id", editStepId);
+    const relatedId = resolveRelatedId(
+      editStepType,
+      FORM_STEP_TYPES,
+      editStepFormId,
+      StepType.Interview,
+      editStepInterviewId
+    );
+    await jobRepository.updateJobStep(getSupabase(), editStepId, {
+      step_type: editStepType,
+      label: editStepLabel,
+      related_id: relatedId,
+    });
     setSteps((prev) =>
       prev.map((s) =>
         s.id === editStepId
@@ -325,20 +283,17 @@ export function useJobDetail() {
   }
 
   async function saveInfo() {
-    if (!job) return;
+    if (!job || !organization) return;
     setSavingInfo(true);
 
-    await getSupabase()
-      .from("jobs")
-      .update({
-        title: editTitle,
-        description: editDescription || null,
-        department: editDepartment || null,
-        location: editLocation || null,
-        employment_type: editEmploymentType || null,
-        salary_range: editSalaryRange || null,
-      })
-      .eq("id", job.id);
+    await jobRepository.updateJob(getSupabase(), job.id, organization.id, {
+      title: editTitle,
+      description: editDescription || null,
+      department: editDepartment || null,
+      location: editLocation || null,
+      employment_type: editEmploymentType || null,
+      salary_range: editSalaryRange || null,
+    });
 
     setSavingInfo(false);
     setEditingInfo(false);
@@ -386,8 +341,8 @@ export function useJobDetail() {
     setNewStepLabel,
     newStepFormId,
     setNewStepFormId,
-    newStepScheduleIds,
-    setNewStepScheduleIds,
+    newStepInterviewId,
+    setNewStepInterviewId,
     savingStep,
     addStep,
 
@@ -401,8 +356,8 @@ export function useJobDetail() {
     setEditStepLabel,
     editStepFormId,
     setEditStepFormId,
-    editStepScheduleIds,
-    setEditStepScheduleIds,
+    editStepInterviewId,
+    setEditStepInterviewId,
     savingEditStep,
     saveEditStep,
     deletingEditStep,

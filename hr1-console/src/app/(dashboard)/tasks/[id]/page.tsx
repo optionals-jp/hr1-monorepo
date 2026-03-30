@@ -35,9 +35,20 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 import type { Task, TaskAssignee, Project, ProjectTeam } from "@/types/database";
+import {
+  loadTaskDetail,
+  updateTaskById,
+  deleteTaskById,
+  updateAssigneeStatus,
+  removeAssignee,
+  addAssignees,
+  fetchEmployeesForAssign,
+  fetchProjectsForEdit,
+  fetchTeamsForEdit,
+  updateTaskStatus,
+} from "@/lib/hooks/use-tasks";
 import {
   taskStatusLabels,
   taskPriorityLabels,
@@ -127,27 +138,13 @@ export default function TaskDetailPage() {
     if (!organization) return;
     setLoading(true);
     try {
-      const supabase = getSupabase();
-      const { data: taskData } = await supabase
-        .from("tasks")
-        .select(
-          "*, creator:profiles!tasks_created_by_fkey(display_name, email), projects(id, name), project_teams(id, name)"
-        )
-        .eq("id", id)
-        .eq("organization_id", organization!.id)
-        .single();
-      if (!taskData) {
+      const result = await loadTaskDetail(id, organization.id);
+      if (!result.task) {
         router.push("/tasks");
         return;
       }
-      setTask(taskData as TaskWithRelations);
-
-      const { data: assigneeData } = await supabase
-        .from("task_assignees")
-        .select("*, profiles(display_name, email, position)")
-        .eq("task_id", id)
-        .order("created_at", { ascending: true });
-      setAssignees((assigneeData ?? []) as AssigneeRow[]);
+      setTask(result.task as TaskWithRelations);
+      setAssignees((result.assignees ?? []) as AssigneeRow[]);
     } catch {
       showToast("タスクの取得に失敗しました", "error");
     } finally {
@@ -170,116 +167,81 @@ export default function TaskDetailPage() {
     setEditTeamId(task.team_id ?? "");
     setEditOpen(true);
 
-    // プロジェクト一覧取得
     if (organization) {
-      getSupabase()
-        .from("projects")
-        .select("*")
-        .eq("organization_id", organization.id)
-        .in("status", ["active"])
-        .order("name")
-        .then(({ data }) => setProjects(data ?? []));
+      fetchProjectsForEdit(organization.id).then((data) => setProjects(data));
     }
   };
 
   const handleSaveEdit = async () => {
-    if (!task || !editTitle.trim()) return;
+    if (!task || !editTitle.trim() || !organization) return;
     setSavingEdit(true);
-    try {
-      const { error } = await getSupabase()
-        .from("tasks")
-        .update({
-          title: editTitle.trim(),
-          description: editDescription.trim() || null,
-          priority: editPriority,
-          due_date: editDueDate || null,
-          scope: editScope,
-          project_id:
-            editScope === "project" || editScope === "team" ? editProjectId || null : null,
-          team_id: editScope === "team" ? editTeamId || null : null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", task.id);
-      if (error) throw error;
+    const result = await updateTaskById(task.id, organization.id, {
+      title: editTitle,
+      description: editDescription,
+      priority: editPriority,
+      dueDate: editDueDate,
+      scope: editScope,
+      projectId: editProjectId,
+      teamId: editTeamId,
+    });
+    if (result.success) {
       setEditOpen(false);
       await fetchTask();
       showToast("タスクを更新しました");
-    } catch {
-      showToast("更新に失敗しました", "error");
-    } finally {
-      setSavingEdit(false);
+    } else {
+      showToast(result.error ?? "更新に失敗しました", "error");
     }
+    setSavingEdit(false);
   };
 
   const handleStatusChange = async (newStatus: string) => {
-    if (!task) return;
-    try {
-      const { error } = await getSupabase()
-        .from("tasks")
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq("id", task.id);
-      if (error) throw error;
+    if (!task || !organization) return;
+    const result = await updateTaskStatus(task.id, organization.id, newStatus);
+    if (result.success) {
       await fetchTask();
       showToast("ステータスを更新しました");
-    } catch {
-      showToast("更新に失敗しました", "error");
+    } else {
+      showToast(result.error ?? "更新に失敗しました", "error");
     }
   };
 
   const handleDelete = async () => {
-    if (!task || !window.confirm("削除してもよろしいですか？")) return;
-    try {
-      const { error } = await getSupabase().from("tasks").delete().eq("id", task.id);
-      if (error) throw error;
+    if (!task || !organization || !window.confirm("削除してもよろしいですか？")) return;
+    const result = await deleteTaskById(task.id, organization.id);
+    if (result.success) {
       showToast("タスクを削除しました");
       router.push("/tasks");
-    } catch {
-      showToast("削除に失敗しました", "error");
+    } else {
+      showToast(result.error ?? "削除に失敗しました", "error");
     }
   };
 
   const handleAssigneeStatusChange = async (assigneeId: string, newStatus: string) => {
-    try {
-      const { error } = await getSupabase()
-        .from("task_assignees")
-        .update({
-          status: newStatus,
-          completed_at: newStatus === "completed" ? new Date().toISOString() : null,
-        })
-        .eq("id", assigneeId);
-      if (error) throw error;
+    const result = await updateAssigneeStatus(assigneeId, newStatus);
+    if (result.success) {
       await fetchTask();
       showToast("ステータスを更新しました");
-    } catch {
-      showToast("更新に失敗しました", "error");
+    } else {
+      showToast(result.error ?? "更新に失敗しました", "error");
     }
   };
 
   const handleRemoveAssignee = async (assigneeId: string) => {
     if (!window.confirm("削除してもよろしいですか？")) return;
-    try {
-      const { error } = await getSupabase().from("task_assignees").delete().eq("id", assigneeId);
-      if (error) throw error;
+    const result = await removeAssignee(assigneeId);
+    if (result.success) {
       await fetchTask();
       showToast("担当者を削除しました");
-    } catch {
-      showToast("削除に失敗しました", "error");
+    } else {
+      showToast(result.error ?? "削除に失敗しました", "error");
     }
   };
 
   const openAssignDialog = async () => {
     if (!organization) return;
-    const { data } = await getSupabase()
-      .from("user_organizations")
-      .select("user_id, profiles!user_organizations_user_id_fkey(id, email, display_name)")
-      .eq("organization_id", organization.id);
-    const emps = (data ?? []).map((d) => {
-      const p = d.profiles as unknown as Employee;
-      return { id: p.id, email: p.email, display_name: p.display_name };
-    });
-    // 既に割り当て済みのユーザーを除外
     const existingIds = new Set(assignees.map((a) => a.user_id));
-    setAllEmployees(emps.filter((e) => !existingIds.has(e.id)));
+    const emps = await fetchEmployeesForAssign(organization.id, existingIds);
+    setAllEmployees(emps);
     setSelectedEmployeeIds([]);
     setAssignDialogOpen(true);
   };
@@ -287,32 +249,21 @@ export default function TaskDetailPage() {
   const handleAddAssignees = async () => {
     if (!task || selectedEmployeeIds.length === 0) return;
     setSavingAssign(true);
-    try {
-      const rows = selectedEmployeeIds.map((uid) => ({
-        task_id: task.id,
-        user_id: uid,
-      }));
-      const { error } = await getSupabase().from("task_assignees").insert(rows);
-      if (error) throw error;
+    const result = await addAssignees(task.id, selectedEmployeeIds);
+    if (result.success) {
       setAssignDialogOpen(false);
       await fetchTask();
       showToast("担当者を追加しました");
-    } catch {
-      showToast("追加に失敗しました", "error");
-    } finally {
-      setSavingAssign(false);
+    } else {
+      showToast(result.error ?? "追加に失敗しました", "error");
     }
+    setSavingAssign(false);
   };
 
   // チーム一覧取得（editScope=team時）
   useEffect(() => {
     if (editScope === "team" && editProjectId) {
-      getSupabase()
-        .from("project_teams")
-        .select("*")
-        .eq("project_id", editProjectId)
-        .order("name")
-        .then(({ data }) => setTeams(data ?? []));
+      fetchTeamsForEdit(editProjectId).then((data) => setTeams(data));
     }
   }, [editScope, editProjectId]);
 

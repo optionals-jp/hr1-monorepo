@@ -23,10 +23,8 @@ import {
 } from "@/components/ui/select";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
 import { cn } from "@/lib/utils";
-import type { ComplianceAlert } from "@/types/database";
+import { useComplianceAlerts, runComplianceCheck, resolveAlert } from "@/lib/hooks/use-compliance";
 import { Play, CheckCircle2, AlertTriangle, AlertCircle, Info } from "lucide-react";
 
 const ALERT_TYPE_LABELS: Record<string, string> = {
@@ -87,22 +85,7 @@ export default function CompliancePage() {
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("unresolved");
 
-  const {
-    data: alerts,
-    error: alertsError,
-    mutate: mutateAlerts,
-  } = useQuery<ComplianceAlert[]>(
-    organization ? `compliance-alerts-${organization.id}` : null,
-    async () => {
-      const supabase = getSupabase();
-      const { data } = await supabase
-        .from("compliance_alerts")
-        .select("*")
-        .eq("organization_id", organization!.id)
-        .order("created_at", { ascending: false });
-      return (data ?? []) as ComplianceAlert[];
-    }
-  );
+  const { data: alerts, error: alertsError, mutate: mutateAlerts } = useComplianceAlerts();
 
   const filteredAlerts = useMemo(() => {
     let rows = alerts ?? [];
@@ -133,37 +116,25 @@ export default function CompliancePage() {
     if (!organization) return;
     setRunning(true);
     try {
-      const supabase = getSupabase();
-      const { data, error } = await supabase.rpc("check_compliance_alerts", {
-        p_organization_id: organization.id,
-      });
-      if (error) throw error;
-      await mutateAlerts();
-      showToast(`チェック完了: ${data ?? 0}件の新規アラートを検出しました`, "success");
-    } catch {
-      showToast("チェックに失敗しました", "error");
+      const result = await runComplianceCheck(organization.id);
+      if (!result.success) {
+        showToast(result.error!, "error");
+      } else {
+        await mutateAlerts();
+        showToast(`チェック完了: ${result.count}件の新規アラートを検出しました`, "success");
+      }
     } finally {
       setRunning(false);
     }
   };
 
   const handleResolve = async (alertId: string) => {
-    try {
-      const supabase = getSupabase();
-      const { error } = await supabase
-        .from("compliance_alerts")
-        .update({
-          is_resolved: true,
-          resolved_at: new Date().toISOString(),
-          resolved_by: (await supabase.auth.getUser()).data.user?.id ?? null,
-        })
-        .eq("id", alertId)
-        .eq("organization_id", organization!.id);
-      if (error) throw error;
+    const result = await resolveAlert(alertId, organization!.id);
+    if (!result.success) {
+      showToast(result.error!, "error");
+    } else {
       await mutateAlerts();
       showToast("対応済みにしました", "success");
-    } catch {
-      showToast("更新に失敗しました", "error");
     }
   };
 

@@ -20,9 +20,8 @@ import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
-import type { Department, Profile } from "@/types/database";
+import { useEmployeesPage, type EmployeeWithDepts } from "@/lib/hooks/use-employees-page";
+
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -40,29 +39,6 @@ import { exportToCSV } from "@/lib/export-csv";
 import { genderLabels } from "@/lib/constants";
 import { useRouter } from "next/navigation";
 import { EmployeeImportDialog } from "./employee-import-dialog";
-
-interface EmployeeWithDepts {
-  id: string;
-  email: string;
-  display_name: string | null;
-  name_kana: string | null;
-  position: string | null;
-  phone: string | null;
-  hire_date: string | null;
-  birth_date: string | null;
-  gender: Profile["gender"];
-  current_postal_code: string | null;
-  current_prefecture: string | null;
-  current_city: string | null;
-  current_street_address: string | null;
-  current_building: string | null;
-  registered_postal_code: string | null;
-  registered_prefecture: string | null;
-  registered_city: string | null;
-  registered_street_address: string | null;
-  registered_building: string | null;
-  departments: { id: string; name: string }[];
-}
 
 const addTabs: EditPanelTab[] = [
   { value: "basic", label: "基本情報" },
@@ -170,6 +146,8 @@ export default function EmployeesPage() {
   const router = useRouter();
   const { showToast } = useToast();
   const { organization } = useOrg();
+  const { departments, employees, isLoading, employeesError, mutate, addEmployee, deleteEmployee } =
+    useEmployeesPage();
   const [search, setSearch] = useState("");
   const [filterDeptId, setFilterDeptId] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -182,94 +160,6 @@ export default function EmployeesPage() {
   const [saving, setSaving] = useState(false);
   const [formErrors, setFormErrors] = useState<ValidationErrors>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const { data: departments = [] } = useQuery<Department[]>(
-    organization ? `departments-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("departments")
-        .select("*")
-        .eq("organization_id", organization!.id)
-        .order("name");
-      return data ?? [];
-    }
-  );
-
-  const {
-    data: employees = [],
-    isLoading,
-    error: employeesError,
-    mutate,
-  } = useQuery<EmployeeWithDepts[]>(
-    organization ? `employees-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("user_organizations")
-        .select(
-          "profiles!inner(id, email, display_name, name_kana, position, phone, hire_date, birth_date, gender, current_postal_code, current_prefecture, current_city, current_street_address, current_building, registered_postal_code, registered_prefecture, registered_city, registered_street_address, registered_building)"
-        )
-        .eq("organization_id", organization!.id)
-        .eq("profiles.role", "employee");
-
-      const profiles = (data ?? [])
-        .map(
-          (row) =>
-            (
-              row as unknown as {
-                profiles: {
-                  id: string;
-                  email: string;
-                  display_name: string | null;
-                  name_kana: string | null;
-                  position: string | null;
-                  phone: string | null;
-                  hire_date: string | null;
-                  birth_date: string | null;
-                  gender: Profile["gender"];
-                  current_postal_code: string | null;
-                  current_prefecture: string | null;
-                  current_city: string | null;
-                  current_street_address: string | null;
-                  current_building: string | null;
-                  registered_postal_code: string | null;
-                  registered_prefecture: string | null;
-                  registered_city: string | null;
-                  registered_street_address: string | null;
-                  registered_building: string | null;
-                };
-              }
-            ).profiles
-        )
-        .filter(Boolean);
-
-      if (profiles.length === 0) return [];
-
-      const { data: edData } = await getSupabase()
-        .from("employee_departments")
-        .select("user_id, departments(id, name)")
-        .in(
-          "user_id",
-          profiles.map((p) => p.id)
-        );
-
-      const deptMap = new Map<string, { id: string; name: string }[]>();
-      for (const ed of edData ?? []) {
-        const dept = ed as unknown as {
-          user_id: string;
-          departments: { id: string; name: string };
-        };
-        if (!dept.departments) continue;
-        const list = deptMap.get(dept.user_id) ?? [];
-        list.push(dept.departments);
-        deptMap.set(dept.user_id, list);
-      }
-
-      return profiles.map((p) => ({
-        ...p,
-        departments: deptMap.get(p.id) ?? [],
-      }));
-    }
-  );
 
   const openAddDialog = () => {
     setNewEmail("");
@@ -300,59 +190,33 @@ export default function EmployeesPage() {
     setFormErrors({});
     setSaving(true);
 
-    try {
-      const { data, error } = await getSupabase().functions.invoke("create-user", {
-        body: {
-          email: newEmail,
-          display_name: newName || null,
-          role: "employee",
-          organization_id: organization.id,
-          position: newPosition || null,
-          department_ids: selectedDeptIds.length > 0 ? selectedDeptIds : undefined,
-        },
-      });
+    const result = await addEmployee(organization.id, {
+      email: newEmail,
+      display_name: newName || null,
+      position: newPosition || null,
+      department_ids: selectedDeptIds,
+    });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
+    if (result.success) {
       setDialogOpen(false);
-      mutate();
       showToast("社員を追加しました");
-    } catch {
-      showToast("社員の追加に失敗しました", "error");
-    } finally {
-      setSaving(false);
+    } else {
+      showToast(result.error ?? "社員の追加に失敗しました", "error");
     }
+    setSaving(false);
   };
 
   const handleDelete = async (emp: EmployeeWithDepts) => {
     if (!organization) return;
     if (!window.confirm(`${emp.display_name ?? emp.email} を組織から削除しますか？`)) return;
     setDeletingId(emp.id);
-    try {
-      if (emp.departments.length > 0) {
-        await getSupabase()
-          .from("employee_departments")
-          .delete()
-          .eq("user_id", emp.id)
-          .in(
-            "department_id",
-            emp.departments.map((d) => d.id)
-          );
-      }
-      const { error } = await getSupabase()
-        .from("user_organizations")
-        .delete()
-        .eq("user_id", emp.id)
-        .eq("organization_id", organization.id);
-      if (error) throw error;
-      mutate();
+    const result = await deleteEmployee(organization.id, emp);
+    if (result.success) {
       showToast("社員を削除しました");
-    } catch {
-      showToast("削除に失敗しました", "error");
-    } finally {
-      setDeletingId(null);
+    } else {
+      showToast(result.error ?? "削除に失敗しました", "error");
     }
+    setDeletingId(null);
   };
 
   const toggleDept = (deptId: string) => {

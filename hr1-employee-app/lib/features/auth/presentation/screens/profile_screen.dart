@@ -90,7 +90,7 @@ class ProfileScreen extends ConsumerWidget {
                 },
               ),
               MenuRow(
-                icon: Icon(Icons.palette_outlined),
+                icon: AppIcons.brush(),
                 title: '外観',
                 showChevron: true,
                 onTap: () {
@@ -107,7 +107,7 @@ class ProfileScreen extends ConsumerWidget {
             title: 'サポート',
             children: [
               MenuRow(
-                icon: Icon(Icons.support_agent_outlined),
+                icon: AppIcons.star(),
                 title: 'サービスリクエスト',
                 subtitle: 'バグ報告・機能リクエスト',
                 showChevron: true,

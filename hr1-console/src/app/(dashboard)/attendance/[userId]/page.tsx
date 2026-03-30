@@ -18,16 +18,10 @@ import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
+import { useAttendanceDetail } from "@/lib/hooks/use-attendance-detail";
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 import { cn, formatDateLocal, formatTime, formatMinutesHM, weekdayLabel } from "@/lib/utils";
-import type {
-  AttendanceRecord,
-  AttendancePunch,
-  AttendanceSettingsRow,
-  Profile,
-} from "@/types/database";
+import type { AttendanceRecord, AttendancePunch, AttendanceSettingsRow } from "@/types/database";
 import { attendanceStatusLabels, attendanceStatusColors, punchTypeLabels } from "@/lib/constants";
 import {
   ChevronDown,
@@ -320,77 +314,16 @@ export default function AttendanceDetailPage() {
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [showAuditLog, setShowAuditLog] = useState(false);
 
-  // 社員プロフィール
-  const { data: profile } = useQuery<Profile | null>(
-    organization ? `attendance-detail-profile-${userId}` : null,
-    async () => {
-      const { data: membership } = await getSupabase()
-        .from("user_organizations")
-        .select("user_id")
-        .eq("user_id", userId)
-        .eq("organization_id", organization!.id)
-        .maybeSingle();
-      if (!membership) return null;
-      const { data } = await getSupabase().from("profiles").select("*").eq("id", userId).single();
-      return data as Profile;
-    }
-  );
-
-  // 月間の勤怠レコード
-  const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
-  const lastDay = new Date(year, month, 0).getDate();
-  const endDate = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
-
   const {
-    data: records = [],
-    isLoading: recordsLoading,
-    error: recordsError,
-    mutate: mutateRecords,
-  } = useQuery<AttendanceRecord[]>(
-    organization ? `attendance-detail-records-${userId}-${year}-${month}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("attendance_records")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("organization_id", organization!.id)
-        .gte("date", startDate)
-        .lte("date", endDate)
-        .order("date", { ascending: true });
-      return (data ?? []) as AttendanceRecord[];
-    }
-  );
-
-  // 月間の打刻履歴
-  const { data: punches = [] } = useQuery<AttendancePunch[]>(
-    organization ? `attendance-detail-punches-${userId}-${year}-${month}` : null,
-    async () => {
-      const monthStart = new Date(year, month - 1, 1);
-      const monthEnd = new Date(year, month, 1);
-      const { data } = await getSupabase()
-        .from("attendance_punches")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("organization_id", organization!.id)
-        .gte("punched_at", monthStart.toISOString())
-        .lt("punched_at", monthEnd.toISOString())
-        .order("punched_at", { ascending: true });
-      return (data ?? []) as AttendancePunch[];
-    }
-  );
-
-  // 設定
-  const { data: settings } = useQuery<AttendanceSettingsRow | null>(
-    organization ? `attendance-settings-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("attendance_settings")
-        .select("*")
-        .eq("organization_id", organization!.id)
-        .maybeSingle();
-      return data as AttendanceSettingsRow | null;
-    }
-  );
+    profile,
+    records,
+    recordsLoading,
+    recordsError,
+    mutateRecords,
+    punches,
+    settings,
+    lastDay,
+  } = useAttendanceDetail(userId, year, month);
 
   // 日付ごとの打刻をグループ化
   const punchesByDate = useMemo(() => {

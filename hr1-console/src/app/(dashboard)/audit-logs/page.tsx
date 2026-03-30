@@ -24,7 +24,10 @@ import {
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
+import {
+  fetchAuditLogs as fetchAuditLogsAction,
+  fetchProfileNames as fetchProfileNamesAction,
+} from "@/lib/hooks/use-audit-logs-page";
 import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
 import type { AuditLog } from "@/types/database";
 import {
@@ -123,37 +126,15 @@ export default function AuditLogsPage() {
       setError(undefined);
 
       try {
-        let query = getSupabase()
-          .from("audit_logs")
-          .select("*")
-          .eq("organization_id", organization.id)
-          .order("created_at", { ascending: false })
-          .order("id", { ascending: false })
-          .limit(PAGE_SIZE + 1);
-
-        if (cursor) {
-          query = query.or(
-            `created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`
-          );
-        }
-
-        if (filterAction !== "all") {
-          query = query.eq("action", filterAction);
-        }
-        if (filterTable !== "all") {
-          query = query.eq("table_name", filterTable);
-        }
-        if (filterDateFrom) {
-          query = query.gte("created_at", `${filterDateFrom}T00:00:00`);
-        }
-        if (filterDateTo) {
-          query = query.lte("created_at", `${filterDateTo}T23:59:59`);
-        }
-        if (filterUser) {
-          query = query.eq("user_id", filterUser);
-        }
-
-        const { data, error: queryError } = await query;
+        const { data, error: queryError } = await fetchAuditLogsAction(organization.id, {
+          cursor,
+          filterAction,
+          filterTable,
+          filterDateFrom,
+          filterDateTo,
+          filterUser,
+          pageSize: PAGE_SIZE,
+        });
         if (queryError) throw queryError;
 
         const rows = (data ?? []) as AuditLog[];
@@ -177,17 +158,8 @@ export default function AuditLogsPage() {
         const userIds = [...new Set(pageRows.map((l) => l.user_id))];
         const unknownIds = userIds.filter((uid) => !userNames[uid]);
         if (unknownIds.length > 0) {
-          const { data: profiles } = await getSupabase()
-            .from("profiles")
-            .select("id, display_name, email")
-            .in("id", unknownIds);
-          if (profiles) {
-            const newNames: Record<string, string> = {};
-            for (const p of profiles) {
-              newNames[p.id] = p.display_name || p.email;
-            }
-            setUserNames((prev) => ({ ...prev, ...newNames }));
-          }
+          const newNames = await fetchProfileNamesAction(unknownIds);
+          setUserNames((prev) => ({ ...prev, ...newNames }));
         }
       } catch (e) {
         setError(e instanceof Error ? e : new Error("取得に失敗しました"));

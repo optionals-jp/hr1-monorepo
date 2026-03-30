@@ -6,7 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
+import {
+  loadCertificationMasters,
+  addCertificationMaster,
+  removeCertificationMaster,
+} from "@/lib/hooks/use-settings";
 import type { CertificationMaster } from "@/types/database";
 import { Plus, X } from "lucide-react";
 
@@ -21,12 +25,8 @@ export default function CertificationsSettingsPage() {
   const load = async () => {
     if (!organization) return;
     setLoading(true);
-    const { data } = await getSupabase()
-      .from("certification_masters")
-      .select("*")
-      .order("category", { nullsFirst: false })
-      .order("name");
-    setMasters(data ?? []);
+    const data = await loadCertificationMasters();
+    setMasters(data);
     setLoading(false);
   };
 
@@ -38,13 +38,11 @@ export default function CertificationsSettingsPage() {
   const handleAdd = async () => {
     if (!organization || !newName.trim()) return;
     setAdding(true);
-    await getSupabase()
-      .from("certification_masters")
-      .insert({
-        organization_id: organization.id,
-        name: newName.trim(),
-        category: newCategory.trim() || null,
-      });
+    await addCertificationMaster({
+      organization_id: organization.id,
+      name: newName.trim(),
+      category: newCategory.trim() || null,
+    });
     setNewName("");
     setNewCategory("");
     setAdding(false);
@@ -53,7 +51,7 @@ export default function CertificationsSettingsPage() {
 
   const handleDelete = async (master: CertificationMaster) => {
     if (!window.confirm("削除してもよろしいですか？")) return;
-    await getSupabase().from("certification_masters").delete().eq("id", master.id);
+    await removeCertificationMaster(master.id);
     await load();
   };
 

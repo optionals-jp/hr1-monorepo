@@ -14,9 +14,14 @@ import {
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
 import type { Announcement } from "@/types/database";
+import {
+  useAnnouncements,
+  saveAnnouncement,
+  deleteAnnouncement as deleteAnnouncementAction,
+  toggleAnnouncementPublish,
+  toggleAnnouncementPin,
+} from "@/lib/hooks/use-announcements";
 import { Badge } from "@/components/ui/badge";
 import { announcementTargetLabels } from "@/lib/constants";
 import { EditPanel } from "@/components/ui/edit-panel";
@@ -33,7 +38,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { Pencil, Pin, Send, Undo2 } from "lucide-react";
-import { mutate } from "swr";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { useToast } from "@/components/ui/toast";
 
@@ -52,23 +56,12 @@ export default function AnnouncementsPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
 
-  const cacheKey = organization ? `announcements-${organization.id}` : null;
-
   const {
     data: announcements = [],
     isLoading,
     error: announcementsError,
     mutate: mutateAnnouncements,
-  } = useQuery<Announcement[]>(cacheKey, async () => {
-    const { data } = await getSupabase()
-      .from("announcements")
-      .select("*")
-      .eq("organization_id", organization!.id)
-      .order("is_pinned", { ascending: false })
-      .order("published_at", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false });
-    return data ?? [];
-  });
+  } = useAnnouncements();
 
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState<Announcement | null>(null);
@@ -102,36 +95,20 @@ export default function AnnouncementsPage() {
     if (!organization || !user || !title.trim() || !body.trim()) return;
     setSaving(true);
     try {
-      if (editItem) {
-        const { error } = await getSupabase()
-          .from("announcements")
-          .update({
-            title: title.trim(),
-            body: body.trim(),
-            target,
-            is_pinned: isPinned,
-          })
-          .eq("id", editItem.id)
-          .eq("organization_id", organization.id);
-        if (error) {
-          showToast("操作に失敗しました", "error");
-          return;
-        }
-      } else {
-        const { error } = await getSupabase().from("announcements").insert({
-          organization_id: organization.id,
-          title: title.trim(),
-          body: body.trim(),
-          target,
-          is_pinned: isPinned,
-          created_by: user.id,
-        });
-        if (error) {
-          showToast("操作に失敗しました", "error");
-          return;
-        }
+      const result = await saveAnnouncement({
+        organizationId: organization.id,
+        userId: user.id,
+        editItemId: editItem?.id ?? null,
+        title: title.trim(),
+        body: body.trim(),
+        target,
+        isPinned,
+      });
+      if (!result.success) {
+        showToast(result.error!, "error");
+        return;
       }
-      await mutate(cacheKey);
+      await mutateAnnouncements();
       setEditOpen(false);
     } finally {
       setSaving(false);
@@ -142,16 +119,12 @@ export default function AnnouncementsPage() {
     if (!editItem || !organization) return;
     setDeleting(true);
     try {
-      const { error } = await getSupabase()
-        .from("announcements")
-        .delete()
-        .eq("id", editItem.id)
-        .eq("organization_id", organization.id);
-      if (error) {
-        showToast("操作に失敗しました", "error");
+      const result = await deleteAnnouncementAction(editItem.id, organization.id);
+      if (!result.success) {
+        showToast(result.error!, "error");
         return;
       }
-      await mutate(cacheKey);
+      await mutateAnnouncements();
       setEditOpen(false);
     } finally {
       setDeleting(false);
@@ -160,31 +133,22 @@ export default function AnnouncementsPage() {
 
   async function togglePublish(a: Announcement) {
     if (!organization) return;
-    const published_at = a.published_at ? null : new Date().toISOString();
-    const { error } = await getSupabase()
-      .from("announcements")
-      .update({ published_at })
-      .eq("id", a.id)
-      .eq("organization_id", organization.id);
-    if (error) {
-      showToast("操作に失敗しました", "error");
+    const result = await toggleAnnouncementPublish(a.id, organization.id, !!a.published_at);
+    if (!result.success) {
+      showToast(result.error!, "error");
       return;
     }
-    await mutate(cacheKey);
+    await mutateAnnouncements();
   }
 
   async function togglePin(a: Announcement) {
     if (!organization) return;
-    const { error } = await getSupabase()
-      .from("announcements")
-      .update({ is_pinned: !a.is_pinned })
-      .eq("id", a.id)
-      .eq("organization_id", organization.id);
-    if (error) {
-      showToast("操作に失敗しました", "error");
+    const result = await toggleAnnouncementPin(a.id, organization.id, a.is_pinned);
+    if (!result.success) {
+      showToast(result.error!, "error");
       return;
     }
-    await mutate(cacheKey);
+    await mutateAnnouncements();
   }
 
   return (

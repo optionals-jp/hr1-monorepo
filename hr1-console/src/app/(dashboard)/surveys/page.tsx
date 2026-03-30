@@ -14,9 +14,7 @@ import {
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
-import type { PulseSurvey } from "@/types/database";
+import { useSurveys, createSurvey } from "@/lib/hooks/use-surveys";
 import { Badge } from "@/components/ui/badge";
 import { surveyStatusLabels, surveyStatusColors, surveyTargetLabels } from "@/lib/constants";
 import { EditPanel } from "@/components/ui/edit-panel";
@@ -31,7 +29,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from "date-fns";
-import { mutate } from "swr";
 import { useToast } from "@/components/ui/toast";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 
@@ -40,21 +37,12 @@ export default function SurveysPage() {
   const router = useRouter();
   const { showToast } = useToast();
 
-  const cacheKey = organization ? `pulse-surveys-${organization.id}` : null;
-
   const {
     data: surveys = [],
     isLoading,
     error: surveysError,
     mutate: mutateSurveys,
-  } = useQuery<PulseSurvey[]>(cacheKey, async () => {
-    const { data } = await getSupabase()
-      .from("pulse_surveys")
-      .select("*, pulse_survey_questions(id)")
-      .eq("organization_id", organization!.id)
-      .order("created_at", { ascending: false });
-    return data ?? [];
-  });
+  } = useSurveys();
 
   // 作成パネル
   const [editOpen, setEditOpen] = useState(false);
@@ -77,33 +65,23 @@ export default function SurveysPage() {
   async function handleSave() {
     if (!organization || !title.trim()) return;
     setSaving(true);
-    try {
-      const { data, error } = await getSupabase()
-        .from("pulse_surveys")
-        .insert({
-          organization_id: organization.id,
-          title: title.trim(),
-          description: description.trim() || null,
-          target,
-          deadline: deadline ? `${deadline}T23:59:59+09:00` : null,
-        })
-        .select()
-        .single();
-      if (error) {
-        showToast("サーベイの作成に失敗しました", "error");
-        return;
-      }
-      await mutate(cacheKey);
+    const result = await createSurvey(organization.id, {
+      title,
+      description,
+      target,
+      deadline,
+    });
+    if (result.success) {
+      await mutateSurveys();
       setEditOpen(false);
       showToast("サーベイを作成しました");
-      if (data) {
-        router.push(`/surveys/${data.id}`);
+      if (result.id) {
+        router.push(`/surveys/${result.id}`);
       }
-    } catch {
-      showToast("サーベイの作成に失敗しました", "error");
-    } finally {
-      setSaving(false);
+    } else {
+      showToast(result.error ?? "サーベイの作成に失敗しました", "error");
     }
+    setSaving(false);
   }
 
   const todayStr = new Date().toISOString().split("T")[0];

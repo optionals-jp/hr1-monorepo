@@ -38,10 +38,15 @@ import { SearchBar } from "@/components/ui/search-bar";
 import { useRouter } from "next/navigation";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
 import { cn } from "@/lib/utils";
-import type { Task, Project, ProjectTeam } from "@/types/database";
+import {
+  useTasks,
+  useTaskEmployees,
+  useTaskProjects,
+  useTaskTeams,
+  createTask,
+  updateTaskStatus,
+} from "@/lib/hooks/use-tasks";
 import {
   taskStatusLabels,
   taskPriorityLabels,
@@ -63,20 +68,6 @@ import {
   Megaphone,
 } from "lucide-react";
 import { format } from "date-fns";
-
-interface Employee {
-  id: string;
-  email: string;
-  display_name: string | null;
-}
-
-type TaskRow = Task & {
-  creator?: { display_name: string | null; email: string } | null;
-  projects?: { id: string; name: string } | null;
-  project_teams?: { id: string; name: string } | null;
-  assignee_count?: number;
-  completed_count?: number;
-};
 
 const addTabs: EditPanelTab[] = [
   { value: "basic", label: "基本情報" },
@@ -115,68 +106,13 @@ export default function TasksPage() {
   const [newAssigneeIds, setNewAssigneeIds] = useState<string[]>([]);
 
   // データ取得
-  const {
-    data: tasks = [],
-    isLoading,
-    error: tasksError,
-    mutate,
-  } = useQuery<TaskRow[]>(organization ? `tasks-${organization.id}` : null, async () => {
-    const { data } = await getSupabase()
-      .from("tasks")
-      .select(
-        "*, creator:profiles!tasks_created_by_fkey(display_name, email), projects(id, name), project_teams(id, name), task_assignees(id, status)"
-      )
-      .eq("organization_id", organization!.id)
-      .order("created_at", { ascending: false });
-    return (data ?? []).map((t) => {
-      const assignees = (t as unknown as { task_assignees: { id: string; status: string }[] })
-        .task_assignees;
-      return {
-        ...t,
-        assignee_count: assignees?.length ?? 0,
-        completed_count: assignees?.filter((a) => a.status === "completed").length ?? 0,
-      } as TaskRow;
-    });
-  });
+  const { data: tasks = [], isLoading, error: tasksError, mutate } = useTasks();
 
-  const { data: employees = [] } = useQuery<Employee[]>(
-    organization ? `employees-list-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("user_organizations")
-        .select("user_id, profiles!user_organizations_user_id_fkey(id, email, display_name)")
-        .eq("organization_id", organization!.id);
-      return (data ?? []).map((d) => {
-        const p = d.profiles as unknown as Employee;
-        return { id: p.id, email: p.email, display_name: p.display_name };
-      });
-    }
-  );
+  const { data: employees = [] } = useTaskEmployees();
 
-  const { data: projects = [] } = useQuery<Project[]>(
-    organization ? `projects-list-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("projects")
-        .select("*")
-        .eq("organization_id", organization!.id)
-        .in("status", ["active"])
-        .order("name");
-      return data ?? [];
-    }
-  );
+  const { data: projects = [] } = useTaskProjects();
 
-  const { data: teams = [] } = useQuery<(ProjectTeam & { project_name?: string })[]>(
-    organization && newScope === "team" && newProjectId ? `teams-${newProjectId}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("project_teams")
-        .select("*")
-        .eq("project_id", newProjectId)
-        .order("name");
-      return data ?? [];
-    }
-  );
+  const { data: teams = [] } = useTaskTeams(newProjectId, newScope);
 
   // フィルター
   const filtered = useMemo(() => {
@@ -217,77 +153,41 @@ export default function TasksPage() {
     if (!organization || !user || !newTitle.trim()) return;
     setSaving(true);
 
-    try {
-      const { data: inserted, error } = await getSupabase()
-        .from("tasks")
-        .insert({
-          organization_id: organization.id,
-          title: newTitle.trim(),
-          description: newDescription.trim() || null,
-          status: "open",
-          priority: newPriority,
-          scope: newScope,
-          project_id: newScope === "project" || newScope === "team" ? newProjectId || null : null,
-          team_id: newScope === "team" ? newTeamId || null : null,
-          due_date: newDueDate || null,
-          assign_to_all: newAssignAll,
-          created_by: user.id,
-          source: "console",
-        })
-        .select("id")
-        .single();
-      if (error || !inserted) throw error;
+    const result = await createTask(
+      organization.id,
+      user.id,
+      {
+        title: newTitle,
+        description: newDescription,
+        priority: newPriority,
+        scope: newScope,
+        projectId: newProjectId,
+        teamId: newTeamId,
+        dueDate: newDueDate,
+        assignAll: newAssignAll,
+        assigneeIds: newAssigneeIds,
+      },
+      employees
+    );
 
-      const taskId = inserted.id;
-
-      // 担当者を登録
-      if (newAssignAll) {
-        // 全従業員に割り当て
-        const assignees = employees.map((e) => ({
-          task_id: taskId,
-          user_id: e.id,
-        }));
-        if (assignees.length > 0) {
-          const { error: aErr } = await getSupabase().from("task_assignees").insert(assignees);
-          if (aErr) {
-            // タスクだけ残る不整合を防ぐ
-            await getSupabase().from("tasks").delete().eq("id", taskId);
-            throw aErr;
-          }
-        }
-      } else if (newAssigneeIds.length > 0) {
-        const assignees = newAssigneeIds.map((uid) => ({
-          task_id: taskId,
-          user_id: uid,
-        }));
-        const { error: aErr } = await getSupabase().from("task_assignees").insert(assignees);
-        if (aErr) {
-          await getSupabase().from("tasks").delete().eq("id", taskId);
-          throw aErr;
-        }
-      }
-
+    if (result.success) {
       setDialogOpen(false);
       mutate();
       showToast("タスクを作成しました");
-    } catch {
-      showToast("タスクの作成に失敗しました", "error");
-    } finally {
-      setSaving(false);
+    } else {
+      showToast(result.error ?? "タスクの作成に失敗しました", "error");
     }
+    setSaving(false);
   };
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
-    try {
-      const { error } = await getSupabase()
-        .from("tasks")
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq("id", taskId);
-      if (error) throw error;
+    if (!organization) return;
+    const result = await updateTaskStatus(taskId, organization.id, newStatus);
+    if (result.success) {
       mutate();
       showToast("ステータスを更新しました");
-    } catch {
-      showToast("更新に失敗しました", "error");
+    } else {
+      showToast(result.error ?? "更新に失敗しました", "error");
     }
   };
 

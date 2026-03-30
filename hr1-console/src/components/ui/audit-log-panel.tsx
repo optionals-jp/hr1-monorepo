@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { getSupabase } from "@/lib/supabase/browser";
+import { fetchAuditLogsByRecord } from "@/lib/hooks/use-audit-log-panel";
 import { getAuditActionLabel } from "@/lib/constants";
 import type { AuditLog } from "@/types/database";
 import { format } from "date-fns";
@@ -39,24 +39,14 @@ export function AuditLogPanel({
 
     const fetchLogs = async () => {
       setLoading(true);
-      let query = getSupabase()
-        .from("audit_logs")
-        .select("*")
-        .eq("organization_id", organizationId)
-        .eq("table_name", tableName);
-
-      if (recordIds) {
-        query = query.in("record_id", recordIds);
-      } else if (recordId) {
-        query = query.eq("record_id", recordId);
-      }
-
-      if (filterColumn && filterValue) {
-        query = query.eq(filterColumn, filterValue);
-      }
-
-      const { data } = await query.order("created_at", { ascending: false }).limit(50);
-
+      const { data } = await fetchAuditLogsByRecord({
+        organizationId,
+        tableName,
+        recordId,
+        recordIds,
+        filterColumn,
+        filterValue,
+      });
       setLogs(data ?? []);
       setLoading(false);
     };

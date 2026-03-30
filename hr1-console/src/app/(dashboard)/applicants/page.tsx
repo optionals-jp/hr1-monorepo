@@ -25,9 +25,7 @@ import {
 } from "@/components/ui/select";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
-import type { Profile } from "@/types/database";
+import { useApplicantsList, addApplicant } from "@/lib/hooks/use-applicants-page";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -66,22 +64,7 @@ export default function ApplicantsPage() {
   const [saving, setSaving] = useState(false);
   const [formErrors, setFormErrors] = useState<ValidationErrors>({});
 
-  const {
-    data: applicants = [],
-    isLoading,
-    error: applicantsError,
-    mutate,
-  } = useQuery<Profile[]>(organization ? `applicants-${organization.id}` : null, async () => {
-    const { data } = await getSupabase()
-      .from("user_organizations")
-      .select("profiles!inner(*)")
-      .eq("organization_id", organization!.id)
-      .eq("profiles.role", "applicant");
-
-    return (data ?? [])
-      .map((row) => (row as unknown as { profiles: Profile }).profiles)
-      .filter(Boolean);
-  });
+  const { data: applicants = [], isLoading, error: applicantsError, mutate } = useApplicantsList();
 
   const openAddDialog = () => {
     setNewEmail("");
@@ -112,20 +95,14 @@ export default function ApplicantsPage() {
     setSaving(true);
 
     try {
-      const { data, error } = await getSupabase().functions.invoke("create-user", {
-        body: {
-          email: newEmail,
-          display_name: newName || null,
-          role: "applicant",
-          organization_id: organization.id,
-          hiring_type: newHiringType || null,
-          graduation_year:
-            newHiringType === "new_grad" && newGradYear ? Number(newGradYear) : undefined,
-        },
+      await addApplicant({
+        email: newEmail,
+        display_name: newName || null,
+        organization_id: organization.id,
+        hiring_type: newHiringType || null,
+        graduation_year:
+          newHiringType === "new_grad" && newGradYear ? Number(newGradYear) : undefined,
       });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
 
       setDialogOpen(false);
       mutate();

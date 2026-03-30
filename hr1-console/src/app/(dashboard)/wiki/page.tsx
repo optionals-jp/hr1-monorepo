@@ -14,9 +14,13 @@ import {
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
 import type { WikiPage } from "@/types/database";
+import {
+  useWikiPages,
+  saveWikiPage,
+  deleteWikiPage,
+  updateWikiPageInline,
+} from "@/lib/hooks/use-wiki";
 import { Badge } from "@/components/ui/badge";
 import { EditPanel } from "@/components/ui/edit-panel";
 import { Label } from "@/components/ui/label";
@@ -31,7 +35,6 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { Pencil, Eye, EyeOff, Search, FolderOpen } from "lucide-react";
-import { mutate } from "swr";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { useToast } from "@/components/ui/toast";
 
@@ -40,22 +43,7 @@ export default function WikiPage_() {
   const { user } = useAuth();
   const { showToast } = useToast();
 
-  const cacheKey = organization ? `wiki-pages-${organization.id}` : null;
-
-  const {
-    data: pages = [],
-    isLoading,
-    error: pagesError,
-    mutate: mutatePages,
-  } = useQuery<WikiPage[]>(cacheKey, async () => {
-    const { data } = await getSupabase()
-      .from("wiki_pages")
-      .select("*")
-      .eq("organization_id", organization!.id)
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: false });
-    return data ?? [];
-  });
+  const { data: pages = [], isLoading, error: pagesError, mutate: mutatePages } = useWikiPages();
 
   const [editOpen, setEditOpen] = useState(false);
   const [editPage, setEditPage] = useState<WikiPage | null>(null);
@@ -118,41 +106,22 @@ export default function WikiPage_() {
     setSaving(true);
     const resolvedCategory = newCategory.trim() || category || null;
     try {
-      if (editPage) {
-        const { error } = await getSupabase()
-          .from("wiki_pages")
-          .update({
-            title: title.trim(),
-            content,
-            category: resolvedCategory,
-            parent_id: parentId === "none" ? null : parentId,
-            updated_by: user.id,
-          })
-          .eq("id", editPage.id)
-          .eq("organization_id", organization.id);
-        if (error) {
-          showToast("操作に失敗しました", "error");
-          return;
-        }
-      } else {
-        const maxOrder = pages.length > 0 ? Math.max(...pages.map((p) => p.sort_order)) + 1 : 0;
-        const { error } = await getSupabase()
-          .from("wiki_pages")
-          .insert({
-            organization_id: organization.id,
-            title: title.trim(),
-            content,
-            category: resolvedCategory,
-            parent_id: parentId === "none" ? null : parentId,
-            created_by: user.id,
-            sort_order: maxOrder,
-          });
-        if (error) {
-          showToast("操作に失敗しました", "error");
-          return;
-        }
+      const maxOrder = pages.length > 0 ? Math.max(...pages.map((p) => p.sort_order)) + 1 : 0;
+      const result = await saveWikiPage({
+        organizationId: organization.id,
+        userId: user.id,
+        editPageId: editPage?.id ?? null,
+        title: title.trim(),
+        content,
+        category: resolvedCategory,
+        parentId: parentId === "none" ? null : parentId,
+        maxSortOrder: maxOrder,
+      });
+      if (!result.success) {
+        showToast(result.error!, "error");
+        return;
       }
-      await mutate(cacheKey);
+      await mutatePages();
       setEditOpen(false);
     } finally {
       setSaving(false);
@@ -163,16 +132,12 @@ export default function WikiPage_() {
     if (!editPage || !organization) return;
     setDeleting(true);
     try {
-      const { error } = await getSupabase()
-        .from("wiki_pages")
-        .delete()
-        .eq("id", editPage.id)
-        .eq("organization_id", organization.id);
-      if (error) {
-        showToast("操作に失敗しました", "error");
+      const result = await deleteWikiPage(editPage.id, organization.id);
+      if (!result.success) {
+        showToast(result.error!, "error");
         return;
       }
-      await mutate(cacheKey);
+      await mutatePages();
       setEditOpen(false);
     } finally {
       setDeleting(false);
@@ -181,17 +146,17 @@ export default function WikiPage_() {
 
   async function togglePublished(page: WikiPage) {
     if (!organization) return;
-    const newVal = !page.is_published;
-    const { error } = await getSupabase()
-      .from("wiki_pages")
-      .update({ is_published: newVal, updated_by: user?.id })
-      .eq("id", page.id)
-      .eq("organization_id", organization.id);
-    if (error) {
-      showToast("操作に失敗しました", "error");
+    const result = await updateWikiPageInline(page.id, organization.id, {
+      title: page.title,
+      content: page.content,
+      is_published: !page.is_published,
+      updated_by: user?.id ?? "",
+    });
+    if (!result.success) {
+      showToast(result.error!, "error");
       return;
     }
-    await mutate(cacheKey);
+    await mutatePages();
   }
 
   function getParentTitle(parentId: string | null) {

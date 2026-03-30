@@ -1,3 +1,5 @@
+import { StepType } from "@/lib/constants";
+
 export interface StepItem {
   id: string;
   step_type: string;
@@ -19,8 +21,8 @@ export function reorderSteps<T extends StepItem>(
 ): T[] | null {
   if (fromIndex === toIndex) return null;
 
-  const nonOffer = steps.filter((s) => s.step_type !== "offer").map((s) => ({ ...s }));
-  const offerSteps = steps.filter((s) => s.step_type === "offer");
+  const nonOffer = steps.filter((s) => s.step_type !== StepType.Offer).map((s) => ({ ...s }));
+  const offerSteps = steps.filter((s) => s.step_type === StepType.Offer);
 
   const clampedTo = Math.min(toIndex, nonOffer.length - 1);
   if (fromIndex === clampedTo) return null;

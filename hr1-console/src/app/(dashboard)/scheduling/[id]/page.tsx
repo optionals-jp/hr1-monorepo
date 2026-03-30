@@ -26,8 +26,13 @@ import {
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { DatetimeInput } from "@/components/ui/datetime-input";
 import { cn, autoFillEndAt } from "@/lib/utils";
-import { getSupabase } from "@/lib/supabase/browser";
 import { useOrg } from "@/lib/org-context";
+import {
+  loadSchedulingDetail,
+  updateInterviewStatus as updateStatusAction,
+  fetchSchedulingAuditLogs,
+  saveSchedulingDetail,
+} from "@/lib/hooks/use-scheduling-detail";
 import type { Interview, InterviewSlot, AuditLog } from "@/types/database";
 import { Calendar, Trash2, Search } from "lucide-react";
 import { format } from "date-fns";
@@ -97,24 +102,7 @@ export default function SchedulingDetailPage() {
   const load = async () => {
     if (!organization) return;
     setLoading(true);
-    const [{ data }, { data: logsData }] = await Promise.all([
-      getSupabase()
-        .from("interviews")
-        .select(
-          "*, interview_slots(*, applications:application_id(id, profiles:applicant_id(display_name, email)))"
-        )
-        .eq("id", id)
-        .eq("organization_id", organization.id)
-        .single(),
-      getSupabase()
-        .from("audit_logs")
-        .select("*")
-        .eq("organization_id", organization.id)
-        .eq("table_name", "interviews")
-        .eq("record_id", id)
-        .order("created_at", { ascending: false })
-        .limit(50),
-    ]);
+    const { data, logsData } = await loadSchedulingDetail(id, organization.id);
 
     if (data) {
       const { interview_slots, ...rest } = data;
@@ -158,19 +146,12 @@ export default function SchedulingDetailPage() {
   const updateStatus = async (status: string) => {
     if (!organization) return;
     const oldStatus = interview?.status;
-    await getSupabase().from("interviews").update({ status }).eq("id", id);
+    await updateStatusAction(id, organization.id, status);
     setInterview((prev) => (prev ? { ...prev, status: status as Interview["status"] } : prev));
 
     if (oldStatus && oldStatus !== status) {
-      const { data: logsData } = await getSupabase()
-        .from("audit_logs")
-        .select("*")
-        .eq("organization_id", organization.id)
-        .eq("table_name", "interviews")
-        .eq("record_id", id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      setChangeLogs(logsData ?? []);
+      const logs = await fetchSchedulingAuditLogs(organization.id, id);
+      setChangeLogs(logs);
     }
   };
 
@@ -222,98 +203,19 @@ export default function SchedulingDetailPage() {
   }
 
   async function handleSave() {
-    if (!interview) return;
+    if (!interview || !organization) return;
     setSaving(true);
 
-    const slotLogs: { detail_action: string; summary: string }[] = [];
-
-    await getSupabase()
-      .from("interviews")
-      .update({
-        title: editTitle,
-        location: editLocation || null,
-        notes: editNotes || null,
-      })
-      .eq("id", interview.id);
-
-    // Slot changes
-    const existingIds = slots.map((s) => s.id);
-    const editIds = editSlots.filter((s) => !s.isNew).map((s) => s.id);
-
-    const deletedIds = existingIds.filter((sid) => !editIds.includes(sid));
-    const deletableIds = deletedIds.filter((sid) => {
-      const slot = slots.find((s) => s.id === sid);
-      return !slot?.application_id;
+    await saveSchedulingDetail({
+      interviewId: interview.id,
+      organizationId: organization.id,
+      title: editTitle,
+      location: editLocation || null,
+      notes: editNotes || null,
+      existingSlots: slots,
+      editSlots,
+      toLocalDatetime,
     });
-    if (deletableIds.length > 0) {
-      await getSupabase().from("interview_slots").delete().in("id", deletableIds);
-      slotLogs.push({
-        detail_action: "slot_deleted",
-        summary: `候補日時を${deletableIds.length}件削除`,
-      });
-    }
-
-    const newSlots = editSlots.filter((s) => s.isNew && s.startAt && s.endAt);
-    if (newSlots.length > 0) {
-      await getSupabase()
-        .from("interview_slots")
-        .insert(
-          newSlots.map((s, i) => ({
-            id: `slot-${interview.id}-${Date.now()}-${i}`,
-            interview_id: interview.id,
-            start_at: new Date(s.startAt).toISOString(),
-            end_at: new Date(s.endAt).toISOString(),
-            is_selected: false,
-            max_applicants: s.maxApplicants,
-          }))
-        );
-      slotLogs.push({ detail_action: "slot_added", summary: `候補日時を${newSlots.length}件追加` });
-    }
-
-    let updatedCount = 0;
-    for (const es of editSlots.filter((s) => !s.isNew)) {
-      const original = slots.find((s) => s.id === es.id);
-      if (!original) continue;
-      const origStart = toLocalDatetime(original.start_at);
-      const origEnd = toLocalDatetime(original.end_at);
-      const timeChanged =
-        !original.application_id && (es.startAt !== origStart || es.endAt !== origEnd);
-      const maxChanged = es.maxApplicants !== (original.max_applicants ?? 0);
-      if (timeChanged || maxChanged) {
-        const updates: Record<string, unknown> = { max_applicants: es.maxApplicants };
-        if (timeChanged) {
-          updates.start_at = new Date(es.startAt).toISOString();
-          updates.end_at = new Date(es.endAt).toISOString();
-        }
-        await getSupabase().from("interview_slots").update(updates).eq("id", es.id);
-        updatedCount++;
-      }
-    }
-    if (updatedCount > 0) {
-      slotLogs.push({ detail_action: "slot_updated", summary: `候補日時を${updatedCount}件変更` });
-    }
-
-    if (slotLogs.length > 0 && organization) {
-      const userId = (await getSupabase().auth.getUser()).data.user?.id;
-      if (!userId) throw new Error("認証ユーザーが取得できません");
-      await getSupabase()
-        .from("audit_logs")
-        .insert(
-          slotLogs.map((log) => ({
-            organization_id: organization.id,
-            user_id: userId,
-            action: log.detail_action.includes("deleted")
-              ? "delete"
-              : log.detail_action.includes("added")
-                ? "create"
-                : "update",
-            table_name: "interviews",
-            record_id: interview.id,
-            metadata: { summary: log.summary, detail_action: log.detail_action },
-            source: "console" as const,
-          }))
-        );
-    }
 
     setSaving(false);
     setEditing(false);

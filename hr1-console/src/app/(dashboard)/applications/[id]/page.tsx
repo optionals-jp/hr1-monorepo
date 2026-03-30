@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import {
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
+import { useToast } from "@/components/ui/toast";
 import { applicationStatusLabels as statusLabels } from "@/lib/constants";
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 import { useApplicationDetail } from "@/features/applications/hooks/use-application-detail";
@@ -21,11 +23,38 @@ import { FormResponseSheet } from "@/features/applications/components/form-respo
 import { ResourceSelectDialog } from "@/features/applications/components/resource-select-dialog";
 import { ConvertEmployeeDialog } from "@/features/applications/components/convert-employee-dialog";
 import type { ApplicationProfile } from "@/features/applications/types";
+import type { ApplicationStep } from "@/types/database";
 
 export default function ApplicationDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { organization } = useOrg();
+  const { showToast } = useToast();
   const detail = useApplicationDetail(id);
+
+  const handleSkipStep = useCallback(
+    async (step: ApplicationStep) => {
+      const result = await detail.skipStep(step);
+      if (!result.success) showToast(result.error!, "error");
+    },
+    [detail, showToast]
+  );
+
+  const handleUnskipStep = useCallback(
+    async (step: ApplicationStep) => {
+      const result = await detail.unskipStep(step);
+      if (!result.success) showToast(result.error!, "error");
+    },
+    [detail, showToast]
+  );
+
+  const handleConvert = useCallback(async () => {
+    const result = await detail.handleConvertToEmployee();
+    if (result.success) {
+      showToast("入社確定しました。応募者が社員として登録されました。");
+    } else if (result.error) {
+      showToast(`エラーが発生しました: ${result.error}`, "error");
+    }
+  }, [detail, showToast]);
 
   if (detail.loading) {
     return (
@@ -109,8 +138,8 @@ export default function ApplicationDetailPage() {
             steps={detail.steps}
             canActOnStep={detail.canActOnStep}
             advanceStep={detail.advanceStep}
-            skipStep={detail.skipStep}
-            unskipStep={detail.unskipStep}
+            skipStep={handleSkipStep}
+            unskipStep={handleUnskipStep}
             onViewFormResponses={detail.openFormResponses}
             onConvertDialogOpen={() => detail.setConvertDialogOpen(true)}
           />
@@ -121,8 +150,8 @@ export default function ApplicationDetailPage() {
             steps={detail.steps}
             canActOnStep={detail.canActOnStep}
             advanceStep={detail.advanceStep}
-            skipStep={detail.skipStep}
-            unskipStep={detail.unskipStep}
+            skipStep={handleSkipStep}
+            unskipStep={handleUnskipStep}
             onViewFormResponses={detail.openFormResponses}
           />
         )}
@@ -158,7 +187,7 @@ export default function ApplicationDetailPage() {
         hireDate={detail.hireDate}
         onHireDateChange={detail.setHireDate}
         converting={detail.converting}
-        onConvert={detail.handleConvertToEmployee}
+        onConvert={handleConvert}
       />
     </>
   );

@@ -19,7 +19,7 @@ import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/auth-context";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
+import { loadProfileSettings, saveProfileSettings } from "@/lib/hooks/use-settings";
 import { genderLabels } from "@/lib/constants";
 import type { Department } from "@/types/database";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
@@ -87,24 +87,13 @@ export default function ProfileSettingsPage() {
     if (!profile || !organization) return;
     setLoading(true);
 
-    const [{ data: edData }, { data: allDepts }] = await Promise.all([
-      getSupabase()
-        .from("employee_departments")
-        .select("department_id, departments(id, name)")
-        .eq("user_id", profile.id),
-      getSupabase()
-        .from("departments")
-        .select("*")
-        .eq("organization_id", organization.id)
-        .order("name"),
-    ]);
-
-    const depts = (edData ?? [])
-      .map((row) => (row as unknown as { departments: Department }).departments)
-      .filter(Boolean);
+    const { departments: depts, allDepartments: allDepts } = await loadProfileSettings(
+      profile.id,
+      organization.id
+    );
     setDepartments(depts);
     setAssignedDeptIds(depts.map((d) => d.id));
-    setAllDepartments(allDepts ?? []);
+    setAllDepartments(allDepts);
     setLoading(false);
   };
 
@@ -141,9 +130,9 @@ export default function ProfileSettingsPage() {
     if (!profile) return;
     setSaving(true);
 
-    await getSupabase()
-      .from("profiles")
-      .update({
+    await saveProfileSettings(
+      profile.id,
+      {
         display_name: editName.trim() || null,
         name_kana: editNameKana.trim() || null,
         position: editPosition.trim() || null,
@@ -161,15 +150,9 @@ export default function ProfileSettingsPage() {
         registered_city: editRegisteredCity.trim() || null,
         registered_street_address: editRegisteredStreetAddress.trim() || null,
         registered_building: editRegisteredBuilding.trim() || null,
-      })
-      .eq("id", profile.id);
-
-    await getSupabase().from("employee_departments").delete().eq("user_id", profile.id);
-    if (editDeptIds.length > 0) {
-      await getSupabase()
-        .from("employee_departments")
-        .insert(editDeptIds.map((deptId) => ({ user_id: profile.id, department_id: deptId })));
-    }
+      },
+      editDeptIds
+    );
 
     setSaving(false);
     setEditing(false);

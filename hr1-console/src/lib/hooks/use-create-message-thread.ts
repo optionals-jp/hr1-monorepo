@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/browser";
+import * as messageRepository from "@/lib/repositories/message-repository";
 
 type ParticipantType = "applicant" | "employee";
 
@@ -29,14 +30,14 @@ export function useCreateMessageThread({
 
     setCreatingThread(true);
 
-    // 既存スレッドを検索
-    const { data: existing } = await getSupabase()
-      .from("message_threads")
-      .select("id")
-      .eq("organization_id", organizationId)
-      .eq("participant_id", participantId)
-      .eq("participant_type", participantType)
-      .maybeSingle();
+    const client = getSupabase();
+
+    const { data: existing } = await messageRepository.findThreadByParticipant(
+      client,
+      organizationId,
+      participantId,
+      participantType
+    );
 
     if (existing) {
       router.push(`/messages?thread=${existing.id}`);
@@ -44,16 +45,11 @@ export function useCreateMessageThread({
       return;
     }
 
-    // 新規スレッド作成
-    const { data: newThread } = await getSupabase()
-      .from("message_threads")
-      .insert({
-        organization_id: organizationId,
-        participant_id: participantId,
-        participant_type: participantType,
-      })
-      .select("id")
-      .single();
+    const { data: newThread } = await messageRepository.createThread(client, {
+      organization_id: organizationId,
+      participant_id: participantId,
+      participant_type: participantType,
+    });
 
     setCreatingThread(false);
 

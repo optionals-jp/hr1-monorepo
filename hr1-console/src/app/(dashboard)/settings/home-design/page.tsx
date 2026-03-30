@@ -16,7 +16,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
+import {
+  loadPageTabs,
+  savePageTab,
+  removePageTab,
+  swapPageTabOrder,
+  savePageSection,
+  removePageSection,
+  swapPageSectionOrder,
+} from "@/lib/hooks/use-settings";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -136,11 +144,7 @@ export default function HomeDesignPage() {
     if (!organization) return;
     if (isInitial) setLoading(true);
 
-    const { data, error } = await getSupabase()
-      .from("page_tabs")
-      .select("*, page_sections(*)")
-      .eq("organization_id", organization.id)
-      .order("sort_order", { ascending: true });
+    const { data, error } = await loadPageTabs(organization.id);
 
     if (error) {
       setErrorMsg(`データの読み込みに失敗しました: ${error.message}`);
@@ -183,11 +187,9 @@ export default function HomeDesignPage() {
     setErrorMsg(null);
 
     if (editingTab) {
-      const { data: updated, error } = await getSupabase()
-        .from("page_tabs")
-        .update({ label: editTabLabel.trim() })
-        .eq("id", editingTab.id)
-        .select("id");
+      const { data: updated, error } = await savePageTab(editingTab.id, {
+        label: editTabLabel.trim(),
+      });
       if (error) {
         setErrorMsg(`保存に失敗しました: ${error.message}`);
         setSavingTab(false);
@@ -202,15 +204,11 @@ export default function HomeDesignPage() {
       }
     } else {
       const maxOrder = tabs.length > 0 ? Math.max(...tabs.map((t) => t.sort_order)) : -1;
-      const { data, error } = await getSupabase()
-        .from("page_tabs")
-        .insert({
-          organization_id: organization.id,
-          label: editTabLabel.trim(),
-          sort_order: maxOrder + 1,
-        })
-        .select()
-        .single();
+      const { data, error } = await savePageTab(null, {
+        organization_id: organization.id,
+        label: editTabLabel.trim(),
+        sort_order: maxOrder + 1,
+      });
       if (error) {
         setErrorMsg(`保存に失敗しました: ${error.message}`);
         setSavingTab(false);
@@ -232,7 +230,7 @@ export default function HomeDesignPage() {
   const deleteTab = async () => {
     if (!editingTab) return;
     setDeletingTab(true);
-    const { error } = await getSupabase().from("page_tabs").delete().eq("id", editingTab.id);
+    const { error } = await removePageTab(editingTab.id);
     if (error) {
       setErrorMsg(`削除に失敗しました: ${error.message}`);
       setDeletingTab(false);
@@ -251,10 +249,7 @@ export default function HomeDesignPage() {
 
     const a = tabs[idx];
     const b = tabs[swapIdx];
-    await Promise.all([
-      getSupabase().from("page_tabs").update({ sort_order: b.sort_order }).eq("id", a.id),
-      getSupabase().from("page_tabs").update({ sort_order: a.sort_order }).eq("id", b.id),
-    ]);
+    await swapPageTabOrder(a.id, a.sort_order, b.id, b.sort_order);
     await load();
   };
 
@@ -302,18 +297,13 @@ export default function HomeDesignPage() {
     };
 
     if (editingSection) {
-      const { data: updated, error } = await getSupabase()
-        .from("page_sections")
-        .update(basePayload)
-        .eq("id", editingSection.id)
-        .select("id");
+      const { data: updated, error } = await savePageSection(editingSection.id, basePayload);
 
       if (error) {
         setErrorMsg(`保存に失敗しました: ${error.message}`);
         setSavingSection(false);
         return;
       }
-      // 0件 = RLS でブロックされているか、IDが存在しない
       if (!updated || updated.length === 0) {
         setErrorMsg(
           "保存できませんでした。権限がないか、データが見つかりません。Supabase の RLS ポリシーを確認してください。"
@@ -326,10 +316,11 @@ export default function HomeDesignPage() {
         selectedTab.page_sections.length > 0
           ? Math.max(...selectedTab.page_sections.map((s) => s.sort_order))
           : -1;
-      const { data: inserted, error } = await getSupabase()
-        .from("page_sections")
-        .insert({ ...basePayload, tab_id: selectedTab.id, sort_order: maxOrder + 1 })
-        .select("id");
+      const { data: inserted, error } = await savePageSection(null, {
+        ...basePayload,
+        tab_id: selectedTab.id,
+        sort_order: maxOrder + 1,
+      });
 
       if (error) {
         setErrorMsg(`保存に失敗しました: ${error.message}`);
@@ -353,10 +344,7 @@ export default function HomeDesignPage() {
   const deleteSection = async () => {
     if (!editingSection) return;
     setDeletingSection(true);
-    const { error } = await getSupabase()
-      .from("page_sections")
-      .delete()
-      .eq("id", editingSection.id);
+    const { error } = await removePageSection(editingSection.id);
     if (error) {
       setErrorMsg(`削除に失敗しました: ${error.message}`);
       setDeletingSection(false);
@@ -376,10 +364,7 @@ export default function HomeDesignPage() {
 
     const a = sections[idx];
     const b = sections[swapIdx];
-    await Promise.all([
-      getSupabase().from("page_sections").update({ sort_order: b.sort_order }).eq("id", a.id),
-      getSupabase().from("page_sections").update({ sort_order: a.sort_order }).eq("id", b.id),
-    ]);
+    await swapPageSectionOrder(a.id, a.sort_order, b.id, b.sort_order);
     await load();
   };
 

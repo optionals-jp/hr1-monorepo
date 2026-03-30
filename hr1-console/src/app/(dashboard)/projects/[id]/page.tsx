@@ -26,18 +26,25 @@ import {
 import { EditPanel } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  loadProjectDetail,
+  updateProjectById,
+  deleteProjectById,
+  addTeam,
+  deleteTeamById,
+  addTeamMembers,
+  updateTeamMember as repoUpdateTeamMember,
+  removeTeamMember,
+  fetchOrgEmployeesForTeam,
+  type TeamWithMembers,
+} from "@/lib/hooks/use-projects";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { projectStatusLabels, projectStatusColors, teamMemberRoleLabels } from "@/lib/constants";
-import type { Project, ProjectTeam, ProjectTeamMember, Profile } from "@/types/database";
+import type { Project, ProjectTeamMember, Profile } from "@/types/database";
 import { format } from "date-fns";
 import { Trash2, Plus, Users, Pencil } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-
-interface TeamWithMembers extends ProjectTeam {
-  members: (ProjectTeamMember & { profiles: Profile })[];
-}
 
 const tabs = [
   { value: "overview", label: "概要" },
@@ -90,42 +97,9 @@ export default function ProjectDetailPage() {
     if (!organization) return;
     setLoading(true);
 
-    const { data: proj } = await getSupabase()
-      .from("projects")
-      .select("*")
-      .eq("id", id)
-      .eq("organization_id", organization.id)
-      .single();
-
-    setProject(proj);
-
-    if (proj) {
-      const { data: teamData } = await getSupabase()
-        .from("project_teams")
-        .select("*")
-        .eq("project_id", id)
-        .order("created_at");
-
-      const teamIds = (teamData ?? []).map((t) => t.id);
-
-      let membersData: Record<string, unknown>[] = [];
-      if (teamIds.length > 0) {
-        const { data } = await getSupabase()
-          .from("project_team_members")
-          .select("*, profiles:user_id(id, email, display_name, avatar_url, position, department)")
-          .in("team_id", teamIds);
-        membersData = (data ?? []) as Record<string, unknown>[];
-      }
-
-      const teamsWithMembers: TeamWithMembers[] = (teamData ?? []).map((team) => ({
-        ...team,
-        members: membersData
-          .filter((m) => (m as { team_id: string }).team_id === team.id)
-          .map((m) => m as unknown as ProjectTeamMember & { profiles: Profile }),
-      }));
-
-      setTeams(teamsWithMembers);
-    }
+    const result = await loadProjectDetail(id, organization.id);
+    setProject(result.project);
+    setTeams(result.teams);
 
     setLoading(false);
   };
@@ -147,40 +121,34 @@ export default function ProjectDetailPage() {
   };
 
   const saveEdit = async () => {
-    if (!project || !editName.trim()) return;
+    if (!project || !editName.trim() || !organization) return;
     setSavingEdit(true);
-    try {
-      const { error } = await getSupabase()
-        .from("projects")
-        .update({
-          name: editName.trim(),
-          description: editDescription.trim() || null,
-          status: editStatus,
-          start_date: editStartDate || null,
-          end_date: editEndDate || null,
-        })
-        .eq("id", project.id);
-      if (error) throw error;
+    const result = await updateProjectById(project.id, organization.id, {
+      name: editName,
+      description: editDescription,
+      status: editStatus,
+      startDate: editStartDate,
+      endDate: editEndDate,
+    });
+    if (result.success) {
       setEditOpen(false);
       await load();
       showToast("プロジェクトを更新しました");
-    } catch {
-      showToast("プロジェクトの更新に失敗しました", "error");
-    } finally {
-      setSavingEdit(false);
+    } else {
+      showToast(result.error ?? "プロジェクトの更新に失敗しました", "error");
     }
+    setSavingEdit(false);
   };
 
-  const deleteProject = async () => {
-    if (!project) return;
+  const handleDeleteProject = async () => {
+    if (!project || !organization) return;
     if (!window.confirm("削除してもよろしいですか？")) return;
-    try {
-      const { error } = await getSupabase().from("projects").delete().eq("id", project.id);
-      if (error) throw error;
+    const result = await deleteProjectById(project.id, organization.id);
+    if (result.success) {
       showToast("プロジェクトを削除しました");
       router.push("/projects");
-    } catch {
-      showToast("プロジェクトの削除に失敗しました", "error");
+    } else {
+      showToast(result.error ?? "プロジェクトの削除に失敗しました", "error");
     }
   };
 
@@ -193,35 +161,28 @@ export default function ProjectDetailPage() {
   const handleAddTeam = async () => {
     if (!project || !newTeamName.trim()) return;
     setSavingTeam(true);
-    try {
-      const { error } = await getSupabase()
-        .from("project_teams")
-        .insert({
-          id: crypto.randomUUID(),
-          project_id: project.id,
-          name: newTeamName.trim(),
-          description: newTeamDescription.trim() || null,
-        });
-      if (error) throw error;
+    const result = await addTeam(project.id, {
+      name: newTeamName,
+      description: newTeamDescription,
+    });
+    if (result.success) {
       setTeamDialogOpen(false);
       await load();
       showToast("チームを追加しました");
-    } catch {
-      showToast("チームの追加に失敗しました", "error");
-    } finally {
-      setSavingTeam(false);
+    } else {
+      showToast(result.error ?? "チームの追加に失敗しました", "error");
     }
+    setSavingTeam(false);
   };
 
-  const deleteTeam = async (teamId: string) => {
+  const handleDeleteTeam = async (teamId: string) => {
     if (!window.confirm("削除してもよろしいですか？")) return;
-    try {
-      const { error } = await getSupabase().from("project_teams").delete().eq("id", teamId);
-      if (error) throw error;
+    const result = await deleteTeamById(teamId);
+    if (result.success) {
       await load();
       showToast("チームを削除しました");
-    } catch {
-      showToast("チームの削除に失敗しました", "error");
+    } else {
+      showToast(result.error ?? "チームの削除に失敗しました", "error");
     }
   };
 
@@ -232,20 +193,10 @@ export default function ProjectDetailPage() {
     setMemberJoinedAt(new Date().toISOString().slice(0, 10));
 
     if (organization) {
-      const { data } = await getSupabase()
-        .from("user_organizations")
-        .select("profiles!inner(id, email, display_name, position)")
-        .eq("organization_id", organization.id)
-        .eq("profiles.role", "employee");
-
-      const profiles = (data ?? [])
-        .map((row) => (row as unknown as { profiles: Profile }).profiles)
-        .filter(Boolean);
-
-      // 既にチームにいるメンバーを除外
       const team = teams.find((t) => t.id === teamId);
       const existingIds = new Set((team?.members ?? []).map((m) => m.user_id));
-      setAllEmployees(profiles.filter((p) => !existingIds.has(p.id)));
+      const emps = await fetchOrgEmployeesForTeam(organization.id, existingIds);
+      setAllEmployees(emps);
     }
 
     setMemberDialogOpen(true);
@@ -254,38 +205,30 @@ export default function ProjectDetailPage() {
   const handleAddMembers = async () => {
     if (!memberTeamId || selectedEmployeeIds.length === 0) return;
     setSavingMember(true);
-    try {
-      const rows = selectedEmployeeIds.map((userId) => ({
-        id: crypto.randomUUID(),
-        team_id: memberTeamId,
-        user_id: userId,
-        role: memberRole,
-        joined_at: memberJoinedAt || new Date().toISOString(),
-      }));
-      const { error } = await getSupabase().from("project_team_members").insert(rows);
-      if (error) throw error;
+    const result = await addTeamMembers(
+      memberTeamId,
+      selectedEmployeeIds,
+      memberRole,
+      memberJoinedAt
+    );
+    if (result.success) {
       setMemberDialogOpen(false);
       await load();
       showToast("メンバーを追加しました");
-    } catch {
-      showToast("メンバーの追加に失敗しました", "error");
-    } finally {
-      setSavingMember(false);
+    } else {
+      showToast(result.error ?? "メンバーの追加に失敗しました", "error");
     }
+    setSavingMember(false);
   };
 
-  const removeMember = async (memberId: string) => {
+  const handleRemoveMember = async (memberId: string) => {
     if (!window.confirm("削除してもよろしいですか？")) return;
-    try {
-      const { error } = await getSupabase()
-        .from("project_team_members")
-        .delete()
-        .eq("id", memberId);
-      if (error) throw error;
+    const result = await removeTeamMember(memberId);
+    if (result.success) {
       await load();
       showToast("メンバーを削除しました");
-    } catch {
-      showToast("メンバーの削除に失敗しました", "error");
+    } else {
+      showToast(result.error ?? "メンバーの削除に失敗しました", "error");
     }
   };
 
@@ -300,24 +243,19 @@ export default function ProjectDetailPage() {
   const saveEditMember = async () => {
     if (!editMemberId) return;
     setSavingMemberEdit(true);
-    try {
-      const { error } = await getSupabase()
-        .from("project_team_members")
-        .update({
-          role: editMemberRole,
-          joined_at: editMemberJoinedAt || new Date().toISOString(),
-          left_at: editMemberLeftAt || null,
-        })
-        .eq("id", editMemberId);
-      if (error) throw error;
+    const result = await repoUpdateTeamMember(editMemberId, {
+      role: editMemberRole,
+      joinedAt: editMemberJoinedAt,
+      leftAt: editMemberLeftAt,
+    });
+    if (result.success) {
       setEditMemberOpen(false);
       await load();
       showToast("メンバー情報を更新しました");
-    } catch {
-      showToast("メンバー情報の更新に失敗しました", "error");
-    } finally {
-      setSavingMemberEdit(false);
+    } else {
+      showToast(result.error ?? "メンバー情報の更新に失敗しました", "error");
     }
+    setSavingMemberEdit(false);
   };
 
   const toggleEmployee = (employeeId: string) => {
@@ -482,7 +420,7 @@ export default function ProjectDetailPage() {
                           size="sm"
                           variant="ghost"
                           className="text-destructive hover:text-destructive"
-                          onClick={() => deleteTeam(team.id)}
+                          onClick={() => handleDeleteTeam(team.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -567,7 +505,7 @@ export default function ProjectDetailPage() {
                                     className="text-destructive hover:text-destructive"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      removeMember(member.id);
+                                      handleRemoveMember(member.id);
                                     }}
                                   >
                                     <Trash2 className="h-4 w-4" />
@@ -595,7 +533,7 @@ export default function ProjectDetailPage() {
         onSave={saveEdit}
         saving={savingEdit}
         saveDisabled={!editName.trim()}
-        onDelete={deleteProject}
+        onDelete={handleDeleteProject}
         deleteLabel="プロジェクトを削除"
       >
         <div className="space-y-4">

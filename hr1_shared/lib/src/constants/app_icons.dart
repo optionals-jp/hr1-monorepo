@@ -173,6 +173,10 @@ class AppIcons {
       _svg('ic-brush', size: size, color: color);
   static Widget brushFill({double size = 24, Color? color}) =>
       _svg('ic-brush-fill', size: size, color: color);
+  static Widget star({double size = 24, Color? color}) =>
+      _svg('ic-star', size: size, color: color);
+  static Widget starFill({double size = 24, Color? color}) =>
+      _svg('ic-star-fill', size: size, color: color);
 
   // ── レイアウト ──
   static Widget rowHorizontal({double size = 24, Color? color}) =>

@@ -35,8 +35,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
+import { useLeave } from "@/lib/hooks/use-leave";
 import { cn } from "@/lib/utils";
 import type { LeaveBalance } from "@/types/database";
 import { CalendarOff, Plus, Calculator, Users, Download } from "lucide-react";
@@ -131,35 +130,14 @@ export default function LeavePage() {
   // ---------- データ取得 ----------
 
   const {
-    data: balances,
-    error: balancesError,
-    mutate: mutateBalances,
-  } = useQuery<LeaveBalance[]>(
-    organization ? `leave-balances-${organization.id}` : null,
-    async () => {
-      const supabase = getSupabase();
-      const { data } = await supabase
-        .from("leave_balances")
-        .select("*")
-        .eq("organization_id", organization!.id)
-        .order("fiscal_year", { ascending: false });
-      return (data ?? []) as LeaveBalance[];
-    }
-  );
-
-  const { data: members } = useQuery<MemberRow[]>(
-    organization ? `members-${organization.id}` : null,
-    async () => {
-      const supabase = getSupabase();
-      const { data } = await supabase
-        .from("user_organizations")
-        .select(
-          "user_id, profiles!user_organizations_user_id_fkey(id, display_name, email, avatar_url, hire_date)"
-        )
-        .eq("organization_id", organization!.id);
-      return (data ?? []) as unknown as MemberRow[];
-    }
-  );
+    balances,
+    balancesError,
+    mutateBalances,
+    members,
+    updateBalance: updateBalanceApi,
+    grantManual: grantManualApi,
+    grantAuto: grantAutoApi,
+  } = useLeave();
 
   // ---------- プロフィール検索ヘルパー ----------
 
@@ -223,27 +201,21 @@ export default function LeavePage() {
   const handleSaveEdit = async () => {
     if (!organization || !editTarget) return;
     setSavingEdit(true);
-    try {
-      const { error } = await getSupabase()
-        .from("leave_balances")
-        .update({
-          granted_days: parseFloat(editGrantedDays) || 0,
-          used_days: parseFloat(editUsedDays) || 0,
-          carried_over_days: parseFloat(editCarriedOverDays) || 0,
-          expired_days: parseFloat(editExpiredDays) || 0,
-          grant_date: editGrantDate,
-          expiry_date: editExpiryDate,
-        })
-        .eq("id", editTarget.id);
-      if (error) throw error;
-      await mutateBalances();
+    const result = await updateBalanceApi(editTarget.id, {
+      granted_days: parseFloat(editGrantedDays) || 0,
+      used_days: parseFloat(editUsedDays) || 0,
+      carried_over_days: parseFloat(editCarriedOverDays) || 0,
+      expired_days: parseFloat(editExpiredDays) || 0,
+      grant_date: editGrantDate,
+      expiry_date: editExpiryDate,
+    });
+    if (result.success) {
       showToast("有給残日数を更新しました", "success");
       setEditPanelOpen(false);
-    } catch {
-      showToast("更新に失敗しました", "error");
-    } finally {
-      setSavingEdit(false);
+    } else {
+      showToast(result.error ?? "更新に失敗しました", "error");
     }
+    setSavingEdit(false);
   };
 
   const editRemaining =
@@ -277,32 +249,24 @@ export default function LeavePage() {
       return;
     }
     setSavingManual(true);
-    try {
-      const { error } = await getSupabase()
-        .from("leave_balances")
-        .upsert(
-          {
-            organization_id: organization.id,
-            user_id: manualUserId,
-            fiscal_year: parseInt(manualFiscalYear, 10),
-            granted_days: parseFloat(manualGrantedDays) || 0,
-            carried_over_days: parseFloat(manualCarriedOverDays) || 0,
-            used_days: 0,
-            expired_days: 0,
-            grant_date: manualGrantDate,
-            expiry_date: manualExpiryDate,
-          },
-          { onConflict: "user_id,organization_id,fiscal_year" }
-        );
-      if (error) throw error;
-      await mutateBalances();
+    const result = await grantManualApi(organization.id, {
+      organization_id: organization.id,
+      user_id: manualUserId,
+      fiscal_year: parseInt(manualFiscalYear, 10),
+      granted_days: parseFloat(manualGrantedDays) || 0,
+      carried_over_days: parseFloat(manualCarriedOverDays) || 0,
+      used_days: 0,
+      expired_days: 0,
+      grant_date: manualGrantDate,
+      expiry_date: manualExpiryDate,
+    });
+    if (result.success) {
       showToast("有給を付与しました", "success");
       setManualPanelOpen(false);
-    } catch {
-      showToast("付与に失敗しました", "error");
-    } finally {
-      setSavingManual(false);
+    } else {
+      showToast(result.error ?? "付与に失敗しました", "error");
     }
+    setSavingManual(false);
   };
 
   // ---------- 自動付与 ----------
@@ -336,34 +300,29 @@ export default function LeavePage() {
   const handleConfirmAutoGrant = async () => {
     if (!organization) return;
     setSavingAutoGrant(true);
-    try {
-      const today = formatDateInput(new Date());
-      const expiryDate = formatDateInput(
-        new Date(new Date().setFullYear(new Date().getFullYear() + 2))
-      );
-      const rows = autoGrantPreview.map((p) => ({
-        organization_id: organization.id,
-        user_id: p.userId,
-        fiscal_year: currentYear,
-        granted_days: p.days,
-        carried_over_days: 0,
-        used_days: 0,
-        expired_days: 0,
-        grant_date: today,
-        expiry_date: expiryDate,
-      }));
-      const { error } = await getSupabase()
-        .from("leave_balances")
-        .upsert(rows, { onConflict: "user_id,organization_id,fiscal_year" });
-      if (error) throw error;
-      await mutateBalances();
+    const today = formatDateInput(new Date());
+    const expiryDate = formatDateInput(
+      new Date(new Date().setFullYear(new Date().getFullYear() + 2))
+    );
+    const rows = autoGrantPreview.map((p) => ({
+      organization_id: organization.id,
+      user_id: p.userId,
+      fiscal_year: currentYear,
+      granted_days: p.days,
+      carried_over_days: 0,
+      used_days: 0,
+      expired_days: 0,
+      grant_date: today,
+      expiry_date: expiryDate,
+    }));
+    const result = await grantAutoApi(rows);
+    if (result.success) {
       showToast(`${autoGrantPreview.length}名に有給を付与しました`, "success");
       setAutoGrantDialogOpen(false);
-    } catch {
-      showToast("自動付与に失敗しました", "error");
-    } finally {
-      setSavingAutoGrant(false);
+    } else {
+      showToast(result.error ?? "自動付与に失敗しました", "error");
     }
+    setSavingAutoGrant(false);
   };
 
   // ---------- レンダリング ----------

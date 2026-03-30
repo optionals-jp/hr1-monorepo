@@ -13,9 +13,8 @@ import {
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
 import type { Faq } from "@/types/database";
+import { useFaqs, saveFaq, deleteFaq, toggleFaqPublished } from "@/lib/hooks/use-faqs";
 import { Badge } from "@/components/ui/badge";
 import { faqTargetLabels, faqCategoryLabels } from "@/lib/constants";
 import { EditPanel } from "@/components/ui/edit-panel";
@@ -31,27 +30,12 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { Pencil, GripVertical, Eye, EyeOff } from "lucide-react";
-import { mutate } from "swr";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 
 export default function FaqsPage() {
   const { organization } = useOrg();
 
-  const cacheKey = organization ? `faqs-${organization.id}` : null;
-
-  const {
-    data: faqs = [],
-    isLoading,
-    error: faqsError,
-    mutate: mutateFaqs,
-  } = useQuery<Faq[]>(cacheKey, async () => {
-    const { data } = await getSupabase()
-      .from("faqs")
-      .select("*")
-      .eq("organization_id", organization!.id)
-      .order("sort_order", { ascending: true });
-    return data ?? [];
-  });
+  const { data: faqs = [], isLoading, error: faqsError, mutate: mutateFaqs } = useFaqs();
 
   // 編集パネル
   const [editOpen, setEditOpen] = useState(false);
@@ -87,29 +71,17 @@ export default function FaqsPage() {
     if (!organization || !question.trim() || !answer.trim()) return;
     setSaving(true);
     try {
-      if (editFaq) {
-        await getSupabase()
-          .from("faqs")
-          .update({
-            question: question.trim(),
-            answer: answer.trim(),
-            category,
-            target,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", editFaq.id);
-      } else {
-        const maxOrder = faqs.length > 0 ? Math.max(...faqs.map((f) => f.sort_order)) + 1 : 0;
-        await getSupabase().from("faqs").insert({
-          organization_id: organization.id,
-          question: question.trim(),
-          answer: answer.trim(),
-          category,
-          target,
-          sort_order: maxOrder,
-        });
-      }
-      await mutate(cacheKey);
+      const maxOrder = faqs.length > 0 ? Math.max(...faqs.map((f) => f.sort_order)) + 1 : 0;
+      await saveFaq({
+        organizationId: organization.id,
+        editFaqId: editFaq?.id ?? null,
+        question: question.trim(),
+        answer: answer.trim(),
+        category,
+        target,
+        maxSortOrder: maxOrder,
+      });
+      await mutateFaqs();
       setEditOpen(false);
     } finally {
       setSaving(false);
@@ -120,8 +92,9 @@ export default function FaqsPage() {
     if (!editFaq) return;
     setDeleting(true);
     try {
-      await getSupabase().from("faqs").delete().eq("id", editFaq.id);
-      await mutate(cacheKey);
+      if (!organization) return;
+      await deleteFaq(editFaq.id, organization.id);
+      await mutateFaqs();
       setEditOpen(false);
     } finally {
       setDeleting(false);
@@ -129,8 +102,9 @@ export default function FaqsPage() {
   }
 
   async function togglePublished(faq: Faq) {
-    await getSupabase().from("faqs").update({ is_published: !faq.is_published }).eq("id", faq.id);
-    await mutate(cacheKey);
+    if (!organization) return;
+    await toggleFaqPublished(faq.id, organization.id, faq.is_published);
+    await mutateFaqs();
   }
 
   return (

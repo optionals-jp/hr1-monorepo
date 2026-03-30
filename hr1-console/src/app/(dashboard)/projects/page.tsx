@@ -19,9 +19,7 @@ import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { EditPanel } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
-import type { Project } from "@/types/database";
+import { useProjects, createProject } from "@/lib/hooks/use-projects";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { projectStatusLabels, projectStatusColors } from "@/lib/constants";
@@ -71,25 +69,7 @@ export default function ProjectsPage() {
   const [newEndDate, setNewEndDate] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const {
-    data: projects = [],
-    isLoading,
-    error: projectsError,
-    mutate,
-  } = useQuery<(Project & { team_count: number })[]>(
-    organization ? `projects-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("projects")
-        .select("*, project_teams(id)")
-        .eq("organization_id", organization!.id)
-        .order("created_at", { ascending: false });
-      return (data ?? []).map((p) => ({
-        ...p,
-        team_count: ((p as Record<string, unknown>).project_teams as { id: string }[])?.length ?? 0,
-      }));
-    }
-  );
+  const { data: projects = [], isLoading, error: projectsError, mutate } = useProjects();
 
   const openAddDialog = () => {
     setNewName("");
@@ -104,28 +84,21 @@ export default function ProjectsPage() {
     if (!organization || !newName.trim()) return;
     setSaving(true);
 
-    try {
-      const { error } = await getSupabase()
-        .from("projects")
-        .insert({
-          id: crypto.randomUUID(),
-          organization_id: organization.id,
-          name: newName.trim(),
-          description: newDescription.trim() || null,
-          status: newStatus,
-          start_date: newStartDate || null,
-          end_date: newEndDate || null,
-        });
-      if (error) throw error;
-
+    const result = await createProject(organization.id, {
+      name: newName,
+      description: newDescription,
+      status: newStatus,
+      startDate: newStartDate,
+      endDate: newEndDate,
+    });
+    if (result.success) {
       setDialogOpen(false);
       mutate();
       showToast("プロジェクトを作成しました");
-    } catch {
-      showToast("プロジェクトの作成に失敗しました", "error");
-    } finally {
-      setSaving(false);
+    } else {
+      showToast(result.error ?? "プロジェクトの作成に失敗しました", "error");
     }
+    setSaving(false);
   };
 
   const filtered = projects.filter((p) => {

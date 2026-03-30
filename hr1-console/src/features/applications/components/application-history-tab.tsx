@@ -1,6 +1,7 @@
 "use client";
 
 import type { ApplicationStep } from "@/types/database";
+import { StepStatus } from "@/lib/constants";
 import { format } from "date-fns";
 
 interface ApplicationHistoryTabProps {
@@ -33,12 +34,12 @@ function StepHistory({ steps }: { steps: ApplicationStep[] }) {
     if (step.started_at) {
       events.push({
         date: step.started_at,
-        label: step.status === "skipped" ? "スキップ" : "開始",
+        label: step.status === StepStatus.Skipped ? "スキップ" : "開始",
         stepLabel: step.label,
-        type: step.status === "skipped" ? "skipped" : "started",
+        type: step.status === StepStatus.Skipped ? "skipped" : "started",
       });
     }
-    if (step.completed_at && step.status === "completed") {
+    if (step.completed_at && step.status === StepStatus.Completed) {
       events.push({
         date: step.completed_at,
         label: "完了",
@@ -46,7 +47,7 @@ function StepHistory({ steps }: { steps: ApplicationStep[] }) {
         type: "completed",
       });
     }
-    if (step.completed_at && step.status === "skipped") {
+    if (step.completed_at && step.status === StepStatus.Skipped) {
       events.push({
         date: step.completed_at,
         label: "スキップ",

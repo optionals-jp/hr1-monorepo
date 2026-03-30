@@ -17,10 +17,10 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
+import { useNewJob } from "@/lib/hooks/use-jobs-page";
 import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
 import { Trash2, GripVertical } from "lucide-react";
-import { jobStatusLabels, stepTypeLabels } from "@/lib/constants";
+import { jobStatusLabels, stepTypeLabels, selectableStepTypes, StepType } from "@/lib/constants";
 
 interface StepDraft {
   tempId: string;
@@ -32,6 +32,7 @@ export default function NewJobPage() {
   const router = useRouter();
   const { showToast } = useToast();
   const { organization } = useOrg();
+  const { createJob } = useNewJob();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [department, setDepartment] = useState("");
@@ -40,9 +41,9 @@ export default function NewJobPage() {
   const [salaryRange, setSalaryRange] = useState("");
   const [status, setStatus] = useState("open");
   const [steps, setSteps] = useState<StepDraft[]>([
-    { tempId: "1", step_type: "screening", label: "書類選考" },
-    { tempId: "2", step_type: "interview", label: "一次面接" },
-    { tempId: "3", step_type: "offer", label: "内定" },
+    { tempId: "1", step_type: StepType.Screening, label: "書類選考" },
+    { tempId: "2", step_type: StepType.Interview, label: "一次面接" },
+    { tempId: "3", step_type: StepType.Offer, label: "内定" },
   ]);
   const [saving, setSaving] = useState(false);
   const [formErrors, setFormErrors] = useState<ValidationErrors>({});
@@ -52,7 +53,7 @@ export default function NewJobPage() {
       ...steps,
       {
         tempId: `${Date.now()}`,
-        step_type: "interview",
+        step_type: StepType.Interview,
         label: "",
       },
     ]);
@@ -83,37 +84,19 @@ export default function NewJobPage() {
     setSaving(true);
 
     try {
-      const jobId = `job-${Date.now()}`;
-
-      const { error: jobError } = await getSupabase()
-        .from("jobs")
-        .insert({
-          id: jobId,
-          organization_id: organization.id,
-          title,
-          description,
-          department: department || null,
-          location: location || null,
-          employment_type: employmentType || null,
-          salary_range: salaryRange || null,
-          status,
-        });
-      if (jobError) throw jobError;
-
-      if (steps.length > 0) {
-        const { error: stepsError } = await getSupabase()
-          .from("job_steps")
-          .insert(
-            steps.map((step, index) => ({
-              id: `step-${jobId}-${index + 1}`,
-              job_id: jobId,
-              step_type: step.step_type,
-              step_order: index + 1,
-              label: step.label,
-            }))
-          );
-        if (stepsError) throw stepsError;
-      }
+      await createJob({
+        title,
+        description,
+        department: department || null,
+        location: location || null,
+        employmentType: employmentType || null,
+        salaryRange: salaryRange || null,
+        status,
+        steps: steps.map((step) => ({
+          step_type: step.step_type,
+          label: step.label,
+        })),
+      });
 
       showToast("求人を作成しました");
       router.push("/jobs");
@@ -231,7 +214,7 @@ export default function NewJobPage() {
                       <SelectValue>{(v: string) => stepTypeLabels[v] ?? v}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(stepTypeLabels).map(([key, label]) => (
+                      {Object.entries(selectableStepTypes).map(([key, label]) => (
                         <SelectItem key={key} value={key}>
                           {label}
                         </SelectItem>

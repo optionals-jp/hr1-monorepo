@@ -25,9 +25,9 @@ import {
 } from "@/components/ui/table";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
-import { getSupabase } from "@/lib/supabase/browser";
 import { useOrg } from "@/lib/org-context";
 import type { CustomForm, FormField, AuditLog } from "@/types/database";
+import { loadFormDetail, saveFormEdit } from "@/lib/hooks/use-forms";
 import { format } from "date-fns";
 import { Trash2 } from "lucide-react";
 import { fieldTypeLabels, getAuditActionLabel, formTargetLabels } from "@/lib/constants";
@@ -91,62 +91,11 @@ export default function FormDetailPage() {
     if (!organization) return;
     setLoading(true);
 
-    const [{ data: formData }, { data: fieldsData }, { data: responsesData }, { data: logsData }] =
-      await Promise.all([
-        getSupabase()
-          .from("custom_forms")
-          .select("*")
-          .eq("id", id)
-          .eq("organization_id", organization.id)
-          .single(),
-        getSupabase().from("form_fields").select("*").eq("form_id", id).order("sort_order"),
-        getSupabase().from("form_responses").select("*").eq("form_id", id),
-        getSupabase()
-          .from("audit_logs")
-          .select("*")
-          .eq("organization_id", organization.id)
-          .eq("table_name", "custom_forms")
-          .eq("record_id", id)
-          .order("created_at", { ascending: false })
-          .limit(50),
-      ]);
-
-    setForm(formData);
-    setFields(fieldsData ?? []);
-    setChangeLogs(logsData ?? []);
-
-    // Group responses by applicant_id
-    const grouped: Record<string, ResponseRow> = {};
-    for (const resp of responsesData ?? []) {
-      const applicantId = resp.applicant_id as string;
-      if (!grouped[applicantId]) {
-        grouped[applicantId] = {
-          applicant_id: applicantId,
-          applicant_name: applicantId,
-          answers: {},
-          created_at: resp.submitted_at,
-        };
-      }
-      grouped[applicantId].answers[resp.field_id] = Array.isArray(resp.value)
-        ? (resp.value as string[]).join(", ")
-        : String(resp.value ?? "");
-    }
-
-    // Fetch profile names
-    const applicantIds = Object.keys(grouped);
-    if (applicantIds.length > 0) {
-      const { data: profilesData } = await getSupabase()
-        .from("profiles")
-        .select("id, display_name, email")
-        .in("id", applicantIds);
-      for (const p of profilesData ?? []) {
-        if (grouped[p.id]) {
-          grouped[p.id].applicant_name = p.display_name ?? p.email ?? p.id;
-        }
-      }
-    }
-
-    setResponses(Object.values(grouped));
+    const result = await loadFormDetail(id, organization.id);
+    setForm(result.form);
+    setFields(result.fields);
+    setResponses(result.responses);
+    setChangeLogs(result.changeLogs);
 
     setLoading(false);
   }
@@ -199,127 +148,18 @@ export default function FormDetailPage() {
   }
 
   async function handleSave() {
-    if (!form) return;
+    if (!form || !organization) return;
     setSaving(true);
 
-    const fieldLogs: { detail_action: string; summary: string }[] = [];
-
-    // 1. Update form title/description/target
-    const titleChanged = editTitle !== form.title;
-    const targetChanged = editTarget !== (form.target ?? "both");
-    const descChanged = editDescription !== (form.description ?? "");
-
-    if (titleChanged || targetChanged || descChanged) {
-      await getSupabase()
-        .from("custom_forms")
-        .update({
-          title: editTitle,
-          target: editTarget,
-          description: editDescription || null,
-        })
-        .eq("id", form.id);
-    }
-
-    // 2. Handle field changes
-    const existingIds = fields.map((f) => f.id);
-    const editIds = editFields.filter((f) => !f.isNew).map((f) => f.id);
-
-    // Deleted fields
-    const deletedIds = existingIds.filter((fid) => !editIds.includes(fid));
-    if (deletedIds.length > 0) {
-      await getSupabase().from("form_fields").delete().in("id", deletedIds);
-      const deletedLabels = fields
-        .filter((f) => deletedIds.includes(f.id))
-        .map((f) => f.label)
-        .join("、");
-      fieldLogs.push({
-        detail_action: "field_deleted",
-        summary: `フィールド「${deletedLabels}」を削除`,
-      });
-    }
-
-    // New fields
-    const newFields = editFields.filter((f) => f.isNew);
-    if (newFields.length > 0) {
-      await getSupabase()
-        .from("form_fields")
-        .insert(
-          newFields.map((f, i) => ({
-            id: `field-${form.id}-${Date.now()}-${i}`,
-            form_id: form.id,
-            type: f.field_type,
-            label: f.label,
-            description: f.description || null,
-            placeholder: f.placeholder || null,
-            is_required: f.is_required,
-            options:
-              f.options && ["radio", "checkbox", "dropdown"].includes(f.field_type)
-                ? f.options.split("\n").filter(Boolean)
-                : null,
-            sort_order: f.sort_order,
-          }))
-        );
-      const newLabels = newFields.map((f) => f.label).join("、");
-      fieldLogs.push({ detail_action: "field_added", summary: `フィールド「${newLabels}」を追加` });
-    }
-
-    // Updated existing fields
-    for (const ef of editFields.filter((f) => !f.isNew && existingIds.includes(f.id))) {
-      const original = fields.find((f) => f.id === ef.id);
-      if (!original) continue;
-      const changed =
-        ef.label !== original.label ||
-        ef.field_type !== original.type ||
-        ef.description !== (original.description ?? "") ||
-        ef.placeholder !== (original.placeholder ?? "") ||
-        ef.is_required !== original.is_required ||
-        ef.options !== (original.options?.join("\n") ?? "");
-
-      if (changed) {
-        await getSupabase()
-          .from("form_fields")
-          .update({
-            type: ef.field_type,
-            label: ef.label,
-            description: ef.description || null,
-            placeholder: ef.placeholder || null,
-            is_required: ef.is_required,
-            options:
-              ef.options && ["radio", "checkbox", "dropdown"].includes(ef.field_type)
-                ? ef.options.split("\n").filter(Boolean)
-                : null,
-            sort_order: ef.sort_order,
-          })
-          .eq("id", ef.id);
-        fieldLogs.push({
-          detail_action: "field_updated",
-          summary: `フィールド「${ef.label}」を変更`,
-        });
-      }
-    }
-
-    // 3. Save field change logs
-    if (fieldLogs.length > 0 && organization) {
-      const userId = (await getSupabase().auth.getUser()).data.user?.id;
-      if (!userId) throw new Error("認証ユーザーが取得できません");
-      await getSupabase()
-        .from("audit_logs")
-        .insert(
-          fieldLogs.map((log) => ({
-            organization_id: organization.id,
-            user_id: userId,
-            action: log.detail_action.includes("deleted")
-              ? "delete"
-              : log.detail_action.includes("added")
-                ? "create"
-                : "update",
-            table_name: "custom_forms",
-            record_id: form.id,
-            metadata: { summary: log.summary, detail_action: log.detail_action },
-            source: "console" as const,
-          }))
-        );
-    }
+    await saveFormEdit(
+      form,
+      fields,
+      organization.id,
+      editTitle,
+      editTarget,
+      editDescription,
+      editFields
+    );
 
     setSaving(false);
     setEditing(false);

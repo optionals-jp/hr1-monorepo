@@ -20,9 +20,7 @@ import {
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
-import type { EvaluationTemplate } from "@/types/database";
+import { useMultiRaterTemplates, createCycle } from "@/lib/hooks/use-evaluations";
 
 export default function NewEvaluationCyclePage() {
   const router = useRouter();
@@ -42,49 +40,28 @@ export default function NewEvaluationCyclePage() {
     data: templates,
     error: templatesError,
     mutate: mutateTemplates,
-  } = useQuery<EvaluationTemplate[]>(
-    organization ? `eval-templates-multi-${organization.id}` : null,
-    async () => {
-      if (!organization) return [];
-      const { data } = await getSupabase()
-        .from("evaluation_templates")
-        .select("*")
-        .eq("organization_id", organization.id)
-        .eq("evaluation_type", "multi_rater")
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    }
-  );
+  } = useMultiRaterTemplates();
 
   const handleSubmit = async () => {
     if (!organization || !user || !title || !templateId || !startDate || !endDate) return;
     setSaving(true);
 
-    try {
-      const cycleId = `cycle-${Date.now()}`;
+    const result = await createCycle(organization.id, user.id, {
+      title,
+      description,
+      templateId,
+      startDate,
+      endDate,
+    });
 
-      const { error } = await getSupabase()
-        .from("evaluation_cycles")
-        .insert({
-          id: cycleId,
-          organization_id: organization.id,
-          title,
-          description: description || null,
-          template_id: templateId,
-          start_date: startDate,
-          end_date: endDate,
-          created_by: user.id,
-        });
-      if (error) throw error;
-
+    if (result.success) {
       await mutate(`eval-cycles-${organization.id}`);
       showToast("評価サイクルを作成しました");
-      router.push(`/evaluations/cycles/${cycleId}`);
-    } catch {
-      showToast("サイクルの作成に失敗しました", "error");
-    } finally {
-      setSaving(false);
+      router.push(`/evaluations/cycles/${result.cycleId}`);
+    } else {
+      showToast(result.error ?? "サイクルの作成に失敗しました", "error");
     }
+    setSaving(false);
   };
 
   return (

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
+import { loadSkillMasters, addSkillMaster, removeSkillMaster } from "@/lib/hooks/use-settings";
 import type { SkillMaster } from "@/types/database";
 import { Plus, X } from "lucide-react";
 
@@ -21,12 +21,8 @@ export default function SkillsSettingsPage() {
   const load = async () => {
     if (!organization) return;
     setLoading(true);
-    const { data } = await getSupabase()
-      .from("skill_masters")
-      .select("*")
-      .order("category", { nullsFirst: false })
-      .order("name");
-    setMasters(data ?? []);
+    const data = await loadSkillMasters();
+    setMasters(data);
     setLoading(false);
   };
 
@@ -38,13 +34,11 @@ export default function SkillsSettingsPage() {
   const handleAdd = async () => {
     if (!organization || !newName.trim()) return;
     setAdding(true);
-    await getSupabase()
-      .from("skill_masters")
-      .insert({
-        organization_id: organization.id,
-        name: newName.trim(),
-        category: newCategory.trim() || null,
-      });
+    await addSkillMaster({
+      organization_id: organization.id,
+      name: newName.trim(),
+      category: newCategory.trim() || null,
+    });
     setNewName("");
     setNewCategory("");
     setAdding(false);
@@ -53,7 +47,7 @@ export default function SkillsSettingsPage() {
 
   const handleDelete = async (master: SkillMaster) => {
     if (!window.confirm("削除してもよろしいですか？")) return;
-    await getSupabase().from("skill_masters").delete().eq("id", master.id);
+    await removeSkillMaster(master.id);
     await load();
   };
 

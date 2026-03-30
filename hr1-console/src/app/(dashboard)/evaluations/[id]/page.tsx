@@ -35,8 +35,12 @@ import { SearchBar } from "@/components/ui/search-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
-import { getSupabase } from "@/lib/supabase/browser";
 import { useOrg } from "@/lib/org-context";
+import {
+  loadTemplateDetail,
+  saveTemplateEdit,
+  type EvalWithScores,
+} from "@/lib/hooks/use-evaluation-detail";
 import type {
   EvaluationTemplate,
   EvaluationCriterion,
@@ -83,12 +87,6 @@ const editTabs: EditPanelTab[] = [
   { value: "basic", label: "基本情報" },
   { value: "criteria", label: "評価項目" },
 ];
-
-type EvalWithScores = Evaluation & {
-  target_name: string;
-  evaluator_name: string;
-  scores: EvaluationScore[];
-};
 
 /** 統計ビュー：項目ごとの平均・分布・回答数 */
 function StatisticsView({
@@ -490,64 +488,11 @@ export default function EvaluationTemplateDetailPage() {
     if (!organization) return;
     setLoading(true);
 
-    const [{ data: tplData }, { data: crData }, { data: evalData }] = await Promise.all([
-      getSupabase()
-        .from("evaluation_templates")
-        .select("*")
-        .eq("id", id)
-        .eq("organization_id", organization.id)
-        .single(),
-      getSupabase()
-        .from("evaluation_criteria")
-        .select("*")
-        .eq("template_id", id)
-        .order("sort_order"),
-      getSupabase()
-        .from("evaluations")
-        .select("*")
-        .eq("template_id", id)
-        .eq("organization_id", organization.id)
-        .order("created_at", { ascending: false }),
-    ]);
-
-    setTemplate(tplData);
-    setCriteria(crData ?? []);
-
-    // Fetch profile names and scores for evaluations
-    if (evalData && evalData.length > 0) {
-      const userIds = [...new Set(evalData.flatMap((e) => [e.target_user_id, e.evaluator_id]))];
-      const evalIds = evalData.map((e) => e.id);
-
-      const [{ data: profiles }, { data: scoreData }] = await Promise.all([
-        getSupabase().from("profiles").select("id, display_name, email").in("id", userIds),
-        getSupabase().from("evaluation_scores").select("*").in("evaluation_id", evalIds),
-      ]);
-
-      const nameMap = new Map<string, string>();
-      for (const p of profiles ?? []) {
-        nameMap.set(p.id, p.display_name ?? p.email);
-      }
-
-      setEvaluations(
-        evalData.map((e) => ({
-          ...e,
-          target_name: nameMap.get(e.target_user_id) ?? e.target_user_id,
-          evaluator_name: nameMap.get(e.evaluator_id) ?? e.evaluator_id,
-          scores: (scoreData ?? []).filter((s) => s.evaluation_id === e.id),
-        }))
-      );
-    } else {
-      setEvaluations([]);
-    }
-
-    // サイクル取得（多面評価シートの場合）
-    const { data: cycleData } = await getSupabase()
-      .from("evaluation_cycles")
-      .select("*")
-      .eq("template_id", id)
-      .eq("organization_id", organization.id)
-      .order("created_at", { ascending: false });
-    setCycles(cycleData ?? []);
+    const result = await loadTemplateDetail(id, organization.id);
+    setTemplate(result.template);
+    setCriteria(result.criteria);
+    setEvaluations(result.evaluations);
+    setCycles(result.cycles);
 
     setLoading(false);
   }
@@ -600,77 +545,14 @@ export default function EvaluationTemplateDetailPage() {
     if (!template) return;
     setSaving(true);
 
-    // 1. Update template
-    if (
-      editTitle !== template.title ||
-      editTarget !== template.target ||
-      editDescription !== (template.description ?? "")
-    ) {
-      await getSupabase()
-        .from("evaluation_templates")
-        .update({
-          title: editTitle,
-          target: editTarget,
-          description: editDescription || null,
-        })
-        .eq("id", template.id);
-    }
-
-    // 2. Handle criteria changes
-    const existingIds = criteria.map((c) => c.id);
-    const editIds = editCriteria.filter((c) => !c.isNew).map((c) => c.id);
-
-    // Deleted
-    const deletedIds = existingIds.filter((cid) => !editIds.includes(cid));
-    if (deletedIds.length > 0) {
-      await getSupabase().from("evaluation_criteria").delete().in("id", deletedIds);
-    }
-
-    // New
-    const newCriteria = editCriteria.filter((c) => c.isNew);
-    if (newCriteria.length > 0) {
-      await getSupabase()
-        .from("evaluation_criteria")
-        .insert(
-          newCriteria.map((c, i) => ({
-            id: `evalcr-${template.id}-${Date.now()}-${i}`,
-            template_id: template.id,
-            label: c.label,
-            description: c.description || null,
-            score_type: c.score_type,
-            options:
-              c.options && c.score_type === "select" ? c.options.split("\n").filter(Boolean) : null,
-            sort_order: c.sort_order,
-          }))
-        );
-    }
-
-    // Updated
-    for (const ec of editCriteria.filter((c) => !c.isNew && existingIds.includes(c.id))) {
-      const original = criteria.find((c) => c.id === ec.id);
-      if (!original) continue;
-      const changed =
-        ec.label !== original.label ||
-        ec.score_type !== original.score_type ||
-        ec.description !== (original.description ?? "") ||
-        ec.options !== (original.options?.join("\n") ?? "");
-
-      if (changed) {
-        await getSupabase()
-          .from("evaluation_criteria")
-          .update({
-            label: ec.label,
-            description: ec.description || null,
-            score_type: ec.score_type,
-            options:
-              ec.options && ec.score_type === "select"
-                ? ec.options.split("\n").filter(Boolean)
-                : null,
-            sort_order: ec.sort_order,
-          })
-          .eq("id", ec.id);
-      }
-    }
+    await saveTemplateEdit(
+      template,
+      criteria,
+      editTitle,
+      editTarget,
+      editDescription,
+      editCriteria
+    );
 
     setSaving(false);
     setEditing(false);

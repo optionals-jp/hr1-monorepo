@@ -18,8 +18,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import {
   formTargetLabels,
@@ -27,6 +25,10 @@ import {
   cycleStatusLabels,
   cycleStatusColors,
 } from "@/lib/constants";
+import {
+  useEvaluationTemplates,
+  useEvaluationCyclesWithDetails,
+} from "@/lib/hooks/use-evaluations";
 import {
   FileText,
   ListChecks,
@@ -41,7 +43,6 @@ import {
   Download,
 } from "lucide-react";
 import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
-import type { EvaluationTemplate, EvaluationCycle } from "@/types/database";
 
 const subTabs = [
   { value: "sheets", label: "評価シート" },
@@ -313,65 +314,16 @@ export default function EvaluationsPage() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const activeTab = tabParam === "cycles" ? "cycles" : tabParam === "guide" ? "guide" : "sheets";
-  const { organization } = useOrg();
+  useOrg();
 
   const {
     data: templates = [],
     isLoading: templatesLoading,
     error: templatesError,
     mutate: mutateTemplates,
-  } = useQuery<EvaluationTemplate[]>(
-    organization ? `eval-templates-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("evaluation_templates")
-        .select("*")
-        .eq("organization_id", organization!.id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    }
-  );
+  } = useEvaluationTemplates();
 
-  const { data: cycles = [], isLoading: cyclesLoading } = useQuery<
-    (EvaluationCycle & {
-      template_title: string;
-      assignment_count: number;
-      submitted_count: number;
-    })[]
-  >(organization ? `eval-cycles-${organization.id}` : null, async () => {
-    if (!organization) return [];
-    const { data: cycleData } = await getSupabase()
-      .from("evaluation_cycles")
-      .select("*")
-      .eq("organization_id", organization.id)
-      .order("created_at", { ascending: false });
-
-    if (!cycleData || cycleData.length === 0) return [];
-
-    const templateIds = [...new Set(cycleData.map((c) => c.template_id))];
-    const cycleIds = cycleData.map((c) => c.id);
-
-    const [{ data: tplData }, { data: assignments }] = await Promise.all([
-      getSupabase().from("evaluation_templates").select("id, title").in("id", templateIds),
-      getSupabase()
-        .from("evaluation_assignments")
-        .select("id, cycle_id, status")
-        .in("cycle_id", cycleIds),
-    ]);
-
-    const titleMap = new Map<string, string>();
-    for (const t of tplData ?? []) titleMap.set(t.id, t.title);
-
-    return cycleData.map((c) => {
-      const cycleAssignments = (assignments ?? []).filter((a) => a.cycle_id === c.id);
-      return {
-        ...c,
-        template_title: titleMap.get(c.template_id) ?? "",
-        assignment_count: cycleAssignments.length,
-        submitted_count: cycleAssignments.filter((a) => a.status === "submitted").length,
-      };
-    });
-  });
+  const { data: cycles = [], isLoading: cyclesLoading } = useEvaluationCyclesWithDetails();
 
   const setActiveTab = (tab: string) => {
     if (tab === "cycles") router.push("/evaluations?tab=cycles");

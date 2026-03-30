@@ -8,8 +8,7 @@ import { Bell, Search, HelpCircle, ChevronDown, Menu, LogOut, User } from "lucid
 import { Button } from "@/components/ui/button";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
-import { useQuery } from "@/lib/use-query";
-import { getSupabase } from "@/lib/supabase/browser";
+import { usePendingCount } from "@/lib/hooks/use-header";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -27,17 +26,7 @@ export function Header() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const { data: pendingCount } = useQuery(
-    organization ? `header-pending-${organization.id}` : null,
-    async () => {
-      const { count } = await getSupabase()
-        .from("workflow_requests")
-        .select("*", { count: "exact", head: true })
-        .eq("organization_id", organization!.id)
-        .eq("status", "pending");
-      return count ?? 0;
-    }
-  );
+  const { data: pendingCount } = usePendingCount();
 
   const handleSignOut = useCallback(async () => {
     await signOut();

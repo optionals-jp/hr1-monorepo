@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_applicant_app/features/applications/domain/entities/application.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/application_status.dart';
+import 'package:hr1_applicant_app/features/applications/domain/entities/application_step.dart';
 import 'package:hr1_applicant_app/features/applications/domain/entities/job.dart';
 import 'package:hr1_applicant_app/features/applications/domain/repositories/applications_repository.dart';
 
@@ -48,15 +50,18 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
     required String applicantId,
     required String organizationId,
   }) async {
-    // 1. application を作成
-    final appId = 'app-${DateTime.now().millisecondsSinceEpoch}';
-    await _client.from('applications').insert({
-      'id': appId,
-      'job_id': jobId,
-      'applicant_id': applicantId,
-      'organization_id': organizationId,
-      'status': 'active',
-    });
+    // 1. application を作成（IDはDBのgen_random_uuid()で自動生成）
+    final appResponse = await _client
+        .from('applications')
+        .insert({
+          'job_id': jobId,
+          'applicant_id': applicantId,
+          'organization_id': organizationId,
+          'status': ApplicationStatus.active.name,
+        })
+        .select('id')
+        .single();
+    final appId = appResponse['id'] as String;
 
     // 2. job_steps を取得してコピー
     final jobSteps = await _client
@@ -73,13 +78,14 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
       final steps = jobSteps.map((s) {
         final isFirst = (s['step_order'] as int) == minOrder;
         return {
-          'id': '$appId-step-${s['step_order']}',
           'application_id': appId,
           'step_type': s['step_type'],
           'step_order': s['step_order'],
           'label': s['label'],
           'related_id': s['related_id'],
-          'status': isFirst ? 'in_progress' : 'pending',
+          'status': isFirst
+              ? StepStatus.inProgress.value
+              : StepStatus.pending.value,
           'started_at': isFirst ? DateTime.now().toIso8601String() : null,
         };
       }).toList();
@@ -93,48 +99,10 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
 
   @override
   Future<void> completeStep(String stepId, String applicationId) async {
-    // 1. 現在のステップを完了にする
-    final now = DateTime.now().toIso8601String();
-    await _client
-        .from('application_steps')
-        .update({
-          'status': 'completed',
-          'completed_at': now,
-          'applicant_action_at': now,
-        })
-        .eq('id', stepId);
-
-    // 2. このアプリケーションの全ステップを取得
-    final allSteps = await _client
-        .from('application_steps')
-        .select()
-        .eq('application_id', applicationId)
-        .order('step_order', ascending: true);
-
-    // 3. 完了したステップの次のpendingステップを in_progress にする
-    final completedStep = (allSteps as List).firstWhere(
-      (s) => s['id'] == stepId,
+    await _client.rpc(
+      'applicant_complete_step',
+      params: {'p_step_id': stepId, 'p_application_id': applicationId},
     );
-    final completedOrder = completedStep['step_order'] as int;
-
-    final pendingSteps =
-        allSteps.cast<Map<String, dynamic>>().where((s) {
-          return (s['step_order'] as int) > completedOrder &&
-              s['status'] == 'pending';
-        }).toList()..sort(
-          (a, b) => (a['step_order'] as int).compareTo(b['step_order'] as int),
-        );
-    final nextStep = pendingSteps.firstOrNull;
-
-    if (nextStep != null) {
-      await _client
-          .from('application_steps')
-          .update({
-            'status': 'in_progress',
-            'started_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', nextStep['id']);
-    }
   }
 
   @override
