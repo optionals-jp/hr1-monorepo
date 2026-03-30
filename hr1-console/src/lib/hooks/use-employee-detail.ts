@@ -15,6 +15,46 @@ export interface MembershipRecord {
   team: { id: string; name: string; project: { id: string; name: string; status: string } };
 }
 
+export interface EditForm {
+  name: string;
+  nameKana: string;
+  position: string;
+  birthDate: string;
+  gender: string;
+  hireDate: string;
+  phone: string;
+  currentPostalCode: string;
+  currentPrefecture: string;
+  currentCity: string;
+  currentStreetAddress: string;
+  currentBuilding: string;
+  registeredPostalCode: string;
+  registeredPrefecture: string;
+  registeredCity: string;
+  registeredStreetAddress: string;
+  registeredBuilding: string;
+}
+
+const initialEditForm: EditForm = {
+  name: "",
+  nameKana: "",
+  position: "",
+  birthDate: "",
+  gender: "",
+  hireDate: "",
+  phone: "",
+  currentPostalCode: "",
+  currentPrefecture: "",
+  currentCity: "",
+  currentStreetAddress: "",
+  currentBuilding: "",
+  registeredPostalCode: "",
+  registeredPrefecture: "",
+  registeredCity: "",
+  registeredStreetAddress: "",
+  registeredBuilding: "",
+};
+
 export function useEmployeeDetail(id: string) {
   const { organization } = useOrg();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -25,6 +65,16 @@ export function useEmployeeDetail(id: string) {
   const [skills, setSkills] = useState<EmployeeSkill[]>([]);
   const [certifications, setCertifications] = useState<EmployeeCertification[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [activeTab, setActiveTab] = useState("profile");
+  const [editing, setEditing] = useState(false);
+  const [editTab, setEditTab] = useState("basic");
+  const [editForm, setEditForm] = useState<EditForm>(initialEditForm);
+  const [editDeptIds, setEditDeptIds] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  const updateField = (field: keyof EditForm, value: string) =>
+    setEditForm((prev) => ({ ...prev, [field]: value }));
 
   const load = async () => {
     if (!organization) return;
@@ -67,11 +117,67 @@ export function useEmployeeDetail(id: string) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, organization]);
 
-  const saveProfile = async (data: Record<string, unknown>, editDeptIds: string[]) => {
+  const startEditing = () => {
     if (!profile) return;
-    await employeeRepository.updateProfile(getSupabase(), profile.id, data);
+    setEditForm({
+      name: profile.display_name ?? "",
+      nameKana: profile.name_kana ?? "",
+      position: profile.position ?? "",
+      birthDate: profile.birth_date ?? "",
+      gender: profile.gender ?? "",
+      hireDate: profile.hire_date ?? "",
+      phone: profile.phone ?? "",
+      currentPostalCode: profile.current_postal_code ?? "",
+      currentPrefecture: profile.current_prefecture ?? "",
+      currentCity: profile.current_city ?? "",
+      currentStreetAddress: profile.current_street_address ?? "",
+      currentBuilding: profile.current_building ?? "",
+      registeredPostalCode: profile.registered_postal_code ?? "",
+      registeredPrefecture: profile.registered_prefecture ?? "",
+      registeredCity: profile.registered_city ?? "",
+      registeredStreetAddress: profile.registered_street_address ?? "",
+      registeredBuilding: profile.registered_building ?? "",
+    });
+    setEditDeptIds([...assignedDeptIds]);
+    setEditTab("basic");
+    setEditing(true);
+  };
+
+  const saveEdit = async (): Promise<{ success: boolean; error?: string }> => {
+    if (!profile) return { success: false, error: "プロフィールが見つかりません" };
+    setSaving(true);
+
+    await employeeRepository.updateProfile(getSupabase(), profile.id, {
+      display_name: editForm.name.trim() || null,
+      name_kana: editForm.nameKana.trim() || null,
+      position: editForm.position.trim() || null,
+      birth_date: editForm.birthDate || null,
+      gender: editForm.gender || null,
+      hire_date: editForm.hireDate || null,
+      phone: editForm.phone.trim() || null,
+      current_postal_code: editForm.currentPostalCode.trim() || null,
+      current_prefecture: editForm.currentPrefecture.trim() || null,
+      current_city: editForm.currentCity.trim() || null,
+      current_street_address: editForm.currentStreetAddress.trim() || null,
+      current_building: editForm.currentBuilding.trim() || null,
+      registered_postal_code: editForm.registeredPostalCode.trim() || null,
+      registered_prefecture: editForm.registeredPrefecture.trim() || null,
+      registered_city: editForm.registeredCity.trim() || null,
+      registered_street_address: editForm.registeredStreetAddress.trim() || null,
+      registered_building: editForm.registeredBuilding.trim() || null,
+    });
     await employeeRepository.replaceEmployeeDepartments(getSupabase(), profile.id, editDeptIds);
     await load();
+
+    setSaving(false);
+    setEditing(false);
+    return { success: true };
+  };
+
+  const toggleDept = (deptId: string) => {
+    setEditDeptIds((prev) =>
+      prev.includes(deptId) ? prev.filter((id) => id !== deptId) : [...prev, deptId]
+    );
   };
 
   return {
@@ -85,6 +191,19 @@ export function useEmployeeDetail(id: string) {
     certifications,
     loading,
     load,
-    saveProfile,
+    saveProfile: saveEdit,
+    activeTab,
+    setActiveTab,
+    editing,
+    setEditing,
+    editTab,
+    setEditTab,
+    editForm,
+    updateField,
+    editDeptIds,
+    saving,
+    startEditing,
+    saveEdit,
+    toggleDept,
   };
 }

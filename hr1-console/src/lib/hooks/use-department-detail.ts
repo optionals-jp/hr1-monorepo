@@ -44,6 +44,26 @@ export function useDepartmentDetail(id: string) {
     await load();
   };
 
+  // Edit panel state
+  const [activeTab, setActiveTab] = useState("overview");
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const startEditing = () => {
+    if (!department) return;
+    setEditName(department.name);
+    setEditing(true);
+  };
+
+  const saveEdit = async () => {
+    if (!department || !editName.trim()) return;
+    setSaving(true);
+    await updateName(editName.trim());
+    setEditing(false);
+    setSaving(false);
+  };
+
   return {
     organization,
     department,
@@ -51,5 +71,14 @@ export function useDepartmentDetail(id: string) {
     loading,
     load,
     updateName,
+    activeTab,
+    setActiveTab,
+    editing,
+    setEditing,
+    editName,
+    setEditName,
+    saving,
+    startEditing,
+    saveEdit,
   };
 }

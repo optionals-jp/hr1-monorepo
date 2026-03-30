@@ -1,9 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/toast";
-import { useSWRConfig } from "swr";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,51 +14,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { useOrg } from "@/lib/org-context";
-import { useAuth } from "@/lib/auth-context";
-import { useMultiRaterTemplates, createCycle } from "@/lib/hooks/use-evaluations";
+import { useNewEvaluationCycle } from "@/lib/hooks/use-evaluations";
 
 export default function NewEvaluationCyclePage() {
-  const router = useRouter();
-  const { showToast } = useToast();
-  const { mutate } = useSWRConfig();
-  const { organization } = useOrg();
-  const { user } = useAuth();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [templateId, setTemplateId] = useState<string>("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  // 多面評価シートのみ取得
   const {
-    data: templates,
-    error: templatesError,
-    mutate: mutateTemplates,
-  } = useMultiRaterTemplates();
-
-  const handleSubmit = async () => {
-    if (!organization || !user || !title || !templateId || !startDate || !endDate) return;
-    setSaving(true);
-
-    const result = await createCycle(organization.id, user.id, {
-      title,
-      description,
-      templateId,
-      startDate,
-      endDate,
-    });
-
-    if (result.success) {
-      await mutate(`eval-cycles-${organization.id}`);
-      showToast("評価サイクルを作成しました");
-      router.push(`/evaluations/cycles/${result.cycleId}`);
-    } else {
-      showToast(result.error ?? "サイクルの作成に失敗しました", "error");
-    }
-    setSaving(false);
-  };
+    templates,
+    templatesError,
+    mutateTemplates,
+    title,
+    setTitle,
+    description,
+    setDescription,
+    templateId,
+    setTemplateId,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    saving,
+    handleSubmit,
+    cancel,
+  } = useNewEvaluationCycle();
 
   return (
     <>
@@ -141,7 +113,7 @@ export default function NewEvaluationCyclePage() {
           </Card>
 
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => router.push("/evaluations/cycles")}>
+            <Button variant="outline" onClick={cancel}>
               キャンセル
             </Button>
             <Button

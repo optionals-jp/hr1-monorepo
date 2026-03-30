@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { useOrg } from "@/lib/org-context";
 import { useQuery } from "@/lib/use-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repository from "@/lib/repositories/crm-repository";
+import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
+import type { BcCompany } from "@/types/database";
 
 // --- Dashboard ---
 export function useCrmDeals() {
@@ -158,4 +161,79 @@ export async function removeCompany(
   } catch {
     return { success: false, error: "削除に失敗しました" };
   }
+}
+
+export function useCrmCompaniesPage() {
+  const { organization } = useOrg();
+  const [search, setSearch] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editData, setEditData] = useState<Partial<BcCompany>>({});
+  const [errors, setErrors] = useState<ValidationErrors | null>(null);
+
+  const { data: companies, error, mutate } = useCrmCompanies();
+
+  const filtered = (companies ?? []).filter((c) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      c.name.toLowerCase().includes(q) ||
+      c.name_kana?.toLowerCase().includes(q) ||
+      c.corporate_number?.includes(q)
+    );
+  });
+
+  const openCreate = () => {
+    setEditData({});
+    setErrors(null);
+    setEditOpen(true);
+  };
+
+  const handleSave = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    const rules = { name: [validators.required("企業名")] };
+    const validationErrors = validateForm(rules, editData);
+    if (validationErrors) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    const result = await saveCompany({
+      organizationId: organization!.id,
+      data: editData,
+    });
+    if (result.success) {
+      showToast(editData.id ? "企業情報を更新しました" : "企業を登録しました");
+      setEditOpen(false);
+      mutate();
+    } else {
+      showToast(result.error!, "error");
+    }
+  };
+
+  const handleDelete = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    if (!editData.id) return;
+    const result = await removeCompany(editData.id, organization!.id);
+    if (result.success) {
+      showToast("企業を削除しました");
+      setEditOpen(false);
+      mutate();
+    } else {
+      showToast(result.error!, "error");
+    }
+  };
+
+  return {
+    search,
+    setSearch,
+    editOpen,
+    setEditOpen,
+    editData,
+    setEditData,
+    errors,
+    companies,
+    error,
+    filtered,
+    openCreate,
+    handleSave,
+    handleDelete,
+  };
 }

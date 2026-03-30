@@ -1,9 +1,172 @@
 "use client";
 
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useSWRConfig } from "swr";
+import { useToast } from "@/components/ui/toast";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
+import { useOrg } from "@/lib/org-context";
+import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repo from "@/lib/repositories/evaluation-repository";
 import type { EvaluationTemplate, EvaluationCycle } from "@/types/database";
+
+interface AnchorDraft {
+  score_value: number;
+  description: string;
+}
+
+interface CriterionDraft {
+  tempId: string;
+  label: string;
+  description: string;
+  score_type: string;
+  options: string;
+  weight: string;
+  anchors: AnchorDraft[];
+  showAnchors: boolean;
+}
+
+function getDefaultAnchors(scoreType: string): AnchorDraft[] {
+  const max = scoreType === "five_star" ? 5 : scoreType === "ten_point" ? 10 : 0;
+  return Array.from({ length: max }, (_, i) => ({
+    score_value: i + 1,
+    description: "",
+  }));
+}
+
+export type { AnchorDraft, CriterionDraft };
+
+export function useCreateEvaluation() {
+  const router = useRouter();
+  const { showToast } = useToast();
+  const { mutate } = useSWRConfig();
+  const { organization } = useOrg();
+
+  const [title, setTitle] = useState("");
+  const [target, setTarget] = useState<string>("both");
+  const [evaluationType, setEvaluationType] = useState<string>("single");
+  const [anonymityMode, setAnonymityMode] = useState<string>("none");
+  const [description, setDescription] = useState("");
+  const [criteria, setCriteria] = useState<CriterionDraft[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  const addCriterion = useCallback(() => {
+    setCriteria((prev) => [
+      ...prev,
+      {
+        tempId: `${Date.now()}`,
+        label: "",
+        description: "",
+        score_type: "five_star",
+        options: "",
+        weight: "1.00",
+        anchors: getDefaultAnchors("five_star"),
+        showAnchors: false,
+      },
+    ]);
+  }, []);
+
+  const removeCriterion = useCallback((tempId: string) => {
+    setCriteria((prev) => prev.filter((c) => c.tempId !== tempId));
+  }, []);
+
+  const updateCriterion = useCallback((tempId: string, field: string, value: string | boolean) => {
+    setCriteria((prev) =>
+      prev.map((c) => {
+        if (c.tempId !== tempId) return c;
+        const updated = { ...c, [field]: value };
+        if (field === "score_type" && typeof value === "string") {
+          updated.anchors = getDefaultAnchors(value);
+        }
+        return updated;
+      })
+    );
+  }, []);
+
+  const updateAnchor = useCallback(
+    (tempId: string, scoreValue: number, anchorDescription: string) => {
+      setCriteria((prev) =>
+        prev.map((c) => {
+          if (c.tempId !== tempId) return c;
+          return {
+            ...c,
+            anchors: c.anchors.map((a) =>
+              a.score_value === scoreValue ? { ...a, description: anchorDescription } : a
+            ),
+          };
+        })
+      );
+    },
+    []
+  );
+
+  const handleSubmit = useCallback(async () => {
+    if (!organization || !title) return;
+    setSaving(true);
+
+    const result = await createTemplate(organization.id, {
+      title,
+      target,
+      evaluationType,
+      anonymityMode,
+      description,
+      criteria: criteria.map((c) => ({
+        label: c.label,
+        description: c.description,
+        score_type: c.score_type,
+        options: c.options,
+        weight: c.weight,
+        anchors: c.anchors,
+      })),
+    });
+
+    if (result.success) {
+      await mutate(`eval-templates-${organization.id}`);
+      showToast("評価シートを作成しました");
+      router.push("/evaluations");
+    } else {
+      showToast(result.error ?? "評価シートの作成に失敗しました", "error");
+    }
+    setSaving(false);
+  }, [
+    organization,
+    title,
+    target,
+    evaluationType,
+    anonymityMode,
+    description,
+    criteria,
+    mutate,
+    showToast,
+    router,
+  ]);
+
+  const cancel = useCallback(() => {
+    router.push("/evaluations");
+  }, [router]);
+
+  return {
+    title,
+    setTitle,
+    target,
+    setTarget,
+    evaluationType,
+    setEvaluationType,
+    anonymityMode,
+    setAnonymityMode,
+    description,
+    setDescription,
+    criteria,
+    saving,
+    addCriterion,
+    removeCriterion,
+    updateCriterion,
+    updateAnchor,
+    handleSubmit,
+    cancel,
+  };
+}
 
 export function useEvaluationTemplates() {
   return useOrgQuery<EvaluationTemplate[]>("eval-templates", (orgId) =>
@@ -51,6 +214,72 @@ export function useMultiRaterTemplates() {
   return useOrgQuery<EvaluationTemplate[]>("eval-templates-multi", (orgId) =>
     repo.fetchMultiRaterTemplates(getSupabase(), orgId)
   );
+}
+
+export function useNewEvaluationCycle() {
+  const router = useRouter();
+  const { showToast } = useToast();
+  const { mutate } = useSWRConfig();
+  const { organization } = useOrg();
+  const { user } = useAuth();
+
+  const {
+    data: templates,
+    error: templatesError,
+    mutate: mutateTemplates,
+  } = useMultiRaterTemplates();
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [templateId, setTemplateId] = useState<string>("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!organization || !user || !title || !templateId || !startDate || !endDate) return;
+    setSaving(true);
+
+    const result = await createCycle(organization.id, user.id, {
+      title,
+      description,
+      templateId,
+      startDate,
+      endDate,
+    });
+
+    if (result.success) {
+      await mutate(`eval-cycles-${organization.id}`);
+      showToast("評価サイクルを作成しました");
+      router.push(`/evaluations/cycles/${result.cycleId}`);
+    } else {
+      showToast(result.error ?? "サイクルの作成に失敗しました", "error");
+    }
+    setSaving(false);
+  };
+
+  const cancel = () => {
+    router.push("/evaluations/cycles");
+  };
+
+  return {
+    templates,
+    templatesError,
+    mutateTemplates,
+    title,
+    setTitle,
+    description,
+    setDescription,
+    templateId,
+    setTemplateId,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    saving,
+    handleSubmit,
+    cancel,
+  };
 }
 
 export async function createTemplate(

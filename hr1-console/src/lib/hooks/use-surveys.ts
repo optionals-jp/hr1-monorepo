@@ -1,9 +1,13 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import { useOrg } from "@/lib/org-context";
 import { useQuery } from "@/lib/use-query";
+import { useToast } from "@/components/ui/toast";
+import { mutate as swrMutate } from "swr";
 import * as repo from "@/lib/repositories/survey-repository";
 import type { PulseSurvey, PulseSurveyQuestion, PulseSurveyResponse } from "@/types/database";
 
@@ -51,6 +55,220 @@ export function useSurveyDetail(id: string) {
     surveyCacheKey,
     questionsCacheKey,
     listCacheKey: orgId ? `pulse-surveys-${orgId}` : null,
+  };
+}
+
+type Tab = "questions" | "responses" | "analytics";
+
+export function useSurveyDetailPage(id: string) {
+  const { organization } = useOrg();
+
+  const detail = useSurveyDetail(id);
+
+  // タブ
+  const [tab, setTab] = useState<Tab>("questions");
+
+  // 質問編集パネル
+  const [qEditOpen, setQEditOpen] = useState(false);
+  const [editQuestion, setEditQuestion] = useState<PulseSurveyQuestion | null>(null);
+  const [qSaving, setQSaving] = useState(false);
+  const [qDeleting, setQDeleting] = useState(false);
+
+  // 質問フォーム
+  const [qLabel, setQLabel] = useState("");
+  const [qDescription, setQDescription] = useState("");
+  const [qType, setQType] = useState<string>("rating");
+  const [qRequired, setQRequired] = useState(true);
+  const [qOptions, setQOptions] = useState("");
+
+  // ステータス変更のローディング
+  const [statusUpdating, setStatusUpdating] = useState(false);
+
+  function openCreateQuestion() {
+    setEditQuestion(null);
+    setQLabel("");
+    setQDescription("");
+    setQType("rating");
+    setQRequired(true);
+    setQOptions("");
+    setQEditOpen(true);
+  }
+
+  function openEditQuestion(q: PulseSurveyQuestion) {
+    setEditQuestion(q);
+    setQLabel(q.label);
+    setQDescription(q.description ?? "");
+    setQType(q.type);
+    setQRequired(q.is_required);
+    setQOptions(q.options ? (q.options as string[]).join("\n") : "");
+    setQEditOpen(true);
+  }
+
+  async function handleSaveQuestion(): Promise<{ success: boolean; error?: string }> {
+    if (!qLabel.trim()) return { success: false };
+    setQSaving(true);
+    const maxOrder =
+      detail.questions.length > 0 ? Math.max(...detail.questions.map((q) => q.sort_order)) : -1;
+    const result = await saveQuestion(
+      id,
+      editQuestion,
+      {
+        label: qLabel,
+        description: qDescription,
+        type: qType,
+        isRequired: qRequired,
+        options: qOptions,
+      },
+      maxOrder
+    );
+    if (result.success) {
+      await swrMutate(detail.questionsCacheKey);
+      setQEditOpen(false);
+    }
+    setQSaving(false);
+    return result;
+  }
+
+  async function handleDeleteQuestion(): Promise<{ success: boolean; error?: string }> {
+    if (!editQuestion) return { success: false };
+    if (!window.confirm("削除してもよろしいですか？")) return { success: false };
+    setQDeleting(true);
+    const result = await deleteQuestionById(editQuestion.id);
+    if (result.success) {
+      await swrMutate(detail.questionsCacheKey);
+      setQEditOpen(false);
+    }
+    setQDeleting(false);
+    return result;
+  }
+
+  async function updateStatus(
+    newStatus: "active" | "closed"
+  ): Promise<{ success: boolean; error?: string }> {
+    if (!detail.survey || statusUpdating) return { success: false };
+    if (!organization) return { success: false };
+    setStatusUpdating(true);
+    const result = await updateSurveyStatus(detail.survey.id, organization.id, newStatus);
+    if (result.success) {
+      await swrMutate(detail.surveyCacheKey);
+      await swrMutate(detail.listCacheKey);
+    }
+    setStatusUpdating(false);
+    return result;
+  }
+
+  async function handleDeleteSurvey(): Promise<{ success: boolean; error?: string }> {
+    if (!detail.survey) return { success: false };
+    if (!window.confirm("削除してもよろしいですか？")) return { success: false };
+    if (!organization) return { success: false };
+    const result = await deleteSurveyById(detail.survey.id, organization.id);
+    if (result.success) {
+      await swrMutate(detail.listCacheKey);
+    }
+    return result;
+  }
+
+  const completedCount = detail.responses.filter((r) => r.completed_at).length;
+
+  return {
+    ...detail,
+    tab,
+    setTab,
+    qEditOpen,
+    setQEditOpen,
+    editQuestion,
+    qSaving,
+    qDeleting,
+    qLabel,
+    setQLabel,
+    qDescription,
+    setQDescription,
+    qType,
+    setQType,
+    qRequired,
+    setQRequired,
+    qOptions,
+    setQOptions,
+    statusUpdating,
+    openCreateQuestion,
+    openEditQuestion,
+    handleSaveQuestion,
+    handleDeleteQuestion,
+    updateStatus,
+    handleDeleteSurvey,
+    completedCount,
+  };
+}
+
+export function useSurveyCreatePanel() {
+  const { organization } = useOrg();
+  const router = useRouter();
+  const { showToast } = useToast();
+  const {
+    data: surveys = [],
+    isLoading,
+    error: surveysError,
+    mutate: mutateSurveys,
+  } = useSurveys();
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [target, setTarget] = useState<string>("employee");
+  const [deadline, setDeadline] = useState("");
+
+  function openCreate() {
+    setTitle("");
+    setDescription("");
+    setTarget("employee");
+    setDeadline("");
+    setEditOpen(true);
+  }
+
+  async function handleSave() {
+    if (!organization || !title.trim()) return;
+    setSaving(true);
+    const result = await createSurvey(organization.id, {
+      title,
+      description,
+      target,
+      deadline,
+    });
+    if (result.success) {
+      await mutateSurveys();
+      setEditOpen(false);
+      showToast("サーベイを作成しました");
+      if (result.id) {
+        router.push(`/surveys/${result.id}`);
+      }
+    } else {
+      showToast(result.error ?? "サーベイの作成に失敗しました", "error");
+    }
+    setSaving(false);
+  }
+
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  return {
+    surveys,
+    isLoading,
+    surveysError,
+    mutateSurveys,
+    editOpen,
+    setEditOpen,
+    saving,
+    title,
+    setTitle,
+    description,
+    setDescription,
+    target,
+    setTarget,
+    deadline,
+    setDeadline,
+    openCreate,
+    handleSave,
+    todayStr,
   };
 }
 

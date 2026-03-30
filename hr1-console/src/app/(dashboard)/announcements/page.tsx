@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,16 +11,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { useOrg } from "@/lib/org-context";
-import { useAuth } from "@/lib/auth-context";
 import type { Announcement } from "@/types/database";
-import {
-  useAnnouncements,
-  saveAnnouncement,
-  deleteAnnouncement as deleteAnnouncementAction,
-  toggleAnnouncementPublish,
-  toggleAnnouncementPin,
-} from "@/lib/hooks/use-announcements";
+import { useAnnouncements, useAnnouncementPanel } from "@/lib/hooks/use-announcements";
 import { Badge } from "@/components/ui/badge";
 import { announcementTargetLabels } from "@/lib/constants";
 import { EditPanel } from "@/components/ui/edit-panel";
@@ -39,7 +30,6 @@ import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { Pencil, Pin, Send, Undo2 } from "lucide-react";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { useToast } from "@/components/ui/toast";
 
 function statusBadge(a: Announcement) {
   if (a.is_pinned && a.published_at) {
@@ -52,10 +42,6 @@ function statusBadge(a: Announcement) {
 }
 
 export default function AnnouncementsPage() {
-  const { organization } = useOrg();
-  const { user } = useAuth();
-  const { showToast } = useToast();
-
   const {
     data: announcements = [],
     isLoading,
@@ -63,93 +49,27 @@ export default function AnnouncementsPage() {
     mutate: mutateAnnouncements,
   } = useAnnouncements();
 
-  const [editOpen, setEditOpen] = useState(false);
-  const [editItem, setEditItem] = useState<Announcement | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [target, setTarget] = useState<string>("all");
-  const [isPinned, setIsPinned] = useState(false);
-
-  function openCreate() {
-    setEditItem(null);
-    setTitle("");
-    setBody("");
-    setTarget("all");
-    setIsPinned(false);
-    setEditOpen(true);
-  }
-
-  function openEdit(a: Announcement) {
-    setEditItem(a);
-    setTitle(a.title);
-    setBody(a.body);
-    setTarget(a.target);
-    setIsPinned(a.is_pinned);
-    setEditOpen(true);
-  }
-
-  async function handleSave() {
-    if (!organization || !user || !title.trim() || !body.trim()) return;
-    setSaving(true);
-    try {
-      const result = await saveAnnouncement({
-        organizationId: organization.id,
-        userId: user.id,
-        editItemId: editItem?.id ?? null,
-        title: title.trim(),
-        body: body.trim(),
-        target,
-        isPinned,
-      });
-      if (!result.success) {
-        showToast(result.error!, "error");
-        return;
-      }
-      await mutateAnnouncements();
-      setEditOpen(false);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDelete() {
-    if (!editItem || !organization) return;
-    setDeleting(true);
-    try {
-      const result = await deleteAnnouncementAction(editItem.id, organization.id);
-      if (!result.success) {
-        showToast(result.error!, "error");
-        return;
-      }
-      await mutateAnnouncements();
-      setEditOpen(false);
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  async function togglePublish(a: Announcement) {
-    if (!organization) return;
-    const result = await toggleAnnouncementPublish(a.id, organization.id, !!a.published_at);
-    if (!result.success) {
-      showToast(result.error!, "error");
-      return;
-    }
-    await mutateAnnouncements();
-  }
-
-  async function togglePin(a: Announcement) {
-    if (!organization) return;
-    const result = await toggleAnnouncementPin(a.id, organization.id, a.is_pinned);
-    if (!result.success) {
-      showToast(result.error!, "error");
-      return;
-    }
-    await mutateAnnouncements();
-  }
+  const {
+    editOpen,
+    setEditOpen,
+    editItem,
+    saving,
+    deleting,
+    title,
+    setTitle,
+    body,
+    setBody,
+    target,
+    setTarget,
+    isPinned,
+    setIsPinned,
+    openCreate,
+    openEdit,
+    handleSave,
+    handleDelete,
+    togglePublish,
+    togglePin,
+  } = useAnnouncementPanel();
 
   return (
     <div className="flex flex-col">

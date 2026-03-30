@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -16,14 +14,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { useOrg } from "@/lib/org-context";
-import {
-  loadApplicantDetail,
-  fetchLinkedForms,
-  fetchLinkedInterviews,
-} from "@/lib/hooks/use-applicant-detail";
-import { useCreateMessageThread } from "@/lib/hooks/use-create-message-thread";
-import type { Profile, Application, ApplicationStep } from "@/types/database";
+import { useApplicantDetailPage } from "@/lib/hooks/use-applicant-detail";
+import type { TimelineEvent } from "@/lib/hooks/use-applicant-detail";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -41,23 +33,10 @@ import { format } from "date-fns";
 import {
   applicationStatusLabels as statusLabels,
   applicationStatusColors as statusColors,
-  stepStatusLabels,
-  interviewStatusLabels,
   StepStatus,
-  StepType,
   ApplicationStatus,
 } from "@/lib/constants";
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";
-
-interface TimelineEvent {
-  id: string;
-  category: string; // 応募, 選考, フォーム, 面接, アカウント
-  source: string; // 求人名 or "-"
-  eventType: string;
-  label: string;
-  status: string;
-  date: string;
-}
 
 const tabs = [
   { value: "profile", label: "プロフィール" },
@@ -67,165 +46,25 @@ const tabs = [
 ];
 
 export default function ApplicantDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const { organization } = useOrg();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("profile");
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [eventFilter, setEventFilter] = useState<string | null>(null);
-  const [historySearch, setHistorySearch] = useState("");
-
-  useEffect(() => {
-    if (!organization) return;
-    async function load() {
-      setLoading(true);
-      const { profile: profileData, applications: appsData } = await loadApplicantDetail(
-        id,
-        organization!.id
-      );
-
-      if (appsData.length === 0) {
-        setProfile(null);
-        setApplications([]);
-        setLoading(false);
-        return;
-      }
-
-      setProfile(profileData);
-      setApplications(appsData);
-
-      // Build timeline events
-      const events: TimelineEvent[] = [];
-
-      // アカウント作成
-      if (profileData) {
-        events.push({
-          id: `profile-${profileData.id}`,
-          category: "アカウント",
-          source: "-",
-          eventType: "アカウント作成",
-          label: "作成",
-          status: StepStatus.Completed,
-          date: profileData.created_at,
-        });
-      }
-
-      // Collect related_ids for batch fetching
-      const formStepIds: { stepId: string; relatedId: string; jobTitle: string; date: string }[] =
-        [];
-      const interviewStepIds: {
-        stepId: string;
-        relatedId: string;
-        jobTitle: string;
-        date: string;
-      }[] = [];
-
-      for (const app of appsData ?? []) {
-        const jobTitle = app.jobs?.title ?? "-";
-
-        // Application event
-        events.push({
-          id: `app-${app.id}`,
-          category: "応募",
-          source: jobTitle,
-          eventType: "応募",
-          label: statusLabels[app.status] ?? app.status,
-          status: app.status,
-          date: app.applied_at,
-        });
-
-        // Step events
-        for (const step of (app.application_steps ?? []) as ApplicationStep[]) {
-          if (step.status !== StepStatus.Pending) {
-            events.push({
-              id: `step-${step.id}`,
-              category: "選考",
-              source: jobTitle,
-              eventType: step.label,
-              label: stepStatusLabels[step.status] ?? step.status,
-              status: step.status,
-              date: step.completed_at ?? app.applied_at,
-            });
-          }
-
-          // Collect related resources
-          if (step.related_id && step.step_type === StepType.Form) {
-            formStepIds.push({
-              stepId: step.id,
-              relatedId: step.related_id,
-              jobTitle,
-              date: step.completed_at ?? app.applied_at,
-            });
-          }
-          if (step.related_id && step.step_type === StepType.Interview) {
-            interviewStepIds.push({
-              stepId: step.id,
-              relatedId: step.related_id,
-              jobTitle,
-              date: step.completed_at ?? app.applied_at,
-            });
-          }
-        }
-      }
-
-      // Fetch linked forms
-      if (formStepIds.length > 0) {
-        const formIds = [...new Set(formStepIds.map((f) => f.relatedId))];
-        const formMap = await fetchLinkedForms(formIds);
-
-        for (const fs of formStepIds) {
-          const formTitle = formMap.get(fs.relatedId);
-          if (formTitle) {
-            events.push({
-              id: `form-${fs.stepId}`,
-              category: "フォーム",
-              source: fs.jobTitle,
-              eventType: `フォーム: ${formTitle}`,
-              label: "送信済み",
-              status: StepStatus.Completed,
-              date: fs.date,
-            });
-          }
-        }
-      }
-
-      // Fetch linked interviews
-      if (interviewStepIds.length > 0) {
-        const intIds = [...new Set(interviewStepIds.map((i) => i.relatedId))];
-        const intMap = await fetchLinkedInterviews(intIds);
-
-        for (const is_ of interviewStepIds) {
-          const interview = intMap.get(is_.relatedId);
-          if (interview) {
-            events.push({
-              id: `interview-${is_.stepId}`,
-              category: "面接",
-              source: is_.jobTitle,
-              eventType: `面接: ${interview.title}`,
-              label: interviewStatusLabels[interview.status] ?? interview.status,
-              status: interview.status,
-              date: is_.date,
-            });
-          }
-        }
-      }
-
-      events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setTimelineEvents(events);
-
-      setLoading(false);
-    }
-    load();
-  }, [id, organization]);
-
-  const { handleOpenMessage, creatingThread } = useCreateMessageThread({
-    participantId: profile?.id,
-    participantType: "applicant",
-    organizationId: organization?.id,
-  });
+  const {
+    id,
+    organization,
+    profile,
+    applications,
+    timelineEvents,
+    filteredTimeline,
+    loading,
+    activeTab,
+    setActiveTab,
+    statusFilter,
+    setStatusFilter,
+    eventFilter,
+    setEventFilter,
+    historySearch,
+    setHistorySearch,
+    handleOpenMessage,
+    creatingThread,
+  } = useApplicantDetailPage();
 
   if (loading) {
     return (
@@ -367,161 +206,16 @@ export default function ApplicantDetailPage() {
       )}
 
       {activeTab === "timeline" && (
-        <>
-          {/* フィルターバー */}
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
-              <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
-              {(statusFilter || eventFilter) && (
-                <div className="flex items-center gap-1.5 overflow-x-auto">
-                  {statusFilter && (
-                    <Badge variant="secondary" className="shrink-0 gap-1">
-                      ステータス：{statusFilter}
-                      <span
-                        role="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setStatusFilter(null);
-                        }}
-                        className="ml-0.5 hover:text-foreground"
-                      >
-                        <X className="h-3 w-3" />
-                      </span>
-                    </Badge>
-                  )}
-                  {eventFilter && (
-                    <Badge variant="secondary" className="shrink-0 gap-1">
-                      カテゴリ：{eventFilter}
-                      <span
-                        role="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEventFilter(null);
-                        }}
-                        className="ml-0.5 hover:text-foreground"
-                      >
-                        <X className="h-3 w-3" />
-                      </span>
-                    </Badge>
-                  )}
-                </div>
-              )}
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-auto py-2">
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="py-2">ステータス</DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="py-2">
-                  <DropdownMenuItem className="py-2" onClick={() => setStatusFilter(null)}>
-                    <span className={cn(!statusFilter && "font-medium")}>すべて</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  {[...new Set(timelineEvents.map((ev) => ev.label))].map((label) => (
-                    <DropdownMenuItem
-                      className="py-2"
-                      key={label}
-                      onClick={() => setStatusFilter(label)}
-                    >
-                      <span className={cn(statusFilter === label && "font-medium")}>{label}</span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="py-2">カテゴリ</DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="py-2">
-                  <DropdownMenuItem className="py-2" onClick={() => setEventFilter(null)}>
-                    <span className={cn(!eventFilter && "font-medium")}>すべて</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  {[...new Set(timelineEvents.map((ev) => ev.category))].map((cat) => (
-                    <DropdownMenuItem
-                      className="py-2"
-                      key={cat}
-                      onClick={() => setEventFilter(cat)}
-                    >
-                      <span className={cn(eventFilter === cat && "font-medium")}>{cat}</span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          {/* 検索バー */}
-          <SearchBar
-            value={historySearch}
-            onChange={setHistorySearch}
-            placeholder="求人名・イベントで検索"
-          />
-          <div className="flex-1 overflow-y-auto bg-white">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>カテゴリ</TableHead>
-                  <TableHead>イベント</TableHead>
-                  <TableHead>関連求人</TableHead>
-                  <TableHead>ステータス</TableHead>
-                  <TableHead>日時</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(() => {
-                  const filtered = timelineEvents.filter((ev) => {
-                    if (statusFilter && ev.label !== statusFilter) return false;
-                    if (eventFilter && ev.category !== eventFilter) return false;
-                    if (!historySearch) return true;
-                    const q = historySearch.toLowerCase();
-                    return (
-                      ev.source.toLowerCase().includes(q) || ev.eventType.toLowerCase().includes(q)
-                    );
-                  });
-                  if (filtered.length === 0) {
-                    return (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                          {timelineEvents.length === 0
-                            ? "履歴がありません"
-                            : "該当する履歴がありません"}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  }
-                  return filtered.map((ev) => (
-                    <TableRow key={ev.id}>
-                      <TableCell>
-                        <Badge variant="outline">{ev.category}</Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">{ev.eventType}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {ev.source !== "-" ? ev.source : ""}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            ev.status === StepStatus.Completed ||
-                            ev.status === ApplicationStatus.Offered
-                              ? "secondary"
-                              : ev.status === ApplicationStatus.Rejected
-                                ? "destructive"
-                                : ev.status === ApplicationStatus.Withdrawn ||
-                                    ev.status === StepStatus.Skipped
-                                  ? "outline"
-                                  : "default"
-                          }
-                        >
-                          {ev.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {format(new Date(ev.date), "yyyy/MM/dd HH:mm")}
-                      </TableCell>
-                    </TableRow>
-                  ));
-                })()}
-              </TableBody>
-            </Table>
-          </div>
-        </>
+        <TimelineTab
+          timelineEvents={timelineEvents}
+          filteredTimeline={filteredTimeline}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          eventFilter={eventFilter}
+          setEventFilter={setEventFilter}
+          historySearch={historySearch}
+          setHistorySearch={setHistorySearch}
+        />
       )}
 
       {activeTab === "audit" && organization && (
@@ -529,6 +223,164 @@ export default function ApplicantDetailPage() {
           <AuditLogPanel organizationId={organization.id} tableName="profiles" recordId={id} />
         </div>
       )}
+    </>
+  );
+}
+
+function TimelineTab({
+  timelineEvents,
+  filteredTimeline,
+  statusFilter,
+  setStatusFilter,
+  eventFilter,
+  setEventFilter,
+  historySearch,
+  setHistorySearch,
+}: {
+  timelineEvents: TimelineEvent[];
+  filteredTimeline: TimelineEvent[];
+  statusFilter: string | null;
+  setStatusFilter: (v: string | null) => void;
+  eventFilter: string | null;
+  setEventFilter: (v: string | null) => void;
+  historySearch: string;
+  setHistorySearch: (v: string) => void;
+}) {
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
+          <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
+          {(statusFilter || eventFilter) && (
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              {statusFilter && (
+                <Badge variant="secondary" className="shrink-0 gap-1">
+                  ステータス：{statusFilter}
+                  <span
+                    role="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setStatusFilter(null);
+                    }}
+                    className="ml-0.5 hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </span>
+                </Badge>
+              )}
+              {eventFilter && (
+                <Badge variant="secondary" className="shrink-0 gap-1">
+                  カテゴリ：{eventFilter}
+                  <span
+                    role="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEventFilter(null);
+                    }}
+                    className="ml-0.5 hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </span>
+                </Badge>
+              )}
+            </div>
+          )}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-auto py-2">
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="py-2">ステータス</DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="py-2">
+              <DropdownMenuItem className="py-2" onClick={() => setStatusFilter(null)}>
+                <span className={cn(!statusFilter && "font-medium")}>すべて</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {[...new Set(timelineEvents.map((ev) => ev.label))].map((label) => (
+                <DropdownMenuItem
+                  className="py-2"
+                  key={label}
+                  onClick={() => setStatusFilter(label)}
+                >
+                  <span className={cn(statusFilter === label && "font-medium")}>{label}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="py-2">カテゴリ</DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="py-2">
+              <DropdownMenuItem className="py-2" onClick={() => setEventFilter(null)}>
+                <span className={cn(!eventFilter && "font-medium")}>すべて</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {[...new Set(timelineEvents.map((ev) => ev.category))].map((cat) => (
+                <DropdownMenuItem className="py-2" key={cat} onClick={() => setEventFilter(cat)}>
+                  <span className={cn(eventFilter === cat && "font-medium")}>{cat}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <SearchBar
+        value={historySearch}
+        onChange={setHistorySearch}
+        placeholder="求人名・イベントで検索"
+      />
+      <div className="flex-1 overflow-y-auto bg-white">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>カテゴリ</TableHead>
+              <TableHead>イベント</TableHead>
+              <TableHead>関連求人</TableHead>
+              <TableHead>ステータス</TableHead>
+              <TableHead>日時</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredTimeline.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  {timelineEvents.length === 0 ? "履歴がありません" : "該当する履歴がありません"}
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredTimeline.map((ev) => (
+                <TableRow key={ev.id}>
+                  <TableCell>
+                    <Badge variant="outline">{ev.category}</Badge>
+                  </TableCell>
+                  <TableCell className="font-medium">{ev.eventType}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {ev.source !== "-" ? ev.source : ""}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        ev.status === StepStatus.Completed ||
+                        ev.status === ApplicationStatus.Offered
+                          ? "secondary"
+                          : ev.status === ApplicationStatus.Rejected
+                            ? "destructive"
+                            : ev.status === ApplicationStatus.Withdrawn ||
+                                ev.status === StepStatus.Skipped
+                              ? "outline"
+                              : "default"
+                      }
+                    >
+                      {ev.label}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {format(new Date(ev.date), "yyyy/MM/dd HH:mm")}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </>
   );
 }

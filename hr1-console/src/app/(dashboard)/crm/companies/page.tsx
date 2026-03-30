@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,74 +7,30 @@ import { Label } from "@/components/ui/label";
 import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { useOrg } from "@/lib/org-context";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { useToast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
-import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
-import type { BcCompany } from "@/types/database";
-import { useCrmCompanies, saveCompany, removeCompany } from "@/lib/hooks/use-crm";
+import { useCrmCompaniesPage } from "@/lib/hooks/use-crm";
 
 export default function CrmCompaniesPage() {
-  const { organization } = useOrg();
   const { showToast } = useToast();
   const router = useRouter();
-  const [search, setSearch] = useState("");
-  const [editOpen, setEditOpen] = useState(false);
-  const [editData, setEditData] = useState<Partial<BcCompany>>({});
-  const [errors, setErrors] = useState<ValidationErrors | null>(null);
-
-  const { data: companies, error, mutate } = useCrmCompanies();
-
-  const filtered = (companies ?? []).filter((c) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      c.name.toLowerCase().includes(q) ||
-      c.name_kana?.toLowerCase().includes(q) ||
-      c.corporate_number?.includes(q)
-    );
-  });
-
-  const openCreate = () => {
-    setEditData({});
-    setErrors(null);
-    setEditOpen(true);
-  };
-
-  const handleSave = async () => {
-    const rules = { name: [validators.required("企業名")] };
-    const validationErrors = validateForm(rules, editData);
-    if (validationErrors) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    const result = await saveCompany({
-      organizationId: organization!.id,
-      data: editData,
-    });
-    if (result.success) {
-      showToast(editData.id ? "企業情報を更新しました" : "企業を登録しました");
-      setEditOpen(false);
-      mutate();
-    } else {
-      showToast(result.error!, "error");
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!editData.id) return;
-    const result = await removeCompany(editData.id, organization!.id);
-    if (result.success) {
-      showToast("企業を削除しました");
-      setEditOpen(false);
-      mutate();
-    } else {
-      showToast(result.error!, "error");
-    }
-  };
+  const {
+    search,
+    setSearch,
+    editOpen,
+    setEditOpen,
+    editData,
+    setEditData,
+    errors,
+    companies,
+    error,
+    filtered,
+    openCreate,
+    handleSave,
+    handleDelete,
+  } = useCrmCompaniesPage();
 
   return (
     <div>
@@ -121,8 +76,8 @@ export default function CrmCompaniesPage() {
         open={editOpen}
         onOpenChange={setEditOpen}
         title={editData.id ? "企業編集" : "企業登録"}
-        onSave={handleSave}
-        onDelete={editData.id ? handleDelete : undefined}
+        onSave={() => handleSave(showToast)}
+        onDelete={editData.id ? () => handleDelete(showToast) : undefined}
       >
         <div className="space-y-4">
           <div>

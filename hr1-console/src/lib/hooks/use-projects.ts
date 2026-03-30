@@ -1,8 +1,10 @@
 "use client";
 
+import { useState, useMemo, useCallback } from "react";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repo from "@/lib/repositories/project-repository";
+import { useOrg } from "@/lib/org-context";
 import type { Project, ProjectTeam, ProjectTeamMember, Profile } from "@/types/database";
 
 export interface TeamWithMembers extends ProjectTeam {
@@ -201,4 +203,93 @@ export async function fetchOrgEmployeesForTeam(
     .map((row) => (row as unknown as { profiles: Profile }).profiles)
     .filter(Boolean);
   return profiles.filter((p) => !existingIds.has(p.id));
+}
+
+export function useProjectsPage() {
+  const { organization } = useOrg();
+  const { data: projects = [], isLoading, error: projectsError, mutate } = useProjects();
+
+  const [activeTab, setActiveTab] = useState("list");
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newStatus, setNewStatus] = useState<string>("active");
+  const [newStartDate, setNewStartDate] = useState("");
+  const [newEndDate, setNewEndDate] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const openAddDialog = useCallback(() => {
+    setNewName("");
+    setNewDescription("");
+    setNewStatus("active");
+    setNewStartDate("");
+    setNewEndDate("");
+    setDialogOpen(true);
+  }, []);
+
+  const handleAdd = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+    if (!organization || !newName.trim())
+      return { success: false, error: "プロジェクト名を入力してください" };
+    setSaving(true);
+
+    const result = await createProject(organization.id, {
+      name: newName,
+      description: newDescription,
+      status: newStatus,
+      startDate: newStartDate,
+      endDate: newEndDate,
+    });
+    if (result.success) {
+      setDialogOpen(false);
+      mutate();
+    }
+    setSaving(false);
+    return result;
+  }, [organization, newName, newDescription, newStatus, newStartDate, newEndDate, mutate]);
+
+  const filtered = useMemo(
+    () =>
+      projects.filter((p) => {
+        if (filterStatus !== "all" && p.status !== filterStatus) return false;
+        if (search) {
+          const s = search.toLowerCase();
+          if (!p.name.toLowerCase().includes(s) && !(p.description ?? "").toLowerCase().includes(s))
+            return false;
+        }
+        return true;
+      }),
+    [projects, filterStatus, search]
+  );
+
+  return {
+    organization,
+    projects,
+    isLoading,
+    projectsError,
+    mutate,
+    activeTab,
+    setActiveTab,
+    search,
+    setSearch,
+    filterStatus,
+    setFilterStatus,
+    dialogOpen,
+    setDialogOpen,
+    newName,
+    setNewName,
+    newDescription,
+    setNewDescription,
+    newStatus,
+    setNewStatus,
+    newStartDate,
+    setNewStartDate,
+    newEndDate,
+    setNewEndDate,
+    saving,
+    openAddDialog,
+    handleAdd,
+    filtered,
+  };
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -13,15 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { useOrg } from "@/lib/org-context";
-import type { PulseSurveyQuestion } from "@/types/database";
-import {
-  useSurveyDetail,
-  saveQuestion,
-  deleteQuestionById,
-  updateSurveyStatus as repoUpdateSurveyStatus,
-  deleteSurveyById,
-} from "@/lib/hooks/use-surveys";
+import { useSurveyDetailPage } from "@/lib/hooks/use-surveys";
 import { Badge } from "@/components/ui/badge";
 import {
   surveyStatusLabels,
@@ -42,144 +33,18 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { Pencil, Trash2, Plus, Play, Square, Loader2 } from "lucide-react";
-import { mutate } from "swr";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SurveyAnalyticsTab } from "./survey-analytics-tab";
 
-type Tab = "questions" | "responses" | "analytics";
-
 export default function SurveyDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { organization } = useOrg();
   const router = useRouter();
   const { showToast } = useToast();
-  const [tab, setTab] = useState<Tab>("questions");
+  const h = useSurveyDetailPage(id);
 
-  const {
-    survey,
-    surveyLoading,
-    surveyError,
-    mutateSurvey,
-    questions,
-    questionsLoading,
-    responses,
-    responsesLoading,
-    totalTargetUsers,
-    surveyCacheKey,
-    questionsCacheKey,
-    listCacheKey,
-  } = useSurveyDetail(id);
-
-  // 質問編集パネル
-  const [qEditOpen, setQEditOpen] = useState(false);
-  const [editQuestion, setEditQuestion] = useState<PulseSurveyQuestion | null>(null);
-  const [qSaving, setQSaving] = useState(false);
-  const [qDeleting, setQDeleting] = useState(false);
-
-  // 質問フォーム
-  const [qLabel, setQLabel] = useState("");
-  const [qDescription, setQDescription] = useState("");
-  const [qType, setQType] = useState<string>("rating");
-  const [qRequired, setQRequired] = useState(true);
-  const [qOptions, setQOptions] = useState("");
-
-  // ステータス変更のローディング
-  const [statusUpdating, setStatusUpdating] = useState(false);
-
-  function openCreateQuestion() {
-    setEditQuestion(null);
-    setQLabel("");
-    setQDescription("");
-    setQType("rating");
-    setQRequired(true);
-    setQOptions("");
-    setQEditOpen(true);
-  }
-
-  function openEditQuestion(q: PulseSurveyQuestion) {
-    setEditQuestion(q);
-    setQLabel(q.label);
-    setQDescription(q.description ?? "");
-    setQType(q.type);
-    setQRequired(q.is_required);
-    setQOptions(q.options ? (q.options as string[]).join("\n") : "");
-    setQEditOpen(true);
-  }
-
-  async function handleSaveQuestion() {
-    if (!qLabel.trim()) return;
-    setQSaving(true);
-    const maxOrder = questions.length > 0 ? Math.max(...questions.map((q) => q.sort_order)) : -1;
-    const result = await saveQuestion(
-      id,
-      editQuestion,
-      {
-        label: qLabel,
-        description: qDescription,
-        type: qType,
-        isRequired: qRequired,
-        options: qOptions,
-      },
-      maxOrder
-    );
-    if (result.success) {
-      await mutate(questionsCacheKey);
-      setQEditOpen(false);
-      showToast(editQuestion ? "質問を更新しました" : "質問を追加しました");
-    } else {
-      showToast(result.error ?? "質問の保存に失敗しました", "error");
-    }
-    setQSaving(false);
-  }
-
-  async function handleDeleteQuestion() {
-    if (!editQuestion) return;
-    if (!window.confirm("削除してもよろしいですか？")) return;
-    setQDeleting(true);
-    const result = await deleteQuestionById(editQuestion.id);
-    if (result.success) {
-      await mutate(questionsCacheKey);
-      setQEditOpen(false);
-      showToast("質問を削除しました");
-    } else {
-      showToast(result.error ?? "質問の削除に失敗しました", "error");
-    }
-    setQDeleting(false);
-  }
-
-  // ステータス変更
-  async function updateStatus(newStatus: "active" | "closed") {
-    if (!survey || statusUpdating) return;
-    setStatusUpdating(true);
-    if (!organization) return;
-    const result = await repoUpdateSurveyStatus(survey.id, organization.id, newStatus);
-    if (result.success) {
-      await mutate(surveyCacheKey);
-      await mutate(listCacheKey);
-      showToast(newStatus === "active" ? "配信を開始しました" : "サーベイを締め切りました");
-    } else {
-      showToast(result.error ?? "ステータスの変更に失敗しました", "error");
-    }
-    setStatusUpdating(false);
-  }
-
-  // サーベイ削除
-  async function handleDeleteSurvey() {
-    if (!survey) return;
-    if (!window.confirm("削除してもよろしいですか？")) return;
-    if (!organization) return;
-    const result = await deleteSurveyById(survey.id, organization.id);
-    if (result.success) {
-      await mutate(listCacheKey);
-      router.push("/surveys");
-    } else {
-      showToast(result.error ?? "サーベイの削除に失敗しました", "error");
-    }
-  }
-
-  if (surveyLoading) {
+  if (h.surveyLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -187,7 +52,7 @@ export default function SurveyDetailPage() {
     );
   }
 
-  if (!survey) {
+  if (!h.survey) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
         <p>サーベイが見つかりません</p>
@@ -198,25 +63,30 @@ export default function SurveyDetailPage() {
     );
   }
 
-  const completedCount = responses.filter((r) => r.completed_at).length;
-
   return (
     <div className="flex flex-col">
-      <QueryErrorBanner error={surveyError} onRetry={() => mutateSurvey()} />
+      <QueryErrorBanner error={h.surveyError} onRetry={() => h.mutateSurvey()} />
 
       <PageHeader
-        title={survey.title}
-        description={survey.description ?? undefined}
+        title={h.survey.title}
+        description={h.survey.description ?? undefined}
         breadcrumb={[{ label: "パルスサーベイ", href: "/surveys" }]}
         sticky={false}
         action={
           <div className="flex gap-2">
-            {survey.status === "draft" && (
+            {h.survey.status === "draft" && (
               <Button
-                onClick={() => updateStatus("active")}
-                disabled={questions.length === 0 || statusUpdating}
+                onClick={async () => {
+                  const result = await h.updateStatus("active");
+                  if (result.success) {
+                    showToast("配信を開始しました");
+                  } else if (result.error) {
+                    showToast(result.error, "error");
+                  }
+                }}
+                disabled={h.questions.length === 0 || h.statusUpdating}
               >
-                {statusUpdating ? (
+                {h.statusUpdating ? (
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                 ) : (
                   <Play className="h-4 w-4 mr-1" />
@@ -224,13 +94,20 @@ export default function SurveyDetailPage() {
                 配信開始
               </Button>
             )}
-            {survey.status === "active" && (
+            {h.survey.status === "active" && (
               <Button
                 variant="secondary"
-                onClick={() => updateStatus("closed")}
-                disabled={statusUpdating}
+                onClick={async () => {
+                  const result = await h.updateStatus("closed");
+                  if (result.success) {
+                    showToast("サーベイを締め切りました");
+                  } else if (result.error) {
+                    showToast(result.error, "error");
+                  }
+                }}
+                disabled={h.statusUpdating}
               >
-                {statusUpdating ? (
+                {h.statusUpdating ? (
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                 ) : (
                   <Square className="h-4 w-4 mr-1" />
@@ -241,7 +118,14 @@ export default function SurveyDetailPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleDeleteSurvey}
+              onClick={async () => {
+                const result = await h.handleDeleteSurvey();
+                if (result.success) {
+                  router.push("/surveys");
+                } else if (result.error) {
+                  showToast(result.error, "error");
+                }
+              }}
               aria-label="サーベイを削除"
             >
               <Trash2 className="h-4 w-4" />
@@ -250,47 +134,46 @@ export default function SurveyDetailPage() {
         }
       />
 
-      {/* メタ情報 */}
       <div className="px-6 pb-4 flex gap-4 items-center text-sm text-muted-foreground">
-        <Badge variant={surveyStatusColors[survey.status] ?? "outline"}>
-          {surveyStatusLabels[survey.status] ?? survey.status}
+        <Badge variant={surveyStatusColors[h.survey.status] ?? "outline"}>
+          {surveyStatusLabels[h.survey.status] ?? h.survey.status}
         </Badge>
-        <Badge variant="secondary">{surveyTargetLabels[survey.target] ?? survey.target}</Badge>
-        {survey.deadline && <span>締切: {format(new Date(survey.deadline), "yyyy/MM/dd")}</span>}
-        <span>回答済み: {completedCount}件</span>
+        <Badge variant="secondary">{surveyTargetLabels[h.survey.target] ?? h.survey.target}</Badge>
+        {h.survey.deadline && (
+          <span>締切: {format(new Date(h.survey.deadline), "yyyy/MM/dd")}</span>
+        )}
+        <span>回答済み: {h.completedCount}件</span>
       </div>
 
-      {/* タブ */}
       <div className="border-b px-6 flex gap-6" role="tablist">
-        {(["questions", "responses", "analytics"] as Tab[]).map((t) => (
+        {(["questions", "responses", "analytics"] as const).map((t) => (
           <button
             key={t}
             type="button"
             role="tab"
-            aria-selected={tab === t}
-            onClick={() => setTab(t)}
+            aria-selected={h.tab === t}
+            onClick={() => h.setTab(t)}
             className={cn(
               "pb-2 text-sm font-medium border-b-2 transition-colors",
-              tab === t
+              h.tab === t
                 ? "border-foreground text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             )}
           >
             {t === "questions"
-              ? `質問 (${questions.length})`
+              ? `質問 (${h.questions.length})`
               : t === "responses"
-                ? `回答 (${completedCount})`
+                ? `回答 (${h.completedCount})`
                 : "分析"}
           </button>
         ))}
       </div>
 
-      {/* 質問タブ */}
-      {tab === "questions" && (
+      {h.tab === "questions" && (
         <div className="bg-white">
-          {survey.status === "draft" && (
+          {h.survey.status === "draft" && (
             <div className="px-6 py-3 border-b">
-              <Button size="sm" variant="outline" onClick={openCreateQuestion}>
+              <Button size="sm" variant="outline" onClick={h.openCreateQuestion}>
                 <Plus className="h-4 w-4 mr-1" />
                 質問を追加
               </Button>
@@ -303,17 +186,17 @@ export default function SurveyDetailPage() {
                 <TableHead>質問</TableHead>
                 <TableHead>タイプ</TableHead>
                 <TableHead>必須</TableHead>
-                {survey.status === "draft" && <TableHead className="w-20" />}
+                {h.survey.status === "draft" && <TableHead className="w-20" />}
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableEmptyState
-                colSpan={survey.status === "draft" ? 5 : 4}
-                isLoading={questionsLoading}
-                isEmpty={questions.length === 0}
+                colSpan={h.survey.status === "draft" ? 5 : 4}
+                isLoading={h.questionsLoading}
+                isEmpty={h.questions.length === 0}
                 emptyMessage="質問がありません"
               >
-                {questions.map((q, i) => (
+                {h.questions.map((q, i) => (
                   <TableRow key={q.id}>
                     <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                     <TableCell>
@@ -331,11 +214,11 @@ export default function SurveyDetailPage() {
                       <Badge variant="outline">{surveyQuestionTypeLabels[q.type] ?? q.type}</Badge>
                     </TableCell>
                     <TableCell>{q.is_required ? "必須" : "任意"}</TableCell>
-                    {survey.status === "draft" && (
+                    {h.survey!.status === "draft" && (
                       <TableCell>
                         <button
                           type="button"
-                          onClick={() => openEditQuestion(q)}
+                          onClick={() => h.openEditQuestion(q)}
                           className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                           aria-label="質問を編集"
                         >
@@ -351,15 +234,14 @@ export default function SurveyDetailPage() {
         </div>
       )}
 
-      {/* 回答タブ */}
-      {tab === "responses" && (
+      {h.tab === "responses" && (
         <div className="bg-white overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>回答者</TableHead>
                 <TableHead>ステータス</TableHead>
-                {questions.map((q, i) => (
+                {h.questions.map((q, i) => (
                   <TableHead key={q.id} className="max-w-[200px]">
                     Q{i + 1}
                   </TableHead>
@@ -369,12 +251,12 @@ export default function SurveyDetailPage() {
             </TableHeader>
             <TableBody>
               <TableEmptyState
-                colSpan={3 + questions.length}
-                isLoading={responsesLoading}
-                isEmpty={responses.length === 0}
+                colSpan={3 + h.questions.length}
+                isLoading={h.responsesLoading}
+                isEmpty={h.responses.length === 0}
                 emptyMessage="回答がありません"
               >
-                {responses.map((r) => {
+                {h.responses.map((r) => {
                   return (
                     <TableRow key={r.id}>
                       <TableCell>{r.user_id}</TableCell>
@@ -383,18 +265,18 @@ export default function SurveyDetailPage() {
                           {r.completed_at ? "回答済み" : "未回答"}
                         </Badge>
                       </TableCell>
-                      {questions.map((q) => {
+                      {h.questions.map((q) => {
                         const answer = r.pulse_survey_answers?.find((a) => a.question_id === q.id);
                         return (
                           <TableCell key={q.id} className="max-w-[200px] truncate text-sm">
-                            {answer?.value ?? "—"}
+                            {answer?.value ?? "\u2014"}
                           </TableCell>
                         );
                       })}
                       <TableCell className="text-muted-foreground text-sm">
                         {r.completed_at
                           ? format(new Date(r.completed_at), "yyyy/MM/dd HH:mm")
-                          : "—"}
+                          : "\u2014"}
                       </TableCell>
                     </TableRow>
                   );
@@ -405,48 +287,64 @@ export default function SurveyDetailPage() {
         </div>
       )}
 
-      {/* 分析タブ */}
-      {tab === "analytics" && (
+      {h.tab === "analytics" && (
         <SurveyAnalyticsTab
-          questions={questions}
-          responses={responses}
-          totalTargetUsers={totalTargetUsers}
-          surveyTitle={survey.title}
+          questions={h.questions}
+          responses={h.responses}
+          totalTargetUsers={h.totalTargetUsers}
+          surveyTitle={h.survey.title}
         />
       )}
 
-      {/* 質問編集パネル */}
       <EditPanel
-        open={qEditOpen}
-        onOpenChange={setQEditOpen}
-        title={editQuestion ? "質問を編集" : "質問を追加"}
-        onSave={handleSaveQuestion}
-        saving={qSaving}
-        saveDisabled={!qLabel.trim()}
-        onDelete={editQuestion ? handleDeleteQuestion : undefined}
-        deleting={qDeleting}
+        open={h.qEditOpen}
+        onOpenChange={h.setQEditOpen}
+        title={h.editQuestion ? "質問を編集" : "質問を追加"}
+        onSave={async () => {
+          const result = await h.handleSaveQuestion();
+          if (result.success) {
+            showToast(h.editQuestion ? "質問を更新しました" : "質問を追加しました");
+          } else if (result.error) {
+            showToast(result.error, "error");
+          }
+        }}
+        saving={h.qSaving}
+        saveDisabled={!h.qLabel.trim()}
+        onDelete={
+          h.editQuestion
+            ? async () => {
+                const result = await h.handleDeleteQuestion();
+                if (result.success) {
+                  showToast("質問を削除しました");
+                } else if (result.error) {
+                  showToast(result.error, "error");
+                }
+              }
+            : undefined
+        }
+        deleting={h.qDeleting}
       >
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>質問文</Label>
             <Input
-              value={qLabel}
-              onChange={(e) => setQLabel(e.target.value)}
+              value={h.qLabel}
+              onChange={(e) => h.setQLabel(e.target.value)}
               placeholder="質問を入力"
             />
           </div>
           <div className="space-y-2">
             <Label>補足説明</Label>
             <Input
-              value={qDescription}
-              onChange={(e) => setQDescription(e.target.value)}
+              value={h.qDescription}
+              onChange={(e) => h.setQDescription(e.target.value)}
               placeholder="補足説明（任意）"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>タイプ</Label>
-              <Select value={qType} onValueChange={(v) => v && setQType(v)}>
+              <Select value={h.qType} onValueChange={(v) => v && h.setQType(v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -462,8 +360,8 @@ export default function SurveyDetailPage() {
             <div className="space-y-2">
               <Label>必須</Label>
               <Select
-                value={qRequired ? "true" : "false"}
-                onValueChange={(v) => setQRequired(v === "true")}
+                value={h.qRequired ? "true" : "false"}
+                onValueChange={(v) => h.setQRequired(v === "true")}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -475,12 +373,12 @@ export default function SurveyDetailPage() {
               </Select>
             </div>
           </div>
-          {(qType === "single_choice" || qType === "multiple_choice") && (
+          {(h.qType === "single_choice" || h.qType === "multiple_choice") && (
             <div className="space-y-2">
               <Label>選択肢（1行に1つ）</Label>
               <Textarea
-                value={qOptions}
-                onChange={(e) => setQOptions(e.target.value)}
+                value={h.qOptions}
+                onChange={(e) => h.setQOptions(e.target.value)}
                 placeholder={"選択肢1\n選択肢2\n選択肢3"}
                 rows={5}
               />

@@ -1,11 +1,14 @@
 "use client";
 
+import { useState, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/browser";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
 import { useQuery } from "@/lib/use-query";
 import * as messageRepo from "@/lib/repositories/message-repository";
 import type { MessageThread, Profile, ChannelMember } from "@/types/database";
+import type { MessageCache } from "@/features/messages/components/thread-chat";
 
 export function useThreadsList() {
   const { organization } = useOrg();
@@ -277,4 +280,78 @@ export async function fetchSenderProfile(senderId: string) {
 
 export async function markSingleAsRead(messageId: string) {
   return messageRepo.markSingleAsRead(getSupabase(), messageId);
+}
+
+export function useMessagesPage() {
+  const searchParams = useSearchParams();
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(
+    searchParams.get("thread")
+  );
+  const [search, setSearch] = useState("");
+  const [showNewThread, setShowNewThread] = useState(false);
+  const [mainTab, setMainTab] = useState<"dm" | "channels">("dm");
+  const [showCreateChannel, setShowCreateChannel] = useState(false);
+  const [showChannelMembers, setShowChannelMembers] = useState(false);
+  const messageCache = useRef<MessageCache>(new Map());
+
+  const {
+    data: threads = [],
+    isLoading: threadsLoading,
+    error: threadsError,
+    mutate: mutateThreads,
+  } = useThreadsList();
+
+  const {
+    data: channels = [],
+    isLoading: channelsLoading,
+    error: channelsError,
+    mutate: mutateChannels,
+  } = useChannelsList();
+
+  const filtered = threads.filter((t) => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    const name = t.participant?.display_name?.toLowerCase() ?? "";
+    const email = t.participant?.email?.toLowerCase() ?? "";
+    const jobTitles = t.job_titles?.toLowerCase() ?? "";
+    return name.includes(s) || email.includes(s) || jobTitles.includes(s);
+  });
+
+  const filteredChannels = channels.filter((c) => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return (c.channel_name?.toLowerCase() ?? "").includes(s);
+  });
+
+  const selectedThread =
+    mainTab === "dm"
+      ? threads.find((t) => t.id === selectedThreadId)
+      : channels.find((c) => c.id === selectedThreadId);
+
+  return {
+    selectedThreadId,
+    setSelectedThreadId,
+    search,
+    setSearch,
+    showNewThread,
+    setShowNewThread,
+    mainTab,
+    setMainTab,
+    showCreateChannel,
+    setShowCreateChannel,
+    showChannelMembers,
+    setShowChannelMembers,
+    messageCache,
+    threads,
+    threadsLoading,
+    threadsError,
+    mutateThreads,
+    channels,
+    channelsLoading,
+    channelsError,
+    mutateChannels,
+    filtered,
+    filteredChannels,
+    selectedThread,
+  };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React from "react";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -13,17 +13,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useOrg } from "@/lib/org-context";
-import { useShifts } from "@/lib/hooks/use-shifts";
+import {
+  useShifts,
+  type Employee,
+  type RequestWithProfile,
+  type ScheduleWithProfile,
+} from "@/lib/hooks/use-shifts";
 import { cn, weekdayLabel } from "@/lib/utils";
-import type { ShiftRequest, ShiftSchedule } from "@/types/database";
 
 import { ChevronLeft, ChevronRight, CalendarRange, ClipboardList, Send } from "lucide-react";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-
-// ---------------------------------------------------------------------------
-// 型
-// ---------------------------------------------------------------------------
 
 type TabValue = "requests" | "schedule";
 
@@ -31,20 +30,6 @@ const tabList: { value: TabValue; label: string; icon: React.ElementType }[] = [
   { value: "requests", label: "シフト希望", icon: ClipboardList },
   { value: "schedule", label: "シフト表", icon: CalendarRange },
 ];
-
-interface Employee {
-  id: string;
-  email: string;
-  display_name: string | null;
-}
-
-type RequestWithProfile = ShiftRequest & {
-  profiles: { display_name: string | null; email: string };
-};
-
-type ScheduleWithProfile = ShiftSchedule & {
-  profiles: { display_name: string | null; email: string };
-};
 
 // ---------------------------------------------------------------------------
 // ヘルパー
@@ -65,89 +50,49 @@ function timeShort(t: string | null): string {
 // ---------------------------------------------------------------------------
 
 export default function ShiftsPage() {
-  const { organization } = useOrg();
-  const orgId = organization?.id ?? null;
   const { showToast } = useToast();
-  const [tab, setTab] = useState<TabValue>("requests");
-
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
-  const [publishing, setPublishing] = useState(false);
-
-  const prevMonth = () => {
-    if (month === 1) {
-      setYear((y) => y - 1);
-      setMonth(12);
-    } else setMonth((m) => m - 1);
-  };
-  const nextMonth = () => {
-    if (month === 12) {
-      setYear((y) => y + 1);
-      setMonth(1);
-    } else setMonth((m) => m + 1);
-  };
 
   const {
-    requests,
+    tab,
+    setTab,
+    year,
+    month,
+    prevMonth,
+    nextMonth,
+    publishing,
     requestsError,
     mutateReqs,
-    schedules,
     employees,
     totalDays,
-    autoFill,
-    publish,
-  } = useShifts(year, month);
+    requestMap,
+    scheduleMap,
+    handleAutoFill,
+    handlePublish,
+    draftCount,
+  } = useShifts();
 
-  // 希望をグループ化: userId → dateStr → request
-  const requestMap = useMemo(() => {
-    const map = new Map<string, Map<string, RequestWithProfile>>();
-    for (const r of requests ?? []) {
-      if (!map.has(r.user_id)) map.set(r.user_id, new Map());
-      map.get(r.user_id)!.set(r.target_date, r);
-    }
-    return map;
-  }, [requests]);
-
-  // 確定をグループ化
-  const scheduleMap = useMemo(() => {
-    const map = new Map<string, Map<string, ScheduleWithProfile>>();
-    for (const s of schedules ?? []) {
-      if (!map.has(s.user_id)) map.set(s.user_id, new Map());
-      map.get(s.user_id)!.set(s.target_date, s);
-    }
-    return map;
-  }, [schedules]);
-
-  const handleAutoFill = useCallback(async () => {
-    if (!orgId) return;
-    const result = await autoFill(orgId);
+  const onAutoFill = async () => {
+    const result = await handleAutoFill();
     if (result.success) {
       showToast(`${result.count}件のシフトを反映しました`);
     } else {
       showToast(result.error ?? "反映に失敗しました", "error");
     }
-  }, [orgId, autoFill, showToast]);
+  };
 
-  const handlePublish = useCallback(async () => {
-    if (!orgId) return;
-    setPublishing(true);
-    const result = await publish(orgId);
-    setPublishing(false);
+  const onPublish = async () => {
+    const result = await handlePublish();
     if (result.success) {
       showToast("シフトを公開しました");
     } else {
       showToast(result.error ?? "公開に失敗しました", "error");
     }
-  }, [orgId, publish, showToast]);
-
-  const draftCount = (schedules ?? []).filter((s) => s.status === "draft").length;
+  };
 
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="シフト管理" sticky border />
 
-      {/* タブ + 月セレクター */}
       <div className="flex items-center justify-between border-b px-6 py-2">
         <div className="flex gap-1">
           {tabList.map((t) => (
@@ -182,7 +127,6 @@ export default function ShiftsPage() {
 
       <QueryErrorBanner error={requestsError} onRetry={() => mutateReqs()} />
 
-      {/* コンテンツ */}
       <div className="flex-1 overflow-auto p-6">
         {tab === "requests" && (
           <RequestsGrid
@@ -197,11 +141,11 @@ export default function ShiftsPage() {
         {tab === "schedule" && (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={handleAutoFill}>
+              <Button variant="outline" size="sm" onClick={onAutoFill}>
                 <ClipboardList className="h-4 w-4 mr-1.5" />
                 希望から反映
               </Button>
-              <Button size="sm" onClick={handlePublish} disabled={publishing || draftCount === 0}>
+              <Button size="sm" onClick={onPublish} disabled={publishing || draftCount === 0}>
                 <Send className="h-4 w-4 mr-1.5" />
                 {draftCount > 0 ? `公開（${draftCount}件）` : "公開済み"}
               </Button>
@@ -239,7 +183,6 @@ function RequestsGrid({
   month: number;
   totalDays: number;
 }) {
-  // 提出済みの社員のみ表示
   const submittedEmployees = employees.filter((e) => {
     const reqs = requestMap.get(e.id);
     if (!reqs) return false;
@@ -352,7 +295,6 @@ function ScheduleGrid({
   month: number;
   totalDays: number;
 }) {
-  // スケジュールまたは希望がある社員を表示
   const relevantEmployees = employees.filter((e) => scheduleMap.has(e.id) || requestMap.has(e.id));
 
   return (

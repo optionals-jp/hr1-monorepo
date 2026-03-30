@@ -1,12 +1,106 @@
 "use client";
 
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useSWRConfig } from "swr";
+import { useToast } from "@/components/ui/toast";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
+import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repo from "@/lib/repositories/form-repository";
 import type { CustomForm, FormField, AuditLog } from "@/types/database";
 
 export function useForms() {
   return useOrgQuery<CustomForm[]>("forms", (orgId) => repo.fetchForms(getSupabase(), orgId));
+}
+
+interface FieldDraft {
+  tempId: string;
+  field_type: string;
+  label: string;
+  description: string;
+  placeholder: string;
+  is_required: boolean;
+  options: string;
+}
+
+export type { FieldDraft };
+
+export function useCreateForm() {
+  const router = useRouter();
+  const { showToast } = useToast();
+  const { mutate } = useSWRConfig();
+  const { organization } = useOrg();
+
+  const [title, setTitle] = useState("");
+  const [target, setTarget] = useState<string>("both");
+  const [description, setDescription] = useState("");
+  const [fields, setFields] = useState<FieldDraft[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  const addField = useCallback(() => {
+    setFields((prev) => [
+      ...prev,
+      {
+        tempId: `${Date.now()}`,
+        field_type: "shortText",
+        label: "",
+        description: "",
+        placeholder: "",
+        is_required: false,
+        options: "",
+      },
+    ]);
+  }, []);
+
+  const removeField = useCallback((tempId: string) => {
+    setFields((prev) => prev.filter((f) => f.tempId !== tempId));
+  }, []);
+
+  const updateField = useCallback((tempId: string, field: string, value: string | boolean) => {
+    setFields((prev) => prev.map((f) => (f.tempId === tempId ? { ...f, [field]: value } : f)));
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
+    if (!organization || !title) return;
+    setSaving(true);
+
+    const result = await createForm(organization.id, {
+      title,
+      target,
+      description,
+      fields,
+    });
+
+    if (result.success) {
+      await mutate(`forms-${organization.id}`);
+      showToast("フォームを作成しました");
+      router.push("/forms");
+    } else {
+      showToast(result.error ?? "フォームの作成に失敗しました", "error");
+    }
+    setSaving(false);
+  }, [organization, title, target, description, fields, mutate, showToast, router]);
+
+  const cancel = useCallback(() => {
+    router.push("/forms");
+  }, [router]);
+
+  return {
+    title,
+    setTitle,
+    target,
+    setTarget,
+    description,
+    setDescription,
+    fields,
+    saving,
+    addField,
+    removeField,
+    updateField,
+    handleSubmit,
+    cancel,
+  };
 }
 
 export async function deleteForm(

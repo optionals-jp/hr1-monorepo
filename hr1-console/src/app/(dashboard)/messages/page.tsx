@@ -1,12 +1,10 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useThreadsList, useChannelsList } from "@/lib/hooks/use-messages-page";
+import { useMessagesPage } from "@/lib/hooks/use-messages-page";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { Search, MessageSquare, Hash, Users, Plus } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,55 +14,32 @@ import { ThreadChat } from "@/features/messages/components/thread-chat";
 import { NewThreadPanel } from "@/features/messages/components/new-thread-panel";
 import { CreateChannelPanel } from "@/features/messages/components/create-channel-panel";
 import { ChannelMembersPanel } from "@/features/messages/components/channel-members-panel";
-import type { MessageCache } from "@/features/messages/components/thread-chat";
 
 export default function MessagesPage() {
-  const searchParams = useSearchParams();
-  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(
-    searchParams.get("thread")
-  );
-  const [search, setSearch] = useState("");
-  const [showNewThread, setShowNewThread] = useState(false);
-  const [mainTab, setMainTab] = useState<"dm" | "channels">("dm");
-  const [showCreateChannel, setShowCreateChannel] = useState(false);
-  const [showChannelMembers, setShowChannelMembers] = useState(false);
-  const messageCache = useRef<MessageCache>(new Map());
-
-  // --- スレッド一覧 (RPC で1回のクエリで取得) ---
   const {
-    data: threads = [],
-    isLoading: threadsLoading,
-    error: threadsError,
-    mutate: mutateThreads,
-  } = useThreadsList();
-
-  // --- チャンネル一覧 ---
-  const {
-    data: channels = [],
-    isLoading: channelsLoading,
-    error: channelsError,
-    mutate: mutateChannels,
-  } = useChannelsList();
-
-  const filtered = threads.filter((t) => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    const name = t.participant?.display_name?.toLowerCase() ?? "";
-    const email = t.participant?.email?.toLowerCase() ?? "";
-    const jobTitles = t.job_titles?.toLowerCase() ?? "";
-    return name.includes(s) || email.includes(s) || jobTitles.includes(s);
-  });
-
-  const filteredChannels = channels.filter((c) => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return (c.channel_name?.toLowerCase() ?? "").includes(s);
-  });
-
-  const selectedThread =
-    mainTab === "dm"
-      ? threads.find((t) => t.id === selectedThreadId)
-      : channels.find((c) => c.id === selectedThreadId);
+    selectedThreadId,
+    setSelectedThreadId,
+    search,
+    setSearch,
+    showNewThread,
+    setShowNewThread,
+    mainTab,
+    setMainTab,
+    showCreateChannel,
+    setShowCreateChannel,
+    showChannelMembers,
+    setShowChannelMembers,
+    messageCache,
+    threadsLoading,
+    threadsError,
+    mutateThreads,
+    channelsLoading,
+    channelsError,
+    mutateChannels,
+    filtered,
+    filteredChannels,
+    selectedThread,
+  } = useMessagesPage();
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">

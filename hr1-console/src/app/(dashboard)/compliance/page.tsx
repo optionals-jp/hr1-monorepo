@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { useToast } from "@/components/ui/toast";
+import React from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,9 +21,8 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { useOrg } from "@/lib/org-context";
 import { cn } from "@/lib/utils";
-import { useComplianceAlerts, runComplianceCheck, resolveAlert } from "@/lib/hooks/use-compliance";
+import { useCompliancePage } from "@/lib/hooks/use-compliance";
 import { Play, CheckCircle2, AlertTriangle, AlertCircle, Info } from "lucide-react";
 
 const ALERT_TYPE_LABELS: Record<string, string> = {
@@ -78,65 +76,22 @@ function formatDateJa(dateStr: string): string {
 }
 
 export default function CompliancePage() {
-  const { showToast } = useToast();
-  const { organization } = useOrg();
-  const [running, setRunning] = useState(false);
-  const [filterSeverity, setFilterSeverity] = useState<string>("all");
-  const [filterType, setFilterType] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("unresolved");
-
-  const { data: alerts, error: alertsError, mutate: mutateAlerts } = useComplianceAlerts();
-
-  const filteredAlerts = useMemo(() => {
-    let rows = alerts ?? [];
-    if (filterStatus === "unresolved") {
-      rows = rows.filter((a) => !a.is_resolved);
-    } else if (filterStatus === "resolved") {
-      rows = rows.filter((a) => a.is_resolved);
-    }
-    if (filterSeverity !== "all") {
-      rows = rows.filter((a) => a.severity === filterSeverity);
-    }
-    if (filterType !== "all") {
-      rows = rows.filter((a) => a.alert_type === filterType);
-    }
-    return rows;
-  }, [alerts, filterSeverity, filterType, filterStatus]);
-
-  const summary = useMemo(() => {
-    const unresolved = (alerts ?? []).filter((a) => !a.is_resolved);
-    return {
-      critical: unresolved.filter((a) => a.severity === "critical").length,
-      warning: unresolved.filter((a) => a.severity === "warning").length,
-      info: unresolved.filter((a) => a.severity === "info").length,
-    };
-  }, [alerts]);
-
-  const handleRunCheck = async () => {
-    if (!organization) return;
-    setRunning(true);
-    try {
-      const result = await runComplianceCheck(organization.id);
-      if (!result.success) {
-        showToast(result.error!, "error");
-      } else {
-        await mutateAlerts();
-        showToast(`チェック完了: ${result.count}件の新規アラートを検出しました`, "success");
-      }
-    } finally {
-      setRunning(false);
-    }
-  };
-
-  const handleResolve = async (alertId: string) => {
-    const result = await resolveAlert(alertId, organization!.id);
-    if (!result.success) {
-      showToast(result.error!, "error");
-    } else {
-      await mutateAlerts();
-      showToast("対応済みにしました", "success");
-    }
-  };
+  const {
+    alerts,
+    alertsError,
+    mutateAlerts,
+    running,
+    filterSeverity,
+    setFilterSeverity,
+    filterType,
+    setFilterType,
+    filterStatus,
+    setFilterStatus,
+    filteredAlerts,
+    summary,
+    handleRunCheck,
+    handleResolve,
+  } = useCompliancePage();
 
   return (
     <div className="flex flex-col">

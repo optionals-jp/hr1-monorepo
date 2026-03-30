@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -35,29 +35,22 @@ const editTabs: EditPanelTab[] = [{ value: "basic", label: "基本情報" }];
 export default function DepartmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { organization, department, members, loading, updateName } = useDepartmentDetail(id);
-  const [activeTab, setActiveTab] = useState("overview");
+  const {
+    organization,
+    department,
+    members,
+    loading,
+    activeTab,
+    setActiveTab,
+    editing,
+    setEditing,
+    editName,
+    setEditName,
+    saving,
+    startEditing,
+    saveEdit,
+  } = useDepartmentDetail(id);
 
-  // Editing
-  const [editing, setEditing] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const startEditing = () => {
-    if (!department) return;
-    setEditName(department.name);
-    setEditing(true);
-  };
-
-  const saveEdit = async () => {
-    if (!department || !editName.trim()) return;
-    setSaving(true);
-    await updateName(editName.trim());
-    setEditing(false);
-    setSaving(false);
-  };
-
-  // 人口統計の計算
   const demographics = useMemo(() => {
     const now = new Date();
     const ages = members

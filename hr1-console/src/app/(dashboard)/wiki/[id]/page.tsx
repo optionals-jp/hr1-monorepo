@@ -1,12 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { useParams } from "next/navigation";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/auth-context";
-import { useWikiPage, updateWikiPageInline } from "@/lib/hooks/use-wiki";
-import { useOrg } from "@/lib/org-context";
+import { useWikiPageDetail } from "@/lib/hooks/use-wiki";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -14,7 +11,6 @@ import { MarkdownEditor, markdownToHtml } from "@/components/ui/markdown-editor"
 import { format } from "date-fns";
 import { Pencil, Eye, EyeOff } from "lucide-react";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { useToast } from "@/components/ui/toast";
 
 function MarkdownPreview({ content }: { content: string }) {
   return (
@@ -27,58 +23,23 @@ function MarkdownPreview({ content }: { content: string }) {
 
 export default function WikiDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { organization } = useOrg();
-  const { user } = useAuth();
-  const { showToast } = useToast();
 
-  const { data: page, isLoading, error: pageError, mutate: mutatePage } = useWikiPage(id);
-
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [editTitle, setEditTitle] = useState("");
-  const [editContent, setEditContent] = useState("");
-
-  function startEdit() {
-    if (!page) return;
-    setEditTitle(page.title);
-    setEditContent(page.content);
-    setEditing(true);
-  }
-
-  async function handleSave() {
-    if (!page || !user) return;
-    setSaving(true);
-    try {
-      const result = await updateWikiPageInline(page.id, organization!.id, {
-        title: editTitle.trim(),
-        content: editContent,
-        updated_by: user.id,
-      });
-      if (!result.success) {
-        showToast(result.error!, "error");
-        return;
-      }
-      await mutatePage();
-      setEditing(false);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function togglePublished() {
-    if (!page || !user) return;
-    const result = await updateWikiPageInline(page.id, organization!.id, {
-      title: page.title,
-      content: page.content,
-      is_published: !page.is_published,
-      updated_by: user.id,
-    });
-    if (!result.success) {
-      showToast(result.error!, "error");
-      return;
-    }
-    await mutatePage();
-  }
+  const {
+    page,
+    isLoading,
+    pageError,
+    mutatePage,
+    editing,
+    setEditing,
+    saving,
+    editTitle,
+    setEditTitle,
+    editContent,
+    setEditContent,
+    startEdit,
+    handleSave,
+    togglePublished,
+  } = useWikiPageDetail(id);
 
   if (isLoading) {
     return (

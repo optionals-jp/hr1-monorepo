@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import * as XLSX from "xlsx";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
@@ -19,7 +18,6 @@ import {
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
-import { useOrg } from "@/lib/org-context";
 import { useEmployeesPage, type EmployeeWithDepts } from "@/lib/hooks/use-employees-page";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -31,7 +29,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { SlidersHorizontal, X, Download, Upload, ChevronDown, Trash2 } from "lucide-react";
@@ -145,103 +142,11 @@ function exportAsCsv(employees: EmployeeWithDepts[]) {
 export default function EmployeesPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const { organization } = useOrg();
-  const { departments, employees, isLoading, employeesError, mutate, addEmployee, deleteEmployee } =
-    useEmployeesPage();
-  const [search, setSearch] = useState("");
-  const [filterDeptId, setFilterDeptId] = useState<string>("all");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
-  const [addTab, setAddTab] = useState("basic");
-  const [newEmail, setNewEmail] = useState("");
-  const [newName, setNewName] = useState("");
-  const [newPosition, setNewPosition] = useState("");
-  const [selectedDeptIds, setSelectedDeptIds] = useState<string[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [formErrors, setFormErrors] = useState<ValidationErrors>({});
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const openAddDialog = () => {
-    setNewEmail("");
-    setNewName("");
-    setNewPosition("");
-    setSelectedDeptIds([]);
-    setFormErrors({});
-    setAddTab("basic");
-    setDialogOpen(true);
-  };
-
-  const handleAdd = async () => {
-    if (!organization) return;
-
-    const errors = validateForm(
-      {
-        email: [validators.required("メールアドレス"), validators.email()],
-        name: [validators.maxLength(100, "名前")],
-        position: [validators.maxLength(100, "役職")],
-      },
-      { email: newEmail, name: newName, position: newPosition }
-    );
-    if (errors) {
-      setFormErrors(errors);
-      if (errors.email || errors.name || errors.position) setAddTab("basic");
-      return;
-    }
-    setFormErrors({});
-    setSaving(true);
-
-    const result = await addEmployee(organization.id, {
-      email: newEmail,
-      display_name: newName || null,
-      position: newPosition || null,
-      department_ids: selectedDeptIds,
-    });
-
-    if (result.success) {
-      setDialogOpen(false);
-      showToast("社員を追加しました");
-    } else {
-      showToast(result.error ?? "社員の追加に失敗しました", "error");
-    }
-    setSaving(false);
-  };
-
-  const handleDelete = async (emp: EmployeeWithDepts) => {
-    if (!organization) return;
-    if (!window.confirm(`${emp.display_name ?? emp.email} を組織から削除しますか？`)) return;
-    setDeletingId(emp.id);
-    const result = await deleteEmployee(organization.id, emp);
-    if (result.success) {
-      showToast("社員を削除しました");
-    } else {
-      showToast(result.error ?? "削除に失敗しました", "error");
-    }
-    setDeletingId(null);
-  };
-
-  const toggleDept = (deptId: string) => {
-    setSelectedDeptIds((prev) =>
-      prev.includes(deptId) ? prev.filter((id) => id !== deptId) : [...prev, deptId]
-    );
-  };
-
-  const filtered = employees.filter((e) => {
-    const matchesSearch =
-      !search ||
-      e.email.toLowerCase().includes(search.toLowerCase()) ||
-      e.display_name?.toLowerCase().includes(search.toLowerCase()) ||
-      e.departments.some((d) => d.name.toLowerCase().includes(search.toLowerCase()));
-    const matchesDept =
-      filterDeptId === "all" ||
-      (filterDeptId === "none"
-        ? e.departments.length === 0
-        : e.departments.some((d) => d.id === filterDeptId));
-    return matchesSearch && matchesDept;
-  });
+  const h = useEmployeesPage();
 
   return (
     <div className="flex flex-col">
-      <QueryErrorBanner error={employeesError} onRetry={() => mutate()} />
+      <QueryErrorBanner error={h.employeesError} onRetry={() => h.mutate()} />
       <PageHeader
         title="社員一覧"
         description="社員の管理・招待"
@@ -251,46 +156,48 @@ export default function EmployeesPage() {
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger
-                render={<Button variant="outline" size="sm" disabled={employees.length === 0} />}
+                render={<Button variant="outline" size="sm" disabled={h.employees.length === 0} />}
               >
                 <Download className="mr-1.5 h-4 w-4" />
                 エクスポート
                 <ChevronDown className="ml-1 h-3 w-3" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => exportAsCsv(employees)}>CSV出力</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportAsXlsx(employees)}>
+                <DropdownMenuItem onClick={() => exportAsCsv(h.employees)}>
+                  CSV出力
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportAsXlsx(h.employees)}>
                   スプレッドシート出力 (.xlsx)
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <Button variant="outline" size="sm" onClick={() => h.setImportOpen(true)}>
               <Upload className="mr-1.5 h-4 w-4" />
               インポート
             </Button>
-            <Button onClick={openAddDialog}>社員を追加</Button>
+            <Button onClick={h.openAddDialog}>社員を追加</Button>
           </div>
         }
       />
 
       <div className="sticky top-14 z-10">
-        <SearchBar value={search} onChange={setSearch} />
+        <SearchBar value={h.search} onChange={h.setSearch} />
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
-            {filterDeptId !== "all" && (
+            {h.filterDeptId !== "all" && (
               <div className="flex items-center gap-1.5 overflow-x-auto">
                 <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
                   部署：
-                  {filterDeptId === "none"
+                  {h.filterDeptId === "none"
                     ? "未所属"
-                    : departments.find((d) => d.id === filterDeptId)?.name}
+                    : h.departments.find((d) => d.id === h.filterDeptId)?.name}
                   <span
                     role="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setFilterDeptId("all");
+                      h.setFilterDeptId("all");
                     }}
                     className="ml-0.5 hover:text-foreground"
                   >
@@ -301,22 +208,22 @@ export default function EmployeesPage() {
             )}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-auto py-2">
-            <DropdownMenuItem className="py-2" onClick={() => setFilterDeptId("all")}>
-              <span className={cn(filterDeptId === "all" && "font-medium")}>すべて</span>
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterDeptId("all")}>
+              <span className={cn(h.filterDeptId === "all" && "font-medium")}>すべて</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            {departments.map((dept) => (
+            {h.departments.map((dept) => (
               <DropdownMenuItem
                 key={dept.id}
                 className="py-2"
-                onClick={() => setFilterDeptId(dept.id)}
+                onClick={() => h.setFilterDeptId(dept.id)}
               >
-                <span className={cn(filterDeptId === dept.id && "font-medium")}>{dept.name}</span>
+                <span className={cn(h.filterDeptId === dept.id && "font-medium")}>{dept.name}</span>
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="py-2" onClick={() => setFilterDeptId("none")}>
-              <span className={cn(filterDeptId === "none" && "font-medium")}>未所属</span>
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterDeptId("none")}>
+              <span className={cn(h.filterDeptId === "none" && "font-medium")}>未所属</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -336,11 +243,11 @@ export default function EmployeesPage() {
           <TableBody>
             <TableEmptyState
               colSpan={5}
-              isLoading={isLoading}
-              isEmpty={filtered.length === 0}
+              isLoading={h.isLoading}
+              isEmpty={h.filtered.length === 0}
               emptyMessage="社員がいません"
             >
-              {filtered.map((emp) => (
+              {h.filtered.map((emp) => (
                 <TableRow
                   key={emp.id}
                   className="cursor-pointer"
@@ -374,10 +281,15 @@ export default function EmployeesPage() {
                   <TableCell>
                     <button
                       type="button"
-                      disabled={deletingId === emp.id}
-                      onClick={(e) => {
+                      disabled={h.deletingId === emp.id}
+                      onClick={async (e) => {
                         e.stopPropagation();
-                        handleDelete(emp);
+                        const result = await h.handleDelete(emp);
+                        if (result.success) {
+                          showToast("社員を削除しました");
+                        } else if (result.error) {
+                          showToast(result.error, "error");
+                        }
                       }}
                       className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-50"
                     >
@@ -392,71 +304,71 @@ export default function EmployeesPage() {
       </div>
 
       <EditPanel
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        open={h.dialogOpen}
+        onOpenChange={h.setDialogOpen}
         title="社員を追加"
         tabs={addTabs}
-        activeTab={addTab}
-        onTabChange={setAddTab}
-        onSave={handleAdd}
-        saving={saving}
-        saveDisabled={!newEmail}
+        activeTab={h.addTab}
+        onTabChange={h.setAddTab}
+        onSave={async () => {
+          const result = await h.handleAdd();
+          if (result.success) {
+            showToast("社員を追加しました");
+          } else if (result.error) {
+            showToast(result.error, "error");
+          }
+        }}
+        saving={h.saving}
+        saveDisabled={!h.newEmail}
         saveLabel="追加"
       >
-        {addTab === "basic" && (
+        {h.addTab === "basic" && (
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>メールアドレス *</Label>
               <Input
                 type="email"
-                value={newEmail}
-                onChange={(e) => {
-                  setNewEmail(e.target.value);
-                  setFormErrors((prev) => ({ ...prev, email: "" }));
-                }}
+                value={h.newEmail}
+                onChange={(e) => h.updateNewEmail(e.target.value)}
                 placeholder="example@company.com"
-                className={formErrors.email ? "border-red-500" : ""}
+                className={h.formErrors.email ? "border-red-500" : ""}
               />
-              {formErrors.email && <p className="text-sm text-red-500">{formErrors.email}</p>}
+              {h.formErrors.email && <p className="text-sm text-red-500">{h.formErrors.email}</p>}
             </div>
             <div className="space-y-2">
               <Label>名前</Label>
               <Input
-                value={newName}
-                onChange={(e) => {
-                  setNewName(e.target.value);
-                  setFormErrors((prev) => ({ ...prev, name: "" }));
-                }}
+                value={h.newName}
+                onChange={(e) => h.updateNewName(e.target.value)}
                 placeholder="田中 太郎"
-                className={formErrors.name ? "border-red-500" : ""}
+                className={h.formErrors.name ? "border-red-500" : ""}
               />
-              {formErrors.name && <p className="text-sm text-red-500">{formErrors.name}</p>}
+              {h.formErrors.name && <p className="text-sm text-red-500">{h.formErrors.name}</p>}
             </div>
             <div className="space-y-2">
               <Label>役職</Label>
               <Input
-                value={newPosition}
-                onChange={(e) => {
-                  setNewPosition(e.target.value);
-                  setFormErrors((prev) => ({ ...prev, position: "" }));
-                }}
+                value={h.newPosition}
+                onChange={(e) => h.updateNewPosition(e.target.value)}
                 placeholder="マネージャー"
-                className={formErrors.position ? "border-red-500" : ""}
+                className={h.formErrors.position ? "border-red-500" : ""}
               />
-              {formErrors.position && <p className="text-sm text-red-500">{formErrors.position}</p>}
+              {h.formErrors.position && (
+                <p className="text-sm text-red-500">{h.formErrors.position}</p>
+              )}
             </div>
           </div>
         )}
-        {addTab === "departments" && (
+        {h.addTab === "departments" && (
           <div className="space-y-3">
-            {departments.length === 0 ? (
+            {h.departments.length === 0 ? (
               <p className="text-sm text-muted-foreground">部署管理から部署を追加してください</p>
             ) : (
-              departments.map((dept) => (
+              h.departments.map((dept) => (
                 <label key={dept.id} className="flex items-center gap-2 cursor-pointer">
                   <Checkbox
-                    checked={selectedDeptIds.includes(dept.id)}
-                    onCheckedChange={() => toggleDept(dept.id)}
+                    checked={h.selectedDeptIds.includes(dept.id)}
+                    onCheckedChange={() => h.toggleDept(dept.id)}
                   />
                   <span className="text-sm">{dept.name}</span>
                 </label>
@@ -466,13 +378,13 @@ export default function EmployeesPage() {
         )}
       </EditPanel>
 
-      {organization && (
+      {h.organization && (
         <EmployeeImportDialog
-          open={importOpen}
-          onOpenChange={setImportOpen}
-          organizationId={organization.id}
-          departments={departments}
-          onComplete={() => mutate()}
+          open={h.importOpen}
+          onOpenChange={h.setImportOpen}
+          organizationId={h.organization.id}
+          departments={h.departments}
+          onComplete={() => h.mutate()}
         />
       )}
     </div>

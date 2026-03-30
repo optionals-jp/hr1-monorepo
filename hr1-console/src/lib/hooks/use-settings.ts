@@ -1,7 +1,10 @@
 "use client";
 
+import { useEffect, useState, useCallback } from "react";
+import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as settingsRepo from "@/lib/repositories/settings-repository";
+import type { SkillMaster, CertificationMaster } from "@/types/database";
 
 // --- Organization ---
 
@@ -170,4 +173,116 @@ export async function addCertificationMaster(data: {
 
 export async function removeCertificationMaster(id: string, organizationId: string) {
   return settingsRepo.deleteCertificationMaster(getSupabase(), id, organizationId);
+}
+
+// --- Skill Masters Hook ---
+
+export function useSkillMastersPage() {
+  const { organization } = useOrg();
+  const [masters, setMasters] = useState<SkillMaster[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newName, setNewName] = useState("");
+  const [newCategory, setNewCategory] = useState("");
+  const [adding, setAdding] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!organization) return;
+    setLoading(true);
+    const data = await loadSkillMasters(organization.id);
+    setMasters(data);
+    setLoading(false);
+  }, [organization]);
+
+  useEffect(() => {
+    if (organization) load();
+  }, [organization, load]);
+
+  const handleAdd = async () => {
+    if (!organization || !newName.trim()) return;
+    setAdding(true);
+    await addSkillMaster({
+      organization_id: organization.id,
+      name: newName.trim(),
+      category: newCategory.trim() || null,
+    });
+    setNewName("");
+    setNewCategory("");
+    setAdding(false);
+    await load();
+  };
+
+  const handleDelete = async (master: SkillMaster) => {
+    if (!window.confirm("削除してもよろしいですか？")) return;
+    await removeSkillMaster(master.id, organization!.id);
+    await load();
+  };
+
+  return {
+    organization,
+    masters,
+    loading,
+    newName,
+    setNewName,
+    newCategory,
+    setNewCategory,
+    adding,
+    handleAdd,
+    handleDelete,
+  };
+}
+
+// --- Certification Masters Hook ---
+
+export function useCertificationMastersPage() {
+  const { organization } = useOrg();
+  const [masters, setMasters] = useState<CertificationMaster[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newName, setNewName] = useState("");
+  const [newCategory, setNewCategory] = useState("");
+  const [adding, setAdding] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!organization) return;
+    setLoading(true);
+    const data = await loadCertificationMasters(organization.id);
+    setMasters(data);
+    setLoading(false);
+  }, [organization]);
+
+  useEffect(() => {
+    if (organization) load();
+  }, [organization, load]);
+
+  const handleAdd = async () => {
+    if (!organization || !newName.trim()) return;
+    setAdding(true);
+    await addCertificationMaster({
+      organization_id: organization.id,
+      name: newName.trim(),
+      category: newCategory.trim() || null,
+    });
+    setNewName("");
+    setNewCategory("");
+    setAdding(false);
+    await load();
+  };
+
+  const handleDelete = async (master: CertificationMaster) => {
+    if (!window.confirm("削除してもよろしいですか？")) return;
+    await removeCertificationMaster(master.id, organization!.id);
+    await load();
+  };
+
+  return {
+    organization,
+    masters,
+    loading,
+    newName,
+    setNewName,
+    newCategory,
+    setNewCategory,
+    adding,
+    handleAdd,
+    handleDelete,
+  };
 }

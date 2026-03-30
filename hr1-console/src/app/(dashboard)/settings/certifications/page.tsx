@@ -1,61 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useOrg } from "@/lib/org-context";
-import {
-  loadCertificationMasters,
-  addCertificationMaster,
-  removeCertificationMaster,
-} from "@/lib/hooks/use-settings";
-import type { CertificationMaster } from "@/types/database";
+import { useCertificationMastersPage } from "@/lib/hooks/use-settings";
 import { Plus, X } from "lucide-react";
 
 export default function CertificationsSettingsPage() {
-  const { organization } = useOrg();
-  const [masters, setMasters] = useState<CertificationMaster[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [newName, setNewName] = useState("");
-  const [newCategory, setNewCategory] = useState("");
-  const [adding, setAdding] = useState(false);
+  const {
+    organization,
+    masters,
+    loading,
+    newName,
+    setNewName,
+    newCategory,
+    setNewCategory,
+    adding,
+    handleAdd,
+    handleDelete,
+  } = useCertificationMastersPage();
 
-  const load = async () => {
-    if (!organization) return;
-    setLoading(true);
-    const data = await loadCertificationMasters(organization!.id);
-    setMasters(data);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    if (organization) load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organization?.id]);
-
-  const handleAdd = async () => {
-    if (!organization || !newName.trim()) return;
-    setAdding(true);
-    await addCertificationMaster({
-      organization_id: organization.id,
-      name: newName.trim(),
-      category: newCategory.trim() || null,
-    });
-    setNewName("");
-    setNewCategory("");
-    setAdding(false);
-    await load();
-  };
-
-  const handleDelete = async (master: CertificationMaster) => {
-    if (!window.confirm("削除してもよろしいですか？")) return;
-    await removeCertificationMaster(master.id, organization!.id);
-    await load();
-  };
-
-  // カテゴリーごとにグループ化
   const grouped = masters.reduce(
     (acc, m) => {
       const cat = m.category ?? "未分類";
@@ -63,7 +28,7 @@ export default function CertificationsSettingsPage() {
       acc[cat].push(m);
       return acc;
     },
-    {} as Record<string, CertificationMaster[]>
+    {} as Record<string, typeof masters>
   );
 
   const categories = Object.keys(grouped).sort((a, b) => {
@@ -72,7 +37,6 @@ export default function CertificationsSettingsPage() {
     return a.localeCompare(b, "ja");
   });
 
-  // 既存カテゴリーのリスト（入力補助用）
   const existingCategories = [
     ...new Set(masters.map((m) => m.category).filter(Boolean)),
   ] as string[];

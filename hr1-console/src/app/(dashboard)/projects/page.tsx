@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -18,8 +17,7 @@ import {
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { EditPanel } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
-import { useOrg } from "@/lib/org-context";
-import { useProjects, createProject } from "@/lib/hooks/use-projects";
+import { useProjectsPage } from "@/lib/hooks/use-projects";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { projectStatusLabels, projectStatusColors } from "@/lib/constants";
@@ -57,59 +55,7 @@ const statusOptions = [
 export default function ProjectsPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const { organization } = useOrg();
-  const [activeTab, setActiveTab] = useState("list");
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newDescription, setNewDescription] = useState("");
-  const [newStatus, setNewStatus] = useState<string>("active");
-  const [newStartDate, setNewStartDate] = useState("");
-  const [newEndDate, setNewEndDate] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const { data: projects = [], isLoading, error: projectsError, mutate } = useProjects();
-
-  const openAddDialog = () => {
-    setNewName("");
-    setNewDescription("");
-    setNewStatus("active");
-    setNewStartDate("");
-    setNewEndDate("");
-    setDialogOpen(true);
-  };
-
-  const handleAdd = async () => {
-    if (!organization || !newName.trim()) return;
-    setSaving(true);
-
-    const result = await createProject(organization.id, {
-      name: newName,
-      description: newDescription,
-      status: newStatus,
-      startDate: newStartDate,
-      endDate: newEndDate,
-    });
-    if (result.success) {
-      setDialogOpen(false);
-      mutate();
-      showToast("プロジェクトを作成しました");
-    } else {
-      showToast(result.error ?? "プロジェクトの作成に失敗しました", "error");
-    }
-    setSaving(false);
-  };
-
-  const filtered = projects.filter((p) => {
-    if (filterStatus !== "all" && p.status !== filterStatus) return false;
-    if (search) {
-      const s = search.toLowerCase();
-      if (!p.name.toLowerCase().includes(s) && !(p.description ?? "").toLowerCase().includes(s))
-        return false;
-    }
-    return true;
-  });
+  const h = useProjectsPage();
 
   return (
     <div className="flex flex-col">
@@ -119,8 +65,8 @@ export default function ProjectsPage() {
         sticky={false}
         border={false}
         action={
-          activeTab === "list" ? (
-            <Button onClick={openAddDialog}>プロジェクトを作成</Button>
+          h.activeTab === "list" ? (
+            <Button onClick={h.openAddDialog}>プロジェクトを作成</Button>
           ) : undefined
         }
       />
@@ -131,37 +77,37 @@ export default function ProjectsPage() {
             <button
               key={tab.value}
               type="button"
-              onClick={() => setActiveTab(tab.value)}
+              onClick={() => h.setActiveTab(tab.value)}
               className={cn(
                 "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-                activeTab === tab.value
+                h.activeTab === tab.value
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               {tab.label}
-              {activeTab === tab.value && (
+              {h.activeTab === tab.value && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
               )}
             </button>
           ))}
         </div>
-        {activeTab === "list" && (
+        {h.activeTab === "list" && (
           <>
-            <SearchBar value={search} onChange={setSearch} />
+            <SearchBar value={h.search} onChange={h.setSearch} />
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
                 <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
-                {filterStatus !== "all" && (
+                {h.filterStatus !== "all" && (
                   <div className="flex items-center gap-1.5 overflow-x-auto">
                     <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
-                      ステータス：{projectStatusLabels[filterStatus]}
+                      ステータス：{projectStatusLabels[h.filterStatus]}
                       <span
                         role="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setFilterStatus("all");
+                          h.setFilterStatus("all");
                         }}
                         className="ml-0.5 hover:text-foreground"
                       >
@@ -175,8 +121,8 @@ export default function ProjectsPage() {
                 {statusOptions.map((opt, i) => (
                   <div key={opt.value}>
                     {i === 1 && <DropdownMenuSeparator />}
-                    <DropdownMenuItem className="py-2" onClick={() => setFilterStatus(opt.value)}>
-                      <span className={cn(filterStatus === opt.value && "font-medium")}>
+                    <DropdownMenuItem className="py-2" onClick={() => h.setFilterStatus(opt.value)}>
+                      <span className={cn(h.filterStatus === opt.value && "font-medium")}>
                         {opt.label}
                       </span>
                     </DropdownMenuItem>
@@ -188,9 +134,9 @@ export default function ProjectsPage() {
         )}
       </div>
 
-      <QueryErrorBanner error={projectsError} onRetry={() => mutate()} />
+      <QueryErrorBanner error={h.projectsError} onRetry={() => h.mutate()} />
 
-      {activeTab === "list" && (
+      {h.activeTab === "list" && (
         <div className="bg-white">
           <Table>
             <TableHeader>
@@ -205,11 +151,11 @@ export default function ProjectsPage() {
             <TableBody>
               <TableEmptyState
                 colSpan={5}
-                isLoading={isLoading}
-                isEmpty={filtered.length === 0}
+                isLoading={h.isLoading}
+                isEmpty={h.filtered.length === 0}
                 emptyMessage="プロジェクトがありません"
               >
-                {filtered.map((project) => (
+                {h.filtered.map((project) => (
                   <TableRow
                     key={project.id}
                     className="cursor-pointer"
@@ -249,7 +195,7 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      {activeTab === "guide" && (
+      {h.activeTab === "guide" && (
         <div className="px-4 py-6 sm:px-6 md:px-8">
           <div className="max-w-3xl space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -369,34 +315,41 @@ export default function ProjectsPage() {
       )}
 
       <EditPanel
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        open={h.dialogOpen}
+        onOpenChange={h.setDialogOpen}
         title="プロジェクトを作成"
-        onSave={handleAdd}
-        saving={saving}
-        saveDisabled={!newName.trim()}
+        onSave={async () => {
+          const result = await h.handleAdd();
+          if (result.success) {
+            showToast("プロジェクトを作成しました");
+          } else if (result.error) {
+            showToast(result.error, "error");
+          }
+        }}
+        saving={h.saving}
+        saveDisabled={!h.newName.trim()}
         saveLabel="作成"
       >
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>プロジェクト名 *</Label>
             <Input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
+              value={h.newName}
+              onChange={(e) => h.setNewName(e.target.value)}
               placeholder="新製品開発プロジェクト"
             />
           </div>
           <div className="space-y-2">
             <Label>説明</Label>
             <Input
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
+              value={h.newDescription}
+              onChange={(e) => h.setNewDescription(e.target.value)}
               placeholder="プロジェクトの概要"
             />
           </div>
           <div className="space-y-2">
             <Label>ステータス</Label>
-            <Select value={newStatus} onValueChange={(v) => v && setNewStatus(v)}>
+            <Select value={h.newStatus} onValueChange={(v) => v && h.setNewStatus(v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -412,17 +365,17 @@ export default function ProjectsPage() {
               <Label>開始日</Label>
               <Input
                 type="date"
-                value={newStartDate}
-                onChange={(e) => setNewStartDate(e.target.value)}
+                value={h.newStartDate}
+                onChange={(e) => h.setNewStartDate(e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label>終了日</Label>
               <Input
                 type="date"
-                value={newEndDate}
-                onChange={(e) => setNewEndDate(e.target.value)}
-                min={newStartDate || undefined}
+                value={h.newEndDate}
+                onChange={(e) => h.setNewEndDate(e.target.value)}
+                min={h.newStartDate || undefined}
               />
             </div>
           </div>

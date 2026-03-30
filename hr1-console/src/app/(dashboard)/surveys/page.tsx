@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -13,8 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { useOrg } from "@/lib/org-context";
-import { useSurveys, createSurvey } from "@/lib/hooks/use-surveys";
+import { useSurveyCreatePanel } from "@/lib/hooks/use-surveys";
 import { Badge } from "@/components/ui/badge";
 import { surveyStatusLabels, surveyStatusColors, surveyTargetLabels } from "@/lib/constants";
 import { EditPanel } from "@/components/ui/edit-panel";
@@ -29,62 +27,31 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from "date-fns";
-import { useToast } from "@/components/ui/toast";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 
 export default function SurveysPage() {
-  const { organization } = useOrg();
   const router = useRouter();
-  const { showToast } = useToast();
 
   const {
-    data: surveys = [],
+    surveys,
     isLoading,
-    error: surveysError,
-    mutate: mutateSurveys,
-  } = useSurveys();
-
-  // 作成パネル
-  const [editOpen, setEditOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  // フォーム
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [target, setTarget] = useState<string>("employee");
-  const [deadline, setDeadline] = useState("");
-
-  function openCreate() {
-    setTitle("");
-    setDescription("");
-    setTarget("employee");
-    setDeadline("");
-    setEditOpen(true);
-  }
-
-  async function handleSave() {
-    if (!organization || !title.trim()) return;
-    setSaving(true);
-    const result = await createSurvey(organization.id, {
-      title,
-      description,
-      target,
-      deadline,
-    });
-    if (result.success) {
-      await mutateSurveys();
-      setEditOpen(false);
-      showToast("サーベイを作成しました");
-      if (result.id) {
-        router.push(`/surveys/${result.id}`);
-      }
-    } else {
-      showToast(result.error ?? "サーベイの作成に失敗しました", "error");
-    }
-    setSaving(false);
-  }
-
-  const todayStr = new Date().toISOString().split("T")[0];
+    surveysError,
+    mutateSurveys,
+    editOpen,
+    setEditOpen,
+    saving,
+    title,
+    setTitle,
+    description,
+    setDescription,
+    target,
+    setTarget,
+    deadline,
+    setDeadline,
+    openCreate,
+    handleSave,
+    todayStr,
+  } = useSurveyCreatePanel();
 
   return (
     <div className="flex flex-col">

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,9 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { useOrg } from "@/lib/org-context";
-import type { Faq } from "@/types/database";
-import { useFaqs, saveFaq, deleteFaq, toggleFaqPublished } from "@/lib/hooks/use-faqs";
+import { useFaqs, useFaqPanel } from "@/lib/hooks/use-faqs";
 import { Badge } from "@/components/ui/badge";
 import { faqTargetLabels, faqCategoryLabels } from "@/lib/constants";
 import { EditPanel } from "@/components/ui/edit-panel";
@@ -33,79 +30,28 @@ import { Pencil, GripVertical, Eye, EyeOff } from "lucide-react";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 
 export default function FaqsPage() {
-  const { organization } = useOrg();
-
   const { data: faqs = [], isLoading, error: faqsError, mutate: mutateFaqs } = useFaqs();
 
-  // 編集パネル
-  const [editOpen, setEditOpen] = useState(false);
-  const [editFaq, setEditFaq] = useState<Faq | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  // フォーム
-  const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
-  const [category, setCategory] = useState("general");
-  const [target, setTarget] = useState<string>("both");
-
-  function openCreate() {
-    setEditFaq(null);
-    setQuestion("");
-    setAnswer("");
-    setCategory("general");
-    setTarget("both");
-    setEditOpen(true);
-  }
-
-  function openEdit(faq: Faq) {
-    setEditFaq(faq);
-    setQuestion(faq.question);
-    setAnswer(faq.answer);
-    setCategory(faq.category);
-    setTarget(faq.target);
-    setEditOpen(true);
-  }
-
-  async function handleSave() {
-    if (!organization || !question.trim() || !answer.trim()) return;
-    setSaving(true);
-    try {
-      const maxOrder = faqs.length > 0 ? Math.max(...faqs.map((f) => f.sort_order)) + 1 : 0;
-      await saveFaq({
-        organizationId: organization.id,
-        editFaqId: editFaq?.id ?? null,
-        question: question.trim(),
-        answer: answer.trim(),
-        category,
-        target,
-        maxSortOrder: maxOrder,
-      });
-      await mutateFaqs();
-      setEditOpen(false);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDelete() {
-    if (!editFaq) return;
-    setDeleting(true);
-    try {
-      if (!organization) return;
-      await deleteFaq(editFaq.id, organization.id);
-      await mutateFaqs();
-      setEditOpen(false);
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  async function togglePublished(faq: Faq) {
-    if (!organization) return;
-    await toggleFaqPublished(faq.id, organization.id, faq.is_published);
-    await mutateFaqs();
-  }
+  const {
+    editOpen,
+    setEditOpen,
+    editFaq,
+    saving,
+    deleting,
+    question,
+    setQuestion,
+    answer,
+    setAnswer,
+    category,
+    setCategory,
+    target,
+    setTarget,
+    openCreate,
+    openEdit,
+    handleSave,
+    handleDelete,
+    handleTogglePublished,
+  } = useFaqPanel();
 
   return (
     <div className="flex flex-col">
@@ -157,7 +103,7 @@ export default function FaqsPage() {
                   <TableCell>
                     <button
                       type="button"
-                      onClick={() => togglePublished(faq)}
+                      onClick={() => handleTogglePublished(faq)}
                       className="text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {faq.is_published ? (

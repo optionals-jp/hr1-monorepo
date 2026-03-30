@@ -1,9 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/toast";
-import { useSWRConfig } from "swr";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,9 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useOrg } from "@/lib/org-context";
 import { Trash2, ChevronDown } from "lucide-react";
-import { createTemplate } from "@/lib/hooks/use-evaluations";
+import { useCreateEvaluation } from "@/lib/hooks/use-evaluations";
 import {
   formTargetLabels,
   scoreTypeLabels,
@@ -28,118 +23,27 @@ import {
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
-interface AnchorDraft {
-  score_value: number;
-  description: string;
-}
-
-interface CriterionDraft {
-  tempId: string;
-  label: string;
-  description: string;
-  score_type: string;
-  options: string;
-  weight: string;
-  anchors: AnchorDraft[];
-  showAnchors: boolean;
-}
-
-function getDefaultAnchors(scoreType: string): AnchorDraft[] {
-  const max = scoreType === "five_star" ? 5 : scoreType === "ten_point" ? 10 : 0;
-  return Array.from({ length: max }, (_, i) => ({
-    score_value: i + 1,
-    description: "",
-  }));
-}
-
 export default function NewEvaluationTemplatePage() {
-  const router = useRouter();
-  const { showToast } = useToast();
-  const { mutate } = useSWRConfig();
-  const { organization } = useOrg();
-  const [title, setTitle] = useState("");
-  const [target, setTarget] = useState<string>("both");
-  const [evaluationType, setEvaluationType] = useState<string>("single");
-  const [anonymityMode, setAnonymityMode] = useState<string>("none");
-  const [description, setDescription] = useState("");
-  const [criteria, setCriteria] = useState<CriterionDraft[]>([]);
-  const [saving, setSaving] = useState(false);
-
-  const addCriterion = () => {
-    setCriteria([
-      ...criteria,
-      {
-        tempId: `${Date.now()}`,
-        label: "",
-        description: "",
-        score_type: "five_star",
-        options: "",
-        weight: "1.00",
-        anchors: getDefaultAnchors("five_star"),
-        showAnchors: evaluationType === "multi_rater",
-      },
-    ]);
-  };
-
-  const removeCriterion = (tempId: string) => {
-    setCriteria(criteria.filter((c) => c.tempId !== tempId));
-  };
-
-  const updateCriterion = (tempId: string, field: string, value: string | boolean) => {
-    setCriteria(
-      criteria.map((c) => {
-        if (c.tempId !== tempId) return c;
-        const updated = { ...c, [field]: value };
-        // score_type変更時にアンカーをリセット
-        if (field === "score_type" && typeof value === "string") {
-          updated.anchors = getDefaultAnchors(value);
-        }
-        return updated;
-      })
-    );
-  };
-
-  const updateAnchor = (tempId: string, scoreValue: number, description: string) => {
-    setCriteria(
-      criteria.map((c) => {
-        if (c.tempId !== tempId) return c;
-        return {
-          ...c,
-          anchors: c.anchors.map((a) => (a.score_value === scoreValue ? { ...a, description } : a)),
-        };
-      })
-    );
-  };
-
-  const handleSubmit = async () => {
-    if (!organization || !title) return;
-    setSaving(true);
-
-    const result = await createTemplate(organization.id, {
-      title,
-      target,
-      evaluationType,
-      anonymityMode,
-      description,
-      criteria: criteria.map((c) => ({
-        label: c.label,
-        description: c.description,
-        score_type: c.score_type,
-        options: c.options,
-        weight: c.weight,
-        anchors: c.anchors,
-      })),
-    });
-
-    if (result.success) {
-      await mutate(`eval-templates-${organization.id}`);
-      showToast("評価シートを作成しました");
-      router.push("/evaluations");
-    } else {
-      showToast(result.error ?? "評価シートの作成に失敗しました", "error");
-    }
-    setSaving(false);
-  };
+  const {
+    title,
+    setTitle,
+    target,
+    setTarget,
+    evaluationType,
+    setEvaluationType,
+    anonymityMode,
+    setAnonymityMode,
+    description,
+    setDescription,
+    criteria,
+    saving,
+    addCriterion,
+    removeCriterion,
+    updateCriterion,
+    updateAnchor,
+    handleSubmit,
+    cancel,
+  } = useCreateEvaluation();
 
   const isNumericType = (type: string) => type === "five_star" || type === "ten_point";
 
@@ -318,7 +222,6 @@ export default function NewEvaluationTemplatePage() {
                         />
                       </div>
                     )}
-                    {/* 行動アンカー (BARS) */}
                     {isNumericType(c.score_type) && (
                       <div className="space-y-2">
                         <button
@@ -375,7 +278,7 @@ export default function NewEvaluationTemplatePage() {
           </Card>
 
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => router.push("/evaluations")}>
+            <Button variant="outline" onClick={cancel}>
               キャンセル
             </Button>
             <Button onClick={handleSubmit} disabled={!title || saving}>
