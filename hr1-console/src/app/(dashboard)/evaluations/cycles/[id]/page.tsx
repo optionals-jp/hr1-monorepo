@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -15,18 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useOrg } from "@/lib/org-context";
-import type {
-  EvaluationCycle,
-  EvaluationCriterion,
-  EvaluationAssignment,
-  EvaluationScore,
-  Profile,
-  Department,
-} from "@/types/database";
+import { useEvaluationCycleDetail } from "@/lib/hooks/use-evaluation-cycle-detail";
+import type { Profile } from "@/types/database";
 import { Star, Trash2, Plus, Users, UserPlus, Building2, Check } from "lucide-react";
 import {
   cycleStatusLabels,
@@ -41,384 +30,49 @@ const tabs = [
   { value: "overview", label: "概要" },
   { value: "assignments", label: "対象者・評価者" },
   { value: "report", label: "集計レポート" },
-  { value: "audit", label: "変更履歴" },
+  { value: "audit", label: "変更ログ" },
 ];
 
-type AddMode = "individual" | "department" | "all_mutual";
-
-interface DepartmentWithMembers extends Department {
-  members: Profile[];
-}
-
 export default function EvaluationCycleDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const { organization } = useOrg();
-  const { showToast } = useToast();
-  const [cycle, setCycle] = useState<EvaluationCycle | null>(null);
-  const [criteria, setCriteria] = useState<EvaluationCriterion[]>([]);
-  const [assignments, setAssignments] = useState<
-    (EvaluationAssignment & { target_user?: Profile; evaluator?: Profile })[]
-  >([]);
-  const [allScores, setAllScores] = useState<EvaluationScore[]>([]);
-  const [orgMembers, setOrgMembers] = useState<Profile[]>([]);
-  const [departments, setDepartments] = useState<DepartmentWithMembers[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
-
-  // 追加モード
-  const [addMode, setAddMode] = useState<AddMode>("individual");
-
-  // 個別追加
-  const [addTargetId, setAddTargetId] = useState("");
-  const [addEvaluatorId, setAddEvaluatorId] = useState("");
-  const [addRaterType, setAddRaterType] = useState("peer");
-
-  // 部署一括追加
-  const [targetDeptId, setTargetDeptId] = useState("");
-  const [evaluatorDeptId, setEvaluatorDeptId] = useState("");
-  const [deptRaterType, setDeptRaterType] = useState("peer");
-
-  // 相互評価一括
-  const [mutualDeptId, setMutualDeptId] = useState("");
-  const [mutualIncludeSelf, setMutualIncludeSelf] = useState(true);
-
-  const [addingSaving, setAddingSaving] = useState(false);
-
-  useEffect(() => {
-    if (!organization) return;
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, organization]);
-
-  async function loadData() {
-    if (!organization) return;
-    setLoading(true);
-
-    const [{ data: cycleData }, { data: members }, { data: deptData }] = await Promise.all([
-      getSupabase()
-        .from("evaluation_cycles")
-        .select("*")
-        .eq("id", id)
-        .eq("organization_id", organization.id)
-        .single(),
-      getSupabase()
-        .from("user_organizations")
-        .select("profiles(id, display_name, email, role)")
-        .eq("organization_id", organization.id),
-      getSupabase()
-        .from("departments")
-        .select("*")
-        .eq("organization_id", organization.id)
-        .order("name"),
-    ]);
-
-    setCycle(cycleData);
-    const profiles = (members ?? [])
-      .map((m) => (m as unknown as { profiles: Profile }).profiles)
-      .filter(Boolean);
-    setOrgMembers(profiles);
-
-    // 部署メンバーマッピング
-    if (deptData && deptData.length > 0) {
-      const { data: empDepts } = await getSupabase()
-        .from("employee_departments")
-        .select("user_id, department_id")
-        .in(
-          "department_id",
-          deptData.map((d) => d.id)
-        );
-
-      const deptMembers = new Map<string, Profile[]>();
-      for (const ed of empDepts ?? []) {
-        const profile = profiles.find((p) => p.id === ed.user_id);
-        if (profile) {
-          if (!deptMembers.has(ed.department_id)) deptMembers.set(ed.department_id, []);
-          deptMembers.get(ed.department_id)!.push(profile);
-        }
-      }
-
-      setDepartments(
-        (deptData as Department[]).map((d) => ({
-          ...d,
-          members: deptMembers.get(d.id) ?? [],
-        }))
-      );
-    } else {
-      setDepartments([]);
-    }
-
-    if (cycleData) {
-      const [{ data: crData }, { data: assignData }] = await Promise.all([
-        getSupabase()
-          .from("evaluation_criteria")
-          .select("*")
-          .eq("template_id", cycleData.template_id)
-          .order("sort_order"),
-        getSupabase()
-          .from("evaluation_assignments")
-          .select("*")
-          .eq("cycle_id", id)
-          .order("created_at"),
-      ]);
-
-      setCriteria(crData ?? []);
-
-      const assignmentList = assignData ?? [];
-      const userIds = [
-        ...new Set(assignmentList.flatMap((a) => [a.target_user_id, a.evaluator_id])),
-      ];
-
-      const profileMap = new Map<string, Profile>();
-      if (userIds.length > 0) {
-        const { data: profileData } = await getSupabase()
-          .from("profiles")
-          .select("id, display_name, email, role")
-          .in("id", userIds);
-        for (const p of profileData ?? []) profileMap.set(p.id, p as Profile);
-      }
-
-      setAssignments(
-        assignmentList.map((a) => ({
-          ...a,
-          target_user: profileMap.get(a.target_user_id),
-          evaluator: profileMap.get(a.evaluator_id),
-        }))
-      );
-
-      // スコアデータ取得（提出済みの評価のみ）
-      const submittedEvalIds = assignmentList
-        .filter((a) => a.evaluation_id)
-        .map((a) => a.evaluation_id!);
-      if (submittedEvalIds.length > 0) {
-        const { data: scoreData } = await getSupabase()
-          .from("evaluation_scores")
-          .select("*")
-          .in("evaluation_id", submittedEvalIds);
-        setAllScores(scoreData ?? []);
-      } else {
-        setAllScores([]);
-      }
-    }
-
-    setLoading(false);
-  }
-
-  /** 既に存在するアサインかチェック */
-  function assignmentExists(targetId: string, evaluatorId: string) {
-    return assignments.some((a) => a.target_user_id === targetId && a.evaluator_id === evaluatorId);
-  }
-
-  /** 複数アサインを一括追加 */
-  async function bulkAddAssignments(
-    pairs: { targetId: string; evaluatorId: string; raterType: string }[]
-  ) {
-    if (!cycle) return;
-
-    // 重複除外
-    const newPairs = pairs.filter((p) => !assignmentExists(p.targetId, p.evaluatorId));
-    if (newPairs.length === 0) {
-      showToast("追加できる組み合わせがありません（すべて登録済みです）", "error");
-      return;
-    }
-
-    setAddingSaving(true);
-    try {
-      const rows = newPairs.map((p, i) => ({
-        id: `assign-${Date.now()}-${i}`,
-        cycle_id: cycle.id,
-        target_user_id: p.targetId,
-        evaluator_id: p.evaluatorId,
-        rater_type: p.raterType,
-        due_date: cycle.end_date,
-      }));
-
-      const { error } = await getSupabase().from("evaluation_assignments").insert(rows);
-      if (error) throw error;
-
-      showToast(`${newPairs.length}件の評価を追加しました`);
-      await loadData();
-    } catch {
-      showToast("追加に失敗しました", "error");
-    } finally {
-      setAddingSaving(false);
-    }
-  }
-
-  async function addIndividualAssignment() {
-    if (!addTargetId || !addEvaluatorId) return;
-    await bulkAddAssignments([
-      { targetId: addTargetId, evaluatorId: addEvaluatorId, raterType: addRaterType },
-    ]);
-    setAddTargetId("");
-    setAddEvaluatorId("");
-  }
-
-  async function addByDepartment() {
-    const targetDept = departments.find((d) => d.id === targetDeptId);
-    const evaluatorDept = departments.find((d) => d.id === evaluatorDeptId);
-    if (!targetDept || !evaluatorDept) return;
-
-    const pairs: { targetId: string; evaluatorId: string; raterType: string }[] = [];
-    for (const target of targetDept.members) {
-      for (const evaluator of evaluatorDept.members) {
-        if (target.id !== evaluator.id) {
-          pairs.push({ targetId: target.id, evaluatorId: evaluator.id, raterType: deptRaterType });
-        }
-      }
-    }
-    await bulkAddAssignments(pairs);
-  }
-
-  async function addMutualEvaluations() {
-    const dept = departments.find((d) => d.id === mutualDeptId);
-    if (!dept) return;
-
-    const pairs: { targetId: string; evaluatorId: string; raterType: string }[] = [];
-    for (const target of dept.members) {
-      for (const evaluator of dept.members) {
-        if (target.id === evaluator.id) {
-          if (mutualIncludeSelf) {
-            pairs.push({ targetId: target.id, evaluatorId: evaluator.id, raterType: "self" });
-          }
-        } else {
-          pairs.push({ targetId: target.id, evaluatorId: evaluator.id, raterType: "peer" });
-        }
-      }
-    }
-    await bulkAddAssignments(pairs);
-  }
-
-  async function removeAssignment(assignmentId: string) {
-    const { error } = await getSupabase()
-      .from("evaluation_assignments")
-      .delete()
-      .eq("id", assignmentId);
-    if (error) {
-      showToast("削除に失敗しました", "error");
-    } else {
-      await loadData();
-    }
-  }
-
-  async function removeTargetAssignments(targetUserId: string) {
-    const targetAssignments = assignments.filter(
-      (a) => a.target_user_id === targetUserId && a.status === "pending"
-    );
-    if (targetAssignments.length === 0) return;
-
-    const { error } = await getSupabase()
-      .from("evaluation_assignments")
-      .delete()
-      .in(
-        "id",
-        targetAssignments.map((a) => a.id)
-      );
-    if (error) {
-      showToast("削除に失敗しました", "error");
-    } else {
-      showToast(`${targetAssignments.length}件を削除しました`);
-      await loadData();
-    }
-  }
-
-  async function updateCycleStatus(newStatus: string) {
-    if (!cycle) return;
-    const { error } = await getSupabase()
-      .from("evaluation_cycles")
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
-      .eq("id", cycle.id);
-    if (error) {
-      showToast("ステータスの更新に失敗しました", "error");
-    } else {
-      showToast(`ステータスを「${cycleStatusLabels[newStatus]}」に変更しました`);
-      await loadData();
-    }
-  }
-
-  // 対象者ごとにアサインをグループ化
-  const assignmentsByTarget = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        targetUser: Profile | undefined;
-        assignments: (EvaluationAssignment & { target_user?: Profile; evaluator?: Profile })[];
-      }
-    >();
-    for (const a of assignments) {
-      if (!map.has(a.target_user_id)) {
-        map.set(a.target_user_id, { targetUser: a.target_user, assignments: [] });
-      }
-      map.get(a.target_user_id)!.assignments.push(a);
-    }
-    return Array.from(map.entries()).map(([targetId, data]) => ({
-      targetId,
-      ...data,
-    }));
-  }, [assignments]);
-
-  // 集計レポート用データ
-  const reportData = useMemo(() => {
-    if (!cycle || assignments.length === 0) return null;
-
-    const submittedAssignments = assignments.filter((a) => a.status === "submitted");
-    const targetUserIds = [...new Set(submittedAssignments.map((a) => a.target_user_id))];
-
-    return targetUserIds.map((targetId) => {
-      const targetAssignments = submittedAssignments.filter((a) => a.target_user_id === targetId);
-      const targetProfile = targetAssignments[0]?.target_user;
-      const evalIds = targetAssignments.map((a) => a.evaluation_id).filter(Boolean) as string[];
-      const targetScores = allScores.filter((s) => evalIds.includes(s.evaluation_id));
-
-      const criteriaStats = criteria.map((c) => {
-        const isNumeric = c.score_type === "five_star" || c.score_type === "ten_point";
-        const criterionScores = targetScores.filter((s) => s.criterion_id === c.id);
-
-        const byRaterType: Record<string, number[]> = {};
-        for (const a of targetAssignments) {
-          if (!a.evaluation_id) continue;
-          const scores = criterionScores.filter((s) => s.evaluation_id === a.evaluation_id);
-          for (const s of scores) {
-            if (s.score != null && isNumeric) {
-              if (!byRaterType[a.rater_type]) byRaterType[a.rater_type] = [];
-              byRaterType[a.rater_type].push(s.score);
-            }
-          }
-        }
-
-        const allNumeric = Object.values(byRaterType).flat();
-        const avg =
-          allNumeric.length > 0 ? allNumeric.reduce((a, b) => a + b, 0) / allNumeric.length : null;
-        const stdDev =
-          allNumeric.length > 1
-            ? Math.sqrt(
-                allNumeric.reduce((sum, s) => sum + (s - avg!) ** 2, 0) / (allNumeric.length - 1)
-              )
-            : null;
-
-        const raterTypeAvgs: Record<string, number | null> = {};
-        for (const [type, scores] of Object.entries(byRaterType)) {
-          raterTypeAvgs[type] =
-            scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
-        }
-
-        return {
-          criterion: c,
-          avg,
-          stdDev,
-          count: allNumeric.length,
-          byRaterType: raterTypeAvgs,
-          isNumeric,
-        };
-      });
-
-      return {
-        targetId,
-        targetName: targetProfile?.display_name ?? targetProfile?.email ?? targetId,
-        raterCount: targetAssignments.length,
-        criteriaStats,
-      };
-    });
-  }, [assignments, allScores, criteria, cycle]);
+  const {
+    id,
+    organization,
+    cycle,
+    assignments,
+    orgMembers,
+    departments,
+    loading,
+    activeTab,
+    setActiveTab,
+    addMode,
+    setAddMode,
+    addTargetId,
+    setAddTargetId,
+    addEvaluatorId,
+    setAddEvaluatorId,
+    addRaterType,
+    setAddRaterType,
+    targetDeptId,
+    setTargetDeptId,
+    evaluatorDeptId,
+    setEvaluatorDeptId,
+    deptRaterType,
+    setDeptRaterType,
+    mutualDeptId,
+    setMutualDeptId,
+    mutualIncludeSelf,
+    setMutualIncludeSelf,
+    addingSaving,
+    assignmentsByTarget,
+    reportData,
+    assignmentExists,
+    addIndividualAssignment,
+    addByDepartment,
+    addMutualEvaluations,
+    handleRemoveAssignment,
+    removeTargetAssignments,
+    handleUpdateCycleStatus,
+  } = useEvaluationCycleDetail();
 
   if (loading) {
     return (
@@ -506,7 +160,7 @@ export default function EvaluationCycleDetailPage() {
               {cycleStatusLabels[cycle.status]}
             </Badge>
             {nextAction && (
-              <Button size="sm" onClick={() => updateCycleStatus(nextAction.status)}>
+              <Button size="sm" onClick={() => handleUpdateCycleStatus(nextAction.status)}>
                 {nextAction.label}
               </Button>
             )}
@@ -949,7 +603,7 @@ export default function EvaluationCycleDetailPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => removeAssignment(a.id)}
+                                onClick={() => handleRemoveAssignment(a.id)}
                                 className="text-destructive hover:text-destructive h-7 w-7 p-0"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />

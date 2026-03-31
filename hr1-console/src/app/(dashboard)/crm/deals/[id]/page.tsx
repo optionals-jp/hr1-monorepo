@@ -3,9 +3,6 @@
 import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { InfoItem } from "@/components/ui/info-item";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,50 +12,14 @@ import {
   activityTypeLabels,
 } from "@/lib/constants";
 import Link from "next/link";
-import type { BcDeal, BcActivity, BcTodo } from "@/types/database";
+import { useCrmDeal, useCrmDealActivities, useCrmDealTodos } from "@/lib/hooks/use-crm";
 
 export default function CrmDealDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { organization } = useOrg();
 
-  const { data: deal, error } = useQuery<BcDeal | null>(
-    organization ? `crm-deal-${id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("bc_deals")
-        .select("*, bc_companies(*), bc_contacts(*)")
-        .eq("id", id)
-        .eq("organization_id", organization!.id)
-        .single();
-      return data;
-    }
-  );
-
-  const { data: activities } = useQuery<BcActivity[]>(
-    organization ? `crm-deal-activities-${id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("bc_activities")
-        .select("*")
-        .eq("deal_id", id)
-        .eq("organization_id", organization!.id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    }
-  );
-
-  const { data: todos } = useQuery<BcTodo[]>(
-    organization ? `crm-deal-todos-${id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("bc_todos")
-        .select("*")
-        .eq("deal_id", id)
-        .eq("organization_id", organization!.id)
-        .order("due_date");
-      return data ?? [];
-    }
-  );
+  const { data: deal, error } = useCrmDeal(id);
+  const { data: activities } = useCrmDealActivities(id);
+  const { data: todos } = useCrmDealTodos(id);
 
   return (
     <div>
@@ -148,7 +109,7 @@ export default function CrmDealDetailPage() {
 
           {/* 活動 */}
           <div>
-            <h2 className="text-lg font-semibold mb-3">活動履歴（{activities?.length ?? 0}件）</h2>
+            <h2 className="text-lg font-semibold mb-3">活動ログ（{activities?.length ?? 0}件）</h2>
             <div className="space-y-2">
               {(activities ?? []).map((a) => (
                 <div key={a.id} className="rounded-lg border p-3">

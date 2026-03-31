@@ -9,15 +9,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp } from "lucide-react";
+import type { KpiTrendPoint } from "@/types/dashboard";
 
-export interface KpiTrendPoint {
-  month: string;
-  applications: number;
-  offered: number;
-  withdrawn: number;
-}
+export type { KpiTrendPoint };
 
 interface KpiTrendChartProps {
   data: KpiTrendPoint[];
@@ -62,25 +57,19 @@ function CustomTooltip({
 
 export function KpiTrendChart({ data }: KpiTrendChartProps) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-base font-semibold">KPIトレンド推移</CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">過去6ヶ月の月別推移</p>
-          </div>
-          {/* 凡例 */}
-          <div className="flex items-center gap-3">
-            {SERIES.map((s) => (
-              <div key={s.key} className="flex items-center gap-1">
-                <div className={`h-2 w-2 rounded-full ${s.dotClass}`} />
-                <span className="text-[11px] text-muted-foreground">{s.name}</span>
-              </div>
-            ))}
-          </div>
+    <div className="rounded-xl border border-border/60 bg-white">
+      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+        <h2 className="text-[15px] font-semibold">応募トレンド</h2>
+        <div className="flex items-center gap-3">
+          {SERIES.map((s) => (
+            <div key={s.key} className="flex items-center gap-1">
+              <div className={`h-2 w-2 rounded-full ${s.dotClass}`} />
+              <span className="text-[11px] text-muted-foreground">{s.name}</span>
+            </div>
+          ))}
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="px-5 pb-4">
         {data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <TrendingUp className="h-8 w-8 mb-2 opacity-40" />
@@ -152,7 +141,7 @@ export function KpiTrendChart({ data }: KpiTrendChartProps) {
             </AreaChart>
           </ResponsiveContainer>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

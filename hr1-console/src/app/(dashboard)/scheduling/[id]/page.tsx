@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { useOrg } from "@/lib/org-context";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,22 +26,20 @@ import {
 } from "@/components/ui/table";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { DatetimeInput } from "@/components/ui/datetime-input";
-import { cn, autoFillEndAt } from "@/lib/utils";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useOrg } from "@/lib/org-context";
-import type { Interview, InterviewSlot, AuditLog } from "@/types/database";
+import { cn } from "@/lib/utils";
+import { useSchedulingDetailPage } from "@/lib/hooks/use-scheduling-detail";
 import { Calendar, Trash2, Search } from "lucide-react";
 import { format } from "date-fns";
 import {
   interviewScheduleStatusLabels as statusLabels,
   interviewScheduleStatusColors as statusColors,
-  getAuditActionLabel,
 } from "@/lib/constants";
+import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 
 const tabs = [
   { value: "detail", label: "面接詳細" },
-  { value: "timeline", label: "履歴" },
-  { value: "history", label: "編集履歴" },
+  { value: "timeline", label: "ログ" },
+  { value: "history", label: "編集ログ" },
 ];
 
 const editTabs: EditPanelTab[] = [
@@ -48,279 +47,14 @@ const editTabs: EditPanelTab[] = [
   { value: "slots", label: "候補日時" },
 ];
 
-// datetime-local用のフォーマット (yyyy-MM-ddTHH:mm)
-function toLocalDatetime(isoString: string): string {
-  const d = new Date(isoString);
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-interface BookedApplication {
-  slotId: string;
-  applicationId: string;
-  applicantName: string;
-  applicantEmail: string;
-  startAt: string;
-  endAt: string;
-}
-
 export default function SchedulingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { organization } = useOrg();
-  const [interview, setInterview] = useState<Interview | null>(null);
-  const [slots, setSlots] = useState<InterviewSlot[]>([]);
-  const [changeLogs, setChangeLogs] = useState<AuditLog[]>([]);
-  const [bookedApps, setBookedApps] = useState<BookedApplication[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("detail");
+  const h = useSchedulingDetailPage();
+  const [auditLogCount, setAuditLogCount] = useState<number | undefined>(undefined);
+  const handleAuditLoaded = useCallback((count: number) => setAuditLogCount(count), []);
 
-  const [historySearch, setHistorySearch] = useState("");
-
-  // Edit states
-  const [editing, setEditing] = useState(false);
-  const [editTab, setEditTab] = useState("info");
-  const [editTitle, setEditTitle] = useState("");
-  const [editLocation, setEditLocation] = useState("");
-  const [editNotes, setEditNotes] = useState("");
-  const [editSlots, setEditSlots] = useState<
-    {
-      id: string;
-      startAt: string;
-      endAt: string;
-      maxApplicants: number;
-      isNew?: boolean;
-      applicationId?: string | null;
-    }[]
-  >([]);
-  const [saving, setSaving] = useState(false);
-
-  const load = async () => {
-    if (!organization) return;
-    setLoading(true);
-    const [{ data }, { data: logsData }] = await Promise.all([
-      getSupabase()
-        .from("interviews")
-        .select(
-          "*, interview_slots(*, applications:application_id(id, profiles:applicant_id(display_name, email)))"
-        )
-        .eq("id", id)
-        .eq("organization_id", organization.id)
-        .single(),
-      getSupabase()
-        .from("audit_logs")
-        .select("*")
-        .eq("organization_id", organization.id)
-        .eq("table_name", "interviews")
-        .eq("record_id", id)
-        .order("created_at", { ascending: false })
-        .limit(50),
-    ]);
-
-    if (data) {
-      const { interview_slots, ...rest } = data;
-      setInterview(rest as Interview);
-      const sortedSlots = (interview_slots ?? []).sort(
-        (a: InterviewSlot, b: InterviewSlot) =>
-          new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
-      );
-      setSlots(sortedSlots);
-
-      // Extract booked applications
-      const apps: BookedApplication[] = [];
-      for (const slot of sortedSlots) {
-        if (slot.application_id) {
-          const app = slot.applications as unknown as {
-            id: string;
-            profiles?: { display_name: string | null; email: string };
-          } | null;
-          apps.push({
-            slotId: slot.id,
-            applicationId: slot.application_id,
-            applicantName: app?.profiles?.display_name ?? "-",
-            applicantEmail: app?.profiles?.email ?? "-",
-            startAt: slot.start_at,
-            endAt: slot.end_at,
-          });
-        }
-      }
-      setBookedApps(apps);
-    }
-    setChangeLogs(logsData ?? []);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    if (!organization) return;
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, organization]);
-
-  const updateStatus = async (status: string) => {
-    if (!organization) return;
-    const oldStatus = interview?.status;
-    await getSupabase().from("interviews").update({ status }).eq("id", id);
-    setInterview((prev) => (prev ? { ...prev, status: status as Interview["status"] } : prev));
-
-    if (oldStatus && oldStatus !== status) {
-      const { data: logsData } = await getSupabase()
-        .from("audit_logs")
-        .select("*")
-        .eq("organization_id", organization.id)
-        .eq("table_name", "interviews")
-        .eq("record_id", id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      setChangeLogs(logsData ?? []);
-    }
-  };
-
-  function startEditing() {
-    if (!interview) return;
-    setEditTitle(interview.title);
-    setEditLocation(interview.location ?? "");
-    setEditNotes(interview.notes ?? "");
-    setEditSlots(
-      slots.map((s) => ({
-        id: s.id,
-        startAt: toLocalDatetime(s.start_at),
-        endAt: toLocalDatetime(s.end_at),
-        maxApplicants: Math.max(1, s.max_applicants ?? 1),
-        applicationId: s.application_id,
-      }))
-    );
-    setEditTab("info");
-    setEditing(true);
-  }
-
-  function addSlot() {
-    setEditSlots([
-      ...editSlots,
-      { id: `new-${Date.now()}`, startAt: "", endAt: "", maxApplicants: 1, isNew: true },
-    ]);
-  }
-
-  function removeSlot(slotId: string) {
-    setEditSlots(editSlots.filter((s) => s.id !== slotId));
-  }
-
-  function updateSlot(
-    slotId: string,
-    field: "startAt" | "endAt" | "maxApplicants",
-    value: string | number
-  ) {
-    setEditSlots(
-      editSlots.map((s) => {
-        if (s.id !== slotId) return s;
-        const updated = { ...s, [field]: value };
-        // 開始日時が設定され、終了日時が未設定なら30分後を自動入力
-        if (field === "startAt" && value && !s.endAt) {
-          updated.endAt = autoFillEndAt(value as string);
-        }
-        return updated;
-      })
-    );
-  }
-
-  async function handleSave() {
-    if (!interview) return;
-    setSaving(true);
-
-    const slotLogs: { detail_action: string; summary: string }[] = [];
-
-    await getSupabase()
-      .from("interviews")
-      .update({
-        title: editTitle,
-        location: editLocation || null,
-        notes: editNotes || null,
-      })
-      .eq("id", interview.id);
-
-    // Slot changes
-    const existingIds = slots.map((s) => s.id);
-    const editIds = editSlots.filter((s) => !s.isNew).map((s) => s.id);
-
-    const deletedIds = existingIds.filter((sid) => !editIds.includes(sid));
-    const deletableIds = deletedIds.filter((sid) => {
-      const slot = slots.find((s) => s.id === sid);
-      return !slot?.application_id;
-    });
-    if (deletableIds.length > 0) {
-      await getSupabase().from("interview_slots").delete().in("id", deletableIds);
-      slotLogs.push({
-        detail_action: "slot_deleted",
-        summary: `候補日時を${deletableIds.length}件削除`,
-      });
-    }
-
-    const newSlots = editSlots.filter((s) => s.isNew && s.startAt && s.endAt);
-    if (newSlots.length > 0) {
-      await getSupabase()
-        .from("interview_slots")
-        .insert(
-          newSlots.map((s, i) => ({
-            id: `slot-${interview.id}-${Date.now()}-${i}`,
-            interview_id: interview.id,
-            start_at: new Date(s.startAt).toISOString(),
-            end_at: new Date(s.endAt).toISOString(),
-            is_selected: false,
-            max_applicants: s.maxApplicants,
-          }))
-        );
-      slotLogs.push({ detail_action: "slot_added", summary: `候補日時を${newSlots.length}件追加` });
-    }
-
-    let updatedCount = 0;
-    for (const es of editSlots.filter((s) => !s.isNew)) {
-      const original = slots.find((s) => s.id === es.id);
-      if (!original) continue;
-      const origStart = toLocalDatetime(original.start_at);
-      const origEnd = toLocalDatetime(original.end_at);
-      const timeChanged =
-        !original.application_id && (es.startAt !== origStart || es.endAt !== origEnd);
-      const maxChanged = es.maxApplicants !== (original.max_applicants ?? 0);
-      if (timeChanged || maxChanged) {
-        const updates: Record<string, unknown> = { max_applicants: es.maxApplicants };
-        if (timeChanged) {
-          updates.start_at = new Date(es.startAt).toISOString();
-          updates.end_at = new Date(es.endAt).toISOString();
-        }
-        await getSupabase().from("interview_slots").update(updates).eq("id", es.id);
-        updatedCount++;
-      }
-    }
-    if (updatedCount > 0) {
-      slotLogs.push({ detail_action: "slot_updated", summary: `候補日時を${updatedCount}件変更` });
-    }
-
-    if (slotLogs.length > 0 && organization) {
-      const userId = (await getSupabase().auth.getUser()).data.user?.id;
-      if (!userId) throw new Error("認証ユーザーが取得できません");
-      await getSupabase()
-        .from("audit_logs")
-        .insert(
-          slotLogs.map((log) => ({
-            organization_id: organization.id,
-            user_id: userId,
-            action: log.detail_action.includes("deleted")
-              ? "delete"
-              : log.detail_action.includes("added")
-                ? "create"
-                : "update",
-            table_name: "interviews",
-            record_id: interview.id,
-            metadata: { summary: log.summary, detail_action: log.detail_action },
-            source: "console" as const,
-          }))
-        );
-    }
-
-    setSaving(false);
-    setEditing(false);
-    await load();
-  }
-
-  if (loading) {
+  if (h.loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
         読み込み中...
@@ -328,13 +62,15 @@ export default function SchedulingDetailPage() {
     );
   }
 
-  if (!interview) {
+  if (!h.interview) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
         面接が見つかりません
       </div>
     );
   }
+
+  const interview = h.interview;
 
   return (
     <>
@@ -344,7 +80,7 @@ export default function SchedulingDetailPage() {
         breadcrumb={[{ label: "日程調整", href: "/scheduling" }]}
         sticky={false}
         action={
-          <Select value={interview.status} onValueChange={(v) => v && updateStatus(v)}>
+          <Select value={interview.status} onValueChange={(v) => v && h.updateStatus(v)}>
             <SelectTrigger className="w-32">
               <SelectValue>{(v: string) => statusLabels[v] ?? v}</SelectValue>
             </SelectTrigger>
@@ -363,18 +99,18 @@ export default function SchedulingDetailPage() {
           {tabs.map((tab) => {
             const count =
               tab.value === "timeline"
-                ? bookedApps.length
+                ? h.bookedApps.length
                 : tab.value === "history"
-                  ? changeLogs.length
+                  ? auditLogCount
                   : undefined;
             return (
               <button
                 key={tab.value}
                 type="button"
-                onClick={() => setActiveTab(tab.value)}
+                onClick={() => h.setActiveTab(tab.value)}
                 className={cn(
                   "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-                  activeTab === tab.value
+                  h.activeTab === tab.value
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 )}
@@ -383,7 +119,7 @@ export default function SchedulingDetailPage() {
                 {count !== undefined && (
                   <span className="ml-1.5 text-xs text-muted-foreground">{count}</span>
                 )}
-                {activeTab === tab.value && (
+                {h.activeTab === tab.value && (
                   <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
                 )}
               </button>
@@ -392,17 +128,17 @@ export default function SchedulingDetailPage() {
         </div>
       </div>
 
-      {(activeTab === "detail" || activeTab === "history") && (
+      {(h.activeTab === "detail" || h.activeTab === "history") && (
         <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
           {/* ===== 面接詳細タブ ===== */}
-          {activeTab === "detail" && (
+          {h.activeTab === "detail" && (
             <div className="space-y-6 max-w-3xl">
               {/* 面接情報セクション */}
               <section>
                 <div className="rounded-lg bg-white border">
                   <div className="flex items-center justify-between px-5 pt-4 pb-2">
                     <h2 className="text-sm font-semibold text-muted-foreground">面接情報</h2>
-                    <Button variant="outline" size="sm" onClick={startEditing}>
+                    <Button variant="outline" size="sm" onClick={h.startEditing}>
                       編集
                     </Button>
                   </div>
@@ -424,7 +160,7 @@ export default function SchedulingDetailPage() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">枠の予約状況</span>
                       <span>
-                        {slots.filter((s) => s.application_id).length} / {slots.length} 予約済み
+                        {h.slots.filter((s) => s.application_id).length} / {h.slots.length} 予約済み
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -447,14 +183,14 @@ export default function SchedulingDetailPage() {
                   <div className="flex items-center justify-between px-5 pt-4 pb-2">
                     <h2 className="text-sm font-semibold text-muted-foreground">
                       候補日時
-                      <span className="ml-1.5 text-xs font-normal">{slots.length}</span>
+                      <span className="ml-1.5 text-xs font-normal">{h.slots.length}</span>
                     </h2>
                   </div>
-                  {slots.length === 0 ? (
+                  {h.slots.length === 0 ? (
                     <p className="text-center py-8 text-muted-foreground">候補日時がありません</p>
                   ) : (
                     <div>
-                      {slots.map((slot) => (
+                      {h.slots.map((slot) => (
                         <div
                           key={slot.id}
                           className={cn(
@@ -502,51 +238,28 @@ export default function SchedulingDetailPage() {
             </div>
           )}
 
-          {/* ===== 編集履歴タブ ===== */}
-          {activeTab === "history" && (
-            <>
-              {changeLogs.length === 0 ? (
-                <p className="text-center py-8 text-muted-foreground">編集履歴がありません</p>
-              ) : (
-                <div className="space-y-3 max-w-3xl">
-                  {changeLogs.map((log) => (
-                    <div
-                      key={log.id}
-                      className="flex items-start gap-4 py-3 border-b last:border-0"
-                    >
-                      <div className="shrink-0 mt-0.5">
-                        <Badge variant="outline" className="text-xs">
-                          {getAuditActionLabel(log)}
-                        </Badge>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm">
-                          {(log.metadata as Record<string, string> | null)?.summary ??
-                            (log.changes as Record<string, string> | null)?.summary ??
-                            log.action}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {format(new Date(log.created_at), "yyyy/MM/dd HH:mm")}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
+          {/* ===== 編集ログタブ ===== */}
+          {h.activeTab === "history" && organization && (
+            <AuditLogPanel
+              organizationId={organization.id}
+              tableName="interviews"
+              recordId={id}
+              refreshKey={h.auditRefreshKey}
+              onLoaded={handleAuditLoaded}
+            />
           )}
         </div>
       )}
 
-      {/* ===== 履歴タブ（白背景・全幅） ===== */}
-      {activeTab === "timeline" && (
+      {/* ===== ログタブ（白背景・全幅） ===== */}
+      {h.activeTab === "timeline" && (
         <>
           <div className="flex items-center h-12 bg-white border-b px-4 sm:px-6 md:px-8">
             <Search className="h-4 w-4 text-muted-foreground shrink-0" />
             <Input
               placeholder="名前・メールで検索"
-              value={historySearch}
-              onChange={(e) => setHistorySearch(e.target.value)}
+              value={h.historySearch}
+              onChange={(e) => h.setHistorySearch(e.target.value)}
               className="border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-transparent h-12"
             />
           </div>
@@ -561,9 +274,9 @@ export default function SchedulingDetailPage() {
               </TableHeader>
               <TableBody>
                 {(() => {
-                  const filtered = bookedApps.filter((app) => {
-                    if (!historySearch) return true;
-                    const q = historySearch.toLowerCase();
+                  const filtered = h.bookedApps.filter((app) => {
+                    if (!h.historySearch) return true;
+                    const q = h.historySearch.toLowerCase();
                     return (
                       app.applicantName.toLowerCase().includes(q) ||
                       app.applicantEmail.toLowerCase().includes(q)
@@ -573,9 +286,9 @@ export default function SchedulingDetailPage() {
                     return (
                       <TableRow>
                         <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                          {bookedApps.length === 0
-                            ? "履歴がありません"
-                            : "該当する履歴がありません"}
+                          {h.bookedApps.length === 0
+                            ? "ログがありません"
+                            : "該当するログがありません"}
                         </TableCell>
                       </TableRow>
                     );
@@ -599,60 +312,60 @@ export default function SchedulingDetailPage() {
       )}
 
       <EditPanel
-        open={editing}
-        onOpenChange={setEditing}
+        open={h.editing}
+        onOpenChange={h.setEditing}
         title="面接情報を編集"
         tabs={editTabs}
-        activeTab={editTab}
-        onTabChange={setEditTab}
-        onSave={handleSave}
-        saving={saving}
-        saveDisabled={!editTitle}
+        activeTab={h.editTab}
+        onTabChange={h.setEditTab}
+        onSave={h.handleSave}
+        saving={h.saving}
+        saveDisabled={!h.editTitle}
       >
-        {editTab === "info" && (
+        {h.editTab === "info" && (
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>タイトル *</Label>
               <Input
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
+                value={h.editTitle}
+                onChange={(e) => h.setEditTitle(e.target.value)}
                 placeholder="一次面接"
               />
             </div>
             <div className="space-y-2">
               <Label>場所</Label>
               <Input
-                value={editLocation}
-                onChange={(e) => setEditLocation(e.target.value)}
+                value={h.editLocation}
+                onChange={(e) => h.setEditLocation(e.target.value)}
                 placeholder="オンライン (Google Meet)"
               />
             </div>
             <div className="space-y-2">
               <Label>備考</Label>
               <Textarea
-                value={editNotes}
-                onChange={(e) => setEditNotes(e.target.value)}
+                value={h.editNotes}
+                onChange={(e) => h.setEditNotes(e.target.value)}
                 placeholder="面接に関する備考"
                 rows={3}
               />
             </div>
           </div>
         )}
-        {editTab === "slots" && (
+        {h.editTab === "slots" && (
           <div className="space-y-3">
-            {editSlots.map((slot) => (
+            {h.editSlots.map((slot) => (
               <div key={slot.id} className="space-y-1">
                 <div className="flex items-center gap-2">
                   <DatetimeInput
                     value={slot.startAt}
-                    onChange={(v) => updateSlot(slot.id, "startAt", v)}
+                    onChange={(v) => h.updateSlot(slot.id, "startAt", v)}
                     className="flex-1"
                     disabled={!!slot.applicationId}
                   />
                   <span className="text-muted-foreground shrink-0">〜</span>
                   <DatetimeInput
                     value={slot.endAt}
-                    onChange={(v) => updateSlot(slot.id, "endAt", v)}
+                    onChange={(v) => h.updateSlot(slot.id, "endAt", v)}
                     className="flex-1"
                     disabled={!!slot.applicationId}
                     minDateTime={slot.startAt}
@@ -665,7 +378,7 @@ export default function SchedulingDetailPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeSlot(slot.id)}
+                      onClick={() => h.removeSlot(slot.id)}
                       className="text-destructive hover:text-destructive shrink-0"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -693,7 +406,7 @@ export default function SchedulingDetailPage() {
                     min={1}
                     value={slot.maxApplicants}
                     onChange={(e) =>
-                      updateSlot(
+                      h.updateSlot(
                         slot.id,
                         "maxApplicants",
                         Math.max(1, parseInt(e.target.value) || 1)
@@ -705,7 +418,7 @@ export default function SchedulingDetailPage() {
                 </div>
               </div>
             ))}
-            <Button variant="outline" onClick={addSlot} className="w-full">
+            <Button variant="outline" onClick={h.addSlot} className="w-full">
               候補日時を追加
             </Button>
           </div>

@@ -1,63 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import type { SkillMaster } from "@/types/database";
+import { useSkillMastersPage } from "@/lib/hooks/use-settings";
 import { Plus, X } from "lucide-react";
 
 export default function SkillsSettingsPage() {
-  const { organization } = useOrg();
-  const [masters, setMasters] = useState<SkillMaster[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [newName, setNewName] = useState("");
-  const [newCategory, setNewCategory] = useState("");
-  const [adding, setAdding] = useState(false);
+  const {
+    organization,
+    masters,
+    loading,
+    newName,
+    setNewName,
+    newCategory,
+    setNewCategory,
+    adding,
+    handleAdd,
+    handleDelete,
+  } = useSkillMastersPage();
 
-  const load = async () => {
-    if (!organization) return;
-    setLoading(true);
-    const { data } = await getSupabase()
-      .from("skill_masters")
-      .select("*")
-      .order("category", { nullsFirst: false })
-      .order("name");
-    setMasters(data ?? []);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    if (organization) load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organization?.id]);
-
-  const handleAdd = async () => {
-    if (!organization || !newName.trim()) return;
-    setAdding(true);
-    await getSupabase()
-      .from("skill_masters")
-      .insert({
-        organization_id: organization.id,
-        name: newName.trim(),
-        category: newCategory.trim() || null,
-      });
-    setNewName("");
-    setNewCategory("");
-    setAdding(false);
-    await load();
-  };
-
-  const handleDelete = async (master: SkillMaster) => {
-    if (!window.confirm("削除してもよろしいですか？")) return;
-    await getSupabase().from("skill_masters").delete().eq("id", master.id);
-    await load();
-  };
-
-  // カテゴリーごとにグループ化
   const grouped = masters.reduce(
     (acc, m) => {
       const cat = m.category ?? "未分類";
@@ -65,7 +28,7 @@ export default function SkillsSettingsPage() {
       acc[cat].push(m);
       return acc;
     },
-    {} as Record<string, SkillMaster[]>
+    {} as Record<string, typeof masters>
   );
 
   const categories = Object.keys(grouped).sort((a, b) => {

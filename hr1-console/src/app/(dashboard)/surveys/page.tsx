@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -13,10 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
-import type { PulseSurvey } from "@/types/database";
+import { useSurveyCreatePanel } from "@/lib/hooks/use-surveys";
 import { Badge } from "@/components/ui/badge";
 import { surveyStatusLabels, surveyStatusColors, surveyTargetLabels } from "@/lib/constants";
 import { EditPanel } from "@/components/ui/edit-panel";
@@ -31,82 +27,31 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from "date-fns";
-import { mutate } from "swr";
-import { useToast } from "@/components/ui/toast";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 
 export default function SurveysPage() {
-  const { organization } = useOrg();
   const router = useRouter();
-  const { showToast } = useToast();
-
-  const cacheKey = organization ? `pulse-surveys-${organization.id}` : null;
 
   const {
-    data: surveys = [],
+    surveys,
     isLoading,
-    error: surveysError,
-    mutate: mutateSurveys,
-  } = useQuery<PulseSurvey[]>(cacheKey, async () => {
-    const { data } = await getSupabase()
-      .from("pulse_surveys")
-      .select("*, pulse_survey_questions(id)")
-      .eq("organization_id", organization!.id)
-      .order("created_at", { ascending: false });
-    return data ?? [];
-  });
-
-  // 作成パネル
-  const [editOpen, setEditOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  // フォーム
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [target, setTarget] = useState<string>("employee");
-  const [deadline, setDeadline] = useState("");
-
-  function openCreate() {
-    setTitle("");
-    setDescription("");
-    setTarget("employee");
-    setDeadline("");
-    setEditOpen(true);
-  }
-
-  async function handleSave() {
-    if (!organization || !title.trim()) return;
-    setSaving(true);
-    try {
-      const { data, error } = await getSupabase()
-        .from("pulse_surveys")
-        .insert({
-          organization_id: organization.id,
-          title: title.trim(),
-          description: description.trim() || null,
-          target,
-          deadline: deadline ? `${deadline}T23:59:59+09:00` : null,
-        })
-        .select()
-        .single();
-      if (error) {
-        showToast("サーベイの作成に失敗しました", "error");
-        return;
-      }
-      await mutate(cacheKey);
-      setEditOpen(false);
-      showToast("サーベイを作成しました");
-      if (data) {
-        router.push(`/surveys/${data.id}`);
-      }
-    } catch {
-      showToast("サーベイの作成に失敗しました", "error");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const todayStr = new Date().toISOString().split("T")[0];
+    surveysError,
+    mutateSurveys,
+    editOpen,
+    setEditOpen,
+    saving,
+    title,
+    setTitle,
+    description,
+    setDescription,
+    target,
+    setTarget,
+    deadline,
+    setDeadline,
+    openCreate,
+    handleSave,
+    todayStr,
+  } = useSurveyCreatePanel();
 
   return (
     <div className="flex flex-col">

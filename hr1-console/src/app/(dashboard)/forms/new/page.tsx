@@ -1,9 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/toast";
-import { useSWRConfig } from "swr";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,104 +13,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
 import { Trash2 } from "lucide-react";
+import { useCreateForm } from "@/lib/hooks/use-forms";
 import { fieldTypeLabels, formTargetLabels } from "@/lib/constants";
 
-interface FieldDraft {
-  tempId: string;
-  field_type: string;
-  label: string;
-  description: string;
-  placeholder: string;
-  is_required: boolean;
-  options: string;
-}
-
 export default function NewFormPage() {
-  const router = useRouter();
-  const { showToast } = useToast();
-  const { mutate } = useSWRConfig();
-  const { organization } = useOrg();
-  const [title, setTitle] = useState("");
-  const [target, setTarget] = useState<string>("both");
-  const [description, setDescription] = useState("");
-  const [fields, setFields] = useState<FieldDraft[]>([]);
-  const [saving, setSaving] = useState(false);
-
-  const addField = () => {
-    setFields([
-      ...fields,
-      {
-        tempId: `${Date.now()}`,
-        field_type: "shortText",
-        label: "",
-        description: "",
-        placeholder: "",
-        is_required: false,
-        options: "",
-      },
-    ]);
-  };
-
-  const removeField = (tempId: string) => {
-    setFields(fields.filter((f) => f.tempId !== tempId));
-  };
-
-  const updateField = (tempId: string, field: string, value: string | boolean) => {
-    setFields(fields.map((f) => (f.tempId === tempId ? { ...f, [field]: value } : f)));
-  };
-
-  const handleSubmit = async () => {
-    if (!organization || !title) return;
-    setSaving(true);
-
-    try {
-      const formId = `form-${Date.now()}`;
-
-      const { error: formError } = await getSupabase()
-        .from("custom_forms")
-        .insert({
-          id: formId,
-          organization_id: organization.id,
-          title,
-          target,
-          description: description || null,
-        });
-      if (formError) throw formError;
-
-      if (fields.length > 0) {
-        const { error: fieldsError } = await getSupabase()
-          .from("form_fields")
-          .insert(
-            fields.map((field, index) => ({
-              id: `field-${formId}-${index + 1}`,
-              form_id: formId,
-              type: field.field_type,
-              label: field.label,
-              description: field.description || null,
-              placeholder: field.placeholder || null,
-              is_required: field.is_required,
-              options:
-                field.options && ["radio", "checkbox", "dropdown"].includes(field.field_type)
-                  ? field.options.split("\n").filter(Boolean)
-                  : null,
-              sort_order: index + 1,
-            }))
-          );
-        if (fieldsError) throw fieldsError;
-      }
-
-      await mutate(`forms-${organization.id}`);
-      showToast("フォームを作成しました");
-      router.push("/forms");
-    } catch {
-      showToast("フォームの作成に失敗しました", "error");
-    } finally {
-      setSaving(false);
-    }
-  };
+  const {
+    title,
+    setTitle,
+    target,
+    setTarget,
+    description,
+    setDescription,
+    fields,
+    saving,
+    addField,
+    removeField,
+    updateField,
+    handleSubmit,
+    cancel,
+  } = useCreateForm();
 
   return (
     <>
@@ -122,7 +40,6 @@ export default function NewFormPage() {
 
       <PageContent>
         <div className="space-y-6 max-w-3xl">
-          {/* 基本情報 */}
           <Card>
             <CardHeader>
               <CardTitle>基本情報</CardTitle>
@@ -163,7 +80,6 @@ export default function NewFormPage() {
             </CardContent>
           </Card>
 
-          {/* フィールド */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>フィールド</CardTitle>
@@ -255,7 +171,7 @@ export default function NewFormPage() {
           </Card>
 
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => router.push("/forms")}>
+            <Button variant="outline" onClick={cancel}>
               キャンセル
             </Button>
             <Button onClick={handleSubmit} disabled={!title || saving}>

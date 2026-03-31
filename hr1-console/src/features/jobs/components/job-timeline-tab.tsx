@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { StepStatus, ApplicationStatus } from "@/lib/constants";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -158,7 +159,7 @@ export function JobTimelineTab({
                 return (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      {historyEvents.length === 0 ? "履歴がありません" : "該当する履歴がありません"}
+                      {historyEvents.length === 0 ? "ログがありません" : "該当するログがありません"}
                     </TableCell>
                   </TableRow>
                 );
@@ -171,11 +172,13 @@ export function JobTimelineTab({
                   <TableCell>
                     <Badge
                       variant={
-                        ev.status === "completed" || ev.status === "offered"
+                        ev.status === StepStatus.Completed ||
+                        ev.status === ApplicationStatus.Offered
                           ? "secondary"
-                          : ev.status === "rejected"
+                          : ev.status === ApplicationStatus.Rejected
                             ? "destructive"
-                            : ev.status === "withdrawn" || ev.status === "skipped"
+                            : ev.status === ApplicationStatus.Withdrawn ||
+                                ev.status === StepStatus.Skipped
                               ? "outline"
                               : "default"
                       }

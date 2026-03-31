@@ -1,14 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { useParams } from "next/navigation";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { useOrg } from "@/lib/org-context";
-import { useAuth } from "@/lib/auth-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
-import type { WikiPage } from "@/types/database";
+import { useWikiPageDetail } from "@/lib/hooks/use-wiki";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -16,7 +11,6 @@ import { MarkdownEditor, markdownToHtml } from "@/components/ui/markdown-editor"
 import { format } from "date-fns";
 import { Pencil, Eye, EyeOff } from "lucide-react";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { useToast } from "@/components/ui/toast";
 
 function MarkdownPreview({ content }: { content: string }) {
   return (
@@ -29,76 +23,23 @@ function MarkdownPreview({ content }: { content: string }) {
 
 export default function WikiDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { organization } = useOrg();
-  const { user } = useAuth();
-  const { showToast } = useToast();
-
-  const cacheKey = organization && id ? `wiki-page-${organization.id}-${id}` : null;
 
   const {
-    data: page,
+    page,
     isLoading,
-    error: pageError,
-    mutate: mutatePage,
-  } = useQuery<WikiPage | null>(cacheKey, async () => {
-    const { data } = await getSupabase()
-      .from("wiki_pages")
-      .select("*")
-      .eq("id", id)
-      .eq("organization_id", organization!.id)
-      .single();
-    return data ?? null;
-  });
-
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [editTitle, setEditTitle] = useState("");
-  const [editContent, setEditContent] = useState("");
-
-  function startEdit() {
-    if (!page) return;
-    setEditTitle(page.title);
-    setEditContent(page.content);
-    setEditing(true);
-  }
-
-  async function handleSave() {
-    if (!page || !user) return;
-    setSaving(true);
-    try {
-      const { error } = await getSupabase()
-        .from("wiki_pages")
-        .update({
-          title: editTitle.trim(),
-          content: editContent,
-          updated_by: user.id,
-        })
-        .eq("id", page.id)
-        .eq("organization_id", organization!.id);
-      if (error) {
-        showToast("操作に失敗しました", "error");
-        return;
-      }
-      await mutatePage();
-      setEditing(false);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function togglePublished() {
-    if (!page || !user) return;
-    const { error } = await getSupabase()
-      .from("wiki_pages")
-      .update({ is_published: !page.is_published, updated_by: user.id })
-      .eq("id", page.id)
-      .eq("organization_id", organization!.id);
-    if (error) {
-      showToast("操作に失敗しました", "error");
-      return;
-    }
-    await mutatePage();
-  }
+    pageError,
+    mutatePage,
+    editing,
+    setEditing,
+    saving,
+    editTitle,
+    setEditTitle,
+    editContent,
+    setEditContent,
+    startEdit,
+    handleSave,
+    togglePublished,
+  } = useWikiPageDetail(id);
 
   if (isLoading) {
     return (

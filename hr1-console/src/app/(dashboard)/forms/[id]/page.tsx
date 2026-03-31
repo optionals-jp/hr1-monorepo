@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { useOrg } from "@/lib/org-context";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,36 +26,16 @@ import {
 } from "@/components/ui/table";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useOrg } from "@/lib/org-context";
-import type { CustomForm, FormField, AuditLog } from "@/types/database";
+import { useFormDetailPage } from "@/lib/hooks/use-form-detail";
 import { format } from "date-fns";
 import { Trash2 } from "lucide-react";
-import { fieldTypeLabels, getAuditActionLabel, formTargetLabels } from "@/lib/constants";
-
-interface FieldDraft {
-  id: string;
-  field_type: string;
-  label: string;
-  description: string;
-  placeholder: string;
-  is_required: boolean;
-  options: string;
-  sort_order: number;
-  isNew?: boolean;
-}
-
-interface ResponseRow {
-  applicant_id: string;
-  applicant_name: string;
-  answers: Record<string, string>;
-  created_at: string;
-}
+import { fieldTypeLabels, formTargetLabels } from "@/lib/constants";
+import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 
 const tabs = [
   { value: "fields", label: "フィールド" },
   { value: "responses", label: "回答" },
-  { value: "history", label: "変更履歴" },
+  { value: "history", label: "変更ログ" },
 ];
 
 const editTabs: EditPanelTab[] = [
@@ -65,268 +46,11 @@ const editTabs: EditPanelTab[] = [
 export default function FormDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { organization } = useOrg();
-  const [form, setForm] = useState<CustomForm | null>(null);
-  const [fields, setFields] = useState<FormField[]>([]);
-  const [responses, setResponses] = useState<ResponseRow[]>([]);
-  const [changeLogs, setChangeLogs] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("fields");
+  const h = useFormDetailPage();
+  const [auditLogCount, setAuditLogCount] = useState<number | undefined>(undefined);
+  const handleAuditLoaded = useCallback((count: number) => setAuditLogCount(count), []);
 
-  // Edit states
-  const [editing, setEditing] = useState(false);
-  const [editTab, setEditTab] = useState("basic");
-  const [editTitle, setEditTitle] = useState("");
-  const [editTarget, setEditTarget] = useState<string>("both");
-  const [editDescription, setEditDescription] = useState("");
-  const [editFields, setEditFields] = useState<FieldDraft[]>([]);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!organization) return;
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, organization]);
-
-  async function loadData() {
-    if (!organization) return;
-    setLoading(true);
-
-    const [{ data: formData }, { data: fieldsData }, { data: responsesData }, { data: logsData }] =
-      await Promise.all([
-        getSupabase()
-          .from("custom_forms")
-          .select("*")
-          .eq("id", id)
-          .eq("organization_id", organization.id)
-          .single(),
-        getSupabase().from("form_fields").select("*").eq("form_id", id).order("sort_order"),
-        getSupabase().from("form_responses").select("*").eq("form_id", id),
-        getSupabase()
-          .from("audit_logs")
-          .select("*")
-          .eq("organization_id", organization.id)
-          .eq("table_name", "custom_forms")
-          .eq("record_id", id)
-          .order("created_at", { ascending: false })
-          .limit(50),
-      ]);
-
-    setForm(formData);
-    setFields(fieldsData ?? []);
-    setChangeLogs(logsData ?? []);
-
-    // Group responses by applicant_id
-    const grouped: Record<string, ResponseRow> = {};
-    for (const resp of responsesData ?? []) {
-      const applicantId = resp.applicant_id as string;
-      if (!grouped[applicantId]) {
-        grouped[applicantId] = {
-          applicant_id: applicantId,
-          applicant_name: applicantId,
-          answers: {},
-          created_at: resp.submitted_at,
-        };
-      }
-      grouped[applicantId].answers[resp.field_id] = Array.isArray(resp.value)
-        ? (resp.value as string[]).join(", ")
-        : String(resp.value ?? "");
-    }
-
-    // Fetch profile names
-    const applicantIds = Object.keys(grouped);
-    if (applicantIds.length > 0) {
-      const { data: profilesData } = await getSupabase()
-        .from("profiles")
-        .select("id, display_name, email")
-        .in("id", applicantIds);
-      for (const p of profilesData ?? []) {
-        if (grouped[p.id]) {
-          grouped[p.id].applicant_name = p.display_name ?? p.email ?? p.id;
-        }
-      }
-    }
-
-    setResponses(Object.values(grouped));
-
-    setLoading(false);
-  }
-
-  function startEditing() {
-    if (!form) return;
-    setEditTitle(form.title);
-    setEditTarget(form.target ?? "both");
-    setEditDescription(form.description ?? "");
-    setEditFields(
-      fields.map((f) => ({
-        id: f.id,
-        field_type: f.type,
-        label: f.label,
-        description: f.description ?? "",
-        placeholder: f.placeholder ?? "",
-        is_required: f.is_required,
-        options: f.options?.join("\n") ?? "",
-        sort_order: f.sort_order,
-      }))
-    );
-    setEditTab("basic");
-    setEditing(true);
-  }
-
-  function addField() {
-    const maxOrder = editFields.length > 0 ? Math.max(...editFields.map((f) => f.sort_order)) : 0;
-    setEditFields([
-      ...editFields,
-      {
-        id: `new-${Date.now()}`,
-        field_type: "shortText",
-        label: "",
-        description: "",
-        placeholder: "",
-        is_required: false,
-        options: "",
-        sort_order: maxOrder + 1,
-        isNew: true,
-      },
-    ]);
-  }
-
-  function removeField(fieldId: string) {
-    setEditFields(editFields.filter((f) => f.id !== fieldId));
-  }
-
-  function updateField(fieldId: string, key: string, value: string | boolean) {
-    setEditFields(editFields.map((f) => (f.id === fieldId ? { ...f, [key]: value } : f)));
-  }
-
-  async function handleSave() {
-    if (!form) return;
-    setSaving(true);
-
-    const fieldLogs: { detail_action: string; summary: string }[] = [];
-
-    // 1. Update form title/description/target
-    const titleChanged = editTitle !== form.title;
-    const targetChanged = editTarget !== (form.target ?? "both");
-    const descChanged = editDescription !== (form.description ?? "");
-
-    if (titleChanged || targetChanged || descChanged) {
-      await getSupabase()
-        .from("custom_forms")
-        .update({
-          title: editTitle,
-          target: editTarget,
-          description: editDescription || null,
-        })
-        .eq("id", form.id);
-    }
-
-    // 2. Handle field changes
-    const existingIds = fields.map((f) => f.id);
-    const editIds = editFields.filter((f) => !f.isNew).map((f) => f.id);
-
-    // Deleted fields
-    const deletedIds = existingIds.filter((fid) => !editIds.includes(fid));
-    if (deletedIds.length > 0) {
-      await getSupabase().from("form_fields").delete().in("id", deletedIds);
-      const deletedLabels = fields
-        .filter((f) => deletedIds.includes(f.id))
-        .map((f) => f.label)
-        .join("、");
-      fieldLogs.push({
-        detail_action: "field_deleted",
-        summary: `フィールド「${deletedLabels}」を削除`,
-      });
-    }
-
-    // New fields
-    const newFields = editFields.filter((f) => f.isNew);
-    if (newFields.length > 0) {
-      await getSupabase()
-        .from("form_fields")
-        .insert(
-          newFields.map((f, i) => ({
-            id: `field-${form.id}-${Date.now()}-${i}`,
-            form_id: form.id,
-            type: f.field_type,
-            label: f.label,
-            description: f.description || null,
-            placeholder: f.placeholder || null,
-            is_required: f.is_required,
-            options:
-              f.options && ["radio", "checkbox", "dropdown"].includes(f.field_type)
-                ? f.options.split("\n").filter(Boolean)
-                : null,
-            sort_order: f.sort_order,
-          }))
-        );
-      const newLabels = newFields.map((f) => f.label).join("、");
-      fieldLogs.push({ detail_action: "field_added", summary: `フィールド「${newLabels}」を追加` });
-    }
-
-    // Updated existing fields
-    for (const ef of editFields.filter((f) => !f.isNew && existingIds.includes(f.id))) {
-      const original = fields.find((f) => f.id === ef.id);
-      if (!original) continue;
-      const changed =
-        ef.label !== original.label ||
-        ef.field_type !== original.type ||
-        ef.description !== (original.description ?? "") ||
-        ef.placeholder !== (original.placeholder ?? "") ||
-        ef.is_required !== original.is_required ||
-        ef.options !== (original.options?.join("\n") ?? "");
-
-      if (changed) {
-        await getSupabase()
-          .from("form_fields")
-          .update({
-            type: ef.field_type,
-            label: ef.label,
-            description: ef.description || null,
-            placeholder: ef.placeholder || null,
-            is_required: ef.is_required,
-            options:
-              ef.options && ["radio", "checkbox", "dropdown"].includes(ef.field_type)
-                ? ef.options.split("\n").filter(Boolean)
-                : null,
-            sort_order: ef.sort_order,
-          })
-          .eq("id", ef.id);
-        fieldLogs.push({
-          detail_action: "field_updated",
-          summary: `フィールド「${ef.label}」を変更`,
-        });
-      }
-    }
-
-    // 3. Save field change logs
-    if (fieldLogs.length > 0 && organization) {
-      const userId = (await getSupabase().auth.getUser()).data.user?.id;
-      if (!userId) throw new Error("認証ユーザーが取得できません");
-      await getSupabase()
-        .from("audit_logs")
-        .insert(
-          fieldLogs.map((log) => ({
-            organization_id: organization.id,
-            user_id: userId,
-            action: log.detail_action.includes("deleted")
-              ? "delete"
-              : log.detail_action.includes("added")
-                ? "create"
-                : "update",
-            table_name: "custom_forms",
-            record_id: form.id,
-            metadata: { summary: log.summary, detail_action: log.detail_action },
-            source: "console" as const,
-          }))
-        );
-    }
-
-    setSaving(false);
-    setEditing(false);
-    await loadData();
-  }
-
-  if (loading) {
+  if (h.loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
         読み込み中...
@@ -334,7 +58,7 @@ export default function FormDetailPage() {
     );
   }
 
-  if (!form) {
+  if (!h.form) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
         フォームが見つかりません
@@ -345,11 +69,11 @@ export default function FormDetailPage() {
   return (
     <>
       <PageHeader
-        title={form.title}
-        description={form.description ?? undefined}
+        title={h.form.title}
+        description={h.form.description ?? undefined}
         breadcrumb={[{ label: "フォーム管理", href: "/forms" }]}
         sticky={false}
-        action={<Badge variant="outline">{formTargetLabels[form.target] ?? form.target}</Badge>}
+        action={<Badge variant="outline">{formTargetLabels[h.form.target] ?? h.form.target}</Badge>}
       />
 
       <div className="sticky top-14 z-10 bg-white">
@@ -357,25 +81,27 @@ export default function FormDetailPage() {
           {tabs.map((tab) => {
             const count =
               tab.value === "fields"
-                ? fields.length
+                ? h.fields.length
                 : tab.value === "responses"
-                  ? responses.length
-                  : changeLogs.length;
+                  ? h.responses.length
+                  : auditLogCount;
             return (
               <button
                 key={tab.value}
                 type="button"
-                onClick={() => setActiveTab(tab.value)}
+                onClick={() => h.setActiveTab(tab.value)}
                 className={cn(
                   "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-                  activeTab === tab.value
+                  h.activeTab === tab.value
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 {tab.label}
-                <span className="ml-1.5 text-xs text-muted-foreground">{count}</span>
-                {activeTab === tab.value && (
+                {count !== undefined && (
+                  <span className="ml-1.5 text-xs text-muted-foreground">{count}</span>
+                )}
+                {h.activeTab === tab.value && (
                   <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
                 )}
               </button>
@@ -386,18 +112,18 @@ export default function FormDetailPage() {
 
       <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
         {/* ===== フィールドタブ ===== */}
-        {activeTab === "fields" && (
+        {h.activeTab === "fields" && (
           <div className="max-w-3xl">
             <div className="flex justify-end mb-3">
-              <Button variant="outline" size="sm" onClick={startEditing}>
+              <Button variant="outline" size="sm" onClick={h.startEditing}>
                 編集
               </Button>
             </div>
-            {fields.length === 0 ? (
+            {h.fields.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground">フィールドがありません</p>
             ) : (
               <div className="rounded-lg bg-white border">
-                {fields.map((field, index) => (
+                {h.fields.map((field, index) => (
                   <div key={field.id} className="flex items-start gap-4 px-5 py-4">
                     <span className="text-sm font-bold text-muted-foreground w-6 pt-0.5">
                       {index + 1}
@@ -435,9 +161,9 @@ export default function FormDetailPage() {
         )}
 
         {/* ===== 回答タブ ===== */}
-        {activeTab === "responses" && (
+        {h.activeTab === "responses" && (
           <>
-            {responses.length === 0 ? (
+            {h.responses.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground">まだ回答がありません</p>
             ) : (
               <div className="overflow-x-auto bg-white rounded-md">
@@ -445,19 +171,19 @@ export default function FormDetailPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="sticky left-0 bg-white">応募者</TableHead>
-                      {fields.map((field) => (
+                      {h.fields.map((field) => (
                         <TableHead key={field.id}>{field.label}</TableHead>
                       ))}
                       <TableHead>回答日</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {responses.map((row) => (
+                    {h.responses.map((row) => (
                       <TableRow key={row.applicant_id}>
                         <TableCell className="font-medium sticky left-0 bg-white">
                           {row.applicant_name}
                         </TableCell>
-                        {fields.map((field) => (
+                        {h.fields.map((field) => (
                           <TableCell key={field.id} className="max-w-xs truncate">
                             {row.answers[field.id] ?? "-"}
                           </TableCell>
@@ -474,62 +200,42 @@ export default function FormDetailPage() {
           </>
         )}
 
-        {/* ===== 変更履歴タブ ===== */}
-        {activeTab === "history" && (
-          <>
-            {changeLogs.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">変更履歴がありません</p>
-            ) : (
-              <div className="space-y-3 max-w-3xl">
-                {changeLogs.map((log) => (
-                  <div key={log.id} className="flex items-start gap-4 py-3 border-b last:border-0">
-                    <div className="shrink-0 mt-0.5">
-                      <Badge variant="outline" className="text-xs">
-                        {getAuditActionLabel(log)}
-                      </Badge>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm">
-                        {(log.metadata as Record<string, string> | null)?.summary ??
-                          (log.changes as Record<string, string> | null)?.summary ??
-                          log.action}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {format(new Date(log.created_at), "yyyy/MM/dd HH:mm")}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
+        {/* ===== 変更ログタブ ===== */}
+        {h.activeTab === "history" && organization && (
+          <AuditLogPanel
+            organizationId={organization.id}
+            tableName="custom_forms"
+            recordId={id}
+            refreshKey={h.auditRefreshKey}
+            onLoaded={handleAuditLoaded}
+          />
         )}
       </div>
 
       <EditPanel
-        open={editing}
-        onOpenChange={setEditing}
+        open={h.editing}
+        onOpenChange={h.setEditing}
         title="フォームを編集"
         tabs={editTabs}
-        activeTab={editTab}
-        onTabChange={setEditTab}
-        onSave={handleSave}
-        saving={saving}
-        saveDisabled={!editTitle}
+        activeTab={h.editTab}
+        onTabChange={h.setEditTab}
+        onSave={h.handleSave}
+        saving={h.saving}
+        saveDisabled={!h.editTitle}
       >
-        {editTab === "basic" && (
+        {h.editTab === "basic" && (
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>タイトル *</Label>
               <Input
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
+                value={h.editTitle}
+                onChange={(e) => h.setEditTitle(e.target.value)}
                 placeholder="フォームタイトル"
               />
             </div>
             <div className="space-y-2">
               <Label>対象 *</Label>
-              <Select value={editTarget} onValueChange={(v) => v && setEditTarget(v)}>
+              <Select value={h.editTarget} onValueChange={(v) => v && h.setEditTarget(v)}>
                 <SelectTrigger>
                   <SelectValue>{(v: string) => formTargetLabels[v] ?? v}</SelectValue>
                 </SelectTrigger>
@@ -545,17 +251,17 @@ export default function FormDetailPage() {
             <div className="space-y-2">
               <Label>説明</Label>
               <Textarea
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
+                value={h.editDescription}
+                onChange={(e) => h.setEditDescription(e.target.value)}
                 placeholder="フォームの説明"
                 rows={3}
               />
             </div>
           </div>
         )}
-        {editTab === "fields" && (
+        {h.editTab === "fields" && (
           <div className="space-y-4">
-            {editFields.map((field, index) => (
+            {h.editFields.map((field, index) => (
               <div key={field.id} className="rounded-lg border p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-muted-foreground">
@@ -569,7 +275,7 @@ export default function FormDetailPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => removeField(field.id)}
+                    onClick={() => h.removeField(field.id)}
                     className="text-destructive hover:text-destructive"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -580,7 +286,7 @@ export default function FormDetailPage() {
                     <Label className="text-xs">ラベル *</Label>
                     <Input
                       value={field.label}
-                      onChange={(e) => updateField(field.id, "label", e.target.value)}
+                      onChange={(e) => h.updateField(field.id, "label", e.target.value)}
                       placeholder="質問内容"
                     />
                   </div>
@@ -588,7 +294,7 @@ export default function FormDetailPage() {
                     <Label className="text-xs">種類</Label>
                     <Select
                       value={field.field_type}
-                      onValueChange={(v) => v && updateField(field.id, "field_type", v)}
+                      onValueChange={(v) => v && h.updateField(field.id, "field_type", v)}
                     >
                       <SelectTrigger>
                         <SelectValue>{(v: string) => fieldTypeLabels[v] ?? v}</SelectValue>
@@ -607,7 +313,7 @@ export default function FormDetailPage() {
                   <Label className="text-xs">説明</Label>
                   <Input
                     value={field.description}
-                    onChange={(e) => updateField(field.id, "description", e.target.value)}
+                    onChange={(e) => h.updateField(field.id, "description", e.target.value)}
                     placeholder="質問の補足説明"
                   />
                 </div>
@@ -616,7 +322,7 @@ export default function FormDetailPage() {
                     <Label className="text-xs">選択肢（1行に1つ）</Label>
                     <Textarea
                       value={field.options}
-                      onChange={(e) => updateField(field.id, "options", e.target.value)}
+                      onChange={(e) => h.updateField(field.id, "options", e.target.value)}
                       placeholder={"選択肢1\n選択肢2\n選択肢3"}
                       rows={3}
                     />
@@ -626,14 +332,14 @@ export default function FormDetailPage() {
                   <input
                     type="checkbox"
                     checked={field.is_required}
-                    onChange={(e) => updateField(field.id, "is_required", e.target.checked)}
+                    onChange={(e) => h.updateField(field.id, "is_required", e.target.checked)}
                     className="rounded"
                   />
                   必須項目
                 </label>
               </div>
             ))}
-            <Button variant="outline" onClick={addField} className="w-full">
+            <Button variant="outline" onClick={h.addField} className="w-full">
               フィールドを追加
             </Button>
           </div>

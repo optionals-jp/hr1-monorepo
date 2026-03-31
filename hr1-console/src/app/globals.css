@@ -54,7 +54,7 @@
   --card-foreground: oklch(0.14 0.005 285);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.14 0.005 285);
-  --primary: oklch(0.58 0.22 27);
+  --primary: oklch(0.5 0.1 192);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.965 0 0);
   --secondary-foreground: oklch(0.25 0 0);
@@ -62,11 +62,11 @@
   --muted-foreground: oklch(0.46 0 0);
   --accent: oklch(0.955 0 0);
   --accent-foreground: oklch(0.14 0 0);
-  --destructive: oklch(0.58 0.22 27);
+  --destructive: oklch(0.55 0.22 25);
   --border: oklch(0.91 0 0);
   --input: oklch(0.91 0 0);
-  --ring: oklch(0.58 0.22 27);
-  --chart-1: oklch(0.58 0.22 27);
+  --ring: oklch(0.5 0.1 192);
+  --chart-1: oklch(0.5 0.1 192);
   --chart-2: oklch(0.55 0.18 250);
   --chart-3: oklch(0.65 0.18 160);
   --chart-4: oklch(0.6 0.2 310);
@@ -74,12 +74,12 @@
   --radius: 0.5rem;
   --sidebar: oklch(1 0 0);
   --sidebar-foreground: oklch(0.25 0 0);
-  --sidebar-primary: oklch(0.58 0.22 27);
+  --sidebar-primary: oklch(0.5 0.1 192);
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.955 0 0);
   --sidebar-accent-foreground: oklch(0.14 0 0);
   --sidebar-border: oklch(0.91 0 0);
-  --sidebar-ring: oklch(0.58 0.22 27);
+  --sidebar-ring: oklch(0.5 0.1 192);
 }
 
 .dark {
@@ -89,7 +89,7 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.65 0.2 27);
+  --primary: oklch(0.62 0.12 192);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
@@ -100,20 +100,20 @@
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.65 0.2 27);
-  --chart-1: oklch(0.65 0.2 27);
+  --ring: oklch(0.62 0.12 192);
+  --chart-1: oklch(0.62 0.12 192);
   --chart-2: oklch(0.55 0.18 250);
   --chart-3: oklch(0.65 0.18 160);
   --chart-4: oklch(0.6 0.2 310);
   --chart-5: oklch(0.7 0.15 50);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.65 0.2 27);
+  --sidebar-primary: oklch(0.62 0.12 192);
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.65 0.2 27);
+  --sidebar-ring: oklch(0.62 0.12 192);
 }
 
 @layer base {
@@ -127,6 +127,114 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Animations                                                         */
+/* ------------------------------------------------------------------ */
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out both;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Staggered animation delays for child elements */
+.stagger-children > * {
+  animation: fade-in-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.stagger-children > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.stagger-children > *:nth-child(2) {
+  animation-delay: 60ms;
+}
+.stagger-children > *:nth-child(3) {
+  animation-delay: 120ms;
+}
+.stagger-children > *:nth-child(4) {
+  animation-delay: 180ms;
+}
+.stagger-children > *:nth-child(5) {
+  animation-delay: 240ms;
+}
+.stagger-children > *:nth-child(6) {
+  animation-delay: 300ms;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Subtle background pattern for main content area                    */
+/* ------------------------------------------------------------------ */
+
+.bg-main-pattern {
+  background-color: #f8fafb;
+  background-image: radial-gradient(
+    ellipse at 50% 0%,
+    oklch(0.92 0.02 192 / 30%) 0%,
+    transparent 60%
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Card hover lift effect                                             */
+/* ------------------------------------------------------------------ */
+
+.card-hover {
+  transition:
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 25px -5px oklch(0.5 0.1 192 / 10%),
+    0 4px 10px -3px oklch(0 0 0 / 5%);
 }
 
 /* react-datepicker: 土曜・日曜の色 */

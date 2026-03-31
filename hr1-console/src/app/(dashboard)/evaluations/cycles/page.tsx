@@ -14,61 +14,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useOrg } from "@/lib/org-context";
-import { useQuery } from "@/lib/use-query";
-import { getSupabase } from "@/lib/supabase/browser";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { cycleStatusLabels, cycleStatusColors } from "@/lib/constants";
-import type { EvaluationCycle } from "@/types/database";
+import { useEvaluationCyclesWithDetails } from "@/lib/hooks/use-evaluations";
 
 export default function EvaluationCyclesPage() {
   const router = useRouter();
-  const { organization } = useOrg();
+  useOrg();
 
   const {
     data: cycles,
     isLoading,
     error: cyclesError,
     mutate: mutateCycles,
-  } = useQuery<
-    (EvaluationCycle & {
-      template_title: string;
-      assignment_count: number;
-      submitted_count: number;
-    })[]
-  >(organization ? `eval-cycles-${organization.id}` : null, async () => {
-    if (!organization) return [];
-    const { data: cycleData } = await getSupabase()
-      .from("evaluation_cycles")
-      .select("*")
-      .eq("organization_id", organization.id)
-      .order("created_at", { ascending: false });
-
-    if (!cycleData || cycleData.length === 0) return [];
-
-    const templateIds = [...new Set(cycleData.map((c) => c.template_id))];
-    const cycleIds = cycleData.map((c) => c.id);
-
-    const [{ data: templates }, { data: assignments }] = await Promise.all([
-      getSupabase().from("evaluation_templates").select("id, title").in("id", templateIds),
-      getSupabase()
-        .from("evaluation_assignments")
-        .select("id, cycle_id, status")
-        .in("cycle_id", cycleIds),
-    ]);
-
-    const titleMap = new Map<string, string>();
-    for (const t of templates ?? []) titleMap.set(t.id, t.title);
-
-    return cycleData.map((c) => {
-      const cycleAssignments = (assignments ?? []).filter((a) => a.cycle_id === c.id);
-      return {
-        ...c,
-        template_title: titleMap.get(c.template_id) ?? "",
-        assignment_count: cycleAssignments.length,
-        submitted_count: cycleAssignments.filter((a) => a.status === "submitted").length,
-      };
-    });
-  });
+  } = useEvaluationCyclesWithDetails();
 
   return (
     <>

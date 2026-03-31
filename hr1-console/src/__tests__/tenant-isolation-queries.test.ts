@@ -82,10 +82,6 @@ describe("fetchJobDetail", () => {
     it("applications クエリに organization_id フィルタがある", () => {
       expect(hasOrgFilter(queries, "applications", ORG)).toBe(true);
     });
-
-    it("audit_logs クエリに organization_id フィルタがある", () => {
-      expect(hasOrgFilter(queries, "audit_logs", ORG)).toBe(true);
-    });
   });
 
   describe("レコード特定", () => {
@@ -100,16 +96,12 @@ describe("fetchJobDetail", () => {
     it("job_steps クエリに job_id フィルタがある", () => {
       expect(eqCallsFor(queries, "job_steps")).toContainEqual({ column: "job_id", value: JOB });
     });
-
-    it("audit_logs クエリに record_id フィルタがある", () => {
-      expect(eqCallsFor(queries, "audit_logs")).toContainEqual({ column: "record_id", value: JOB });
-    });
   });
 
   describe("クエリ対象テーブル", () => {
-    it("4 テーブルにクエリを発行する", () => {
+    it("3 テーブルにクエリを発行する", () => {
       const tables = new Set(queries.map((q) => q.table));
-      expect(tables).toEqual(new Set(["jobs", "job_steps", "applications", "audit_logs"]));
+      expect(tables).toEqual(new Set(["jobs", "job_steps", "applications"]));
     });
   });
 });

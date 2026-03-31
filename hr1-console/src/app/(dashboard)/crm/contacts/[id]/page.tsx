@@ -3,70 +3,24 @@
 import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { InfoItem } from "@/components/ui/info-item";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { Badge } from "@/components/ui/badge";
 import { dealStatusLabels, dealStatusColors, activityTypeLabels } from "@/lib/constants";
 import Link from "next/link";
-import type { BcContact, BcDeal, BcActivity, BcCard } from "@/types/database";
+import {
+  useCrmContact,
+  useCrmContactDeals,
+  useCrmContactActivities,
+  useCrmContactCards,
+} from "@/lib/hooks/use-crm";
 
 export default function CrmContactDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { organization } = useOrg();
 
-  const { data: contact, error } = useQuery<BcContact | null>(
-    organization ? `crm-contact-${id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("bc_contacts")
-        .select("*, bc_companies(*)")
-        .eq("id", id)
-        .eq("organization_id", organization!.id)
-        .single();
-      return data;
-    }
-  );
-
-  const { data: deals } = useQuery<BcDeal[]>(
-    organization ? `crm-contact-deals-${id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("bc_deals")
-        .select("*")
-        .eq("contact_id", id)
-        .eq("organization_id", organization!.id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    }
-  );
-
-  const { data: activities } = useQuery<BcActivity[]>(
-    organization ? `crm-contact-activities-${id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("bc_activities")
-        .select("*")
-        .eq("contact_id", id)
-        .eq("organization_id", organization!.id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    }
-  );
-
-  const { data: cards } = useQuery<BcCard[]>(
-    organization ? `crm-contact-cards-${id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("bc_cards")
-        .select("*")
-        .eq("contact_id", id)
-        .eq("organization_id", organization!.id)
-        .order("scanned_at", { ascending: false });
-      return data ?? [];
-    }
-  );
+  const { data: contact, error } = useCrmContact(id);
+  const { data: deals } = useCrmContactDeals(id);
+  const { data: activities } = useCrmContactActivities(id);
+  const { data: cards } = useCrmContactCards(id);
 
   const fullName = contact ? `${contact.last_name} ${contact.first_name ?? ""}` : "連絡先詳細";
 
@@ -138,7 +92,7 @@ export default function CrmContactDetailPage() {
 
           {/* 活動 */}
           <div>
-            <h2 className="text-lg font-semibold mb-3">活動履歴（{activities?.length ?? 0}件）</h2>
+            <h2 className="text-lg font-semibold mb-3">活動ログ（{activities?.length ?? 0}件）</h2>
             <div className="space-y-2">
               {(activities ?? []).map((a) => (
                 <div key={a.id} className="rounded-lg border p-3">

@@ -22,7 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
-import { getSupabase } from "@/lib/supabase/browser";
+import { invokeCreateUser } from "@/lib/hooks/use-import";
 import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Mail } from "lucide-react";
 import {
   parseFile,
@@ -200,9 +200,7 @@ export function EmployeeImportDialog({
           if (v[key]) body[key] = v[key];
         }
 
-        const { data, error } = await getSupabase().functions.invoke("create-user", { body });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
+        await invokeCreateUser(body);
         successCount++;
       } catch (e) {
         const msg = e instanceof Error ? e.message : "不明なエラー";

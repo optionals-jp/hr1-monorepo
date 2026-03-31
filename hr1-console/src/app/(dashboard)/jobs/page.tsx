@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -18,13 +16,11 @@ import {
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
+import { useJobsPage } from "@/lib/hooks/use-jobs-page";
 import { cn } from "@/lib/utils";
-import type { Job } from "@/types/database";
 import { jobStatusLabels as statusLabels, jobStatusColors as statusColors } from "@/lib/constants";
 import { Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const pageTabs = [
   { value: "open", label: "公開中" },
@@ -33,94 +29,28 @@ const pageTabs = [
   { value: "archived", label: "アーカイブ" },
 ];
 
-interface AppCounts {
-  total: number;
-  offered: number;
-}
-
 export default function JobsPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const { organization } = useOrg();
-  const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState("open");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
   const {
-    data: jobs = [],
+    search,
+    setSearch,
+    activeTab,
+    setActiveTab,
+    deletingId,
+    jobs,
     isLoading,
-    error: jobsError,
-    mutate: mutateJobs,
-  } = useQuery<Job[]>(organization ? `jobs-${organization.id}` : null, async () => {
-    const { data } = await getSupabase()
-      .from("jobs")
-      .select("*")
-      .eq("organization_id", organization!.id)
-      .order("created_at", { ascending: false });
-    return data ?? [];
-  });
-
-  const { data: appCounts = {} } = useQuery<Record<string, AppCounts>>(
-    organization ? `job-app-counts-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("applications")
-        .select("job_id, status")
-        .eq("organization_id", organization!.id);
-
-      const counts: Record<string, AppCounts> = {};
-      for (const row of data ?? []) {
-        if (!counts[row.job_id]) counts[row.job_id] = { total: 0, offered: 0 };
-        counts[row.job_id].total++;
-        if (row.status === "offered") counts[row.job_id].offered++;
-      }
-      return counts;
-    }
-  );
+    jobsError,
+    mutateJobs,
+    appCounts,
+    filtered,
+    handleDeleteJob,
+  } = useJobsPage();
 
   const tabCounts = pageTabs.map((tab) => ({
     ...tab,
     count: jobs.filter((j) => j.status === tab.value).length,
   }));
-
-  const handleDeleteJob = async (job: Job) => {
-    if (!organization) return;
-    if (!window.confirm(`「${job.title}」を削除しますか？`)) return;
-    setDeletingId(job.id);
-    try {
-      const { count } = await getSupabase()
-        .from("applications")
-        .select("id", { count: "exact", head: true })
-        .eq("job_id", job.id);
-      if (count && count > 0) {
-        showToast(`この求人には${count}件の応募があるため削除できません`, "error");
-        return;
-      }
-      const { error } = await getSupabase()
-        .from("jobs")
-        .delete()
-        .eq("id", job.id)
-        .eq("organization_id", organization.id);
-      if (error) throw error;
-      mutateJobs();
-      showToast("求人を削除しました");
-    } catch {
-      showToast("削除に失敗しました", "error");
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  const filtered = jobs.filter((job) => {
-    if (job.status !== activeTab) return false;
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      job.title.toLowerCase().includes(q) ||
-      (job.department ?? "").toLowerCase().includes(q) ||
-      (job.location ?? "").toLowerCase().includes(q)
-    );
-  });
 
   return (
     <div className="flex flex-col">
@@ -225,7 +155,7 @@ export default function JobsPage() {
                         disabled={deletingId === job.id}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteJob(job);
+                          handleDeleteJob(job, showToast);
                         }}
                         className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-50"
                       >

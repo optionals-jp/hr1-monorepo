@@ -15,18 +15,14 @@ class SupabaseInterviewsRepository implements InterviewsRepository {
     required String applicationId,
     String? stepId,
   }) async {
-    await _client
-        .from('interview_slots')
-        .update({'is_selected': true, 'application_id': applicationId})
-        .eq('id', slotId);
-
-    // 応募者アクション完了を記録
-    if (stepId != null) {
-      await _client
-          .from('application_steps')
-          .update({'applicant_action_at': DateTime.now().toIso8601String()})
-          .eq('id', stepId);
-    }
+    await _client.rpc(
+      'applicant_confirm_interview_slot',
+      params: {
+        'p_slot_id': slotId,
+        'p_application_id': applicationId,
+        'p_step_id': stepId,
+      },
+    );
   }
 
   @override

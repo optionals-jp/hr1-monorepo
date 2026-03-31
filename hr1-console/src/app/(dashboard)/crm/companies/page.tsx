@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,117 +7,30 @@ import { Label } from "@/components/ui/label";
 import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { useToast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
-import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
-import type { BcCompany } from "@/types/database";
+import { useCrmCompaniesPage } from "@/lib/hooks/use-crm";
 
 export default function CrmCompaniesPage() {
-  const { organization } = useOrg();
   const { showToast } = useToast();
   const router = useRouter();
-  const [search, setSearch] = useState("");
-  const [editOpen, setEditOpen] = useState(false);
-  const [editData, setEditData] = useState<Partial<BcCompany>>({});
-  const [errors, setErrors] = useState<ValidationErrors | null>(null);
-
   const {
-    data: companies,
+    search,
+    setSearch,
+    editOpen,
+    setEditOpen,
+    editData,
+    setEditData,
+    errors,
+    companies,
     error,
-    mutate,
-  } = useQuery<BcCompany[]>(organization ? `crm-companies-${organization.id}` : null, async () => {
-    const { data } = await getSupabase()
-      .from("bc_companies")
-      .select("*")
-      .eq("organization_id", organization!.id)
-      .order("name");
-    return data ?? [];
-  });
-
-  const filtered = (companies ?? []).filter((c) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      c.name.toLowerCase().includes(q) ||
-      c.name_kana?.toLowerCase().includes(q) ||
-      c.corporate_number?.includes(q)
-    );
-  });
-
-  const openCreate = () => {
-    setEditData({});
-    setErrors(null);
-    setEditOpen(true);
-  };
-
-  const handleSave = async () => {
-    const rules = { name: [validators.required("企業名")] };
-    const validationErrors = validateForm(rules, editData);
-    if (validationErrors) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    try {
-      if (editData.id) {
-        await getSupabase()
-          .from("bc_companies")
-          .update({
-            name: editData.name,
-            name_kana: editData.name_kana || null,
-            corporate_number: editData.corporate_number || null,
-            phone: editData.phone || null,
-            address: editData.address || null,
-            website: editData.website || null,
-            industry: editData.industry || null,
-            notes: editData.notes || null,
-          })
-          .eq("id", editData.id)
-          .eq("organization_id", organization!.id);
-        showToast("企業情報を更新しました");
-      } else {
-        await getSupabase()
-          .from("bc_companies")
-          .insert({
-            organization_id: organization!.id,
-            name: editData.name!,
-            name_kana: editData.name_kana || null,
-            corporate_number: editData.corporate_number || null,
-            phone: editData.phone || null,
-            address: editData.address || null,
-            website: editData.website || null,
-            industry: editData.industry || null,
-            notes: editData.notes || null,
-          });
-        showToast("企業を登録しました");
-      }
-      setEditOpen(false);
-      mutate();
-    } catch {
-      showToast("保存に失敗しました", "error");
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!editData.id) return;
-    try {
-      await getSupabase()
-        .from("bc_companies")
-        .delete()
-        .eq("id", editData.id)
-        .eq("organization_id", organization!.id);
-      showToast("企業を削除しました");
-      setEditOpen(false);
-      mutate();
-    } catch {
-      showToast("削除に失敗しました", "error");
-    }
-  };
+    filtered,
+    openCreate,
+    handleSave,
+    handleDelete,
+  } = useCrmCompaniesPage();
 
   return (
     <div>
@@ -164,8 +76,8 @@ export default function CrmCompaniesPage() {
         open={editOpen}
         onOpenChange={setEditOpen}
         title={editData.id ? "企業編集" : "企業登録"}
-        onSave={handleSave}
-        onDelete={editData.id ? handleDelete : undefined}
+        onSave={() => handleSave(showToast)}
+        onDelete={editData.id ? () => handleDelete(showToast) : undefined}
       >
         <div className="space-y-4">
           <div>

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { ApplicationStep, CustomForm, Interview } from "@/types/database";
+import { StepType } from "@/lib/constants";
 import { format } from "date-fns";
 
 interface ResourceSelectDialogProps {
@@ -28,7 +29,7 @@ export function ResourceSelectDialog({
 }: ResourceSelectDialogProps) {
   if (!step) return null;
 
-  const isForm = step.step_type === "form";
+  const isForm = step.step_type === StepType.Form;
   const title = isForm ? "フォームを選択" : "面接を選択";
   const description = isForm
     ? "このステップに紐付けるフォームを選択してください"

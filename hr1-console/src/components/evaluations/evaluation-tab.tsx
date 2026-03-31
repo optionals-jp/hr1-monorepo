@@ -16,9 +16,13 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
-import { getSupabase } from "@/lib/supabase/browser";
 import { useAuth } from "@/lib/auth-context";
 import { useOrg } from "@/lib/org-context";
+import {
+  loadEvaluationTabData,
+  loadTemplateCriteria,
+  submitEvaluation,
+} from "@/lib/hooks/use-evaluation-detail";
 import {
   scoreTypeLabels,
   evaluationStatusLabels,
@@ -74,107 +78,39 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
 
   useEffect(() => {
     if (!organization) return;
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [targetUserId, organization]);
+    let cancelled = false;
 
-  async function loadData() {
+    loadEvaluationTabData(organization.id, targetUserId, targetType).then((result) => {
+      if (cancelled) return;
+      setTemplates(result.templates);
+      setEvaluations(result.evaluations);
+      setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [organization, targetUserId, targetType]);
+
+  const loadData = async () => {
     if (!organization) return;
     setLoading(true);
-
-    // Load templates matching target type
-    const { data: tplData } = await getSupabase()
-      .from("evaluation_templates")
-      .select("*")
-      .eq("organization_id", organization.id)
-      .in("target", [targetType, "both"])
-      .order("created_at", { ascending: false });
-
-    setTemplates(tplData ?? []);
-
-    // Load existing evaluations for this user
-    const query = getSupabase()
-      .from("evaluations")
-      .select("*")
-      .eq("organization_id", organization.id)
-      .eq("target_user_id", targetUserId)
-      .order("created_at", { ascending: false });
-
-    const { data: evalData } = await query;
-
-    if (evalData && evalData.length > 0) {
-      // Fetch template titles, criteria, and scores
-      const templateIds = [...new Set(evalData.map((e) => e.template_id))];
-      const evalIds = evalData.map((e) => e.id);
-      const evaluatorIds = [...new Set(evalData.map((e) => e.evaluator_id))];
-
-      const [{ data: crData }, { data: scoreData }, { data: profiles }, { data: tpls }] =
-        await Promise.all([
-          getSupabase()
-            .from("evaluation_criteria")
-            .select("*")
-            .in("template_id", templateIds)
-            .order("sort_order"),
-          getSupabase().from("evaluation_scores").select("*").in("evaluation_id", evalIds),
-          getSupabase().from("profiles").select("id, display_name, email").in("id", evaluatorIds),
-          getSupabase().from("evaluation_templates").select("id, title").in("id", templateIds),
-        ]);
-
-      const nameMap = new Map<string, string>();
-      for (const p of profiles ?? []) {
-        nameMap.set(p.id, p.display_name ?? p.email);
-      }
-
-      const titleMap = new Map<string, string>();
-      for (const t of tpls ?? []) {
-        titleMap.set(t.id, t.title);
-      }
-
-      setEvaluations(
-        evalData.map((e) => ({
-          ...e,
-          evaluator_name: nameMap.get(e.evaluator_id) ?? e.evaluator_id,
-          scores: (scoreData ?? []).filter((s) => s.evaluation_id === e.id),
-          criteria: (crData ?? []).filter((c) => c.template_id === e.template_id),
-          template_title: titleMap.get(e.template_id) ?? "",
-        }))
-      );
-    } else {
-      setEvaluations([]);
-    }
-
+    const result = await loadEvaluationTabData(organization.id, targetUserId, targetType);
+    setTemplates(result.templates);
+    setEvaluations(result.evaluations);
     setLoading(false);
-  }
+  };
 
   async function handleTemplateSelect(templateId: string | null) {
     if (!templateId) return;
     setSelectedTemplateId(templateId);
-    const { data: crData } = await getSupabase()
-      .from("evaluation_criteria")
-      .select("*")
-      .eq("template_id", templateId)
-      .order("sort_order");
+    const result = await loadTemplateCriteria(templateId);
 
-    const cr = crData ?? [];
-    setFormCriteria(cr);
-
-    // 行動アンカーを取得
-    if (cr.length > 0) {
-      const { data: anchorData } = await getSupabase()
-        .from("evaluation_anchors")
-        .select("*")
-        .in(
-          "criterion_id",
-          cr.map((c) => c.id)
-        )
-        .order("score_value");
-      setFormAnchors(anchorData ?? []);
-    } else {
-      setFormAnchors([]);
-    }
+    setFormCriteria(result.criteria);
+    setFormAnchors(result.anchors);
 
     setScores(
-      cr.map((c) => ({
+      result.criteria.map((c) => ({
         criterion_id: c.id,
         score: null,
         value: "",
@@ -192,50 +128,23 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
     if (!organization || !user || !selectedTemplateId) return;
     setSaving(true);
 
-    try {
-      const evalId = `eval-${Date.now()}`;
+    const result = await submitEvaluation(organization.id, user.id, {
+      templateId: selectedTemplateId,
+      targetUserId,
+      applicationId,
+      status,
+      overallComment,
+      scores,
+    });
 
-      const { error: evalError } = await getSupabase()
-        .from("evaluations")
-        .insert({
-          id: evalId,
-          organization_id: organization.id,
-          template_id: selectedTemplateId,
-          target_user_id: targetUserId,
-          evaluator_id: user.id,
-          application_id: applicationId ?? null,
-          status,
-          overall_comment: overallComment || null,
-          submitted_at: status === "submitted" ? new Date().toISOString() : null,
-        });
-      if (evalError) throw evalError;
-
-      const scoreRows = scores
-        .filter((s) => s.score !== null || s.value || s.comment)
-        .map((s, i) => ({
-          id: `evalscore-${evalId}-${i}`,
-          evaluation_id: evalId,
-          criterion_id: s.criterion_id,
-          score: s.score,
-          value: s.value || null,
-          comment: s.comment || null,
-        }));
-
-      if (scoreRows.length > 0) {
-        const { error: scoreError } = await getSupabase()
-          .from("evaluation_scores")
-          .insert(scoreRows);
-        if (scoreError) throw scoreError;
-      }
-
+    if (result.success) {
       showToast(status === "submitted" ? "評価を提出しました" : "下書きを保存しました");
       setShowForm(false);
       await loadData();
-    } catch {
-      showToast("評価の保存に失敗しました", "error");
-    } finally {
-      setSaving(false);
+    } else {
+      showToast(result.error ?? "評価の保存に失敗しました", "error");
     }
+    setSaving(false);
   }
 
   if (loading) {

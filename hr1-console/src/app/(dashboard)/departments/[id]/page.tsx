@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -13,11 +13,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useOrg } from "@/lib/org-context";
+import { useDepartmentDetail } from "@/lib/hooks/use-department-detail";
 import { genderLabels } from "@/lib/constants";
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";
-import type { Department } from "@/types/database";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
@@ -26,20 +24,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { format, differenceInYears } from "date-fns";
 
-interface DeptMember {
-  id: string;
-  email: string;
-  display_name: string | null;
-  position: string | null;
-  birth_date: string | null;
-  gender: string | null;
-  hire_date: string | null;
-}
-
 const tabs = [
   { value: "overview", label: "概要" },
   { value: "members", label: "社員" },
-  { value: "audit", label: "変更履歴" },
+  { value: "audit", label: "変更ログ" },
 ];
 
 const editTabs: EditPanelTab[] = [{ value: "basic", label: "基本情報" }];
@@ -47,70 +35,22 @@ const editTabs: EditPanelTab[] = [{ value: "basic", label: "基本情報" }];
 export default function DepartmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { organization } = useOrg();
-  const [department, setDepartment] = useState<Department | null>(null);
-  const [members, setMembers] = useState<DeptMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
+  const {
+    organization,
+    department,
+    members,
+    loading,
+    activeTab,
+    setActiveTab,
+    editing,
+    setEditing,
+    editName,
+    setEditName,
+    saving,
+    startEditing,
+    saveEdit,
+  } = useDepartmentDetail(id);
 
-  // Editing
-  const [editing, setEditing] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const load = async () => {
-    if (!organization) return;
-    setLoading(true);
-    const [{ data: dept }, { data: edData }] = await Promise.all([
-      getSupabase()
-        .from("departments")
-        .select("*")
-        .eq("id", id)
-        .eq("organization_id", organization.id)
-        .single(),
-      getSupabase()
-        .from("employee_departments")
-        .select(
-          "profiles:user_id(id, email, display_name, position, birth_date, gender, hire_date)"
-        )
-        .eq("department_id", id),
-    ]);
-
-    setDepartment(dept);
-
-    const memberList = (edData ?? [])
-      .map((row) => (row as unknown as { profiles: DeptMember }).profiles)
-      .filter(Boolean);
-    setMembers(memberList);
-
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    if (!organization) return;
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, organization]);
-
-  const startEditing = () => {
-    if (!department) return;
-    setEditName(department.name);
-    setEditing(true);
-  };
-
-  const saveEdit = async () => {
-    if (!department || !editName.trim()) return;
-    setSaving(true);
-    await getSupabase()
-      .from("departments")
-      .update({ name: editName.trim() })
-      .eq("id", department.id);
-    setEditing(false);
-    setSaving(false);
-    await load();
-  };
-
-  // 人口統計の計算
   const demographics = useMemo(() => {
     const now = new Date();
     const ages = members

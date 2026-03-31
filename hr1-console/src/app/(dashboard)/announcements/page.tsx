@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,11 +11,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { useOrg } from "@/lib/org-context";
-import { useAuth } from "@/lib/auth-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
 import type { Announcement } from "@/types/database";
+import { useAnnouncements, useAnnouncementPanel } from "@/lib/hooks/use-announcements";
 import { Badge } from "@/components/ui/badge";
 import { announcementTargetLabels } from "@/lib/constants";
 import { EditPanel } from "@/components/ui/edit-panel";
@@ -33,9 +29,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { Pencil, Pin, Send, Undo2 } from "lucide-react";
-import { mutate } from "swr";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { useToast } from "@/components/ui/toast";
 
 function statusBadge(a: Announcement) {
   if (a.is_pinned && a.published_at) {
@@ -48,144 +42,34 @@ function statusBadge(a: Announcement) {
 }
 
 export default function AnnouncementsPage() {
-  const { organization } = useOrg();
-  const { user } = useAuth();
-  const { showToast } = useToast();
-
-  const cacheKey = organization ? `announcements-${organization.id}` : null;
-
   const {
     data: announcements = [],
     isLoading,
     error: announcementsError,
     mutate: mutateAnnouncements,
-  } = useQuery<Announcement[]>(cacheKey, async () => {
-    const { data } = await getSupabase()
-      .from("announcements")
-      .select("*")
-      .eq("organization_id", organization!.id)
-      .order("is_pinned", { ascending: false })
-      .order("published_at", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false });
-    return data ?? [];
-  });
+  } = useAnnouncements();
 
-  const [editOpen, setEditOpen] = useState(false);
-  const [editItem, setEditItem] = useState<Announcement | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [target, setTarget] = useState<string>("all");
-  const [isPinned, setIsPinned] = useState(false);
-
-  function openCreate() {
-    setEditItem(null);
-    setTitle("");
-    setBody("");
-    setTarget("all");
-    setIsPinned(false);
-    setEditOpen(true);
-  }
-
-  function openEdit(a: Announcement) {
-    setEditItem(a);
-    setTitle(a.title);
-    setBody(a.body);
-    setTarget(a.target);
-    setIsPinned(a.is_pinned);
-    setEditOpen(true);
-  }
-
-  async function handleSave() {
-    if (!organization || !user || !title.trim() || !body.trim()) return;
-    setSaving(true);
-    try {
-      if (editItem) {
-        const { error } = await getSupabase()
-          .from("announcements")
-          .update({
-            title: title.trim(),
-            body: body.trim(),
-            target,
-            is_pinned: isPinned,
-          })
-          .eq("id", editItem.id)
-          .eq("organization_id", organization.id);
-        if (error) {
-          showToast("操作に失敗しました", "error");
-          return;
-        }
-      } else {
-        const { error } = await getSupabase().from("announcements").insert({
-          organization_id: organization.id,
-          title: title.trim(),
-          body: body.trim(),
-          target,
-          is_pinned: isPinned,
-          created_by: user.id,
-        });
-        if (error) {
-          showToast("操作に失敗しました", "error");
-          return;
-        }
-      }
-      await mutate(cacheKey);
-      setEditOpen(false);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDelete() {
-    if (!editItem || !organization) return;
-    setDeleting(true);
-    try {
-      const { error } = await getSupabase()
-        .from("announcements")
-        .delete()
-        .eq("id", editItem.id)
-        .eq("organization_id", organization.id);
-      if (error) {
-        showToast("操作に失敗しました", "error");
-        return;
-      }
-      await mutate(cacheKey);
-      setEditOpen(false);
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  async function togglePublish(a: Announcement) {
-    if (!organization) return;
-    const published_at = a.published_at ? null : new Date().toISOString();
-    const { error } = await getSupabase()
-      .from("announcements")
-      .update({ published_at })
-      .eq("id", a.id)
-      .eq("organization_id", organization.id);
-    if (error) {
-      showToast("操作に失敗しました", "error");
-      return;
-    }
-    await mutate(cacheKey);
-  }
-
-  async function togglePin(a: Announcement) {
-    if (!organization) return;
-    const { error } = await getSupabase()
-      .from("announcements")
-      .update({ is_pinned: !a.is_pinned })
-      .eq("id", a.id)
-      .eq("organization_id", organization.id);
-    if (error) {
-      showToast("操作に失敗しました", "error");
-      return;
-    }
-    await mutate(cacheKey);
-  }
+  const {
+    editOpen,
+    setEditOpen,
+    editItem,
+    saving,
+    deleting,
+    title,
+    setTitle,
+    body,
+    setBody,
+    target,
+    setTarget,
+    isPinned,
+    setIsPinned,
+    openCreate,
+    openEdit,
+    handleSave,
+    handleDelete,
+    togglePublish,
+    togglePin,
+  } = useAnnouncementPanel();
 
   return (
     <div className="flex flex-col">

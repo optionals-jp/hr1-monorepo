@@ -1,9 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/toast";
-import { useSWRConfig } from "swr";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,74 +14,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { useOrg } from "@/lib/org-context";
-import { useAuth } from "@/lib/auth-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
-import type { EvaluationTemplate } from "@/types/database";
+import { useNewEvaluationCycle } from "@/lib/hooks/use-evaluations";
 
 export default function NewEvaluationCyclePage() {
-  const router = useRouter();
-  const { showToast } = useToast();
-  const { mutate } = useSWRConfig();
-  const { organization } = useOrg();
-  const { user } = useAuth();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [templateId, setTemplateId] = useState<string>("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  // 多面評価シートのみ取得
   const {
-    data: templates,
-    error: templatesError,
-    mutate: mutateTemplates,
-  } = useQuery<EvaluationTemplate[]>(
-    organization ? `eval-templates-multi-${organization.id}` : null,
-    async () => {
-      if (!organization) return [];
-      const { data } = await getSupabase()
-        .from("evaluation_templates")
-        .select("*")
-        .eq("organization_id", organization.id)
-        .eq("evaluation_type", "multi_rater")
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    }
-  );
-
-  const handleSubmit = async () => {
-    if (!organization || !user || !title || !templateId || !startDate || !endDate) return;
-    setSaving(true);
-
-    try {
-      const cycleId = `cycle-${Date.now()}`;
-
-      const { error } = await getSupabase()
-        .from("evaluation_cycles")
-        .insert({
-          id: cycleId,
-          organization_id: organization.id,
-          title,
-          description: description || null,
-          template_id: templateId,
-          start_date: startDate,
-          end_date: endDate,
-          created_by: user.id,
-        });
-      if (error) throw error;
-
-      await mutate(`eval-cycles-${organization.id}`);
-      showToast("評価サイクルを作成しました");
-      router.push(`/evaluations/cycles/${cycleId}`);
-    } catch {
-      showToast("サイクルの作成に失敗しました", "error");
-    } finally {
-      setSaving(false);
-    }
-  };
+    templates,
+    templatesError,
+    mutateTemplates,
+    title,
+    setTitle,
+    description,
+    setDescription,
+    templateId,
+    setTemplateId,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    saving,
+    handleSubmit,
+    cancel,
+  } = useNewEvaluationCycle();
 
   return (
     <>
@@ -164,7 +113,7 @@ export default function NewEvaluationCyclePage() {
           </Card>
 
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => router.push("/evaluations/cycles")}>
+            <Button variant="outline" onClick={cancel}>
               キャンセル
             </Button>
             <Button

@@ -2,30 +2,25 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
-import { useToast } from "@/components/ui/toast";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrg } from "@/lib/org-context";
+import { StepStatus, StepType } from "@/lib/constants";
 import { getSupabase } from "@/lib/supabase/browser";
-import type {
-  Application,
-  ApplicationStep,
-  CustomForm,
-  FormField,
-  Interview,
-} from "@/types/database";
+import * as applicationRepository from "@/lib/repositories/application-repository";
+import {
+  isResourceStepType,
+  canUnskipStep,
+  getCurrentStepOrder,
+  canActOnStep,
+  findNextAutoStartStep,
+  buildFormSheetFields,
+} from "@/features/applications/rules";
+import type { Application, ApplicationStep, CustomForm, Interview } from "@/types/database";
 import type {
   ActiveTab,
   FormSheetField,
   UseApplicationDetailReturn,
 } from "@/features/applications/types";
-
-/** リソース選択が必要なステップ種別 */
-const RESOURCE_STEP_TYPES = ["form", "interview"] as const;
-
-type ResourceStepType = (typeof RESOURCE_STEP_TYPES)[number];
-
-function isResourceStepType(type: string): type is ResourceStepType {
-  return (RESOURCE_STEP_TYPES as readonly string[]).includes(type);
-}
 
 export function useApplicationDetail(id: string): UseApplicationDetailReturn {
   const { organization } = useOrg();
@@ -33,39 +28,32 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
   const [steps, setSteps] = useState<ApplicationStep[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // フォーム回答シートの状態
   const [formSheetOpen, setFormSheetOpen] = useState(false);
   const [formSheetStep, setFormSheetStep] = useState<ApplicationStep | null>(null);
   const [formSheetFields, setFormSheetFields] = useState<FormSheetField[]>([]);
   const [formSheetLoading, setFormSheetLoading] = useState(false);
 
-  // タブの状態
-  const [activeTab, setActiveTab] = useState<ActiveTab>("dashboard");
+  const [activeTab, setActiveTab] = useTabParam<ActiveTab>("dashboard");
 
-  // リソース選択ダイアログの状態
   const [resourceDialogOpen, setResourceDialogOpen] = useState(false);
   const [resourceDialogStep, setResourceDialogStep] = useState<ApplicationStep | null>(null);
   const [forms, setForms] = useState<CustomForm[]>([]);
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [resourcesLoading, setResourcesLoading] = useState(false);
 
-  // 入社確定ダイアログの状態
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [hireDate, setHireDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [converting, setConverting] = useState(false);
-  const { showToast } = useToast();
 
   const load = useCallback(async () => {
     if (!organization) return;
     setLoading(true);
-    const { data } = await getSupabase()
-      .from("applications")
-      .select(
-        "*, jobs(*), profiles:applicant_id(id, email, display_name, role), application_steps(*)"
-      )
-      .eq("id", id)
-      .eq("organization_id", organization.id)
-      .single();
+    const client = getSupabase();
+    const { data } = await applicationRepository.fetchApplicationDetail(
+      client,
+      id,
+      organization.id
+    );
 
     if (data) {
       setApplication(data as unknown as Application);
@@ -82,52 +70,29 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
     load();
   }, [load, organization]);
 
-  // Realtime: application_steps の変更をリッスンして自動リロード
   useEffect(() => {
-    const channel = getSupabase()
-      .channel(`application_steps:${id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "application_steps",
-          filter: `application_id=eq.${id}`,
-        },
-        () => {
-          load();
-        }
-      )
-      .subscribe();
-
+    const client = getSupabase();
+    const channel = applicationRepository.subscribeToStepChanges(client, id, load);
     return () => {
-      getSupabase().removeChannel(channel);
+      client.removeChannel(channel);
     };
   }, [id, load]);
 
-  /** リソース選択ダイアログを開き、フォームまたは面接一覧を取得 */
   const openResourceDialog = useCallback(
     async (step: ApplicationStep) => {
       if (!organization) return;
+      const client = getSupabase();
 
       setResourceDialogStep(step);
       setResourcesLoading(true);
       setResourceDialogOpen(true);
 
-      if (step.step_type === "form") {
-        const { data } = await getSupabase()
-          .from("custom_forms")
-          .select("*")
-          .eq("organization_id", organization.id)
-          .order("created_at", { ascending: false });
-        setForms(data ?? []);
-      } else if (step.step_type === "interview") {
-        const { data } = await getSupabase()
-          .from("interviews")
-          .select("*")
-          .eq("organization_id", organization.id)
-          .order("created_at", { ascending: false });
-        setInterviews(data ?? []);
+      if (step.step_type === StepType.Form) {
+        const data = await applicationRepository.fetchForms(client, organization.id);
+        setForms(data);
+      } else if (step.step_type === StepType.Interview) {
+        const data = await applicationRepository.fetchInterviews(client, organization.id);
+        setInterviews(data);
       }
 
       setResourcesLoading(false);
@@ -135,19 +100,15 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
     [organization]
   );
 
-  /** リソースを選択してステップを開始 */
   const startStepWithResource = useCallback(
     async (resourceId: string) => {
       if (!resourceDialogStep) return;
 
-      await getSupabase()
-        .from("application_steps")
-        .update({
-          status: "in_progress",
-          related_id: resourceId,
-          started_at: new Date().toISOString(),
-        })
-        .eq("id", resourceDialogStep.id);
+      await applicationRepository.updateStepStatus(getSupabase(), resourceDialogStep.id, {
+        status: StepStatus.InProgress,
+        related_id: resourceId,
+        started_at: new Date().toISOString(),
+      });
 
       setResourceDialogOpen(false);
       setResourceDialogStep(null);
@@ -156,51 +117,35 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
     [resourceDialogStep, load]
   );
 
-  /** ステップを進行させる */
   const advanceStep = useCallback(
     async (step: ApplicationStep) => {
       try {
-        if (step.status === "pending") {
-          // リソース選択が必要なステップ種別の場合はダイアログを開く
+        const client = getSupabase();
+
+        if (step.status === StepStatus.Pending) {
           if (isResourceStepType(step.step_type)) {
             openResourceDialog(step);
             return;
           }
 
-          // その他のステップは直接開始
-          const { error } = await getSupabase()
-            .from("application_steps")
-            .update({
-              status: "in_progress",
-              started_at: new Date().toISOString(),
-            })
-            .eq("id", step.id);
+          const { error } = await applicationRepository.updateStepStatus(client, step.id, {
+            status: StepStatus.InProgress,
+            started_at: new Date().toISOString(),
+          });
           if (error) throw error;
-        } else if (step.status === "in_progress") {
-          const { error } = await getSupabase()
-            .from("application_steps")
-            .update({
-              status: "completed",
-              completed_at: new Date().toISOString(),
-            })
-            .eq("id", step.id);
+        } else if (step.status === StepStatus.InProgress) {
+          const { error } = await applicationRepository.updateStepStatus(client, step.id, {
+            status: StepStatus.Completed,
+            completed_at: new Date().toISOString(),
+          });
           if (error) throw error;
 
-          // 次のステップを自動開始（step_order が連番でない場合にも対応）
-          const nextStep = steps
-            .filter((s) => s.step_order > step.step_order && s.status === "pending")
-            .sort((a, b) => a.step_order - b.step_order)[0];
-          if (nextStep) {
-            // 次ステップがリソース選択を必要としない場合のみ自動開始
-            if (!isResourceStepType(nextStep.step_type)) {
-              await getSupabase()
-                .from("application_steps")
-                .update({
-                  status: "in_progress",
-                  started_at: new Date().toISOString(),
-                })
-                .eq("id", nextStep.id);
-            }
+          const nextStep = findNextAutoStartStep(steps, step.step_order);
+          if (nextStep && !isResourceStepType(nextStep.step_type)) {
+            await applicationRepository.updateStepStatus(client, nextStep.id, {
+              status: StepStatus.InProgress,
+              started_at: new Date().toISOString(),
+            });
           }
         }
         load();
@@ -212,54 +157,47 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
   );
 
   const skipStep = useCallback(
-    async (step: ApplicationStep) => {
-      const { error } = await getSupabase()
-        .from("application_steps")
-        .update({ status: "skipped", completed_at: new Date().toISOString() })
-        .eq("id", step.id);
+    async (step: ApplicationStep): Promise<{ success: boolean; error?: string }> => {
+      const { error } = await applicationRepository.updateStepStatus(getSupabase(), step.id, {
+        status: StepStatus.Skipped,
+        completed_at: new Date().toISOString(),
+      });
       if (error) {
-        console.error("ステップスキップエラー:", error);
-        return;
+        return { success: false, error: "ステップのスキップに失敗しました" };
       }
       load();
+      return { success: true };
     },
     [load]
   );
 
   const unskipStep = useCallback(
-    async (step: ApplicationStep) => {
-      const { error } = await getSupabase()
-        .from("application_steps")
-        .update({ status: "pending", started_at: null, completed_at: null })
-        .eq("id", step.id);
+    async (step: ApplicationStep): Promise<{ success: boolean; error?: string }> => {
+      if (!canUnskipStep(step, steps)) {
+        return { success: false, error: "後続ステップが完了済みのため元に戻せません" };
+      }
+
+      const { error } = await applicationRepository.updateStepStatus(getSupabase(), step.id, {
+        status: StepStatus.Pending,
+        started_at: null,
+        completed_at: null,
+      });
       if (error) {
-        console.error("ステップ復元エラー:", error);
-        return;
+        return { success: false, error: "ステップの復元に失敗しました" };
       }
       load();
+      return { success: true };
     },
-    [load]
+    [load, steps]
   );
 
-  /** 現在アクション可能なステップを判定（順序を強制） */
-  const currentStepOrder = (() => {
-    const inProgress = steps.find((s) => s.status === "in_progress");
-    if (inProgress) return inProgress.step_order;
-    const firstPending = steps.find((s) => s.status === "pending");
-    if (firstPending) return firstPending.step_order;
-    return null;
-  })();
+  const currentStepOrder = getCurrentStepOrder(steps);
 
-  const canActOnStep = useCallback(
-    (step: ApplicationStep) => {
-      if (step.status === "completed") return false;
-      if (step.status === "skipped") return true;
-      return step.step_order === currentStepOrder;
-    },
+  const canActOnStepFn = useCallback(
+    (step: ApplicationStep) => canActOnStep(step, currentStepOrder),
     [currentStepOrder]
   );
 
-  /** フォーム回答シートを開く */
   const openFormResponses = useCallback(
     async (step: ApplicationStep) => {
       if (!step.related_id || !application) return;
@@ -267,29 +205,13 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
       setFormSheetLoading(true);
       setFormSheetOpen(true);
 
-      const [{ data: fieldsData }, { data: responsesData }] = await Promise.all([
-        getSupabase()
-          .from("form_fields")
-          .select("*")
-          .eq("form_id", step.related_id)
-          .order("sort_order"),
-        getSupabase()
-          .from("form_responses")
-          .select("*")
-          .eq("form_id", step.related_id)
-          .eq("applicant_id", application.applicant_id),
-      ]);
-
-      const answerMap: Record<string, string> = {};
-      for (const r of responsesData ?? []) {
-        answerMap[r.field_id] = Array.isArray(r.value)
-          ? (r.value as string[]).join(", ")
-          : String(r.value ?? "");
-      }
-
-      setFormSheetFields(
-        (fieldsData ?? []).map((f) => ({ field: f as FormField, value: answerMap[f.id] ?? "-" }))
+      const { fields, responses } = await applicationRepository.fetchFormResponses(
+        getSupabase(),
+        step.related_id,
+        application.applicant_id
       );
+
+      setFormSheetFields(buildFormSheetFields(fields, responses));
       setFormSheetLoading(false);
     },
     [application]
@@ -298,54 +220,42 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
   const updateApplicationStatus = useCallback(
     async (status: string | null) => {
       if (!status) return;
-      await getSupabase().from("applications").update({ status }).eq("id", id);
+      if (!organization) return;
+      await applicationRepository.updateApplicationStatus(
+        getSupabase(),
+        id,
+        organization.id,
+        status
+      );
       setApplication((prev) =>
         prev ? { ...prev, status: status as Application["status"] } : prev
       );
     },
-    [id]
+    [id, organization]
   );
 
-  const handleConvertToEmployee = useCallback(async () => {
-    if (!application || !organization) return;
+  const handleConvertToEmployee = useCallback(async (): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    if (!application || !organization) return { success: false };
     setConverting(true);
     try {
-      const supabase = getSupabase();
-      const applicantId = application.applicant_id;
-
-      // 1. プロフィールのロールを employee に変更し、入社日を設定
-      await supabase
-        .from("profiles")
-        .update({ role: "employee", hire_date: hireDate })
-        .eq("id", applicantId);
-
-      // 2. user_organizations に登録されていなければ追加
-      await supabase
-        .from("user_organizations")
-        .upsert(
-          { user_id: applicantId, organization_id: organization.id },
-          { onConflict: "user_id,organization_id" }
-        );
-
-      // 3. 通知を作成
-      await supabase.from("notifications").insert({
-        organization_id: organization.id,
-        user_id: applicantId,
-        type: "general",
-        title: "入社が確定しました",
-        body: `${hireDate} 付けで社員として登録されました。社員アプリからログインできます。`,
-        is_read: false,
-      });
-
-      showToast("入社確定しました。応募者が社員として登録されました。");
+      await applicationRepository.convertToEmployee(
+        getSupabase(),
+        application.applicant_id,
+        organization.id,
+        hireDate
+      );
       setConvertDialogOpen(false);
       load();
+      return { success: true };
     } catch (e) {
-      showToast(`エラーが発生しました: ${String(e)}`, "error");
+      return { success: false, error: String(e) };
     } finally {
       setConverting(false);
     }
-  }, [application, organization, hireDate, showToast, load]);
+  }, [application, organization, hireDate, load]);
 
   return {
     application,
@@ -379,7 +289,7 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
     advanceStep,
     skipStep,
     unskipStep,
-    canActOnStep,
+    canActOnStep: canActOnStepFn,
     currentStepOrder,
 
     updateApplicationStatus,

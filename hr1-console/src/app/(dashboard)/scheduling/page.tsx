@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,115 +23,34 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
-import type { Interview, InterviewSlot } from "@/types/database";
+import { useSchedulingList, useCreateInterview } from "@/lib/hooks/use-scheduling";
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   interviewScheduleStatusLabels as statusLabels,
   interviewScheduleStatusColors as statusColors,
 } from "@/lib/constants";
-import { autoFillEndAt } from "@/lib/utils";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 
 export default function SchedulingPage() {
   const router = useRouter();
-  const { organization } = useOrg();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newLocation, setNewLocation] = useState("");
-  const [newNotes, setNewNotes] = useState("");
-  const [slots, setSlots] = useState<{ startAt: string; endAt: string; maxApplicants: number }[]>(
-    []
-  );
+  const { data: interviews = [], isLoading, error: interviewsError, mutate } = useSchedulingList();
 
   const {
-    data: interviews = [],
-    isLoading,
-    error: interviewsError,
-    mutate,
-  } = useQuery<(Interview & { interview_slots: InterviewSlot[] })[]>(
-    organization ? `interviews-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("interviews")
-        .select("*, interview_slots(*)")
-        .eq("organization_id", organization!.id)
-        .order("created_at", { ascending: false });
-
-      return data ?? [];
-    }
-  );
-
-  const addSlot = () => {
-    setSlots([...slots, { startAt: "", endAt: "", maxApplicants: 1 }]);
-  };
-
-  const updateSlot = (
-    index: number,
-    field: "startAt" | "endAt" | "maxApplicants",
-    value: string | number
-  ) => {
-    const updated = [...slots];
-    if (field === "maxApplicants") {
-      updated[index] = { ...updated[index], maxApplicants: value as number };
-    } else {
-      updated[index] = { ...updated[index], [field]: value as string };
-    }
-    // 開始日時が設定され、終了日時が未設定なら30分後を自動入力
-    if (field === "startAt" && value && !updated[index].endAt) {
-      updated[index] = { ...updated[index], endAt: autoFillEndAt(value as string) };
-    }
-    setSlots(updated);
-  };
-
-  const removeSlot = (index: number) => {
-    setSlots(slots.filter((_, i) => i !== index));
-  };
-
-  const handleCreate = async () => {
-    if (!organization || !newTitle) return;
-
-    const interviewId = `interview-${Date.now()}`;
-
-    await getSupabase()
-      .from("interviews")
-      .insert({
-        id: interviewId,
-        organization_id: organization.id,
-        title: newTitle,
-        location: newLocation || null,
-        notes: newNotes || null,
-        status: "scheduling",
-      });
-
-    if (slots.length > 0) {
-      const validSlots = slots.filter((s) => s.startAt && s.endAt);
-      if (validSlots.length > 0) {
-        await getSupabase()
-          .from("interview_slots")
-          .insert(
-            validSlots.map((slot, i) => ({
-              id: `slot-${interviewId}-${i + 1}`,
-              interview_id: interviewId,
-              start_at: new Date(slot.startAt).toISOString(),
-              end_at: new Date(slot.endAt).toISOString(),
-              is_selected: false,
-              max_applicants: slot.maxApplicants,
-            }))
-          );
-      }
-    }
-
-    setNewTitle("");
-    setNewLocation("");
-    setNewNotes("");
-    setSlots([]);
-    setDialogOpen(false);
-    mutate();
-  };
+    dialogOpen,
+    setDialogOpen,
+    newTitle,
+    setNewTitle,
+    newLocation,
+    setNewLocation,
+    newNotes,
+    setNewNotes,
+    slots,
+    addSlot,
+    updateSlot,
+    removeSlot,
+    handleCreate,
+  } = useCreateInterview();
 
   return (
     <div className="flex flex-col">

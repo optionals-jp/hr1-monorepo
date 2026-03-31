@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React from "react";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -14,18 +13,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
-import { cn, formatYearMonth, weekdayLabel } from "@/lib/utils";
-import type { ShiftRequest, ShiftSchedule, Profile } from "@/types/database";
-import { shiftScheduleStatusLabels, shiftScheduleStatusColors } from "@/lib/constants";
+import {
+  useShifts,
+  type Employee,
+  type RequestWithProfile,
+  type ScheduleWithProfile,
+} from "@/lib/hooks/use-shifts";
+import { cn, weekdayLabel } from "@/lib/utils";
+
 import { ChevronLeft, ChevronRight, CalendarRange, ClipboardList, Send } from "lucide-react";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-
-// ---------------------------------------------------------------------------
-// 型
-// ---------------------------------------------------------------------------
 
 type TabValue = "requests" | "schedule";
 
@@ -34,27 +31,9 @@ const tabList: { value: TabValue; label: string; icon: React.ElementType }[] = [
   { value: "schedule", label: "シフト表", icon: CalendarRange },
 ];
 
-interface Employee {
-  id: string;
-  email: string;
-  display_name: string | null;
-}
-
-type RequestWithProfile = ShiftRequest & {
-  profiles: { display_name: string | null; email: string };
-};
-
-type ScheduleWithProfile = ShiftSchedule & {
-  profiles: { display_name: string | null; email: string };
-};
-
 // ---------------------------------------------------------------------------
 // ヘルパー
 // ---------------------------------------------------------------------------
-
-function daysInMonth(year: number, month: number): number {
-  return new Date(year, month, 0).getDate();
-}
 
 function isWeekend(year: number, month: number, day: number): boolean {
   const d = new Date(year, month - 1, day);
@@ -71,175 +50,49 @@ function timeShort(t: string | null): string {
 // ---------------------------------------------------------------------------
 
 export default function ShiftsPage() {
-  const { organization } = useOrg();
-  const orgId = organization?.id ?? null;
   const { showToast } = useToast();
-  const [tab, setTab] = useState<TabValue>("requests");
 
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
-  const [publishing, setPublishing] = useState(false);
-
-  const prevMonth = () => {
-    if (month === 1) {
-      setYear((y) => y - 1);
-      setMonth(12);
-    } else setMonth((m) => m - 1);
-  };
-  const nextMonth = () => {
-    if (month === 12) {
-      setYear((y) => y + 1);
-      setMonth(1);
-    } else setMonth((m) => m + 1);
-  };
-
-  const ym = formatYearMonth(year, month);
-  const totalDays = daysInMonth(year, month);
-
-  // シフト希望取得
   const {
-    data: requests,
-    error: requestsError,
-    mutate: mutateReqs,
-  } = useQuery<RequestWithProfile[]>(orgId ? `shift-requests-${orgId}-${ym}` : null, async () => {
-    const sb = getSupabase();
-    const { data } = await sb
-      .from("shift_requests")
-      .select("*, profiles!shift_requests_user_id_fkey(display_name, email)")
-      .eq("organization_id", orgId!)
-      .gte("target_date", `${ym}-01`)
-      .lte("target_date", `${ym}-${totalDays}`)
-      .order("target_date");
-    return (data ?? []) as RequestWithProfile[];
-  });
+    tab,
+    setTab,
+    year,
+    month,
+    prevMonth,
+    nextMonth,
+    publishing,
+    requestsError,
+    mutateReqs,
+    employees,
+    totalDays,
+    requestMap,
+    scheduleMap,
+    handleAutoFill,
+    handlePublish,
+    draftCount,
+  } = useShifts();
 
-  // 確定シフト取得
-  const { data: schedules, mutate: mutateSch } = useQuery<ScheduleWithProfile[]>(
-    orgId ? `shift-schedules-${orgId}-${ym}` : null,
-    async () => {
-      const sb = getSupabase();
-      const { data } = await sb
-        .from("shift_schedules")
-        .select("*, profiles!shift_schedules_user_id_fkey(display_name, email)")
-        .eq("organization_id", orgId!)
-        .gte("target_date", `${ym}-01`)
-        .lte("target_date", `${ym}-${totalDays}`)
-        .order("target_date");
-      return (data ?? []) as ScheduleWithProfile[];
-    }
-  );
-
-  // 社員一覧取得
-  const { data: employees } = useQuery<Employee[]>(
-    orgId ? `shift-employees-${orgId}` : null,
-    async () => {
-      const sb = getSupabase();
-      const { data } = await sb
-        .from("user_organizations")
-        .select("user_id, profiles!user_organizations_user_id_fkey(id, display_name, email)")
-        .eq("organization_id", orgId!)
-        .in("role", ["employee", "admin", "owner"]);
-      return (data ?? []).map((row: Record<string, unknown>) => {
-        const p = row.profiles as Record<string, unknown> | null;
-        return {
-          id: row.user_id as string,
-          email: (p?.email as string) ?? "",
-          display_name: (p?.display_name as string | null) ?? null,
-        };
-      });
-    }
-  );
-
-  // 希望をグループ化: userId → dateStr → request
-  const requestMap = useMemo(() => {
-    const map = new Map<string, Map<string, RequestWithProfile>>();
-    for (const r of requests ?? []) {
-      if (!map.has(r.user_id)) map.set(r.user_id, new Map());
-      map.get(r.user_id)!.set(r.target_date, r);
-    }
-    return map;
-  }, [requests]);
-
-  // 確定をグループ化
-  const scheduleMap = useMemo(() => {
-    const map = new Map<string, Map<string, ScheduleWithProfile>>();
-    for (const s of schedules ?? []) {
-      if (!map.has(s.user_id)) map.set(s.user_id, new Map());
-      map.get(s.user_id)!.set(s.target_date, s);
-    }
-    return map;
-  }, [schedules]);
-
-  // 希望からシフト表を自動生成
-  const handleAutoFill = useCallback(async () => {
-    if (!orgId || !requests) return;
-    const sb = getSupabase();
-    const userId = (await sb.auth.getUser()).data.user?.id;
-
-    const upserts = requests
-      .filter((r) => r.is_available && r.start_time && r.end_time)
-      .map((r) => ({
-        user_id: r.user_id,
-        organization_id: orgId,
-        target_date: r.target_date,
-        start_time: r.start_time!,
-        end_time: r.end_time!,
-        status: "draft",
-      }));
-
-    if (upserts.length === 0) {
-      showToast("反映するデータがありません", "error");
-      return;
-    }
-
-    const { error } = await sb
-      .from("shift_schedules")
-      .upsert(upserts, { onConflict: "user_id,organization_id,target_date" });
-
-    if (error) {
-      showToast(`反映に失敗しました: ${error.message}`, "error");
+  const onAutoFill = async () => {
+    const result = await handleAutoFill();
+    if (result.success) {
+      showToast(`${result.count}件のシフトを反映しました`);
     } else {
-      showToast(`${upserts.length}件のシフトを反映しました`);
-      mutateSch();
+      showToast(result.error ?? "反映に失敗しました", "error");
     }
-  }, [orgId, requests, showToast, mutateSch]);
+  };
 
-  // 公開
-  const handlePublish = useCallback(async () => {
-    if (!orgId) return;
-    setPublishing(true);
-    const sb = getSupabase();
-    const userId = (await sb.auth.getUser()).data.user?.id;
-
-    const { error } = await sb
-      .from("shift_schedules")
-      .update({
-        status: "published",
-        published_at: new Date().toISOString(),
-        published_by: userId,
-      })
-      .eq("organization_id", orgId)
-      .eq("status", "draft")
-      .gte("target_date", `${ym}-01`)
-      .lte("target_date", `${ym}-${totalDays}`);
-
-    setPublishing(false);
-    if (error) {
-      showToast(`公開に失敗しました: ${error.message}`, "error");
-    } else {
+  const onPublish = async () => {
+    const result = await handlePublish();
+    if (result.success) {
       showToast("シフトを公開しました");
-      mutateSch();
+    } else {
+      showToast(result.error ?? "公開に失敗しました", "error");
     }
-  }, [orgId, ym, totalDays, showToast, mutateSch]);
-
-  const draftCount = (schedules ?? []).filter((s) => s.status === "draft").length;
+  };
 
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="シフト管理" sticky border />
 
-      {/* タブ + 月セレクター */}
       <div className="flex items-center justify-between border-b px-6 py-2">
         <div className="flex gap-1">
           {tabList.map((t) => (
@@ -274,7 +127,6 @@ export default function ShiftsPage() {
 
       <QueryErrorBanner error={requestsError} onRetry={() => mutateReqs()} />
 
-      {/* コンテンツ */}
       <div className="flex-1 overflow-auto p-6">
         {tab === "requests" && (
           <RequestsGrid
@@ -289,11 +141,11 @@ export default function ShiftsPage() {
         {tab === "schedule" && (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={handleAutoFill}>
+              <Button variant="outline" size="sm" onClick={onAutoFill}>
                 <ClipboardList className="h-4 w-4 mr-1.5" />
                 希望から反映
               </Button>
-              <Button size="sm" onClick={handlePublish} disabled={publishing || draftCount === 0}>
+              <Button size="sm" onClick={onPublish} disabled={publishing || draftCount === 0}>
                 <Send className="h-4 w-4 mr-1.5" />
                 {draftCount > 0 ? `公開（${draftCount}件）` : "公開済み"}
               </Button>
@@ -331,7 +183,6 @@ function RequestsGrid({
   month: number;
   totalDays: number;
 }) {
-  // 提出済みの社員のみ表示
   const submittedEmployees = employees.filter((e) => {
     const reqs = requestMap.get(e.id);
     if (!reqs) return false;
@@ -444,7 +295,6 @@ function ScheduleGrid({
   month: number;
   totalDays: number;
 }) {
-  // スケジュールまたは希望がある社員を表示
   const relevantEmployees = employees.filter((e) => scheduleMap.has(e.id) || requestMap.has(e.id));
 
   return (

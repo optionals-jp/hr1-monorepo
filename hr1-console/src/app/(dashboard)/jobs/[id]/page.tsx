@@ -1,5 +1,8 @@
 "use client";
 
+import { useState, useCallback } from "react";
+import { useParams } from "next/navigation";
+import { useOrg } from "@/lib/org-context";
 import { PageHeader } from "@/components/layout/page-header";
 import {
   Select,
@@ -9,11 +12,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { jobStatusLabels as statusLabels } from "@/lib/constants";
+import { jobStatusLabels as statusLabels, StepType } from "@/lib/constants";
 import { useJobDetail } from "@/features/jobs/hooks/use-job-detail";
 import { JobApplicantsTab } from "@/features/jobs/components/job-applicants-tab";
 import { JobDetailTab } from "@/features/jobs/components/job-detail-tab";
-import { JobHistoryTab } from "@/features/jobs/components/job-history-tab";
+import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 import { JobTimelineTab } from "@/features/jobs/components/job-timeline-tab";
 import { JobEditPanel } from "@/features/jobs/components/job-edit-panel";
 import { StepEditPanel } from "@/features/jobs/components/step-edit-panel";
@@ -21,12 +24,16 @@ import { StepEditPanel } from "@/features/jobs/components/step-edit-panel";
 const tabs = [
   { value: "detail", label: "求人詳細" },
   { value: "applicants", label: "応募者" },
-  { value: "timeline", label: "履歴" },
-  { value: "history", label: "編集履歴" },
+  { value: "timeline", label: "ログ" },
+  { value: "history", label: "編集ログ" },
 ];
 
 export default function JobDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const { organization } = useOrg();
   const h = useJobDetail();
+  const [auditLogCount, setAuditLogCount] = useState<number | undefined>(undefined);
+  const handleAuditLoaded = useCallback((count: number) => setAuditLogCount(count), []);
 
   if (h.loading) {
     return (
@@ -77,7 +84,7 @@ export default function JobDetailPage() {
                 : tab.value === "timeline"
                   ? h.historyEvents.length
                   : tab.value === "history"
-                    ? h.changeLogs.length
+                    ? auditLogCount
                     : undefined;
             return (
               <button
@@ -136,14 +143,23 @@ export default function JobDetailPage() {
               startEditStep={h.startEditStep}
               startEditingInfo={h.startEditingInfo}
               openAddStep={() => {
-                h.setNewStepType("interview");
+                h.setNewStepType(StepType.Interview);
                 h.setNewStepLabel("");
                 h.setNewStepFormId("");
+                h.setNewStepInterviewId("");
                 h.setDialogOpen(true);
               }}
             />
           )}
-          {h.activeTab === "history" && <JobHistoryTab changeLogs={h.changeLogs} />}
+          {h.activeTab === "history" && organization && (
+            <AuditLogPanel
+              organizationId={organization.id}
+              tableName="jobs"
+              recordId={id}
+              refreshKey={h.auditRefreshKey}
+              onLoaded={handleAuditLoaded}
+            />
+          )}
         </div>
       )}
 
@@ -190,8 +206,8 @@ export default function JobDetailPage() {
         setStepLabel={h.setEditStepLabel}
         stepFormId={h.editStepFormId}
         setStepFormId={h.setEditStepFormId}
-        stepScheduleIds={h.editStepScheduleIds}
-        setStepScheduleIds={h.setEditStepScheduleIds}
+        stepInterviewId={h.editStepInterviewId}
+        setStepInterviewId={h.setEditStepInterviewId}
         forms={h.forms}
         interviews={h.interviews}
         saving={h.savingEditStep}
@@ -210,8 +226,8 @@ export default function JobDetailPage() {
         setStepLabel={h.setNewStepLabel}
         stepFormId={h.newStepFormId}
         setStepFormId={h.setNewStepFormId}
-        stepScheduleIds={h.newStepScheduleIds}
-        setStepScheduleIds={h.setNewStepScheduleIds}
+        stepInterviewId={h.newStepInterviewId}
+        setStepInterviewId={h.setNewStepInterviewId}
         forms={h.forms}
         interviews={h.interviews}
         saving={h.savingStep}

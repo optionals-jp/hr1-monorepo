@@ -64,42 +64,24 @@ class SplashScreen extends HookConsumerWidget {
       return null;
     }, [initAsync]);
 
+    final isDark = AppColors.isDark(context);
     return Scaffold(
-      backgroundColor: AppColors.brandSecondary,
+      backgroundColor: isDark
+          ? AppColors.darkBackground
+          : AppColors.lightBackground,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: AppRadius.radius160,
-              ),
-              child: Center(
-                child: Text(
-                  'HR1',
-                  style: AppTextStyles.title2.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.brandSecondary,
-                  ),
-                ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Image.asset(
+                'assets/icon/app_icon.png',
+                width: 120,
+                height: 120,
               ),
             ),
             const SizedBox(height: 24),
-            Text(
-              'HR1',
-              style: AppTextStyles.title1.copyWith(color: Colors.white),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'AI-Native HR SaaS',
-              style: AppTextStyles.body2.copyWith(
-                color: Colors.white.withValues(alpha: 0.7),
-              ),
-            ),
-            const SizedBox(height: 48),
             const SizedBox(
               width: 24,
               height: 24,

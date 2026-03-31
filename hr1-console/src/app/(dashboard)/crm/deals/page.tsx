@@ -5,32 +5,18 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { dealStatusLabels, dealStatusColors, dealStageLabels } from "@/lib/constants";
 import { useRouter } from "next/navigation";
-import type { BcDeal } from "@/types/database";
+import { useCrmDealsAll } from "@/lib/hooks/use-crm";
 
 export default function CrmDealsPage() {
-  const { organization } = useOrg();
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const { data: deals, error } = useQuery<BcDeal[]>(
-    organization ? `crm-deals-all-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("bc_deals")
-        .select("*, bc_companies(name), bc_contacts(last_name, first_name)")
-        .eq("organization_id", organization!.id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    }
-  );
+  const { data: deals, error } = useCrmDealsAll();
 
   const filtered = (deals ?? []).filter((d) => {
     if (statusFilter !== "all" && d.status !== statusFilter) return false;

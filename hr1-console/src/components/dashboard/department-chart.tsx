@@ -10,14 +10,10 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2 } from "lucide-react";
+import type { DepartmentStat } from "@/types/dashboard";
 
-export interface DepartmentStat {
-  department: string;
-  applications: number;
-  offered: number;
-}
+export type { DepartmentStat };
 
 interface DepartmentChartProps {
   data: DepartmentStat[];
@@ -70,27 +66,21 @@ function CustomTooltip({
 
 export function DepartmentChart({ data }: DepartmentChartProps) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-base font-semibold">部署別採用状況</CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">部署ごとの応募数と内定数の比較</p>
+    <div className="rounded-xl border border-border/60 bg-white">
+      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+        <h2 className="text-[15px] font-semibold">部署別採用状況</h2>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <div className="h-2 w-2 rounded-full bg-blue-500" />
+            <span className="text-[11px] text-muted-foreground">応募数</span>
           </div>
-          {/* 凡例 */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <div className="h-2 w-2 rounded-full bg-blue-500" />
-              <span className="text-[11px] text-muted-foreground">応募数</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span className="text-[11px] text-muted-foreground">内定数</span>
-            </div>
+          <div className="flex items-center gap-1">
+            <div className="h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="text-[11px] text-muted-foreground">内定数</span>
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="px-5 pb-4">
         {data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <Building2 className="h-8 w-8 mb-2 opacity-40" />
@@ -131,7 +121,7 @@ export function DepartmentChart({ data }: DepartmentChartProps) {
             </BarChart>
           </ResponsiveContainer>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

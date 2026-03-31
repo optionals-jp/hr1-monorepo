@@ -14,10 +14,9 @@ import {
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
 import { useToast } from "@/components/ui/toast";
 import type { CustomForm } from "@/types/database";
+import { useForms, deleteForm } from "@/lib/hooks/use-forms";
 import { Badge } from "@/components/ui/badge";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { formTargetLabels } from "@/lib/constants";
@@ -32,47 +31,20 @@ export default function FormsPage() {
   const { organization } = useOrg();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const {
-    data: forms = [],
-    isLoading,
-    error: formsError,
-    mutate: mutateForms,
-  } = useQuery<CustomForm[]>(organization ? `forms-${organization.id}` : null, async () => {
-    const { data } = await getSupabase()
-      .from("custom_forms")
-      .select("*")
-      .eq("organization_id", organization!.id)
-      .order("created_at", { ascending: false });
-    return data ?? [];
-  });
+  const { data: forms = [], isLoading, error: formsError, mutate: mutateForms } = useForms();
 
   const handleDeleteForm = async (form: CustomForm) => {
     if (!organization) return;
     if (!window.confirm(`「${form.title}」を削除しますか？`)) return;
     setDeletingId(form.id);
-    try {
-      const { count } = await getSupabase()
-        .from("form_responses")
-        .select("id", { count: "exact", head: true })
-        .eq("form_id", form.id);
-      if (count && count > 0) {
-        showToast(`このフォームには${count}件の回答があるため削除できません`, "error");
-        return;
-      }
-      await getSupabase().from("form_fields").delete().eq("form_id", form.id);
-      const { error } = await getSupabase()
-        .from("custom_forms")
-        .delete()
-        .eq("id", form.id)
-        .eq("organization_id", organization.id);
-      if (error) throw error;
+    const result = await deleteForm(organization.id, form);
+    if (result.success) {
       mutateForms();
       showToast("フォームを削除しました");
-    } catch {
-      showToast("削除に失敗しました", "error");
-    } finally {
-      setDeletingId(null);
+    } else {
+      showToast(result.error ?? "削除に失敗しました", "error");
     }
+    setDeletingId(null);
   };
 
   return (

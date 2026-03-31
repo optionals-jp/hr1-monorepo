@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,10 +22,7 @@ import {
 } from "@/components/ui/select";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
-import type { AuditLog } from "@/types/database";
+import { useAuditLogs } from "@/lib/hooks/use-audit-logs";
 import {
   Download,
   SlidersHorizontal,
@@ -37,8 +33,6 @@ import {
   ChevronUp,
   AlertTriangle,
 } from "lucide-react";
-
-const PAGE_SIZE = 50;
 
 const ACTION_OPTIONS = [
   { value: "all", label: "すべて" },
@@ -93,214 +87,19 @@ function truncateId(id: string): string {
   return id.slice(0, 8) + "...";
 }
 
-interface CursorPage {
-  createdAt: string;
-  id: string;
-}
-
 export default function AuditLogsPage() {
-  const { organization } = useOrg();
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | undefined>();
-  const [search, setSearch] = useState("");
-  const [filterAction, setFilterAction] = useState("all");
-  const [filterTable, setFilterTable] = useState("all");
-  const [filterDateFrom, setFilterDateFrom] = useState("");
-  const [filterDateTo, setFilterDateTo] = useState("");
-  const [filterUser, setFilterUser] = useState("");
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  const [userNames, setUserNames] = useState<Record<string, string>>({});
-  const [hasNextPage, setHasNextPage] = useState(false);
-  const [cursorStack, setCursorStack] = useState<CursorPage[]>([]);
-  const [currentCursor, setCurrentCursor] = useState<CursorPage | null>(null);
-  const [sequenceGaps, setSequenceGaps] = useState<Set<string>>(new Set());
-
-  const fetchLogs = useCallback(
-    async (cursor: CursorPage | null) => {
-      if (!organization) return;
-      setIsLoading(true);
-      setError(undefined);
-
-      try {
-        let query = getSupabase()
-          .from("audit_logs")
-          .select("*")
-          .eq("organization_id", organization.id)
-          .order("created_at", { ascending: false })
-          .order("id", { ascending: false })
-          .limit(PAGE_SIZE + 1);
-
-        if (cursor) {
-          query = query.or(
-            `created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`
-          );
-        }
-
-        if (filterAction !== "all") {
-          query = query.eq("action", filterAction);
-        }
-        if (filterTable !== "all") {
-          query = query.eq("table_name", filterTable);
-        }
-        if (filterDateFrom) {
-          query = query.gte("created_at", `${filterDateFrom}T00:00:00`);
-        }
-        if (filterDateTo) {
-          query = query.lte("created_at", `${filterDateTo}T23:59:59`);
-        }
-        if (filterUser) {
-          query = query.eq("user_id", filterUser);
-        }
-
-        const { data, error: queryError } = await query;
-        if (queryError) throw queryError;
-
-        const rows = (data ?? []) as AuditLog[];
-        const hasMore = rows.length > PAGE_SIZE;
-        const pageRows = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
-
-        setLogs(pageRows);
-        setHasNextPage(hasMore);
-
-        const gaps = new Set<string>();
-        for (let i = 0; i < pageRows.length - 1; i++) {
-          const current = pageRows[i].sequence_number;
-          const next = pageRows[i + 1].sequence_number;
-          if (current - next > 1) {
-            gaps.add(pageRows[i].id);
-            gaps.add(pageRows[i + 1].id);
-          }
-        }
-        setSequenceGaps(gaps);
-
-        const userIds = [...new Set(pageRows.map((l) => l.user_id))];
-        const unknownIds = userIds.filter((uid) => !userNames[uid]);
-        if (unknownIds.length > 0) {
-          const { data: profiles } = await getSupabase()
-            .from("profiles")
-            .select("id, display_name, email")
-            .in("id", unknownIds);
-          if (profiles) {
-            const newNames: Record<string, string> = {};
-            for (const p of profiles) {
-              newNames[p.id] = p.display_name || p.email;
-            }
-            setUserNames((prev) => ({ ...prev, ...newNames }));
-          }
-        }
-      } catch (e) {
-        setError(e instanceof Error ? e : new Error("取得に失敗しました"));
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [organization, filterAction, filterTable, filterDateFrom, filterDateTo, filterUser, userNames]
-  );
-
-  useEffect(() => {
-    setCursorStack([]);
-    setCurrentCursor(null);
-    fetchLogs(null);
-  }, [organization, filterAction, filterTable, filterDateFrom, filterDateTo, filterUser]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const goNextPage = () => {
-    if (logs.length === 0) return;
-    const lastLog = logs[logs.length - 1];
-    const newCursor = { createdAt: lastLog.created_at, id: lastLog.id };
-    setCursorStack((prev) => [...prev, currentCursor ?? { createdAt: "", id: "" }]);
-    setCurrentCursor(newCursor);
-    fetchLogs(newCursor);
-  };
-
-  const goPrevPage = () => {
-    if (cursorStack.length === 0) return;
-    const prev = cursorStack[cursorStack.length - 1];
-    setCursorStack((s) => s.slice(0, -1));
-    const cursor = prev.createdAt ? prev : null;
-    setCurrentCursor(cursor);
-    fetchLogs(cursor);
-  };
-
-  const toggleExpand = (id: string) => {
-    setExpandedRows((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const filteredLogs = logs.filter((log) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    const changesStr = log.changes ? JSON.stringify(log.changes).toLowerCase() : "";
-    const metadataStr = log.metadata ? JSON.stringify(log.metadata).toLowerCase() : "";
-    return (
-      log.record_id.toLowerCase().includes(q) ||
-      log.table_name.toLowerCase().includes(q) ||
-      log.action.toLowerCase().includes(q) ||
-      (userNames[log.user_id] ?? "").toLowerCase().includes(q) ||
-      changesStr.includes(q) ||
-      metadataStr.includes(q)
-    );
-  });
-
-  const activeFilterCount =
-    (filterAction !== "all" ? 1 : 0) +
-    (filterTable !== "all" ? 1 : 0) +
-    (filterDateFrom ? 1 : 0) +
-    (filterDateTo ? 1 : 0) +
-    (filterUser ? 1 : 0);
-
-  const clearFilters = () => {
-    setFilterAction("all");
-    setFilterTable("all");
-    setFilterDateFrom("");
-    setFilterDateTo("");
-    setFilterUser("");
-  };
-
-  const handleExport = () => {
-    if (filteredLogs.length === 0) return;
-    exportToCSV(
-      filteredLogs.map((l) => ({
-        ...l,
-        _datetime: formatDateTime(l.created_at),
-        _action: l.action,
-        _tableName: l.table_name,
-        _recordId: l.record_id,
-        _user: userNames[l.user_id] ?? l.user_id,
-        _source: l.source,
-        _changes: l.changes ? JSON.stringify(l.changes) : "",
-        _ipAddress: l.ip_address ?? "",
-        _sequenceNumber: String(l.sequence_number),
-      })),
-      [
-        { key: "_sequenceNumber", label: "連番" },
-        { key: "_datetime", label: "日時" },
-        { key: "_action", label: "操作" },
-        { key: "_tableName", label: "テーブル" },
-        { key: "_recordId", label: "レコードID" },
-        { key: "_user", label: "ユーザー" },
-        { key: "_source", label: "ソース" },
-        { key: "_ipAddress", label: "IPアドレス" },
-        { key: "_changes", label: "変更内容" },
-      ],
-      csvFilenameWithDate("監査ログ")
-    );
-  };
+  const h = useAuditLogs();
 
   return (
     <div className="flex flex-col">
-      <QueryErrorBanner error={error} onRetry={() => fetchLogs(currentCursor)} />
+      <QueryErrorBanner error={h.error} onRetry={h.retry} />
       <PageHeader
         title="監査ログ"
-        description="組織全体の操作履歴"
+        description="組織全体の操作ログ"
         sticky={false}
         border={false}
         action={
-          <Button variant="outline" size="sm" onClick={handleExport}>
+          <Button variant="outline" size="sm" onClick={h.handleExport}>
             <Download className="mr-1.5 h-4 w-4" />
             CSV出力
           </Button>
@@ -308,12 +107,16 @@ export default function AuditLogsPage() {
       />
 
       <div className="sticky top-14 z-10">
-        <SearchBar value={search} onChange={setSearch} placeholder="変更内容・レコードID等で検索" />
+        <SearchBar
+          value={h.search}
+          onChange={h.setSearch}
+          placeholder="変更内容・レコードID等で検索"
+        />
         <div className="flex items-center gap-2 w-full bg-white border-b px-4 sm:px-6 md:px-8 py-2 overflow-x-auto">
           <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
           <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
 
-          <Select value={filterAction} onValueChange={(v) => setFilterAction(v ?? "all")}>
+          <Select value={h.filterAction} onValueChange={(v) => h.setFilterAction(v ?? "all")}>
             <SelectTrigger size="sm">
               <SelectValue>
                 {(v: string) => ACTION_OPTIONS.find((o) => o.value === v)?.label ?? v}
@@ -328,7 +131,7 @@ export default function AuditLogsPage() {
             </SelectContent>
           </Select>
 
-          <Select value={filterTable} onValueChange={(v) => setFilterTable(v ?? "all")}>
+          <Select value={h.filterTable} onValueChange={(v) => h.setFilterTable(v ?? "all")}>
             <SelectTrigger size="sm">
               <SelectValue>{(v: string) => (v === "all" ? "テーブル" : v)}</SelectValue>
             </SelectTrigger>
@@ -343,30 +146,30 @@ export default function AuditLogsPage() {
 
           <Input
             type="date"
-            value={filterDateFrom}
-            onChange={(e) => setFilterDateFrom(e.target.value)}
+            value={h.filterDateFrom}
+            onChange={(e) => h.setFilterDateFrom(e.target.value)}
             className="w-36 h-7 text-sm"
             placeholder="開始日"
           />
           <span className="text-sm text-muted-foreground">〜</span>
           <Input
             type="date"
-            value={filterDateTo}
-            onChange={(e) => setFilterDateTo(e.target.value)}
+            value={h.filterDateTo}
+            onChange={(e) => h.setFilterDateTo(e.target.value)}
             className="w-36 h-7 text-sm"
             placeholder="終了日"
           />
 
           <Input
             type="text"
-            value={filterUser}
-            onChange={(e) => setFilterUser(e.target.value)}
+            value={h.filterUser}
+            onChange={(e) => h.setFilterUser(e.target.value)}
             className="w-48 h-7 text-sm"
             placeholder="ユーザーID"
           />
 
-          {activeFilterCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 shrink-0">
+          {h.activeFilterCount > 0 && (
+            <Button variant="ghost" size="sm" onClick={h.clearFilters} className="h-7 shrink-0">
               <X className="h-3 w-3 mr-1" />
               クリア
             </Button>
@@ -390,15 +193,15 @@ export default function AuditLogsPage() {
           <TableBody>
             <TableEmptyState
               colSpan={7}
-              isLoading={isLoading}
-              isEmpty={filteredLogs.length === 0}
+              isLoading={h.isLoading}
+              isEmpty={h.filteredLogs.length === 0}
               emptyMessage="監査ログがありません"
             >
-              {filteredLogs.map((log) => (
-                <TableRow key={log.id} className={sequenceGaps.has(log.id) ? "bg-yellow-50" : ""}>
+              {h.filteredLogs.map((log) => (
+                <TableRow key={log.id} className={h.sequenceGaps.has(log.id) ? "bg-yellow-50" : ""}>
                   <TableCell className="text-sm tabular-nums">
                     <div className="flex items-center gap-1">
-                      {sequenceGaps.has(log.id) && (
+                      {h.sequenceGaps.has(log.id) && (
                         <AlertTriangle className="h-3.5 w-3.5 text-yellow-600 shrink-0" />
                       )}
                       {formatDateTime(log.created_at)}
@@ -416,7 +219,7 @@ export default function AuditLogsPage() {
                     </span>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {userNames[log.user_id] ?? truncateId(log.user_id)}
+                    {h.userNames[log.user_id] ?? truncateId(log.user_id)}
                   </TableCell>
                   <TableCell>
                     <span className="text-xs text-muted-foreground">{log.source}</span>
@@ -425,20 +228,20 @@ export default function AuditLogsPage() {
                     {Object.keys(log.changes).length > 0 ? (
                       <button
                         type="button"
-                        onClick={() => toggleExpand(log.id)}
+                        onClick={() => h.toggleExpand(log.id)}
                         className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
                       >
-                        {expandedRows.has(log.id) ? (
+                        {h.expandedRows.has(log.id) ? (
                           <ChevronUp className="h-3 w-3" />
                         ) : (
                           <ChevronDown className="h-3 w-3" />
                         )}
-                        {expandedRows.has(log.id) ? "閉じる" : "表示"}
+                        {h.expandedRows.has(log.id) ? "閉じる" : "表示"}
                       </button>
                     ) : (
                       <span className="text-xs text-muted-foreground">-</span>
                     )}
-                    {expandedRows.has(log.id) && Object.keys(log.changes).length > 0 && (
+                    {h.expandedRows.has(log.id) && Object.keys(log.changes).length > 0 && (
                       <pre className="mt-2 text-xs bg-gray-50 p-2 rounded max-w-md overflow-x-auto whitespace-pre-wrap break-all">
                         {JSON.stringify(log.changes, null, 2)}
                       </pre>
@@ -453,19 +256,19 @@ export default function AuditLogsPage() {
 
       <div className="flex items-center justify-between px-4 sm:px-6 md:px-8 py-3 border-t bg-white">
         <span className="text-sm text-muted-foreground">
-          {filteredLogs.length > 0 ? `${filteredLogs.length}件表示` : ""}
+          {h.filteredLogs.length > 0 ? `${h.filteredLogs.length}件表示` : ""}
         </span>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={goPrevPage}
-            disabled={cursorStack.length === 0}
+            onClick={h.goPrevPage}
+            disabled={h.cursorStack.length === 0}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
             前へ
           </Button>
-          <Button variant="outline" size="sm" onClick={goNextPage} disabled={!hasNextPage}>
+          <Button variant="outline" size="sm" onClick={h.goNextPage} disabled={!h.hasNextPage}>
             次へ
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>

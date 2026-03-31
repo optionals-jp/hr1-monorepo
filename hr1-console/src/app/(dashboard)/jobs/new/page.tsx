@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
@@ -16,111 +15,45 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
+import { useNewJobPage } from "@/lib/hooks/use-jobs-page";
 import { Trash2, GripVertical } from "lucide-react";
-import { jobStatusLabels, stepTypeLabels } from "@/lib/constants";
-
-interface StepDraft {
-  tempId: string;
-  step_type: string;
-  label: string;
-}
+import { jobStatusLabels, stepTypeLabels, selectableStepTypes } from "@/lib/constants";
 
 export default function NewJobPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const { organization } = useOrg();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [department, setDepartment] = useState("");
-  const [location, setLocation] = useState("");
-  const [employmentType, setEmploymentType] = useState("");
-  const [salaryRange, setSalaryRange] = useState("");
-  const [status, setStatus] = useState("open");
-  const [steps, setSteps] = useState<StepDraft[]>([
-    { tempId: "1", step_type: "screening", label: "書類選考" },
-    { tempId: "2", step_type: "interview", label: "一次面接" },
-    { tempId: "3", step_type: "offer", label: "内定" },
-  ]);
-  const [saving, setSaving] = useState(false);
-  const [formErrors, setFormErrors] = useState<ValidationErrors>({});
 
-  const addStep = () => {
-    setSteps([
-      ...steps,
-      {
-        tempId: `${Date.now()}`,
-        step_type: "interview",
-        label: "",
-      },
-    ]);
-  };
+  const {
+    title,
+    setTitle,
+    description,
+    setDescription,
+    department,
+    setDepartment,
+    location,
+    setLocation,
+    employmentType,
+    setEmploymentType,
+    salaryRange,
+    setSalaryRange,
+    status,
+    setStatus,
+    steps,
+    addStep,
+    removeStep,
+    updateStep,
+    saving,
+    formErrors,
+    handleSubmit,
+  } = useNewJobPage();
 
-  const removeStep = (tempId: string) => {
-    setSteps(steps.filter((s) => s.tempId !== tempId));
-  };
-
-  const updateStep = (tempId: string, field: keyof StepDraft, value: string) => {
-    setSteps(steps.map((s) => (s.tempId === tempId ? { ...s, [field]: value } : s)));
-  };
-
-  const handleSubmit = async () => {
-    if (!organization) return;
-
-    const errors = validateForm(
-      {
-        title: [validators.required("タイトル"), validators.maxLength(200, "タイトル")],
-      },
-      { title }
-    );
-    if (errors) {
-      setFormErrors(errors);
-      return;
-    }
-    setFormErrors({});
-    setSaving(true);
-
-    try {
-      const jobId = `job-${Date.now()}`;
-
-      const { error: jobError } = await getSupabase()
-        .from("jobs")
-        .insert({
-          id: jobId,
-          organization_id: organization.id,
-          title,
-          description,
-          department: department || null,
-          location: location || null,
-          employment_type: employmentType || null,
-          salary_range: salaryRange || null,
-          status,
-        });
-      if (jobError) throw jobError;
-
-      if (steps.length > 0) {
-        const { error: stepsError } = await getSupabase()
-          .from("job_steps")
-          .insert(
-            steps.map((step, index) => ({
-              id: `step-${jobId}-${index + 1}`,
-              job_id: jobId,
-              step_type: step.step_type,
-              step_order: index + 1,
-              label: step.label,
-            }))
-          );
-        if (stepsError) throw stepsError;
-      }
-
+  const onSubmit = async () => {
+    const result = await handleSubmit();
+    if (result.success) {
       showToast("求人を作成しました");
       router.push("/jobs");
-    } catch {
-      showToast("求人の作成に失敗しました", "error");
-    } finally {
-      setSaving(false);
+    } else if (result.error && result.error !== "validation") {
+      showToast(result.error, "error");
     }
   };
 
@@ -130,7 +63,6 @@ export default function NewJobPage() {
 
       <PageContent>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* 基本情報 */}
           <Card>
             <CardHeader>
               <CardTitle>基本情報</CardTitle>
@@ -140,10 +72,7 @@ export default function NewJobPage() {
                 <Label>タイトル *</Label>
                 <Input
                   value={title}
-                  onChange={(e) => {
-                    setTitle(e.target.value);
-                    setFormErrors((prev) => ({ ...prev, title: "" }));
-                  }}
+                  onChange={(e) => setTitle(e.target.value)}
                   placeholder="バックエンドエンジニア"
                   className={formErrors.title ? "border-red-500" : ""}
                 />
@@ -210,7 +139,6 @@ export default function NewJobPage() {
             </CardContent>
           </Card>
 
-          {/* 選考ステップ */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>選考ステップ</CardTitle>
@@ -231,7 +159,7 @@ export default function NewJobPage() {
                       <SelectValue>{(v: string) => stepTypeLabels[v] ?? v}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(stepTypeLabels).map(([key, label]) => (
+                      {Object.entries(selectableStepTypes).map(([key, label]) => (
                         <SelectItem key={key} value={key}>
                           {label}
                         </SelectItem>
@@ -267,7 +195,7 @@ export default function NewJobPage() {
           <Button variant="outline" onClick={() => router.push("/jobs")}>
             キャンセル
           </Button>
-          <Button onClick={handleSubmit} disabled={!title.trim() || saving}>
+          <Button onClick={onSubmit} disabled={!title.trim() || saving}>
             {saving ? "作成中..." : "求人を作成"}
           </Button>
         </div>

@@ -11,9 +11,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { Checkbox } from "@/components/ui/checkbox";
 import type { Interview } from "@/types/database";
-import { stepTypeLabels, selectableStepTypes } from "@/lib/constants";
+import { StepType, FORM_STEP_TYPES, stepTypeLabels, selectableStepTypes } from "@/lib/constants";
 
 interface StepEditPanelProps {
   mode: "add" | "edit";
@@ -25,8 +24,8 @@ interface StepEditPanelProps {
   setStepLabel: (v: string) => void;
   stepFormId: string;
   setStepFormId: (v: string) => void;
-  stepScheduleIds: string[];
-  setStepScheduleIds: (v: string[] | ((prev: string[]) => string[])) => void;
+  stepInterviewId: string;
+  setStepInterviewId: (v: string) => void;
   forms: { id: string; title: string }[];
   interviews: Interview[];
   saving: boolean;
@@ -45,8 +44,8 @@ export function StepEditPanel({
   setStepLabel,
   stepFormId,
   setStepFormId,
-  stepScheduleIds,
-  setStepScheduleIds,
+  stepInterviewId,
+  setStepInterviewId,
   forms,
   interviews,
   saving,
@@ -75,7 +74,7 @@ export function StepEditPanel({
               if (!v) return;
               setStepType(v);
               setStepFormId("");
-              setStepScheduleIds([]);
+              setStepInterviewId("");
             }}
           >
             <SelectTrigger>
@@ -90,7 +89,7 @@ export function StepEditPanel({
             </SelectContent>
           </Select>
         </div>
-        {["screening", "form"].includes(stepType) && (
+        {FORM_STEP_TYPES.includes(stepType as StepType) && (
           <div className="space-y-2">
             <Label>フォーム</Label>
             <Select value={stepFormId} onValueChange={(v) => v && setStepFormId(v)}>
@@ -120,43 +119,36 @@ export function StepEditPanel({
             )}
           </div>
         )}
-        {stepType === "interview" && (
+        {stepType === StepType.Interview && (
           <div className="space-y-2">
             <Label>日程調整</Label>
-            {interviews.length === 0 ? (
-              <p className="text-sm text-muted-foreground">日程調整がありません</p>
-            ) : (
-              <div className="space-y-2 max-h-48 overflow-y-auto rounded-md border p-3">
-                {interviews.map((iv) => (
-                  <label key={iv.id} className="flex items-center gap-2 cursor-pointer">
-                    <Checkbox
-                      checked={stepScheduleIds.includes(iv.id)}
-                      onCheckedChange={(checked) => {
-                        setStepScheduleIds((prev: string[]) =>
-                          checked ? [...prev, iv.id] : prev.filter((sid) => sid !== iv.id)
-                        );
-                      }}
-                    />
-                    <span className="text-sm">{iv.title}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-            {mode === "edit" && stepScheduleIds.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {stepScheduleIds.map((sid) => {
-                  const iv = interviews.find((i) => i.id === sid);
-                  return iv ? (
-                    <Link
-                      key={sid}
-                      href={`/scheduling/${sid}`}
-                      className="text-sm text-primary hover:underline"
-                    >
+            <Select value={stepInterviewId} onValueChange={(v) => v && setStepInterviewId(v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="日程調整を選択（任意）">
+                  {(v: string) => interviews.find((iv) => iv.id === v)?.title ?? v}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {interviews.length === 0 ? (
+                  <div className="py-2 px-3 text-sm text-muted-foreground">
+                    日程調整がありません
+                  </div>
+                ) : (
+                  interviews.map((iv) => (
+                    <SelectItem key={iv.id} value={iv.id}>
                       {iv.title}
-                    </Link>
-                  ) : null;
-                })}
-              </div>
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+            {mode === "edit" && stepInterviewId && (
+              <Link
+                href={`/scheduling/${stepInterviewId}`}
+                className="text-sm text-primary hover:underline"
+              >
+                日程調整の詳細を表示 →
+              </Link>
             )}
           </div>
         )}

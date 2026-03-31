@@ -76,24 +76,51 @@ class InterviewScheduleScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              // スロット一覧（未予約のスロットのみ表示）
-              ...data.slots
-                  .where((slot) => !slot.isBooked)
-                  .map(
-                    (slot) => Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                      child: _SlotCard(
-                        slot: slot,
-                        isSelected: selectedSlotId == slot.id,
-                        onTap: () {
-                          ref
-                              .read(selectedSlotProvider(interviewId).notifier)
-                              .state = slot
-                              .id;
-                        },
+              // スロット一覧（未予約かつ未来のスロットのみ、日時順）
+              ...() {
+                final now = DateTime.now();
+                final available =
+                    data.slots
+                        .where(
+                          (slot) => !slot.isBooked && slot.startAt.isAfter(now),
+                        )
+                        .toList()
+                      ..sort((a, b) => a.startAt.compareTo(b.startAt));
+
+                if (available.isEmpty) {
+                  return [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.xxl,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '現在選択可能な日程がありません',
+                          style: AppTextStyles.body2.copyWith(
+                            color: AppColors.textSecondary(context),
+                          ),
+                        ),
                       ),
                     ),
+                  ];
+                }
+
+                return available.map(
+                  (slot) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: _SlotCard(
+                      slot: slot,
+                      isSelected: selectedSlotId == slot.id,
+                      onTap: () {
+                        ref
+                            .read(selectedSlotProvider(interviewId).notifier)
+                            .state = slot
+                            .id;
+                      },
+                    ),
                   ),
+                );
+              }(),
             ],
           );
         },

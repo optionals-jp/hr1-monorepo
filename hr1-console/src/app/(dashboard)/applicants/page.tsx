@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -24,10 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
-import type { Profile } from "@/types/database";
+import { useApplicantsPage } from "@/lib/hooks/use-applicants-page";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -37,7 +33,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { SlidersHorizontal, X, Download, Upload } from "lucide-react";
@@ -53,104 +48,11 @@ const addTabs: EditPanelTab[] = [
 export default function ApplicantsPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const { organization } = useOrg();
-  const [search, setSearch] = useState("");
-  const [filterHiringType, setFilterHiringType] = useState<string>("all");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
-  const [addTab, setAddTab] = useState("basic");
-  const [newEmail, setNewEmail] = useState("");
-  const [newName, setNewName] = useState("");
-  const [newHiringType, setNewHiringType] = useState<string>("");
-  const [newGradYear, setNewGradYear] = useState<string>("");
-  const [saving, setSaving] = useState(false);
-  const [formErrors, setFormErrors] = useState<ValidationErrors>({});
-
-  const {
-    data: applicants = [],
-    isLoading,
-    error: applicantsError,
-    mutate,
-  } = useQuery<Profile[]>(organization ? `applicants-${organization.id}` : null, async () => {
-    const { data } = await getSupabase()
-      .from("user_organizations")
-      .select("profiles!inner(*)")
-      .eq("organization_id", organization!.id)
-      .eq("profiles.role", "applicant");
-
-    return (data ?? [])
-      .map((row) => (row as unknown as { profiles: Profile }).profiles)
-      .filter(Boolean);
-  });
-
-  const openAddDialog = () => {
-    setNewEmail("");
-    setNewName("");
-    setNewHiringType("");
-    setNewGradYear("");
-    setFormErrors({});
-    setAddTab("basic");
-    setDialogOpen(true);
-  };
-
-  const handleAdd = async () => {
-    if (!organization) return;
-
-    const errors = validateForm(
-      {
-        email: [validators.required("メールアドレス"), validators.email()],
-        name: [validators.maxLength(100, "名前")],
-      },
-      { email: newEmail, name: newName }
-    );
-    if (errors) {
-      setFormErrors(errors);
-      if (errors.email) setAddTab("basic");
-      return;
-    }
-    setFormErrors({});
-    setSaving(true);
-
-    try {
-      const { data, error } = await getSupabase().functions.invoke("create-user", {
-        body: {
-          email: newEmail,
-          display_name: newName || null,
-          role: "applicant",
-          organization_id: organization.id,
-          hiring_type: newHiringType || null,
-          graduation_year:
-            newHiringType === "new_grad" && newGradYear ? Number(newGradYear) : undefined,
-        },
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      setDialogOpen(false);
-      mutate();
-      showToast("応募者を追加しました");
-    } catch {
-      showToast("応募者の追加に失敗しました", "error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const filtered = applicants.filter((a) => {
-    const matchesSearch =
-      !search ||
-      a.email.toLowerCase().includes(search.toLowerCase()) ||
-      a.display_name?.toLowerCase().includes(search.toLowerCase());
-    const matchesHiringType =
-      filterHiringType === "all" ||
-      (filterHiringType === "none" ? !a.hiring_type : a.hiring_type === filterHiringType);
-    return matchesSearch && matchesHiringType;
-  });
+  const h = useApplicantsPage();
 
   return (
     <div className="flex flex-col">
-      <QueryErrorBanner error={applicantsError} onRetry={() => mutate()} />
+      <QueryErrorBanner error={h.applicantsError} onRetry={() => h.mutate()} />
       <PageHeader
         title="応募者一覧"
         description="応募者の管理・招待"
@@ -162,19 +64,9 @@ export default function ApplicantsPage() {
               variant="outline"
               size="sm"
               onClick={() => {
-                if (applicants.length === 0) return;
+                if (h.applicants.length === 0) return;
                 exportToCSV(
-                  applicants.map((a) => ({
-                    ...a,
-                    _name: a.display_name ?? "",
-                    _hiringType:
-                      a.hiring_type === "new_grad"
-                        ? `新卒（${a.graduation_year}年卒）`
-                        : a.hiring_type === "mid_career"
-                          ? "中途採用"
-                          : "",
-                    _createdAt: a.created_at,
-                  })),
+                  h.handleExport(),
                   [
                     { key: "_name", label: "氏名" },
                     { key: "email", label: "メール" },
@@ -188,35 +80,35 @@ export default function ApplicantsPage() {
               <Download className="mr-1.5 h-4 w-4" />
               CSV出力
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <Button variant="outline" size="sm" onClick={() => h.setImportOpen(true)}>
               <Upload className="mr-1.5 h-4 w-4" />
               インポート
             </Button>
-            <Button onClick={openAddDialog}>応募者を追加</Button>
+            <Button onClick={h.openAddDialog}>応募者を追加</Button>
           </div>
         }
       />
 
       <div className="sticky top-14 z-10">
-        <SearchBar value={search} onChange={setSearch} />
+        <SearchBar value={h.search} onChange={h.setSearch} />
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
-            {filterHiringType !== "all" && (
+            {h.filterHiringType !== "all" && (
               <div className="flex items-center gap-1.5 overflow-x-auto">
                 <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
                   採用区分：
-                  {filterHiringType === "new_grad"
+                  {h.filterHiringType === "new_grad"
                     ? "新卒"
-                    : filterHiringType === "mid_career"
+                    : h.filterHiringType === "mid_career"
                       ? "中途"
                       : "未設定"}
                   <span
                     role="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setFilterHiringType("all");
+                      h.setFilterHiringType("all");
                     }}
                     className="ml-0.5 hover:text-foreground"
                   >
@@ -227,18 +119,18 @@ export default function ApplicantsPage() {
             )}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-auto py-2">
-            <DropdownMenuItem className="py-2" onClick={() => setFilterHiringType("all")}>
-              <span className={cn(filterHiringType === "all" && "font-medium")}>すべて</span>
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterHiringType("all")}>
+              <span className={cn(h.filterHiringType === "all" && "font-medium")}>すべて</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="py-2" onClick={() => setFilterHiringType("new_grad")}>
-              <span className={cn(filterHiringType === "new_grad" && "font-medium")}>新卒</span>
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterHiringType("new_grad")}>
+              <span className={cn(h.filterHiringType === "new_grad" && "font-medium")}>新卒</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="py-2" onClick={() => setFilterHiringType("mid_career")}>
-              <span className={cn(filterHiringType === "mid_career" && "font-medium")}>中途</span>
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterHiringType("mid_career")}>
+              <span className={cn(h.filterHiringType === "mid_career" && "font-medium")}>中途</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="py-2" onClick={() => setFilterHiringType("none")}>
-              <span className={cn(filterHiringType === "none" && "font-medium")}>未設定</span>
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterHiringType("none")}>
+              <span className={cn(h.filterHiringType === "none" && "font-medium")}>未設定</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -256,11 +148,11 @@ export default function ApplicantsPage() {
           <TableBody>
             <TableEmptyState
               colSpan={3}
-              isLoading={isLoading}
-              isEmpty={filtered.length === 0}
+              isLoading={h.isLoading}
+              isEmpty={h.filtered.length === 0}
               emptyMessage="応募者がいません"
             >
-              {filtered.map((applicant) => (
+              {h.filtered.map((applicant) => (
                 <TableRow
                   key={applicant.id}
                   className="cursor-pointer"
@@ -294,59 +186,54 @@ export default function ApplicantsPage() {
       </div>
 
       <EditPanel
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        open={h.dialogOpen}
+        onOpenChange={h.setDialogOpen}
         title="応募者を追加"
         tabs={addTabs}
-        activeTab={addTab}
-        onTabChange={setAddTab}
-        onSave={handleAdd}
-        saving={saving}
-        saveDisabled={!newEmail}
+        activeTab={h.addTab}
+        onTabChange={h.setAddTab}
+        onSave={async () => {
+          const result = await h.handleAdd();
+          if (result.success) {
+            showToast("応募者を追加しました");
+          } else if (result.error) {
+            showToast(result.error, "error");
+          }
+        }}
+        saving={h.saving}
+        saveDisabled={!h.newEmail}
         saveLabel="追加"
       >
-        {addTab === "basic" && (
+        {h.addTab === "basic" && (
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>メールアドレス *</Label>
               <Input
                 type="email"
-                value={newEmail}
-                onChange={(e) => {
-                  setNewEmail(e.target.value);
-                  setFormErrors((prev) => ({ ...prev, email: "" }));
-                }}
+                value={h.newEmail}
+                onChange={(e) => h.setNewEmail(e.target.value)}
                 placeholder="example@email.com"
-                className={formErrors.email ? "border-red-500" : ""}
+                className={h.formErrors.email ? "border-red-500" : ""}
               />
-              {formErrors.email && <p className="text-sm text-red-500">{formErrors.email}</p>}
+              {h.formErrors.email && <p className="text-sm text-red-500">{h.formErrors.email}</p>}
             </div>
             <div className="space-y-2">
               <Label>名前</Label>
               <Input
-                value={newName}
-                onChange={(e) => {
-                  setNewName(e.target.value);
-                  setFormErrors((prev) => ({ ...prev, name: "" }));
-                }}
+                value={h.newName}
+                onChange={(e) => h.setNewName(e.target.value)}
                 placeholder="山田 花子"
-                className={formErrors.name ? "border-red-500" : ""}
+                className={h.formErrors.name ? "border-red-500" : ""}
               />
-              {formErrors.name && <p className="text-sm text-red-500">{formErrors.name}</p>}
+              {h.formErrors.name && <p className="text-sm text-red-500">{h.formErrors.name}</p>}
             </div>
           </div>
         )}
-        {addTab === "hiring" && (
+        {h.addTab === "hiring" && (
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>採用区分</Label>
-              <Select
-                value={newHiringType}
-                onValueChange={(v) => {
-                  setNewHiringType(v ?? "");
-                  if (v !== "new_grad") setNewGradYear("");
-                }}
-              >
+              <Select value={h.newHiringType} onValueChange={(v) => h.setNewHiringType(v ?? "")}>
                 <SelectTrigger>
                   <SelectValue placeholder="未設定">
                     {(v: string) =>
@@ -360,10 +247,10 @@ export default function ApplicantsPage() {
                 </SelectContent>
               </Select>
             </div>
-            {newHiringType === "new_grad" && (
+            {h.newHiringType === "new_grad" && (
               <div className="space-y-2">
                 <Label>卒業年</Label>
-                <Select value={newGradYear} onValueChange={(v) => setNewGradYear(v ?? "")}>
+                <Select value={h.newGradYear} onValueChange={(v) => h.setNewGradYear(v ?? "")}>
                   <SelectTrigger>
                     <SelectValue placeholder="選択してください">
                       {(v: string) => (v ? `${v}年卒` : v)}
@@ -383,12 +270,12 @@ export default function ApplicantsPage() {
         )}
       </EditPanel>
 
-      {organization && (
+      {h.organization && (
         <ApplicantImportDialog
-          open={importOpen}
-          onOpenChange={setImportOpen}
-          organizationId={organization.id}
-          onComplete={() => mutate()}
+          open={h.importOpen}
+          onOpenChange={h.setImportOpen}
+          organizationId={h.organization.id}
+          onComplete={() => h.mutate()}
         />
       )}
     </div>

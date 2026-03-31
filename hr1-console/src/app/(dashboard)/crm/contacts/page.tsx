@@ -4,30 +4,16 @@ import { useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { useRouter } from "next/navigation";
-import type { BcContact } from "@/types/database";
+import { useCrmContacts } from "@/lib/hooks/use-crm";
 
 export default function CrmContactsPage() {
-  const { organization } = useOrg();
   const router = useRouter();
   const [search, setSearch] = useState("");
 
-  const { data: contacts, error } = useQuery<BcContact[]>(
-    organization ? `crm-contacts-${organization.id}` : null,
-    async () => {
-      const { data } = await getSupabase()
-        .from("bc_contacts")
-        .select("*, bc_companies(name)")
-        .eq("organization_id", organization!.id)
-        .order("last_name");
-      return data ?? [];
-    }
-  );
+  const { data: contacts, error } = useCrmContacts();
 
   const filtered = (contacts ?? []).filter((c) => {
     if (!search) return true;

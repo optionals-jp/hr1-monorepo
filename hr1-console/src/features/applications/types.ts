@@ -5,10 +5,11 @@ import type {
   FormField,
   Interview,
 } from "@/types/database";
+import { RESOURCE_STEP_TYPES } from "@/lib/constants";
 
 export type ActiveTab = "dashboard" | "steps" | "history" | "audit";
 
-export type ResourceStepType = "form" | "interview";
+export type ResourceStepType = (typeof RESOURCE_STEP_TYPES)[number];
 
 export interface ApplicationProfile {
   display_name: string | null;
@@ -50,12 +51,12 @@ export interface UseApplicationDetailReturn {
   hireDate: string;
   setHireDate: (date: string) => void;
   converting: boolean;
-  handleConvertToEmployee: () => Promise<void>;
+  handleConvertToEmployee: () => Promise<{ success: boolean; error?: string }>;
 
   // ステップ操作
   advanceStep: (step: ApplicationStep) => Promise<void>;
-  skipStep: (step: ApplicationStep) => Promise<void>;
-  unskipStep: (step: ApplicationStep) => Promise<void>;
+  skipStep: (step: ApplicationStep) => Promise<{ success: boolean; error?: string }>;
+  unskipStep: (step: ApplicationStep) => Promise<{ success: boolean; error?: string }>;
   canActOnStep: (step: ApplicationStep) => boolean;
   currentStepOrder: number | null;
 

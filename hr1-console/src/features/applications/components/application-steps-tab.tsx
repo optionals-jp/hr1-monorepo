@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { stepStatusLabels, stepTypeLabels } from "@/lib/constants";
+import { StepStatus, StepType, stepStatusLabels, stepTypeLabels } from "@/lib/constants";
 import type { ApplicationStep } from "@/types/database";
 import { Check, Circle, SkipForward, FileText, Calendar, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
@@ -79,20 +79,20 @@ export function ApplicationStepList({
         <div
           key={step.id}
           className={`flex items-center gap-3 rounded-lg border p-4 ${
-            step.status === "in_progress" ? "border-primary bg-primary/5" : ""
+            step.status === StepStatus.InProgress ? "border-primary bg-primary/5" : ""
           }`}
         >
           {/* Icon */}
           <div className="shrink-0">
-            {step.status === "completed" ? (
+            {step.status === StepStatus.Completed ? (
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-600">
                 <Check className="h-4 w-4" />
               </div>
-            ) : step.status === "in_progress" ? (
+            ) : step.status === StepStatus.InProgress ? (
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <Circle className="h-4 w-4 fill-current" />
               </div>
-            ) : step.status === "skipped" ? (
+            ) : step.status === StepStatus.Skipped ? (
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-orange-500">
                 <SkipForward className="h-4 w-4" />
               </div>
@@ -114,10 +114,10 @@ export function ApplicationStepList({
             <p className="text-xs text-muted-foreground">
               {stepStatusLabels[step.status]}
               {step.started_at &&
-                step.status === "in_progress" &&
+                step.status === StepStatus.InProgress &&
                 ` (開始: ${format(new Date(step.started_at), "yyyy/MM/dd")})`}
               {step.completed_at &&
-                step.status === "completed" &&
+                step.status === StepStatus.Completed &&
                 ` (完了: ${format(new Date(step.completed_at), "yyyy/MM/dd")})`}
             </p>
             {/* 紐付けリソースへのリンク */}
@@ -126,15 +126,15 @@ export function ApplicationStepList({
 
           {/* Actions */}
           <div className="flex gap-2 shrink-0">
-            {step.step_type === "form" &&
-              step.status === "completed" &&
+            {step.step_type === StepType.Form &&
+              step.status === StepStatus.Completed &&
               step.related_id &&
               onViewFormResponses && (
                 <Button size="sm" variant="outline" onClick={() => onViewFormResponses(step)}>
                   回答を確認
                 </Button>
               )}
-            {step.status === "skipped" && (
+            {step.status === StepStatus.Skipped && (
               <Button
                 size="sm"
                 variant="outline"
@@ -144,14 +144,14 @@ export function ApplicationStepList({
                 元に戻す
               </Button>
             )}
-            {canActOnStep(step) && step.status !== "skipped" && (
+            {canActOnStep(step) && step.status !== StepStatus.Skipped && (
               <>
                 <Button
                   size="sm"
-                  variant={step.status === "in_progress" ? "default" : "outline"}
+                  variant={step.status === StepStatus.InProgress ? "default" : "outline"}
                   onClick={() => advanceStep(step)}
                 >
-                  {step.status === "pending" ? "開始" : "完了"}
+                  {step.status === StepStatus.Pending ? "開始" : "完了"}
                 </Button>
                 <Button
                   size="sm"
@@ -172,7 +172,7 @@ export function ApplicationStepList({
 
 /** ステップに紐付いたリソースへのリンク */
 function ResourceLink({ step }: { step: ApplicationStep }) {
-  if (step.step_type === "form" && step.related_id) {
+  if (step.step_type === StepType.Form && step.related_id) {
     return (
       <Link
         href={`/forms/${step.related_id}`}
@@ -186,7 +186,7 @@ function ResourceLink({ step }: { step: ApplicationStep }) {
     );
   }
 
-  if (step.step_type === "interview" && step.related_id) {
+  if (step.step_type === StepType.Interview && step.related_id) {
     return (
       <Link
         href={`/scheduling/${step.related_id}`}

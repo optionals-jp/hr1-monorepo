@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -23,27 +22,13 @@ import {
 } from "@/components/ui/select";
 import { EditPanel } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
-import { useOrg } from "@/lib/org-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useQuery } from "@/lib/use-query";
-import type { Department } from "@/types/database";
+import { useDepartmentsPage, type DeptWithMembers } from "@/lib/hooks/use-departments-page";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { Trash2, Pencil, Users, ZoomIn, ZoomOut, Maximize } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-
-interface DeptMember {
-  id: string;
-  email: string;
-  display_name: string | null;
-  position: string | null;
-}
-
-interface DeptWithMembers extends Department {
-  members: DeptMember[];
-}
 
 const pageTabs = [
   { value: "list", label: "一覧" },
@@ -53,224 +38,52 @@ const pageTabs = [
 export default function DepartmentsPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const { organization } = useOrg();
-  const [activeTab, setActiveTab] = useState("list");
-  const [search, setSearch] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [newDeptName, setNewDeptName] = useState("");
-  const [newParentId, setNewParentId] = useState<string>("none");
-  const [savingAdd, setSavingAdd] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editParentId, setEditParentId] = useState<string>("none");
-  const [savingEdit, setSavingEdit] = useState(false);
-
-  // 組織図パン＆ズーム
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const isPanning = useRef(false);
-  const panStart = useRef({ x: 0, y: 0 });
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // wheelイベントはpassive: falseでネイティブ登録（ReactのonWheelはpassiveのためpreventDefaultが効かない）
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.05 : 0.05;
-      setZoom((z) => Math.min(2, Math.max(0.3, z + delta)));
-    };
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, []);
-
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      if (e.button !== 0) return;
-      isPanning.current = true;
-      panStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    },
-    [pan]
-  );
-
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isPanning.current) return;
-    setPan({ x: e.clientX - panStart.current.x, y: e.clientY - panStart.current.y });
-  }, []);
-
-  const handlePointerUp = useCallback(() => {
-    isPanning.current = false;
-  }, []);
-
-  const resetView = useCallback(() => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-  }, []);
-
   const {
-    data: departments = [],
+    departments,
     isLoading,
-    error: departmentsError,
+    departmentsError,
     mutate,
-  } = useQuery<Department[]>(organization ? `departments-${organization.id}` : null, async () => {
-    const { data } = await getSupabase()
-      .from("departments")
-      .select("*")
-      .eq("organization_id", organization!.id)
-      .order("name");
-    return data ?? [];
-  });
+    deptWithMembers,
+    orgLoading,
+    activeTab,
+    setActiveTab,
+    search,
+    setSearch,
+    dialogOpen,
+    setDialogOpen,
+    newDeptName,
+    setNewDeptName,
+    newParentId,
+    setNewParentId,
+    savingAdd,
+    editDialogOpen,
+    setEditDialogOpen,
+    editingId,
+    editName,
+    setEditName,
+    editParentId,
+    setEditParentId,
+    savingEdit,
+    zoom,
+    pan,
+    containerRef,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    resetView,
+    zoomIn,
+    zoomOut,
+    openAddDialog,
+    handleAdd,
+    handleDelete,
+    startEditing,
+    saveEdit,
+    filtered,
+    getDescendantIds,
+    getParentName,
+    topLevelDepts,
+  } = useDepartmentsPage();
 
-  const {
-    data: deptWithMembers = [],
-    isLoading: orgLoading,
-    mutate: mutateOrg,
-  } = useQuery<DeptWithMembers[]>(
-    organization && activeTab === "orgchart" ? `dept-members-${organization.id}` : null,
-    async () => {
-      const [{ data: deptData }, { data: edData }] = await Promise.all([
-        getSupabase()
-          .from("departments")
-          .select("*")
-          .eq("organization_id", organization!.id)
-          .order("name"),
-        getSupabase()
-          .from("employee_departments")
-          .select("department_id, profiles:user_id(id, email, display_name, position)")
-          .in(
-            "department_id",
-            (
-              await getSupabase()
-                .from("departments")
-                .select("id")
-                .eq("organization_id", organization!.id)
-            ).data?.map((d) => d.id) ?? []
-          ),
-      ]);
-
-      const memberMap = new Map<string, DeptMember[]>();
-      for (const row of edData ?? []) {
-        const ed = row as unknown as { department_id: string; profiles: DeptMember };
-        if (!ed.profiles) continue;
-        const list = memberMap.get(ed.department_id) ?? [];
-        list.push(ed.profiles);
-        memberMap.set(ed.department_id, list);
-      }
-
-      return (deptData ?? []).map((dept) => ({
-        ...dept,
-        members: memberMap.get(dept.id) ?? [],
-      }));
-    }
-  );
-
-  const openAddDialog = () => {
-    setNewDeptName("");
-    setNewParentId("none");
-    setDialogOpen(true);
-  };
-
-  const handleAdd = async () => {
-    if (!organization || !newDeptName.trim()) return;
-    setSavingAdd(true);
-
-    try {
-      const { error } = await getSupabase()
-        .from("departments")
-        .insert({
-          id: crypto.randomUUID(),
-          organization_id: organization.id,
-          name: newDeptName.trim(),
-          parent_id: newParentId === "none" ? null : newParentId,
-        });
-      if (error) throw error;
-
-      setDialogOpen(false);
-      mutate();
-      mutateOrg();
-      showToast("部署を追加しました");
-    } catch {
-      showToast("部署の追加に失敗しました", "error");
-    } finally {
-      setSavingAdd(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      const { error } = await getSupabase().from("departments").delete().eq("id", id);
-      if (error) throw error;
-
-      mutate();
-      mutateOrg();
-      showToast("部署を削除しました");
-    } catch {
-      showToast("部署の削除に失敗しました", "error");
-    }
-  };
-
-  const startEditing = (dept: Department) => {
-    setEditingId(dept.id);
-    setEditName(dept.name);
-    setEditParentId(dept.parent_id ?? "none");
-    setEditDialogOpen(true);
-  };
-
-  const saveEdit = async () => {
-    if (!editingId || !editName.trim()) return;
-    setSavingEdit(true);
-
-    try {
-      const { error } = await getSupabase()
-        .from("departments")
-        .update({
-          name: editName.trim(),
-          parent_id: editParentId === "none" ? null : editParentId,
-        })
-        .eq("id", editingId);
-      if (error) throw error;
-
-      setEditingId(null);
-      setEditDialogOpen(false);
-      mutate();
-      mutateOrg();
-      showToast("部署を更新しました");
-    } catch {
-      showToast("部署の更新に失敗しました", "error");
-    } finally {
-      setSavingEdit(false);
-    }
-  };
-
-  const filtered = departments.filter(
-    (d) => !search || d.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  // 指定部署の子孫IDを全て取得（循環参照防止用）
-  const getDescendantIds = (deptId: string): Set<string> => {
-    const ids = new Set<string>();
-    const collect = (id: string) => {
-      for (const d of departments) {
-        if (d.parent_id === id && !ids.has(d.id)) {
-          ids.add(d.id);
-          collect(d.id);
-        }
-      }
-    };
-    collect(deptId);
-    return ids;
-  };
-
-  // 親部署名を取得
-  const getParentName = (parentId: string | null) => {
-    if (!parentId) return null;
-    return departments.find((d) => d.id === parentId)?.name ?? null;
-  };
-
-  // 部署カードコンポーネント
   const DeptCard = ({ dept }: { dept: DeptWithMembers }) => (
     <div className="rounded-xl border bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow w-56 shrink-0">
       <div className="flex items-center gap-2 px-4 py-3 border-b bg-gray-50/50">
@@ -321,7 +134,6 @@ export default function DepartmentsPage() {
     </div>
   );
 
-  // 組織図: 上から下へのツリーレイアウト
   const renderOrgTree = (dept: DeptWithMembers) => {
     const children = deptWithMembers.filter((d) => d.parent_id === dept.id);
     return (
@@ -329,9 +141,7 @@ export default function DepartmentsPage() {
         <DeptCard dept={dept} />
         {children.length > 0 && (
           <>
-            {/* 親から下への縦線 */}
             <div className="w-0.5 h-6 bg-gray-300" />
-            {/* 子ノードを横に並べる */}
             <div className="flex">
               {children.map((child, index) => {
                 const isFirst = index === 0;
@@ -339,7 +149,6 @@ export default function DepartmentsPage() {
                 const isOnly = children.length === 1;
                 return (
                   <div key={child.id} className="flex flex-col items-center px-4">
-                    {/* 接続線（-mx-4でパディング領域まで拡張） */}
                     {isOnly ? (
                       <div className="w-0.5 h-6 bg-gray-300" />
                     ) : (
@@ -365,12 +174,6 @@ export default function DepartmentsPage() {
       </div>
     );
   };
-
-  const rootDepts = deptWithMembers.filter((d) => !d.parent_id);
-  const orphanDepts = deptWithMembers.filter(
-    (d) => d.parent_id && !deptWithMembers.some((p) => p.id === d.parent_id)
-  );
-  const topLevelDepts = [...rootDepts, ...orphanDepts];
 
   return (
     <div className="flex flex-col">
@@ -463,9 +266,14 @@ export default function DepartmentsPage() {
                           size="sm"
                           variant="ghost"
                           className="text-destructive hover:text-destructive"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            handleDelete(dept.id);
+                            const result = await handleDelete(dept.id);
+                            if (result.success) {
+                              showToast("部署を削除しました");
+                            } else {
+                              showToast(result.error ?? "部署の削除に失敗しました", "error");
+                            }
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -504,24 +312,15 @@ export default function DepartmentsPage() {
               </div>
             </div>
           )}
-          {/* ズームコントロール */}
           {deptWithMembers.length > 0 && (
             <div className="absolute bottom-4 right-4 flex items-center gap-1 bg-white rounded-lg shadow-md border p-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setZoom((z) => Math.min(2, z + 0.1))}
-              >
+              <Button size="sm" variant="ghost" onClick={zoomIn}>
                 <ZoomIn className="h-4 w-4" />
               </Button>
               <span className="text-xs text-muted-foreground w-10 text-center">
                 {Math.round(zoom * 100)}%
               </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setZoom((z) => Math.max(0.3, z - 0.1))}
-              >
+              <Button size="sm" variant="ghost" onClick={zoomOut}>
                 <ZoomOut className="h-4 w-4" />
               </Button>
               <div className="w-px h-5 bg-gray-200" />
@@ -537,7 +336,14 @@ export default function DepartmentsPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         title="部署を追加"
-        onSave={handleAdd}
+        onSave={async () => {
+          const result = await handleAdd();
+          if (result.success) {
+            showToast("部署を追加しました");
+          } else if (result.error) {
+            showToast(result.error, "error");
+          }
+        }}
         saving={savingAdd}
         saveDisabled={!newDeptName.trim()}
         saveLabel="追加"
@@ -578,7 +384,14 @@ export default function DepartmentsPage() {
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         title="部署を編集"
-        onSave={saveEdit}
+        onSave={async () => {
+          const result = await saveEdit();
+          if (result.success) {
+            showToast("部署を更新しました");
+          } else if (result.error) {
+            showToast(result.error, "error");
+          }
+        }}
         saving={savingEdit}
         saveDisabled={!editName.trim()}
       >

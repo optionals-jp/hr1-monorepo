@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { applicationStatusLabels as statusLabels } from "@/lib/constants";
+import { applicationStatusLabels as statusLabels, ApplicationStatus } from "@/lib/constants";
 import type { Application, ApplicationStep } from "@/types/database";
 import type { ApplicationProfile } from "@/features/applications/types";
 import { ApplicationStepList } from "@/features/applications/components/application-steps-tab";
@@ -84,7 +84,7 @@ export function ApplicationDashboardTab({
       </section>
 
       {/* 入社確定セクション */}
-      {application?.status === "offered" && (
+      {application?.status === ApplicationStatus.Offered && (
         <div className="mt-6 rounded-lg border border-green-200 bg-green-50 p-4">
           <div className="flex items-center justify-between">
             <div>

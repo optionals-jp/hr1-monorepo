@@ -8,8 +8,7 @@ import { Bell, Search, HelpCircle, ChevronDown, Menu, LogOut, User } from "lucid
 import { Button } from "@/components/ui/button";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
-import { useQuery } from "@/lib/use-query";
-import { getSupabase } from "@/lib/supabase/browser";
+import { usePendingCount } from "@/lib/hooks/use-header";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -19,7 +18,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { SidebarNav } from "./sidebar";
+import {
+  SidebarNav,
+  useProductTab,
+  saveProductTab,
+  productTabDefs,
+  dashboardByTab,
+} from "./sidebar";
+import { t } from "@/lib/i18n";
 
 export function Header() {
   const { organization, organizations, setOrganization } = useOrg();
@@ -27,17 +33,18 @@ export function Header() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const { data: pendingCount } = useQuery(
-    organization ? `header-pending-${organization.id}` : null,
-    async () => {
-      const { count } = await getSupabase()
-        .from("workflow_requests")
-        .select("*", { count: "exact", head: true })
-        .eq("organization_id", organization!.id)
-        .eq("status", "pending");
-      return count ?? 0;
-    }
-  );
+  const { data: pendingCount } = usePendingCount();
+
+  const activeProduct = useProductTab();
+  const activeProductDef =
+    productTabDefs.find((d) => d.value === activeProduct) ?? productTabDefs[0];
+
+  const handleProductChange = (tab: (typeof productTabDefs)[number]["value"]) => {
+    saveProductTab(tab);
+    const dest = dashboardByTab[tab];
+    // 共通ダッシュボード（/）では ?product= を付与して URL でタブを判別可能にする
+    router.push(dest === "/" ? `/?product=${tab}` : dest);
+  };
 
   const handleSignOut = useCallback(async () => {
     await signOut();
@@ -50,7 +57,7 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 flex h-14 items-center gap-2 sm:gap-4 border-b border-border bg-white px-3 sm:px-4 shrink-0 shadow-sm z-30">
+      <header className="sticky top-0 flex h-14 items-center gap-2 sm:gap-4 border-b border-border/60 bg-white/80 backdrop-blur-xl px-3 sm:px-4 shrink-0 z-30">
         {/* Mobile menu button */}
         <Button
           variant="ghost"
@@ -61,23 +68,42 @@ export function Header() {
           <Menu className="h-5 w-5" />
         </Button>
 
-        {/* Logo */}
-        <button
-          onClick={() => router.push("/")}
-          className="flex items-center gap-2 shrink-0 pr-2 hover:opacity-80 transition-opacity"
-        >
-          <div className="flex h-7 w-7 items-center justify-center rounded bg-red-600">
-            <span className="text-xs font-bold text-white">H</span>
-          </div>
-          <span className="hidden sm:inline text-[15px] font-medium text-foreground">
-            HR1 Studio
-          </span>
-        </button>
+        {/* Product Switcher */}
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-1.5 sm:gap-2 shrink-0 rounded-md px-1.5 sm:px-2 py-1.5 hover:bg-accent text-left transition-colors">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="HR1" className="h-5 shrink-0" />
+            <span className="hidden sm:inline text-[18px] font-extrabold tracking-tight text-[#1C1E1E] max-w-40 truncate">
+              {t(activeProductDef.labelKey)}
+            </span>
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56 p-1.5">
+            {productTabDefs.map((p) => {
+              const Icon = p.icon;
+              return (
+                <DropdownMenuItem
+                  key={p.value}
+                  onClick={() => handleProductChange(p.value)}
+                  className={cn(
+                    "group gap-3 rounded-lg px-3 py-2.5 text-[14px] cursor-pointer",
+                    activeProduct === p.value && "bg-accent font-medium"
+                  )}
+                >
+                  <Icon className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110 group-data-highlighted:scale-110" />
+                  <span className="font-extrabold tracking-tight text-[#1C1E1E] transition-transform group-hover:translate-x-0.5 group-data-highlighted:translate-x-0.5">
+                    {t(p.labelKey)}
+                  </span>
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Org Switcher */}
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-1 sm:gap-2 rounded-md px-1.5 sm:px-2 py-1.5 hover:bg-accent text-left transition-colors shrink-0 min-w-0">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-600 text-xs font-bold shrink-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-xs font-bold shrink-0">
               {organization?.name?.[0] ?? "?"}
             </div>
             <span className="hidden sm:inline text-[13px] font-medium text-foreground max-w-40 truncate">
@@ -92,7 +118,7 @@ export function Header() {
                 onClick={() => setOrganization(org)}
                 className={cn(org.id === organization?.id && "bg-accent")}
               >
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-red-600 text-[10px] font-bold mr-2">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-[10px] font-bold mr-2">
                   {org.name[0]}
                 </div>
                 {org.name}
@@ -107,7 +133,7 @@ export function Header() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="検索..."
-              className="h-9 pl-9 rounded-full border-border bg-accent/50 focus:bg-white focus:ring-1 focus:ring-primary/20"
+              className="h-9 pl-9 rounded-full border-transparent bg-accent/60 focus:bg-white focus:border-primary/20 focus:ring-2 focus:ring-primary/10 transition-all duration-200"
             />
           </div>
         </div>
@@ -136,9 +162,9 @@ export function Header() {
 
           {/* User menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center rounded-full ml-1 sm:ml-2 hover:opacity-80 transition-opacity">
+            <DropdownMenuTrigger className="flex items-center rounded-full ml-1 sm:ml-2 transition-all duration-200 hover:ring-2 hover:ring-primary/20">
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-purple-600 text-white text-xs font-medium">
+                <AvatarFallback className="bg-linear-to-br from-teal-600 to-teal-800 text-white text-xs font-medium">
                   {avatarInitial}
                 </AvatarFallback>
               </Avatar>
@@ -147,7 +173,7 @@ export function Header() {
               <div className="px-3 py-2">
                 <p className="text-sm font-medium">{displayName}</p>
                 <p className="text-xs text-muted-foreground">{profile?.email}</p>
-                <span className="mt-1 inline-block rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+                <span className="mt-1 inline-block rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-medium text-teal-700">
                   {roleLabel}
                 </span>
               </div>
@@ -171,10 +197,9 @@ export function Header() {
         <SheetContent side="left" className="w-64 p-0">
           <SheetHeader className="border-b px-4 py-3">
             <SheetTitle className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded bg-red-600">
-                <span className="text-xs font-bold text-white">H</span>
-              </div>
-              HR1 Studio
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.svg" alt="HR1" className="h-5" />
+              {t(activeProductDef.labelKey)}
             </SheetTitle>
           </SheetHeader>
           <SidebarNav onNavigate={() => setMobileMenuOpen(false)} />
