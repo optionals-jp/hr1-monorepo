@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useRouter } from "next/navigation";
 import { useOrg } from "@/lib/org-context";
 import { useQuery } from "@/lib/use-query";
@@ -185,7 +186,7 @@ export function formatRequestSummary(req: WorkflowRequest): string {
 export function useWorkflowsPage() {
   const router = useRouter();
   const { organization } = useOrg();
-  const [activeTab, setActiveTab] = useState<TabValue>("requests");
+  const [activeTab, setActiveTab] = useTabParam<TabValue>("requests");
 
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");

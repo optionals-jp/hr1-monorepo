@@ -18,7 +18,7 @@ import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 import { useApplicationDetail } from "@/features/applications/hooks/use-application-detail";
 import { ApplicationDashboardTab } from "@/features/applications/components/application-dashboard-tab";
 import { ApplicationStepsTab } from "@/features/applications/components/application-steps-tab";
-import { ApplicationHistoryTab } from "@/features/applications/components/application-history-tab";
+import { ApplicationLogTab } from "@/features/applications/components/application-log-tab";
 import { FormResponseSheet } from "@/features/applications/components/form-response-sheet";
 import { ResourceSelectDialog } from "@/features/applications/components/resource-select-dialog";
 import { ConvertEmployeeDialog } from "@/features/applications/components/convert-employee-dialog";
@@ -77,8 +77,8 @@ export default function ApplicationDetailPage() {
   const tabs = [
     { value: "dashboard" as const, label: "ダッシュボード" },
     { value: "steps" as const, label: "選考ステップ", count: detail.steps.length },
-    { value: "history" as const, label: "選考履歴" },
-    { value: "audit" as const, label: "変更履歴" },
+    { value: "history" as const, label: "選考ログ" },
+    { value: "audit" as const, label: "変更ログ" },
   ];
 
   return (
@@ -156,7 +156,7 @@ export default function ApplicationDetailPage() {
           />
         )}
 
-        {detail.activeTab === "history" && <ApplicationHistoryTab steps={detail.steps} />}
+        {detail.activeTab === "history" && <ApplicationLogTab steps={detail.steps} />}
 
         {detail.activeTab === "audit" && organization && (
           <AuditLogPanel organizationId={organization.id} tableName="applications" recordId={id} />

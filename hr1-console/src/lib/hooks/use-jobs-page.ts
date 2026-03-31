@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
@@ -33,7 +34,7 @@ export async function deleteJob(jobId: string, organizationId: string) {
 export function useJobsPage() {
   const { organization } = useOrg();
   const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState("open");
+  const [activeTab, setActiveTab] = useTabParam("open");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: jobs = [], isLoading, error: jobsError, mutate: mutateJobs } = useJobsList();

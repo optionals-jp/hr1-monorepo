@@ -20,11 +20,10 @@ function DashboardShell({ children }: { children: ReactNode }) {
 
   if (loading || !user || !profile) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-slate-50">
+      <div className="fixed inset-0 flex items-center justify-center bg-main-pattern">
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded bg-red-600">
-            <span className="text-sm font-bold text-white">H</span>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="HR1" className="h-8" />
           <p className="text-sm text-muted-foreground">読み込み中...</p>
         </div>
       </div>
@@ -38,7 +37,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
       <Header />
       <div className="flex min-h-0">
         {!isSettings && <Sidebar />}
-        <main className="flex flex-col flex-1 min-w-0 bg-slate-50">{children}</main>
+        <main className="flex flex-col flex-1 min-w-0 bg-main-pattern">{children}</main>
       </div>
     </OrgProvider>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrg } from "@/lib/org-context";
 import { usePayslips } from "@/lib/hooks/use-payslips";
 import type { Payslip } from "@/types/database";
@@ -29,7 +30,7 @@ interface CsvPreviewRow {
 export function usePayslipsPage() {
   const { organization } = useOrg();
 
-  const [activeTab, setActiveTab] = useState<TabValue>("list");
+  const [activeTab, setActiveTab] = useTabParam<TabValue>("list");
 
   // --- 一覧タブ ---
   const today = new Date();

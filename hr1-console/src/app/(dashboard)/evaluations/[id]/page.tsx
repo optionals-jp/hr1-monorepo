@@ -56,7 +56,7 @@ function getTabs(evaluationType?: string) {
   } else {
     base.push({ value: "statistics", label: "統計" }, { value: "comparison", label: "比較" });
   }
-  base.push({ value: "audit", label: "変更履歴" });
+  base.push({ value: "audit", label: "変更ログ" });
   return base;
 }
 

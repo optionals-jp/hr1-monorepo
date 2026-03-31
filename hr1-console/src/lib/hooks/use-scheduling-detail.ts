@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as schedulingRepo from "@/lib/repositories/scheduling-repository";
 import { getCurrentUserId } from "@/lib/get-current-user-id";
 import { autoFillEndAt } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
-import type { Interview, InterviewSlot, AuditLog } from "@/types/database";
+import type { Interview, InterviewSlot } from "@/types/database";
 
 export async function loadSchedulingDetail(id: string, organizationId: string) {
   const client = getSupabase();
@@ -16,10 +17,6 @@ export async function loadSchedulingDetail(id: string, organizationId: string) {
 
 export async function updateInterviewStatus(id: string, organizationId: string, status: string) {
   return schedulingRepo.updateInterviewStatus(getSupabase(), id, organizationId, status);
-}
-
-export async function fetchSchedulingAuditLogs(organizationId: string, interviewId: string) {
-  return schedulingRepo.fetchAuditLogs(getSupabase(), organizationId, interviewId);
 }
 
 export async function saveSchedulingDetail(params: {
@@ -160,10 +157,10 @@ export function useSchedulingDetailPage() {
   const { organization } = useOrg();
   const [interview, setInterview] = useState<Interview | null>(null);
   const [slots, setSlots] = useState<InterviewSlot[]>([]);
-  const [changeLogs, setChangeLogs] = useState<AuditLog[]>([]);
+  const [auditRefreshKey, setAuditRefreshKey] = useState(0);
   const [bookedApps, setBookedApps] = useState<BookedApplication[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("detail");
+  const [activeTab, setActiveTab] = useTabParam("detail");
 
   const [historySearch, setHistorySearch] = useState("");
 
@@ -179,7 +176,7 @@ export function useSchedulingDetailPage() {
   const load = useCallback(async () => {
     if (!organization) return;
     setLoading(true);
-    const { data, logsData } = await loadSchedulingDetail(id, organization.id);
+    const { data } = await loadSchedulingDetail(id, organization.id);
 
     if (data) {
       const { interview_slots, ...rest } = data;
@@ -209,13 +206,13 @@ export function useSchedulingDetailPage() {
       }
       setBookedApps(apps);
     }
-    setChangeLogs(logsData ?? []);
     setLoading(false);
   }, [id, organization]);
 
   useEffect(() => {
     if (!organization) return;
-    load();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load is an async data fetcher
+    void load();
   }, [load, organization]);
 
   const updateStatus = async (status: string): Promise<{ success: boolean; error?: string }> => {
@@ -226,8 +223,7 @@ export function useSchedulingDetailPage() {
       setInterview((prev) => (prev ? { ...prev, status: status as Interview["status"] } : prev));
 
       if (oldStatus && oldStatus !== status) {
-        const logs = await fetchSchedulingAuditLogs(organization.id, id);
-        setChangeLogs(logs);
+        setAuditRefreshKey((k) => k + 1);
       }
       return { success: true };
     } catch (e) {
@@ -310,6 +306,7 @@ export function useSchedulingDetailPage() {
       setSaving(false);
       setEditing(false);
       await load();
+      setAuditRefreshKey((k) => k + 1);
       return { success: true };
     } catch (e) {
       setSaving(false);
@@ -320,7 +317,7 @@ export function useSchedulingDetailPage() {
   return {
     interview,
     slots,
-    changeLogs,
+    auditRefreshKey,
     bookedApps,
     loading,
     activeTab,

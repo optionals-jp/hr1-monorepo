@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repo from "@/lib/repositories/project-repository";
@@ -209,7 +210,7 @@ export function useProjectsPage() {
   const { organization } = useOrg();
   const { data: projects = [], isLoading, error: projectsError, mutate } = useProjects();
 
-  const [activeTab, setActiveTab] = useState("list");
+  const [activeTab, setActiveTab] = useTabParam("list");
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);

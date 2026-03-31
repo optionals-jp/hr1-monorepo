@@ -41,8 +41,8 @@ import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 const tabs = [
   { value: "profile", label: "プロフィール" },
   { value: "evaluations", label: "評価" },
-  { value: "timeline", label: "履歴" },
-  { value: "audit", label: "変更履歴" },
+  { value: "timeline", label: "ログ" },
+  { value: "audit", label: "変更ログ" },
 ];
 
 export default function ApplicantDetailPage() {
@@ -154,7 +154,7 @@ export default function ApplicantDetailPage() {
 
             <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle>応募履歴</CardTitle>
+                <CardTitle>応募ログ</CardTitle>
               </CardHeader>
               <CardContent>
                 {applications.length === 0 ? (
@@ -342,7 +342,7 @@ function TimelineTab({
             {filteredTimeline.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  {timelineEvents.length === 0 ? "履歴がありません" : "該当する履歴がありません"}
+                  {timelineEvents.length === 0 ? "ログがありません" : "該当するログがありません"}
                 </TableCell>
               </TableRow>
             ) : (

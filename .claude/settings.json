@@ -14,6 +14,10 @@
           {
             "type": "command",
             "command": "cd hr1-console && npm run format:check 2>&1 | tail -5"
+          },
+          {
+            "type": "command",
+            "command": "cd hr1-console && npm run lint 2>&1 | tail -10"
           }
         ]
       }
@@ -32,8 +36,12 @@
       "Bash(supabase init:*)",
       "Bash(supabase link:*)"
     ],
-    "additionalDirectories": [
-      "/Users/takama/hr1/hr1-console/src/app/attendance"
-    ]
+    "additionalDirectories": []
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "vercel@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "supabase@claude-plugins-official": true
   }
 }

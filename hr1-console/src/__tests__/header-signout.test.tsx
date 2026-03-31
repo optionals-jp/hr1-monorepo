@@ -15,6 +15,7 @@ vi.mock("next/navigation", () => ({
     forward: vi.fn(),
     prefetch: vi.fn(),
   }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("@/lib/auth-context", () => ({

@@ -1,5 +1,8 @@
 "use client";
 
+import { useState, useCallback } from "react";
+import { useParams } from "next/navigation";
+import { useOrg } from "@/lib/org-context";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,13 +33,13 @@ import { format } from "date-fns";
 import {
   interviewScheduleStatusLabels as statusLabels,
   interviewScheduleStatusColors as statusColors,
-  getAuditActionLabel,
 } from "@/lib/constants";
+import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 
 const tabs = [
   { value: "detail", label: "面接詳細" },
-  { value: "timeline", label: "履歴" },
-  { value: "history", label: "編集履歴" },
+  { value: "timeline", label: "ログ" },
+  { value: "history", label: "編集ログ" },
 ];
 
 const editTabs: EditPanelTab[] = [
@@ -45,7 +48,11 @@ const editTabs: EditPanelTab[] = [
 ];
 
 export default function SchedulingDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const { organization } = useOrg();
   const h = useSchedulingDetailPage();
+  const [auditLogCount, setAuditLogCount] = useState<number | undefined>(undefined);
+  const handleAuditLoaded = useCallback((count: number) => setAuditLogCount(count), []);
 
   if (h.loading) {
     return (
@@ -94,7 +101,7 @@ export default function SchedulingDetailPage() {
               tab.value === "timeline"
                 ? h.bookedApps.length
                 : tab.value === "history"
-                  ? h.changeLogs.length
+                  ? auditLogCount
                   : undefined;
             return (
               <button
@@ -231,43 +238,20 @@ export default function SchedulingDetailPage() {
             </div>
           )}
 
-          {/* ===== 編集履歴タブ ===== */}
-          {h.activeTab === "history" && (
-            <>
-              {h.changeLogs.length === 0 ? (
-                <p className="text-center py-8 text-muted-foreground">編集履歴がありません</p>
-              ) : (
-                <div className="space-y-3 max-w-3xl">
-                  {h.changeLogs.map((log) => (
-                    <div
-                      key={log.id}
-                      className="flex items-start gap-4 py-3 border-b last:border-0"
-                    >
-                      <div className="shrink-0 mt-0.5">
-                        <Badge variant="outline" className="text-xs">
-                          {getAuditActionLabel(log)}
-                        </Badge>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm">
-                          {(log.metadata as Record<string, string> | null)?.summary ??
-                            (log.changes as Record<string, string> | null)?.summary ??
-                            log.action}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {format(new Date(log.created_at), "yyyy/MM/dd HH:mm")}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
+          {/* ===== 編集ログタブ ===== */}
+          {h.activeTab === "history" && organization && (
+            <AuditLogPanel
+              organizationId={organization.id}
+              tableName="interviews"
+              recordId={id}
+              refreshKey={h.auditRefreshKey}
+              onLoaded={handleAuditLoaded}
+            />
           )}
         </div>
       )}
 
-      {/* ===== 履歴タブ（白背景・全幅） ===== */}
+      {/* ===== ログタブ（白背景・全幅） ===== */}
       {h.activeTab === "timeline" && (
         <>
           <div className="flex items-center h-12 bg-white border-b px-4 sm:px-6 md:px-8">
@@ -303,8 +287,8 @@ export default function SchedulingDetailPage() {
                       <TableRow>
                         <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
                           {h.bookedApps.length === 0
-                            ? "履歴がありません"
-                            : "該当する履歴がありません"}
+                            ? "ログがありません"
+                            : "該当するログがありません"}
                         </TableCell>
                       </TableRow>
                     );

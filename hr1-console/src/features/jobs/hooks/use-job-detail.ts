@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { reorderSteps as reorderStepsUtil } from "@/lib/reorder-steps";
 import { getSupabase } from "@/lib/supabase/browser";
-import type { Job, JobStep, AuditLog, Application, Interview } from "@/types/database";
+import type { Job, JobStep, Application, Interview } from "@/types/database";
 import { useOrg } from "@/lib/org-context";
 import { StepType, FORM_STEP_TYPES } from "@/lib/constants";
 import * as jobRepository from "@/lib/repositories/job-repository";
@@ -20,9 +21,9 @@ export function useJobDetail() {
   const [steps, setSteps] = useState<JobStep[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>([]);
-  const [changeLogs, setChangeLogs] = useState<AuditLog[]>([]);
+  const [auditRefreshKey, setAuditRefreshKey] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("detail");
+  const [activeTab, setActiveTab] = useTabParam("detail");
 
   const [applicantSearch, setApplicantSearch] = useState("");
   const [applicantStatusFilter, setApplicantStatusFilter] = useState<string>("all");
@@ -78,7 +79,6 @@ export function useJobDetail() {
     setJob(result.job);
     setSteps(result.steps);
     setApplications(result.applications);
-    setChangeLogs(result.auditLogs);
     setHistoryEvents(buildHistoryEvents(result.applications));
     setLoading(false);
   };
@@ -104,12 +104,7 @@ export function useJobDetail() {
     setJob((prev) => (prev ? { ...prev, status: status as Job["status"] } : prev));
 
     if (oldStatus && oldStatus !== status) {
-      const { data: logsData } = await auditRepository.fetchAuditLogs(client, {
-        organizationId: organization.id,
-        tableName: "jobs",
-        recordId: id,
-      });
-      setChangeLogs(logsData ?? []);
+      setAuditRefreshKey((k) => k + 1);
     }
   };
 
@@ -168,6 +163,7 @@ export function useJobDetail() {
     };
 
     setSteps((prev) => [...prev, newStep]);
+    setAuditRefreshKey((k) => k + 1);
     setSavingStep(false);
     setDialogOpen(false);
     setNewStepType(StepType.Interview);
@@ -305,7 +301,7 @@ export function useJobDetail() {
     steps,
     applications,
     historyEvents,
-    changeLogs,
+    auditRefreshKey,
     loading,
     forms,
     interviews,

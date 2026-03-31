@@ -37,7 +37,7 @@ const pageTabs = [
   { value: "projects", label: "プロジェクト" },
   { value: "skills", label: "スキル" },
   { value: "evaluations", label: "評価" },
-  { value: "audit", label: "変更履歴" },
+  { value: "audit", label: "変更ログ" },
 ];
 
 const editTabs: EditPanelTab[] = [
@@ -306,11 +306,11 @@ export default function EmployeeDetailPage() {
               );
             })()}
 
-            {/* 在籍履歴タイムライン */}
+            {/* 在籍ログタイムライン */}
             <section>
-              <h2 className="text-sm font-semibold text-muted-foreground mb-3">在籍履歴</h2>
+              <h2 className="text-sm font-semibold text-muted-foreground mb-3">在籍ログ</h2>
               {h.memberships.length === 0 ? (
-                <p className="text-sm text-muted-foreground">履歴がありません</p>
+                <p className="text-sm text-muted-foreground">ログがありません</p>
               ) : (
                 <div className="relative">
                   {/* タイムラインの縦線 */}

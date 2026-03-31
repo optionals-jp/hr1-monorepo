@@ -30,7 +30,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "bg-white px-4 sm:px-6 md:px-8",
+        "bg-white/80 backdrop-blur-xl px-4 sm:px-6 md:px-8",
         sticky ? "pt-4 md:pt-6" : "pt-2 md:pt-3",
         sticky && "sticky top-14 z-10",
         sticky && border && "border-b"
@@ -57,7 +57,7 @@ export function PageHeader({
         )}
       >
         <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl font-semibold tracking-tight truncate">{title}</h1>
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight truncate">{title}</h1>
           {description && (
             <p className="text-sm text-muted-foreground mt-0.5 truncate">{description}</p>
           )}

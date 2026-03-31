@@ -10,7 +10,6 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2 } from "lucide-react";
 import type { EmployeeDepartmentStat } from "@/types/dashboard";
 
@@ -45,14 +44,11 @@ function CustomTooltip({
 
 export function EmployeeDepartmentChart({ data }: EmployeeDepartmentChartProps) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div>
-          <CardTitle className="text-base font-semibold">部署別社員数</CardTitle>
-          <p className="text-xs text-muted-foreground mt-0.5">部署ごとの社員の分布</p>
-        </div>
-      </CardHeader>
-      <CardContent>
+    <div className="rounded-xl border border-border/60 bg-white">
+      <div className="px-5 pt-4 pb-2">
+        <h2 className="text-[15px] font-semibold">部署別社員数</h2>
+      </div>
+      <div className="px-5 pb-4">
         {data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <Building2 className="h-8 w-8 mb-2 opacity-40" />
@@ -85,7 +81,7 @@ export function EmployeeDepartmentChart({ data }: EmployeeDepartmentChartProps) 
             </BarChart>
           </ResponsiveContainer>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

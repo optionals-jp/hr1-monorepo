@@ -1,11 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+const ALLOWED_FILTER_COLUMNS = ["action", "performed_by", "record_id"] as const;
+
+export type AuditFilterColumn = (typeof ALLOWED_FILTER_COLUMNS)[number];
+
 interface FetchAuditLogsParams {
   organizationId: string;
   tableName: string;
   recordId?: string;
   recordIds?: string[];
-  filterColumn?: string;
+  filterColumn?: AuditFilterColumn;
   filterValue?: string;
 }
 
@@ -22,7 +26,11 @@ export async function fetchAuditLogs(client: SupabaseClient, params: FetchAuditL
     query = query.eq("record_id", params.recordId);
   }
 
-  if (params.filterColumn && params.filterValue) {
+  if (
+    params.filterColumn &&
+    params.filterValue &&
+    (ALLOWED_FILTER_COLUMNS as readonly string[]).includes(params.filterColumn)
+  ) {
     query = query.eq(params.filterColumn, params.filterValue);
   }
 

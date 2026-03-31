@@ -27,7 +27,7 @@ import { format, differenceInYears } from "date-fns";
 const tabs = [
   { value: "overview", label: "概要" },
   { value: "members", label: "社員" },
-  { value: "audit", label: "変更履歴" },
+  { value: "audit", label: "変更ログ" },
 ];
 
 const editTabs: EditPanelTab[] = [{ value: "basic", label: "基本情報" }];

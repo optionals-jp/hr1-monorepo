@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrg } from "@/lib/org-context";
 import {
   loadProjectDetail,
@@ -24,7 +25,7 @@ export function useProjectDetail() {
   const [project, setProject] = useState<Project | null>(null);
   const [teams, setTeams] = useState<TeamWithMembers[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useTabParam("overview");
 
   // 編集パネル
   const [editOpen, setEditOpen] = useState(false);
@@ -69,11 +70,11 @@ export function useProjectDetail() {
     setLoading(false);
   }, [id, organization]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!organization) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load is an async data fetcher
     load();
-  }, [id, organization]);
+  }, [id, organization, load]);
 
   const startEditing = () => {
     if (!project) return;

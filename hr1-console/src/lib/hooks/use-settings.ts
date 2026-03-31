@@ -194,7 +194,8 @@ export function useSkillMastersPage() {
   }, [organization]);
 
   useEffect(() => {
-    if (organization) load();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load is an async data fetcher
+    if (organization) void load();
   }, [organization, load]);
 
   const handleAdd = async () => {
@@ -250,7 +251,8 @@ export function useCertificationMastersPage() {
   }, [organization]);
 
   useEffect(() => {
-    if (organization) load();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load is an async data fetcher
+    if (organization) void load();
   }, [organization, load]);
 
   const handleAdd = async () => {

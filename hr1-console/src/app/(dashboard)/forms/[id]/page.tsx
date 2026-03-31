@@ -1,5 +1,8 @@
 "use client";
 
+import { useState, useCallback } from "react";
+import { useParams } from "next/navigation";
+import { useOrg } from "@/lib/org-context";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,12 +29,13 @@ import { cn } from "@/lib/utils";
 import { useFormDetailPage } from "@/lib/hooks/use-form-detail";
 import { format } from "date-fns";
 import { Trash2 } from "lucide-react";
-import { fieldTypeLabels, getAuditActionLabel, formTargetLabels } from "@/lib/constants";
+import { fieldTypeLabels, formTargetLabels } from "@/lib/constants";
+import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 
 const tabs = [
   { value: "fields", label: "フィールド" },
   { value: "responses", label: "回答" },
-  { value: "history", label: "変更履歴" },
+  { value: "history", label: "変更ログ" },
 ];
 
 const editTabs: EditPanelTab[] = [
@@ -40,7 +44,11 @@ const editTabs: EditPanelTab[] = [
 ];
 
 export default function FormDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const { organization } = useOrg();
   const h = useFormDetailPage();
+  const [auditLogCount, setAuditLogCount] = useState<number | undefined>(undefined);
+  const handleAuditLoaded = useCallback((count: number) => setAuditLogCount(count), []);
 
   if (h.loading) {
     return (
@@ -76,7 +84,7 @@ export default function FormDetailPage() {
                 ? h.fields.length
                 : tab.value === "responses"
                   ? h.responses.length
-                  : h.changeLogs.length;
+                  : auditLogCount;
             return (
               <button
                 key={tab.value}
@@ -90,7 +98,9 @@ export default function FormDetailPage() {
                 )}
               >
                 {tab.label}
-                <span className="ml-1.5 text-xs text-muted-foreground">{count}</span>
+                {count !== undefined && (
+                  <span className="ml-1.5 text-xs text-muted-foreground">{count}</span>
+                )}
                 {h.activeTab === tab.value && (
                   <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
                 )}
@@ -190,35 +200,15 @@ export default function FormDetailPage() {
           </>
         )}
 
-        {/* ===== 変更履歴タブ ===== */}
-        {h.activeTab === "history" && (
-          <>
-            {h.changeLogs.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">変更履歴がありません</p>
-            ) : (
-              <div className="space-y-3 max-w-3xl">
-                {h.changeLogs.map((log) => (
-                  <div key={log.id} className="flex items-start gap-4 py-3 border-b last:border-0">
-                    <div className="shrink-0 mt-0.5">
-                      <Badge variant="outline" className="text-xs">
-                        {getAuditActionLabel(log)}
-                      </Badge>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm">
-                        {(log.metadata as Record<string, string> | null)?.summary ??
-                          (log.changes as Record<string, string> | null)?.summary ??
-                          log.action}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {format(new Date(log.created_at), "yyyy/MM/dd HH:mm")}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
+        {/* ===== 変更ログタブ ===== */}
+        {h.activeTab === "history" && organization && (
+          <AuditLogPanel
+            organizationId={organization.id}
+            tableName="custom_forms"
+            recordId={id}
+            refreshKey={h.auditRefreshKey}
+            onLoaded={handleAuditLoaded}
+          />
         )}
       </div>
 

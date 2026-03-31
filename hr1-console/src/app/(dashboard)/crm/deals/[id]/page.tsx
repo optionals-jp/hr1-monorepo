@@ -109,7 +109,7 @@ export default function CrmDealDetailPage() {
 
           {/* 活動 */}
           <div>
-            <h2 className="text-lg font-semibold mb-3">活動履歴（{activities?.length ?? 0}件）</h2>
+            <h2 className="text-lg font-semibold mb-3">活動ログ（{activities?.length ?? 0}件）</h2>
             <div className="space-y-2">
               {(activities ?? []).map((a) => (
                 <div key={a.id} className="rounded-lg border p-3">

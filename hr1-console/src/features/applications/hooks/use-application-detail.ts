@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrg } from "@/lib/org-context";
 import { StepStatus, StepType } from "@/lib/constants";
 import { getSupabase } from "@/lib/supabase/browser";
@@ -32,7 +33,7 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
   const [formSheetFields, setFormSheetFields] = useState<FormSheetField[]>([]);
   const [formSheetLoading, setFormSheetLoading] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>("dashboard");
+  const [activeTab, setActiveTab] = useTabParam<ActiveTab>("dashboard");
 
   const [resourceDialogOpen, setResourceDialogOpen] = useState(false);
   const [resourceDialogStep, setResourceDialogStep] = useState<ApplicationStep | null>(null);

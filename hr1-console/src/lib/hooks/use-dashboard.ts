@@ -1,9 +1,14 @@
 "use client";
 
+import { useCallback } from "react";
 import { useOrg } from "@/lib/org-context";
+import { useAuth } from "@/lib/auth-context";
 import { useQuery } from "@/lib/use-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as dashboardRepository from "@/lib/repositories/dashboard-repository";
+import * as crmRepository from "@/lib/repositories/crm-repository";
+import type { ProductTab } from "@/components/layout/sidebar";
+import { migrateWidgetConfig } from "@/lib/dashboard/migration";
 import { StepStatus, ApplicationStatus } from "@/lib/constants";
 import { format, subMonths } from "date-fns";
 import type {
@@ -13,6 +18,9 @@ import type {
   EmployeeDepartmentStat,
   HiringTypeStat,
   OpenJobStat,
+  HiringTypeApplicationStats,
+  RecruitingTargets,
+  DashboardWidgetConfigV2,
 } from "@/types/dashboard";
 
 export interface DashboardStats {
@@ -22,7 +30,7 @@ export interface DashboardStats {
   activeApplications: number;
 }
 
-export function useDashboard() {
+export function useDashboard(activeTab?: ProductTab) {
   const { organization } = useOrg();
   const orgId = organization?.id;
   const client = getSupabase();
@@ -227,6 +235,191 @@ export function useDashboard() {
     }
   );
 
+  /* ---- 採用区分別の応募・内定数 ---- */
+
+  const { data: hiringTypeAppStats } = useQuery<HiringTypeApplicationStats>(
+    orgId ? `dashboard-ht-app-stats-${orgId}` : null,
+    async () => {
+      const rows = await dashboardRepository.fetchApplicationCountsByHiringType(client, orgId!);
+      if (!rows)
+        return {
+          newGrad: { applications: 0, offered: 0 },
+          midCareer: { applications: 0, offered: 0 },
+        };
+
+      const result: HiringTypeApplicationStats = {
+        newGrad: { applications: 0, offered: 0 },
+        midCareer: { applications: 0, offered: 0 },
+      };
+
+      for (const row of rows) {
+        const ht = (row.profiles as unknown as { hiring_type: string | null })?.hiring_type;
+        const bucket = ht === "new_grad" ? "newGrad" : ht === "mid_career" ? "midCareer" : null;
+        if (!bucket) continue;
+        result[bucket].applications++;
+        if (row.status === ApplicationStatus.Offered) result[bucket].offered++;
+      }
+
+      return result;
+    }
+  );
+
+  /* ---- 採用目標 ---- */
+
+  const fiscalYear = getFiscalYear();
+
+  const { data: targets, mutate: mutateTargets } = useQuery<RecruitingTargets>(
+    orgId ? `dashboard-targets-${orgId}-${fiscalYear}` : null,
+    async () => {
+      const rows = await dashboardRepository.fetchRecruitingTargets(client, orgId!, fiscalYear);
+      const result: RecruitingTargets = {
+        newGrad: { applicationTarget: 0, offerTarget: 0 },
+        midCareer: { applicationTarget: 0, offerTarget: 0 },
+        all: { applicationTarget: 0, offerTarget: 0 },
+      };
+      if (!rows) return result;
+
+      for (const r of rows) {
+        const key =
+          r.hiring_type === "new_grad"
+            ? "newGrad"
+            : r.hiring_type === "mid_career"
+              ? "midCareer"
+              : "all";
+        if (r.target_type === "applications") result[key].applicationTarget = r.target_value;
+        else if (r.target_type === "offers") result[key].offerTarget = r.target_value;
+      }
+      return result;
+    }
+  );
+
+  /* ---- ウィジェット設定（タブごと） ---- */
+
+  const { profile } = useAuth();
+  const userId = profile?.id;
+
+  const {
+    data: recruitingWidgetConfigRaw,
+    isLoading: recruitingWidgetLoading,
+    mutate: mutateRecruitingWidgets,
+  } = useQuery<DashboardWidgetConfigV2[] | null>(
+    userId && orgId ? `dashboard-widgets-${userId}-${orgId}-recruiting` : null,
+    async () => {
+      const raw = await dashboardRepository.fetchWidgetPreferences(
+        client,
+        userId!,
+        orgId!,
+        "recruiting"
+      );
+      return raw ? migrateWidgetConfig(raw) : null;
+    }
+  );
+  const recruitingWidgetConfig = recruitingWidgetConfigRaw ?? undefined;
+
+  const {
+    data: workspaceWidgetConfigRaw,
+    isLoading: workspaceWidgetLoading,
+    mutate: mutateWorkspaceWidgets,
+  } = useQuery<DashboardWidgetConfigV2[] | null>(
+    userId && orgId ? `dashboard-widgets-${userId}-${orgId}-workspace` : null,
+    async () => {
+      const raw = await dashboardRepository.fetchWidgetPreferences(
+        client,
+        userId!,
+        orgId!,
+        "workspace"
+      );
+      return raw ? migrateWidgetConfig(raw) : null;
+    }
+  );
+  const workspaceWidgetConfig = workspaceWidgetConfigRaw ?? undefined;
+
+  const {
+    data: clientWidgetConfigRaw,
+    isLoading: clientWidgetLoading,
+    mutate: mutateClientWidgets,
+  } = useQuery<DashboardWidgetConfigV2[] | null>(
+    userId && orgId ? `dashboard-widgets-${userId}-${orgId}-client` : null,
+    async () => {
+      const raw = await dashboardRepository.fetchWidgetPreferences(
+        client,
+        userId!,
+        orgId!,
+        "client"
+      );
+      return raw ? migrateWidgetConfig(raw) : null;
+    }
+  );
+  const clientWidgetConfig = clientWidgetConfigRaw ?? undefined;
+
+  // OrgProviderはchildrenを即時レンダーするため、orgId未確定中もロード中として扱う。
+  // layout.tsxがauth完了までブロックするためauthLoadingチェックは不要。
+  // タブごとに個別のloading状態を返し、page.tsxでアクティブタブのみ参照する。
+  const depsLoading = !orgId || !userId;
+  const recruitingConfigLoading = depsLoading || recruitingWidgetLoading;
+  const workspaceConfigLoading = depsLoading || workspaceWidgetLoading;
+  const clientConfigLoading = depsLoading || clientWidgetLoading;
+
+  const saveWidgetConfig = useCallback(
+    async (tab: string, config: DashboardWidgetConfigV2[]) => {
+      if (!userId || !orgId) return;
+      const { error } = await dashboardRepository.upsertWidgetPreferences(
+        client,
+        userId,
+        orgId,
+        tab,
+        config
+      );
+      if (error) throw error;
+      if (tab === "recruiting") mutateRecruitingWidgets();
+      else if (tab === "workspace") mutateWorkspaceWidgets();
+      else mutateClientWidgets();
+    },
+    [client, userId, orgId, mutateRecruitingWidgets, mutateWorkspaceWidgets, mutateClientWidgets]
+  );
+
+  const saveTarget = useCallback(
+    async (hiringType: string, targetType: string, value: number) => {
+      if (!orgId) return;
+      const { error } = await dashboardRepository.upsertRecruitingTarget(
+        client,
+        orgId,
+        fiscalYear,
+        hiringType,
+        targetType,
+        value
+      );
+      if (error) throw error;
+      mutateTargets();
+    },
+    [client, orgId, fiscalYear, mutateTargets]
+  );
+
+  /* ---- CRM データ（clientタブの時のみフェッチ） ---- */
+
+  const crmEnabled = activeTab === "client" && !!orgId;
+  const { data: crmDeals } = useQuery(crmEnabled ? `crm-deals-${orgId}` : null, () =>
+    crmRepository.fetchDeals(client, orgId!)
+  );
+  const { data: crmCompanies } = useQuery(crmEnabled ? `crm-companies-count-${orgId}` : null, () =>
+    crmRepository.fetchCompanyIds(client, orgId!)
+  );
+  const { data: crmContacts } = useQuery(crmEnabled ? `crm-contacts-count-${orgId}` : null, () =>
+    crmRepository.fetchContactIds(client, orgId!)
+  );
+
+  const crmOpenDeals = crmDeals?.filter((d) => d.status === "open") ?? [];
+  const crmWonDeals = crmDeals?.filter((d) => d.status === "won") ?? [];
+
+  const crmDealsMapped = crmDeals?.map((d) => ({
+    id: d.id,
+    title: d.title,
+    companyName: (d.bc_companies as unknown as { name: string })?.name ?? "—",
+    stage: d.stage,
+    amount: d.amount,
+    status: d.status,
+  }));
+
   return {
     stats,
     statsError,
@@ -240,6 +433,31 @@ export function useDashboard() {
     leaveUsageRate,
     attendanceAnomalies,
     hiringTypeStats,
+    hiringTypeAppStats,
+    targets,
+    fiscalYear,
+    recruitingWidgetConfig,
+    workspaceWidgetConfig,
+    clientWidgetConfig,
+    recruitingConfigLoading,
+    workspaceConfigLoading,
+    clientConfigLoading,
+    saveWidgetConfig,
+    saveTarget,
     organization,
+    crmDeals: crmDealsMapped,
+    crmCompanyCount: crmCompanies?.length ?? 0,
+    crmContactCount: crmContacts?.length ?? 0,
+    crmOpenDeals: crmOpenDeals.length,
+    crmWonDeals: crmWonDeals.length,
+    crmTotalAmount: crmOpenDeals.reduce((s, d) => s + (d.amount ?? 0), 0),
+    crmWonAmount: crmWonDeals.reduce((s, d) => s + (d.amount ?? 0), 0),
   };
+}
+
+/* ---- 日本の会計年度（4月始まり） ---- */
+
+function getFiscalYear(): number {
+  const now = new Date();
+  return now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear();
 }

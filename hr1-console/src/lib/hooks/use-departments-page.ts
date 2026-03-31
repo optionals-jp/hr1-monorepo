@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { useOrg } from "@/lib/org-context";
 import { useQuery } from "@/lib/use-query";
@@ -23,7 +24,7 @@ export function useDepartmentsPage() {
   const { organization } = useOrg();
 
   // タブ
-  const [activeTab, setActiveTab] = useState("list");
+  const [activeTab, setActiveTab] = useTabParam("list");
 
   // 検索
   const [search, setSearch] = useState("");

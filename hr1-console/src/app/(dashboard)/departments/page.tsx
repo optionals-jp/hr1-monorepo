@@ -38,7 +38,51 @@ const pageTabs = [
 export default function DepartmentsPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const h = useDepartmentsPage();
+  const {
+    departments,
+    isLoading,
+    departmentsError,
+    mutate,
+    deptWithMembers,
+    orgLoading,
+    activeTab,
+    setActiveTab,
+    search,
+    setSearch,
+    dialogOpen,
+    setDialogOpen,
+    newDeptName,
+    setNewDeptName,
+    newParentId,
+    setNewParentId,
+    savingAdd,
+    editDialogOpen,
+    setEditDialogOpen,
+    editingId,
+    editName,
+    setEditName,
+    editParentId,
+    setEditParentId,
+    savingEdit,
+    zoom,
+    pan,
+    containerRef,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    resetView,
+    zoomIn,
+    zoomOut,
+    openAddDialog,
+    handleAdd,
+    handleDelete,
+    startEditing,
+    saveEdit,
+    filtered,
+    getDescendantIds,
+    getParentName,
+    topLevelDepts,
+  } = useDepartmentsPage();
 
   const DeptCard = ({ dept }: { dept: DeptWithMembers }) => (
     <div className="rounded-xl border bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow w-56 shrink-0">
@@ -56,7 +100,7 @@ export default function DepartmentsPage() {
           <h3 className="text-sm font-semibold truncate">{dept.name}</h3>
           <p className="text-xs text-muted-foreground">{dept.members.length}名</p>
         </div>
-        <Button size="sm" variant="ghost" className="shrink-0" onClick={() => h.startEditing(dept)}>
+        <Button size="sm" variant="ghost" className="shrink-0" onClick={() => startEditing(dept)}>
           <Pencil className="h-3.5 w-3.5" />
         </Button>
       </div>
@@ -91,7 +135,7 @@ export default function DepartmentsPage() {
   );
 
   const renderOrgTree = (dept: DeptWithMembers) => {
-    const children = h.deptWithMembers.filter((d) => d.parent_id === dept.id);
+    const children = deptWithMembers.filter((d) => d.parent_id === dept.id);
     return (
       <div key={dept.id} className="flex flex-col items-center">
         <DeptCard dept={dept} />
@@ -133,13 +177,13 @@ export default function DepartmentsPage() {
 
   return (
     <div className="flex flex-col">
-      <QueryErrorBanner error={h.departmentsError} onRetry={() => h.mutate()} />
+      <QueryErrorBanner error={departmentsError} onRetry={() => mutate()} />
       <PageHeader
         title="部署管理"
         description="組織の部署を管理"
         sticky={false}
         border={false}
-        action={<Button onClick={h.openAddDialog}>部署を追加</Button>}
+        action={<Button onClick={openAddDialog}>部署を追加</Button>}
       />
 
       <div className="sticky top-14 z-10">
@@ -148,25 +192,25 @@ export default function DepartmentsPage() {
             <button
               key={tab.value}
               type="button"
-              onClick={() => h.setActiveTab(tab.value)}
+              onClick={() => setActiveTab(tab.value)}
               className={cn(
                 "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-                h.activeTab === tab.value
+                activeTab === tab.value
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               {tab.label}
-              {h.activeTab === tab.value && (
+              {activeTab === tab.value && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
               )}
             </button>
           ))}
         </div>
-        {h.activeTab === "list" && <SearchBar value={h.search} onChange={h.setSearch} />}
+        {activeTab === "list" && <SearchBar value={search} onChange={setSearch} />}
       </div>
 
-      {h.activeTab === "list" && (
+      {activeTab === "list" && (
         <div className="bg-white">
           <Table>
             <TableHeader>
@@ -178,20 +222,20 @@ export default function DepartmentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {h.isLoading ? (
+              {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                     読み込み中...
                   </TableCell>
                 </TableRow>
-              ) : h.filtered.length === 0 ? (
+              ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    {h.search ? "一致する部署がありません" : "部署がありません"}
+                    {search ? "一致する部署がありません" : "部署がありません"}
                   </TableCell>
                 </TableRow>
               ) : (
-                h.filtered.map((dept) => (
+                filtered.map((dept) => (
                   <TableRow
                     key={dept.id}
                     className="cursor-pointer"
@@ -201,7 +245,7 @@ export default function DepartmentsPage() {
                       <span className="font-medium">{dept.name}</span>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {h.getParentName(dept.parent_id) ?? "-"}
+                      {getParentName(dept.parent_id) ?? "-"}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {format(new Date(dept.created_at), "yyyy/MM/dd")}
@@ -213,7 +257,7 @@ export default function DepartmentsPage() {
                           variant="ghost"
                           onClick={(e) => {
                             e.stopPropagation();
-                            h.startEditing(dept);
+                            startEditing(dept);
                           }}
                         >
                           <Pencil className="h-4 w-4" />
@@ -224,7 +268,7 @@ export default function DepartmentsPage() {
                           className="text-destructive hover:text-destructive"
                           onClick={async (e) => {
                             e.stopPropagation();
-                            const result = await h.handleDelete(dept.id);
+                            const result = await handleDelete(dept.id);
                             if (result.success) {
                               showToast("部署を削除しました");
                             } else {
@@ -244,43 +288,43 @@ export default function DepartmentsPage() {
         </div>
       )}
 
-      {h.activeTab === "orgchart" && (
+      {activeTab === "orgchart" && (
         <div className="relative overflow-hidden bg-gray-50 h-[calc(100dvh-7.5rem)]">
-          {h.orgLoading ? (
+          {orgLoading ? (
             <div className="text-center py-8 text-muted-foreground">読み込み中...</div>
-          ) : h.deptWithMembers.length === 0 ? (
+          ) : deptWithMembers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">部署がありません</div>
           ) : (
             <div
-              ref={h.containerRef}
+              ref={containerRef}
               className="w-full h-full cursor-grab active:cursor-grabbing touch-none"
-              onPointerDown={h.handlePointerDown}
-              onPointerMove={h.handlePointerMove}
-              onPointerUp={h.handlePointerUp}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
             >
               <div
                 className="inline-flex items-start gap-10 p-8 origin-top-left"
                 style={{
-                  transform: `translate(${h.pan.x}px, ${h.pan.y}px) scale(${h.zoom})`,
+                  transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                 }}
               >
-                {h.topLevelDepts.map((dept) => renderOrgTree(dept))}
+                {topLevelDepts.map((dept) => renderOrgTree(dept))}
               </div>
             </div>
           )}
-          {h.deptWithMembers.length > 0 && (
+          {deptWithMembers.length > 0 && (
             <div className="absolute bottom-4 right-4 flex items-center gap-1 bg-white rounded-lg shadow-md border p-1">
-              <Button size="sm" variant="ghost" onClick={h.zoomIn}>
+              <Button size="sm" variant="ghost" onClick={zoomIn}>
                 <ZoomIn className="h-4 w-4" />
               </Button>
               <span className="text-xs text-muted-foreground w-10 text-center">
-                {Math.round(h.zoom * 100)}%
+                {Math.round(zoom * 100)}%
               </span>
-              <Button size="sm" variant="ghost" onClick={h.zoomOut}>
+              <Button size="sm" variant="ghost" onClick={zoomOut}>
                 <ZoomOut className="h-4 w-4" />
               </Button>
               <div className="w-px h-5 bg-gray-200" />
-              <Button size="sm" variant="ghost" onClick={h.resetView}>
+              <Button size="sm" variant="ghost" onClick={resetView}>
                 <Maximize className="h-4 w-4" />
               </Button>
             </div>
@@ -289,43 +333,43 @@ export default function DepartmentsPage() {
       )}
 
       <EditPanel
-        open={h.dialogOpen}
-        onOpenChange={h.setDialogOpen}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
         title="部署を追加"
         onSave={async () => {
-          const result = await h.handleAdd();
+          const result = await handleAdd();
           if (result.success) {
             showToast("部署を追加しました");
           } else if (result.error) {
             showToast(result.error, "error");
           }
         }}
-        saving={h.savingAdd}
-        saveDisabled={!h.newDeptName.trim()}
+        saving={savingAdd}
+        saveDisabled={!newDeptName.trim()}
         saveLabel="追加"
       >
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>部署名 *</Label>
             <Input
-              value={h.newDeptName}
-              onChange={(e) => h.setNewDeptName(e.target.value)}
+              value={newDeptName}
+              onChange={(e) => setNewDeptName(e.target.value)}
               placeholder="エンジニアリング"
             />
           </div>
           <div className="space-y-2">
             <Label>親部署</Label>
-            <Select value={h.newParentId} onValueChange={(v) => h.setNewParentId(v ?? "none")}>
+            <Select value={newParentId} onValueChange={(v) => setNewParentId(v ?? "none")}>
               <SelectTrigger>
                 <SelectValue placeholder="なし">
                   {(v: string) =>
-                    v === "none" ? "なし" : (h.departments.find((d) => d.id === v)?.name ?? v)
+                    v === "none" ? "なし" : (departments.find((d) => d.id === v)?.name ?? v)
                   }
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">なし</SelectItem>
-                {h.departments.map((dept) => (
+                {departments.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id}>
                     {dept.name}
                   </SelectItem>
@@ -337,46 +381,46 @@ export default function DepartmentsPage() {
       </EditPanel>
 
       <EditPanel
-        open={h.editDialogOpen}
-        onOpenChange={h.setEditDialogOpen}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
         title="部署を編集"
         onSave={async () => {
-          const result = await h.saveEdit();
+          const result = await saveEdit();
           if (result.success) {
             showToast("部署を更新しました");
           } else if (result.error) {
             showToast(result.error, "error");
           }
         }}
-        saving={h.savingEdit}
-        saveDisabled={!h.editName.trim()}
+        saving={savingEdit}
+        saveDisabled={!editName.trim()}
       >
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>部署名 *</Label>
             <Input
-              value={h.editName}
-              onChange={(e) => h.setEditName(e.target.value)}
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
               placeholder="エンジニアリング"
             />
           </div>
           <div className="space-y-2">
             <Label>親部署</Label>
-            <Select value={h.editParentId} onValueChange={(v) => h.setEditParentId(v ?? "none")}>
+            <Select value={editParentId} onValueChange={(v) => setEditParentId(v ?? "none")}>
               <SelectTrigger>
                 <SelectValue placeholder="なし">
                   {(v: string) =>
-                    v === "none" ? "なし" : (h.departments.find((d) => d.id === v)?.name ?? v)
+                    v === "none" ? "なし" : (departments.find((d) => d.id === v)?.name ?? v)
                   }
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">なし</SelectItem>
-                {h.departments
+                {departments
                   .filter((d) => {
-                    if (!h.editingId) return true;
-                    if (d.id === h.editingId) return false;
-                    return !h.getDescendantIds(h.editingId).has(d.id);
+                    if (!editingId) return true;
+                    if (d.id === editingId) return false;
+                    return !getDescendantIds(editingId).has(d.id);
                   })
                   .map((dept) => (
                     <SelectItem key={dept.id} value={dept.id}>

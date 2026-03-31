@@ -30,7 +30,7 @@ const tabs = [
   { value: "overview", label: "概要" },
   { value: "assignments", label: "対象者・評価者" },
   { value: "report", label: "集計レポート" },
-  { value: "audit", label: "変更履歴" },
+  { value: "audit", label: "変更ログ" },
 ];
 
 export default function EvaluationCycleDetailPage() {

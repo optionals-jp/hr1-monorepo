@@ -89,23 +89,6 @@ export async function fetchProfiles(client: SupabaseClient, ids: string[]) {
 
 // ─── Audit logs ───
 
-export async function fetchAuditLogs(
-  client: SupabaseClient,
-  orgId: string,
-  tableName: string,
-  recordId: string
-) {
-  const { data } = await client
-    .from("audit_logs")
-    .select("*")
-    .eq("organization_id", orgId)
-    .eq("table_name", tableName)
-    .eq("record_id", recordId)
-    .order("created_at", { ascending: false })
-    .limit(50);
-  return data ?? [];
-}
-
 export async function insertAuditLogs(client: SupabaseClient, rows: Record<string, unknown>[]) {
   return client.from("audit_logs").insert(rows);
 }

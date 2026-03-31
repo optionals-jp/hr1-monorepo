@@ -1,7 +1,6 @@
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users } from "lucide-react";
 import type { HiringTypeStat } from "@/types/dashboard";
 
@@ -40,14 +39,11 @@ export function HiringTypeChart({ data }: HiringTypeChartProps) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div>
-          <CardTitle className="text-base font-semibold">採用区分</CardTitle>
-          <p className="text-xs text-muted-foreground mt-0.5">新卒・中途の内訳</p>
-        </div>
-      </CardHeader>
-      <CardContent>
+    <div className="rounded-xl border border-border/60 bg-white">
+      <div className="px-5 pt-4 pb-2">
+        <h2 className="text-[15px] font-semibold">採用区分</h2>
+      </div>
+      <div className="px-5 pb-4">
         {data.length === 0 || total === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <Users className="h-8 w-8 mb-2 opacity-40" />
@@ -96,7 +92,7 @@ export function HiringTypeChart({ data }: HiringTypeChartProps) {
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

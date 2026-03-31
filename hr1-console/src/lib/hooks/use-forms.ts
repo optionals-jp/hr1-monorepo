@@ -8,7 +8,7 @@ import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repo from "@/lib/repositories/form-repository";
-import type { CustomForm, FormField, AuditLog } from "@/types/database";
+import type { CustomForm, FormField } from "@/types/database";
 
 export function useForms() {
   return useOrgQuery<CustomForm[]>("forms", (orgId) => repo.fetchForms(getSupabase(), orgId));
@@ -192,15 +192,13 @@ export async function loadFormDetail(
   form: CustomForm | null;
   fields: FormField[];
   responses: ResponseRow[];
-  changeLogs: AuditLog[];
 }> {
   const client = getSupabase();
 
-  const [{ data: formData }, fieldsData, { data: responsesData }, logsData] = await Promise.all([
+  const [{ data: formData }, fieldsData, { data: responsesData }] = await Promise.all([
     repo.fetchFormById(client, id, orgId),
     repo.fetchFields(client, id),
     repo.fetchResponses(client, id),
-    repo.fetchAuditLogs(client, orgId, "custom_forms", id),
   ]);
 
   const grouped: Record<string, ResponseRow> = {};
@@ -233,7 +231,6 @@ export async function loadFormDetail(
     form: formData,
     fields: fieldsData,
     responses: Object.values(grouped),
-    changeLogs: logsData,
   };
 }
 

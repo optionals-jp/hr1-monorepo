@@ -199,7 +199,7 @@ function DayDetail({
     <div className="px-6 py-4 space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <h4 className="text-xs font-semibold text-muted-foreground mb-2">打刻履歴</h4>
+          <h4 className="text-xs font-semibold text-muted-foreground mb-2">打刻ログ</h4>
           {sortedPunches.length === 0 ? (
             <p className="text-sm text-muted-foreground">打刻データなし</p>
           ) : (
@@ -624,7 +624,7 @@ export default function AttendanceDetailPage() {
               className="flex items-center justify-between w-full px-5 py-3 text-sm font-medium"
               onClick={() => setShowAuditLog((v) => !v)}
             >
-              変更履歴
+              変更ログ
               <ChevronDown
                 className={cn(
                   "h-4 w-4 text-muted-foreground transition-transform",

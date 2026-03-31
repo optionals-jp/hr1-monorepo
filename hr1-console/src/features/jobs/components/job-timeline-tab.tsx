@@ -159,7 +159,7 @@ export function JobTimelineTab({
                 return (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      {historyEvents.length === 0 ? "履歴がありません" : "該当する履歴がありません"}
+                      {historyEvents.length === 0 ? "ログがありません" : "該当するログがありません"}
                     </TableCell>
                   </TableRow>
                 );

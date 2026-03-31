@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { getSupabase } from "@/lib/supabase/browser";
 import { useOrg } from "@/lib/org-context";
 import { useCreateMessageThread } from "@/lib/hooks/use-create-message-thread";
@@ -32,7 +33,7 @@ export function useApplicantDetailPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useTabParam("profile");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [eventFilter, setEventFilter] = useState<string | null>(null);
   const [historySearch, setHistorySearch] = useState("");

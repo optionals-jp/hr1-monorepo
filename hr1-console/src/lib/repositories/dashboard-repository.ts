@@ -130,3 +130,94 @@ export async function fetchHiringTypeData(client: SupabaseClient, orgId: string)
     .eq("profiles.role", "employee");
   return data;
 }
+
+/* ------------------------------------------------------------------ */
+/*  採用区分別の応募・内定数                                           */
+/* ------------------------------------------------------------------ */
+
+export async function fetchApplicationCountsByHiringType(client: SupabaseClient, orgId: string) {
+  const { data } = await client
+    .from("applications")
+    .select("id, status, applicant_id, profiles:applicant_id(hiring_type)")
+    .eq("organization_id", orgId);
+  return data;
+}
+
+/* ------------------------------------------------------------------ */
+/*  採用目標                                                           */
+/* ------------------------------------------------------------------ */
+
+export async function fetchRecruitingTargets(
+  client: SupabaseClient,
+  orgId: string,
+  fiscalYear: number
+) {
+  const { data } = await client
+    .from("recruiting_targets")
+    .select("hiring_type, target_type, target_value")
+    .eq("organization_id", orgId)
+    .eq("fiscal_year", fiscalYear);
+  return data;
+}
+
+export async function upsertRecruitingTarget(
+  client: SupabaseClient,
+  orgId: string,
+  fiscalYear: number,
+  hiringType: string,
+  targetType: string,
+  targetValue: number
+) {
+  const { error } = await client.from("recruiting_targets").upsert(
+    {
+      organization_id: orgId,
+      fiscal_year: fiscalYear,
+      hiring_type: hiringType,
+      target_type: targetType,
+      target_value: targetValue,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "organization_id,fiscal_year,hiring_type,target_type" }
+  );
+  return { error };
+}
+
+/* ------------------------------------------------------------------ */
+/*  ダッシュボードウィジェット設定                                     */
+/* ------------------------------------------------------------------ */
+
+export async function fetchWidgetPreferences(
+  client: SupabaseClient,
+  userId: string,
+  orgId: string,
+  productTab: string
+) {
+  const { data } = await client
+    .from("dashboard_widget_preferences")
+    .select("widget_config")
+    .eq("user_id", userId)
+    .eq("organization_id", orgId)
+    .eq("product_tab", productTab)
+    .maybeSingle();
+  return data?.widget_config ?? null;
+}
+
+export async function upsertWidgetPreferences(
+  client: SupabaseClient,
+  userId: string,
+  orgId: string,
+  productTab: string,
+  widgetConfig: unknown
+) {
+  const { error } = await client.from("dashboard_widget_preferences").upsert(
+    {
+      user_id: userId,
+      organization_id: orgId,
+      product_tab: productTab,
+      widget_config: widgetConfig,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,organization_id,product_tab" }
+  );
+  return { error };
+}

@@ -14,16 +14,27 @@ import {
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+} from "@/components/ui/dropdown-menu";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { cn } from "@/lib/utils";
 import { useCompliancePage } from "@/lib/hooks/use-compliance";
-import { Play, CheckCircle2, AlertTriangle, AlertCircle, Info } from "lucide-react";
+import {
+  Play,
+  CheckCircle2,
+  AlertTriangle,
+  AlertCircle,
+  Info,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 
 const ALERT_TYPE_LABELS: Record<string, string> = {
   leave_usage_warning: "有給消化不足",
@@ -139,42 +150,125 @@ export default function CompliancePage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Select value={filterStatus} onValueChange={(v) => v && setFilterStatus(v)}>
-            <SelectTrigger className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="unresolved">未対応</SelectItem>
-              <SelectItem value="resolved">対応済み</SelectItem>
-              <SelectItem value="all">すべて</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filterSeverity} onValueChange={(v) => v && setFilterSeverity(v)}>
-            <SelectTrigger className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">重要度: すべて</SelectItem>
-              <SelectItem value="critical">重大</SelectItem>
-              <SelectItem value="warning">警告</SelectItem>
-              <SelectItem value="info">情報</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filterType} onValueChange={(v) => v && setFilterType(v)}>
-            <SelectTrigger className="w-44">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">種別: すべて</SelectItem>
-              {Object.entries(ALERT_TYPE_LABELS).map(([key, label]) => (
-                <SelectItem key={key} value={key}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 cursor-pointer">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
+            {(filterStatus !== "unresolved" ||
+              filterSeverity !== "all" ||
+              filterType !== "all") && (
+              <div className="flex items-center gap-1.5 overflow-x-auto">
+                {filterStatus !== "unresolved" && (
+                  <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                    ステータス：{filterStatus === "resolved" ? "対応済み" : "すべて"}
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFilterStatus("unresolved");
+                      }}
+                      className="ml-0.5 hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </span>
+                  </Badge>
+                )}
+                {filterSeverity !== "all" && (
+                  <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                    重要度：
+                    {filterSeverity === "critical"
+                      ? "重大"
+                      : filterSeverity === "warning"
+                        ? "警告"
+                        : "情報"}
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFilterSeverity("all");
+                      }}
+                      className="ml-0.5 hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </span>
+                  </Badge>
+                )}
+                {filterType !== "all" && (
+                  <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                    種別：{ALERT_TYPE_LABELS[filterType] ?? filterType}
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFilterType("all");
+                      }}
+                      className="ml-0.5 hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </span>
+                  </Badge>
+                )}
+              </div>
+            )}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-auto py-2">
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="py-2">ステータス</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="py-2">
+                {[
+                  { value: "unresolved", label: "未対応" },
+                  { value: "resolved", label: "対応済み" },
+                  { value: "all", label: "すべて" },
+                ].map((opt) => (
+                  <DropdownMenuItem
+                    key={opt.value}
+                    className="py-2"
+                    onClick={() => setFilterStatus(opt.value)}
+                  >
+                    <span className={cn(filterStatus === opt.value && "font-medium")}>
+                      {opt.label}
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="py-2">重要度</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="py-2">
+                {[
+                  { value: "all", label: "すべて" },
+                  { value: "critical", label: "重大" },
+                  { value: "warning", label: "警告" },
+                  { value: "info", label: "情報" },
+                ].map((opt) => (
+                  <DropdownMenuItem
+                    key={opt.value}
+                    className="py-2"
+                    onClick={() => setFilterSeverity(opt.value)}
+                  >
+                    <span className={cn(filterSeverity === opt.value && "font-medium")}>
+                      {opt.label}
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="py-2">種別</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="py-2">
+                <DropdownMenuItem className="py-2" onClick={() => setFilterType("all")}>
+                  <span className={cn(filterType === "all" && "font-medium")}>すべて</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {Object.entries(ALERT_TYPE_LABELS).map(([key, label]) => (
+                  <DropdownMenuItem key={key} className="py-2" onClick={() => setFilterType(key)}>
+                    <span className={cn(filterType === key && "font-medium")}>{label}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <div className="rounded-lg border">
           <Table>

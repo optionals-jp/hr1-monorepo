@@ -95,7 +95,7 @@ export default function AuditLogsPage() {
       <QueryErrorBanner error={h.error} onRetry={h.retry} />
       <PageHeader
         title="監査ログ"
-        description="組織全体の操作履歴"
+        description="組織全体の操作ログ"
         sticky={false}
         border={false}
         action={

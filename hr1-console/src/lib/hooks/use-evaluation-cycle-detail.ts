@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrg } from "@/lib/org-context";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -36,7 +37,7 @@ export function useEvaluationCycleDetail() {
   const [orgMembers, setOrgMembers] = useState<Profile[]>([]);
   const [departments, setDepartments] = useState<DepartmentWithMembers[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useTabParam("overview");
 
   // 追加モード
   const [addMode, setAddMode] = useState<AddMode>("individual");

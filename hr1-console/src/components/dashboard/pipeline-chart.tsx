@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowDown, GitCommitHorizontal } from "lucide-react";
 import type { PipelineStage } from "@/types/dashboard";
 
@@ -23,21 +22,16 @@ export function PipelineChart({ data }: PipelineChartProps) {
   const maxCount = Math.max(...data.map((d) => d.count), 1);
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-base font-semibold">選考パイプライン</CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">各ステージの候補者数と通過率</p>
-          </div>
-          {data.length > 0 && (
-            <span className="text-xs text-muted-foreground tabular-nums">
-              全{data[0]?.count ?? 0}件
-            </span>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
+    <div className="rounded-xl border border-border/60 bg-white">
+      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+        <h2 className="text-[15px] font-semibold">選考パイプライン</h2>
+        {data.length > 0 && (
+          <span className="text-[13px] text-muted-foreground tabular-nums">
+            全{data[0]?.count ?? 0}件
+          </span>
+        )}
+      </div>
+      <div className="px-5 pb-4">
         {data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <GitCommitHorizontal className="h-8 w-8 mb-2 opacity-40" />
@@ -95,7 +89,7 @@ export function PipelineChart({ data }: PipelineChartProps) {
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

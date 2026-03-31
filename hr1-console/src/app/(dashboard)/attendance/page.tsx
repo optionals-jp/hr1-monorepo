@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { PageHeader } from "@/components/layout/page-header";
 import { cn } from "@/lib/utils";
 import { Calendar, Clock, ShieldCheck, FileEdit, Settings2 } from "lucide-react";
@@ -21,7 +21,7 @@ const tabList: { value: TabValue; label: string; icon: React.ElementType }[] = [
 ];
 
 export default function AttendancePage() {
-  const [activeTab, setActiveTab] = useState<TabValue>("daily");
+  const [activeTab, setActiveTab] = useTabParam<TabValue>("daily");
   const { organization, employees, departments, projects, settings, mutateSettings } =
     useAttendanceData();
 

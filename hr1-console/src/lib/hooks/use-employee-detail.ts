@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useOrg } from "@/lib/org-context";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as employeeRepository from "@/lib/repositories/employee-repository";
 import * as departmentRepository from "@/lib/repositories/department-repository";
@@ -66,7 +67,7 @@ export function useEmployeeDetail(id: string) {
   const [certifications, setCertifications] = useState<EmployeeCertification[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useTabParam("profile");
   const [editing, setEditing] = useState(false);
   const [editTab, setEditTab] = useState("basic");
   const [editForm, setEditForm] = useState<EditForm>(initialEditForm);

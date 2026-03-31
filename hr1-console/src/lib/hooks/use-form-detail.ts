@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrg } from "@/lib/org-context";
-import type { CustomForm, FormField, AuditLog } from "@/types/database";
+import type { CustomForm, FormField } from "@/types/database";
 import { loadFormDetail, saveFormEdit } from "@/lib/hooks/use-forms";
 
 interface FieldDraft {
@@ -33,9 +34,9 @@ export function useFormDetailPage() {
   const [form, setForm] = useState<CustomForm | null>(null);
   const [fields, setFields] = useState<FormField[]>([]);
   const [responses, setResponses] = useState<ResponseRow[]>([]);
-  const [changeLogs, setChangeLogs] = useState<AuditLog[]>([]);
+  const [auditRefreshKey, setAuditRefreshKey] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("fields");
+  const [activeTab, setActiveTab] = useTabParam("fields");
 
   // Edit states
   const [editing, setEditing] = useState(false);
@@ -60,7 +61,6 @@ export function useFormDetailPage() {
     setForm(result.form);
     setFields(result.fields);
     setResponses(result.responses);
-    setChangeLogs(result.changeLogs);
 
     setLoading(false);
   }
@@ -129,6 +129,7 @@ export function useFormDetailPage() {
     setSaving(false);
     setEditing(false);
     await loadData();
+    setAuditRefreshKey((k) => k + 1);
     return result;
   }
 
@@ -136,7 +137,7 @@ export function useFormDetailPage() {
     form,
     fields,
     responses,
-    changeLogs,
+    auditRefreshKey,
     loading,
     activeTab,
     setActiveTab,

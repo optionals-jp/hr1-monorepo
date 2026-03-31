@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrg } from "@/lib/org-context";
 import { useLeave } from "@/lib/hooks/use-leave";
 import type { LeaveBalance } from "@/types/database";
@@ -41,7 +42,7 @@ function formatDateInput(d: Date): string {
 
 export function useLeavePage() {
   const { organization } = useOrg();
-  const [activeTab, setActiveTab] = useState<TabValue>("balances");
+  const [activeTab, setActiveTab] = useTabParam<TabValue>("balances");
 
   // --- 残日数タブ ---
   const currentYear = new Date().getFullYear();

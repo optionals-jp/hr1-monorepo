@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrg } from "@/lib/org-context";
 import {
   loadTemplateDetail,
@@ -29,7 +30,7 @@ export function useEvaluationTemplateDetail() {
   const [evaluations, setEvaluations] = useState<EvalWithScores[]>([]);
   const [cycles, setCycles] = useState<EvaluationCycle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("criteria");
+  const [activeTab, setActiveTab] = useTabParam("criteria");
 
   // Search & filter states for evaluations tab
   const [evalSearch, setEvalSearch] = useState("");

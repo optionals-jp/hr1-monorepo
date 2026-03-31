@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Interview, InterviewSlot, AuditLog } from "@/types/database";
+import type { Interview, InterviewSlot } from "@/types/database";
 
 export async function findByOrg(client: SupabaseClient, organizationId: string) {
   const { data } = await client
@@ -39,25 +39,15 @@ export async function createSlots(
 }
 
 export async function fetchDetail(client: SupabaseClient, id: string, organizationId: string) {
-  const [{ data }, { data: logsData }] = await Promise.all([
-    client
-      .from("interviews")
-      .select(
-        "*, interview_slots(*, applications:application_id(id, profiles:applicant_id(display_name, email)))"
-      )
-      .eq("id", id)
-      .eq("organization_id", organizationId)
-      .single(),
-    client
-      .from("audit_logs")
-      .select("*")
-      .eq("organization_id", organizationId)
-      .eq("table_name", "interviews")
-      .eq("record_id", id)
-      .order("created_at", { ascending: false })
-      .limit(50),
-  ]);
-  return { data, logsData: (logsData ?? []) as AuditLog[] };
+  const { data } = await client
+    .from("interviews")
+    .select(
+      "*, interview_slots(*, applications:application_id(id, profiles:applicant_id(display_name, email)))"
+    )
+    .eq("id", id)
+    .eq("organization_id", organizationId)
+    .single();
+  return { data };
 }
 
 export async function updateInterviewStatus(
@@ -92,22 +82,6 @@ export async function updateSlot(
   data: Record<string, unknown>
 ) {
   return client.from("interview_slots").update(data).eq("id", id);
-}
-
-export async function fetchAuditLogs(
-  client: SupabaseClient,
-  organizationId: string,
-  recordId: string
-) {
-  const { data } = await client
-    .from("audit_logs")
-    .select("*")
-    .eq("organization_id", organizationId)
-    .eq("table_name", "interviews")
-    .eq("record_id", recordId)
-    .order("created_at", { ascending: false })
-    .limit(50);
-  return (data ?? []) as AuditLog[];
 }
 
 export async function insertAuditLogs(
