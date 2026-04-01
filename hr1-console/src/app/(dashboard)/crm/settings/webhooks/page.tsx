@@ -7,7 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { useToast } from "@/components/ui/toast";
 import { useWebhooks, useWebhookLogs } from "@/lib/hooks/use-webhooks";
@@ -15,8 +22,9 @@ import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as webhookRepo from "@/lib/repositories/webhook-repository";
 import { webhookEventLabels } from "@/lib/constants/crm";
+import { TableSection } from "@/components/layout/table-section";
 import type { CrmWebhook } from "@/types/database";
-import { Plus, Webhook, Globe, ScrollText } from "lucide-react";
+import { Plus, ScrollText } from "lucide-react";
 
 type EditableWebhook = Partial<CrmWebhook>;
 
@@ -117,9 +125,11 @@ export default function WebhookSettingsPage() {
   };
 
   return (
-    <div>
+    <div className="flex flex-col">
       <PageHeader
         title="Webhook設定"
+        sticky={false}
+        border={false}
         breadcrumb={[{ label: "CRM設定", href: "/crm/settings/pipelines" }]}
         action={
           <div className="flex gap-2">
@@ -136,90 +146,93 @@ export default function WebhookSettingsPage() {
       />
 
       {!showLogs ? (
-        <div className="space-y-3">
-          {!webhooks && (
-            <p className="text-sm text-muted-foreground text-center py-8">読み込み中...</p>
-          )}
-          {webhooks?.length === 0 && (
-            <div className="text-center py-12 border rounded-lg bg-muted/20">
-              <Webhook className="size-10 mx-auto mb-3 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground mb-3">
-                Webhookが設定されていません。
-                <br />
-                CRMイベントを外部サービスに通知できます。
-              </p>
-              <Button variant="outline" onClick={openCreate}>
-                <Plus className="size-4 mr-1.5" />
-                最初のWebhookを追加
-              </Button>
-            </div>
-          )}
-
-          {(webhooks ?? []).map((webhook) => (
-            <div
-              key={webhook.id}
-              className="rounded-lg border bg-background p-4 cursor-pointer hover:bg-muted/30"
-              onClick={() => openEdit(webhook)}
-            >
-              <div className="flex items-center gap-3">
-                <Globe className="size-5 text-muted-foreground flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{webhook.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{webhook.url}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {webhook.events.map((e) => webhookEventLabels[e] ?? e).join("、")}
-                  </p>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <Badge variant={webhook.is_active ? "secondary" : "default"}>
-                    {webhook.is_active ? "有効" : "無効"}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground tabular-nums">
-                    成功: {webhook.success_count} / 失敗: {webhook.failure_count}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>実行日時</TableHead>
-              <TableHead>Webhook</TableHead>
-              <TableHead>イベント</TableHead>
-              <TableHead>ステータス</TableHead>
-              <TableHead>レスポンス</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableEmptyState
-            colSpan={5}
-            isLoading={!logs}
-            isEmpty={(logs ?? []).length === 0}
-            emptyMessage="送信ログがありません"
-          >
-            {(logs ?? []).map((log) => (
-              <TableRow key={log.id}>
-                <TableCell className="text-xs tabular-nums">
-                  {new Date(log.executed_at).toLocaleString("ja-JP")}
-                </TableCell>
-                <TableCell className="text-sm">{log.crm_webhooks?.name ?? "—"}</TableCell>
-                <TableCell className="text-sm">
-                  {webhookEventLabels[log.event_type] ?? log.event_type}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={log.success ? "secondary" : "destructive"}>
-                    {log.response_status ?? (log.success ? "OK" : "Error")}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-xs max-w-48 truncate">
-                  {log.error_message ?? log.response_body ?? "—"}
-                </TableCell>
+        <TableSection>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Webhook名</TableHead>
+                <TableHead>URL</TableHead>
+                <TableHead>イベント</TableHead>
+                <TableHead>成功/失敗</TableHead>
+                <TableHead>ステータス</TableHead>
               </TableRow>
-            ))}
-          </TableEmptyState>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              <TableEmptyState
+                colSpan={5}
+                isLoading={!webhooks}
+                isEmpty={webhooks?.length === 0}
+                emptyMessage="Webhookがありません"
+              >
+                {(webhooks ?? []).map((webhook) => (
+                  <TableRow
+                    key={webhook.id}
+                    className="cursor-pointer"
+                    onClick={() => openEdit(webhook)}
+                  >
+                    <TableCell className="font-medium">{webhook.name}</TableCell>
+                    <TableCell className="text-muted-foreground truncate max-w-xs">
+                      {webhook.url}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs">
+                      {webhook.events.map((e) => webhookEventLabels[e] ?? e).join("、")}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-xs">
+                      {webhook.success_count} / {webhook.failure_count}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={webhook.is_active ? "secondary" : "default"}>
+                        {webhook.is_active ? "有効" : "無効"}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableEmptyState>
+            </TableBody>
+          </Table>
+        </TableSection>
+      ) : (
+        <TableSection>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>実行日時</TableHead>
+                <TableHead>Webhook</TableHead>
+                <TableHead>イベント</TableHead>
+                <TableHead>ステータス</TableHead>
+                <TableHead>レスポンス</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableEmptyState
+                colSpan={5}
+                isLoading={!logs}
+                isEmpty={(logs ?? []).length === 0}
+                emptyMessage="送信ログがありません"
+              >
+                {(logs ?? []).map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell className="text-xs tabular-nums">
+                      {new Date(log.executed_at).toLocaleString("ja-JP")}
+                    </TableCell>
+                    <TableCell className="text-sm">{log.crm_webhooks?.name ?? "—"}</TableCell>
+                    <TableCell className="text-sm">
+                      {webhookEventLabels[log.event_type] ?? log.event_type}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={log.success ? "secondary" : "destructive"}>
+                        {log.response_status ?? (log.success ? "OK" : "Error")}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs max-w-48 truncate">
+                      {log.error_message ?? log.response_body ?? "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableEmptyState>
+            </TableBody>
+          </Table>
+        </TableSection>
       )}
 
       <EditPanel

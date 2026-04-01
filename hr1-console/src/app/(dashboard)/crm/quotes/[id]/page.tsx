@@ -2,7 +2,7 @@
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useState, useMemo, useCallback } from "react";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,9 +70,11 @@ export default function QuoteDetailPage() {
   // 新規時はすぐにフォームを表示、既存時はデータ到着後にフォームを表示
   if (!isNew && !quote && !error) {
     return (
-      <div>
+      <div className="flex flex-col">
         <PageHeader
           title="見積書"
+          sticky={false}
+          border={false}
           breadcrumb={[
             { label: "商談管理", href: "/crm/deals" },
             { label: "見積書一覧", href: "/crm/quotes" },
@@ -207,13 +209,13 @@ function QuoteForm({
           created_by: user?.id ?? null,
         });
         if (validItems.length > 0) {
-          await quoteRepo.syncQuoteItems(getSupabase(), created.id, validItems);
+          await quoteRepo.syncQuoteItems(getSupabase(), created.id, organization.id, validItems);
         }
         showToast("見積書を作成しました");
         router.push(`/crm/quotes/${created.id}`);
       } else {
         await quoteRepo.updateQuote(getSupabase(), id, organization.id, quoteData);
-        await quoteRepo.syncQuoteItems(getSupabase(), id, validItems);
+        await quoteRepo.syncQuoteItems(getSupabase(), id, organization.id, validItems);
         showToast("見積書を更新しました");
         mutate();
       }
@@ -262,9 +264,11 @@ function QuoteForm({
   }, [organization, isNew, deleting, id, showToast, router]);
 
   return (
-    <div>
+    <div className="flex flex-col">
       <PageHeader
         title={isNew ? "見積書作成" : `見積書: ${quote?.quote_number ?? ""}`}
+        sticky={false}
+        border={false}
         breadcrumb={[
           { label: "商談管理", href: "/crm/deals" },
           { label: "見積書一覧", href: "/crm/quotes" },
@@ -295,237 +299,243 @@ function QuoteForm({
         }
       />
 
-      <div className="space-y-6">
-        {/* 基本情報 */}
-        <div className="rounded-lg border p-4">
-          <h2 className="text-sm font-semibold mb-4">基本情報</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>タイトル *</Label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="見積書タイトル"
-              />
-            </div>
-            {!isNew && (
+      <PageContent>
+        <div className="space-y-6">
+          {/* 基本情報 */}
+          <div className="rounded-lg border p-4">
+            <h2 className="text-sm font-semibold mb-4">基本情報</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>ステータス</Label>
-                <div className="flex items-center gap-2">
-                  <Select value={status} onValueChange={(v) => setStatus(v as QuoteStatus)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(quoteStatusLabels).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Badge variant={quoteStatusColors[status]}>{quoteStatusLabels[status]}</Badge>
+                <Label>タイトル *</Label>
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="見積書タイトル"
+                />
+              </div>
+              {!isNew && (
+                <div>
+                  <Label>ステータス</Label>
+                  <div className="flex items-center gap-2">
+                    <Select value={status} onValueChange={(v) => setStatus(v as QuoteStatus)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(quoteStatusLabels).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Badge variant={quoteStatusColors[status]}>{quoteStatusLabels[status]}</Badge>
+                  </div>
+                </div>
+              )}
+              <div>
+                <Label>商談</Label>
+                <Select value={dealId} onValueChange={(v) => setDealId(v ?? "")}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="商談を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">未選択</SelectItem>
+                    {deals.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>取引先企業</Label>
+                <Select value={companyId} onValueChange={(v) => setCompanyId(v ?? "")}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="企業を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">未選択</SelectItem>
+                    {companies.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>連絡先</Label>
+                <Select value={contactId} onValueChange={(v) => setContactId(v ?? "")}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="連絡先を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">未選択</SelectItem>
+                    {contacts.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.last_name} {c.first_name ?? ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>発行日</Label>
+                <Input
+                  type="date"
+                  value={issueDate}
+                  onChange={(e) => setIssueDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>有効期限</Label>
+                <Input
+                  type="date"
+                  value={expiryDate}
+                  onChange={(e) => setExpiryDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>消費税率（%）</Label>
+                <Input
+                  type="number"
+                  value={taxRate}
+                  onChange={(e) => setTaxRate(Number(e.target.value))}
+                  min={0}
+                  max={100}
+                  step={0.01}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 明細 */}
+          <div className="rounded-lg border p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                <FileText className="size-4" />
+                明細
+              </h2>
+              <Button variant="outline" size="sm" onClick={addItem}>
+                <Plus className="size-4 mr-1" />
+                行を追加
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/20">
+                    <th className="text-left px-2 py-2 font-medium w-8">#</th>
+                    <th className="text-left px-2 py-2 font-medium">品目・説明</th>
+                    <th className="text-right px-2 py-2 font-medium w-20">数量</th>
+                    <th className="text-left px-2 py-2 font-medium w-16">単位</th>
+                    <th className="text-right px-2 py-2 font-medium w-28">単価</th>
+                    <th className="text-right px-2 py-2 font-medium w-28">金額</th>
+                    <th className="w-10" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item, idx) => (
+                    <tr key={idx} className="border-b">
+                      <td className="px-2 py-1 text-muted-foreground">{idx + 1}</td>
+                      <td className="px-2 py-1">
+                        <Input
+                          value={item.description}
+                          onChange={(e) => updateItem(idx, "description", e.target.value)}
+                          placeholder="品目名"
+                          className="h-8"
+                        />
+                      </td>
+                      <td className="px-2 py-1">
+                        <Input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => updateItem(idx, "quantity", Number(e.target.value))}
+                          className="h-8 text-right"
+                          min={0}
+                          step={0.01}
+                        />
+                      </td>
+                      <td className="px-2 py-1">
+                        <Input
+                          value={item.unit}
+                          onChange={(e) => updateItem(idx, "unit", e.target.value)}
+                          className="h-8"
+                        />
+                      </td>
+                      <td className="px-2 py-1">
+                        <Input
+                          type="number"
+                          value={item.unit_price}
+                          onChange={(e) => updateItem(idx, "unit_price", Number(e.target.value))}
+                          className="h-8 text-right"
+                          min={0}
+                        />
+                      </td>
+                      <td className="px-2 py-1 text-right tabular-nums font-medium">
+                        ¥{item.amount.toLocaleString()}
+                      </td>
+                      <td className="px-2 py-1">
+                        <button
+                          onClick={() => removeItem(idx)}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* 合計 */}
+            <div className="mt-4 flex justify-end">
+              <div className="w-64 space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">小計</span>
+                  <span className="tabular-nums">¥{subtotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">消費税（{taxRate}%）</span>
+                  <span className="tabular-nums">¥{taxAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-base font-bold border-t pt-1">
+                  <span>合計</span>
+                  <span className="tabular-nums">¥{total.toLocaleString()}</span>
                 </div>
               </div>
-            )}
-            <div>
-              <Label>商談</Label>
-              <Select value={dealId} onValueChange={setDealId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="商談を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">未選択</SelectItem>
-                  {deals.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
-            <div>
-              <Label>取引先企業</Label>
-              <Select value={companyId} onValueChange={setCompanyId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="企業を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">未選択</SelectItem>
-                  {companies.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>連絡先</Label>
-              <Select value={contactId} onValueChange={setContactId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="連絡先を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">未選択</SelectItem>
-                  {contacts.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.last_name} {c.first_name ?? ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>発行日</Label>
-              <Input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} />
-            </div>
-            <div>
-              <Label>有効期限</Label>
-              <Input
-                type="date"
-                value={expiryDate}
-                onChange={(e) => setExpiryDate(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>消費税率（%）</Label>
-              <Input
-                type="number"
-                value={taxRate}
-                onChange={(e) => setTaxRate(Number(e.target.value))}
-                min={0}
-                max={100}
-                step={0.01}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* 明細 */}
-        <div className="rounded-lg border p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold flex items-center gap-2">
-              <FileText className="size-4" />
-              明細
-            </h2>
-            <Button variant="outline" size="sm" onClick={addItem}>
-              <Plus className="size-4 mr-1" />
-              行を追加
-            </Button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/20">
-                  <th className="text-left px-2 py-2 font-medium w-8">#</th>
-                  <th className="text-left px-2 py-2 font-medium">品目・説明</th>
-                  <th className="text-right px-2 py-2 font-medium w-20">数量</th>
-                  <th className="text-left px-2 py-2 font-medium w-16">単位</th>
-                  <th className="text-right px-2 py-2 font-medium w-28">単価</th>
-                  <th className="text-right px-2 py-2 font-medium w-28">金額</th>
-                  <th className="w-10" />
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item, idx) => (
-                  <tr key={idx} className="border-b">
-                    <td className="px-2 py-1 text-muted-foreground">{idx + 1}</td>
-                    <td className="px-2 py-1">
-                      <Input
-                        value={item.description}
-                        onChange={(e) => updateItem(idx, "description", e.target.value)}
-                        placeholder="品目名"
-                        className="h-8"
-                      />
-                    </td>
-                    <td className="px-2 py-1">
-                      <Input
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => updateItem(idx, "quantity", Number(e.target.value))}
-                        className="h-8 text-right"
-                        min={0}
-                        step={0.01}
-                      />
-                    </td>
-                    <td className="px-2 py-1">
-                      <Input
-                        value={item.unit}
-                        onChange={(e) => updateItem(idx, "unit", e.target.value)}
-                        className="h-8"
-                      />
-                    </td>
-                    <td className="px-2 py-1">
-                      <Input
-                        type="number"
-                        value={item.unit_price}
-                        onChange={(e) => updateItem(idx, "unit_price", Number(e.target.value))}
-                        className="h-8 text-right"
-                        min={0}
-                      />
-                    </td>
-                    <td className="px-2 py-1 text-right tabular-nums font-medium">
-                      ¥{item.amount.toLocaleString()}
-                    </td>
-                    <td className="px-2 py-1">
-                      <button
-                        onClick={() => removeItem(idx)}
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
 
-          {/* 合計 */}
-          <div className="mt-4 flex justify-end">
-            <div className="w-64 space-y-1">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">小計</span>
-                <span className="tabular-nums">¥{subtotal.toLocaleString()}</span>
+          {/* 備考・条件 */}
+          <div className="rounded-lg border p-4">
+            <h2 className="text-sm font-semibold mb-4">備考・条件</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>備考</Label>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="備考欄"
+                  rows={3}
+                />
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">消費税（{taxRate}%）</span>
-                <span className="tabular-nums">¥{taxAmount.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-base font-bold border-t pt-1">
-                <span>合計</span>
-                <span className="tabular-nums">¥{total.toLocaleString()}</span>
+              <div>
+                <Label>取引条件</Label>
+                <Textarea
+                  value={terms}
+                  onChange={(e) => setTerms(e.target.value)}
+                  placeholder="支払条件、納期等"
+                  rows={3}
+                />
               </div>
             </div>
           </div>
         </div>
-
-        {/* 備考・条件 */}
-        <div className="rounded-lg border p-4">
-          <h2 className="text-sm font-semibold mb-4">備考・条件</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>備考</Label>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="備考欄"
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label>取引条件</Label>
-              <Textarea
-                value={terms}
-                onChange={(e) => setTerms(e.target.value)}
-                placeholder="支払条件、納期等"
-                rows={3}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      </PageContent>
 
       <ConfirmDialog
         open={deleteConfirmOpen}

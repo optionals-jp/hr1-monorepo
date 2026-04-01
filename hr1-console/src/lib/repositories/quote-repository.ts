@@ -113,6 +113,7 @@ export async function deleteQuote(client: SupabaseClient, id: string, organizati
 export async function syncQuoteItems(
   client: SupabaseClient,
   quoteId: string,
+  organizationId: string,
   items: {
     sort_order: number;
     description: string;
@@ -122,6 +123,15 @@ export async function syncQuoteItems(
     amount: number;
   }[]
 ) {
+  // 0. 見積が当該テナントに属するか検証
+  const { data: quote, error: quoteErr } = await client
+    .from("bc_quotes")
+    .select("id")
+    .eq("id", quoteId)
+    .eq("organization_id", organizationId)
+    .single();
+  if (quoteErr || !quote) throw quoteErr ?? new Error("見積書が見つかりません");
+
   // 1. 既存明細IDを取得
   const { data: existing, error: fetchErr } = await client
     .from("bc_quote_items")

@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS public.crm_webhooks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id uuid NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  organization_id text NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
   name text NOT NULL,
   url text NOT NULL,
   secret text, -- HMAC署名用シークレット（任意）
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS public.crm_webhooks (
 -- Webhook 送信ログ
 CREATE TABLE IF NOT EXISTS public.crm_webhook_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id uuid NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  organization_id text NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
   webhook_id uuid NOT NULL REFERENCES public.crm_webhooks(id) ON DELETE CASCADE,
   event_type text NOT NULL,
   request_body jsonb NOT NULL,
@@ -55,14 +55,10 @@ ALTER TABLE public.crm_webhook_logs ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "crm_webhooks_org_isolation" ON public.crm_webhooks
   FOR ALL USING (
-    organization_id IN (
-      SELECT organization_id FROM public.organization_members WHERE user_id = auth.uid()
-    )
+    organization_id = get_my_organization_id()
   );
 
 CREATE POLICY "crm_webhook_logs_org_isolation" ON public.crm_webhook_logs
   FOR ALL USING (
-    organization_id IN (
-      SELECT organization_id FROM public.organization_members WHERE user_id = auth.uid()
-    )
+    organization_id = get_my_organization_id()
   );

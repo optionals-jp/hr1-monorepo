@@ -26,8 +26,27 @@ import {
   crmEntityTypeLabels,
   fieldTypeNeedsOptions,
 } from "@/lib/constants/crm";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { TableEmptyState } from "@/components/ui/table-empty-state";
+import { TableSection } from "@/components/layout/table-section";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import type { CrmEntityType, CrmFieldDefinition, CrmFieldType } from "@/types/database";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, SlidersHorizontal, X } from "lucide-react";
 
 const ENTITY_TYPES: CrmEntityType[] = ["company", "contact", "deal"];
 
@@ -130,9 +149,11 @@ export default function CrmFieldSettingsPage() {
   };
 
   return (
-    <div>
+    <div className="flex flex-col">
       <PageHeader
         title="カスタムフィールド設定"
+        sticky={false}
+        border={false}
         breadcrumb={[{ label: "商談管理", href: "/crm/deals" }]}
         action={
           <Button onClick={openCreate}>
@@ -142,90 +163,89 @@ export default function CrmFieldSettingsPage() {
         }
       />
 
-      {/* エンティティフィルタ */}
-      <div className="mb-6 flex gap-1">
-        {(["all", ...ENTITY_TYPES] as const).map((et) => (
-          <button
-            key={et}
-            onClick={() => setFilterEntity(et)}
-            className={`px-3 py-1 text-sm rounded-full border transition-colors ${
-              filterEntity === et ? "bg-primary text-primary-foreground" : "hover:bg-muted"
-            }`}
-          >
-            {et === "all" ? "すべて" : crmEntityTypeLabels[et]}
-          </button>
-        ))}
-      </div>
-
-      {/* フィールド一覧 */}
-      <div className="space-y-6">
-        {grouped.map((group) => (
-          <div key={group.entityType}>
-            <h2 className="text-sm font-semibold text-muted-foreground mb-3">
-              {group.label}（{group.fields.length}フィールド）
-            </h2>
-            {group.fields.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4 border rounded-lg">
-                カスタムフィールドはありません
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {group.fields.map((field) => (
-                  <div
-                    key={field.id}
-                    className="flex items-center gap-3 rounded-lg border bg-background p-3"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-sm">{field.label}</p>
-                        {field.is_required && (
-                          <Badge variant="destructive" className="text-xs">
-                            必須
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <Badge variant="outline" className="text-xs">
-                          {crmFieldTypeLabels[field.field_type] ?? field.field_type}
-                        </Badge>
-                        {field.description && (
-                          <span className="text-xs text-muted-foreground truncate">
-                            {field.description}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => openEdit(field)}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <Pencil className="size-4" />
-                    </button>
-                    <button
-                      onClick={async () => {
-                        try {
-                          await fieldRepo.deleteFieldDefinition(
-                            getSupabase(),
-                            field.id,
-                            organization!.id
-                          );
-                          mutate();
-                          showToast("フィールドを削除しました");
-                        } catch {
-                          showToast("削除に失敗しました", "error");
-                        }
-                      }}
-                      className="text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+      <StickyFilterBar>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
+            {filterEntity !== "all" && (
+              <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                対象：{crmEntityTypeLabels[filterEntity]}
+                <span
+                  role="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFilterEntity("all");
+                  }}
+                  className="ml-0.5 hover:text-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </span>
+              </Badge>
             )}
-          </div>
-        ))}
-      </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-auto py-2">
+            <DropdownMenuItem className="py-2" onClick={() => setFilterEntity("all")}>
+              <span className={cn(filterEntity === "all" && "font-medium")}>すべて</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {ENTITY_TYPES.map((et) => (
+              <DropdownMenuItem key={et} className="py-2" onClick={() => setFilterEntity(et)}>
+                <span className={cn(filterEntity === et && "font-medium")}>
+                  {crmEntityTypeLabels[et]}
+                </span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </StickyFilterBar>
+
+      <TableSection>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>フィールド名</TableHead>
+              <TableHead>対象</TableHead>
+              <TableHead>型</TableHead>
+              <TableHead>説明</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableEmptyState
+              colSpan={4}
+              isLoading={!allFields}
+              isEmpty={filtered.length === 0}
+              emptyMessage="カスタムフィールドがありません"
+            >
+              {filtered.map((field) => (
+                <TableRow key={field.id} className="cursor-pointer" onClick={() => openEdit(field)}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{field.label}</span>
+                      {field.is_required && (
+                        <Badge variant="destructive" className="text-xs">
+                          必須
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">
+                      {crmEntityTypeLabels[field.entity_type]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {crmFieldTypeLabels[field.field_type] ?? field.field_type}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground truncate max-w-xs">
+                    {field.description ?? "—"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableEmptyState>
+          </TableBody>
+        </Table>
+      </TableSection>
 
       {/* 編集パネル */}
       <EditPanel

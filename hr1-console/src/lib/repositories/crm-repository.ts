@@ -217,8 +217,23 @@ export async function fetchActivitiesByContact(
 ) {
   const { data, error } = await client
     .from("bc_activities")
-    .select("*")
+    .select("*, profiles:created_by(display_name, email)")
     .eq("contact_id", contactId)
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as BcActivity[];
+}
+
+export async function fetchActivitiesByCompany(
+  client: SupabaseClient,
+  companyId: string,
+  organizationId: string
+) {
+  const { data, error } = await client
+    .from("bc_activities")
+    .select("*, profiles:created_by(display_name, email)")
+    .eq("company_id", companyId)
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -232,7 +247,7 @@ export async function fetchActivitiesByDeal(
 ) {
   const { data, error } = await client
     .from("bc_activities")
-    .select("*")
+    .select("*, profiles:created_by(display_name, email)")
     .eq("deal_id", dealId)
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
@@ -248,6 +263,7 @@ export async function createActivity(
     title: string;
     description?: string | null;
     deal_id?: string | null;
+    lead_id?: string | null;
     company_id?: string | null;
     contact_id?: string | null;
     activity_date: string;
@@ -270,6 +286,7 @@ export async function createTodo(
     title: string;
     description?: string | null;
     deal_id?: string | null;
+    lead_id?: string | null;
     company_id?: string | null;
     contact_id?: string | null;
     due_date?: string | null;
@@ -317,6 +334,21 @@ export async function fetchCardsByContact(
 }
 
 // --- Todos ---
+
+export async function fetchActivitiesByLead(
+  client: SupabaseClient,
+  leadId: string,
+  organizationId: string
+) {
+  const { data, error } = await client
+    .from("bc_activities")
+    .select("*, profiles:created_by(display_name, email)")
+    .eq("lead_id", leadId)
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as BcActivity[];
+}
 
 export async function fetchTodosByDeal(
   client: SupabaseClient,

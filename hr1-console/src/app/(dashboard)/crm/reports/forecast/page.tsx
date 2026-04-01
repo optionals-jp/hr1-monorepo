@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader, PageContent } from "@/components/layout/page-header";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -14,7 +15,14 @@ import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { useCrmDealsAll } from "@/lib/hooks/use-crm";
 import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
 import type { BcDeal } from "@/types/database";
-import { Download, TrendingUp, Target, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  Download,
+  TrendingUp,
+  Target,
+  CheckCircle,
+  AlertCircle,
+  SlidersHorizontal,
+} from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -193,9 +201,11 @@ export default function ForecastReportPage() {
   };
 
   return (
-    <div>
+    <div className="flex flex-col bg-white">
       <PageHeader
         title="売上予測レポート"
+        sticky={false}
+        border={false}
         breadcrumb={[{ label: "商談管理", href: "/crm/deals" }]}
         action={
           <Button variant="outline" onClick={handleExportCSV} disabled={!deals}>
@@ -206,168 +216,173 @@ export default function ForecastReportPage() {
       />
       {error && <QueryErrorBanner error={error} />}
 
-      {/* サマリーカード */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {FORECAST_CATEGORIES.map((cat) => {
-          const s = categorySummary[cat.key];
-          const Icon = cat.icon;
-          return (
-            <div key={cat.key} className="rounded-lg border p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Icon className="size-4" style={{ color: cat.color }} />
-                <p className="text-sm font-medium">{cat.label}</p>
-                <span className="text-xs text-muted-foreground">({cat.range})</span>
+      <StickyFilterBar>
+        <div className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8">
+          <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="text-sm text-muted-foreground shrink-0">期間表示</span>
+          <Select value={periodMode} onValueChange={(v) => v && setPeriodMode(v as PeriodMode)}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="monthly">月別</SelectItem>
+              <SelectItem value="quarterly">四半期別</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </StickyFilterBar>
+
+      <PageContent>
+        {/* サマリーカード */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {FORECAST_CATEGORIES.map((cat) => {
+            const s = categorySummary[cat.key];
+            const Icon = cat.icon;
+            return (
+              <div key={cat.key} className="rounded-lg border p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon className="size-4" style={{ color: cat.color }} />
+                  <p className="text-sm font-medium">{cat.label}</p>
+                  <span className="text-xs text-muted-foreground">({cat.range})</span>
+                </div>
+                <p className="text-xl font-bold tabular-nums">¥{s.weighted.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {s.count}件 / 総額¥{s.amount.toLocaleString()}
+                </p>
               </div>
-              <p className="text-xl font-bold tabular-nums">¥{s.weighted.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {s.count}件 / 総額¥{s.amount.toLocaleString()}
-              </p>
+            );
+          })}
+        </div>
+
+        {/* 加重合計 */}
+        <div className="rounded-lg border bg-muted/30 p-4 mb-6">
+          <p className="text-sm text-muted-foreground">加重売上予測合計</p>
+          <p className="text-2xl font-bold tabular-nums">¥{totalWeighted.toLocaleString()}</p>
+        </div>
+
+        {/* 期間別グラフ */}
+        <div className="rounded-lg border p-4 mb-6">
+          <h2 className="text-sm font-semibold mb-4">
+            {periodMode === "monthly" ? "月別" : "四半期別"}売上予測
+          </h2>
+          {chartData.length === 0 ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              <p className="text-sm">データがありません</p>
             </div>
-          );
-        })}
-      </div>
-
-      {/* 加重合計 */}
-      <div className="rounded-lg border bg-muted/30 p-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">加重売上予測合計</p>
-            <p className="text-2xl font-bold tabular-nums">¥{totalWeighted.toLocaleString()}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <p className="text-sm text-muted-foreground">期間表示:</p>
-            <Select value={periodMode} onValueChange={(v) => setPeriodMode(v as PeriodMode)}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monthly">月別</SelectItem>
-                <SelectItem value="quarterly">四半期別</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart
+                data={chartData}
+                margin={{ top: 8, right: 8, left: 16, bottom: 0 }}
+                barGap={0}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 11, fill: "#94a3b8" }}
+                  axisLine={false}
+                  tickLine={false}
+                  dy={8}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: "#94a3b8" }}
+                  axisLine={false}
+                  tickLine={false}
+                  dx={-4}
+                  tickFormatter={(v: number) =>
+                    v >= 1_000_000
+                      ? `${(v / 1_000_000).toFixed(0)}M`
+                      : v >= 1_000
+                        ? `${(v / 1_000).toFixed(0)}K`
+                        : String(v)
+                  }
+                />
+                <Tooltip
+                  formatter={(value, name) => [
+                    `¥${Number(value).toLocaleString()}`,
+                    name as string,
+                  ]}
+                  contentStyle={{ fontSize: 12 }}
+                />
+                <Legend
+                  verticalAlign="top"
+                  height={36}
+                  iconType="circle"
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: 12 }}
+                />
+                <Bar
+                  dataKey="closed"
+                  name="受注済"
+                  fill="#22c55e"
+                  stackId="forecast"
+                  radius={[0, 0, 0, 0]}
+                />
+                <Bar dataKey="commit" name="コミット" fill="#3b82f6" stackId="forecast" />
+                <Bar dataKey="bestCase" name="ベストケース" fill="#eab308" stackId="forecast" />
+                <Bar
+                  dataKey="pipeline"
+                  name="パイプライン"
+                  fill="#94a3b8"
+                  stackId="forecast"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
-      </div>
 
-      {/* 期間別グラフ */}
-      <div className="rounded-lg border p-4 mb-6">
-        <h2 className="text-sm font-semibold mb-4">
-          {periodMode === "monthly" ? "月別" : "四半期別"}売上予測
-        </h2>
-        {chartData.length === 0 ? (
-          <div className="flex items-center justify-center py-12 text-muted-foreground">
-            <p className="text-sm">データがありません</p>
+        {/* 担当者別テーブル */}
+        <div className="rounded-lg border">
+          <div className="p-4 border-b bg-muted/30">
+            <h2 className="text-sm font-semibold">担当者別予測</h2>
           </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart
-              data={chartData}
-              margin={{ top: 8, right: 8, left: 16, bottom: 0 }}
-              barGap={0}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 11, fill: "#94a3b8" }}
-                axisLine={false}
-                tickLine={false}
-                dy={8}
-              />
-              <YAxis
-                tick={{ fontSize: 11, fill: "#94a3b8" }}
-                axisLine={false}
-                tickLine={false}
-                dx={-4}
-                tickFormatter={(v: number) =>
-                  v >= 1_000_000
-                    ? `${(v / 1_000_000).toFixed(0)}M`
-                    : v >= 1_000
-                      ? `${(v / 1_000).toFixed(0)}K`
-                      : String(v)
-                }
-              />
-              <Tooltip
-                formatter={(value: number, name: string) => [`¥${value.toLocaleString()}`, name]}
-                contentStyle={{ fontSize: 12 }}
-              />
-              <Legend
-                verticalAlign="top"
-                height={36}
-                iconType="circle"
-                iconSize={8}
-                wrapperStyle={{ fontSize: 12 }}
-              />
-              <Bar
-                dataKey="closed"
-                name="受注済"
-                fill="#22c55e"
-                stackId="forecast"
-                radius={[0, 0, 0, 0]}
-              />
-              <Bar dataKey="commit" name="コミット" fill="#3b82f6" stackId="forecast" />
-              <Bar dataKey="bestCase" name="ベストケース" fill="#eab308" stackId="forecast" />
-              <Bar
-                dataKey="pipeline"
-                name="パイプライン"
-                fill="#94a3b8"
-                stackId="forecast"
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-
-      {/* 担当者別テーブル */}
-      <div className="rounded-lg border">
-        <div className="p-4 border-b bg-muted/30">
-          <h2 className="text-sm font-semibold">担当者別予測</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/20">
-                <th className="text-left px-4 py-2 font-medium">担当者</th>
-                <th className="text-right px-4 py-2 font-medium">パイプライン</th>
-                <th className="text-right px-4 py-2 font-medium">ベストケース</th>
-                <th className="text-right px-4 py-2 font-medium">コミット</th>
-                <th className="text-right px-4 py-2 font-medium">受注済</th>
-                <th className="text-right px-4 py-2 font-medium">合計（加重）</th>
-              </tr>
-            </thead>
-            <tbody>
-              {repData.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-8 text-muted-foreground">
-                    データがありません
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/20">
+                  <th className="text-left px-4 py-2 font-medium">担当者</th>
+                  <th className="text-right px-4 py-2 font-medium">パイプライン</th>
+                  <th className="text-right px-4 py-2 font-medium">ベストケース</th>
+                  <th className="text-right px-4 py-2 font-medium">コミット</th>
+                  <th className="text-right px-4 py-2 font-medium">受注済</th>
+                  <th className="text-right px-4 py-2 font-medium">合計（加重）</th>
                 </tr>
-              ) : (
-                repData.map((rep) => (
-                  <tr key={rep.name} className="border-b hover:bg-muted/30">
-                    <td className="px-4 py-2 font-medium">{rep.name}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">
-                      ¥{rep.pipeline.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-2 text-right tabular-nums">
-                      ¥{rep.bestCase.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-2 text-right tabular-nums">
-                      ¥{rep.commit.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-2 text-right tabular-nums">
-                      ¥{rep.closed.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-2 text-right tabular-nums font-semibold">
-                      ¥{rep.total.toLocaleString()}
+              </thead>
+              <tbody>
+                {repData.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-8 text-muted-foreground">
+                      データがありません
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  repData.map((rep) => (
+                    <tr key={rep.name} className="border-b hover:bg-muted/30">
+                      <td className="px-4 py-2 font-medium">{rep.name}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">
+                        ¥{rep.pipeline.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums">
+                        ¥{rep.bestCase.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums">
+                        ¥{rep.commit.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums">
+                        ¥{rep.closed.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums font-semibold">
+                        ¥{rep.total.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      </PageContent>
     </div>
   );
 }

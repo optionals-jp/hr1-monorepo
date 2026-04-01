@@ -3,7 +3,14 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { useAutomationLogs } from "@/lib/hooks/use-automation";
 import { automationTriggerLabels, automationActionLabels } from "@/lib/constants/crm";
@@ -51,39 +58,41 @@ export default function AutomationLogsPage() {
             <TableHead>エラー</TableHead>
           </TableRow>
         </TableHeader>
-        <TableEmptyState
-          colSpan={6}
-          isLoading={!logs}
-          isEmpty={(logs ?? []).length === 0}
-          emptyMessage="実行ログがありません"
-        >
-          {(logs ?? []).map((log) => (
-            <TableRow key={log.id}>
-              <TableCell className="text-xs tabular-nums">
-                {new Date(log.executed_at).toLocaleString("ja-JP")}
-              </TableCell>
-              <TableCell className="font-medium text-sm">
-                {log.crm_automation_rules?.name ?? "—"}
-              </TableCell>
-              <TableCell className="text-sm">
-                {automationTriggerLabels[log.trigger_type] ?? log.trigger_type}
-              </TableCell>
-              <TableCell className="text-xs">
-                {log.actions_executed
-                  .map((a) => automationActionLabels[a.type] ?? a.type)
-                  .join("、")}
-              </TableCell>
-              <TableCell>
-                <Badge variant={statusColors[log.status]}>
-                  {statusLabels[log.status] ?? log.status}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-xs text-destructive max-w-48 truncate">
-                {log.error_message ?? "—"}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableEmptyState>
+        <TableBody>
+          <TableEmptyState
+            colSpan={6}
+            isLoading={!logs}
+            isEmpty={(logs ?? []).length === 0}
+            emptyMessage="実行ログがありません"
+          >
+            {(logs ?? []).map((log) => (
+              <TableRow key={log.id}>
+                <TableCell className="text-xs tabular-nums">
+                  {new Date(log.executed_at).toLocaleString("ja-JP")}
+                </TableCell>
+                <TableCell className="font-medium text-sm">
+                  {log.crm_automation_rules?.name ?? "—"}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {automationTriggerLabels[log.trigger_type] ?? log.trigger_type}
+                </TableCell>
+                <TableCell className="text-xs">
+                  {log.actions_executed
+                    .map((a) => automationActionLabels[a.type] ?? a.type)
+                    .join("、")}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={statusColors[log.status]}>
+                    {statusLabels[log.status] ?? log.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-xs text-destructive max-w-48 truncate">
+                  {log.error_message ?? "—"}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableEmptyState>
+        </TableBody>
       </Table>
     </div>
   );

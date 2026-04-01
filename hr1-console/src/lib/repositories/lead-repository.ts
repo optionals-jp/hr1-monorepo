@@ -63,8 +63,9 @@ export async function convertLead(
   leadId: string,
   organizationId: string,
   options: {
+    existingCompanyId?: string | null;
     companyName: string;
-    contactName: string;
+    contactName: string | null;
     contactEmail: string | null;
     contactPhone: string | null;
     dealTitle: string;
@@ -74,33 +75,41 @@ export async function convertLead(
   }
 ) {
   let companyId: string | null = null;
+  let createdCompany = false;
   let contactId: string | null = null;
   let dealId: string | null = null;
 
   try {
-    // 1. 企業作成
-    const { data: company, error: companyErr } = await client
-      .from("bc_companies")
-      .insert({ organization_id: organizationId, name: options.companyName })
-      .select("id")
-      .single();
-    if (companyErr) throw companyErr;
-    companyId = company.id;
+    // 1. 企業: 既存を使用 or 新規作成
+    if (options.existingCompanyId) {
+      companyId = options.existingCompanyId;
+    } else {
+      const { data: company, error: companyErr } = await client
+        .from("bc_companies")
+        .insert({ organization_id: organizationId, name: options.companyName })
+        .select("id")
+        .single();
+      if (companyErr) throw companyErr;
+      companyId = company.id;
+      createdCompany = true;
+    }
 
-    // 2. 連絡先作成
-    const { data: contact, error: contactErr } = await client
-      .from("bc_contacts")
-      .insert({
-        organization_id: organizationId,
-        company_id: companyId,
-        last_name: options.contactName,
-        email: options.contactEmail,
-        phone: options.contactPhone,
-      })
-      .select("id")
-      .single();
-    if (contactErr) throw contactErr;
-    contactId = contact.id;
+    // 2. 連絡先作成（担当者名がある場合のみ）
+    if (options.contactName) {
+      const { data: contact, error: contactErr } = await client
+        .from("bc_contacts")
+        .insert({
+          organization_id: organizationId,
+          company_id: companyId,
+          last_name: options.contactName,
+          email: options.contactEmail,
+          phone: options.contactPhone,
+        })
+        .select("id")
+        .single();
+      if (contactErr) throw contactErr;
+      contactId = contact.id;
+    }
 
     // 3. 商談作成
     const { data: deal, error: dealErr } = await client
@@ -147,7 +156,7 @@ export async function convertLead(
         .eq("id", contactId)
         .eq("organization_id", organizationId);
     }
-    if (companyId) {
+    if (companyId && createdCompany) {
       await client
         .from("bc_companies")
         .delete()

@@ -1,4 +1,4 @@
-import { useOrgQuery } from "@/lib/use-query";
+import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repo from "@/lib/repositories/email-template-repository";
 

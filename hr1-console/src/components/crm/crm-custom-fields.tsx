@@ -12,36 +12,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useOrg } from "@/lib/org-context";
 import { useToast } from "@/components/ui/toast";
 import { useCrmFieldDefinitions, useCrmFieldValues } from "@/lib/hooks/use-crm-fields";
 import { upsertFieldValues } from "@/lib/repositories/crm-field-repository";
 import { getSupabase } from "@/lib/supabase/browser";
+import { Pencil } from "lucide-react";
 import type { CrmEntityType, CrmFieldDefinition } from "@/types/database";
 
 interface CrmCustomFieldsProps {
   entityId: string;
   entityType: CrmEntityType;
-  mode: "view" | "edit";
-  onSaveComplete?: () => void;
 }
 
-/**
- * カスタムフィールドの表示・編集コンポーネント
- * entityIdとentityTypeを指定して、該当するカスタムフィールドを動的に表示
- */
-export function CrmCustomFields({
-  entityId,
-  entityType,
-  mode,
-  onSaveComplete,
-}: CrmCustomFieldsProps) {
+export function CrmCustomFields({ entityId, entityType }: CrmCustomFieldsProps) {
   const { organization } = useOrg();
   const { showToast } = useToast();
   const { data: fieldDefs } = useCrmFieldDefinitions(entityType);
   const { data: fieldValues, mutate: mutateValues } = useCrmFieldValues(entityId, entityType);
 
-  // フィールド値の初期マップをmemoで導出
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
   const initialValues = useMemo(() => {
     const map: Record<string, string> = {};
     if (fieldValues) {
@@ -62,8 +62,14 @@ export function CrmCustomFields({
     setOverrides((prev) => ({ ...prev, [fieldId]: value }));
   }, []);
 
-  const saveAll = useCallback(async () => {
+  const handleOpen = useCallback(() => {
+    setOverrides({});
+    setDialogOpen(true);
+  }, []);
+
+  const handleSave = useCallback(async () => {
     if (!organization || !fieldDefs) return;
+    setSaving(true);
     const values = fieldDefs.map((fd) => ({
       organization_id: organization.id,
       field_id: fd.id,
@@ -74,71 +80,82 @@ export function CrmCustomFields({
     try {
       await upsertFieldValues(getSupabase(), values);
       mutateValues();
-      onSaveComplete?.();
-    } catch (err) {
-      console.error("Failed to save custom fields:", err);
+      setDialogOpen(false);
+      setOverrides({});
+      showToast("カスタムフィールドを保存しました");
+    } catch {
       showToast("カスタムフィールドの保存に失敗しました", "error");
+    } finally {
+      setSaving(false);
     }
-  }, [
-    organization,
-    fieldDefs,
-    entityId,
-    entityType,
-    localValues,
-    mutateValues,
-    onSaveComplete,
-    showToast,
-  ]);
-
-  // saveAll を親に公開するため、refでは使えないが、edit時のonBlurで自動保存する
-  // もしくは親からsaveAllを呼ぶパターンを使う
+  }, [organization, fieldDefs, entityId, entityType, localValues, mutateValues, showToast]);
 
   if (!fieldDefs || fieldDefs.length === 0) return null;
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-muted-foreground">カスタムフィールド</h3>
-      {fieldDefs.map((fd) => (
-        <CustomFieldRenderer
-          key={fd.id}
-          field={fd}
-          value={localValues[fd.id] ?? ""}
-          mode={mode}
-          onChange={(v) => handleChange(fd.id, v)}
-        />
-      ))}
-      {mode === "edit" && (
-        <button type="button" onClick={saveAll} className="text-sm text-primary hover:underline">
-          カスタムフィールドを保存
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-muted-foreground">カスタムフィールド</h3>
+        <button
+          onClick={handleOpen}
+          className="text-muted-foreground hover:text-foreground"
+          title="編集"
+        >
+          <Pencil className="size-4" />
         </button>
-      )}
+      </div>
+      <div className="space-y-2">
+        {fieldDefs.map((fd) => {
+          const val = initialValues[fd.id] ?? "";
+          return (
+            <div key={fd.id} className="flex justify-between text-sm">
+              <span className="text-muted-foreground">{fd.label}</span>
+              <span className="font-medium text-right max-w-[60%]">
+                {formatDisplayValue(fd, val) || "—"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>カスタムフィールド編集</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto">
+            {fieldDefs.map((fd) => (
+              <CustomFieldEditor
+                key={fd.id}
+                field={fd}
+                value={localValues[fd.id] ?? ""}
+                onChange={(v) => handleChange(fd.id, v)}
+              />
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
+              キャンセル
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "保存中..." : "保存"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-/**
- * 個別のカスタムフィールドのレンダラー
- */
-function CustomFieldRenderer({
+function CustomFieldEditor({
   field,
   value,
-  mode,
   onChange,
 }: {
   field: CrmFieldDefinition;
   value: string;
-  mode: "view" | "edit";
   onChange: (value: string) => void;
 }) {
-  if (mode === "view") {
-    return (
-      <div>
-        <p className="text-sm text-muted-foreground">{field.label}</p>
-        <p className="font-medium text-sm">{formatDisplayValue(field, value) || "—"}</p>
-      </div>
-    );
-  }
-
   switch (field.field_type) {
     case "text":
       return (

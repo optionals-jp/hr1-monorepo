@@ -71,11 +71,16 @@ export async function deletePipeline(client: SupabaseClient, id: string, organiz
 
 // --- Stages ---
 
-export async function fetchStages(client: SupabaseClient, pipelineId: string) {
+export async function fetchStages(
+  client: SupabaseClient,
+  pipelineId: string,
+  organizationId: string
+) {
   const { data, error } = await client
     .from("crm_pipeline_stages")
-    .select("*")
+    .select("*, crm_pipelines!inner(organization_id)")
     .eq("pipeline_id", pipelineId)
+    .eq("crm_pipelines.organization_id", organizationId)
     .order("sort_order");
   if (error) throw error;
   return (data ?? []) as CrmPipelineStage[];

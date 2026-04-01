@@ -51,6 +51,14 @@ export function useCrmCompanyContacts(companyId: string) {
   );
 }
 
+export function useCrmCompanyActivities(companyId: string) {
+  const { organization } = useOrg();
+  return useQuery(
+    organization ? `crm-company-activities-${organization.id}-${companyId}` : null,
+    () => repository.fetchActivitiesByCompany(getSupabase(), companyId, organization!.id)
+  );
+}
+
 export function useCrmCompanyDeals(companyId: string) {
   const { organization } = useOrg();
   return useQuery(organization ? `crm-company-deals-${organization.id}-${companyId}` : null, () =>
@@ -118,12 +126,104 @@ export function useCrmDealTodos(dealId: string) {
   );
 }
 
+export function useCrmLeadActivities(leadId: string) {
+  const { organization } = useOrg();
+  return useQuery(organization ? `crm-lead-activities-${organization.id}-${leadId}` : null, () =>
+    repository.fetchActivitiesByLead(getSupabase(), leadId, organization!.id)
+  );
+}
+
+// --- Activity Mutation ---
+export function useCreateActivity() {
+  const { organization } = useOrg();
+  return async (data: {
+    activity_type: string;
+    title: string;
+    description?: string | null;
+    deal_id?: string | null;
+    lead_id?: string | null;
+    company_id?: string | null;
+    activity_date: string;
+    created_by?: string | null;
+  }): Promise<{ success: boolean }> => {
+    if (!organization) return { success: false };
+    try {
+      await repository.createActivity(getSupabase(), {
+        ...data,
+        organization_id: organization.id,
+      });
+      return { success: true };
+    } catch {
+      return { success: false };
+    }
+  };
+}
+
 // --- Deal Contacts ---
 export function useCrmDealContacts(dealId: string) {
   const { organization } = useOrg();
   return useQuery(organization ? `crm-deal-contacts-${organization.id}-${dealId}` : null, () =>
     dealContactRepository.fetchDealContacts(getSupabase(), dealId, organization!.id)
   );
+}
+
+export function useDealContactMutations() {
+  const { organization } = useOrg();
+  const client = getSupabase();
+
+  const add = async (data: {
+    deal_id: string;
+    contact_id: string;
+    role: import("@/types/database").DealContactRole;
+    is_primary: boolean;
+    notes: string | null;
+  }): Promise<{ success: boolean }> => {
+    if (!organization) return { success: false };
+    try {
+      await dealContactRepository.addDealContact(client, {
+        ...data,
+        organization_id: organization.id,
+      });
+      return { success: true };
+    } catch {
+      return { success: false };
+    }
+  };
+
+  const remove = async (id: string): Promise<{ success: boolean }> => {
+    if (!organization) return { success: false };
+    try {
+      await dealContactRepository.removeDealContact(client, id, organization.id);
+      return { success: true };
+    } catch {
+      return { success: false };
+    }
+  };
+
+  const setPrimary = async (dealId: string, dcId: string): Promise<{ success: boolean }> => {
+    if (!organization) return { success: false };
+    try {
+      await dealContactRepository.setPrimaryContact(client, dealId, dcId, organization.id);
+      return { success: true };
+    } catch {
+      return { success: false };
+    }
+  };
+
+  const updateRole = async (
+    id: string,
+    role: import("@/types/database").DealContactRole
+  ): Promise<{ success: boolean }> => {
+    if (!organization) return { success: false };
+    try {
+      await dealContactRepository.updateDealContact(client, id, organization.id, { role });
+      return { success: true };
+    } catch {
+      return { success: false };
+    }
+  };
+
+  return { add, remove, setPrimary, updateRole };
 }
 
 // --- Quotes ---
@@ -460,12 +560,20 @@ export function useCrmCompaniesPage() {
     handleDelete,
     saving,
     deleting,
+    mutate,
   };
 }
 
 // --- Leads ---
 export function useCrmLeads() {
   return useOrgQuery("crm-leads", (orgId) => leadRepository.fetchLeads(getSupabase(), orgId));
+}
+
+export function useCrmLead(id: string) {
+  const { organization } = useOrg();
+  return useQuery(organization ? `crm-lead-${organization.id}-${id}` : null, () =>
+    leadRepository.fetchLead(getSupabase(), id, organization!.id)
+  );
 }
 
 export function useCrmLeadsPage() {
@@ -486,8 +594,8 @@ export function useCrmLeadsPage() {
     const q = search.toLowerCase();
     return (
       l.name.toLowerCase().includes(q) ||
-      l.company_name?.toLowerCase().includes(q) ||
-      l.email?.toLowerCase().includes(q)
+      l.contact_name?.toLowerCase().includes(q) ||
+      l.contact_email?.toLowerCase().includes(q)
     );
   });
 
@@ -499,7 +607,7 @@ export function useCrmLeadsPage() {
 
   const handleSave = async (showToast: (msg: string, type?: "success" | "error") => void) => {
     if (!organization || saving) return;
-    const rules = { name: [validators.required("名前")] };
+    const rules = { name: [validators.required("企業名")] };
     const validationErrors = validateForm(rules, editData);
     if (validationErrors) {
       setErrors(validationErrors);
@@ -510,12 +618,14 @@ export function useCrmLeadsPage() {
     const client = getSupabase();
     try {
       if (editData.id) {
-        const previousStatus = editData._previousStatus as string | undefined;
+        const previousStatus = (editData as Record<string, unknown>)._previousStatus as
+          | string
+          | undefined;
         await leadRepository.updateLead(client, editData.id, organization.id, {
           name: editData.name as string,
-          company_name: editData.company_name || null,
-          email: editData.email || null,
-          phone: editData.phone || null,
+          contact_name: editData.contact_name || null,
+          contact_email: editData.contact_email || null,
+          contact_phone: editData.contact_phone || null,
           source: editData.source || "other",
           status: editData.status || "new",
           assigned_to: editData.assigned_to || null,
@@ -535,9 +645,9 @@ export function useCrmLeadsPage() {
         const created = await leadRepository.createLead(client, {
           organization_id: organization.id,
           name: editData.name as string,
-          company_name: editData.company_name || null,
-          email: editData.email || null,
-          phone: editData.phone || null,
+          contact_name: editData.contact_name || null,
+          contact_email: editData.contact_email || null,
+          contact_phone: editData.contact_phone || null,
           source: editData.source || "other",
           status: editData.status || "new",
           notes: editData.notes || null,

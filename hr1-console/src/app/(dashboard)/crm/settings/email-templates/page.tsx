@@ -22,8 +22,18 @@ import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as templateRepo from "@/lib/repositories/email-template-repository";
 import { emailTemplateCategoryLabels } from "@/lib/constants/crm";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { TableEmptyState } from "@/components/ui/table-empty-state";
+import { TableSection } from "@/components/layout/table-section";
 import type { CrmEmailTemplate, CrmEmailTemplateCategory } from "@/types/database";
-import { Plus, Mail, Copy, Eye } from "lucide-react";
+import { Plus, Copy, Eye } from "lucide-react";
 
 type EditableTemplate = Partial<CrmEmailTemplate>;
 
@@ -146,9 +156,11 @@ export default function EmailTemplatesPage() {
   });
 
   return (
-    <div>
+    <div className="flex flex-col">
       <PageHeader
         title="メールテンプレート"
+        sticky={false}
+        border={false}
         breadcrumb={[{ label: "CRM設定", href: "/crm/settings/pipelines" }]}
         action={
           <Button onClick={openCreate}>
@@ -158,45 +170,47 @@ export default function EmailTemplatesPage() {
         }
       />
 
-      <div className="space-y-3">
-        {!templates && (
-          <p className="text-sm text-muted-foreground text-center py-8">読み込み中...</p>
-        )}
-        {templates?.length === 0 && (
-          <div className="text-center py-12 border rounded-lg bg-muted/20">
-            <Mail className="size-10 mx-auto mb-3 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground mb-3">
-              メールテンプレートがありません。
-              <br />
-              定型メールのテンプレートを作成できます。
-            </p>
-            <Button variant="outline" onClick={openCreate}>
-              <Plus className="size-4 mr-1.5" />
-              最初のテンプレートを作成
-            </Button>
-          </div>
-        )}
-
-        {(templates ?? []).map((template) => (
-          <div
-            key={template.id}
-            className="rounded-lg border bg-background p-4 cursor-pointer hover:bg-muted/30"
-            onClick={() => openEdit(template)}
-          >
-            <div className="flex items-center gap-3">
-              <Mail className="size-5 text-muted-foreground flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm">{template.name}</p>
-                <p className="text-xs text-muted-foreground truncate">件名: {template.subject}</p>
-              </div>
-              <Badge variant="outline">
-                {emailTemplateCategoryLabels[template.category] ?? template.category}
-              </Badge>
-              {!template.is_active && <Badge variant="default">無効</Badge>}
-            </div>
-          </div>
-        ))}
-      </div>
+      <TableSection>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>テンプレート名</TableHead>
+              <TableHead>件名</TableHead>
+              <TableHead>カテゴリ</TableHead>
+              <TableHead>ステータス</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableEmptyState
+              colSpan={4}
+              isLoading={!templates}
+              isEmpty={templates?.length === 0}
+              emptyMessage="メールテンプレートがありません"
+            >
+              {(templates ?? []).map((template) => (
+                <TableRow
+                  key={template.id}
+                  className="cursor-pointer"
+                  onClick={() => openEdit(template)}
+                >
+                  <TableCell className="font-medium">{template.name}</TableCell>
+                  <TableCell className="text-muted-foreground truncate max-w-xs">
+                    {template.subject}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {emailTemplateCategoryLabels[template.category] ?? template.category}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {!template.is_active && <Badge variant="default">無効</Badge>}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableEmptyState>
+          </TableBody>
+        </Table>
+      </TableSection>
 
       <EditPanel
         open={editOpen}

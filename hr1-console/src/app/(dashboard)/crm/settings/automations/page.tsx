@@ -33,7 +33,17 @@ import type {
   CrmAutomationAction,
   CrmAutomationActionType,
 } from "@/types/database";
-import { Plus, Zap, ZapOff, Trash2, ChevronDown, ChevronUp, ScrollText } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { TableEmptyState } from "@/components/ui/table-empty-state";
+import { TableSection } from "@/components/layout/table-section";
+import { Plus, Zap, ZapOff, Trash2, ScrollText } from "lucide-react";
 import Link from "next/link";
 
 type EditableRule = Partial<CrmAutomationRule>;
@@ -47,7 +57,6 @@ export default function AutomationSettingsPage() {
   const [editData, setEditData] = useState<EditableRule>({});
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [expandedRule, setExpandedRule] = useState<string | null>(null);
 
   const openCreate = useCallback(() => {
     setEditData({
@@ -205,9 +214,11 @@ export default function AutomationSettingsPage() {
   };
 
   return (
-    <div>
+    <div className="flex flex-col">
       <PageHeader
         title="自動化ルール"
+        sticky={false}
+        border={false}
         breadcrumb={[{ label: "CRM設定", href: "/crm/settings/pipelines" }]}
         action={
           <div className="flex gap-2">
@@ -225,88 +236,62 @@ export default function AutomationSettingsPage() {
         }
       />
 
-      <div className="space-y-3">
-        {!rules && <p className="text-sm text-muted-foreground text-center py-8">読み込み中...</p>}
-        {rules?.length === 0 && (
-          <div className="text-center py-12 border rounded-lg bg-muted/20">
-            <Zap className="size-10 mx-auto mb-3 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground mb-3">
-              自動化ルールがありません。
-              <br />
-              トリガーに応じてタスク作成や通知送信を自動化できます。
-            </p>
-            <Button variant="outline" onClick={openCreate}>
-              <Plus className="size-4 mr-1.5" />
-              最初のルールを作成
-            </Button>
-          </div>
-        )}
-
-        {(rules ?? []).map((rule) => (
-          <div key={rule.id} className="rounded-lg border bg-background">
-            <div className="flex items-center gap-3 p-4">
-              <button
-                onClick={() => handleToggleActive(rule)}
-                className={rule.is_active ? "text-primary" : "text-muted-foreground"}
-                title={rule.is_active ? "有効（クリックで無効化）" : "無効（クリックで有効化）"}
-              >
-                {rule.is_active ? <Zap className="size-5" /> : <ZapOff className="size-5" />}
-              </button>
-              <div className="flex-1 min-w-0 cursor-pointer" onClick={() => openEdit(rule)}>
-                <p className="font-medium text-sm">{rule.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {automationTriggerLabels[rule.trigger_type] ?? rule.trigger_type}
-                  {" → "}
-                  {rule.actions.map((a) => automationActionLabels[a.type] ?? a.type).join("、")}
-                </p>
-              </div>
-              <Badge variant={rule.is_active ? "secondary" : "default"}>
-                {rule.is_active ? "有効" : "無効"}
-              </Badge>
-              <button
-                onClick={() => setExpandedRule(expandedRule === rule.id ? null : rule.id)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                {expandedRule === rule.id ? (
-                  <ChevronUp className="size-4" />
-                ) : (
-                  <ChevronDown className="size-4" />
-                )}
-              </button>
-            </div>
-
-            {expandedRule === rule.id && (
-              <div className="px-4 pb-4 border-t pt-3 space-y-2 text-sm">
-                {rule.description && <p className="text-muted-foreground">{rule.description}</p>}
-                {rule.conditions.length > 0 && (
-                  <div>
-                    <p className="font-medium text-xs text-muted-foreground mb-1">条件:</p>
-                    <ul className="list-disc list-inside text-xs text-muted-foreground">
-                      {rule.conditions.map((c, i) => (
-                        <li key={i}>
-                          {c.field} {automationConditionOperatorLabels[c.operator] ?? c.operator}{" "}
-                          {String(c.value)}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <div>
-                  <p className="font-medium text-xs text-muted-foreground mb-1">アクション:</p>
-                  <ul className="list-disc list-inside text-xs text-muted-foreground">
-                    {rule.actions.map((a, i) => (
-                      <li key={i}>
-                        {automationActionLabels[a.type] ?? a.type}
-                        {a.params.title ? `: ${a.params.title}` : ""}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      <TableSection>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10" />
+              <TableHead>ルール名</TableHead>
+              <TableHead>トリガー</TableHead>
+              <TableHead>アクション</TableHead>
+              <TableHead>ステータス</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableEmptyState
+              colSpan={5}
+              isLoading={!rules}
+              isEmpty={rules?.length === 0}
+              emptyMessage="自動化ルールがありません"
+            >
+              {(rules ?? []).map((rule) => (
+                <TableRow key={rule.id} className="cursor-pointer" onClick={() => openEdit(rule)}>
+                  <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => handleToggleActive(rule)}
+                      className={rule.is_active ? "text-primary" : "text-muted-foreground"}
+                      title={
+                        rule.is_active ? "有効（クリックで無効化）" : "無効（クリックで有効化）"
+                      }
+                    >
+                      {rule.is_active ? <Zap className="size-4" /> : <ZapOff className="size-4" />}
+                    </button>
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-medium">{rule.name}</span>
+                    {rule.description && (
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xs">
+                        {rule.description}
+                      </p>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {automationTriggerLabels[rule.trigger_type] ?? rule.trigger_type}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {rule.actions.map((a) => automationActionLabels[a.type] ?? a.type).join("、")}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={rule.is_active ? "secondary" : "default"}>
+                      {rule.is_active ? "有効" : "無効"}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableEmptyState>
+          </TableBody>
+        </Table>
+      </TableSection>
 
       {/* ルール編集パネル */}
       <EditPanel

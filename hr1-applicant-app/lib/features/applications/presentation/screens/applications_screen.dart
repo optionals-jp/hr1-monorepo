@@ -133,37 +133,22 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.xxl),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 40),
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: AppColors.brand.withValues(alpha: 0.08),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.description_outlined,
-              size: 36,
-              color: AppColors.brand.withValues(alpha: 0.5),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text('応募はまだありません', style: AppTextStyles.headline),
-          const SizedBox(height: 8),
-          Text(
-            '$organizationNameの求人を探して\n応募してみましょう',
-            style: AppTextStyles.body2.copyWith(
-              color: AppColors.textSecondary(context),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+    return EmptyState(
+      icon: Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          color: AppColors.brand.withValues(alpha: 0.08),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          Icons.description_outlined,
+          size: 36,
+          color: AppColors.brand.withValues(alpha: 0.5),
+        ),
       ),
+      title: '応募はまだありません',
+      description: '$organizationNameの求人を探して\n応募してみましょう',
     );
   }
 }
@@ -482,7 +467,7 @@ class _OfferedBanner extends StatelessWidget {
             AppColors.brand.withValues(alpha: 0.08),
           ],
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.radius160,
         border: Border.all(
           color: AppColors.success.withValues(alpha: 0.3),
           width: 1,

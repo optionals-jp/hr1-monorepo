@@ -846,6 +846,7 @@ export interface BcActivity {
   company_id: string | null;
   contact_id: string | null;
   deal_id: string | null;
+  lead_id: string | null;
   activity_type: "appointment" | "memo" | "call" | "email" | "visit";
   title: string;
   description: string | null;
@@ -853,6 +854,7 @@ export interface BcActivity {
   created_by: string;
   created_at: string;
   updated_at: string;
+  profiles?: { display_name: string | null; email: string } | null;
 }
 
 export interface BcTodo {
@@ -861,6 +863,7 @@ export interface BcTodo {
   company_id: string | null;
   contact_id: string | null;
   deal_id: string | null;
+  lead_id: string | null;
   title: string;
   description: string | null;
   due_date: string | null;
@@ -878,10 +881,14 @@ export type BcLeadStatus = "new" | "contacted" | "qualified" | "unqualified" | "
 export interface BcLead {
   id: string;
   organization_id: string;
+  /** リード企業名（必須） */
   name: string;
-  company_name: string | null;
-  email: string | null;
-  phone: string | null;
+  /** 担当者名 */
+  contact_name: string | null;
+  /** 担当者メール */
+  contact_email: string | null;
+  /** 担当者電話 */
+  contact_phone: string | null;
   source: BcLeadSource;
   status: BcLeadStatus;
   assigned_to: string | null;

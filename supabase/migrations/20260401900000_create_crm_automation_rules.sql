@@ -4,7 +4,7 @@
 -- 自動化ルールテーブル
 CREATE TABLE IF NOT EXISTS public.crm_automation_rules (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id uuid NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  organization_id text NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
   name text NOT NULL,
   description text,
   is_active boolean NOT NULL DEFAULT true,
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS public.crm_automation_rules (
 -- 自動化ルール実行ログ
 CREATE TABLE IF NOT EXISTS public.crm_automation_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id uuid NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  organization_id text NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
   rule_id uuid NOT NULL REFERENCES public.crm_automation_rules(id) ON DELETE CASCADE,
   trigger_type text NOT NULL,
   entity_type text NOT NULL,
@@ -68,14 +68,10 @@ ALTER TABLE public.crm_automation_logs ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "crm_automation_rules_org_isolation" ON public.crm_automation_rules
   FOR ALL USING (
-    organization_id IN (
-      SELECT organization_id FROM public.organization_members WHERE user_id = auth.uid()
-    )
+    organization_id = get_my_organization_id()
   );
 
 CREATE POLICY "crm_automation_logs_org_isolation" ON public.crm_automation_logs
   FOR ALL USING (
-    organization_id IN (
-      SELECT organization_id FROM public.organization_members WHERE user_id = auth.uid()
-    )
+    organization_id = get_my_organization_id()
   );

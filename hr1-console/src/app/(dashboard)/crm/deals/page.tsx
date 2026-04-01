@@ -7,11 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { EditPanel } from "@/components/ui/edit-panel";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { TableSection } from "@/components/layout/table-section";
 import { useToast } from "@/components/ui/toast";
 import {
   Select,
@@ -28,15 +37,19 @@ import { getSupabase } from "@/lib/supabase/browser";
 import { updateDeal } from "@/lib/repositories/crm-repository";
 import { useOrg } from "@/lib/org-context";
 import { fireTrigger } from "@/lib/automation/engine";
-import {
-  useDefaultPipeline,
-  getStagesFromPipeline,
-  resolveStageLabel,
-} from "@/lib/hooks/use-pipelines";
+import { usePipelines, getStagesFromPipeline, resolveStageLabel } from "@/lib/hooks/use-pipelines";
 import { SavedViewSelector } from "@/components/crm/saved-view-selector";
 import { applyFilters, applySort } from "@/lib/hooks/use-saved-views";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import type { BcDeal, CrmSavedViewConfig } from "@/types/database";
-import { LayoutList, Kanban, Settings } from "lucide-react";
+import { LayoutList, Kanban, Settings, SlidersHorizontal, X } from "lucide-react";
 import Link from "next/link";
 
 type ViewMode = "table" | "kanban";
@@ -59,7 +72,7 @@ export default function CrmDealsPage() {
     deals,
     error,
     filtered,
-    openCreate,
+    openCreate: openCreateBase,
     handleSave,
     handleDelete,
     saving,
@@ -69,8 +82,30 @@ export default function CrmDealsPage() {
 
   const { data: companies } = useCrmCompanies();
   const { data: contacts } = useCrmContacts();
-  const { data: defaultPipeline } = useDefaultPipeline();
-  const stages = getStagesFromPipeline(defaultPipeline);
+  const { data: pipelines } = usePipelines();
+  const defaultPipeline = pipelines?.find((p) => p.is_default) ?? pipelines?.[0] ?? null;
+
+  // カンバン用パイプライン選択
+  const [kanbanPipelineId, setKanbanPipelineId] = useState<string | null>(null);
+  const kanbanPipeline = pipelines?.find((p) => p.id === kanbanPipelineId) ?? defaultPipeline;
+  const kanbanStages = getStagesFromPipeline(kanbanPipeline);
+
+  // 編集フォーム用: editData.pipeline_id に連動したステージ
+  const editPipeline = pipelines?.find((p) => p.id === editData.pipeline_id) ?? defaultPipeline;
+  const editStages = getStagesFromPipeline(editPipeline);
+
+  const openCreate = () => {
+    openCreateBase();
+    if (defaultPipeline) {
+      const firstStage = getStagesFromPipeline(defaultPipeline)[0];
+      setEditData((p) => ({
+        ...p,
+        pipeline_id: defaultPipeline.id,
+        stage_id: firstStage?.id ?? undefined,
+        stage: firstStage?.name ?? "initial",
+      }));
+    }
+  };
 
   // 保存ビュー
   const [viewConfig, setViewConfig] = useState<CrmSavedViewConfig>({});
@@ -89,19 +124,19 @@ export default function CrmDealsPage() {
 
   // ビューのフィルタ・ソートを適用
   const viewFiltered = useMemo(() => {
-    let result = filtered as Record<string, unknown>[];
+    let result = filtered as unknown as Record<string, unknown>[];
     if (viewConfig.filters && viewConfig.filters.length > 0) {
       result = applyFilters(result, viewConfig.filters);
     }
     if (viewConfig.sort) {
       result = applySort(result, viewConfig.sort);
     }
-    return result as typeof filtered;
+    return result as unknown as typeof filtered;
   }, [filtered, viewConfig.filters, viewConfig.sort]);
 
   const handleStageChange = async (dealId: string, newStageId: string, newProbability: number) => {
     if (!organization) return;
-    const targetStage = stages.find((s) => s.id === newStageId);
+    const targetStage = kanbanStages.find((s) => s.id === newStageId);
     // 楽観的更新: UI を先に更新し、失敗時にリバート
     const previousDeals = deals;
     mutate(
@@ -146,9 +181,11 @@ export default function CrmDealsPage() {
   };
 
   return (
-    <div>
+    <div className="flex flex-col">
       <PageHeader
         title="商談管理"
+        sticky={false}
+        border={false}
         action={
           <div className="flex gap-2">
             <Link href="/crm/settings/pipelines">
@@ -185,87 +222,145 @@ export default function CrmDealsPage() {
 
       {viewMode === "table" && (
         <>
-          <div className="mb-4 flex gap-2 items-center flex-wrap">
+          <StickyFilterBar>
             <SearchBar value={search} onChange={setSearch} placeholder="商談名・企業名で検索" />
-            <SavedViewSelector
-              entityType="deal"
-              availableFields={DEAL_AVAILABLE_FIELDS}
-              currentConfig={viewConfig}
-              onApplyView={setViewConfig}
-            />
-            <div className="flex gap-1">
-              {[
-                { value: "all", label: "すべて" },
-                { value: "open", label: "商談中" },
-                { value: "won", label: "受注" },
-                { value: "lost", label: "失注" },
-              ].map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setStatusFilter(opt.value)}
-                  className={`px-3 py-1 text-sm rounded-full border transition-colors ${
-                    statusFilter === opt.value
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>商談名</TableHead>
-                <TableHead>企業</TableHead>
-                <TableHead>ステージ</TableHead>
-                <TableHead>確度</TableHead>
-                <TableHead>金額</TableHead>
-                <TableHead>見込み日</TableHead>
-                <TableHead>ステータス</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableEmptyState
-              colSpan={7}
-              isLoading={!deals}
-              isEmpty={viewFiltered.length === 0}
-              emptyMessage="商談が見つかりません"
-            >
-              {viewFiltered.map((deal) => (
-                <TableRow
-                  key={deal.id}
-                  className="cursor-pointer"
-                  onClick={() => router.push(`/crm/deals/${deal.id}`)}
-                >
-                  <TableCell className="font-medium">{deal.title}</TableCell>
-                  <TableCell>{deal.bc_companies?.name ?? "—"}</TableCell>
-                  <TableCell>{resolveStageLabel(deal.stage, deal.stage_id, stages)}</TableCell>
-                  <TableCell>{deal.probability != null ? `${deal.probability}%` : "—"}</TableCell>
-                  <TableCell>
-                    {deal.amount != null ? `¥${deal.amount.toLocaleString()}` : "—"}
-                  </TableCell>
-                  <TableCell>{deal.expected_close_date ?? "—"}</TableCell>
-                  <TableCell>
-                    <Badge variant={dealStatusColors[deal.status]}>
-                      {dealStatusLabels[deal.status] ?? deal.status}
+            <div className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8">
+              <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-1.5 cursor-pointer">
+                  {statusFilter !== "all" ? (
+                    <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                      ステータス：{dealStatusLabels[statusFilter] ?? statusFilter}
+                      <span
+                        role="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setStatusFilter("all");
+                        }}
+                        className="ml-0.5 hover:text-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </span>
                     </Badge>
-                  </TableCell>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">ステータス</span>
+                  )}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-auto py-2">
+                  <DropdownMenuItem className="py-2" onClick={() => setStatusFilter("all")}>
+                    <span className={cn(statusFilter === "all" && "font-medium")}>すべて</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {Object.entries(dealStatusLabels).map(([value, label]) => (
+                    <DropdownMenuItem
+                      key={value}
+                      className="py-2"
+                      onClick={() => setStatusFilter(value)}
+                    >
+                      <span className={cn(statusFilter === value && "font-medium")}>{label}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <SavedViewSelector
+                entityType="deal"
+                availableFields={DEAL_AVAILABLE_FIELDS}
+                currentConfig={viewConfig}
+                onApplyView={setViewConfig}
+              />
+            </div>
+          </StickyFilterBar>
+
+          <TableSection>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>商談名</TableHead>
+                  <TableHead>企業</TableHead>
+                  <TableHead>ステージ</TableHead>
+                  <TableHead>確度</TableHead>
+                  <TableHead>金額</TableHead>
+                  <TableHead>見込み日</TableHead>
+                  <TableHead>ステータス</TableHead>
                 </TableRow>
-              ))}
-            </TableEmptyState>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                <TableEmptyState
+                  colSpan={7}
+                  isLoading={!deals}
+                  isEmpty={viewFiltered.length === 0}
+                  emptyMessage="商談が見つかりません"
+                >
+                  {viewFiltered.map((deal) => (
+                    <TableRow
+                      key={deal.id}
+                      className="cursor-pointer"
+                      onClick={() => router.push(`/crm/deals/${deal.id}`)}
+                    >
+                      <TableCell className="font-medium">{deal.title}</TableCell>
+                      <TableCell>{deal.bc_companies?.name ?? "—"}</TableCell>
+                      <TableCell>
+                        {resolveStageLabel(
+                          deal.stage,
+                          deal.stage_id,
+                          getStagesFromPipeline(
+                            pipelines?.find((p) => p.id === deal.pipeline_id) ?? defaultPipeline
+                          )
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {deal.probability != null ? `${deal.probability}%` : "—"}
+                      </TableCell>
+                      <TableCell>
+                        {deal.amount != null ? `¥${deal.amount.toLocaleString()}` : "—"}
+                      </TableCell>
+                      <TableCell>{deal.expected_close_date ?? "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant={dealStatusColors[deal.status]}>
+                          {dealStatusLabels[deal.status] ?? deal.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableEmptyState>
+              </TableBody>
+            </Table>
+          </TableSection>
         </>
       )}
 
       {viewMode === "kanban" && deals && (
-        <DealKanban
-          deals={deals}
-          stages={stages}
-          onStageChange={handleStageChange}
-          onDealClick={(id) => router.push(`/crm/deals/${id}`)}
-        />
+        <>
+          {(pipelines ?? []).length > 1 && (
+            <div className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2 bg-white border-b">
+              <Label className="text-sm text-muted-foreground shrink-0">パイプライン</Label>
+              <Select
+                value={kanbanPipeline?.id ?? ""}
+                onValueChange={(v) => setKanbanPipelineId(v)}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(pipelines ?? []).map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <DealKanban
+            deals={deals.filter(
+              (d) => !kanbanPipeline || !d.pipeline_id || d.pipeline_id === kanbanPipeline.id
+            )}
+            stages={kanbanStages}
+            onStageChange={handleStageChange}
+            onDealClick={(id) => router.push(`/crm/deals/${id}`)}
+          />
+        </>
       )}
 
       <EditPanel
@@ -329,13 +424,45 @@ export default function CrmDealsPage() {
             </Select>
           </div>
 
+          {(pipelines ?? []).length > 1 && (
+            <div>
+              <Label>パイプライン</Label>
+              <Select
+                value={editData.pipeline_id ?? defaultPipeline?.id ?? ""}
+                onValueChange={(v) => {
+                  const selectedPipeline = pipelines?.find((p) => p.id === v);
+                  const newStages = getStagesFromPipeline(selectedPipeline ?? null);
+                  const firstStage = newStages[0];
+                  setEditData((p) => ({
+                    ...p,
+                    pipeline_id: v,
+                    stage_id: firstStage?.id ?? p.stage_id,
+                    stage: firstStage?.name ?? p.stage,
+                    probability: firstStage?.probability_default ?? p.probability,
+                  }));
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(pipelines ?? []).map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>ステージ</Label>
               <Select
-                value={editData.stage_id ?? editData.stage ?? stages[0]?.id ?? ""}
+                value={editData.stage_id ?? editData.stage ?? editStages[0]?.id ?? ""}
                 onValueChange={(v) => {
-                  const selectedStage = stages.find((s) => s.id === v);
+                  const selectedStage = editStages.find((s) => s.id === v);
                   const newStage = selectedStage?.name ?? v;
                   setEditData(
                     (p) =>
@@ -352,7 +479,7 @@ export default function CrmDealsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {stages.map((s) => (
+                  {editStages.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.name}
                     </SelectItem>

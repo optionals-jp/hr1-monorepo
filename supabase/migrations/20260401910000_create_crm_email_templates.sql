@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS public.crm_email_templates (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id uuid NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  organization_id text NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
   name text NOT NULL,
   subject text NOT NULL,
   body text NOT NULL,
@@ -32,7 +32,5 @@ ALTER TABLE public.crm_email_templates ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "crm_email_templates_org_isolation" ON public.crm_email_templates
   FOR ALL USING (
-    organization_id IN (
-      SELECT organization_id FROM public.organization_members WHERE user_id = auth.uid()
-    )
+    organization_id = get_my_organization_id()
   );

@@ -54,7 +54,8 @@ export function SavedViewSelector({
   const [filterOpen, setFilterOpen] = useState(false);
   const [editFilters, setEditFilters] = useState<CrmSavedViewFilter[]>(currentConfig.filters ?? []);
 
-  const handleSelectView = (viewId: string) => {
+  const handleSelectView = (viewId: string | null) => {
+    if (!viewId) return;
     if (viewId === "__none__") {
       setActiveViewId(null);
       onApplyView({});
@@ -138,15 +139,13 @@ export function SavedViewSelector({
 
       {/* フィルタ */}
       <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="relative">
-            フィルタ
-            {activeFiltersCount > 0 && (
-              <Badge className="ml-1.5 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center">
-                {activeFiltersCount}
-              </Badge>
-            )}
-          </Button>
+        <PopoverTrigger render={<Button variant="outline" size="sm" className="relative" />}>
+          フィルタ
+          {activeFiltersCount > 0 && (
+            <Badge className="ml-1.5 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center">
+              {activeFiltersCount}
+            </Badge>
+          )}
         </PopoverTrigger>
         <PopoverContent className="w-96 p-4" align="start">
           <div className="space-y-3">
@@ -162,7 +161,7 @@ export function SavedViewSelector({
             )}
             {editFilters.map((f, i) => (
               <div key={i} className="flex items-center gap-2">
-                <Select value={f.field} onValueChange={(v) => updateFilter(i, { field: v })}>
+                <Select value={f.field} onValueChange={(v) => v && updateFilter(i, { field: v })}>
                   <SelectTrigger className="w-28 text-xs">
                     <SelectValue />
                   </SelectTrigger>
@@ -177,7 +176,7 @@ export function SavedViewSelector({
                 <Select
                   value={f.operator}
                   onValueChange={(v) =>
-                    updateFilter(i, { operator: v as CrmSavedViewFilter["operator"] })
+                    v && updateFilter(i, { operator: v as CrmSavedViewFilter["operator"] })
                   }
                 >
                   <SelectTrigger className="w-24 text-xs">
@@ -229,11 +228,7 @@ export function SavedViewSelector({
 
       {/* ビュー保存 */}
       <Popover open={saveOpen} onOpenChange={setSaveOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm">
-            ビュー保存
-          </Button>
-        </PopoverTrigger>
+        <PopoverTrigger render={<Button variant="outline" size="sm" />}>ビュー保存</PopoverTrigger>
         <PopoverContent className="w-72 p-4" align="start">
           <div className="space-y-3">
             <div>
