@@ -6,7 +6,7 @@ import type { BcCompany, BcContact, BcDeal, BcActivity, BcCard, BcTodo } from "@
 export async function fetchDeals(client: SupabaseClient, organizationId: string) {
   const { data } = await client
     .from("bc_deals")
-    .select("*, bc_companies(*), bc_contacts(*)")
+    .select("*, bc_companies(*), bc_contacts(*), profiles(display_name)")
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
   return (data ?? []) as BcDeal[];

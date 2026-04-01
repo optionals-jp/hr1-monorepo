@@ -418,6 +418,12 @@ export function useDashboard(activeTab?: ProductTab) {
     stage: d.stage,
     amount: d.amount,
     status: d.status,
+    probability: (d as unknown as { probability: number | null }).probability ?? null,
+    assignedToName:
+      (d as unknown as { profiles: { display_name: string } | null }).profiles?.display_name ??
+      null,
+    expectedCloseDate:
+      (d as unknown as { expected_close_date: string | null }).expected_close_date ?? null,
   }));
 
   return {
