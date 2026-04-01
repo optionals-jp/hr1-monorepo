@@ -24,18 +24,29 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { SearchBar } from "@/components/ui/search-bar";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { TableSection } from "@/components/layout/table-section";
 import { usePayslipsPage } from "@/lib/hooks/use-payslips-page";
+import { TabBar } from "@/components/layout/tab-bar";
 import { cn } from "@/lib/utils";
-import { Receipt, Upload, Plus, Trash2, FileDown, Download } from "lucide-react";
+import { Plus, Trash2, FileDown, Download, SlidersHorizontal, X } from "lucide-react";
 import { exportToCSV } from "@/lib/export-csv";
 
 type TabValue = "list" | "upload";
 
-const tabList: { value: TabValue; label: string; icon: React.ElementType }[] = [
-  { value: "list", label: "明細一覧", icon: Receipt },
-  { value: "upload", label: "CSV取込", icon: Upload },
+const tabList: { value: TabValue; label: string }[] = [
+  { value: "list", label: "明細一覧" },
+  { value: "upload", label: "CSV取込" },
 ];
 
 function formatCurrency(amount: number): string {
@@ -86,64 +97,97 @@ export default function PayslipsPage() {
             新規作成
           </Button>
         }
-        tabs={
-          <div className="flex gap-1 border-b -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8">
-            {tabList.map((t) => {
-              const Icon = t.icon;
-              return (
-                <button
-                  key={t.value}
-                  onClick={() => h.setActiveTab(t.value)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-4 pb-2.5 pt-1 text-sm font-medium border-b-2 transition-colors -mb-px",
-                    h.activeTab === t.value
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-        }
       />
 
       <QueryErrorBanner error={h.payslipsError} onRetry={() => h.mutate()} />
 
-      {/* ========= 明細一覧タブ ========= */}
-      {h.activeTab === "list" && (
-        <>
-          <SearchBar value={h.search} onChange={h.setSearch} placeholder="社員名で検索" />
-          <div className="px-4 py-3 sm:px-6 md:px-8">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Select value={h.filterYear} onValueChange={(v) => v && h.setFilterYear(v)}>
-                <SelectTrigger className="w-28">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全年</SelectItem>
+      <StickyFilterBar>
+        <TabBar
+          tabs={tabList}
+          activeTab={h.activeTab}
+          onTabChange={(v) => h.setActiveTab(v as TabValue)}
+        />
+        {h.activeTab === "list" && (
+          <>
+            <SearchBar value={h.search} onChange={h.setSearch} placeholder="社員名で検索" />
+            <div className="flex items-center gap-2 h-12 bg-white px-4 sm:px-6 md:px-8">
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-2 cursor-pointer">
+                  <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
+                  {(h.filterYear !== "all" || h.filterMonth !== "all") && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto">
+                      {h.filterYear !== "all" && (
+                        <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                          {h.filterYear}年
+                          <span
+                            role="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              h.setFilterYear("all");
+                            }}
+                            className="ml-0.5 hover:text-foreground"
+                          >
+                            <X className="h-3 w-3" />
+                          </span>
+                        </Badge>
+                      )}
+                      {h.filterMonth !== "all" && (
+                        <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                          {h.filterMonth}月
+                          <span
+                            role="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              h.setFilterMonth("all");
+                            }}
+                            className="ml-0.5 hover:text-foreground"
+                          >
+                            <X className="h-3 w-3" />
+                          </span>
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-auto py-2">
+                  <DropdownMenuItem className="py-2 font-medium text-muted-foreground" disabled>
+                    年
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="py-2" onClick={() => h.setFilterYear("all")}>
+                    <span className={cn(h.filterYear === "all" && "font-medium")}>全年</span>
+                  </DropdownMenuItem>
                   {h.yearOptions.map((y) => (
-                    <SelectItem key={y} value={y.toString()}>
-                      {y}年
-                    </SelectItem>
+                    <DropdownMenuItem
+                      key={y}
+                      className="py-2"
+                      onClick={() => h.setFilterYear(y.toString())}
+                    >
+                      <span className={cn(h.filterYear === y.toString() && "font-medium")}>
+                        {y}年
+                      </span>
+                    </DropdownMenuItem>
                   ))}
-                </SelectContent>
-              </Select>
-              <Select value={h.filterMonth} onValueChange={(v) => v && h.setFilterMonth(v)}>
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全月</SelectItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="py-2 font-medium text-muted-foreground" disabled>
+                    月
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="py-2" onClick={() => h.setFilterMonth("all")}>
+                    <span className={cn(h.filterMonth === "all" && "font-medium")}>全月</span>
+                  </DropdownMenuItem>
                   {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                    <SelectItem key={m} value={m.toString()}>
-                      {m}月
-                    </SelectItem>
+                    <DropdownMenuItem
+                      key={m}
+                      className="py-2"
+                      onClick={() => h.setFilterMonth(m.toString())}
+                    >
+                      <span className={cn(h.filterMonth === m.toString() && "font-medium")}>
+                        {m}月
+                      </span>
+                    </DropdownMenuItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <div className="flex-1" />
               <Button
                 variant="outline"
@@ -180,73 +224,76 @@ export default function PayslipsPage() {
                 CSV出力
               </Button>
             </div>
-          </div>
+          </>
+        )}
+      </StickyFilterBar>
 
-          <div className="px-4 sm:px-6 md:px-8 pb-6">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>社員名</TableHead>
-                  <TableHead>年月</TableHead>
-                  <TableHead className="text-right">基本給</TableHead>
-                  <TableHead className="text-right">総支給額</TableHead>
-                  <TableHead className="text-right">控除合計</TableHead>
-                  <TableHead className="text-right">差引支給額</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableEmptyState
-                  colSpan={6}
-                  isLoading={h.isLoading}
-                  isEmpty={h.filteredPayslips.length === 0}
-                  emptyMessage="給与明細がありません"
-                >
-                  {h.filteredPayslips.map((p) => {
-                    const profile = h.profileMap.get(p.user_id);
-                    const displayName = profile?.display_name ?? profile?.email ?? "-";
-                    const totalDeductions = (p.deductions ?? []).reduce(
-                      (sum, d) => sum + d.amount,
-                      0
-                    );
-                    return (
-                      <TableRow
-                        key={p.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => h.openEditPanel(p)}
-                      >
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-7 w-7">
-                              <AvatarFallback className="text-xs">
-                                {(displayName ?? "?")[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm font-medium">{displayName}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {p.year}年{p.month}月
-                        </TableCell>
-                        <TableCell className="text-sm text-right">
-                          {formatCurrency(p.base_salary)}
-                        </TableCell>
-                        <TableCell className="text-sm text-right">
-                          {formatCurrency(p.gross_pay)}
-                        </TableCell>
-                        <TableCell className="text-sm text-right">
-                          {formatCurrency(totalDeductions)}
-                        </TableCell>
-                        <TableCell className="text-sm text-right font-medium">
-                          {formatCurrency(p.net_pay)}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableEmptyState>
-              </TableBody>
-            </Table>
-          </div>
-        </>
+      {/* ========= 明細一覧タブ ========= */}
+      {h.activeTab === "list" && (
+        <TableSection>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>社員名</TableHead>
+                <TableHead>年月</TableHead>
+                <TableHead className="text-right">基本給</TableHead>
+                <TableHead className="text-right">総支給額</TableHead>
+                <TableHead className="text-right">控除合計</TableHead>
+                <TableHead className="text-right">差引支給額</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableEmptyState
+                colSpan={6}
+                isLoading={h.isLoading}
+                isEmpty={h.filteredPayslips.length === 0}
+                emptyMessage="給与明細がありません"
+              >
+                {h.filteredPayslips.map((p) => {
+                  const profile = h.profileMap.get(p.user_id);
+                  const displayName = profile?.display_name ?? profile?.email ?? "-";
+                  const totalDeductions = (p.deductions ?? []).reduce(
+                    (sum, d) => sum + d.amount,
+                    0
+                  );
+                  return (
+                    <TableRow
+                      key={p.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => h.openEditPanel(p)}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-7 w-7">
+                            <AvatarFallback className="text-xs">
+                              {(displayName ?? "?")[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium">{displayName}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {p.year}年{p.month}月
+                      </TableCell>
+                      <TableCell className="text-sm text-right">
+                        {formatCurrency(p.base_salary)}
+                      </TableCell>
+                      <TableCell className="text-sm text-right">
+                        {formatCurrency(p.gross_pay)}
+                      </TableCell>
+                      <TableCell className="text-sm text-right">
+                        {formatCurrency(totalDeductions)}
+                      </TableCell>
+                      <TableCell className="text-sm text-right font-medium">
+                        {formatCurrency(p.net_pay)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableEmptyState>
+            </TableBody>
+          </Table>
+        </TableSection>
       )}
 
       {/* ========= CSV取込タブ ========= */}

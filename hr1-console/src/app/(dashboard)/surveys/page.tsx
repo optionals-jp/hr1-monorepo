@@ -28,9 +28,12 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { TableSection } from "@/components/layout/table-section";
+import { useToast } from "@/components/ui/toast";
 
 export default function SurveysPage() {
   const router = useRouter();
+  const { showToast } = useToast();
 
   const {
     surveys,
@@ -64,7 +67,7 @@ export default function SurveysPage() {
 
       <QueryErrorBanner error={surveysError} onRetry={() => mutateSurveys()} />
 
-      <div className="bg-white">
+      <TableSection>
         <Table>
           <TableHeader>
             <TableRow>
@@ -112,13 +115,20 @@ export default function SurveysPage() {
             </TableEmptyState>
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
 
       <EditPanel
         open={editOpen}
         onOpenChange={setEditOpen}
         title="サーベイを作成"
-        onSave={handleSave}
+        onSave={async () => {
+          const result = await handleSave();
+          if (result.success) {
+            showToast("サーベイを作成しました");
+          } else if (result.error) {
+            showToast(result.error, "error");
+          }
+        }}
         saving={saving}
         saveDisabled={!title.trim()}
       >

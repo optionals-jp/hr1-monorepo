@@ -188,12 +188,12 @@ export function useCrmCompaniesPage() {
     setEditOpen(true);
   };
 
-  const handleSave = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+  const handleSave = async (): Promise<{ success: boolean; error?: string; message?: string }> => {
     const rules = { name: [validators.required("企業名")] };
     const validationErrors = validateForm(rules, editData);
     if (validationErrors) {
       setErrors(validationErrors);
-      return;
+      return { success: false };
     }
 
     const result = await saveCompany({
@@ -201,23 +201,26 @@ export function useCrmCompaniesPage() {
       data: editData,
     });
     if (result.success) {
-      showToast(editData.id ? "企業情報を更新しました" : "企業を登録しました");
       setEditOpen(false);
       mutate();
+      return {
+        success: true,
+        message: editData.id ? "企業情報を更新しました" : "企業を登録しました",
+      };
     } else {
-      showToast(result.error!, "error");
+      return { success: false, error: result.error };
     }
   };
 
-  const handleDelete = async (showToast: (msg: string, type?: "success" | "error") => void) => {
-    if (!editData.id) return;
+  const handleDelete = async (): Promise<{ success: boolean; error?: string }> => {
+    if (!editData.id) return { success: false };
     const result = await removeCompany(editData.id, organization!.id);
     if (result.success) {
-      showToast("企業を削除しました");
       setEditOpen(false);
       mutate();
+      return { success: true };
     } else {
-      showToast(result.error!, "error");
+      return { success: false, error: result.error };
     }
   };
 

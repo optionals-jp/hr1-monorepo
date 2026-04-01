@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrg } from "@/lib/org-context";
-import { useToast } from "@/components/ui/toast";
 import {
   loadCycleDetail,
   bulkAddAssignments,
@@ -20,14 +19,12 @@ import type {
   EvaluationScore,
   Profile,
 } from "@/types/database";
-import { cycleStatusLabels } from "@/lib/constants";
 
 type AddMode = "individual" | "department" | "all_mutual";
 
 export function useEvaluationCycleDetail() {
   const { id } = useParams<{ id: string }>();
   const { organization } = useOrg();
-  const { showToast } = useToast();
   const [cycle, setCycle] = useState<EvaluationCycle | null>(null);
   const [criteria, setCriteria] = useState<EvaluationCriterion[]>([]);
   const [assignments, setAssignments] = useState<
@@ -87,34 +84,38 @@ export function useEvaluationCycleDetail() {
   /** 複数アサインを一括追加 */
   async function handleBulkAddAssignments(
     pairs: { targetId: string; evaluatorId: string; raterType: string }[]
-  ) {
-    if (!cycle) return;
+  ): Promise<{ success: boolean; error?: string; count?: number }> {
+    if (!cycle) return { success: false };
 
     // 重複除外
     const newPairs = pairs.filter((p) => !assignmentExists(p.targetId, p.evaluatorId));
     if (newPairs.length === 0) {
-      showToast("追加できる組み合わせがありません（すべて登録済みです）", "error");
-      return;
+      return {
+        success: false,
+        error: "追加できる組み合わせがありません（すべて登録済みです）",
+      };
     }
 
     setAddingSaving(true);
     const result = await bulkAddAssignments(cycle.id, cycle.end_date, newPairs);
     if (result.success) {
-      showToast(`${result.count}件の評価を追加しました`);
       await loadData();
+      setAddingSaving(false);
+      return { success: true, count: result.count };
     } else {
-      showToast(result.error ?? "追加に失敗しました", "error");
+      setAddingSaving(false);
+      return { success: false, error: result.error ?? "追加に失敗しました" };
     }
-    setAddingSaving(false);
   }
 
   async function addIndividualAssignment() {
     if (!addTargetId || !addEvaluatorId) return;
-    await handleBulkAddAssignments([
+    const result = await handleBulkAddAssignments([
       { targetId: addTargetId, evaluatorId: addEvaluatorId, raterType: addRaterType },
     ]);
     setAddTargetId("");
     setAddEvaluatorId("");
+    return result;
   }
 
   async function addByDepartment() {
@@ -130,7 +131,7 @@ export function useEvaluationCycleDetail() {
         }
       }
     }
-    await handleBulkAddAssignments(pairs);
+    return await handleBulkAddAssignments(pairs);
   }
 
   async function addMutualEvaluations() {
@@ -149,41 +150,48 @@ export function useEvaluationCycleDetail() {
         }
       }
     }
-    await handleBulkAddAssignments(pairs);
+    return await handleBulkAddAssignments(pairs);
   }
 
-  async function handleRemoveAssignment(assignmentId: string) {
+  async function handleRemoveAssignment(
+    assignmentId: string
+  ): Promise<{ success: boolean; error?: string }> {
     const result = await repoRemoveAssignment(assignmentId);
     if (result.success) {
       await loadData();
+      return { success: true };
     } else {
-      showToast(result.error ?? "削除に失敗しました", "error");
+      return { success: false, error: result.error ?? "削除に失敗しました" };
     }
   }
 
-  async function removeTargetAssignments(targetUserId: string) {
+  async function removeTargetAssignments(
+    targetUserId: string
+  ): Promise<{ success: boolean; error?: string; count?: number }> {
     const targetAssignments = assignments.filter(
       (a) => a.target_user_id === targetUserId && a.status === "pending"
     );
-    if (targetAssignments.length === 0) return;
+    if (targetAssignments.length === 0) return { success: false };
 
     const result = await repoRemoveAssignments(targetAssignments.map((a) => a.id));
     if (result.success) {
-      showToast(`${targetAssignments.length}件を削除しました`);
       await loadData();
+      return { success: true, count: targetAssignments.length };
     } else {
-      showToast(result.error ?? "削除に失敗しました", "error");
+      return { success: false, error: result.error ?? "削除に失敗しました" };
     }
   }
 
-  async function handleUpdateCycleStatus(newStatus: string) {
-    if (!cycle) return;
+  async function handleUpdateCycleStatus(
+    newStatus: string
+  ): Promise<{ success: boolean; error?: string }> {
+    if (!cycle) return { success: false };
     const result = await repoUpdateCycleStatus(cycle.id, organization!.id, newStatus);
     if (result.success) {
-      showToast(`ステータスを「${cycleStatusLabels[newStatus]}」に変更しました`);
       await loadData();
+      return { success: true };
     } else {
-      showToast(result.error ?? "ステータスの更新に失敗しました", "error");
+      return { success: false, error: result.error ?? "ステータスの更新に失敗しました" };
     }
   }
 

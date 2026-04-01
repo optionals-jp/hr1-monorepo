@@ -6,7 +6,6 @@ import { getSupabase } from "@/lib/supabase/browser";
 import * as repository from "@/lib/repositories/wiki-repository";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
-import { useToast } from "@/components/ui/toast";
 import { useQuery } from "@/lib/use-query";
 import type { WikiPage } from "@/types/database";
 
@@ -24,8 +23,6 @@ export function useWikiPage(id: string) {
 export function useWikiPageDetail(id: string) {
   const { organization } = useOrg();
   const { user } = useAuth();
-  const { showToast } = useToast();
-
   const { data: page, isLoading, error: pageError, mutate: mutatePage } = useWikiPage(id);
 
   const [editing, setEditing] = useState(false);
@@ -40,8 +37,8 @@ export function useWikiPageDetail(id: string) {
     setEditing(true);
   }
 
-  async function handleSave() {
-    if (!page || !user) return;
+  async function handleSave(): Promise<{ success: boolean; error?: string }> {
+    if (!page || !user) return { success: false };
     setSaving(true);
     try {
       const result = await updateWikiPageInline(page.id, organization!.id, {
@@ -50,18 +47,18 @@ export function useWikiPageDetail(id: string) {
         updated_by: user.id,
       });
       if (!result.success) {
-        showToast(result.error!, "error");
-        return;
+        return { success: false, error: result.error };
       }
       await mutatePage();
       setEditing(false);
+      return { success: true };
     } finally {
       setSaving(false);
     }
   }
 
-  async function togglePublished() {
-    if (!page || !user) return;
+  async function togglePublished(): Promise<{ success: boolean; error?: string }> {
+    if (!page || !user) return { success: false };
     const result = await updateWikiPageInline(page.id, organization!.id, {
       title: page.title,
       content: page.content,
@@ -69,10 +66,10 @@ export function useWikiPageDetail(id: string) {
       updated_by: user.id,
     });
     if (!result.success) {
-      showToast(result.error!, "error");
-      return;
+      return { success: false, error: result.error };
     }
     await mutatePage();
+    return { success: true };
   }
 
   return {

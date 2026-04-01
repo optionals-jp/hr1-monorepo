@@ -57,7 +57,7 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 flex h-14 items-center gap-2 sm:gap-4 border-b border-border/60 bg-white/80 backdrop-blur-xl px-3 sm:px-4 shrink-0 z-30">
+      <header className="sticky top-0 flex h-(--header-height) items-center gap-2 sm:gap-4 border-b border-border/60 bg-white/80 backdrop-blur-xl px-3 sm:px-4 shrink-0 z-30">
         {/* Mobile menu button */}
         <Button
           variant="ghost"
@@ -133,7 +133,7 @@ export function Header() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="検索..."
-              className="h-9 pl-9 rounded-full border-transparent bg-accent/60 focus:bg-white focus:border-primary/20 focus:ring-2 focus:ring-primary/10 transition-all duration-200"
+              className="h-9 pl-9 rounded-full border-transparent bg-accent/60 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-200"
             />
           </div>
         </div>

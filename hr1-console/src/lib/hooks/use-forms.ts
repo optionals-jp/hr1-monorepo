@@ -3,7 +3,6 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSWRConfig } from "swr";
-import { useToast } from "@/components/ui/toast";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
@@ -28,7 +27,6 @@ export type { FieldDraft };
 
 export function useCreateForm() {
   const router = useRouter();
-  const { showToast } = useToast();
   const { mutate } = useSWRConfig();
   const { organization } = useOrg();
 
@@ -61,8 +59,11 @@ export function useCreateForm() {
     setFields((prev) => prev.map((f) => (f.tempId === tempId ? { ...f, [field]: value } : f)));
   }, []);
 
-  const handleSubmit = useCallback(async () => {
-    if (!organization || !title) return;
+  const handleSubmit = useCallback(async (): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    if (!organization || !title) return { success: false };
     setSaving(true);
 
     const result = await createForm(organization.id, {
@@ -74,13 +75,14 @@ export function useCreateForm() {
 
     if (result.success) {
       await mutate(`forms-${organization.id}`);
-      showToast("フォームを作成しました");
       router.push("/forms");
+      setSaving(false);
+      return { success: true };
     } else {
-      showToast(result.error ?? "フォームの作成に失敗しました", "error");
+      setSaving(false);
+      return { success: false, error: result.error ?? "フォームの作成に失敗しました" };
     }
-    setSaving(false);
-  }, [organization, title, target, description, fields, mutate, showToast, router]);
+  }, [organization, title, target, description, fields, mutate, router]);
 
   const cancel = useCallback(() => {
     router.push("/forms");

@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/select";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { TableSection } from "@/components/layout/table-section";
 import { useAuditLogs } from "@/lib/hooks/use-audit-logs";
 import {
   Download,
@@ -106,13 +108,13 @@ export default function AuditLogsPage() {
         }
       />
 
-      <div className="sticky top-14 z-10">
+      <StickyFilterBar>
         <SearchBar
           value={h.search}
           onChange={h.setSearch}
           placeholder="変更内容・レコードID等で検索"
         />
-        <div className="flex items-center gap-2 w-full bg-white border-b px-4 sm:px-6 md:px-8 py-2 overflow-x-auto">
+        <div className="flex items-center gap-2 w-full bg-white px-4 sm:px-6 md:px-8 py-2 overflow-x-auto">
           <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
           <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
 
@@ -175,9 +177,9 @@ export default function AuditLogsPage() {
             </Button>
           )}
         </div>
-      </div>
+      </StickyFilterBar>
 
-      <div className="bg-white">
+      <TableSection>
         <Table>
           <TableHeader>
             <TableRow>
@@ -252,7 +254,7 @@ export default function AuditLogsPage() {
             </TableEmptyState>
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
 
       <div className="flex items-center justify-between px-4 sm:px-6 md:px-8 py-3 border-t bg-white">
         <span className="text-sm text-muted-foreground">

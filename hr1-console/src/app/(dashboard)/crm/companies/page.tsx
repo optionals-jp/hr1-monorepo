@@ -9,6 +9,7 @@ import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { EditPanel } from "@/components/ui/edit-panel";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
+import { TableSection } from "@/components/layout/table-section";
 import { useToast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
 import { useCrmCompaniesPage } from "@/lib/hooks/use-crm";
@@ -42,42 +43,56 @@ export default function CrmCompaniesPage() {
         <SearchBar value={search} onChange={setSearch} placeholder="企業名・法人番号で検索" />
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>企業名</TableHead>
-            <TableHead>法人番号</TableHead>
-            <TableHead>業種</TableHead>
-            <TableHead>電話番号</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableEmptyState
-          colSpan={4}
-          isLoading={!companies}
-          isEmpty={filtered.length === 0}
-          emptyMessage="企業が見つかりません"
-        >
-          {filtered.map((company) => (
-            <TableRow
-              key={company.id}
-              className="cursor-pointer"
-              onClick={() => router.push(`/crm/companies/${company.id}`)}
-            >
-              <TableCell className="font-medium">{company.name}</TableCell>
-              <TableCell>{company.corporate_number ?? "—"}</TableCell>
-              <TableCell>{company.industry ?? "—"}</TableCell>
-              <TableCell>{company.phone ?? "—"}</TableCell>
+      <TableSection>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>企業名</TableHead>
+              <TableHead>法人番号</TableHead>
+              <TableHead>業種</TableHead>
+              <TableHead>電話番号</TableHead>
             </TableRow>
-          ))}
-        </TableEmptyState>
-      </Table>
+          </TableHeader>
+          <TableEmptyState
+            colSpan={4}
+            isLoading={!companies}
+            isEmpty={filtered.length === 0}
+            emptyMessage="企業が見つかりません"
+          >
+            {filtered.map((company) => (
+              <TableRow
+                key={company.id}
+                className="cursor-pointer"
+                onClick={() => router.push(`/crm/companies/${company.id}`)}
+              >
+                <TableCell className="font-medium">{company.name}</TableCell>
+                <TableCell>{company.corporate_number ?? "—"}</TableCell>
+                <TableCell>{company.industry ?? "—"}</TableCell>
+                <TableCell>{company.phone ?? "—"}</TableCell>
+              </TableRow>
+            ))}
+          </TableEmptyState>
+        </Table>
+      </TableSection>
 
       <EditPanel
         open={editOpen}
         onOpenChange={setEditOpen}
         title={editData.id ? "企業編集" : "企業登録"}
-        onSave={() => handleSave(showToast)}
-        onDelete={editData.id ? () => handleDelete(showToast) : undefined}
+        onSave={async () => {
+          const result = await handleSave();
+          if (result.success && result.message) showToast(result.message);
+          else if (result.error) showToast(result.error, "error");
+        }}
+        onDelete={
+          editData.id
+            ? async () => {
+                const result = await handleDelete();
+                if (result.success) showToast("企業を削除しました");
+                else if (result.error) showToast(result.error, "error");
+              }
+            : undefined
+        }
       >
         <div className="space-y-4">
           <div>

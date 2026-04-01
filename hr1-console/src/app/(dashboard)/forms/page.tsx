@@ -19,6 +19,7 @@ import type { CustomForm } from "@/types/database";
 import { useForms, deleteForm } from "@/lib/hooks/use-forms";
 import { Badge } from "@/components/ui/badge";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { TableSection } from "@/components/layout/table-section";
 import { formTargetLabels } from "@/lib/constants";
 import { Trash2 } from "lucide-react";
 
@@ -62,7 +63,7 @@ export default function FormsPage() {
 
       <QueryErrorBanner error={formsError} onRetry={() => mutateForms()} />
 
-      <div className="bg-white">
+      <TableSection>
         <Table>
           <TableHeader>
             <TableRow>
@@ -114,7 +115,7 @@ export default function FormsPage() {
             </TableEmptyState>
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
     </div>
   );
 }

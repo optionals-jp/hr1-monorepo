@@ -24,8 +24,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from "date-fns";
-import { Pencil, Eye, EyeOff, Search, FolderOpen } from "lucide-react";
+import { Pencil, Eye, EyeOff, FolderOpen, SlidersHorizontal, X } from "lucide-react";
+import { SearchBar } from "@/components/ui/search-bar";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { TableSection } from "@/components/layout/table-section";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/toast";
 import { useWikiPageEditor } from "@/lib/hooks/use-wiki";
 
@@ -39,39 +50,57 @@ export default function WikiPage_() {
         title="社内Wiki"
         description="社内ドキュメント・ナレッジベースの管理"
         sticky={false}
+        border={false}
         action={<Button onClick={h.openCreate}>ページを作成</Button>}
       />
 
       <QueryErrorBanner error={h.pagesError} onRetry={() => h.mutatePages()} />
 
-      <div className="px-4 sm:px-6 md:px-8 py-4">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={h.searchQuery}
-              onChange={(e) => h.setSearchQuery(e.target.value)}
-              placeholder="タイトル・本文で検索"
-              className="pl-9"
-            />
-          </div>
-          <Select value={h.filterCategory} onValueChange={(v) => h.setFilterCategory(v ?? "all")}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="カテゴリ" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">すべてのカテゴリ</SelectItem>
-              {h.categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>
-                  {cat}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <StickyFilterBar>
+        <SearchBar
+          value={h.searchQuery}
+          onChange={h.setSearchQuery}
+          placeholder="タイトル・本文で検索"
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
+            {h.filterCategory !== "all" && (
+              <div className="flex items-center gap-1.5 overflow-x-auto">
+                <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                  カテゴリ：{h.filterCategory}
+                  <span
+                    role="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      h.setFilterCategory("all");
+                    }}
+                    className="ml-0.5 hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </span>
+                </Badge>
+              </div>
+            )}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-auto py-2">
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterCategory("all")}>
+              <span className={cn(h.filterCategory === "all" && "font-medium")}>
+                すべてのカテゴリ
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {h.categories.map((cat) => (
+              <DropdownMenuItem key={cat} className="py-2" onClick={() => h.setFilterCategory(cat)}>
+                <span className={cn(h.filterCategory === cat && "font-medium")}>{cat}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </StickyFilterBar>
 
-      <div className="bg-white">
+      <TableSection>
         <Table>
           <TableHeader>
             <TableRow>
@@ -157,7 +186,7 @@ export default function WikiPage_() {
             </TableEmptyState>
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
 
       <EditPanel
         open={h.editOpen}

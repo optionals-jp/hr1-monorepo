@@ -11,6 +11,7 @@ import { MarkdownEditor, markdownToHtml } from "@/components/ui/markdown-editor"
 import { format } from "date-fns";
 import { Pencil, Eye, EyeOff } from "lucide-react";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { useToast } from "@/components/ui/toast";
 
 function MarkdownPreview({ content }: { content: string }) {
   return (
@@ -23,6 +24,8 @@ function MarkdownPreview({ content }: { content: string }) {
 
 export default function WikiDetailPage() {
   const { id } = useParams<{ id: string }>();
+
+  const { showToast } = useToast();
 
   const {
     page,
@@ -40,6 +43,20 @@ export default function WikiDetailPage() {
     handleSave,
     togglePublished,
   } = useWikiPageDetail(id);
+
+  async function onSave() {
+    const result = await handleSave();
+    if (!result.success && result.error) {
+      showToast(result.error, "error");
+    }
+  }
+
+  async function onTogglePublished() {
+    const result = await togglePublished();
+    if (!result.success && result.error) {
+      showToast(result.error, "error");
+    }
+  }
 
   if (isLoading) {
     return (
@@ -83,7 +100,7 @@ export default function WikiDetailPage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={togglePublished}
+              onClick={onTogglePublished}
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               {page.is_published ? (
@@ -123,7 +140,7 @@ export default function WikiDetailPage() {
               <Button variant="outline" onClick={() => setEditing(false)} disabled={saving}>
                 キャンセル
               </Button>
-              <Button onClick={handleSave} disabled={saving || !editTitle.trim()}>
+              <Button onClick={onSave} disabled={saving || !editTitle.trim()}>
                 {saving ? "保存中..." : "保存"}
               </Button>
             </div>

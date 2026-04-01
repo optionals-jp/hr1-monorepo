@@ -25,8 +25,16 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { SearchBar } from "@/components/ui/search-bar";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { TableSection } from "@/components/layout/table-section";
 import {
   Dialog,
   DialogContent,
@@ -35,15 +43,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useLeavePage } from "@/lib/hooks/use-leave-page";
+import { TabBar } from "@/components/layout/tab-bar";
 import { cn } from "@/lib/utils";
-import { CalendarOff, Plus, Calculator, Users, Download } from "lucide-react";
+import { Plus, Calculator, Users, Download, SlidersHorizontal, X } from "lucide-react";
 import { exportToCSV } from "@/lib/export-csv";
 
 type TabValue = "balances" | "grant";
 
-const tabList: { value: TabValue; label: string; icon: React.ElementType }[] = [
-  { value: "balances", label: "残日数一覧", icon: CalendarOff },
-  { value: "grant", label: "有給付与", icon: Plus },
+const tabList: { value: TabValue; label: string }[] = [
+  { value: "balances", label: "残日数一覧" },
+  { value: "grant", label: "有給付与" },
 ];
 
 function formatDays(n: number): string {
@@ -100,54 +109,48 @@ export default function LeavePage() {
         description="社員の有給休暇の残日数・付与を管理します"
         sticky={false}
         border={false}
-        tabs={
-          <div className="flex gap-1 border-b -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8">
-            {tabList.map((t) => {
-              const Icon = t.icon;
-              return (
-                <button
-                  key={t.value}
-                  onClick={() => h.setActiveTab(t.value)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-4 pb-2.5 pt-1 text-sm font-medium border-b-2 transition-colors -mb-px",
-                    h.activeTab === t.value
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-        }
       />
 
       <QueryErrorBanner error={h.balancesError} onRetry={() => h.mutateBalances()} />
 
-      {/* ========= 残日数一覧タブ ========= */}
-      {h.activeTab === "balances" && (
-        <>
-          <SearchBar value={h.search} onChange={h.setSearch} placeholder="社員名で検索" />
-          <div className="px-4 py-3 sm:px-6 md:px-8">
-            <div className="flex items-center gap-3 mb-4">
-              <Label className="text-sm text-muted-foreground">年度</Label>
-              <Select
-                value={String(h.filterYear)}
-                onValueChange={(v) => v && h.setFilterYear(parseInt(v, 10))}
-              >
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
+      <StickyFilterBar>
+        <TabBar
+          tabs={tabList}
+          activeTab={h.activeTab}
+          onTabChange={(v) => h.setActiveTab(v as TabValue)}
+        />
+        {h.activeTab === "balances" && (
+          <>
+            <SearchBar value={h.search} onChange={h.setSearch} placeholder="社員名で検索" />
+            <div className="flex items-center gap-2 h-12 bg-white px-4 sm:px-6 md:px-8">
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-2 cursor-pointer">
+                  <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
+                  {h.filterYear !== h.yearOptions[0] && (
+                    <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                      {h.filterYear}年度
+                      <span
+                        role="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          h.setFilterYear(h.yearOptions[0]);
+                        }}
+                        className="ml-0.5 hover:text-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </span>
+                    </Badge>
+                  )}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-auto py-2">
                   {h.yearOptions.map((y) => (
-                    <SelectItem key={y} value={String(y)}>
-                      {y}年度
-                    </SelectItem>
+                    <DropdownMenuItem key={y} className="py-2" onClick={() => h.setFilterYear(y)}>
+                      <span className={cn(h.filterYear === y && "font-medium")}>{y}年度</span>
+                    </DropdownMenuItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <div className="flex-1" />
               <Button
                 variant="outline"
@@ -179,71 +182,74 @@ export default function LeavePage() {
                 CSV出力
               </Button>
             </div>
+          </>
+        )}
+      </StickyFilterBar>
 
-            <div className="rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>社員名</TableHead>
-                    <TableHead className="text-right">年度</TableHead>
-                    <TableHead className="text-right">付与日数</TableHead>
-                    <TableHead className="text-right">使用日数</TableHead>
-                    <TableHead className="text-right">繰越日数</TableHead>
-                    <TableHead className="text-right">残日数</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableEmptyState
-                    colSpan={6}
-                    isLoading={!h.balances}
-                    isEmpty={h.filteredBalances.length === 0}
-                    emptyMessage="有給データがありません"
-                  >
-                    {h.filteredBalances.map((b) => {
-                      const profile = h.profileMap.get(b.user_id);
-                      const remaining = h.calcRemaining(b);
-                      return (
-                        <TableRow
-                          key={b.id}
-                          className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => h.openEditPanel(b)}
+      {/* ========= 残日数一覧タブ ========= */}
+      {h.activeTab === "balances" && (
+        <TableSection>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>社員名</TableHead>
+                <TableHead className="text-right">年度</TableHead>
+                <TableHead className="text-right">付与日数</TableHead>
+                <TableHead className="text-right">使用日数</TableHead>
+                <TableHead className="text-right">繰越日数</TableHead>
+                <TableHead className="text-right">残日数</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableEmptyState
+                colSpan={6}
+                isLoading={!h.balances}
+                isEmpty={h.filteredBalances.length === 0}
+                emptyMessage="有給データがありません"
+              >
+                {h.filteredBalances.map((b) => {
+                  const profile = h.profileMap.get(b.user_id);
+                  const remaining = h.calcRemaining(b);
+                  return (
+                    <TableRow
+                      key={b.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => h.openEditPanel(b)}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar size="sm">
+                            {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
+                            <AvatarFallback>
+                              {(profile?.display_name ?? "?").charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">
+                            {profile?.display_name ?? profile?.email ?? b.user_id}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">{b.fiscal_year}</TableCell>
+                      <TableCell className="text-right">{formatDays(b.granted_days)}</TableCell>
+                      <TableCell className="text-right">{formatDays(b.used_days)}</TableCell>
+                      <TableCell className="text-right">
+                        {formatDays(b.carried_over_days)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Badge
+                          variant={remaining < 5 ? "destructive" : "default"}
+                          className={cn(remaining >= 5 && "bg-green-100 text-green-800")}
                         >
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Avatar size="sm">
-                                {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
-                                <AvatarFallback>
-                                  {(profile?.display_name ?? "?").charAt(0)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="font-medium">
-                                {profile?.display_name ?? profile?.email ?? b.user_id}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">{b.fiscal_year}</TableCell>
-                          <TableCell className="text-right">{formatDays(b.granted_days)}</TableCell>
-                          <TableCell className="text-right">{formatDays(b.used_days)}</TableCell>
-                          <TableCell className="text-right">
-                            {formatDays(b.carried_over_days)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Badge
-                              variant={remaining < 5 ? "destructive" : "default"}
-                              className={cn(remaining >= 5 && "bg-green-100 text-green-800")}
-                            >
-                              {formatDays(remaining)}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableEmptyState>
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </>
+                          {formatDays(remaining)}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableEmptyState>
+            </TableBody>
+          </Table>
+        </TableSection>
       )}
 
       {/* ========= 有給付与タブ ========= */}

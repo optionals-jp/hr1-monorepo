@@ -52,23 +52,19 @@ export function useJobsPage() {
     );
   });
 
-  const handleDeleteJob = async (
-    job: Job,
-    showToast: (msg: string, type?: "success" | "error") => void
-  ) => {
-    if (!organization) return;
-    if (!window.confirm(`「${job.title}」を削除しますか？`)) return;
+  const handleDeleteJob = async (job: Job): Promise<{ success: boolean; error?: string }> => {
+    if (!organization) return { success: false };
+    if (!window.confirm(`「${job.title}」を削除しますか？`)) return { success: false };
     setDeletingId(job.id);
     try {
       const result = await deleteJob(job.id, organization.id);
       if (result.error) {
-        showToast(result.error.message, "error");
-        return;
+        return { success: false, error: result.error.message };
       }
       mutateJobs();
-      showToast("求人を削除しました");
+      return { success: true };
     } catch {
-      showToast("削除に失敗しました", "error");
+      return { success: false, error: "削除に失敗しました" };
     } finally {
       setDeletingId(null);
     }

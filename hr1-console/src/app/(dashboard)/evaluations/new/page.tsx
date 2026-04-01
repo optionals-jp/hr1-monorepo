@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Trash2, ChevronDown } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 import { useCreateEvaluation } from "@/lib/hooks/use-evaluations";
 import {
   formTargetLabels,
@@ -24,6 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function NewEvaluationTemplatePage() {
+  const { showToast } = useToast();
   const {
     title,
     setTitle,
@@ -281,7 +283,17 @@ export default function NewEvaluationTemplatePage() {
             <Button variant="outline" onClick={cancel}>
               キャンセル
             </Button>
-            <Button onClick={handleSubmit} disabled={!title || saving}>
+            <Button
+              onClick={async () => {
+                const result = await handleSubmit();
+                if (result.success) {
+                  showToast("評価シートを作成しました");
+                } else if (result.error) {
+                  showToast(result.error, "error");
+                }
+              }}
+              disabled={!title || saving}
+            >
               {saving ? "作成中..." : "評価シートを作成"}
             </Button>
           </div>

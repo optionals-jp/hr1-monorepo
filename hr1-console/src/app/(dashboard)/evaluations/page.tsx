@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { PageHeader } from "@/components/layout/page-header";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -17,7 +18,9 @@ import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { TabBar } from "@/components/layout/tab-bar";
 import { useOrg } from "@/lib/org-context";
+import { TableSection } from "@/components/layout/table-section";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import {
   formTargetLabels,
@@ -418,45 +421,25 @@ export default function EvaluationsPage() {
       <QueryErrorBanner error={templatesError} onRetry={() => mutateTemplates()} />
 
       {/* サブナビゲーション */}
-      <div className="sticky top-14 z-10 bg-white">
-        <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8">
-          {subTabs.map((tab) => {
-            const count =
+      <StickyFilterBar>
+        <TabBar
+          tabs={subTabs.map((tab) => ({
+            ...tab,
+            count:
               tab.value === "sheets"
                 ? templates.length
                 : tab.value === "cycles"
                   ? cycles.length
-                  : undefined;
-            const TabIcon = tab.icon;
-            return (
-              <button
-                key={tab.value}
-                type="button"
-                onClick={() => setActiveTab(tab.value)}
-                className={cn(
-                  "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors flex items-center gap-1.5",
-                  activeTab === tab.value
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {TabIcon && <TabIcon className="h-4 w-4" />}
-                {tab.label}
-                {count !== undefined && (
-                  <span className="text-xs text-muted-foreground">{count}</span>
-                )}
-                {activeTab === tab.value && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+                  : undefined,
+          }))}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+      </StickyFilterBar>
 
       {/* 評価シート一覧 */}
       {activeTab === "sheets" && (
-        <div className="bg-white">
+        <TableSection>
           {!templatesLoading && templates.length === 0 ? (
             <div className="text-center py-16 space-y-4">
               <div className="flex justify-center">
@@ -527,12 +510,12 @@ export default function EvaluationsPage() {
               </TableBody>
             </Table>
           )}
-        </div>
+        </TableSection>
       )}
 
       {/* 評価サイクル一覧 */}
       {activeTab === "cycles" && (
-        <div className="bg-white">
+        <TableSection>
           {cyclesLoading ? (
             <p className="text-center py-8 text-muted-foreground">読み込み中...</p>
           ) : cycles.length === 0 ? (
@@ -614,7 +597,7 @@ export default function EvaluationsPage() {
               </TableBody>
             </Table>
           )}
-        </div>
+        </TableSection>
       )}
 
       {/* 使い方ガイド */}

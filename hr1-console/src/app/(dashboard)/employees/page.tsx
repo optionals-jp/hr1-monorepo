@@ -31,6 +31,8 @@ import {
 import { cn } from "@/lib/utils";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { TableSection } from "@/components/layout/table-section";
 import { SlidersHorizontal, X, Download, Upload, ChevronDown, Trash2 } from "lucide-react";
 import { exportToCSV } from "@/lib/export-csv";
 import { genderLabels } from "@/lib/constants";
@@ -180,10 +182,10 @@ export default function EmployeesPage() {
         }
       />
 
-      <div className="sticky top-14 z-10">
+      <StickyFilterBar>
         <SearchBar value={h.search} onChange={h.setSearch} />
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
+          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
             {h.filterDeptId !== "all" && (
@@ -227,9 +229,9 @@ export default function EmployeesPage() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </StickyFilterBar>
 
-      <div className="bg-white">
+      <TableSection>
         <Table>
           <TableHeader>
             <TableRow>
@@ -301,7 +303,7 @@ export default function EmployeesPage() {
             </TableEmptyState>
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
 
       <EditPanel
         open={h.dialogOpen}

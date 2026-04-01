@@ -14,9 +14,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { useToast } from "@/components/ui/toast";
 import { useNewEvaluationCycle } from "@/lib/hooks/use-evaluations";
 
 export default function NewEvaluationCyclePage() {
+  const { showToast } = useToast();
   const {
     templates,
     templatesError,
@@ -117,7 +119,14 @@ export default function NewEvaluationCyclePage() {
               キャンセル
             </Button>
             <Button
-              onClick={handleSubmit}
+              onClick={async () => {
+                const result = await handleSubmit();
+                if (result.success) {
+                  showToast("評価サイクルを作成しました");
+                } else if (result.error) {
+                  showToast(result.error, "error");
+                }
+              }}
               disabled={!title || !templateId || !startDate || !endDate || saving}
             >
               {saving ? "作成中..." : "サイクルを作成"}

@@ -13,7 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TabBar } from "@/components/layout/tab-bar";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 import { useEvaluationCycleDetail } from "@/lib/hooks/use-evaluation-cycle-detail";
 import type { Profile } from "@/types/database";
 import { Star, Trash2, Plus, Users, UserPlus, Building2, Check } from "lucide-react";
@@ -34,6 +37,7 @@ const tabs = [
 ];
 
 export default function EvaluationCycleDetailPage() {
+  const { showToast } = useToast();
   const {
     id,
     organization,
@@ -160,7 +164,19 @@ export default function EvaluationCycleDetailPage() {
               {cycleStatusLabels[cycle.status]}
             </Badge>
             {nextAction && (
-              <Button size="sm" onClick={() => handleUpdateCycleStatus(nextAction.status)}>
+              <Button
+                size="sm"
+                onClick={async () => {
+                  const result = await handleUpdateCycleStatus(nextAction.status);
+                  if (result.success) {
+                    showToast(
+                      `ステータスを「${cycleStatusLabels[nextAction.status]}」に変更しました`
+                    );
+                  } else if (result.error) {
+                    showToast(result.error, "error");
+                  }
+                }}
+              >
                 {nextAction.label}
               </Button>
             )}
@@ -168,31 +184,16 @@ export default function EvaluationCycleDetailPage() {
         }
       />
 
-      <div className="sticky top-14 z-10 bg-white">
-        <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8">
-          {tabs.map((tab) => (
-            <button
-              key={tab.value}
-              type="button"
-              onClick={() => setActiveTab(tab.value)}
-              className={cn(
-                "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-                activeTab === tab.value
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {tab.label}
-              {tab.value === "assignments" && total > 0 && (
-                <span className="ml-1.5 text-xs text-muted-foreground">{total}</span>
-              )}
-              {activeTab === tab.value && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
+      <StickyFilterBar>
+        <TabBar
+          tabs={tabs.map((tab) => ({
+            ...tab,
+            count: tab.value === "assignments" && total > 0 ? total : undefined,
+          }))}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+      </StickyFilterBar>
 
       <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
         {/* ===== 概要タブ ===== */}
@@ -377,7 +378,14 @@ export default function EvaluationCycleDetailPage() {
                         </div>
                         <Button
                           size="sm"
-                          onClick={addIndividualAssignment}
+                          onClick={async () => {
+                            const result = await addIndividualAssignment();
+                            if (result?.success) {
+                              showToast(`${result.count}件の評価を追加しました`);
+                            } else if (result?.error) {
+                              showToast(result.error, "error");
+                            }
+                          }}
                           disabled={!addTargetId || !addEvaluatorId || addingSaving}
                         >
                           <Plus className="h-4 w-4 mr-1" />
@@ -460,7 +468,14 @@ export default function EvaluationCycleDetailPage() {
                         </div>
                         <Button
                           size="sm"
-                          onClick={addByDepartment}
+                          onClick={async () => {
+                            const result = await addByDepartment();
+                            if (result?.success) {
+                              showToast(`${result.count}件の評価を追加しました`);
+                            } else if (result?.error) {
+                              showToast(result.error, "error");
+                            }
+                          }}
                           disabled={!targetDeptId || !evaluatorDeptId || addingSaving}
                         >
                           <Plus className="h-4 w-4 mr-1" />
@@ -523,7 +538,14 @@ export default function EvaluationCycleDetailPage() {
                         </label>
                         <Button
                           size="sm"
-                          onClick={addMutualEvaluations}
+                          onClick={async () => {
+                            const result = await addMutualEvaluations();
+                            if (result?.success) {
+                              showToast(`${result.count}件の評価を追加しました`);
+                            } else if (result?.error) {
+                              showToast(result.error, "error");
+                            }
+                          }}
                           disabled={!mutualDeptId || addingSaving}
                         >
                           <Plus className="h-4 w-4 mr-1" />
@@ -571,7 +593,14 @@ export default function EvaluationCycleDetailPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => removeTargetAssignments(group.targetId)}
+                            onClick={async () => {
+                              const result = await removeTargetAssignments(group.targetId);
+                              if (result.success) {
+                                showToast(`${result.count}件を削除しました`);
+                              } else if (result.error) {
+                                showToast(result.error, "error");
+                              }
+                            }}
                             className="text-destructive hover:text-destructive text-xs"
                           >
                             すべて削除
@@ -603,7 +632,12 @@ export default function EvaluationCycleDetailPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleRemoveAssignment(a.id)}
+                                onClick={async () => {
+                                  const result = await handleRemoveAssignment(a.id);
+                                  if (result.error) {
+                                    showToast(result.error, "error");
+                                  }
+                                }}
                                 className="text-destructive hover:text-destructive h-7 w-7 p-0"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />

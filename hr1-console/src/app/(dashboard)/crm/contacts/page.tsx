@@ -6,6 +6,7 @@ import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
+import { TableSection } from "@/components/layout/table-section";
 import { useRouter } from "next/navigation";
 import { useCrmContacts } from "@/lib/hooks/use-crm";
 
@@ -35,39 +36,43 @@ export default function CrmContactsPage() {
         <SearchBar value={search} onChange={setSearch} placeholder="名前・メール・企業名で検索" />
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>氏名</TableHead>
-            <TableHead>企業</TableHead>
-            <TableHead>部署・役職</TableHead>
-            <TableHead>メール</TableHead>
-            <TableHead>電話</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableEmptyState
-          colSpan={5}
-          isLoading={!contacts}
-          isEmpty={filtered.length === 0}
-          emptyMessage="連絡先が見つかりません"
-        >
-          {filtered.map((c) => (
-            <TableRow
-              key={c.id}
-              className="cursor-pointer"
-              onClick={() => router.push(`/crm/contacts/${c.id}`)}
-            >
-              <TableCell className="font-medium">
-                {c.last_name} {c.first_name ?? ""}
-              </TableCell>
-              <TableCell>{c.bc_companies?.name ?? "—"}</TableCell>
-              <TableCell>{[c.department, c.position].filter(Boolean).join(" / ") || "—"}</TableCell>
-              <TableCell>{c.email ?? "—"}</TableCell>
-              <TableCell>{c.phone ?? c.mobile_phone ?? "—"}</TableCell>
+      <TableSection>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>氏名</TableHead>
+              <TableHead>企業</TableHead>
+              <TableHead>部署・役職</TableHead>
+              <TableHead>メール</TableHead>
+              <TableHead>電話</TableHead>
             </TableRow>
-          ))}
-        </TableEmptyState>
-      </Table>
+          </TableHeader>
+          <TableEmptyState
+            colSpan={5}
+            isLoading={!contacts}
+            isEmpty={filtered.length === 0}
+            emptyMessage="連絡先が見つかりません"
+          >
+            {filtered.map((c) => (
+              <TableRow
+                key={c.id}
+                className="cursor-pointer"
+                onClick={() => router.push(`/crm/contacts/${c.id}`)}
+              >
+                <TableCell className="font-medium">
+                  {c.last_name} {c.first_name ?? ""}
+                </TableCell>
+                <TableCell>{c.bc_companies?.name ?? "—"}</TableCell>
+                <TableCell>
+                  {[c.department, c.position].filter(Boolean).join(" / ") || "—"}
+                </TableCell>
+                <TableCell>{c.email ?? "—"}</TableCell>
+                <TableCell>{c.phone ?? c.mobile_phone ?? "—"}</TableCell>
+              </TableRow>
+            ))}
+          </TableEmptyState>
+        </Table>
+      </TableSection>
     </div>
   );
 }

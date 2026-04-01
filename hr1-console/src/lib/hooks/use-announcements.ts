@@ -4,7 +4,6 @@ import { useState, useCallback } from "react";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
-import { useToast } from "@/components/ui/toast";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repository from "@/lib/repositories/announcement-repository";
 import type { Announcement } from "@/types/database";
@@ -16,7 +15,6 @@ export function useAnnouncements() {
 export function useAnnouncementPanel() {
   const { organization } = useOrg();
   const { user } = useAuth();
-  const { showToast } = useToast();
   const { mutate: mutateAnnouncements } = useAnnouncements();
 
   const [editOpen, setEditOpen] = useState(false);
@@ -46,8 +44,8 @@ export function useAnnouncementPanel() {
     setEditOpen(true);
   }, []);
 
-  const handleSave = useCallback(async () => {
-    if (!organization || !user || !title.trim() || !body.trim()) return;
+  const handleSave = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+    if (!organization || !user || !title.trim() || !body.trim()) return { success: false };
     setSaving(true);
     try {
       const result = await saveAnnouncement({
@@ -60,56 +58,56 @@ export function useAnnouncementPanel() {
         isPinned,
       });
       if (!result.success) {
-        showToast(result.error!, "error");
-        return;
+        return { success: false, error: result.error };
       }
       await mutateAnnouncements();
       setEditOpen(false);
+      return { success: true };
     } finally {
       setSaving(false);
     }
-  }, [organization, user, title, body, target, isPinned, editItem, showToast, mutateAnnouncements]);
+  }, [organization, user, title, body, target, isPinned, editItem, mutateAnnouncements]);
 
-  const handleDelete = useCallback(async () => {
-    if (!editItem || !organization) return;
+  const handleDelete = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+    if (!editItem || !organization) return { success: false };
     setDeleting(true);
     try {
       const result = await deleteAnnouncement(editItem.id, organization.id);
       if (!result.success) {
-        showToast(result.error!, "error");
-        return;
+        return { success: false, error: result.error };
       }
       await mutateAnnouncements();
       setEditOpen(false);
+      return { success: true };
     } finally {
       setDeleting(false);
     }
-  }, [editItem, organization, showToast, mutateAnnouncements]);
+  }, [editItem, organization, mutateAnnouncements]);
 
   const togglePublish = useCallback(
-    async (a: Announcement) => {
-      if (!organization) return;
+    async (a: Announcement): Promise<{ success: boolean; error?: string }> => {
+      if (!organization) return { success: false };
       const result = await toggleAnnouncementPublish(a.id, organization.id, !!a.published_at);
       if (!result.success) {
-        showToast(result.error!, "error");
-        return;
+        return { success: false, error: result.error };
       }
       await mutateAnnouncements();
+      return { success: true };
     },
-    [organization, showToast, mutateAnnouncements]
+    [organization, mutateAnnouncements]
   );
 
   const togglePin = useCallback(
-    async (a: Announcement) => {
-      if (!organization) return;
+    async (a: Announcement): Promise<{ success: boolean; error?: string }> => {
+      if (!organization) return { success: false };
       const result = await toggleAnnouncementPin(a.id, organization.id, a.is_pinned);
       if (!result.success) {
-        showToast(result.error!, "error");
-        return;
+        return { success: false, error: result.error };
       }
       await mutateAnnouncements();
+      return { success: true };
     },
-    [organization, showToast, mutateAnnouncements]
+    [organization, mutateAnnouncements]
   );
 
   return {
