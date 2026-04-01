@@ -7,7 +7,15 @@ import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { Badge } from "@/components/ui/badge";
 import { dealStatusLabels, dealStatusColors, activityTypeLabels } from "@/lib/constants";
 import Link from "next/link";
-import { useCrmDeal, useCrmDealActivities, useCrmDealTodos } from "@/lib/hooks/use-crm";
+import {
+  useCrmDeal,
+  useCrmDealActivities,
+  useCrmDealTodos,
+  useCrmQuotesByDeal,
+} from "@/lib/hooks/use-crm";
+import { quoteStatusLabels, quoteStatusColors } from "@/lib/constants/crm";
+import { FileText, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   useDefaultPipeline,
   getStagesFromPipeline,
@@ -22,6 +30,7 @@ export default function CrmDealDetailPage() {
   const { data: deal, error } = useCrmDeal(id);
   const { data: activities } = useCrmDealActivities(id);
   const { data: todos } = useCrmDealTodos(id);
+  const { data: quotes } = useCrmQuotesByDeal(id);
   const { data: defaultPipeline } = useDefaultPipeline();
   const stages = getStagesFromPipeline(defaultPipeline);
 
@@ -84,6 +93,47 @@ export default function CrmDealDetailPage() {
 
           {/* 関連連絡先 */}
           <DealContactsPanel dealId={deal.id} />
+
+          {/* 見積書 */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <FileText className="size-5" />
+                見積書（{quotes?.length ?? 0}件）
+              </h2>
+              <Link href={`/crm/quotes/new?dealId=${deal.id}`}>
+                <Button variant="outline" size="sm">
+                  <Plus className="size-4 mr-1" />
+                  作成
+                </Button>
+              </Link>
+            </div>
+            <div className="space-y-2">
+              {(quotes ?? []).map((q) => (
+                <Link
+                  key={q.id}
+                  href={`/crm/quotes/${q.id}`}
+                  className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/30"
+                >
+                  <div>
+                    <p className="font-medium text-sm">{q.quote_number}</p>
+                    <p className="text-xs text-muted-foreground">{q.title}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Badge variant={quoteStatusColors[q.status]}>
+                      {quoteStatusLabels[q.status]}
+                    </Badge>
+                    <span className="text-sm font-medium tabular-nums">
+                      ¥{q.total.toLocaleString()}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+              {(quotes ?? []).length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">見積書なし</p>
+              )}
+            </div>
+          </div>
 
           {/* カスタムフィールド */}
           <CrmCustomFields entityId={deal.id} entityType="deal" mode="view" />

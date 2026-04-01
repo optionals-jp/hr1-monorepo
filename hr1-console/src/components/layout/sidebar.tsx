@@ -117,6 +117,7 @@ const clientSections: NavSection[] = [
       { href: "/crm/companies", labelKey: "nav.crm.companies", icon: Building2 },
       { href: "/crm/contacts", labelKey: "nav.crm.contacts", icon: Contact },
       { href: "/crm/deals", labelKey: "nav.crm.deals", icon: Handshake },
+      { href: "/crm/quotes", labelKey: "nav.crm.quotes", icon: FileText },
       { href: "/crm/reports/forecast", labelKey: "nav.crm.forecast", icon: BarChart3 },
       { href: "/crm/settings/pipelines", labelKey: "nav.crm.pipelines", icon: Settings },
       { href: "/crm/settings/fields", labelKey: "nav.crm.fields", icon: Settings },

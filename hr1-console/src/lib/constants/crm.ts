@@ -87,6 +87,23 @@ export const dealContactRoleLabels: Record<string, string> = {
   stakeholder: "関係者",
 };
 
+// --- 見積書ステータス ---
+export const quoteStatusLabels: Record<string, string> = {
+  draft: "下書き",
+  sent: "送付済",
+  accepted: "承認済",
+  rejected: "却下",
+  expired: "期限切れ",
+};
+
+export const quoteStatusColors: Record<string, BadgeVariant> = {
+  draft: "default",
+  sent: "secondary",
+  accepted: "secondary",
+  rejected: "destructive",
+  expired: "destructive",
+};
+
 // --- 活動種別 ---
 export const activityTypeLabels: Record<string, string> = {
   appointment: "アポイント",

@@ -8,6 +8,7 @@ import { getSupabase } from "@/lib/supabase/browser";
 import * as repository from "@/lib/repositories/crm-repository";
 import * as leadRepository from "@/lib/repositories/lead-repository";
 import * as dealContactRepository from "@/lib/repositories/deal-contact-repository";
+import * as quoteRepository from "@/lib/repositories/quote-repository";
 import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
 import { dealStageProbability } from "@/lib/constants/crm";
 import type { BcCompany, BcDeal, BcLead } from "@/types/database";
@@ -121,6 +122,25 @@ export function useCrmDealContacts(dealId: string) {
   const { organization } = useOrg();
   return useQuery(organization ? `crm-deal-contacts-${organization.id}-${dealId}` : null, () =>
     dealContactRepository.fetchDealContacts(getSupabase(), dealId, organization!.id)
+  );
+}
+
+// --- Quotes ---
+export function useCrmQuotes() {
+  return useOrgQuery("crm-quotes", (orgId) => quoteRepository.fetchQuotes(getSupabase(), orgId));
+}
+
+export function useCrmQuotesByDeal(dealId: string) {
+  const { organization } = useOrg();
+  return useQuery(organization ? `crm-deal-quotes-${organization.id}-${dealId}` : null, () =>
+    quoteRepository.fetchQuotesByDeal(getSupabase(), dealId, organization!.id)
+  );
+}
+
+export function useCrmQuote(id: string) {
+  const { organization } = useOrg();
+  return useQuery(organization ? `crm-quote-${organization.id}-${id}` : null, () =>
+    quoteRepository.fetchQuote(getSupabase(), id, organization!.id)
   );
 }
 

@@ -799,6 +799,47 @@ export interface BcDealContact {
   bc_contacts?: BcContact;
 }
 
+export type QuoteStatus = "draft" | "sent" | "accepted" | "rejected" | "expired";
+
+export interface BcQuote {
+  id: string;
+  organization_id: string;
+  deal_id: string | null;
+  company_id: string | null;
+  contact_id: string | null;
+  quote_number: string;
+  title: string;
+  status: QuoteStatus;
+  issue_date: string;
+  expiry_date: string | null;
+  subtotal: number;
+  tax_rate: number;
+  tax_amount: number;
+  total: number;
+  notes: string | null;
+  terms: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  bc_companies?: BcCompany;
+  bc_contacts?: BcContact;
+  bc_deals?: BcDeal;
+  bc_quote_items?: BcQuoteItem[];
+}
+
+export interface BcQuoteItem {
+  id: string;
+  quote_id: string;
+  sort_order: number;
+  description: string;
+  quantity: number;
+  unit: string;
+  unit_price: number;
+  amount: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface BcActivity {
   id: string;
   organization_id: string;
