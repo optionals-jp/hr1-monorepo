@@ -810,6 +810,30 @@ export interface BcTodo {
   updated_at: string;
 }
 
+export type BcLeadSource = "web" | "referral" | "event" | "cold_call" | "other";
+export type BcLeadStatus = "new" | "contacted" | "qualified" | "unqualified" | "converted";
+
+export interface BcLead {
+  id: string;
+  organization_id: string;
+  name: string;
+  company_name: string | null;
+  email: string | null;
+  phone: string | null;
+  source: BcLeadSource;
+  status: BcLeadStatus;
+  assigned_to: string | null;
+  notes: string | null;
+  converted_company_id: string | null;
+  converted_contact_id: string | null;
+  converted_deal_id: string | null;
+  converted_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  profiles?: Profile;
+}
+
 // ==========================================================
 // CRM パイプライン
 // ==========================================================

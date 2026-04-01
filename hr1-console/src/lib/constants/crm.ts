@@ -52,6 +52,31 @@ export const crmEntityTypeLabels: Record<string, string> = {
 // フィールド型が選択肢を必要とするかどうか
 export const fieldTypeNeedsOptions = new Set(["dropdown", "multi_select"]);
 
+// --- リード ---
+export const leadSourceLabels: Record<string, string> = {
+  web: "Web",
+  referral: "紹介",
+  event: "イベント",
+  cold_call: "コールドコール",
+  other: "その他",
+};
+
+export const leadStatusLabels: Record<string, string> = {
+  new: "新規",
+  contacted: "連絡済",
+  qualified: "有望",
+  unqualified: "見込み薄",
+  converted: "コンバート済",
+};
+
+export const leadStatusColors: Record<string, BadgeVariant> = {
+  new: "default",
+  contacted: "secondary",
+  qualified: "secondary",
+  unqualified: "destructive",
+  converted: "secondary",
+};
+
 // --- 活動種別 ---
 export const activityTypeLabels: Record<string, string> = {
   appointment: "アポイント",

@@ -6,9 +6,10 @@ import { useOrg } from "@/lib/org-context";
 import { useQuery } from "@/lib/use-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repository from "@/lib/repositories/crm-repository";
+import * as leadRepository from "@/lib/repositories/lead-repository";
 import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
 import { dealStageProbability } from "@/lib/constants/crm";
-import type { BcCompany, BcDeal } from "@/types/database";
+import type { BcCompany, BcDeal, BcLead } from "@/types/database";
 
 // --- Dashboard ---
 export function useCrmDeals() {
@@ -376,5 +377,110 @@ export function useCrmCompaniesPage() {
     openCreate,
     handleSave,
     handleDelete,
+  };
+}
+
+// --- Leads ---
+export function useCrmLeads() {
+  return useOrgQuery("crm-leads", (orgId) => leadRepository.fetchLeads(getSupabase(), orgId));
+}
+
+export function useCrmLeadsPage() {
+  const { organization } = useOrg();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editData, setEditData] = useState<Partial<BcLead>>({});
+  const [errors, setErrors] = useState<ValidationErrors | null>(null);
+
+  const { data: leads, error, mutate } = useCrmLeads();
+
+  const filtered = (leads ?? []).filter((l) => {
+    if (statusFilter !== "all" && l.status !== statusFilter) return false;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      l.name.toLowerCase().includes(q) ||
+      l.company_name?.toLowerCase().includes(q) ||
+      l.email?.toLowerCase().includes(q)
+    );
+  });
+
+  const openCreate = () => {
+    setEditData({ source: "other", status: "new" });
+    setErrors(null);
+    setEditOpen(true);
+  };
+
+  const handleSave = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    const rules = { name: [validators.required("名前")] };
+    const validationErrors = validateForm(rules, editData);
+    if (validationErrors) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    const client = getSupabase();
+    try {
+      if (editData.id) {
+        await leadRepository.updateLead(client, editData.id, organization!.id, {
+          name: editData.name as string,
+          company_name: editData.company_name || null,
+          email: editData.email || null,
+          phone: editData.phone || null,
+          source: editData.source || "other",
+          status: editData.status || "new",
+          assigned_to: editData.assigned_to || null,
+          notes: editData.notes || null,
+        });
+      } else {
+        await leadRepository.createLead(client, {
+          organization_id: organization!.id,
+          name: editData.name as string,
+          company_name: editData.company_name || null,
+          email: editData.email || null,
+          phone: editData.phone || null,
+          source: editData.source || "other",
+          status: editData.status || "new",
+          notes: editData.notes || null,
+        });
+      }
+      showToast(editData.id ? "リードを更新しました" : "リードを登録しました");
+      setEditOpen(false);
+      mutate();
+    } catch {
+      showToast("保存に失敗しました", "error");
+    }
+  };
+
+  const handleDelete = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    if (!editData.id) return;
+    try {
+      await leadRepository.deleteLead(getSupabase(), editData.id, organization!.id);
+      showToast("リードを削除しました");
+      setEditOpen(false);
+      mutate();
+    } catch {
+      showToast("削除に失敗しました", "error");
+    }
+  };
+
+  return {
+    search,
+    setSearch,
+    statusFilter,
+    setStatusFilter,
+    editOpen,
+    setEditOpen,
+    editData,
+    setEditData,
+    errors,
+    leads,
+    error,
+    filtered,
+    openCreate,
+    handleSave,
+    handleDelete,
+    mutate,
   };
 }

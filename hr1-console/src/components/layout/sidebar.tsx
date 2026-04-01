@@ -112,6 +112,7 @@ const clientSections: NavSection[] = [
   {
     labelKey: "nav.section.crm",
     items: [
+      { href: "/crm/leads", labelKey: "nav.crm.leads", icon: UserPlus },
       { href: "/crm/companies", labelKey: "nav.crm.companies", icon: Building2 },
       { href: "/crm/contacts", labelKey: "nav.crm.contacts", icon: Contact },
       { href: "/crm/deals", labelKey: "nav.crm.deals", icon: Handshake },
