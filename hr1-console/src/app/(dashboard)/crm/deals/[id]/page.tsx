@@ -48,6 +48,10 @@ export default function CrmDealDetailPage() {
               label="金額"
               value={deal.amount != null ? `¥${deal.amount.toLocaleString()}` : null}
             />
+            <InfoItem
+              label="確度"
+              value={deal.probability != null ? `${deal.probability}%` : null}
+            />
             {deal.bc_companies && (
               <div>
                 <p className="text-sm text-muted-foreground">企業</p>

@@ -763,6 +763,7 @@ export interface BcDeal {
   amount: number | null;
   status: "open" | "won" | "lost";
   stage: "initial" | "proposal" | "negotiation" | "closing";
+  probability: number | null;
   expected_close_date: string | null;
   description: string | null;
   assigned_to: string | null;

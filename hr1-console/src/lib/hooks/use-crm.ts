@@ -7,7 +7,8 @@ import { useQuery } from "@/lib/use-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repository from "@/lib/repositories/crm-repository";
 import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
-import type { BcCompany } from "@/types/database";
+import { dealStageProbability } from "@/lib/constants/crm";
+import type { BcCompany, BcDeal } from "@/types/database";
 
 // --- Dashboard ---
 export function useCrmDeals() {
@@ -161,6 +162,147 @@ export async function removeCompany(
   } catch {
     return { success: false, error: "削除に失敗しました" };
   }
+}
+
+// --- Deal Mutations ---
+export async function saveDeal(params: {
+  organizationId: string;
+  data: Record<string, unknown>;
+}): Promise<{ success: boolean; error?: string }> {
+  const client = getSupabase();
+  const { data } = params;
+  try {
+    if (data.id) {
+      await repository.updateDeal(client, data.id as string, params.organizationId, {
+        title: data.title as string,
+        company_id: (data.company_id as string) || null,
+        contact_id: (data.contact_id as string) || null,
+        amount: data.amount ? Number(data.amount) : null,
+        status: (data.status as BcDeal["status"]) || "open",
+        stage: (data.stage as BcDeal["stage"]) || "initial",
+        probability: data.probability != null ? Number(data.probability) : null,
+        expected_close_date: (data.expected_close_date as string) || null,
+        description: (data.description as string) || null,
+        assigned_to: (data.assigned_to as string) || null,
+      });
+    } else {
+      const stage = (data.stage as BcDeal["stage"]) || "initial";
+      await repository.createDeal(client, {
+        organization_id: params.organizationId,
+        title: data.title as string,
+        company_id: (data.company_id as string) || null,
+        contact_id: (data.contact_id as string) || null,
+        amount: data.amount ? Number(data.amount) : null,
+        status: "open",
+        stage,
+        probability:
+          data.probability != null
+            ? Number(data.probability)
+            : (dealStageProbability[stage] ?? null),
+        expected_close_date: (data.expected_close_date as string) || null,
+        description: (data.description as string) || null,
+        assigned_to: (data.assigned_to as string) || null,
+      });
+    }
+    return { success: true };
+  } catch {
+    return { success: false, error: "保存に失敗しました" };
+  }
+}
+
+export async function removeDeal(
+  id: string,
+  organizationId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await repository.deleteDeal(getSupabase(), id, organizationId);
+    return { success: true };
+  } catch {
+    return { success: false, error: "削除に失敗しました" };
+  }
+}
+
+export function useCrmDealsPage() {
+  const { organization } = useOrg();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editData, setEditData] = useState<Partial<BcDeal>>({});
+  const [errors, setErrors] = useState<ValidationErrors | null>(null);
+
+  const { data: deals, error, mutate } = useCrmDealsAll();
+
+  const filtered = (deals ?? []).filter((d) => {
+    if (statusFilter !== "all" && d.status !== statusFilter) return false;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return d.title.toLowerCase().includes(q) || d.bc_companies?.name?.toLowerCase().includes(q);
+  });
+
+  const openCreate = () => {
+    setEditData({ stage: "initial", status: "open" });
+    setErrors(null);
+    setEditOpen(true);
+  };
+
+  const openEdit = (deal: BcDeal) => {
+    setEditData({ ...deal });
+    setErrors(null);
+    setEditOpen(true);
+  };
+
+  const handleSave = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    const rules = { title: [validators.required("商談名")] };
+    const validationErrors = validateForm(rules, editData);
+    if (validationErrors) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    const result = await saveDeal({
+      organizationId: organization!.id,
+      data: editData,
+    });
+    if (result.success) {
+      showToast(editData.id ? "商談を更新しました" : "商談を登録しました");
+      setEditOpen(false);
+      mutate();
+    } else {
+      showToast(result.error!, "error");
+    }
+  };
+
+  const handleDelete = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    if (!editData.id) return;
+    const result = await removeDeal(editData.id, organization!.id);
+    if (result.success) {
+      showToast("商談を削除しました");
+      setEditOpen(false);
+      mutate();
+    } else {
+      showToast(result.error!, "error");
+    }
+  };
+
+  return {
+    search,
+    setSearch,
+    statusFilter,
+    setStatusFilter,
+    editOpen,
+    setEditOpen,
+    editData,
+    setEditData,
+    errors,
+    deals,
+    error,
+    filtered,
+    openCreate,
+    openEdit,
+    handleSave,
+    handleDelete,
+    mutate,
+  };
 }
 
 export function useCrmCompaniesPage() {

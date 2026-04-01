@@ -157,6 +157,26 @@ export async function fetchDealsByContact(
   return (data ?? []) as BcDeal[];
 }
 
+export async function createDeal(
+  client: SupabaseClient,
+  data: Partial<BcDeal> & { organization_id: string; title: string }
+) {
+  return client.from("bc_deals").insert(data);
+}
+
+export async function updateDeal(
+  client: SupabaseClient,
+  id: string,
+  organizationId: string,
+  data: Partial<BcDeal>
+) {
+  return client.from("bc_deals").update(data).eq("id", id).eq("organization_id", organizationId);
+}
+
+export async function deleteDeal(client: SupabaseClient, id: string, organizationId: string) {
+  return client.from("bc_deals").delete().eq("id", id).eq("organization_id", organizationId);
+}
+
 // --- Activities ---
 
 export async function fetchActivitiesByContact(

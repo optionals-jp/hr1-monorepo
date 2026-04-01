@@ -21,6 +21,14 @@ export const dealStageLabels: Record<string, string> = {
   closing: "クロージング",
 };
 
+// --- ステージ別デフォルト確度 ---
+export const dealStageProbability: Record<string, number> = {
+  initial: 10,
+  proposal: 30,
+  negotiation: 60,
+  closing: 90,
+};
+
 // --- 活動種別 ---
 export const activityTypeLabels: Record<string, string> = {
   appointment: "アポイント",
