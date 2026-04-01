@@ -240,6 +240,69 @@ export async function fetchActivitiesByDeal(
   return (data ?? []) as BcActivity[];
 }
 
+export async function createActivity(
+  client: SupabaseClient,
+  data: {
+    organization_id: string;
+    activity_type: string;
+    title: string;
+    description?: string | null;
+    deal_id?: string | null;
+    company_id?: string | null;
+    contact_id?: string | null;
+    activity_date: string;
+    created_by?: string | null;
+  }
+): Promise<BcActivity> {
+  const { data: created, error } = await client
+    .from("bc_activities")
+    .insert(data)
+    .select()
+    .single();
+  if (error) throw error;
+  return created as BcActivity;
+}
+
+export async function createTodo(
+  client: SupabaseClient,
+  data: {
+    organization_id: string;
+    title: string;
+    description?: string | null;
+    deal_id?: string | null;
+    company_id?: string | null;
+    contact_id?: string | null;
+    due_date?: string | null;
+    assigned_to?: string | null;
+    created_by?: string | null;
+  }
+): Promise<BcTodo> {
+  const { data: created, error } = await client
+    .from("bc_todos")
+    .insert(data)
+    .select()
+    .single();
+  if (error) throw error;
+  return created as BcTodo;
+}
+
+export async function toggleTodoComplete(
+  client: SupabaseClient,
+  todoId: string,
+  organizationId: string,
+  isCompleted: boolean
+): Promise<void> {
+  const { error } = await client
+    .from("bc_todos")
+    .update({
+      is_completed: isCompleted,
+      completed_at: isCompleted ? new Date().toISOString() : null,
+    })
+    .eq("id", todoId)
+    .eq("organization_id", organizationId);
+  if (error) throw error;
+}
+
 // --- Cards ---
 
 export async function fetchCardsByContact(

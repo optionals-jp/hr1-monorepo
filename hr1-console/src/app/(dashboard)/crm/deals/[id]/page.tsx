@@ -1,11 +1,22 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { InfoItem } from "@/components/ui/info-item";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { dealStatusLabels, dealStatusColors, activityTypeLabels } from "@/lib/constants";
+import { useToast } from "@/components/ui/toast";
 import Link from "next/link";
 import {
   useCrmDeal,
@@ -14,7 +25,7 @@ import {
   useCrmQuotesByDeal,
 } from "@/lib/hooks/use-crm";
 import { quoteStatusLabels, quoteStatusColors } from "@/lib/constants/crm";
-import { FileText, Plus } from "lucide-react";
+import { FileText, Plus, CheckCircle2, Circle, Clock, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   useDefaultPipeline,
@@ -23,16 +34,108 @@ import {
 } from "@/lib/hooks/use-pipelines";
 import { CrmCustomFields } from "@/components/crm/crm-custom-fields";
 import { DealContactsPanel } from "@/components/crm/deal-contacts-panel";
+import { useOrg } from "@/lib/org-context";
+import { useAuth } from "@/lib/auth-context";
+import { getSupabase } from "@/lib/supabase/browser";
+import * as repository from "@/lib/repositories/crm-repository";
 
 export default function CrmDealDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { showToast } = useToast();
+  const { organization } = useOrg();
+  const { user } = useAuth();
 
   const { data: deal, error } = useCrmDeal(id);
-  const { data: activities } = useCrmDealActivities(id);
-  const { data: todos } = useCrmDealTodos(id);
+  const { data: activities, mutate: mutateActivities } = useCrmDealActivities(id);
+  const { data: todos, mutate: mutateTodos } = useCrmDealTodos(id);
   const { data: quotes } = useCrmQuotesByDeal(id);
   const { data: defaultPipeline } = useDefaultPipeline();
   const stages = getStagesFromPipeline(defaultPipeline);
+
+  // 活動追加
+  const [showActivityForm, setShowActivityForm] = useState(false);
+  const [activityTitle, setActivityTitle] = useState("");
+  const [activityType, setActivityType] = useState("memo");
+  const [activityDesc, setActivityDesc] = useState("");
+  const [savingActivity, setSavingActivity] = useState(false);
+
+  const handleAddActivity = useCallback(async () => {
+    if (!organization || !activityTitle.trim() || savingActivity) return;
+    setSavingActivity(true);
+    try {
+      await repository.createActivity(getSupabase(), {
+        organization_id: organization.id,
+        activity_type: activityType,
+        title: activityTitle.trim(),
+        description: activityDesc.trim() || null,
+        deal_id: id,
+        activity_date: new Date().toISOString(),
+        created_by: user?.id ?? null,
+      });
+      setActivityTitle("");
+      setActivityDesc("");
+      setShowActivityForm(false);
+      mutateActivities();
+      showToast("活動を記録しました");
+    } catch {
+      showToast("活動の記録に失敗しました", "error");
+    } finally {
+      setSavingActivity(false);
+    }
+  }, [
+    organization,
+    activityTitle,
+    activityType,
+    activityDesc,
+    savingActivity,
+    id,
+    user,
+    mutateActivities,
+    showToast,
+  ]);
+
+  // TODO追加
+  const [showTodoForm, setShowTodoForm] = useState(false);
+  const [todoTitle, setTodoTitle] = useState("");
+  const [todoDueDate, setTodoDueDate] = useState("");
+  const [savingTodo, setSavingTodo] = useState(false);
+
+  const handleAddTodo = useCallback(async () => {
+    if (!organization || !todoTitle.trim() || savingTodo) return;
+    setSavingTodo(true);
+    try {
+      await repository.createTodo(getSupabase(), {
+        organization_id: organization.id,
+        title: todoTitle.trim(),
+        deal_id: id,
+        due_date: todoDueDate || null,
+        assigned_to: user?.id ?? null,
+        created_by: user?.id ?? null,
+      });
+      setTodoTitle("");
+      setTodoDueDate("");
+      setShowTodoForm(false);
+      mutateTodos();
+      showToast("TODOを追加しました");
+    } catch {
+      showToast("TODOの追加に失敗しました", "error");
+    } finally {
+      setSavingTodo(false);
+    }
+  }, [organization, todoTitle, todoDueDate, savingTodo, id, user, mutateTodos, showToast]);
+
+  const handleToggleTodo = useCallback(
+    async (todoId: string, isCompleted: boolean) => {
+      if (!organization) return;
+      try {
+        await repository.toggleTodoComplete(getSupabase(), todoId, organization.id, isCompleted);
+        mutateTodos();
+      } catch {
+        showToast("TODOの更新に失敗しました", "error");
+      }
+    },
+    [organization, mutateTodos, showToast]
+  );
 
   return (
     <div>
@@ -140,17 +243,50 @@ export default function CrmDealDetailPage() {
 
           {/* TODO */}
           <div>
-            <h2 className="text-lg font-semibold mb-3">TODO（{todos?.length ?? 0}件）</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold">TODO（{todos?.length ?? 0}件）</h2>
+              <Button variant="outline" size="sm" onClick={() => setShowTodoForm(!showTodoForm)}>
+                <Plus className="size-4 mr-1" />
+                追加
+              </Button>
+            </div>
+            {showTodoForm && (
+              <div className="rounded-lg border p-3 mb-3 space-y-2 bg-muted/20">
+                <Input
+                  value={todoTitle}
+                  onChange={(e) => setTodoTitle(e.target.value)}
+                  placeholder="TODOタイトル"
+                  onKeyDown={(e) => e.key === "Enter" && handleAddTodo()}
+                />
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="date"
+                    value={todoDueDate}
+                    onChange={(e) => setTodoDueDate(e.target.value)}
+                    className="w-40"
+                  />
+                  <Button size="sm" onClick={handleAddTodo} disabled={savingTodo}>
+                    {savingTodo ? "追加中..." : "追加"}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setShowTodoForm(false)}>
+                    キャンセル
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               {(todos ?? []).map((todo) => (
                 <div key={todo.id} className="flex items-center gap-3 rounded-lg border p-3">
-                  <div
-                    className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
-                      todo.is_completed
-                        ? "bg-green-500 border-green-500"
-                        : "border-muted-foreground"
-                    }`}
-                  />
+                  <button
+                    onClick={() => handleToggleTodo(todo.id, !todo.is_completed)}
+                    className="flex-shrink-0"
+                  >
+                    {todo.is_completed ? (
+                      <CheckCircle2 className="size-5 text-green-500" />
+                    ) : (
+                      <Circle className="size-5 text-muted-foreground" />
+                    )}
+                  </button>
                   <div className="flex-1">
                     <p
                       className={`font-medium ${
@@ -160,35 +296,102 @@ export default function CrmDealDetailPage() {
                       {todo.title}
                     </p>
                     {todo.due_date && (
-                      <p className="text-xs text-muted-foreground">期限: {todo.due_date}</p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="size-3" />
+                        {todo.due_date}
+                      </p>
                     )}
                   </div>
                 </div>
               ))}
-              {(todos ?? []).length === 0 && (
+              {(todos ?? []).length === 0 && !showTodoForm && (
                 <p className="text-sm text-muted-foreground text-center py-4">TODOなし</p>
               )}
             </div>
           </div>
 
-          {/* 活動 */}
+          {/* 活動タイムライン */}
           <div>
-            <h2 className="text-lg font-semibold mb-3">活動ログ（{activities?.length ?? 0}件）</h2>
-            <div className="space-y-2">
-              {(activities ?? []).map((a) => (
-                <div key={a.id} className="rounded-lg border p-3">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium">{a.title}</p>
-                    <Badge variant="outline">
-                      {activityTypeLabels[a.activity_type] ?? a.activity_type}
-                    </Badge>
-                  </div>
-                  {a.description && (
-                    <p className="text-sm text-muted-foreground mt-1">{a.description}</p>
-                  )}
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <MessageSquare className="size-5" />
+                活動ログ（{activities?.length ?? 0}件）
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowActivityForm(!showActivityForm)}
+              >
+                <Plus className="size-4 mr-1" />
+                記録
+              </Button>
+            </div>
+            {showActivityForm && (
+              <div className="rounded-lg border p-4 mb-4 space-y-3 bg-muted/20">
+                <div className="flex gap-2">
+                  <Input
+                    value={activityTitle}
+                    onChange={(e) => setActivityTitle(e.target.value)}
+                    placeholder="活動タイトル"
+                    className="flex-1"
+                  />
+                  <Select value={activityType} onValueChange={setActivityType}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(activityTypeLabels).map(([val, lbl]) => (
+                        <SelectItem key={val} value={val}>
+                          {lbl}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              ))}
-              {(activities ?? []).length === 0 && (
+                <Textarea
+                  value={activityDesc}
+                  onChange={(e) => setActivityDesc(e.target.value)}
+                  placeholder="詳細メモ（任意）"
+                  rows={2}
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleAddActivity} disabled={savingActivity}>
+                    {savingActivity ? "記録中..." : "記録する"}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setShowActivityForm(false)}>
+                    キャンセル
+                  </Button>
+                </div>
+              </div>
+            )}
+            <div className="relative">
+              {(activities ?? []).length > 0 && (
+                <div className="absolute left-3 top-0 bottom-0 w-px bg-border" />
+              )}
+              <div className="space-y-4">
+                {(activities ?? []).map((a) => (
+                  <div key={a.id} className="flex gap-3 relative">
+                    <div className="w-6 h-6 rounded-full border-2 bg-background flex-shrink-0 flex items-center justify-center z-10">
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                    </div>
+                    <div className="flex-1 rounded-lg border p-3">
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-sm">{a.title}</p>
+                        <Badge variant="outline" className="text-xs">
+                          {activityTypeLabels[a.activity_type] ?? a.activity_type}
+                        </Badge>
+                      </div>
+                      {a.description && (
+                        <p className="text-sm text-muted-foreground mt-1">{a.description}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {new Date(a.activity_date ?? a.created_at).toLocaleString("ja-JP")}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {(activities ?? []).length === 0 && !showActivityForm && (
                 <p className="text-sm text-muted-foreground text-center py-4">活動なし</p>
               )}
             </div>
