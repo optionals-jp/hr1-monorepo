@@ -56,6 +56,7 @@ export const ja: Record<string, string> = {
   "nav.crm.pipelines": "パイプライン設定",
   "nav.crm.leads": "リード",
   "nav.crm.fields": "カスタムフィールド",
+  "nav.crm.forecast": "売上予測",
 
   "validation.required": "は必須です",
   "validation.email": "有効なメールアドレスを入力してください",
