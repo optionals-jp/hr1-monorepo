@@ -30,11 +30,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SearchBar } from "@/components/ui/search-bar";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { TableSection } from "@/components/layout/table-section";
 import {
   useWorkflowsPage,
   formatRequestSummary,
   type TabValue,
 } from "@/lib/hooks/use-workflows-page";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { TabBar } from "@/components/layout/tab-bar";
 import { cn } from "@/lib/utils";
 import {
   workflowRequestTypeLabels,
@@ -60,176 +63,159 @@ export default function WorkflowsPage() {
         description="各種申請の承認・管理を行います"
         sticky={false}
         border={false}
-        tabs={
-          <div className="flex gap-1 border-b -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8">
-            {tabList.map((t) => {
-              const Icon = t.icon;
-              return (
-                <button
-                  key={t.value}
-                  onClick={() => h.setActiveTab(t.value)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-4 pb-2.5 pt-1 text-sm font-medium border-b-2 transition-colors -mb-px",
-                    h.activeTab === t.value
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {t.label}
-                  {t.value === "requests" && h.pendingCount > 0 && (
-                    <Badge variant="destructive" className="ml-1 px-1.5 py-0 text-[10px]">
-                      {h.pendingCount}
-                    </Badge>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        }
       />
 
       <QueryErrorBanner error={h.requestsError} onRetry={() => h.mutate()} />
 
-      {h.activeTab === "requests" && (
-        <>
-          <div className="sticky top-14 z-10">
-            <SearchBar value={h.search} onChange={h.setSearch} placeholder="社員名・メールで検索" />
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
-                <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
-                {h.activeFilterCount > 0 && (
-                  <div className="flex items-center gap-1.5 overflow-x-auto">
-                    {h.filterStatus !== "all" && (
-                      <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
-                        ステータス：{workflowStatusLabels[h.filterStatus]}
-                        <span
-                          role="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            h.setFilterStatus("all");
-                          }}
-                          className="ml-0.5 hover:text-foreground"
-                        >
-                          <X className="h-3 w-3" />
-                        </span>
-                      </Badge>
-                    )}
-                    {h.filterType !== "all" && (
-                      <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
-                        種別：{workflowRequestTypeLabels[h.filterType]}
-                        <span
-                          role="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            h.setFilterType("all");
-                          }}
-                          className="ml-0.5 hover:text-foreground"
-                        >
-                          <X className="h-3 w-3" />
-                        </span>
-                      </Badge>
-                    )}
-                  </div>
-                )}
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-auto py-2">
-                <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">
-                  ステータス
+      <StickyFilterBar>
+        <TabBar
+          tabs={tabList.map((t) => ({
+            ...t,
+            count: t.value === "requests" && h.pendingCount > 0 ? h.pendingCount : undefined,
+          }))}
+          activeTab={h.activeTab}
+          onTabChange={(v) => h.setActiveTab(v as TabValue)}
+        />
+        {h.activeTab === "requests" && (
+          <SearchBar value={h.search} onChange={h.setSearch} placeholder="社員名・メールで検索" />
+        )}
+        {h.activeTab === "requests" && (
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
+              <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
+              {h.activeFilterCount > 0 && (
+                <div className="flex items-center gap-1.5 overflow-x-auto">
+                  {h.filterStatus !== "all" && (
+                    <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                      ステータス：{workflowStatusLabels[h.filterStatus]}
+                      <span
+                        role="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          h.setFilterStatus("all");
+                        }}
+                        className="ml-0.5 hover:text-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </span>
+                    </Badge>
+                  )}
+                  {h.filterType !== "all" && (
+                    <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                      種別：{workflowRequestTypeLabels[h.filterType]}
+                      <span
+                        role="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          h.setFilterType("all");
+                        }}
+                        className="ml-0.5 hover:text-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </span>
+                    </Badge>
+                  )}
                 </div>
-                <DropdownMenuItem className="py-2" onClick={() => h.setFilterStatus("all")}>
-                  <span className={cn(h.filterStatus === "all" && "font-medium")}>すべて</span>
+              )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-auto py-2">
+              <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">
+                ステータス
+              </div>
+              <DropdownMenuItem className="py-2" onClick={() => h.setFilterStatus("all")}>
+                <span className={cn(h.filterStatus === "all" && "font-medium")}>すべて</span>
+              </DropdownMenuItem>
+              {Object.entries(workflowStatusLabels).map(([k, v]) => (
+                <DropdownMenuItem className="py-2" key={k} onClick={() => h.setFilterStatus(k)}>
+                  <span className={cn(h.filterStatus === k && "font-medium")}>{v}</span>
                 </DropdownMenuItem>
-                {Object.entries(workflowStatusLabels).map(([k, v]) => (
-                  <DropdownMenuItem className="py-2" key={k} onClick={() => h.setFilterStatus(k)}>
-                    <span className={cn(h.filterStatus === k && "font-medium")}>{v}</span>
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">種別</div>
-                <DropdownMenuItem className="py-2" onClick={() => h.setFilterType("all")}>
-                  <span className={cn(h.filterType === "all" && "font-medium")}>すべて</span>
+              ))}
+              <DropdownMenuSeparator />
+              <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">種別</div>
+              <DropdownMenuItem className="py-2" onClick={() => h.setFilterType("all")}>
+                <span className={cn(h.filterType === "all" && "font-medium")}>すべて</span>
+              </DropdownMenuItem>
+              {Object.entries(workflowRequestTypeLabels).map(([k, v]) => (
+                <DropdownMenuItem className="py-2" key={k} onClick={() => h.setFilterType(k)}>
+                  <span className={cn(h.filterType === k && "font-medium")}>{v}</span>
                 </DropdownMenuItem>
-                {Object.entries(workflowRequestTypeLabels).map(([k, v]) => (
-                  <DropdownMenuItem className="py-2" key={k} onClick={() => h.setFilterType(k)}>
-                    <span className={cn(h.filterType === k && "font-medium")}>{v}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </StickyFilterBar>
 
-          <div className="bg-white">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-40">申請者</TableHead>
-                  <TableHead>種別</TableHead>
-                  <TableHead>申請内容</TableHead>
-                  <TableHead>申請日</TableHead>
-                  <TableHead>ステータス</TableHead>
-                  <TableHead className="w-20">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableEmptyState
-                  colSpan={6}
-                  isLoading={h.requestsLoading}
-                  isEmpty={h.filteredRequests.length === 0}
-                  emptyMessage="申請はありません"
-                >
-                  {h.filteredRequests.map((req) => {
-                    const emp = h.getEmployee(req.user_id);
-                    return (
-                      <TableRow key={req.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarFallback className="text-xs">
-                                {(emp?.display_name ?? emp?.email ?? "?")[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm truncate">
-                              {emp?.display_name ?? emp?.email ?? req.user_id}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={workflowRequestTypeColors[req.request_type] ?? "outline"}>
-                            {workflowRequestTypeLabels[req.request_type] ?? req.request_type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm max-w-60 truncate">
-                          {formatRequestSummary(req)}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {new Date(req.created_at).toLocaleDateString("ja-JP")}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={workflowStatusColors[req.status] ?? "outline"}>
-                            {workflowStatusLabels[req.status] ?? req.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {req.status === "pending" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => h.openReviewDialog(req)}
-                            >
-                              確認
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableEmptyState>
-              </TableBody>
-            </Table>
-          </div>
-        </>
+      {h.activeTab === "requests" && (
+        <TableSection>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-40">申請者</TableHead>
+                <TableHead>種別</TableHead>
+                <TableHead>申請内容</TableHead>
+                <TableHead>申請日</TableHead>
+                <TableHead>ステータス</TableHead>
+                <TableHead className="w-20">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableEmptyState
+                colSpan={6}
+                isLoading={h.requestsLoading}
+                isEmpty={h.filteredRequests.length === 0}
+                emptyMessage="申請はありません"
+              >
+                {h.filteredRequests.map((req) => {
+                  const emp = h.getEmployee(req.user_id);
+                  return (
+                    <TableRow key={req.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-xs">
+                              {(emp?.display_name ?? emp?.email ?? "?")[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm truncate">
+                            {emp?.display_name ?? emp?.email ?? req.user_id}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={workflowRequestTypeColors[req.request_type] ?? "outline"}>
+                          {workflowRequestTypeLabels[req.request_type] ?? req.request_type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm max-w-60 truncate">
+                        {formatRequestSummary(req)}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {new Date(req.created_at).toLocaleDateString("ja-JP")}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={workflowStatusColors[req.status] ?? "outline"}>
+                          {workflowStatusLabels[req.status] ?? req.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {req.status === "pending" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => h.openReviewDialog(req)}
+                          >
+                            確認
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableEmptyState>
+            </TableBody>
+          </Table>
+        </TableSection>
       )}
 
       {h.activeTab === "settings" && (

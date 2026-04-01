@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SearchBar } from "@/components/ui/search-bar";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
+import { TabBar } from "@/components/layout/tab-bar";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { cn } from "@/lib/utils";
 import { useEvaluationTemplateDetail } from "@/lib/hooks/use-evaluation-template-detail";
 import { Trash2, SlidersHorizontal, X } from "lucide-react";
@@ -128,41 +130,23 @@ export default function EvaluationTemplateDetailPage() {
         }
       />
 
-      <div className="sticky top-14 z-10 bg-white">
-        <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8">
-          {getTabs(template.evaluation_type).map((tab) => {
-            const count =
+      <StickyFilterBar>
+        <TabBar
+          tabs={getTabs(template.evaluation_type).map((tab) => ({
+            ...tab,
+            count:
               tab.value === "criteria"
                 ? criteria.length
                 : tab.value === "evaluations"
                   ? evaluations.length
                   : tab.value === "cycles"
                     ? cycles.length
-                    : undefined;
-            return (
-              <button
-                key={tab.value}
-                type="button"
-                onClick={() => setActiveTab(tab.value)}
-                className={cn(
-                  "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-                  activeTab === tab.value
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {tab.label}
-                {count !== undefined && (
-                  <span className="ml-1.5 text-xs text-muted-foreground">{count}</span>
-                )}
-                {activeTab === tab.value && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+                    : undefined,
+          }))}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+      </StickyFilterBar>
 
       <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
         {/* ===== 評価項目タブ ===== */}

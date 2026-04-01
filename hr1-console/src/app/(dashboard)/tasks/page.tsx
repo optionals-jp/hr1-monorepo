@@ -33,8 +33,10 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { TableSection } from "@/components/layout/table-section";
 import { SearchBar } from "@/components/ui/search-bar";
 import { useRouter } from "next/navigation";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { cn } from "@/lib/utils";
 import { useTasksPage } from "@/lib/hooks/use-tasks-page";
 import {
@@ -105,10 +107,10 @@ export default function TasksPage() {
         action={<Button onClick={h.openAddDialog}>タスクを作成</Button>}
       />
 
-      <div className="sticky top-14 z-10">
+      <StickyFilterBar>
         <SearchBar value={h.search} onChange={h.setSearch} placeholder="タスク名・説明で検索" />
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
+          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
             {h.activeFilters.length > 0 && (
@@ -172,9 +174,9 @@ export default function TasksPage() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </StickyFilterBar>
 
-      <div className="bg-white">
+      <TableSection>
         <Table>
           <TableHeader>
             <TableRow>
@@ -312,7 +314,7 @@ export default function TasksPage() {
             </TableEmptyState>
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
 
       <EditPanel
         open={h.dialogOpen}

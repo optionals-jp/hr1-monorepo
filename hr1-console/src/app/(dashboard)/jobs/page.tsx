@@ -15,9 +15,11 @@ import {
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { TableSection } from "@/components/layout/table-section";
 import { SearchBar } from "@/components/ui/search-bar";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { useJobsPage } from "@/lib/hooks/use-jobs-page";
-import { cn } from "@/lib/utils";
+import { TabBar } from "@/components/layout/tab-bar";
 import { jobStatusLabels as statusLabels, jobStatusColors as statusColors } from "@/lib/constants";
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -67,39 +69,16 @@ export default function JobsPage() {
         }
       />
 
-      <div className="sticky top-14 z-10">
-        <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8 bg-white">
-          {tabCounts.map((tab) => (
-            <button
-              key={tab.value}
-              type="button"
-              onClick={() => setActiveTab(tab.value)}
-              className={cn(
-                "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-                activeTab === tab.value
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {tab.label}
-              <span
-                className={cn(
-                  "ml-1.5 text-xs tabular-nums",
-                  activeTab === tab.value ? "text-foreground" : "text-muted-foreground"
-                )}
-              >
-                {tab.count}
-              </span>
-              {activeTab === tab.value && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-              )}
-            </button>
-          ))}
-        </div>
+      <StickyFilterBar>
+        <TabBar
+          tabs={tabCounts}
+          activeTab={activeTab}
+          onTabChange={(v) => setActiveTab(v as typeof activeTab)}
+        />
         <SearchBar value={search} onChange={setSearch} placeholder="タイトル・部署・勤務地で検索" />
-      </div>
+      </StickyFilterBar>
 
-      <div className="bg-white">
+      <TableSection>
         <Table>
           <TableHeader>
             <TableRow>
@@ -153,9 +132,14 @@ export default function JobsPage() {
                       <button
                         type="button"
                         disabled={deletingId === job.id}
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
-                          handleDeleteJob(job, showToast);
+                          const result = await handleDeleteJob(job);
+                          if (result.error) {
+                            showToast(result.error, "error");
+                          } else if (result.success) {
+                            showToast("求人を削除しました");
+                          }
                         }}
                         className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-50"
                       >
@@ -168,7 +152,7 @@ export default function JobsPage() {
             </TableEmptyState>
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
     </div>
   );
 }

@@ -28,6 +28,7 @@ import {
 import { format } from "date-fns";
 import { Pencil, GripVertical, Eye, EyeOff } from "lucide-react";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { TableSection } from "@/components/layout/table-section";
 
 export default function FaqsPage() {
   const { data: faqs = [], isLoading, error: faqsError, mutate: mutateFaqs } = useFaqs();
@@ -64,7 +65,7 @@ export default function FaqsPage() {
 
       <QueryErrorBanner error={faqsError} onRetry={() => mutateFaqs()} />
 
-      <div className="bg-white">
+      <TableSection>
         <Table>
           <TableHeader>
             <TableRow>
@@ -132,7 +133,7 @@ export default function FaqsPage() {
             </TableEmptyState>
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
 
       <EditPanel
         open={editOpen}

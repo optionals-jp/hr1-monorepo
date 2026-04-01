@@ -21,6 +21,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useApplicationsPage } from "@/lib/hooks/use-applications-page";
+import { TabBar } from "@/components/layout/tab-bar";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { TableSection } from "@/components/layout/table-section";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SlidersHorizontal, X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -67,37 +70,21 @@ export default function ApplicationsPage() {
         border={false}
       />
 
-      <div className="sticky top-14 z-10">
-        <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8 bg-white">
-          {statusTabs.map((tab) => {
-            const count =
+      <StickyFilterBar>
+        <TabBar
+          tabs={statusTabs.map((tab) => ({
+            ...tab,
+            count:
               tab.value === "all"
                 ? applications.length
-                : applications.filter((a) => a.status === tab.value).length;
-            return (
-              <button
-                key={tab.value}
-                type="button"
-                onClick={() => setStatusFilter(tab.value)}
-                className={cn(
-                  "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-                  statusFilter === tab.value
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {tab.label}
-                <span className="ml-1.5 text-xs text-muted-foreground">{count}</span>
-                {statusFilter === tab.value && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-                )}
-              </button>
-            );
-          })}
-        </div>
+                : applications.filter((a) => a.status === tab.value).length,
+          }))}
+          activeTab={statusFilter}
+          onTabChange={setStatusFilter}
+        />
         <SearchBar value={search} onChange={setSearch} />
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
+          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
             {filterJobId !== "all" && (
@@ -134,9 +121,9 @@ export default function ApplicationsPage() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </StickyFilterBar>
 
-      <div className="bg-white">
+      <TableSection>
         <Table>
           <TableHeader>
             <TableRow>
@@ -200,7 +187,7 @@ export default function ApplicationsPage() {
             )}
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
     </div>
   );
 }

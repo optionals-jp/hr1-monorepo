@@ -16,6 +16,7 @@ import {
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { TableSection } from "@/components/layout/table-section";
 import { formatMinutesHM } from "@/lib/utils";
 import {
   ChevronLeft,
@@ -183,7 +184,7 @@ export function MonthlySummaryTab() {
         )}
       </div>
 
-      <div className="bg-white">
+      <TableSection>
         <Table>
           <TableHeader>
             <TableRow>
@@ -249,7 +250,7 @@ export function MonthlySummaryTab() {
             </TableEmptyState>
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
     </>
   );
 }

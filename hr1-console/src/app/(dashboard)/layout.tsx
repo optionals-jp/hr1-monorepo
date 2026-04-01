@@ -37,7 +37,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
       <Header />
       <div className="flex min-h-0">
         {!isSettings && <Sidebar />}
-        <main className="flex flex-col flex-1 min-w-0 bg-main-pattern">{children}</main>
+        <main className="flex flex-col flex-1 min-w-0 bg-main-pattern *:flex-1">{children}</main>
       </div>
     </OrgProvider>
   );

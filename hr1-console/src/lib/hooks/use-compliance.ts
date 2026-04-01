@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useToast } from "@/components/ui/toast";
 import { useOrg } from "@/lib/org-context";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
@@ -12,7 +11,6 @@ export function useComplianceAlerts() {
 }
 
 export function useCompliancePage() {
-  const { showToast } = useToast();
   const { organization } = useOrg();
   const [running, setRunning] = useState(false);
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
@@ -46,30 +44,32 @@ export function useCompliancePage() {
     };
   }, [alerts]);
 
-  const handleRunCheck = async () => {
-    if (!organization) return;
+  const handleRunCheck = async (): Promise<{
+    success: boolean;
+    error?: string;
+    count?: number;
+  }> => {
+    if (!organization) return { success: false, error: "組織が選択されていません" };
     setRunning(true);
     try {
       const result = await runComplianceCheck(organization.id);
       if (!result.success) {
-        showToast(result.error!, "error");
-      } else {
-        await mutateAlerts();
-        showToast(`チェック完了: ${result.count}件の新規アラートを検出しました`, "success");
+        return { success: false, error: result.error };
       }
+      await mutateAlerts();
+      return { success: true, count: result.count };
     } finally {
       setRunning(false);
     }
   };
 
-  const handleResolve = async (alertId: string) => {
+  const handleResolve = async (alertId: string): Promise<{ success: boolean; error?: string }> => {
     const result = await resolveAlert(alertId, organization!.id);
     if (!result.success) {
-      showToast(result.error!, "error");
-    } else {
-      await mutateAlerts();
-      showToast("対応済みにしました", "success");
+      return { success: false, error: result.error };
     }
+    await mutateAlerts();
+    return { success: true };
   };
 
   return {

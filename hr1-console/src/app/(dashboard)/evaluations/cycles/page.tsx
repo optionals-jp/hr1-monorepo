@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useOrg } from "@/lib/org-context";
+import { TableSection } from "@/components/layout/table-section";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { cycleStatusLabels, cycleStatusColors } from "@/lib/constants";
 import { useEvaluationCyclesWithDetails } from "@/lib/hooks/use-evaluations";
@@ -48,7 +49,7 @@ export default function EvaluationCyclesPage() {
         ) : !cycles || cycles.length === 0 ? (
           <p className="text-center py-8 text-muted-foreground">評価サイクルがありません</p>
         ) : (
-          <div className="overflow-x-auto bg-white rounded-md">
+          <TableSection>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -95,7 +96,7 @@ export default function EvaluationCyclesPage() {
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </TableSection>
         )}
       </PageContent>
     </>

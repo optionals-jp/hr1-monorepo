@@ -10,10 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
 import { useToast } from "@/components/ui/toast";
 import { applicationStatusLabels as statusLabels } from "@/lib/constants";
+import { TabBar } from "@/components/layout/tab-bar";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 import { useApplicationDetail } from "@/features/applications/hooks/use-application-detail";
 import { ApplicationDashboardTab } from "@/features/applications/components/application-dashboard-tab";
@@ -103,32 +104,13 @@ export default function ApplicationDetailPage() {
         }
       />
 
-      {/* タブナビゲーション（sticky） */}
-      <div className="sticky top-14 z-10 bg-white">
-        <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8">
-          {tabs.map((tab) => (
-            <button
-              key={tab.value}
-              type="button"
-              onClick={() => detail.setActiveTab(tab.value)}
-              className={cn(
-                "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-                detail.activeTab === tab.value
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {tab.label}
-              {"count" in tab && tab.count !== undefined && (
-                <span className="ml-1.5 text-xs text-muted-foreground">{tab.count}</span>
-              )}
-              {detail.activeTab === tab.value && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
+      <StickyFilterBar>
+        <TabBar
+          tabs={tabs}
+          activeTab={detail.activeTab}
+          onTabChange={(v) => detail.setActiveTab(v as (typeof tabs)[number]["value"])}
+        />
+      </StickyFilterBar>
 
       <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
         {detail.activeTab === "dashboard" && (

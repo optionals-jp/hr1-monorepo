@@ -18,8 +18,11 @@ import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { EditPanel } from "@/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
 import { useProjectsPage } from "@/lib/hooks/use-projects";
+import { TabBar } from "@/components/layout/tab-bar";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { TableSection } from "@/components/layout/table-section";
 import { SearchBar } from "@/components/ui/search-bar";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { projectStatusLabels, projectStatusColors } from "@/lib/constants";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -71,32 +74,17 @@ export default function ProjectsPage() {
         }
       />
 
-      <div className="sticky top-14 z-10">
-        <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8 bg-white">
-          {pageTabs.map((tab) => (
-            <button
-              key={tab.value}
-              type="button"
-              onClick={() => h.setActiveTab(tab.value)}
-              className={cn(
-                "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-                h.activeTab === tab.value
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {tab.label}
-              {h.activeTab === tab.value && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-              )}
-            </button>
-          ))}
-        </div>
+      <StickyFilterBar>
+        <TabBar
+          tabs={pageTabs}
+          activeTab={h.activeTab}
+          onTabChange={(v) => h.setActiveTab(v as typeof h.activeTab)}
+        />
         {h.activeTab === "list" && (
           <>
             <SearchBar value={h.search} onChange={h.setSearch} />
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
+              <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
                 <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
                 {h.filterStatus !== "all" && (
@@ -132,12 +120,12 @@ export default function ProjectsPage() {
             </DropdownMenu>
           </>
         )}
-      </div>
+      </StickyFilterBar>
 
       <QueryErrorBanner error={h.projectsError} onRetry={() => h.mutate()} />
 
       {h.activeTab === "list" && (
-        <div className="bg-white">
+        <TableSection>
           <Table>
             <TableHeader>
               <TableRow>
@@ -192,7 +180,7 @@ export default function ProjectsPage() {
               </TableEmptyState>
             </TableBody>
           </Table>
-        </div>
+        </TableSection>
       )}
 
       {h.activeTab === "guide" && (

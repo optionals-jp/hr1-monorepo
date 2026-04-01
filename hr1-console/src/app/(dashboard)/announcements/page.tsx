@@ -27,6 +27,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/components/ui/toast";
+import { TableSection } from "@/components/layout/table-section";
 import { format } from "date-fns";
 import { Pencil, Pin, Send, Undo2 } from "lucide-react";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
@@ -42,6 +44,7 @@ function statusBadge(a: Announcement) {
 }
 
 export default function AnnouncementsPage() {
+  const { showToast } = useToast();
   const {
     data: announcements = [],
     isLoading,
@@ -71,6 +74,30 @@ export default function AnnouncementsPage() {
     togglePin,
   } = useAnnouncementPanel();
 
+  const onSave = async () => {
+    const result = await handleSave();
+    if (result.success) showToast("保存しました");
+    else if (result.error) showToast(result.error, "error");
+  };
+
+  const onDelete = async () => {
+    const result = await handleDelete();
+    if (result.success) showToast("削除しました");
+    else if (result.error) showToast(result.error, "error");
+  };
+
+  const onTogglePublish = async (a: Announcement) => {
+    const result = await togglePublish(a);
+    if (result.success) showToast(a.published_at ? "非公開にしました" : "公開しました");
+    else if (result.error) showToast(result.error, "error");
+  };
+
+  const onTogglePin = async (a: Announcement) => {
+    const result = await togglePin(a);
+    if (result.success) showToast(a.is_pinned ? "固定を解除しました" : "固定しました");
+    else if (result.error) showToast(result.error, "error");
+  };
+
   return (
     <div className="flex flex-col">
       <PageHeader
@@ -82,7 +109,7 @@ export default function AnnouncementsPage() {
 
       <QueryErrorBanner error={announcementsError} onRetry={() => mutateAnnouncements()} />
 
-      <div className="bg-white">
+      <TableSection>
         <Table>
           <TableHeader>
             <TableRow>
@@ -122,7 +149,7 @@ export default function AnnouncementsPage() {
                     <div className="flex gap-1">
                       <button
                         type="button"
-                        onClick={() => togglePublish(a)}
+                        onClick={() => onTogglePublish(a)}
                         title={a.published_at ? "非公開にする" : "公開する"}
                         className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                       >
@@ -134,7 +161,7 @@ export default function AnnouncementsPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => togglePin(a)}
+                        onClick={() => onTogglePin(a)}
                         title={a.is_pinned ? "固定を解除" : "固定する"}
                         className={`p-1.5 rounded-md transition-colors ${a.is_pinned ? "text-primary hover:text-primary/80" : "text-muted-foreground hover:text-foreground"} hover:bg-accent`}
                       >
@@ -154,16 +181,16 @@ export default function AnnouncementsPage() {
             </TableEmptyState>
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
 
       <EditPanel
         open={editOpen}
         onOpenChange={setEditOpen}
         title={editItem ? "お知らせを編集" : "お知らせを作成"}
-        onSave={handleSave}
+        onSave={onSave}
         saving={saving}
         saveDisabled={!title.trim() || !body.trim()}
-        onDelete={editItem ? handleDelete : undefined}
+        onDelete={editItem ? onDelete : undefined}
         deleting={deleting}
       >
         <div className="space-y-4">

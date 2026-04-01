@@ -7,6 +7,7 @@ import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
+import { TableSection } from "@/components/layout/table-section";
 import { dealStatusLabels, dealStatusColors, dealStageLabels } from "@/lib/constants";
 import { useRouter } from "next/navigation";
 import { useCrmDealsAll } from "@/lib/hooks/use-crm";
@@ -52,45 +53,47 @@ export default function CrmDealsPage() {
         </div>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>商談名</TableHead>
-            <TableHead>企業</TableHead>
-            <TableHead>ステージ</TableHead>
-            <TableHead>金額</TableHead>
-            <TableHead>見込み日</TableHead>
-            <TableHead>ステータス</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableEmptyState
-          colSpan={6}
-          isLoading={!deals}
-          isEmpty={filtered.length === 0}
-          emptyMessage="商談が見つかりません"
-        >
-          {filtered.map((deal) => (
-            <TableRow
-              key={deal.id}
-              className="cursor-pointer"
-              onClick={() => router.push(`/crm/deals/${deal.id}`)}
-            >
-              <TableCell className="font-medium">{deal.title}</TableCell>
-              <TableCell>{deal.bc_companies?.name ?? "—"}</TableCell>
-              <TableCell>{dealStageLabels[deal.stage] ?? deal.stage}</TableCell>
-              <TableCell>
-                {deal.amount != null ? `¥${deal.amount.toLocaleString()}` : "—"}
-              </TableCell>
-              <TableCell>{deal.expected_close_date ?? "—"}</TableCell>
-              <TableCell>
-                <Badge variant={dealStatusColors[deal.status]}>
-                  {dealStatusLabels[deal.status] ?? deal.status}
-                </Badge>
-              </TableCell>
+      <TableSection>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>商談名</TableHead>
+              <TableHead>企業</TableHead>
+              <TableHead>ステージ</TableHead>
+              <TableHead>金額</TableHead>
+              <TableHead>見込み日</TableHead>
+              <TableHead>ステータス</TableHead>
             </TableRow>
-          ))}
-        </TableEmptyState>
-      </Table>
+          </TableHeader>
+          <TableEmptyState
+            colSpan={6}
+            isLoading={!deals}
+            isEmpty={filtered.length === 0}
+            emptyMessage="商談が見つかりません"
+          >
+            {filtered.map((deal) => (
+              <TableRow
+                key={deal.id}
+                className="cursor-pointer"
+                onClick={() => router.push(`/crm/deals/${deal.id}`)}
+              >
+                <TableCell className="font-medium">{deal.title}</TableCell>
+                <TableCell>{deal.bc_companies?.name ?? "—"}</TableCell>
+                <TableCell>{dealStageLabels[deal.stage] ?? deal.stage}</TableCell>
+                <TableCell>
+                  {deal.amount != null ? `¥${deal.amount.toLocaleString()}` : "—"}
+                </TableCell>
+                <TableCell>{deal.expected_close_date ?? "—"}</TableCell>
+                <TableCell>
+                  <Badge variant={dealStatusColors[deal.status]}>
+                    {dealStatusLabels[deal.status] ?? deal.status}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableEmptyState>
+        </Table>
+      </TableSection>
     </div>
   );
 }

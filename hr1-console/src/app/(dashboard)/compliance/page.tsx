@@ -24,7 +24,9 @@ import {
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { TableSection } from "@/components/layout/table-section";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 import { useCompliancePage } from "@/lib/hooks/use-compliance";
 import {
   Play,
@@ -87,6 +89,7 @@ function formatDateJa(dateStr: string): string {
 }
 
 export default function CompliancePage() {
+  const { showToast } = useToast();
   const {
     alerts,
     alertsError,
@@ -104,13 +107,31 @@ export default function CompliancePage() {
     handleResolve,
   } = useCompliancePage();
 
+  const onRunCheck = async () => {
+    const result = await handleRunCheck();
+    if (!result.success) {
+      showToast(result.error!, "error");
+    } else {
+      showToast(`チェック完了: ${result.count}件の新規アラートを検出しました`, "success");
+    }
+  };
+
+  const onResolve = async (alertId: string) => {
+    const result = await handleResolve(alertId);
+    if (!result.success) {
+      showToast(result.error!, "error");
+    } else {
+      showToast("対応済みにしました", "success");
+    }
+  };
+
   return (
     <div className="flex flex-col">
       <PageHeader
         title="法令ガイド"
         description="コンプライアンスリスクを自動検出しアラートを管理します"
         action={
-          <Button onClick={handleRunCheck} disabled={running}>
+          <Button onClick={onRunCheck} disabled={running}>
             <Play className="h-4 w-4 mr-1.5" />
             {running ? "チェック中..." : "チェック実行"}
           </Button>
@@ -151,7 +172,7 @@ export default function CompliancePage() {
         </div>
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 cursor-pointer">
+          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 cursor-pointer">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
             {(filterStatus !== "unresolved" ||
@@ -270,7 +291,7 @@ export default function CompliancePage() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <div className="rounded-lg border">
+        <TableSection>
           <Table>
             <TableHeader>
               <TableRow>
@@ -314,11 +335,7 @@ export default function CompliancePage() {
                       </TableCell>
                       <TableCell>
                         {!alert.is_resolved && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleResolve(alert.id)}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => onResolve(alert.id)}>
                             <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                             対応済み
                           </Button>
@@ -330,7 +347,7 @@ export default function CompliancePage() {
               </TableEmptyState>
             </TableBody>
           </Table>
-        </div>
+        </TableSection>
       </div>
     </div>
   );

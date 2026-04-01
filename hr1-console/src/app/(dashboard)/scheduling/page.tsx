@@ -31,6 +31,7 @@ import {
   interviewScheduleStatusColors as statusColors,
 } from "@/lib/constants";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { TableSection } from "@/components/layout/table-section";
 
 export default function SchedulingPage() {
   const router = useRouter();
@@ -159,7 +160,7 @@ export default function SchedulingPage() {
 
       <QueryErrorBanner error={interviewsError} onRetry={() => mutate()} />
 
-      <div className="bg-white">
+      <TableSection>
         <Table>
           <TableHeader>
             <TableRow>
@@ -202,7 +203,7 @@ export default function SchedulingPage() {
             </TableEmptyState>
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
     </div>
   );
 }

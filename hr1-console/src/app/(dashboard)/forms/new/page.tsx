@@ -14,10 +14,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Trash2 } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 import { useCreateForm } from "@/lib/hooks/use-forms";
 import { fieldTypeLabels, formTargetLabels } from "@/lib/constants";
 
 export default function NewFormPage() {
+  const { showToast } = useToast();
   const {
     title,
     setTitle,
@@ -33,6 +35,15 @@ export default function NewFormPage() {
     handleSubmit,
     cancel,
   } = useCreateForm();
+
+  const onSubmit = async () => {
+    const result = await handleSubmit();
+    if (result.success) {
+      showToast("フォームを作成しました");
+    } else if (result.error) {
+      showToast(result.error, "error");
+    }
+  };
 
   return (
     <>
@@ -174,7 +185,7 @@ export default function NewFormPage() {
             <Button variant="outline" onClick={cancel}>
               キャンセル
             </Button>
-            <Button onClick={handleSubmit} disabled={!title || saving}>
+            <Button onClick={onSubmit} disabled={!title || saving}>
               {saving ? "作成中..." : "フォームを作成"}
             </Button>
           </div>

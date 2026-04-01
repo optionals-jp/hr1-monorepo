@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/table";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { DatetimeInput } from "@/components/ui/datetime-input";
+import { TabBar } from "@/components/layout/tab-bar";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { cn } from "@/lib/utils";
 import { useSchedulingDetailPage } from "@/lib/hooks/use-scheduling-detail";
 import { Calendar, Trash2, Search } from "lucide-react";
@@ -94,39 +96,21 @@ export default function SchedulingDetailPage() {
         }
       />
 
-      <div className="sticky top-14 z-10 bg-white">
-        <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8">
-          {tabs.map((tab) => {
-            const count =
+      <StickyFilterBar>
+        <TabBar
+          tabs={tabs.map((tab) => ({
+            ...tab,
+            count:
               tab.value === "timeline"
                 ? h.bookedApps.length
                 : tab.value === "history"
                   ? auditLogCount
-                  : undefined;
-            return (
-              <button
-                key={tab.value}
-                type="button"
-                onClick={() => h.setActiveTab(tab.value)}
-                className={cn(
-                  "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-                  h.activeTab === tab.value
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {tab.label}
-                {count !== undefined && (
-                  <span className="ml-1.5 text-xs text-muted-foreground">{count}</span>
-                )}
-                {h.activeTab === tab.value && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+                  : undefined,
+          }))}
+          activeTab={h.activeTab}
+          onTabChange={h.setActiveTab}
+        />
+      </StickyFilterBar>
 
       {(h.activeTab === "detail" || h.activeTab === "history") && (
         <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">

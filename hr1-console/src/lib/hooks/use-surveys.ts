@@ -6,7 +6,6 @@ import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import { useOrg } from "@/lib/org-context";
 import { useQuery } from "@/lib/use-query";
-import { useToast } from "@/components/ui/toast";
 import { mutate as swrMutate } from "swr";
 import * as repo from "@/lib/repositories/survey-repository";
 import type { PulseSurvey, PulseSurveyQuestion, PulseSurveyResponse } from "@/types/database";
@@ -203,7 +202,6 @@ export function useSurveyDetailPage(id: string) {
 export function useSurveyCreatePanel() {
   const { organization } = useOrg();
   const router = useRouter();
-  const { showToast } = useToast();
   const {
     data: surveys = [],
     isLoading,
@@ -226,8 +224,8 @@ export function useSurveyCreatePanel() {
     setEditOpen(true);
   }
 
-  async function handleSave() {
-    if (!organization || !title.trim()) return;
+  async function handleSave(): Promise<{ success: boolean; error?: string; id?: string }> {
+    if (!organization || !title.trim()) return { success: false };
     setSaving(true);
     const result = await createSurvey(organization.id, {
       title,
@@ -238,14 +236,14 @@ export function useSurveyCreatePanel() {
     if (result.success) {
       await mutateSurveys();
       setEditOpen(false);
-      showToast("サーベイを作成しました");
       if (result.id) {
         router.push(`/surveys/${result.id}`);
       }
-    } else {
-      showToast(result.error ?? "サーベイの作成に失敗しました", "error");
     }
     setSaving(false);
+    return result.success
+      ? { success: true, id: result.id }
+      : { success: false, error: result.error ?? "サーベイの作成に失敗しました" };
   }
 
   const todayStr = new Date().toISOString().split("T")[0];

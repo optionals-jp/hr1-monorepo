@@ -2,7 +2,8 @@
 
 import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { PageHeader } from "@/components/layout/page-header";
-import { cn } from "@/lib/utils";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { TabBar } from "@/components/layout/tab-bar";
 import { Calendar, Clock, ShieldCheck, FileEdit, Settings2 } from "lucide-react";
 import { useAttendanceData } from "@/features/attendance/hooks/use-attendance-data";
 import { DailyAttendanceTab } from "@/features/attendance/components/daily-attendance-tab";
@@ -32,29 +33,15 @@ export default function AttendancePage() {
         description="社員の出退勤状況を管理します"
         sticky={false}
         border={false}
-        tabs={
-          <div className="flex gap-1 border-b -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8">
-            {tabList.map((t) => {
-              const Icon = t.icon;
-              return (
-                <button
-                  key={t.value}
-                  onClick={() => setActiveTab(t.value)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-4 pb-2.5 pt-1 text-sm font-medium border-b-2 transition-colors -mb-px",
-                    activeTab === t.value
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-        }
       />
+
+      <StickyFilterBar>
+        <TabBar
+          tabs={tabList}
+          activeTab={activeTab}
+          onTabChange={(v) => setActiveTab(v as TabValue)}
+        />
+      </StickyFilterBar>
 
       {activeTab === "daily" && (
         <DailyAttendanceTab settings={settings ?? null} employees={employees} />

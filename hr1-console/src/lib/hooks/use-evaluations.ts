@@ -3,7 +3,6 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSWRConfig } from "swr";
-import { useToast } from "@/components/ui/toast";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
@@ -39,7 +38,6 @@ export type { AnchorDraft, CriterionDraft };
 
 export function useCreateEvaluation() {
   const router = useRouter();
-  const { showToast } = useToast();
   const { mutate } = useSWRConfig();
   const { organization } = useOrg();
 
@@ -101,8 +99,11 @@ export function useCreateEvaluation() {
     []
   );
 
-  const handleSubmit = useCallback(async () => {
-    if (!organization || !title) return;
+  const handleSubmit = useCallback(async (): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    if (!organization || !title) return { success: false };
     setSaving(true);
 
     const result = await createTemplate(organization.id, {
@@ -123,12 +124,13 @@ export function useCreateEvaluation() {
 
     if (result.success) {
       await mutate(`eval-templates-${organization.id}`);
-      showToast("評価シートを作成しました");
       router.push("/evaluations");
+      setSaving(false);
+      return { success: true };
     } else {
-      showToast(result.error ?? "評価シートの作成に失敗しました", "error");
+      setSaving(false);
+      return { success: false, error: result.error ?? "評価シートの作成に失敗しました" };
     }
-    setSaving(false);
   }, [
     organization,
     title,
@@ -138,7 +140,6 @@ export function useCreateEvaluation() {
     description,
     criteria,
     mutate,
-    showToast,
     router,
   ]);
 
@@ -218,7 +219,6 @@ export function useMultiRaterTemplates() {
 
 export function useNewEvaluationCycle() {
   const router = useRouter();
-  const { showToast } = useToast();
   const { mutate } = useSWRConfig();
   const { organization } = useOrg();
   const { user } = useAuth();
@@ -236,8 +236,9 @@ export function useNewEvaluationCycle() {
   const [endDate, setEndDate] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!organization || !user || !title || !templateId || !startDate || !endDate) return;
+  const handleSubmit = async (): Promise<{ success: boolean; error?: string }> => {
+    if (!organization || !user || !title || !templateId || !startDate || !endDate)
+      return { success: false };
     setSaving(true);
 
     const result = await createCycle(organization.id, user.id, {
@@ -250,12 +251,13 @@ export function useNewEvaluationCycle() {
 
     if (result.success) {
       await mutate(`eval-cycles-${organization.id}`);
-      showToast("評価サイクルを作成しました");
       router.push(`/evaluations/cycles/${result.cycleId}`);
+      setSaving(false);
+      return { success: true };
     } else {
-      showToast(result.error ?? "サイクルの作成に失敗しました", "error");
+      setSaving(false);
+      return { success: false, error: result.error ?? "サイクルの作成に失敗しました" };
     }
-    setSaving(false);
   };
 
   const cancel = () => {

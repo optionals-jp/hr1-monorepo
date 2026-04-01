@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SearchBar } from "@/components/ui/search-bar";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { TableSection } from "@/components/layout/table-section";
 import { cn, formatDateLocal, formatTime, formatMinutesHM } from "@/lib/utils";
 import type { AttendancePunch, AttendanceRecord, AttendanceSettingsRow } from "@/types/database";
 import { attendanceStatusLabels, attendanceStatusColors, punchTypeLabels } from "@/lib/constants";
@@ -155,7 +157,7 @@ export function DailyAttendanceTab({ settings, employees }: DailyAttendanceTabPr
 
   return (
     <>
-      <div className="px-4 py-3 sm:px-6 md:px-8 space-y-4">
+      <div className="bg-white px-4 py-3 sm:px-6 md:px-8 space-y-4">
         <QueryErrorBanner error={dailyError} onRetry={() => mutateDaily()} />
         <MissedPunchAlert employees={missedPunches} />
         <div className="flex items-center gap-2">
@@ -228,10 +230,10 @@ export function DailyAttendanceTab({ settings, employees }: DailyAttendanceTabPr
         </div>
       </div>
 
-      <div className="sticky top-14 z-10">
+      <StickyFilterBar>
         <SearchBar value={search} onChange={setSearch} placeholder="社員名・メールで検索" />
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
+          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
             {filterStatus !== "all" && (
@@ -264,9 +266,9 @@ export function DailyAttendanceTab({ settings, employees }: DailyAttendanceTabPr
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </StickyFilterBar>
 
-      <div className="bg-white">
+      <TableSection>
         <Table>
           <TableHeader>
             <TableRow>
@@ -399,7 +401,7 @@ export function DailyAttendanceTab({ settings, employees }: DailyAttendanceTabPr
             </TableEmptyState>
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
     </>
   );
 }

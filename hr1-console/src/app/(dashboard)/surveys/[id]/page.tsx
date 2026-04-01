@@ -33,8 +33,10 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { Pencil, Trash2, Plus, Play, Square, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
+import { TabBar } from "@/components/layout/tab-bar";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { TableSection } from "@/components/layout/table-section";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SurveyAnalyticsTab } from "./survey-analytics-tab";
 
@@ -145,32 +147,20 @@ export default function SurveyDetailPage() {
         <span>回答済み: {h.completedCount}件</span>
       </div>
 
-      <div className="border-b px-6 flex gap-6" role="tablist">
-        {(["questions", "responses", "analytics"] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            role="tab"
-            aria-selected={h.tab === t}
-            onClick={() => h.setTab(t)}
-            className={cn(
-              "pb-2 text-sm font-medium border-b-2 transition-colors",
-              h.tab === t
-                ? "border-foreground text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {t === "questions"
-              ? `質問 (${h.questions.length})`
-              : t === "responses"
-                ? `回答 (${h.completedCount})`
-                : "分析"}
-          </button>
-        ))}
-      </div>
+      <StickyFilterBar>
+        <TabBar
+          tabs={[
+            { value: "questions", label: "質問", count: h.questions.length },
+            { value: "responses", label: "回答", count: h.completedCount },
+            { value: "analytics", label: "分析" },
+          ]}
+          activeTab={h.tab}
+          onTabChange={(v) => h.setTab(v as "questions" | "responses" | "analytics")}
+        />
+      </StickyFilterBar>
 
       {h.tab === "questions" && (
-        <div className="bg-white">
+        <TableSection>
           {h.survey.status === "draft" && (
             <div className="px-6 py-3 border-b">
               <Button size="sm" variant="outline" onClick={h.openCreateQuestion}>
@@ -231,11 +221,11 @@ export default function SurveyDetailPage() {
               </TableEmptyState>
             </TableBody>
           </Table>
-        </div>
+        </TableSection>
       )}
 
       {h.tab === "responses" && (
-        <div className="bg-white overflow-x-auto">
+        <TableSection className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -284,7 +274,7 @@ export default function SurveyDetailPage() {
               </TableEmptyState>
             </TableBody>
           </Table>
-        </div>
+        </TableSection>
       )}
 
       {h.tab === "analytics" && (

@@ -23,6 +23,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { TableSection } from "@/components/layout/table-section";
 import { cn } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
 import {
@@ -140,7 +141,7 @@ export function ApproverSettingsTab({
         </div>
       </div>
 
-      <div className="bg-white">
+      <TableSection>
         <Table>
           <TableHeader>
             <TableRow>
@@ -236,7 +237,7 @@ export function ApproverSettingsTab({
             </TableEmptyState>
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
 
       <EditPanel
         open={approverDialogOpen}

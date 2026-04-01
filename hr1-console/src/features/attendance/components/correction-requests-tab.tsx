@@ -24,6 +24,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { TableSection } from "@/components/layout/table-section";
 import { cn, formatTime } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
 import {
@@ -83,9 +85,9 @@ export function CorrectionRequestsTab() {
 
   return (
     <>
-      <div className="sticky top-14 z-10">
+      <StickyFilterBar>
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
+          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
             {correctionFilter !== "all" && (
@@ -118,9 +120,9 @@ export function CorrectionRequestsTab() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </StickyFilterBar>
 
-      <div className="bg-white">
+      <TableSection>
         <Table>
           <TableHeader>
             <TableRow>
@@ -193,7 +195,7 @@ export function CorrectionRequestsTab() {
             </TableEmptyState>
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
 
       <EditPanel
         open={reviewDialogOpen}

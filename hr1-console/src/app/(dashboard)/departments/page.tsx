@@ -21,11 +21,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { cn } from "@/lib/utils";
 import { useDepartmentsPage, type DeptWithMembers } from "@/lib/hooks/use-departments-page";
+import { TabBar } from "@/components/layout/tab-bar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { TableSection } from "@/components/layout/table-section";
 import { Trash2, Pencil, Users, ZoomIn, ZoomOut, Maximize } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -186,32 +188,17 @@ export default function DepartmentsPage() {
         action={<Button onClick={openAddDialog}>部署を追加</Button>}
       />
 
-      <div className="sticky top-14 z-10">
-        <div className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8 bg-white">
-          {pageTabs.map((tab) => (
-            <button
-              key={tab.value}
-              type="button"
-              onClick={() => setActiveTab(tab.value)}
-              className={cn(
-                "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors",
-                activeTab === tab.value
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {tab.label}
-              {activeTab === tab.value && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-              )}
-            </button>
-          ))}
-        </div>
+      <StickyFilterBar>
+        <TabBar
+          tabs={pageTabs}
+          activeTab={activeTab}
+          onTabChange={(v) => setActiveTab(v as typeof activeTab)}
+        />
         {activeTab === "list" && <SearchBar value={search} onChange={setSearch} />}
-      </div>
+      </StickyFilterBar>
 
       {activeTab === "list" && (
-        <div className="bg-white">
+        <TableSection>
           <Table>
             <TableHeader>
               <TableRow>
@@ -285,7 +272,7 @@ export default function DepartmentsPage() {
               )}
             </TableBody>
           </Table>
-        </div>
+        </TableSection>
       )}
 
       {activeTab === "orgchart" && (
