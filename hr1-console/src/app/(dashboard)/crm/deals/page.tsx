@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,10 +28,19 @@ import {
 } from "@/lib/constants";
 import { useRouter } from "next/navigation";
 import { useCrmDealsPage, useCrmCompanies, useCrmContacts } from "@/lib/hooks/use-crm";
+import { DealKanban } from "@/components/crm/deal-kanban";
+import { getSupabase } from "@/lib/supabase/browser";
+import { updateDeal } from "@/lib/repositories/crm-repository";
+import { useOrg } from "@/lib/org-context";
+import { LayoutList, Kanban } from "lucide-react";
+
+type ViewMode = "table" | "kanban";
 
 export default function CrmDealsPage() {
   const { showToast } = useToast();
   const router = useRouter();
+  const { organization } = useOrg();
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
   const {
     search,
     setSearch,
@@ -47,79 +57,134 @@ export default function CrmDealsPage() {
     openCreate,
     handleSave,
     handleDelete,
+    mutate,
   } = useCrmDealsPage();
 
   const { data: companies } = useCrmCompanies();
   const { data: contacts } = useCrmContacts();
 
+  const handleStageChange = async (dealId: string, newStage: string, newProbability: number) => {
+    if (!organization) return;
+    try {
+      await updateDeal(getSupabase(), dealId, organization.id, {
+        stage: newStage as "initial" | "proposal" | "negotiation" | "closing",
+        probability: newProbability,
+      });
+      mutate();
+    } catch {
+      showToast("ステージの更新に失敗しました", "error");
+    }
+  };
+
   return (
     <div>
-      <PageHeader title="商談管理" action={<Button onClick={openCreate}>新規登録</Button>} />
+      <PageHeader
+        title="商談管理"
+        action={
+          <div className="flex gap-2">
+            <div className="flex rounded-lg border overflow-hidden">
+              <button
+                onClick={() => setViewMode("table")}
+                className={`px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
+                  viewMode === "table" ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                }`}
+              >
+                <LayoutList className="size-4" />
+                テーブル
+              </button>
+              <button
+                onClick={() => setViewMode("kanban")}
+                className={`px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
+                  viewMode === "kanban" ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                }`}
+              >
+                <Kanban className="size-4" />
+                カンバン
+              </button>
+            </div>
+            <Button onClick={openCreate}>新規登録</Button>
+          </div>
+        }
+      />
       {error && <QueryErrorBanner error={error} />}
 
-      <div className="mb-4 flex gap-2 items-center flex-wrap">
-        <SearchBar value={search} onChange={setSearch} placeholder="商談名・企業名で検索" />
-        <div className="flex gap-1">
-          {[
-            { value: "all", label: "すべて" },
-            { value: "open", label: "商談中" },
-            { value: "won", label: "受注" },
-            { value: "lost", label: "失注" },
-          ].map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setStatusFilter(opt.value)}
-              className={`px-3 py-1 text-sm rounded-full border transition-colors ${
-                statusFilter === opt.value ? "bg-primary text-primary-foreground" : "hover:bg-muted"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {viewMode === "table" && (
+        <>
+          <div className="mb-4 flex gap-2 items-center flex-wrap">
+            <SearchBar value={search} onChange={setSearch} placeholder="商談名・企業名で検索" />
+            <div className="flex gap-1">
+              {[
+                { value: "all", label: "すべて" },
+                { value: "open", label: "商談中" },
+                { value: "won", label: "受注" },
+                { value: "lost", label: "失注" },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setStatusFilter(opt.value)}
+                  className={`px-3 py-1 text-sm rounded-full border transition-colors ${
+                    statusFilter === opt.value
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>商談名</TableHead>
-            <TableHead>企業</TableHead>
-            <TableHead>ステージ</TableHead>
-            <TableHead>確度</TableHead>
-            <TableHead>金額</TableHead>
-            <TableHead>見込み日</TableHead>
-            <TableHead>ステータス</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableEmptyState
-          colSpan={7}
-          isLoading={!deals}
-          isEmpty={filtered.length === 0}
-          emptyMessage="商談が見つかりません"
-        >
-          {filtered.map((deal) => (
-            <TableRow
-              key={deal.id}
-              className="cursor-pointer"
-              onClick={() => router.push(`/crm/deals/${deal.id}`)}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>商談名</TableHead>
+                <TableHead>企業</TableHead>
+                <TableHead>ステージ</TableHead>
+                <TableHead>確度</TableHead>
+                <TableHead>金額</TableHead>
+                <TableHead>見込み日</TableHead>
+                <TableHead>ステータス</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableEmptyState
+              colSpan={7}
+              isLoading={!deals}
+              isEmpty={filtered.length === 0}
+              emptyMessage="商談が見つかりません"
             >
-              <TableCell className="font-medium">{deal.title}</TableCell>
-              <TableCell>{deal.bc_companies?.name ?? "—"}</TableCell>
-              <TableCell>{dealStageLabels[deal.stage] ?? deal.stage}</TableCell>
-              <TableCell>{deal.probability != null ? `${deal.probability}%` : "—"}</TableCell>
-              <TableCell>
-                {deal.amount != null ? `¥${deal.amount.toLocaleString()}` : "—"}
-              </TableCell>
-              <TableCell>{deal.expected_close_date ?? "—"}</TableCell>
-              <TableCell>
-                <Badge variant={dealStatusColors[deal.status]}>
-                  {dealStatusLabels[deal.status] ?? deal.status}
-                </Badge>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableEmptyState>
-      </Table>
+              {filtered.map((deal) => (
+                <TableRow
+                  key={deal.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/crm/deals/${deal.id}`)}
+                >
+                  <TableCell className="font-medium">{deal.title}</TableCell>
+                  <TableCell>{deal.bc_companies?.name ?? "—"}</TableCell>
+                  <TableCell>{dealStageLabels[deal.stage] ?? deal.stage}</TableCell>
+                  <TableCell>{deal.probability != null ? `${deal.probability}%` : "—"}</TableCell>
+                  <TableCell>
+                    {deal.amount != null ? `¥${deal.amount.toLocaleString()}` : "—"}
+                  </TableCell>
+                  <TableCell>{deal.expected_close_date ?? "—"}</TableCell>
+                  <TableCell>
+                    <Badge variant={dealStatusColors[deal.status]}>
+                      {dealStatusLabels[deal.status] ?? deal.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableEmptyState>
+          </Table>
+        </>
+      )}
+
+      {viewMode === "kanban" && deals && (
+        <DealKanban
+          deals={deals}
+          onStageChange={handleStageChange}
+          onDealClick={(id) => router.push(`/crm/deals/${id}`)}
+        />
+      )}
 
       <EditPanel
         open={editOpen}
