@@ -834,3 +834,48 @@ export interface CrmPipelineStage {
   sort_order: number;
   created_at: string;
 }
+
+// ==========================================================
+// CRM カスタムフィールド
+// ==========================================================
+
+export type CrmEntityType = "company" | "contact" | "deal";
+
+export type CrmFieldType =
+  | "text"
+  | "number"
+  | "currency"
+  | "date"
+  | "dropdown"
+  | "multi_select"
+  | "checkbox"
+  | "url"
+  | "email"
+  | "phone";
+
+export interface CrmFieldDefinition {
+  id: string;
+  organization_id: string;
+  entity_type: CrmEntityType;
+  field_type: CrmFieldType;
+  label: string;
+  description: string | null;
+  placeholder: string | null;
+  is_required: boolean;
+  options: string[] | null;
+  field_group: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmFieldValue {
+  id: string;
+  organization_id: string;
+  field_id: string;
+  entity_id: string;
+  entity_type: CrmEntityType;
+  value: string | null;
+  created_at: string;
+  updated_at: string;
+}

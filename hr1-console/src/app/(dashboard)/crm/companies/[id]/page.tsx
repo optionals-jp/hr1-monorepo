@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { dealStatusLabels, dealStatusColors } from "@/lib/constants";
 import Link from "next/link";
 import { useCrmCompany, useCrmCompanyContacts, useCrmCompanyDeals } from "@/lib/hooks/use-crm";
+import { CrmCustomFields } from "@/components/crm/crm-custom-fields";
 
 export default function CrmCompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +37,9 @@ export default function CrmCompanyDetailPage() {
             <InfoItem label="Webサイト" value={company.website} />
             <InfoItem label="業種" value={company.industry} />
           </div>
+
+          {/* カスタムフィールド */}
+          <CrmCustomFields entityId={company.id} entityType="company" mode="view" />
 
           {/* 連絡先 */}
           <div>

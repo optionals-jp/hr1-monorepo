@@ -13,6 +13,7 @@ import {
   useCrmContactActivities,
   useCrmContactCards,
 } from "@/lib/hooks/use-crm";
+import { CrmCustomFields } from "@/components/crm/crm-custom-fields";
 
 export default function CrmContactDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -49,6 +50,9 @@ export default function CrmContactDetailPage() {
             <InfoItem label="電話" value={contact.phone} />
             <InfoItem label="携帯" value={contact.mobile_phone} />
           </div>
+
+          {/* カスタムフィールド */}
+          <CrmCustomFields entityId={contact.id} entityType="contact" mode="view" />
 
           {/* 名刺画像 */}
           {(cards ?? []).length > 0 && (

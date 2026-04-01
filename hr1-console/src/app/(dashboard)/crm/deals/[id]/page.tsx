@@ -13,6 +13,7 @@ import {
   getStagesFromPipeline,
   resolveStageLabel,
 } from "@/lib/hooks/use-pipelines";
+import { CrmCustomFields } from "@/components/crm/crm-custom-fields";
 
 export default function CrmDealDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -79,6 +80,9 @@ export default function CrmDealDetailPage() {
             <InfoItem label="見込み日" value={deal.expected_close_date} />
             <InfoItem label="説明" value={deal.description} />
           </div>
+
+          {/* カスタムフィールド */}
+          <CrmCustomFields entityId={deal.id} entityType="deal" mode="view" />
 
           {/* TODO */}
           <div>
