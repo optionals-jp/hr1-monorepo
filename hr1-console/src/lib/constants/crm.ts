@@ -77,6 +77,16 @@ export const leadStatusColors: Record<string, BadgeVariant> = {
   converted: "secondary",
 };
 
+// --- 商談連絡先ロール ---
+export const dealContactRoleLabels: Record<string, string> = {
+  decision_maker: "意思決定者",
+  influencer: "影響者",
+  champion: "推進者",
+  end_user: "エンドユーザー",
+  evaluator: "評価者",
+  stakeholder: "関係者",
+};
+
 // --- 活動種別 ---
 export const activityTypeLabels: Record<string, string> = {
   appointment: "アポイント",

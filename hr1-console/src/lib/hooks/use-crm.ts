@@ -7,6 +7,7 @@ import { useQuery } from "@/lib/use-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repository from "@/lib/repositories/crm-repository";
 import * as leadRepository from "@/lib/repositories/lead-repository";
+import * as dealContactRepository from "@/lib/repositories/deal-contact-repository";
 import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
 import { dealStageProbability } from "@/lib/constants/crm";
 import type { BcCompany, BcDeal, BcLead } from "@/types/database";
@@ -112,6 +113,14 @@ export function useCrmDealTodos(dealId: string) {
   const { organization } = useOrg();
   return useQuery(organization ? `crm-deal-todos-${organization.id}-${dealId}` : null, () =>
     repository.fetchTodosByDeal(getSupabase(), dealId, organization!.id)
+  );
+}
+
+// --- Deal Contacts ---
+export function useCrmDealContacts(dealId: string) {
+  const { organization } = useOrg();
+  return useQuery(organization ? `crm-deal-contacts-${organization.id}-${dealId}` : null, () =>
+    dealContactRepository.fetchDealContacts(getSupabase(), dealId, organization!.id)
   );
 }
 

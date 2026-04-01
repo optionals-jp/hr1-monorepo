@@ -778,6 +778,27 @@ export interface BcDeal {
   crm_pipeline_stages?: CrmPipelineStage;
 }
 
+export type DealContactRole =
+  | "decision_maker"
+  | "influencer"
+  | "champion"
+  | "end_user"
+  | "evaluator"
+  | "stakeholder";
+
+export interface BcDealContact {
+  id: string;
+  organization_id: string;
+  deal_id: string;
+  contact_id: string;
+  role: DealContactRole;
+  is_primary: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  bc_contacts?: BcContact;
+}
+
 export interface BcActivity {
   id: string;
   organization_id: string;
