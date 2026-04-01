@@ -13,6 +13,7 @@ import type {
 } from "@/types/dashboard";
 import { DATA_SOURCE_REGISTRY } from "@/lib/dashboard/data-sources";
 import { dealStageLabels, dealStatusLabels } from "@/lib/constants/crm";
+import type { CrmPipelineStage } from "@/types/database";
 import { Panel, PanelHeader, PanelBody } from "./panel";
 import { GenericBarChart } from "./charts/generic-bar-chart";
 import type { ChartProps } from "./charts/generic-bar-chart";
@@ -62,12 +63,14 @@ export interface DashboardData {
     title: string;
     companyName: string;
     stage: string;
+    stageId: string | null;
     amount: number | null;
     status: string;
     probability: number | null;
     assignedToName: string | null;
     expectedCloseDate: string | null;
   }[];
+  crmPipelineStages?: CrmPipelineStage[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -319,11 +322,24 @@ function resolveDataSource(
     case "crm_pipeline": {
       const deals = data.crmDeals ?? [];
       const openDeals = deals.filter((d) => d.status === "open");
-      const stageOrder = ["initial", "proposal", "negotiation", "closing"];
-      const stages = stageOrder.map((s) => ({
-        name: dealStageLabels[s] ?? s,
-        count: openDeals.filter((d) => d.stage === s).length,
-      }));
+      const pipelineStages = data.crmPipelineStages ?? [];
+
+      // 動的パイプラインステージがあればそれを使い、なければレガシー定数にフォールバック
+      let stages: { name: string; count: number }[];
+      if (pipelineStages.length > 0) {
+        stages = pipelineStages.map((s) => ({
+          name: s.name,
+          count: openDeals.filter((d) => d.stageId === s.id || (!d.stageId && d.stage === s.name))
+            .length,
+        }));
+      } else {
+        const stageOrder = ["initial", "proposal", "negotiation", "closing"];
+        stages = stageOrder.map((s) => ({
+          name: dealStageLabels[s] ?? s,
+          count: openDeals.filter((d) => d.stage === s).length,
+        }));
+      }
+
       if (displayType === "pipeline") {
         return { type: "pipeline", data: stages };
       }

@@ -5,14 +5,14 @@ import { PageHeader } from "@/components/layout/page-header";
 import { InfoItem } from "@/components/ui/info-item";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { Badge } from "@/components/ui/badge";
-import {
-  dealStatusLabels,
-  dealStatusColors,
-  dealStageLabels,
-  activityTypeLabels,
-} from "@/lib/constants";
+import { dealStatusLabels, dealStatusColors, activityTypeLabels } from "@/lib/constants";
 import Link from "next/link";
 import { useCrmDeal, useCrmDealActivities, useCrmDealTodos } from "@/lib/hooks/use-crm";
+import {
+  useDefaultPipeline,
+  getStagesFromPipeline,
+  resolveStageLabel,
+} from "@/lib/hooks/use-pipelines";
 
 export default function CrmDealDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +20,8 @@ export default function CrmDealDetailPage() {
   const { data: deal, error } = useCrmDeal(id);
   const { data: activities } = useCrmDealActivities(id);
   const { data: todos } = useCrmDealTodos(id);
+  const { data: defaultPipeline } = useDefaultPipeline();
+  const stages = getStagesFromPipeline(defaultPipeline);
 
   return (
     <div>
@@ -37,7 +39,7 @@ export default function CrmDealDetailPage() {
               {dealStatusLabels[deal.status]}
             </Badge>
             <Badge variant="outline" className="text-sm">
-              {dealStageLabels[deal.stage] ?? deal.stage}
+              {resolveStageLabel(deal.stage, deal.stage_id, stages)}
             </Badge>
           </div>
 

@@ -54,6 +54,7 @@ export default function DashboardPage() {
     crmTotalAmount,
     crmWonAmount,
     crmDeals,
+    crmPipelineStages,
   } = useDashboard(activeTab);
 
   const pipelineRate =
@@ -82,6 +83,7 @@ export default function DashboardPage() {
     crmTotalAmount,
     crmWonAmount,
     crmDeals,
+    crmPipelineStages,
   };
 
   const configMap: Record<string, DashboardWidgetConfigV2[] | undefined> = {

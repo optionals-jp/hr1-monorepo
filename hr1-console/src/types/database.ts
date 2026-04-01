@@ -762,17 +762,20 @@ export interface BcDeal {
   title: string;
   amount: number | null;
   status: "open" | "won" | "lost";
-  stage: "initial" | "proposal" | "negotiation" | "closing";
+  stage: string;
   probability: number | null;
   expected_close_date: string | null;
   description: string | null;
   assigned_to: string | null;
   created_by: string | null;
+  pipeline_id: string | null;
+  stage_id: string | null;
   created_at: string;
   updated_at: string;
   bc_companies?: BcCompany;
   bc_contacts?: BcContact;
   profiles?: Profile;
+  crm_pipeline_stages?: CrmPipelineStage;
 }
 
 export interface BcActivity {
@@ -805,4 +808,29 @@ export interface BcTodo {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// ==========================================================
+// CRM パイプライン
+// ==========================================================
+
+export interface CrmPipeline {
+  id: string;
+  organization_id: string;
+  name: string;
+  is_default: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  crm_pipeline_stages?: CrmPipelineStage[];
+}
+
+export interface CrmPipelineStage {
+  id: string;
+  pipeline_id: string;
+  name: string;
+  color: string;
+  probability_default: number;
+  sort_order: number;
+  created_at: string;
 }

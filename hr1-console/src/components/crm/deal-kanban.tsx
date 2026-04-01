@@ -16,21 +16,12 @@ import { useDroppable } from "@dnd-kit/core";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { dealStageLabels, dealStageProbability } from "@/lib/constants";
-import type { BcDeal } from "@/types/database";
-
-const STAGE_ORDER = ["initial", "proposal", "negotiation", "closing"] as const;
-
-const STAGE_COLORS: Record<string, string> = {
-  initial: "border-t-blue-400",
-  proposal: "border-t-yellow-400",
-  negotiation: "border-t-orange-400",
-  closing: "border-t-green-400",
-};
+import type { BcDeal, CrmPipelineStage } from "@/types/database";
 
 interface DealKanbanProps {
   deals: BcDeal[];
-  onStageChange: (dealId: string, newStage: string, newProbability: number) => void;
+  stages: CrmPipelineStage[];
+  onStageChange: (dealId: string, newStageId: string, newProbability: number) => void;
   onDealClick: (dealId: string) => void;
 }
 
@@ -40,25 +31,25 @@ function DroppableColumn({
   count,
   totalAmount,
 }: {
-  stage: string;
+  stage: CrmPipelineStage;
   children: React.ReactNode;
   count: number;
   totalAmount: number;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: stage });
+  const { setNodeRef, isOver } = useDroppable({ id: stage.id });
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
         "flex flex-col rounded-lg bg-muted/50 border-t-4 min-h-[400px]",
-        STAGE_COLORS[stage],
         isOver && "ring-2 ring-primary/30 bg-primary/5"
       )}
+      style={{ borderTopColor: stage.color }}
     >
       <div className="p-3 border-b">
         <div className="flex items-center justify-between mb-1">
-          <h3 className="font-semibold text-sm">{dealStageLabels[stage] ?? stage}</h3>
+          <h3 className="font-semibold text-sm">{stage.name}</h3>
           <Badge variant="outline" className="text-xs">
             {count}件
           </Badge>
@@ -135,7 +126,17 @@ function DealCardOverlay({ deal }: { deal: BcDeal }) {
   );
 }
 
-export function DealKanban({ deals, onStageChange, onDealClick }: DealKanbanProps) {
+/**
+ * ステージIDまたはレガシーstageキーで商談をグルーピングするヘルパー
+ */
+function matchDealToStage(deal: BcDeal, stage: CrmPipelineStage): boolean {
+  // stage_id が設定されていればそれで判定
+  if (deal.stage_id) return deal.stage_id === stage.id;
+  // レガシー: stageキーがステージ名と一致するか、ステージIDと一致するか
+  return deal.stage === stage.id || deal.stage === stage.name;
+}
+
+export function DealKanban({ deals, stages, onStageChange, onDealClick }: DealKanbanProps) {
   const [activeDeal, setActiveDeal] = useState<BcDeal | null>(null);
 
   const sensors = useSensors(
@@ -144,9 +145,11 @@ export function DealKanban({ deals, onStageChange, onDealClick }: DealKanbanProp
     })
   );
 
-  const dealsByStage = STAGE_ORDER.reduce(
+  const stageIds = new Set(stages.map((s) => s.id));
+
+  const dealsByStage = stages.reduce(
     (acc, stage) => {
-      acc[stage] = deals.filter((d) => d.stage === stage && d.status === "open");
+      acc[stage.id] = deals.filter((d) => matchDealToStage(d, stage) && d.status === "open");
       return acc;
     },
     {} as Record<string, BcDeal[]>
@@ -164,17 +167,28 @@ export function DealKanban({ deals, onStageChange, onDealClick }: DealKanbanProp
 
     const dealId = active.id as string;
     const deal = active.data.current?.deal as BcDeal | undefined;
-    const targetStage = over.id as string;
+    const targetStageId = over.id as string;
 
-    if (!deal || deal.stage === targetStage) return;
-    if (!STAGE_ORDER.includes(targetStage as (typeof STAGE_ORDER)[number])) return;
+    if (!deal) return;
+    // 同じステージへのドロップはスキップ
+    if (deal.stage_id === targetStageId || (!deal.stage_id && deal.stage === targetStageId)) return;
+    if (!stageIds.has(targetStageId)) return;
 
-    onStageChange(dealId, targetStage, dealStageProbability[targetStage] ?? 0);
+    const targetStage = stages.find((s) => s.id === targetStageId);
+    onStageChange(dealId, targetStageId, targetStage?.probability_default ?? 0);
   };
 
   // 受注・失注の商談数
   const wonCount = deals.filter((d) => d.status === "won").length;
   const lostCount = deals.filter((d) => d.status === "lost").length;
+
+  // 動的グリッドカラム数
+  const gridCols =
+    stages.length <= 4
+      ? "grid-cols-4"
+      : stages.length <= 6
+        ? "grid-cols-6"
+        : "grid-cols-4 lg:grid-cols-6 xl:grid-cols-8";
 
   return (
     <div>
@@ -184,13 +198,13 @@ export function DealKanban({ deals, onStageChange, onDealClick }: DealKanbanProp
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid grid-cols-4 gap-3">
-          {STAGE_ORDER.map((stage) => {
-            const stageDeals = dealsByStage[stage] ?? [];
+        <div className={`grid ${gridCols} gap-3`}>
+          {stages.map((stage) => {
+            const stageDeals = dealsByStage[stage.id] ?? [];
             const totalAmount = stageDeals.reduce((sum, d) => sum + (d.amount ?? 0), 0);
             return (
               <DroppableColumn
-                key={stage}
+                key={stage.id}
                 stage={stage}
                 count={stageDeals.length}
                 totalAmount={totalAmount}

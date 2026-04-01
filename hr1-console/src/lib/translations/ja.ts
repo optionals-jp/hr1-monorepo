@@ -53,6 +53,7 @@ export const ja: Record<string, string> = {
   "nav.crm.contacts": "連絡先",
   "nav.crm.companies": "取引先企業",
   "nav.crm.deals": "商談",
+  "nav.crm.pipelines": "パイプライン設定",
 
   "validation.required": "は必須です",
   "validation.email": "有効なメールアドレスを入力してください",

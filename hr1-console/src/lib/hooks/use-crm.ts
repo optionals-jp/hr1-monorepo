@@ -172,36 +172,30 @@ export async function saveDeal(params: {
   const client = getSupabase();
   const { data } = params;
   try {
+    const commonFields = {
+      title: data.title as string,
+      company_id: (data.company_id as string) || null,
+      contact_id: (data.contact_id as string) || null,
+      amount: data.amount ? Number(data.amount) : null,
+      stage: (data.stage as string) || "initial",
+      stage_id: (data.stage_id as string) || null,
+      pipeline_id: (data.pipeline_id as string) || null,
+      probability: data.probability != null ? Number(data.probability) : null,
+      expected_close_date: (data.expected_close_date as string) || null,
+      description: (data.description as string) || null,
+      assigned_to: (data.assigned_to as string) || null,
+    };
     if (data.id) {
       await repository.updateDeal(client, data.id as string, params.organizationId, {
-        title: data.title as string,
-        company_id: (data.company_id as string) || null,
-        contact_id: (data.contact_id as string) || null,
-        amount: data.amount ? Number(data.amount) : null,
+        ...commonFields,
         status: (data.status as BcDeal["status"]) || "open",
-        stage: (data.stage as BcDeal["stage"]) || "initial",
-        probability: data.probability != null ? Number(data.probability) : null,
-        expected_close_date: (data.expected_close_date as string) || null,
-        description: (data.description as string) || null,
-        assigned_to: (data.assigned_to as string) || null,
       });
     } else {
-      const stage = (data.stage as BcDeal["stage"]) || "initial";
       await repository.createDeal(client, {
+        ...commonFields,
         organization_id: params.organizationId,
-        title: data.title as string,
-        company_id: (data.company_id as string) || null,
-        contact_id: (data.contact_id as string) || null,
-        amount: data.amount ? Number(data.amount) : null,
         status: "open",
-        stage,
-        probability:
-          data.probability != null
-            ? Number(data.probability)
-            : (dealStageProbability[stage] ?? null),
-        expected_close_date: (data.expected_close_date as string) || null,
-        description: (data.description as string) || null,
-        assigned_to: (data.assigned_to as string) || null,
+        probability: commonFields.probability ?? dealStageProbability[commonFields.stage] ?? null,
       });
     }
     return { success: true };

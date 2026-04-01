@@ -20,19 +20,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  dealStatusLabels,
-  dealStatusColors,
-  dealStageLabels,
-  dealStageProbability,
-} from "@/lib/constants";
+import { dealStatusLabels, dealStatusColors } from "@/lib/constants";
 import { useRouter } from "next/navigation";
 import { useCrmDealsPage, useCrmCompanies, useCrmContacts } from "@/lib/hooks/use-crm";
 import { DealKanban } from "@/components/crm/deal-kanban";
 import { getSupabase } from "@/lib/supabase/browser";
 import { updateDeal } from "@/lib/repositories/crm-repository";
 import { useOrg } from "@/lib/org-context";
-import { LayoutList, Kanban } from "lucide-react";
+import {
+  useDefaultPipeline,
+  getStagesFromPipeline,
+  resolveStageLabel,
+} from "@/lib/hooks/use-pipelines";
+import type { BcDeal } from "@/types/database";
+import { LayoutList, Kanban, Settings } from "lucide-react";
+import Link from "next/link";
 
 type ViewMode = "table" | "kanban";
 
@@ -62,9 +64,12 @@ export default function CrmDealsPage() {
 
   const { data: companies } = useCrmCompanies();
   const { data: contacts } = useCrmContacts();
+  const { data: defaultPipeline } = useDefaultPipeline();
+  const stages = getStagesFromPipeline(defaultPipeline);
 
-  const handleStageChange = async (dealId: string, newStage: string, newProbability: number) => {
+  const handleStageChange = async (dealId: string, newStageId: string, newProbability: number) => {
     if (!organization) return;
+    const targetStage = stages.find((s) => s.id === newStageId);
     // 楽観的更新: UI を先に更新し、失敗時にリバート
     const previousDeals = deals;
     mutate(
@@ -72,7 +77,8 @@ export default function CrmDealsPage() {
         d.id === dealId
           ? {
               ...d,
-              stage: newStage as "initial" | "proposal" | "negotiation" | "closing",
+              stage_id: newStageId,
+              stage: targetStage?.name ?? d.stage,
               probability: newProbability,
             }
           : d
@@ -81,7 +87,8 @@ export default function CrmDealsPage() {
     );
     try {
       await updateDeal(getSupabase(), dealId, organization.id, {
-        stage: newStage as "initial" | "proposal" | "negotiation" | "closing",
+        stage_id: newStageId,
+        stage: targetStage?.name ?? newStageId,
         probability: newProbability,
       });
       mutate();
@@ -97,6 +104,12 @@ export default function CrmDealsPage() {
         title="商談管理"
         action={
           <div className="flex gap-2">
+            <Link href="/crm/settings/pipelines">
+              <Button variant="outline" size="sm">
+                <Settings className="size-4 mr-1.5" />
+                パイプライン設定
+              </Button>
+            </Link>
             <div className="flex rounded-lg border overflow-hidden">
               <button
                 onClick={() => setViewMode("table")}
@@ -175,7 +188,7 @@ export default function CrmDealsPage() {
                 >
                   <TableCell className="font-medium">{deal.title}</TableCell>
                   <TableCell>{deal.bc_companies?.name ?? "—"}</TableCell>
-                  <TableCell>{dealStageLabels[deal.stage] ?? deal.stage}</TableCell>
+                  <TableCell>{resolveStageLabel(deal.stage, deal.stage_id, stages)}</TableCell>
                   <TableCell>{deal.probability != null ? `${deal.probability}%` : "—"}</TableCell>
                   <TableCell>
                     {deal.amount != null ? `¥${deal.amount.toLocaleString()}` : "—"}
@@ -196,6 +209,7 @@ export default function CrmDealsPage() {
       {viewMode === "kanban" && deals && (
         <DealKanban
           deals={deals}
+          stages={stages}
           onStageChange={handleStageChange}
           onDealClick={(id) => router.push(`/crm/deals/${id}`)}
         />
@@ -263,23 +277,28 @@ export default function CrmDealsPage() {
             <div>
               <Label>ステージ</Label>
               <Select
-                value={editData.stage ?? "initial"}
+                value={editData.stage_id ?? editData.stage ?? stages[0]?.id ?? ""}
                 onValueChange={(v) => {
-                  const stage = v as "initial" | "proposal" | "negotiation" | "closing";
-                  setEditData((p) => ({
-                    ...p,
-                    stage,
-                    probability: dealStageProbability[stage] ?? p.probability,
-                  }));
+                  const selectedStage = stages.find((s) => s.id === v);
+                  const newStage = selectedStage?.name ?? v;
+                  setEditData(
+                    (p) =>
+                      ({
+                        ...p,
+                        stage_id: v,
+                        stage: newStage,
+                        probability: selectedStage?.probability_default ?? p.probability,
+                      }) as Partial<BcDeal>
+                  );
                 }}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(dealStageLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
+                  {stages.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
