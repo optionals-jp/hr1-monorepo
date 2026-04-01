@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,9 @@ import { TableSection } from "@/components/layout/table-section";
 import { useToast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
 import { useCrmCompaniesPage } from "@/lib/hooks/use-crm";
+import { SavedViewSelector } from "@/components/crm/saved-view-selector";
+import { applyFilters, applySort } from "@/lib/hooks/use-saved-views";
+import type { CrmSavedViewConfig } from "@/types/database";
 
 export default function CrmCompaniesPage() {
   const { showToast } = useToast();
@@ -33,24 +37,72 @@ export default function CrmCompaniesPage() {
     handleDelete,
   } = useCrmCompaniesPage();
 
+  const [viewConfig, setViewConfig] = useState<CrmSavedViewConfig>({});
+
+  const COMPANY_AVAILABLE_FIELDS = useMemo(
+    () => [
+      { key: "name", label: "企業名" },
+      { key: "corporate_number", label: "法人番号" },
+      { key: "industry", label: "業種" },
+      { key: "phone", label: "電話番号" },
+      { key: "address", label: "住所" },
+      { key: "website", label: "Webサイト" },
+    ],
+    []
+  );
+
+  const viewFiltered = useMemo(() => {
+    let result = filtered as Record<string, unknown>[];
+    if (viewConfig.filters && viewConfig.filters.length > 0) {
+      result = applyFilters(result, viewConfig.filters);
+    }
+    if (viewConfig.sort) {
+      result = applySort(result, viewConfig.sort);
+    }
+    return result as typeof filtered;
+  }, [filtered, viewConfig.filters, viewConfig.sort]);
+
   return (
     <div>
       <PageHeader title="取引先企業" action={<Button onClick={openCreate}>新規登録</Button>} />
 
       {error && <QueryErrorBanner error={error} />}
 
-      <div className="mb-4">
+      <div className="mb-4 flex gap-2 items-center flex-wrap">
         <SearchBar value={search} onChange={setSearch} placeholder="企業名・法人番号で検索" />
+        <SavedViewSelector
+          entityType="company"
+          availableFields={COMPANY_AVAILABLE_FIELDS}
+          currentConfig={viewConfig}
+          onApplyView={setViewConfig}
+        />
       </div>
 
-      <TableSection>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>企業名</TableHead>
-              <TableHead>法人番号</TableHead>
-              <TableHead>業種</TableHead>
-              <TableHead>電話番号</TableHead>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>企業名</TableHead>
+            <TableHead>法人番号</TableHead>
+            <TableHead>業種</TableHead>
+            <TableHead>電話番号</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableEmptyState
+          colSpan={4}
+          isLoading={!companies}
+          isEmpty={viewFiltered.length === 0}
+          emptyMessage="企業が見つかりません"
+        >
+          {viewFiltered.map((company) => (
+            <TableRow
+              key={company.id}
+              className="cursor-pointer"
+              onClick={() => router.push(`/crm/companies/${company.id}`)}
+            >
+              <TableCell className="font-medium">{company.name}</TableCell>
+              <TableCell>{company.corporate_number ?? "—"}</TableCell>
+              <TableCell>{company.industry ?? "—"}</TableCell>
+              <TableCell>{company.phone ?? "—"}</TableCell>
             </TableRow>
           </TableHeader>
           <TableEmptyState

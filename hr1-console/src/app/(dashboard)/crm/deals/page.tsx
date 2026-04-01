@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,9 @@ import {
   getStagesFromPipeline,
   resolveStageLabel,
 } from "@/lib/hooks/use-pipelines";
-import type { BcDeal } from "@/types/database";
+import { SavedViewSelector } from "@/components/crm/saved-view-selector";
+import { applyFilters, applySort } from "@/lib/hooks/use-saved-views";
+import type { BcDeal, CrmSavedViewConfig } from "@/types/database";
 import { LayoutList, Kanban, Settings } from "lucide-react";
 import Link from "next/link";
 
@@ -66,6 +68,33 @@ export default function CrmDealsPage() {
   const { data: contacts } = useCrmContacts();
   const { data: defaultPipeline } = useDefaultPipeline();
   const stages = getStagesFromPipeline(defaultPipeline);
+
+  // 保存ビュー
+  const [viewConfig, setViewConfig] = useState<CrmSavedViewConfig>({});
+
+  const DEAL_AVAILABLE_FIELDS = useMemo(
+    () => [
+      { key: "title", label: "商談名" },
+      { key: "stage", label: "ステージ" },
+      { key: "status", label: "ステータス" },
+      { key: "probability", label: "確度" },
+      { key: "amount", label: "金額" },
+      { key: "expected_close_date", label: "見込み日" },
+    ],
+    []
+  );
+
+  // ビューのフィルタ・ソートを適用
+  const viewFiltered = useMemo(() => {
+    let result = filtered as Record<string, unknown>[];
+    if (viewConfig.filters && viewConfig.filters.length > 0) {
+      result = applyFilters(result, viewConfig.filters);
+    }
+    if (viewConfig.sort) {
+      result = applySort(result, viewConfig.sort);
+    }
+    return result as typeof filtered;
+  }, [filtered, viewConfig.filters, viewConfig.sort]);
 
   const handleStageChange = async (dealId: string, newStageId: string, newProbability: number) => {
     if (!organization) return;
@@ -140,6 +169,12 @@ export default function CrmDealsPage() {
         <>
           <div className="mb-4 flex gap-2 items-center flex-wrap">
             <SearchBar value={search} onChange={setSearch} placeholder="商談名・企業名で検索" />
+            <SavedViewSelector
+              entityType="deal"
+              availableFields={DEAL_AVAILABLE_FIELDS}
+              currentConfig={viewConfig}
+              onApplyView={setViewConfig}
+            />
             <div className="flex gap-1">
               {[
                 { value: "all", label: "すべて" },
@@ -177,10 +212,10 @@ export default function CrmDealsPage() {
             <TableEmptyState
               colSpan={7}
               isLoading={!deals}
-              isEmpty={filtered.length === 0}
+              isEmpty={viewFiltered.length === 0}
               emptyMessage="商談が見つかりません"
             >
-              {filtered.map((deal) => (
+              {viewFiltered.map((deal) => (
                 <TableRow
                   key={deal.id}
                   className="cursor-pointer"

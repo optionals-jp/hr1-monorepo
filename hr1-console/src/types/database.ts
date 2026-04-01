@@ -879,3 +879,32 @@ export interface CrmFieldValue {
   created_at: string;
   updated_at: string;
 }
+
+// ==========================================================
+// CRM 保存ビュー
+// ==========================================================
+
+export interface CrmSavedViewFilter {
+  field: string;
+  operator: "eq" | "neq" | "contains" | "gt" | "lt" | "gte" | "lte" | "empty" | "not_empty";
+  value: string;
+}
+
+export interface CrmSavedViewConfig {
+  columns?: string[];
+  filters?: CrmSavedViewFilter[];
+  sort?: { field: string; direction: "asc" | "desc" };
+}
+
+export interface CrmSavedView {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  entity_type: CrmEntityType;
+  name: string;
+  is_shared: boolean;
+  is_default: boolean;
+  config: CrmSavedViewConfig;
+  created_at: string;
+  updated_at: string;
+}
