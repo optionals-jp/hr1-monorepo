@@ -11,6 +11,7 @@ import * as dealContactRepository from "@/lib/repositories/deal-contact-reposito
 import * as quoteRepository from "@/lib/repositories/quote-repository";
 import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
 import { dealStageProbability } from "@/lib/constants/crm";
+import { fireTrigger } from "@/lib/automation/engine";
 import type { BcCompany, BcDeal, BcLead } from "@/types/database";
 
 // --- Dashboard ---
@@ -216,17 +217,43 @@ export async function saveDeal(params: {
       assigned_to: (data.assigned_to as string) || null,
     };
     if (data.id) {
+      const previousStatus = data._previousStatus as string | undefined;
+      const previousStage = data._previousStage as string | undefined;
       await repository.updateDeal(client, data.id as string, params.organizationId, {
         ...commonFields,
         status: (data.status as BcDeal["status"]) || "open",
       });
+      // 自動化トリガー（非同期、エラーは無視）
+      const dealData = { ...commonFields, id: data.id, status: data.status };
+      const entityCtx = {
+        organizationId: params.organizationId,
+        entityType: "deal" as const,
+        entityId: data.id as string,
+        entityData: dealData as Record<string, unknown>,
+      };
+      if (data.status === "won" && previousStatus !== "won") {
+        fireTrigger(client, { ...entityCtx, triggerType: "deal_won" }).catch(() => {});
+      } else if (data.status === "lost" && previousStatus !== "lost") {
+        fireTrigger(client, { ...entityCtx, triggerType: "deal_lost" }).catch(() => {});
+      }
+      if (commonFields.stage !== previousStage) {
+        fireTrigger(client, { ...entityCtx, triggerType: "deal_stage_changed" }).catch(() => {});
+      }
     } else {
-      await repository.createDeal(client, {
+      const created = await repository.createDeal(client, {
         ...commonFields,
         organization_id: params.organizationId,
         status: "open",
         probability: commonFields.probability ?? dealStageProbability[commonFields.stage] ?? null,
       });
+      // 自動化トリガー（非同期）
+      fireTrigger(client, {
+        organizationId: params.organizationId,
+        triggerType: "deal_created",
+        entityType: "deal",
+        entityId: created.id,
+        entityData: { ...commonFields, id: created.id } as Record<string, unknown>,
+      }).catch(() => {});
     }
     return { success: true };
   } catch (err) {
@@ -483,6 +510,7 @@ export function useCrmLeadsPage() {
     const client = getSupabase();
     try {
       if (editData.id) {
+        const previousStatus = editData._previousStatus as string | undefined;
         await leadRepository.updateLead(client, editData.id, organization.id, {
           name: editData.name as string,
           company_name: editData.company_name || null,
@@ -493,8 +521,18 @@ export function useCrmLeadsPage() {
           assigned_to: editData.assigned_to || null,
           notes: editData.notes || null,
         });
+        // ステータス変更トリガー（非同期）
+        if (editData.status && editData.status !== previousStatus) {
+          fireTrigger(client, {
+            organizationId: organization.id,
+            triggerType: "lead_status_changed",
+            entityType: "lead",
+            entityId: editData.id,
+            entityData: editData as Record<string, unknown>,
+          }).catch(() => {});
+        }
       } else {
-        await leadRepository.createLead(client, {
+        const created = await leadRepository.createLead(client, {
           organization_id: organization.id,
           name: editData.name as string,
           company_name: editData.company_name || null,
@@ -504,6 +542,14 @@ export function useCrmLeadsPage() {
           status: editData.status || "new",
           notes: editData.notes || null,
         });
+        // 作成トリガー（非同期）
+        fireTrigger(client, {
+          organizationId: organization.id,
+          triggerType: "lead_created",
+          entityType: "lead",
+          entityId: created.id,
+          entityData: { ...editData, id: created.id } as Record<string, unknown>,
+        }).catch(() => {});
       }
       showToast(editData.id ? "リードを更新しました" : "リードを登録しました");
       setEditOpen(false);

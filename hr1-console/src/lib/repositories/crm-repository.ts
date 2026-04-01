@@ -179,9 +179,10 @@ export async function fetchDealsByContact(
 export async function createDeal(
   client: SupabaseClient,
   data: Partial<BcDeal> & { organization_id: string; title: string }
-) {
-  const { error } = await client.from("bc_deals").insert(data);
+): Promise<BcDeal> {
+  const { data: created, error } = await client.from("bc_deals").insert(data).select().single();
   if (error) throw error;
+  return created as BcDeal;
 }
 
 export async function updateDeal(

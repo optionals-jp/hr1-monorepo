@@ -112,3 +112,36 @@ export const activityTypeLabels: Record<string, string> = {
   email: "メール",
   visit: "訪問",
 };
+
+// --- 自動化トリガー ---
+export const automationTriggerLabels: Record<string, string> = {
+  deal_stage_changed: "商談ステージ変更時",
+  deal_created: "商談作成時",
+  deal_won: "商談受注時",
+  deal_lost: "商談失注時",
+  lead_created: "リード作成時",
+  lead_status_changed: "リードステータス変更時",
+  lead_converted: "リードコンバート時",
+  contact_created: "連絡先作成時",
+  company_created: "企業作成時",
+  activity_created: "活動記録作成時",
+};
+
+export const automationActionLabels: Record<string, string> = {
+  create_todo: "タスクを作成",
+  create_activity: "活動を記録",
+  send_notification: "通知を送信",
+  update_field: "フィールドを更新",
+  send_webhook: "Webhookを送信",
+};
+
+export const automationConditionOperatorLabels: Record<string, string> = {
+  eq: "等しい",
+  neq: "等しくない",
+  gt: "より大きい",
+  lt: "より小さい",
+  gte: "以上",
+  lte: "以下",
+  contains: "を含む",
+  in: "いずれかに一致",
+};

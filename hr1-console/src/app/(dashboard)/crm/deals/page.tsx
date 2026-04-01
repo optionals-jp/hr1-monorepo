@@ -27,6 +27,7 @@ import { DealKanban } from "@/components/crm/deal-kanban";
 import { getSupabase } from "@/lib/supabase/browser";
 import { updateDeal } from "@/lib/repositories/crm-repository";
 import { useOrg } from "@/lib/org-context";
+import { fireTrigger } from "@/lib/automation/engine";
 import {
   useDefaultPipeline,
   getStagesFromPipeline,
@@ -122,6 +123,21 @@ export default function CrmDealsPage() {
         stage: targetStage?.name ?? newStageId,
         probability: newProbability,
       });
+      // ステージ変更トリガー（非同期）
+      const deal = deals?.find((d) => d.id === dealId);
+      if (deal) {
+        fireTrigger(getSupabase(), {
+          organizationId: organization.id,
+          triggerType: "deal_stage_changed",
+          entityType: "deal",
+          entityId: dealId,
+          entityData: {
+            ...deal,
+            stage_id: newStageId,
+            stage: targetStage?.name ?? newStageId,
+          } as unknown as Record<string, unknown>,
+        }).catch(() => {});
+      }
       mutate();
     } catch {
       mutate(previousDeals, false);

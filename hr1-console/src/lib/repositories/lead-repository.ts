@@ -25,9 +25,10 @@ export async function fetchLead(client: SupabaseClient, id: string, organization
 export async function createLead(
   client: SupabaseClient,
   data: Partial<BcLead> & { organization_id: string; name: string }
-) {
-  const { error } = await client.from("bc_leads").insert(data);
+): Promise<BcLead> {
+  const { data: created, error } = await client.from("bc_leads").insert(data).select().single();
   if (error) throw error;
+  return created as BcLead;
 }
 
 export async function updateLead(

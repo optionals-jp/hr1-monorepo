@@ -25,6 +25,7 @@ import { useCrmLeadsPage } from "@/lib/hooks/use-crm";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import { convertLead } from "@/lib/repositories/lead-repository";
+import { fireTrigger } from "@/lib/automation/engine";
 import { useDefaultPipeline, getStagesFromPipeline } from "@/lib/hooks/use-pipelines";
 import type { BcLead } from "@/types/database";
 import { ArrowRightLeft } from "lucide-react";
@@ -100,6 +101,14 @@ export default function CrmLeadsPage() {
         dealPipelineId: firstStage?.pipeline_id,
       });
       showToast("リードをコンバートしました（企業・連絡先・商談を作成）");
+      // コンバートトリガー（非同期）
+      fireTrigger(getSupabase(), {
+        organizationId: organization.id,
+        triggerType: "lead_converted",
+        entityType: "lead",
+        entityId: convertTarget.id,
+        entityData: convertTarget as unknown as Record<string, unknown>,
+      }).catch(() => {});
       setConvertOpen(false);
       mutate();
     } catch {

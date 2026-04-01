@@ -995,3 +995,67 @@ export interface CrmSavedView {
   created_at: string;
   updated_at: string;
 }
+
+// ==========================================================
+// CRM 自動化ルール
+// ==========================================================
+
+export type CrmAutomationTrigger =
+  | "deal_stage_changed"
+  | "deal_created"
+  | "deal_won"
+  | "deal_lost"
+  | "lead_created"
+  | "lead_status_changed"
+  | "lead_converted"
+  | "contact_created"
+  | "company_created"
+  | "activity_created";
+
+export type CrmAutomationActionType =
+  | "create_todo"
+  | "create_activity"
+  | "send_notification"
+  | "update_field"
+  | "send_webhook";
+
+export interface CrmAutomationCondition {
+  field: string;
+  operator: "eq" | "neq" | "gt" | "lt" | "gte" | "lte" | "contains" | "in";
+  value: string | number | string[];
+}
+
+export interface CrmAutomationAction {
+  type: CrmAutomationActionType;
+  params: Record<string, unknown>;
+}
+
+export interface CrmAutomationRule {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  trigger_type: CrmAutomationTrigger;
+  conditions: CrmAutomationCondition[];
+  actions: CrmAutomationAction[];
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CrmAutomationLogStatus = "success" | "partial" | "failed";
+
+export interface CrmAutomationLog {
+  id: string;
+  organization_id: string;
+  rule_id: string;
+  trigger_type: string;
+  entity_type: string;
+  entity_id: string;
+  actions_executed: CrmAutomationAction[];
+  status: CrmAutomationLogStatus;
+  error_message: string | null;
+  executed_at: string;
+  crm_automation_rules?: CrmAutomationRule;
+}
