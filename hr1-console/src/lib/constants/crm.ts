@@ -145,6 +145,20 @@ export const emailTemplateCategoryLabels: Record<string, string> = {
   reminder: "リマインダー",
 };
 
+// --- Webhookイベント ---
+export const webhookEventLabels: Record<string, string> = {
+  "deal.created": "商談作成",
+  "deal.updated": "商談更新",
+  "deal.won": "商談受注",
+  "deal.lost": "商談失注",
+  "lead.created": "リード作成",
+  "lead.converted": "リードコンバート",
+  "contact.created": "連絡先作成",
+  "company.created": "企業作成",
+  "quote.created": "見積書作成",
+  "quote.accepted": "見積書承認",
+};
+
 export const automationConditionOperatorLabels: Record<string, string> = {
   eq: "等しい",
   neq: "等しくない",

@@ -1085,3 +1085,49 @@ export interface CrmEmailTemplate {
   created_at: string;
   updated_at: string;
 }
+
+// ==========================================================
+// CRM Webhook
+// ==========================================================
+
+export type CrmWebhookEvent =
+  | "deal.created"
+  | "deal.updated"
+  | "deal.won"
+  | "deal.lost"
+  | "lead.created"
+  | "lead.converted"
+  | "contact.created"
+  | "company.created"
+  | "quote.created"
+  | "quote.accepted";
+
+export interface CrmWebhook {
+  id: string;
+  organization_id: string;
+  name: string;
+  url: string;
+  secret: string | null;
+  is_active: boolean;
+  events: string[];
+  headers: Record<string, string>;
+  last_triggered_at: string | null;
+  success_count: number;
+  failure_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmWebhookLog {
+  id: string;
+  organization_id: string;
+  webhook_id: string;
+  event_type: string;
+  request_body: Record<string, unknown>;
+  response_status: number | null;
+  response_body: string | null;
+  success: boolean;
+  error_message: string | null;
+  executed_at: string;
+  crm_webhooks?: CrmWebhook;
+}
