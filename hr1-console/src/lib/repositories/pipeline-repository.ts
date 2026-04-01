@@ -4,11 +4,12 @@ import type { CrmPipeline, CrmPipelineStage } from "@/types/database";
 // --- Pipelines ---
 
 export async function fetchPipelines(client: SupabaseClient, organizationId: string) {
-  const { data } = await client
+  const { data, error } = await client
     .from("crm_pipelines")
     .select("*, crm_pipeline_stages(*)")
     .eq("organization_id", organizationId)
     .order("sort_order");
+  if (error) throw error;
   // ステージをsort_orderでソート
   const pipelines = (data ?? []) as CrmPipeline[];
   for (const p of pipelines) {
@@ -65,11 +66,12 @@ export async function deletePipeline(client: SupabaseClient, id: string, organiz
 // --- Stages ---
 
 export async function fetchStages(client: SupabaseClient, pipelineId: string) {
-  const { data } = await client
+  const { data, error } = await client
     .from("crm_pipeline_stages")
     .select("*")
     .eq("pipeline_id", pipelineId)
     .order("sort_order");
+  if (error) throw error;
   return (data ?? []) as CrmPipelineStage[];
 }
 
@@ -95,23 +97,39 @@ export async function createStage(
 export async function updateStage(
   client: SupabaseClient,
   id: string,
+  pipelineId: string,
   data: Partial<Pick<CrmPipelineStage, "name" | "color" | "probability_default" | "sort_order">>
 ) {
-  return client.from("crm_pipeline_stages").update(data).eq("id", id);
+  const { error } = await client
+    .from("crm_pipeline_stages")
+    .update(data)
+    .eq("id", id)
+    .eq("pipeline_id", pipelineId);
+  if (error) throw error;
 }
 
-export async function deleteStage(client: SupabaseClient, id: string) {
-  return client.from("crm_pipeline_stages").delete().eq("id", id);
+export async function deleteStage(client: SupabaseClient, id: string, pipelineId: string) {
+  const { error } = await client
+    .from("crm_pipeline_stages")
+    .delete()
+    .eq("id", id)
+    .eq("pipeline_id", pipelineId);
+  if (error) throw error;
 }
 
 export async function reorderStages(
   client: SupabaseClient,
+  pipelineId: string,
   stages: { id: string; sort_order: number }[]
 ) {
   // 一括更新（並行実行）
   await Promise.all(
     stages.map((s) =>
-      client.from("crm_pipeline_stages").update({ sort_order: s.sort_order }).eq("id", s.id)
+      client
+        .from("crm_pipeline_stages")
+        .update({ sort_order: s.sort_order })
+        .eq("id", s.id)
+        .eq("pipeline_id", pipelineId)
     )
   );
 }

@@ -2,21 +2,23 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BcLead } from "@/types/database";
 
 export async function fetchLeads(client: SupabaseClient, organizationId: string) {
-  const { data } = await client
+  const { data, error } = await client
     .from("bc_leads")
     .select("*, profiles:assigned_to(display_name, email)")
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
+  if (error) throw error;
   return (data ?? []) as BcLead[];
 }
 
 export async function fetchLead(client: SupabaseClient, id: string, organizationId: string) {
-  const { data } = await client
+  const { data, error } = await client
     .from("bc_leads")
     .select("*, profiles:assigned_to(display_name, email)")
     .eq("id", id)
     .eq("organization_id", organizationId)
     .single();
+  if (error) throw error;
   return data as BcLead | null;
 }
 
@@ -24,7 +26,8 @@ export async function createLead(
   client: SupabaseClient,
   data: Partial<BcLead> & { organization_id: string; name: string }
 ) {
-  return client.from("bc_leads").insert(data);
+  const { error } = await client.from("bc_leads").insert(data);
+  if (error) throw error;
 }
 
 export async function updateLead(
@@ -33,11 +36,21 @@ export async function updateLead(
   organizationId: string,
   data: Partial<BcLead>
 ) {
-  return client.from("bc_leads").update(data).eq("id", id).eq("organization_id", organizationId);
+  const { error } = await client
+    .from("bc_leads")
+    .update(data)
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+  if (error) throw error;
 }
 
 export async function deleteLead(client: SupabaseClient, id: string, organizationId: string) {
-  return client.from("bc_leads").delete().eq("id", id).eq("organization_id", organizationId);
+  const { error } = await client
+    .from("bc_leads")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+  if (error) throw error;
 }
 
 /**
@@ -101,7 +114,7 @@ export async function convertLead(
   if (dealErr) throw dealErr;
 
   // 4. リードをコンバート済に更新
-  await client
+  const { error: leadErr } = await client
     .from("bc_leads")
     .update({
       status: "converted",
@@ -112,6 +125,7 @@ export async function convertLead(
     })
     .eq("id", leadId)
     .eq("organization_id", organizationId);
+  if (leadErr) throw leadErr;
 
   return { companyId: company.id, contactId: contact.id, dealId: deal.id };
 }

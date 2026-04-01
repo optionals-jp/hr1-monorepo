@@ -16,7 +16,8 @@ export async function fetchFieldDefinitions(
   if (entityType) {
     query = query.eq("entity_type", entityType);
   }
-  const { data } = await query;
+  const { data, error } = await query;
+  if (error) throw error;
   return (data ?? []) as CrmFieldDefinition[];
 }
 
@@ -47,6 +48,7 @@ export async function createFieldDefinition(
 export async function updateFieldDefinition(
   client: SupabaseClient,
   id: string,
+  organizationId: string,
   data: Partial<
     Pick<
       CrmFieldDefinition,
@@ -61,14 +63,25 @@ export async function updateFieldDefinition(
     >
   >
 ) {
-  return client
+  const { error } = await client
     .from("crm_field_definitions")
     .update({ ...data, updated_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+  if (error) throw error;
 }
 
-export async function deleteFieldDefinition(client: SupabaseClient, id: string) {
-  return client.from("crm_field_definitions").delete().eq("id", id);
+export async function deleteFieldDefinition(
+  client: SupabaseClient,
+  id: string,
+  organizationId: string
+) {
+  const { error } = await client
+    .from("crm_field_definitions")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+  if (error) throw error;
 }
 
 // --- Field Values ---
@@ -78,11 +91,12 @@ export async function fetchFieldValues(
   entityId: string,
   entityType: CrmEntityType
 ) {
-  const { data } = await client
+  const { data, error } = await client
     .from("crm_field_values")
     .select("*")
     .eq("entity_id", entityId)
     .eq("entity_type", entityType);
+  if (error) throw error;
   return (data ?? []) as CrmFieldValue[];
 }
 

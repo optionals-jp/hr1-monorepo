@@ -53,21 +53,23 @@ export function useSavedViews(entityType: CrmEntityType) {
 
   const updateView = useCallback(
     async (id: string, data: Partial<Pick<CrmSavedView, "name" | "is_shared" | "config">>) => {
+      if (!organization) return;
       try {
-        await repo.updateSavedView(getSupabase(), id, data);
+        await repo.updateSavedView(getSupabase(), id, organization.id, data);
         mutate();
       } catch (err) {
         console.error("Failed to update view:", err);
         throw err;
       }
     },
-    [mutate]
+    [organization, mutate]
   );
 
   const deleteView = useCallback(
     async (id: string) => {
+      if (!organization) return;
       try {
-        await repo.deleteSavedView(getSupabase(), id);
+        await repo.deleteSavedView(getSupabase(), id, organization.id);
         if (activeViewId === id) setActiveViewId(null);
         mutate();
       } catch (err) {
@@ -75,7 +77,7 @@ export function useSavedViews(entityType: CrmEntityType) {
         throw err;
       }
     },
-    [activeViewId, mutate]
+    [organization, activeViewId, mutate]
   );
 
   return {
@@ -140,8 +142,11 @@ export function applySort<T extends Record<string, unknown>>(
     if (aVal == null && bVal == null) return 0;
     if (aVal == null) return sort.direction === "asc" ? -1 : 1;
     if (bVal == null) return sort.direction === "asc" ? 1 : -1;
-    if (typeof aVal === "number" && typeof bVal === "number") {
-      return sort.direction === "asc" ? aVal - bVal : bVal - aVal;
+    // 数値比較（両方が数値 or 数値文字列の場合）
+    const aNum = typeof aVal === "number" ? aVal : Number(aVal);
+    const bNum = typeof bVal === "number" ? bVal : Number(bVal);
+    if (!isNaN(aNum) && !isNaN(bNum)) {
+      return sort.direction === "asc" ? aNum - bNum : bNum - aNum;
     }
     const cmp = String(aVal).localeCompare(String(bVal), "ja");
     return sort.direction === "asc" ? cmp : -cmp;

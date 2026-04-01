@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useOrg } from "@/lib/org-context";
+import { useToast } from "@/components/ui/toast";
 import { useCrmFieldDefinitions, useCrmFieldValues } from "@/lib/hooks/use-crm-fields";
 import { upsertFieldValues } from "@/lib/repositories/crm-field-repository";
 import { getSupabase } from "@/lib/supabase/browser";
@@ -36,6 +37,7 @@ export function CrmCustomFields({
   onSaveComplete,
 }: CrmCustomFieldsProps) {
   const { organization } = useOrg();
+  const { showToast } = useToast();
   const { data: fieldDefs } = useCrmFieldDefinitions(entityType);
   const { data: fieldValues, mutate: mutateValues } = useCrmFieldValues(entityId, entityType);
 
@@ -75,8 +77,18 @@ export function CrmCustomFields({
       onSaveComplete?.();
     } catch (err) {
       console.error("Failed to save custom fields:", err);
+      showToast("カスタムフィールドの保存に失敗しました", "error");
     }
-  }, [organization, fieldDefs, entityId, entityType, localValues, mutateValues, onSaveComplete]);
+  }, [
+    organization,
+    fieldDefs,
+    entityId,
+    entityType,
+    localValues,
+    mutateValues,
+    onSaveComplete,
+    showToast,
+  ]);
 
   // saveAll を親に公開するため、refでは使えないが、edit時のonBlurで自動保存する
   // もしくは親からsaveAllを呼ぶパターンを使う
@@ -275,8 +287,10 @@ function CustomFieldRenderer({
 function formatDisplayValue(field: CrmFieldDefinition, value: string): string {
   if (!value) return "";
   switch (field.field_type) {
-    case "currency":
-      return `¥${Number(value).toLocaleString()}`;
+    case "currency": {
+      const num = parseFloat(value);
+      return isNaN(num) ? "—" : `¥${num.toLocaleString()}`;
+    }
     case "checkbox":
       return value === "true" ? "はい" : "いいえ";
     case "multi_select":

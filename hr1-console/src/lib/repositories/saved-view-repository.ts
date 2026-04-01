@@ -6,12 +6,13 @@ export async function fetchSavedViews(
   organizationId: string,
   entityType: CrmEntityType
 ) {
-  const { data } = await client
+  const { data, error } = await client
     .from("crm_saved_views")
     .select("*")
     .eq("organization_id", organizationId)
     .eq("entity_type", entityType)
     .order("created_at");
+  if (error) throw error;
   return (data ?? []) as CrmSavedView[];
 }
 
@@ -38,14 +39,22 @@ export async function createSavedView(
 export async function updateSavedView(
   client: SupabaseClient,
   id: string,
+  organizationId: string,
   data: Partial<Pick<CrmSavedView, "name" | "is_shared" | "is_default" | "config">>
 ) {
-  return client
+  const { error } = await client
     .from("crm_saved_views")
     .update({ ...data, updated_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+  if (error) throw error;
 }
 
-export async function deleteSavedView(client: SupabaseClient, id: string) {
-  return client.from("crm_saved_views").delete().eq("id", id);
+export async function deleteSavedView(client: SupabaseClient, id: string, organizationId: string) {
+  const { error } = await client
+    .from("crm_saved_views")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+  if (error) throw error;
 }

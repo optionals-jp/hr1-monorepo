@@ -202,7 +202,7 @@ export default function PipelineSettingsPage() {
     }
     try {
       if (editStageData.id) {
-        await pipelineRepo.updateStage(getSupabase(), editStageData.id, {
+        await pipelineRepo.updateStage(getSupabase(), editStageData.id, editPipelineId, {
           name: editStageData.name.trim(),
           color: editStageData.color ?? "#3b82f6",
           probability_default: editStageData.probability_default ?? 0,
@@ -227,7 +227,7 @@ export default function PipelineSettingsPage() {
   const handleDeleteStage = async () => {
     if (!editStageData.id) return;
     try {
-      await pipelineRepo.deleteStage(getSupabase(), editStageData.id);
+      await pipelineRepo.deleteStage(getSupabase(), editStageData.id, editPipelineId!);
       setEditStageOpen(false);
       mutate();
       showToast("ステージを削除しました");
@@ -262,7 +262,7 @@ export default function PipelineSettingsPage() {
       const reordered = arrayMove(stgs, oldIndex, newIndex);
       const updates = reordered.map((s, i) => ({ id: s.id, sort_order: i }));
       try {
-        await pipelineRepo.reorderStages(getSupabase(), updates);
+        await pipelineRepo.reorderStages(getSupabase(), pipeline.id, updates);
         mutate();
       } catch {
         showToast("並び替えに失敗しました", "error");
@@ -357,7 +357,7 @@ export default function PipelineSettingsPage() {
                         onEdit={() => openStageEdit(stage)}
                         onDelete={async () => {
                           try {
-                            await pipelineRepo.deleteStage(getSupabase(), stage.id);
+                            await pipelineRepo.deleteStage(getSupabase(), stage.id, pipeline.id);
                             mutate();
                             showToast("ステージを削除しました");
                           } catch {

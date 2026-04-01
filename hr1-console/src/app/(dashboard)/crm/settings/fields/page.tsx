@@ -83,7 +83,7 @@ export default function CrmFieldSettingsPage() {
 
     try {
       if (editData.id) {
-        await fieldRepo.updateFieldDefinition(getSupabase(), editData.id, {
+        await fieldRepo.updateFieldDefinition(getSupabase(), editData.id, organization.id, {
           label: editData.label.trim(),
           field_type: editData.field_type as CrmFieldType,
           description: editData.description || null,
@@ -120,7 +120,7 @@ export default function CrmFieldSettingsPage() {
   const handleDelete = async () => {
     if (!editData.id) return;
     try {
-      await fieldRepo.deleteFieldDefinition(getSupabase(), editData.id);
+      await fieldRepo.deleteFieldDefinition(getSupabase(), editData.id, organization!.id);
       setEditOpen(false);
       mutate();
       showToast("フィールドを削除しました");
@@ -204,7 +204,11 @@ export default function CrmFieldSettingsPage() {
                     <button
                       onClick={async () => {
                         try {
-                          await fieldRepo.deleteFieldDefinition(getSupabase(), field.id);
+                          await fieldRepo.deleteFieldDefinition(
+                            getSupabase(),
+                            field.id,
+                            organization!.id
+                          );
                           mutate();
                           showToast("フィールドを削除しました");
                         } catch {

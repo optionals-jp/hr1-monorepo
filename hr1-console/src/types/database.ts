@@ -828,6 +828,7 @@ export interface BcLead {
   converted_contact_id: string | null;
   converted_deal_id: string | null;
   converted_at: string | null;
+  /** profiles(id) 参照 — text型 */
   created_by: string | null;
   created_at: string;
   updated_at: string;
