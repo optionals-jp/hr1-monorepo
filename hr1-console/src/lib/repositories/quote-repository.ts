@@ -110,11 +110,10 @@ export async function deleteQuote(client: SupabaseClient, id: string, organizati
 
 // --- Quote Items ---
 
-export async function upsertQuoteItems(
+export async function syncQuoteItems(
   client: SupabaseClient,
   quoteId: string,
   items: {
-    id?: string;
     sort_order: number;
     description: string;
     quantity: number;
@@ -123,27 +122,37 @@ export async function upsertQuoteItems(
     amount: number;
   }[]
 ) {
-  // 既存明細を削除して再作成（シンプルなアプローチ）
-  const { error: deleteError } = await client
+  // 1. 既存明細IDを取得
+  const { data: existing, error: fetchErr } = await client
     .from("bc_quote_items")
-    .delete()
+    .select("id")
     .eq("quote_id", quoteId);
-  if (deleteError) throw deleteError;
+  if (fetchErr) throw fetchErr;
+  const existingIds = new Set((existing ?? []).map((e: { id: string }) => e.id));
 
-  if (items.length === 0) return;
+  // 2. 新しい明細を挿入
+  if (items.length > 0) {
+    const rows = items.map((item) => ({
+      quote_id: quoteId,
+      sort_order: item.sort_order,
+      description: item.description,
+      quantity: item.quantity,
+      unit: item.unit,
+      unit_price: item.unit_price,
+      amount: item.amount,
+    }));
+    const { error: insertErr } = await client.from("bc_quote_items").insert(rows);
+    if (insertErr) throw insertErr;
+  }
 
-  const rows = items.map((item) => ({
-    quote_id: quoteId,
-    sort_order: item.sort_order,
-    description: item.description,
-    quantity: item.quantity,
-    unit: item.unit,
-    unit_price: item.unit_price,
-    amount: item.amount,
-  }));
-
-  const { error } = await client.from("bc_quote_items").insert(rows);
-  if (error) throw error;
+  // 3. 挿入成功後に旧明細を削除（データ消失リスクを排除）
+  if (existingIds.size > 0) {
+    const { error: deleteErr } = await client
+      .from("bc_quote_items")
+      .delete()
+      .in("id", Array.from(existingIds));
+    if (deleteErr) throw deleteErr;
+  }
 }
 
 /**

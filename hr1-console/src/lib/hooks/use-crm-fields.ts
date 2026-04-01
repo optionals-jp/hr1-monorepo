@@ -20,7 +20,8 @@ export function useCrmFieldDefinitions(entityType?: CrmEntityType) {
  */
 export function useCrmFieldValues(entityId: string, entityType: CrmEntityType) {
   const { organization } = useOrg();
-  return useQuery(organization ? `crm-field-values-${entityId}-${entityType}` : null, () =>
-    repo.fetchFieldValues(getSupabase(), entityId, entityType)
+  return useQuery(
+    organization ? `crm-field-values-${organization.id}-${entityId}-${entityType}` : null,
+    () => repo.fetchFieldValues(getSupabase(), organization!.id, entityId, entityType)
   );
 }

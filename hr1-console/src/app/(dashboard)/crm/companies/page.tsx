@@ -35,6 +35,8 @@ export default function CrmCompaniesPage() {
     openCreate,
     handleSave,
     handleDelete,
+    saving,
+    deleting,
   } = useCrmCompaniesPage();
 
   const [viewConfig, setViewConfig] = useState<CrmSavedViewConfig>({});
@@ -131,20 +133,11 @@ export default function CrmCompaniesPage() {
         open={editOpen}
         onOpenChange={setEditOpen}
         title={editData.id ? "企業編集" : "企業登録"}
-        onSave={async () => {
-          const result = await handleSave();
-          if (result.success && result.message) showToast(result.message);
-          else if (result.error) showToast(result.error, "error");
-        }}
-        onDelete={
-          editData.id
-            ? async () => {
-                const result = await handleDelete();
-                if (result.success) showToast("企業を削除しました");
-                else if (result.error) showToast(result.error, "error");
-              }
-            : undefined
-        }
+        onSave={() => handleSave(showToast)}
+        saving={saving}
+        onDelete={editData.id ? () => handleDelete(showToast) : undefined}
+        deleting={deleting}
+        confirmDeleteMessage="この企業を削除しますか？関連する商談・連絡先との紐付けも解除されます。"
       >
         <div className="space-y-4">
           <div>

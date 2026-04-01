@@ -255,6 +255,8 @@ export function useCrmDealsPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState<Partial<BcDeal>>({});
   const [errors, setErrors] = useState<ValidationErrors | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const { data: deals, error, mutate } = useCrmDealsAll();
 
@@ -278,6 +280,7 @@ export function useCrmDealsPage() {
   };
 
   const handleSave = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    if (!organization || saving) return;
     const rules = { title: [validators.required("商談名")] };
     const validationErrors = validateForm(rules, editData);
     if (validationErrors) {
@@ -285,28 +288,38 @@ export function useCrmDealsPage() {
       return;
     }
 
-    const result = await saveDeal({
-      organizationId: organization!.id,
-      data: editData,
-    });
-    if (result.success) {
-      showToast(editData.id ? "商談を更新しました" : "商談を登録しました");
-      setEditOpen(false);
-      mutate();
-    } else {
-      showToast(result.error!, "error");
+    setSaving(true);
+    try {
+      const result = await saveDeal({
+        organizationId: organization.id,
+        data: editData,
+      });
+      if (result.success) {
+        showToast(editData.id ? "商談を更新しました" : "商談を登録しました");
+        setEditOpen(false);
+        mutate();
+      } else {
+        showToast(result.error!, "error");
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async (showToast: (msg: string, type?: "success" | "error") => void) => {
-    if (!editData.id) return;
-    const result = await removeDeal(editData.id, organization!.id);
-    if (result.success) {
-      showToast("商談を削除しました");
-      setEditOpen(false);
-      mutate();
-    } else {
-      showToast(result.error!, "error");
+    if (!editData.id || !organization || deleting) return;
+    setDeleting(true);
+    try {
+      const result = await removeDeal(editData.id, organization.id);
+      if (result.success) {
+        showToast("商談を削除しました");
+        setEditOpen(false);
+        mutate();
+      } else {
+        showToast(result.error!, "error");
+      }
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -327,6 +340,8 @@ export function useCrmDealsPage() {
     openEdit,
     handleSave,
     handleDelete,
+    saving,
+    deleting,
     mutate,
   };
 }
@@ -337,6 +352,8 @@ export function useCrmCompaniesPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState<Partial<BcCompany>>({});
   const [errors, setErrors] = useState<ValidationErrors | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const { data: companies, error, mutate } = useCrmCompanies();
 
@@ -356,7 +373,8 @@ export function useCrmCompaniesPage() {
     setEditOpen(true);
   };
 
-  const handleSave = async (): Promise<{ success: boolean; error?: string; message?: string }> => {
+  const handleSave = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    if (!organization || saving) return;
     const rules = { name: [validators.required("企業名")] };
     const validationErrors = validateForm(rules, editData);
     if (validationErrors) {
@@ -364,31 +382,38 @@ export function useCrmCompaniesPage() {
       return { success: false };
     }
 
-    const result = await saveCompany({
-      organizationId: organization!.id,
-      data: editData,
-    });
-    if (result.success) {
-      setEditOpen(false);
-      mutate();
-      return {
-        success: true,
-        message: editData.id ? "企業情報を更新しました" : "企業を登録しました",
-      };
-    } else {
-      return { success: false, error: result.error };
+    setSaving(true);
+    try {
+      const result = await saveCompany({
+        organizationId: organization.id,
+        data: editData,
+      });
+      if (result.success) {
+        showToast(editData.id ? "企業情報を更新しました" : "企業を登録しました");
+        setEditOpen(false);
+        mutate();
+      } else {
+        showToast(result.error!, "error");
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDelete = async (): Promise<{ success: boolean; error?: string }> => {
-    if (!editData.id) return { success: false };
-    const result = await removeCompany(editData.id, organization!.id);
-    if (result.success) {
-      setEditOpen(false);
-      mutate();
-      return { success: true };
-    } else {
-      return { success: false, error: result.error };
+  const handleDelete = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    if (!editData.id || !organization || deleting) return;
+    setDeleting(true);
+    try {
+      const result = await removeCompany(editData.id, organization.id);
+      if (result.success) {
+        showToast("企業を削除しました");
+        setEditOpen(false);
+        mutate();
+      } else {
+        showToast(result.error!, "error");
+      }
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -406,6 +431,8 @@ export function useCrmCompaniesPage() {
     openCreate,
     handleSave,
     handleDelete,
+    saving,
+    deleting,
   };
 }
 
@@ -421,6 +448,8 @@ export function useCrmLeadsPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState<Partial<BcLead>>({});
   const [errors, setErrors] = useState<ValidationErrors | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const { data: leads, error, mutate } = useCrmLeads();
 
@@ -442,6 +471,7 @@ export function useCrmLeadsPage() {
   };
 
   const handleSave = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    if (!organization || saving) return;
     const rules = { name: [validators.required("名前")] };
     const validationErrors = validateForm(rules, editData);
     if (validationErrors) {
@@ -449,10 +479,11 @@ export function useCrmLeadsPage() {
       return;
     }
 
+    setSaving(true);
     const client = getSupabase();
     try {
       if (editData.id) {
-        await leadRepository.updateLead(client, editData.id, organization!.id, {
+        await leadRepository.updateLead(client, editData.id, organization.id, {
           name: editData.name as string,
           company_name: editData.company_name || null,
           email: editData.email || null,
@@ -464,7 +495,7 @@ export function useCrmLeadsPage() {
         });
       } else {
         await leadRepository.createLead(client, {
-          organization_id: organization!.id,
+          organization_id: organization.id,
           name: editData.name as string,
           company_name: editData.company_name || null,
           email: editData.email || null,
@@ -479,18 +510,23 @@ export function useCrmLeadsPage() {
       mutate();
     } catch {
       showToast("保存に失敗しました", "error");
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async (showToast: (msg: string, type?: "success" | "error") => void) => {
-    if (!editData.id) return;
+    if (!editData.id || !organization || deleting) return;
+    setDeleting(true);
     try {
-      await leadRepository.deleteLead(getSupabase(), editData.id, organization!.id);
+      await leadRepository.deleteLead(getSupabase(), editData.id, organization.id);
       showToast("リードを削除しました");
       setEditOpen(false);
       mutate();
     } catch {
       showToast("削除に失敗しました", "error");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -510,6 +546,8 @@ export function useCrmLeadsPage() {
     openCreate,
     handleSave,
     handleDelete,
+    saving,
+    deleting,
     mutate,
   };
 }

@@ -88,12 +88,14 @@ export async function deleteFieldDefinition(
 
 export async function fetchFieldValues(
   client: SupabaseClient,
+  organizationId: string,
   entityId: string,
   entityType: CrmEntityType
 ) {
   const { data, error } = await client
     .from("crm_field_values")
     .select("*")
+    .eq("organization_id", organizationId)
     .eq("entity_id", entityId)
     .eq("entity_type", entityType);
   if (error) throw error;

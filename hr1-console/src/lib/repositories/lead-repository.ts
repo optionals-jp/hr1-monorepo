@@ -55,6 +55,7 @@ export async function deleteLead(client: SupabaseClient, id: string, organizatio
 
 /**
  * リードコンバージョン: リード→企業+連絡先+商談を一括作成
+ * 途中で失敗した場合、作成済みのレコードをクリーンアップする
  */
 export async function convertLead(
   client: SupabaseClient,
@@ -71,61 +72,87 @@ export async function convertLead(
     dealPipelineId?: string;
   }
 ) {
-  // 1. 企業作成
-  const { data: company, error: companyErr } = await client
-    .from("bc_companies")
-    .insert({
-      organization_id: organizationId,
-      name: options.companyName,
-    })
-    .select("id")
-    .single();
-  if (companyErr) throw companyErr;
+  let companyId: string | null = null;
+  let contactId: string | null = null;
+  let dealId: string | null = null;
 
-  // 2. 連絡先作成
-  const { data: contact, error: contactErr } = await client
-    .from("bc_contacts")
-    .insert({
-      organization_id: organizationId,
-      company_id: company.id,
-      last_name: options.contactName,
-      email: options.contactEmail,
-      phone: options.contactPhone,
-    })
-    .select("id")
-    .single();
-  if (contactErr) throw contactErr;
+  try {
+    // 1. 企業作成
+    const { data: company, error: companyErr } = await client
+      .from("bc_companies")
+      .insert({ organization_id: organizationId, name: options.companyName })
+      .select("id")
+      .single();
+    if (companyErr) throw companyErr;
+    companyId = company.id;
 
-  // 3. 商談作成
-  const { data: deal, error: dealErr } = await client
-    .from("bc_deals")
-    .insert({
-      organization_id: organizationId,
-      company_id: company.id,
-      contact_id: contact.id,
-      title: options.dealTitle,
-      stage: options.dealStage ?? "initial",
-      stage_id: options.dealStageId ?? null,
-      pipeline_id: options.dealPipelineId ?? null,
-      status: "open",
-    })
-    .select("id")
-    .single();
-  if (dealErr) throw dealErr;
+    // 2. 連絡先作成
+    const { data: contact, error: contactErr } = await client
+      .from("bc_contacts")
+      .insert({
+        organization_id: organizationId,
+        company_id: companyId,
+        last_name: options.contactName,
+        email: options.contactEmail,
+        phone: options.contactPhone,
+      })
+      .select("id")
+      .single();
+    if (contactErr) throw contactErr;
+    contactId = contact.id;
 
-  // 4. リードをコンバート済に更新
-  const { error: leadErr } = await client
-    .from("bc_leads")
-    .update({
-      status: "converted",
-      converted_company_id: company.id,
-      converted_contact_id: contact.id,
-      converted_deal_id: deal.id,
-      converted_at: new Date().toISOString(),
-    })
-    .eq("id", leadId)
-    .eq("organization_id", organizationId);
-  if (leadErr) throw leadErr;
+    // 3. 商談作成
+    const { data: deal, error: dealErr } = await client
+      .from("bc_deals")
+      .insert({
+        organization_id: organizationId,
+        company_id: companyId,
+        contact_id: contactId,
+        title: options.dealTitle,
+        stage: options.dealStage ?? "initial",
+        stage_id: options.dealStageId ?? null,
+        pipeline_id: options.dealPipelineId ?? null,
+        status: "open",
+      })
+      .select("id")
+      .single();
+    if (dealErr) throw dealErr;
+    dealId = deal.id;
 
-  return { companyId: company.id, contactId: contact.id, dealId: deal.id };
+    // 4. リードをコンバート済に更新
+    const { error: leadErr } = await client
+      .from("bc_leads")
+      .update({
+        status: "converted",
+        converted_company_id: companyId,
+        converted_contact_id: contactId,
+        converted_deal_id: dealId,
+        converted_at: new Date().toISOString(),
+      })
+      .eq("id", leadId)
+      .eq("organization_id", organizationId);
+    if (leadErr) throw leadErr;
+
+    return { companyId, contactId, dealId };
+  } catch (err) {
+    // 途中で失敗した場合、作成済みレコードをクリーンアップ（ベストエフォート）
+    if (dealId) {
+      await client.from("bc_deals").delete().eq("id", dealId).eq("organization_id", organizationId);
+    }
+    if (contactId) {
+      await client
+        .from("bc_contacts")
+        .delete()
+        .eq("id", contactId)
+        .eq("organization_id", organizationId);
+    }
+    if (companyId) {
+      await client
+        .from("bc_companies")
+        .delete()
+        .eq("id", companyId)
+        .eq("organization_id", organizationId);
+    }
+    throw err;
+  }
 }

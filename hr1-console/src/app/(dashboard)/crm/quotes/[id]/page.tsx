@@ -31,6 +31,7 @@ import type {
   BcContact,
   BcDeal,
 } from "@/types/database";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Save, Trash2, Plus, FileText, Printer } from "lucide-react";
 
 interface EditableItem {
@@ -137,6 +138,9 @@ function QuoteForm({
   const [notes, setNotes] = useState(quote?.notes ?? "");
   const [terms, setTerms] = useState(quote?.terms ?? "");
   const [items, setItems] = useState<EditableItem[]>(quoteToItems(quote));
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const subtotal = useMemo(() => items.reduce((sum, i) => sum + i.amount, 0), [items]);
   const taxAmount = useMemo(() => Math.floor(subtotal * (taxRate / 100)), [subtotal, taxRate]);
@@ -166,11 +170,13 @@ function QuoteForm({
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!organization || !title.trim()) {
+    if (!organization || saving) return;
+    if (!title.trim()) {
       showToast("タイトルを入力してください", "error");
       return;
     }
 
+    setSaving(true);
     try {
       const quoteData = {
         title: title.trim(),
@@ -201,20 +207,23 @@ function QuoteForm({
           created_by: user?.id ?? null,
         });
         if (validItems.length > 0) {
-          await quoteRepo.upsertQuoteItems(getSupabase(), created.id, validItems);
+          await quoteRepo.syncQuoteItems(getSupabase(), created.id, validItems);
         }
         showToast("見積書を作成しました");
         router.push(`/crm/quotes/${created.id}`);
       } else {
         await quoteRepo.updateQuote(getSupabase(), id, organization.id, quoteData);
-        await quoteRepo.upsertQuoteItems(getSupabase(), id, validItems);
+        await quoteRepo.syncQuoteItems(getSupabase(), id, validItems);
         showToast("見積書を更新しました");
         mutate();
       }
     } catch {
       showToast("見積書の保存に失敗しました", "error");
+    } finally {
+      setSaving(false);
     }
   }, [
+    saving,
     organization,
     user,
     title,
@@ -239,15 +248,18 @@ function QuoteForm({
   ]);
 
   const handleDelete = useCallback(async () => {
-    if (!organization || isNew) return;
+    if (!organization || isNew || deleting) return;
+    setDeleting(true);
     try {
       await quoteRepo.deleteQuote(getSupabase(), id, organization.id);
       showToast("見積書を削除しました");
       router.push("/crm/quotes");
     } catch {
       showToast("見積書の削除に失敗しました", "error");
+    } finally {
+      setDeleting(false);
     }
-  }, [organization, isNew, id, showToast, router]);
+  }, [organization, isNew, deleting, id, showToast, router]);
 
   return (
     <div>
@@ -265,15 +277,19 @@ function QuoteForm({
                   <Printer className="size-4 mr-1.5" />
                   印刷
                 </Button>
-                <Button variant="outline" onClick={handleDelete}>
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  disabled={deleting}
+                >
                   <Trash2 className="size-4 mr-1.5" />
-                  削除
+                  {deleting ? "削除中..." : "削除"}
                 </Button>
               </>
             )}
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} disabled={saving}>
               <Save className="size-4 mr-1.5" />
-              保存
+              {saving ? "保存中..." : "保存"}
             </Button>
           </div>
         }
@@ -510,6 +526,20 @@ function QuoteForm({
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="見積書の削除"
+        description="この見積書を削除しますか？この操作は元に戻せません。"
+        variant="destructive"
+        confirmLabel="削除"
+        onConfirm={() => {
+          setDeleteConfirmOpen(false);
+          handleDelete();
+        }}
+        loading={deleting}
+      />
     </div>
   );
 }

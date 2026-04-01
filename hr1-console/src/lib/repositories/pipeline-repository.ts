@@ -52,15 +52,21 @@ export async function updatePipeline(
   organizationId: string,
   data: Partial<Pick<CrmPipeline, "name" | "is_default" | "sort_order">>
 ) {
-  return client
+  const { error } = await client
     .from("crm_pipelines")
     .update({ ...data, updated_at: new Date().toISOString() })
     .eq("id", id)
     .eq("organization_id", organizationId);
+  if (error) throw error;
 }
 
 export async function deletePipeline(client: SupabaseClient, id: string, organizationId: string) {
-  return client.from("crm_pipelines").delete().eq("id", id).eq("organization_id", organizationId);
+  const { error } = await client
+    .from("crm_pipelines")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+  if (error) throw error;
 }
 
 // --- Stages ---
@@ -102,7 +108,7 @@ export async function updateStage(
 ) {
   const { error } = await client
     .from("crm_pipeline_stages")
-    .update(data)
+    .update({ ...data, updated_at: new Date().toISOString() })
     .eq("id", id)
     .eq("pipeline_id", pipelineId);
   if (error) throw error;
@@ -122,16 +128,15 @@ export async function reorderStages(
   pipelineId: string,
   stages: { id: string; sort_order: number }[]
 ) {
-  // 一括更新（並行実行）
-  await Promise.all(
-    stages.map((s) =>
-      client
-        .from("crm_pipeline_stages")
-        .update({ sort_order: s.sort_order })
-        .eq("id", s.id)
-        .eq("pipeline_id", pipelineId)
-    )
-  );
+  // 順次更新（部分成功を避けるため）
+  for (const s of stages) {
+    const { error } = await client
+      .from("crm_pipeline_stages")
+      .update({ sort_order: s.sort_order })
+      .eq("id", s.id)
+      .eq("pipeline_id", pipelineId);
+    if (error) throw error;
+  }
 }
 
 // --- デフォルトパイプライン初期化 ---

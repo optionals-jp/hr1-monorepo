@@ -29,6 +29,7 @@ import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as pipelineRepo from "@/lib/repositories/pipeline-repository";
 import type { CrmPipeline, CrmPipelineStage } from "@/types/database";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { GripVertical, Plus, Trash2, Pencil, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -121,6 +122,29 @@ export default function PipelineSettingsPage() {
   const [editStageData, setEditStageData] = useState<Partial<CrmPipelineStage>>({});
   const [editPipelineId, setEditPipelineId] = useState<string | null>(null);
   const [activeDragStage, setActiveDragStage] = useState<CrmPipelineStage | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<(() => Promise<void>) | null>(null);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmDesc, setConfirmDesc] = useState("");
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  const openConfirm = (title: string, desc: string, action: () => Promise<void>) => {
+    setConfirmTitle(title);
+    setConfirmDesc(desc);
+    setConfirmAction(() => action);
+    setConfirmOpen(true);
+  };
+
+  const executeConfirm = async () => {
+    if (!confirmAction) return;
+    setConfirmLoading(true);
+    try {
+      await confirmAction();
+    } finally {
+      setConfirmLoading(false);
+      setConfirmOpen(false);
+    }
+  };
 
   // パイプライン新規作成
   const [newPipelineName, setNewPipelineName] = useState("");
@@ -337,7 +361,13 @@ export default function PipelineSettingsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDeletePipeline(pipeline)}
+                          onClick={() =>
+                            openConfirm(
+                              "パイプラインの削除",
+                              `「${pipeline.name}」を削除しますか？この操作は元に戻せません。`,
+                              () => handleDeletePipeline(pipeline)
+                            )
+                          }
                         >
                           <Trash2 className="size-4" />
                         </Button>
@@ -355,15 +385,25 @@ export default function PipelineSettingsPage() {
                         key={stage.id}
                         stage={stage}
                         onEdit={() => openStageEdit(stage)}
-                        onDelete={async () => {
-                          try {
-                            await pipelineRepo.deleteStage(getSupabase(), stage.id, pipeline.id);
-                            mutate();
-                            showToast("ステージを削除しました");
-                          } catch {
-                            showToast("ステージの削除に失敗しました", "error");
-                          }
-                        }}
+                        onDelete={() =>
+                          openConfirm(
+                            "ステージの削除",
+                            `「${stage.name}」を削除しますか？この操作は元に戻せません。`,
+                            async () => {
+                              try {
+                                await pipelineRepo.deleteStage(
+                                  getSupabase(),
+                                  stage.id,
+                                  pipeline.id
+                                );
+                                mutate();
+                                showToast("ステージを削除しました");
+                              } catch {
+                                showToast("ステージの削除に失敗しました", "error");
+                              }
+                            }
+                          )
+                        }
                       />
                     ))}
                   </SortableContext>
@@ -390,6 +430,17 @@ export default function PipelineSettingsPage() {
         <DragOverlay>{activeDragStage && <StageOverlay stage={activeDragStage} />}</DragOverlay>
       </DndContext>
 
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={confirmTitle}
+        description={confirmDesc}
+        variant="destructive"
+        confirmLabel="削除"
+        onConfirm={executeConfirm}
+        loading={confirmLoading}
+      />
+
       {/* ステージ編集パネル */}
       <EditPanel
         open={editStageOpen}
@@ -397,6 +448,7 @@ export default function PipelineSettingsPage() {
         title={editStageData.id ? "ステージ編集" : "ステージ追加"}
         onSave={handleSaveStage}
         onDelete={editStageData.id ? handleDeleteStage : undefined}
+        confirmDeleteMessage="このステージを削除しますか？この操作は元に戻せません。"
       >
         <div className="space-y-4">
           <div>

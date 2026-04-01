@@ -61,6 +61,8 @@ export default function CrmDealsPage() {
     openCreate,
     handleSave,
     handleDelete,
+    saving,
+    deleting,
     mutate,
   } = useCrmDealsPage();
 
@@ -255,7 +257,10 @@ export default function CrmDealsPage() {
         onOpenChange={setEditOpen}
         title={editData.id ? "商談編集" : "商談登録"}
         onSave={() => handleSave(showToast)}
+        saving={saving}
         onDelete={editData.id ? () => handleDelete(showToast) : undefined}
+        deleting={deleting}
+        confirmDeleteMessage="この商談を削除しますか？関連する見積書・連絡先の紐付けも削除されます。"
       >
         <div className="space-y-4">
           <div>

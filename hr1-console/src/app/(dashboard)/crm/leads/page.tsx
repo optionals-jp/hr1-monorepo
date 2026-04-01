@@ -48,6 +48,8 @@ export default function CrmLeadsPage() {
     openCreate,
     handleSave,
     handleDelete,
+    saving,
+    deleting,
     mutate,
   } = useCrmLeadsPage();
 
@@ -191,7 +193,10 @@ export default function CrmLeadsPage() {
         onOpenChange={setEditOpen}
         title={editData.id ? "リード編集" : "リード登録"}
         onSave={() => handleSave(showToast)}
+        saving={saving}
         onDelete={editData.id ? () => handleDelete(showToast) : undefined}
+        deleting={deleting}
+        confirmDeleteMessage="このリードを削除しますか？この操作は元に戻せません。"
       >
         <div className="space-y-4">
           <div>
