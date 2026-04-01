@@ -205,7 +205,8 @@ export async function saveDeal(params: {
       });
     }
     return { success: true };
-  } catch {
+  } catch (err) {
+    console.error("saveDeal failed:", err);
     return { success: false, error: "保存に失敗しました" };
   }
 }
@@ -217,7 +218,8 @@ export async function removeDeal(
   try {
     await repository.deleteDeal(getSupabase(), id, organizationId);
     return { success: true };
-  } catch {
+  } catch (err) {
+    console.error("removeDeal failed:", err);
     return { success: false, error: "削除に失敗しました" };
   }
 }

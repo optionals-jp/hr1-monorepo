@@ -65,6 +65,20 @@ export default function CrmDealsPage() {
 
   const handleStageChange = async (dealId: string, newStage: string, newProbability: number) => {
     if (!organization) return;
+    // 楽観的更新: UI を先に更新し、失敗時にリバート
+    const previousDeals = deals;
+    mutate(
+      deals?.map((d) =>
+        d.id === dealId
+          ? {
+              ...d,
+              stage: newStage as "initial" | "proposal" | "negotiation" | "closing",
+              probability: newProbability,
+            }
+          : d
+      ),
+      false
+    );
     try {
       await updateDeal(getSupabase(), dealId, organization.id, {
         stage: newStage as "initial" | "proposal" | "negotiation" | "closing",
@@ -72,6 +86,7 @@ export default function CrmDealsPage() {
       });
       mutate();
     } catch {
+      mutate(previousDeals, false);
       showToast("ステージの更新に失敗しました", "error");
     }
   };
