@@ -59,6 +59,7 @@ export const ja: Record<string, string> = {
   "nav.crm.quotes": "見積書",
   "nav.crm.forecast": "売上予測",
   "nav.crm.automations": "自動化",
+  "nav.crm.emailTemplates": "メールテンプレート",
 
   "validation.required": "は必須です",
   "validation.email": "有効なメールアドレスを入力してください",

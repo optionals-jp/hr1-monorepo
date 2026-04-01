@@ -135,6 +135,16 @@ export const automationActionLabels: Record<string, string> = {
   send_webhook: "Webhookを送信",
 };
 
+// --- メールテンプレートカテゴリ ---
+export const emailTemplateCategoryLabels: Record<string, string> = {
+  general: "一般",
+  follow_up: "フォローアップ",
+  proposal: "提案",
+  thank_you: "お礼",
+  introduction: "紹介",
+  reminder: "リマインダー",
+};
+
 export const automationConditionOperatorLabels: Record<string, string> = {
   eq: "等しい",
   neq: "等しくない",

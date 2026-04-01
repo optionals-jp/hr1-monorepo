@@ -1059,3 +1059,29 @@ export interface CrmAutomationLog {
   executed_at: string;
   crm_automation_rules?: CrmAutomationRule;
 }
+
+// ==========================================================
+// CRM メールテンプレート
+// ==========================================================
+
+export type CrmEmailTemplateCategory =
+  | "general"
+  | "follow_up"
+  | "proposal"
+  | "thank_you"
+  | "introduction"
+  | "reminder";
+
+export interface CrmEmailTemplate {
+  id: string;
+  organization_id: string;
+  name: string;
+  subject: string;
+  body: string;
+  category: CrmEmailTemplateCategory;
+  is_active: boolean;
+  sort_order: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}

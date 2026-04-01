@@ -35,6 +35,7 @@ import {
   Handshake,
   BarChart3,
   Zap,
+  Mail,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
@@ -123,6 +124,7 @@ const clientSections: NavSection[] = [
       { href: "/crm/settings/pipelines", labelKey: "nav.crm.pipelines", icon: Settings },
       { href: "/crm/settings/fields", labelKey: "nav.crm.fields", icon: Settings },
       { href: "/crm/settings/automations", labelKey: "nav.crm.automations", icon: Zap },
+      { href: "/crm/settings/email-templates", labelKey: "nav.crm.emailTemplates", icon: Mail },
     ],
   },
   {

@@ -277,11 +277,7 @@ export async function createTodo(
     created_by?: string | null;
   }
 ): Promise<BcTodo> {
-  const { data: created, error } = await client
-    .from("bc_todos")
-    .insert(data)
-    .select()
-    .single();
+  const { data: created, error } = await client.from("bc_todos").insert(data).select().single();
   if (error) throw error;
   return created as BcTodo;
 }
