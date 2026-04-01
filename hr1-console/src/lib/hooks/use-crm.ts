@@ -6,8 +6,13 @@ import { useOrg } from "@/lib/org-context";
 import { useQuery } from "@/lib/use-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repository from "@/lib/repositories/crm-repository";
+import * as leadRepository from "@/lib/repositories/lead-repository";
+import * as dealContactRepository from "@/lib/repositories/deal-contact-repository";
+import * as quoteRepository from "@/lib/repositories/quote-repository";
 import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
-import type { BcCompany } from "@/types/database";
+import { dealStageProbability } from "@/lib/constants/crm";
+import { fireTrigger } from "@/lib/automation/engine";
+import type { BcCompany, BcDeal, BcLead } from "@/types/database";
 
 // --- Dashboard ---
 export function useCrmDeals() {
@@ -43,6 +48,14 @@ export function useCrmCompanyContacts(companyId: string) {
   return useQuery(
     organization ? `crm-company-contacts-${organization.id}-${companyId}` : null,
     () => repository.fetchContactsByCompany(getSupabase(), companyId, organization!.id)
+  );
+}
+
+export function useCrmCompanyActivities(companyId: string) {
+  const { organization } = useOrg();
+  return useQuery(
+    organization ? `crm-company-activities-${organization.id}-${companyId}` : null,
+    () => repository.fetchActivitiesByCompany(getSupabase(), companyId, organization!.id)
   );
 }
 
@@ -113,6 +126,125 @@ export function useCrmDealTodos(dealId: string) {
   );
 }
 
+export function useCrmLeadActivities(leadId: string) {
+  const { organization } = useOrg();
+  return useQuery(organization ? `crm-lead-activities-${organization.id}-${leadId}` : null, () =>
+    repository.fetchActivitiesByLead(getSupabase(), leadId, organization!.id)
+  );
+}
+
+// --- Activity Mutation ---
+export function useCreateActivity() {
+  const { organization } = useOrg();
+  return async (data: {
+    activity_type: string;
+    title: string;
+    description?: string | null;
+    deal_id?: string | null;
+    lead_id?: string | null;
+    company_id?: string | null;
+    activity_date: string;
+    created_by?: string | null;
+  }): Promise<{ success: boolean }> => {
+    if (!organization) return { success: false };
+    try {
+      await repository.createActivity(getSupabase(), {
+        ...data,
+        organization_id: organization.id,
+      });
+      return { success: true };
+    } catch {
+      return { success: false };
+    }
+  };
+}
+
+// --- Deal Contacts ---
+export function useCrmDealContacts(dealId: string) {
+  const { organization } = useOrg();
+  return useQuery(organization ? `crm-deal-contacts-${organization.id}-${dealId}` : null, () =>
+    dealContactRepository.fetchDealContacts(getSupabase(), dealId, organization!.id)
+  );
+}
+
+export function useDealContactMutations() {
+  const { organization } = useOrg();
+  const client = getSupabase();
+
+  const add = async (data: {
+    deal_id: string;
+    contact_id: string;
+    role: import("@/types/database").DealContactRole;
+    is_primary: boolean;
+    notes: string | null;
+  }): Promise<{ success: boolean }> => {
+    if (!organization) return { success: false };
+    try {
+      await dealContactRepository.addDealContact(client, {
+        ...data,
+        organization_id: organization.id,
+      });
+      return { success: true };
+    } catch {
+      return { success: false };
+    }
+  };
+
+  const remove = async (id: string): Promise<{ success: boolean }> => {
+    if (!organization) return { success: false };
+    try {
+      await dealContactRepository.removeDealContact(client, id, organization.id);
+      return { success: true };
+    } catch {
+      return { success: false };
+    }
+  };
+
+  const setPrimary = async (dealId: string, dcId: string): Promise<{ success: boolean }> => {
+    if (!organization) return { success: false };
+    try {
+      await dealContactRepository.setPrimaryContact(client, dealId, dcId, organization.id);
+      return { success: true };
+    } catch {
+      return { success: false };
+    }
+  };
+
+  const updateRole = async (
+    id: string,
+    role: import("@/types/database").DealContactRole
+  ): Promise<{ success: boolean }> => {
+    if (!organization) return { success: false };
+    try {
+      await dealContactRepository.updateDealContact(client, id, organization.id, { role });
+      return { success: true };
+    } catch {
+      return { success: false };
+    }
+  };
+
+  return { add, remove, setPrimary, updateRole };
+}
+
+// --- Quotes ---
+export function useCrmQuotes() {
+  return useOrgQuery("crm-quotes", (orgId) => quoteRepository.fetchQuotes(getSupabase(), orgId));
+}
+
+export function useCrmQuotesByDeal(dealId: string) {
+  const { organization } = useOrg();
+  return useQuery(organization ? `crm-deal-quotes-${organization.id}-${dealId}` : null, () =>
+    quoteRepository.fetchQuotesByDeal(getSupabase(), dealId, organization!.id)
+  );
+}
+
+export function useCrmQuote(id: string) {
+  const { organization } = useOrg();
+  return useQuery(organization ? `crm-quote-${organization.id}-${id}` : null, () =>
+    quoteRepository.fetchQuote(getSupabase(), id, organization!.id)
+  );
+}
+
 // --- Mutations ---
 export async function saveCompany(params: {
   organizationId: string;
@@ -163,12 +295,192 @@ export async function removeCompany(
   }
 }
 
+// --- Deal Mutations ---
+export async function saveDeal(params: {
+  organizationId: string;
+  data: Record<string, unknown>;
+}): Promise<{ success: boolean; error?: string }> {
+  const client = getSupabase();
+  const { data } = params;
+  try {
+    const commonFields = {
+      title: data.title as string,
+      company_id: (data.company_id as string) || null,
+      contact_id: (data.contact_id as string) || null,
+      amount: data.amount ? Number(data.amount) : null,
+      stage: (data.stage as string) || "initial",
+      stage_id: (data.stage_id as string) || null,
+      pipeline_id: (data.pipeline_id as string) || null,
+      probability: data.probability != null ? Number(data.probability) : null,
+      expected_close_date: (data.expected_close_date as string) || null,
+      description: (data.description as string) || null,
+      assigned_to: (data.assigned_to as string) || null,
+    };
+    if (data.id) {
+      const previousStatus = data._previousStatus as string | undefined;
+      const previousStage = data._previousStage as string | undefined;
+      await repository.updateDeal(client, data.id as string, params.organizationId, {
+        ...commonFields,
+        status: (data.status as BcDeal["status"]) || "open",
+      });
+      // 自動化トリガー（非同期、エラーは無視）
+      const dealData = { ...commonFields, id: data.id, status: data.status };
+      const entityCtx = {
+        organizationId: params.organizationId,
+        entityType: "deal" as const,
+        entityId: data.id as string,
+        entityData: dealData as Record<string, unknown>,
+      };
+      if (data.status === "won" && previousStatus !== "won") {
+        fireTrigger(client, { ...entityCtx, triggerType: "deal_won" }).catch(() => {});
+      } else if (data.status === "lost" && previousStatus !== "lost") {
+        fireTrigger(client, { ...entityCtx, triggerType: "deal_lost" }).catch(() => {});
+      }
+      if (commonFields.stage !== previousStage) {
+        fireTrigger(client, { ...entityCtx, triggerType: "deal_stage_changed" }).catch(() => {});
+      }
+    } else {
+      const created = await repository.createDeal(client, {
+        ...commonFields,
+        organization_id: params.organizationId,
+        status: "open",
+        probability: commonFields.probability ?? dealStageProbability[commonFields.stage] ?? null,
+      });
+      // 自動化トリガー（非同期）
+      fireTrigger(client, {
+        organizationId: params.organizationId,
+        triggerType: "deal_created",
+        entityType: "deal",
+        entityId: created.id,
+        entityData: { ...commonFields, id: created.id } as Record<string, unknown>,
+      }).catch(() => {});
+    }
+    return { success: true };
+  } catch (err) {
+    console.error("saveDeal failed:", err);
+    return { success: false, error: "保存に失敗しました" };
+  }
+}
+
+export async function removeDeal(
+  id: string,
+  organizationId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await repository.deleteDeal(getSupabase(), id, organizationId);
+    return { success: true };
+  } catch (err) {
+    console.error("removeDeal failed:", err);
+    return { success: false, error: "削除に失敗しました" };
+  }
+}
+
+export function useCrmDealsPage() {
+  const { organization } = useOrg();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editData, setEditData] = useState<Partial<BcDeal>>({});
+  const [errors, setErrors] = useState<ValidationErrors | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const { data: deals, error, mutate } = useCrmDealsAll();
+
+  const filtered = (deals ?? []).filter((d) => {
+    if (statusFilter !== "all" && d.status !== statusFilter) return false;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return d.title.toLowerCase().includes(q) || d.bc_companies?.name?.toLowerCase().includes(q);
+  });
+
+  const openCreate = () => {
+    setEditData({ stage: "initial", status: "open" });
+    setErrors(null);
+    setEditOpen(true);
+  };
+
+  const openEdit = (deal: BcDeal) => {
+    setEditData({ ...deal });
+    setErrors(null);
+    setEditOpen(true);
+  };
+
+  const handleSave = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    if (!organization || saving) return;
+    const rules = { title: [validators.required("商談名")] };
+    const validationErrors = validateForm(rules, editData);
+    if (validationErrors) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const result = await saveDeal({
+        organizationId: organization.id,
+        data: editData,
+      });
+      if (result.success) {
+        showToast(editData.id ? "商談を更新しました" : "商談を登録しました");
+        setEditOpen(false);
+        mutate();
+      } else {
+        showToast(result.error!, "error");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    if (!editData.id || !organization || deleting) return;
+    setDeleting(true);
+    try {
+      const result = await removeDeal(editData.id, organization.id);
+      if (result.success) {
+        showToast("商談を削除しました");
+        setEditOpen(false);
+        mutate();
+      } else {
+        showToast(result.error!, "error");
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return {
+    search,
+    setSearch,
+    statusFilter,
+    setStatusFilter,
+    editOpen,
+    setEditOpen,
+    editData,
+    setEditData,
+    errors,
+    deals,
+    error,
+    filtered,
+    openCreate,
+    openEdit,
+    handleSave,
+    handleDelete,
+    saving,
+    deleting,
+    mutate,
+  };
+}
+
 export function useCrmCompaniesPage() {
   const { organization } = useOrg();
   const [search, setSearch] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState<Partial<BcCompany>>({});
   const [errors, setErrors] = useState<ValidationErrors | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const { data: companies, error, mutate } = useCrmCompanies();
 
@@ -188,7 +500,8 @@ export function useCrmCompaniesPage() {
     setEditOpen(true);
   };
 
-  const handleSave = async (): Promise<{ success: boolean; error?: string; message?: string }> => {
+  const handleSave = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    if (!organization || saving) return;
     const rules = { name: [validators.required("企業名")] };
     const validationErrors = validateForm(rules, editData);
     if (validationErrors) {
@@ -196,31 +509,38 @@ export function useCrmCompaniesPage() {
       return { success: false };
     }
 
-    const result = await saveCompany({
-      organizationId: organization!.id,
-      data: editData,
-    });
-    if (result.success) {
-      setEditOpen(false);
-      mutate();
-      return {
-        success: true,
-        message: editData.id ? "企業情報を更新しました" : "企業を登録しました",
-      };
-    } else {
-      return { success: false, error: result.error };
+    setSaving(true);
+    try {
+      const result = await saveCompany({
+        organizationId: organization.id,
+        data: editData,
+      });
+      if (result.success) {
+        showToast(editData.id ? "企業情報を更新しました" : "企業を登録しました");
+        setEditOpen(false);
+        mutate();
+      } else {
+        showToast(result.error!, "error");
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDelete = async (): Promise<{ success: boolean; error?: string }> => {
-    if (!editData.id) return { success: false };
-    const result = await removeCompany(editData.id, organization!.id);
-    if (result.success) {
-      setEditOpen(false);
-      mutate();
-      return { success: true };
-    } else {
-      return { success: false, error: result.error };
+  const handleDelete = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    if (!editData.id || !organization || deleting) return;
+    setDeleting(true);
+    try {
+      const result = await removeCompany(editData.id, organization.id);
+      if (result.success) {
+        showToast("企業を削除しました");
+        setEditOpen(false);
+        mutate();
+      } else {
+        showToast(result.error!, "error");
+      }
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -238,5 +558,152 @@ export function useCrmCompaniesPage() {
     openCreate,
     handleSave,
     handleDelete,
+    saving,
+    deleting,
+    mutate,
+  };
+}
+
+// --- Leads ---
+export function useCrmLeads() {
+  return useOrgQuery("crm-leads", (orgId) => leadRepository.fetchLeads(getSupabase(), orgId));
+}
+
+export function useCrmLead(id: string) {
+  const { organization } = useOrg();
+  return useQuery(organization ? `crm-lead-${organization.id}-${id}` : null, () =>
+    leadRepository.fetchLead(getSupabase(), id, organization!.id)
+  );
+}
+
+export function useCrmLeadsPage() {
+  const { organization } = useOrg();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editData, setEditData] = useState<Partial<BcLead>>({});
+  const [errors, setErrors] = useState<ValidationErrors | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const { data: leads, error, mutate } = useCrmLeads();
+
+  const filtered = (leads ?? []).filter((l) => {
+    if (statusFilter !== "all" && l.status !== statusFilter) return false;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      l.name.toLowerCase().includes(q) ||
+      l.contact_name?.toLowerCase().includes(q) ||
+      l.contact_email?.toLowerCase().includes(q)
+    );
+  });
+
+  const openCreate = () => {
+    setEditData({ source: "other", status: "new" });
+    setErrors(null);
+    setEditOpen(true);
+  };
+
+  const handleSave = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    if (!organization || saving) return;
+    const rules = { name: [validators.required("企業名")] };
+    const validationErrors = validateForm(rules, editData);
+    if (validationErrors) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setSaving(true);
+    const client = getSupabase();
+    try {
+      if (editData.id) {
+        const previousStatus = (editData as Record<string, unknown>)._previousStatus as
+          | string
+          | undefined;
+        await leadRepository.updateLead(client, editData.id, organization.id, {
+          name: editData.name as string,
+          contact_name: editData.contact_name || null,
+          contact_email: editData.contact_email || null,
+          contact_phone: editData.contact_phone || null,
+          source: editData.source || "other",
+          status: editData.status || "new",
+          assigned_to: editData.assigned_to || null,
+          notes: editData.notes || null,
+        });
+        // ステータス変更トリガー（非同期）
+        if (editData.status && editData.status !== previousStatus) {
+          fireTrigger(client, {
+            organizationId: organization.id,
+            triggerType: "lead_status_changed",
+            entityType: "lead",
+            entityId: editData.id,
+            entityData: editData as Record<string, unknown>,
+          }).catch(() => {});
+        }
+      } else {
+        const created = await leadRepository.createLead(client, {
+          organization_id: organization.id,
+          name: editData.name as string,
+          contact_name: editData.contact_name || null,
+          contact_email: editData.contact_email || null,
+          contact_phone: editData.contact_phone || null,
+          source: editData.source || "other",
+          status: editData.status || "new",
+          notes: editData.notes || null,
+        });
+        // 作成トリガー（非同期）
+        fireTrigger(client, {
+          organizationId: organization.id,
+          triggerType: "lead_created",
+          entityType: "lead",
+          entityId: created.id,
+          entityData: { ...editData, id: created.id } as Record<string, unknown>,
+        }).catch(() => {});
+      }
+      showToast(editData.id ? "リードを更新しました" : "リードを登録しました");
+      setEditOpen(false);
+      mutate();
+    } catch {
+      showToast("保存に失敗しました", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    if (!editData.id || !organization || deleting) return;
+    setDeleting(true);
+    try {
+      await leadRepository.deleteLead(getSupabase(), editData.id, organization.id);
+      showToast("リードを削除しました");
+      setEditOpen(false);
+      mutate();
+    } catch {
+      showToast("削除に失敗しました", "error");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return {
+    search,
+    setSearch,
+    statusFilter,
+    setStatusFilter,
+    editOpen,
+    setEditOpen,
+    editData,
+    setEditData,
+    errors,
+    leads,
+    error,
+    filtered,
+    openCreate,
+    handleSave,
+    handleDelete,
+    saving,
+    deleting,
+    mutate,
   };
 }

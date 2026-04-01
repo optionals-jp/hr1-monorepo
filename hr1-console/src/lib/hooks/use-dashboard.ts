@@ -7,6 +7,7 @@ import { useQuery } from "@/lib/use-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as dashboardRepository from "@/lib/repositories/dashboard-repository";
 import * as crmRepository from "@/lib/repositories/crm-repository";
+import * as pipelineRepository from "@/lib/repositories/pipeline-repository";
 import type { ProductTab } from "@/components/layout/sidebar";
 import { migrateWidgetConfig } from "@/lib/dashboard/migration";
 import { StepStatus, ApplicationStatus } from "@/lib/constants";
@@ -407,17 +408,28 @@ export function useDashboard(activeTab?: ProductTab) {
   const { data: crmContacts } = useQuery(crmEnabled ? `crm-contacts-count-${orgId}` : null, () =>
     crmRepository.fetchContactIds(client, orgId!)
   );
+  const { data: crmPipelines } = useQuery(crmEnabled ? `crm-pipelines-${orgId}` : null, () =>
+    pipelineRepository.fetchPipelines(client, orgId!)
+  );
 
   const crmOpenDeals = crmDeals?.filter((d) => d.status === "open") ?? [];
   const crmWonDeals = crmDeals?.filter((d) => d.status === "won") ?? [];
 
+  // パイプラインステージのマップ（ステージIDまたはレガシーキー→ステージ名）
+  const defaultPipeline = crmPipelines?.find((p) => p.is_default) ?? crmPipelines?.[0];
+  const pipelineStages = defaultPipeline?.crm_pipeline_stages ?? [];
+
   const crmDealsMapped = crmDeals?.map((d) => ({
     id: d.id,
     title: d.title,
-    companyName: (d.bc_companies as unknown as { name: string })?.name ?? "—",
+    companyName: d.bc_companies?.name ?? "—",
     stage: d.stage,
+    stageId: d.stage_id ?? null,
     amount: d.amount,
     status: d.status,
+    probability: d.probability ?? null,
+    assignedToName: d.profiles?.display_name ?? null,
+    expectedCloseDate: d.expected_close_date ?? null,
   }));
 
   return {
@@ -446,6 +458,7 @@ export function useDashboard(activeTab?: ProductTab) {
     saveTarget,
     organization,
     crmDeals: crmDealsMapped,
+    crmPipelineStages: pipelineStages,
     crmCompanyCount: crmCompanies?.length ?? 0,
     crmContactCount: crmContacts?.length ?? 0,
     crmOpenDeals: crmOpenDeals.length,

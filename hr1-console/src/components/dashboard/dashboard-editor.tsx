@@ -44,6 +44,9 @@ import {
   AlertTriangle,
   Handshake,
   Hash,
+  BarChart3,
+  PieChart,
+  DollarSign,
 } from "lucide-react";
 
 const SOURCE_ICONS: Record<DataSourceId, React.ElementType> = {
@@ -59,6 +62,10 @@ const SOURCE_ICONS: Record<DataSourceId, React.ElementType> = {
   hiring_type: FolderKanban,
   client_summary: Handshake,
   recent_deals: Handshake,
+  crm_pipeline: FolderKanban,
+  crm_monthly_revenue: DollarSign,
+  crm_deal_status: PieChart,
+  crm_rep_performance: BarChart3,
 };
 
 const DISPLAY_TYPE_LABELS: Record<WidgetDisplayType, string> = {

@@ -120,6 +120,42 @@ export const DATA_SOURCE_REGISTRY: Record<DataSourceId, DataSourceDefinition> = 
     defaultLayout: "full",
     availableTabs: ["client"],
   },
+  crm_pipeline: {
+    id: "crm_pipeline",
+    label: "商談パイプライン",
+    description: "ステージ別の商談件数・金額",
+    compatibleDisplayTypes: ["pipeline", "bar_chart"],
+    defaultDisplayType: "pipeline",
+    defaultLayout: "full",
+    availableTabs: ["client"],
+  },
+  crm_monthly_revenue: {
+    id: "crm_monthly_revenue",
+    label: "月別受注金額",
+    description: "過去6ヶ月の受注金額推移",
+    compatibleDisplayTypes: ["area_chart", "bar_chart"],
+    defaultDisplayType: "area_chart",
+    defaultLayout: "left",
+    availableTabs: ["client"],
+  },
+  crm_deal_status: {
+    id: "crm_deal_status",
+    label: "商談ステータス",
+    description: "商談中・受注・失注の内訳",
+    compatibleDisplayTypes: ["pie_chart", "bar_chart"],
+    defaultDisplayType: "pie_chart",
+    defaultLayout: "right",
+    availableTabs: ["client"],
+  },
+  crm_rep_performance: {
+    id: "crm_rep_performance",
+    label: "担当者別実績",
+    description: "担当者ごとの商談数・受注金額",
+    compatibleDisplayTypes: ["bar_chart"],
+    defaultDisplayType: "bar_chart",
+    defaultLayout: "full",
+    availableTabs: ["client"],
+  },
 };
 
 export function getSourcesForTab(tab: ProductTab): DataSourceDefinition[] {

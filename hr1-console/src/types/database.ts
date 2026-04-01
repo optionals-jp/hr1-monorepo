@@ -762,16 +762,82 @@ export interface BcDeal {
   title: string;
   amount: number | null;
   status: "open" | "won" | "lost";
-  stage: "initial" | "proposal" | "negotiation" | "closing";
+  stage: string;
+  probability: number | null;
   expected_close_date: string | null;
   description: string | null;
   assigned_to: string | null;
   created_by: string | null;
+  pipeline_id: string | null;
+  stage_id: string | null;
   created_at: string;
   updated_at: string;
   bc_companies?: BcCompany;
   bc_contacts?: BcContact;
   profiles?: Profile;
+  crm_pipeline_stages?: CrmPipelineStage;
+}
+
+export type DealContactRole =
+  | "decision_maker"
+  | "influencer"
+  | "champion"
+  | "end_user"
+  | "evaluator"
+  | "stakeholder";
+
+export interface BcDealContact {
+  id: string;
+  organization_id: string;
+  deal_id: string;
+  contact_id: string;
+  role: DealContactRole;
+  is_primary: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  bc_contacts?: BcContact;
+}
+
+export type QuoteStatus = "draft" | "sent" | "accepted" | "rejected" | "expired";
+
+export interface BcQuote {
+  id: string;
+  organization_id: string;
+  deal_id: string | null;
+  company_id: string | null;
+  contact_id: string | null;
+  quote_number: string;
+  title: string;
+  status: QuoteStatus;
+  issue_date: string;
+  expiry_date: string | null;
+  subtotal: number;
+  tax_rate: number;
+  tax_amount: number;
+  total: number;
+  notes: string | null;
+  terms: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  bc_companies?: BcCompany;
+  bc_contacts?: BcContact;
+  bc_deals?: BcDeal;
+  bc_quote_items?: BcQuoteItem[];
+}
+
+export interface BcQuoteItem {
+  id: string;
+  quote_id: string;
+  sort_order: number;
+  description: string;
+  quantity: number;
+  unit: string;
+  unit_price: number;
+  amount: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface BcActivity {
@@ -780,6 +846,7 @@ export interface BcActivity {
   company_id: string | null;
   contact_id: string | null;
   deal_id: string | null;
+  lead_id: string | null;
   activity_type: "appointment" | "memo" | "call" | "email" | "visit";
   title: string;
   description: string | null;
@@ -787,6 +854,7 @@ export interface BcActivity {
   created_by: string;
   created_at: string;
   updated_at: string;
+  profiles?: { display_name: string | null; email: string } | null;
 }
 
 export interface BcTodo {
@@ -795,6 +863,7 @@ export interface BcTodo {
   company_id: string | null;
   contact_id: string | null;
   deal_id: string | null;
+  lead_id: string | null;
   title: string;
   description: string | null;
   due_date: string | null;
@@ -804,4 +873,268 @@ export interface BcTodo {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export type BcLeadSource = "web" | "referral" | "event" | "cold_call" | "other";
+export type BcLeadStatus = "new" | "contacted" | "qualified" | "unqualified" | "converted";
+
+export interface BcLead {
+  id: string;
+  organization_id: string;
+  /** リード企業名（必須） */
+  name: string;
+  /** 担当者名 */
+  contact_name: string | null;
+  /** 担当者メール */
+  contact_email: string | null;
+  /** 担当者電話 */
+  contact_phone: string | null;
+  source: BcLeadSource;
+  status: BcLeadStatus;
+  assigned_to: string | null;
+  notes: string | null;
+  converted_company_id: string | null;
+  converted_contact_id: string | null;
+  converted_deal_id: string | null;
+  converted_at: string | null;
+  /** profiles(id) 参照 — text型 */
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  profiles?: Profile;
+}
+
+// ==========================================================
+// CRM パイプライン
+// ==========================================================
+
+export interface CrmPipeline {
+  id: string;
+  organization_id: string;
+  name: string;
+  is_default: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  crm_pipeline_stages?: CrmPipelineStage[];
+}
+
+export interface CrmPipelineStage {
+  id: string;
+  pipeline_id: string;
+  name: string;
+  color: string;
+  probability_default: number;
+  sort_order: number;
+  created_at: string;
+}
+
+// ==========================================================
+// CRM カスタムフィールド
+// ==========================================================
+
+export type CrmEntityType = "company" | "contact" | "deal";
+
+export type CrmFieldType =
+  | "text"
+  | "number"
+  | "currency"
+  | "date"
+  | "dropdown"
+  | "multi_select"
+  | "checkbox"
+  | "url"
+  | "email"
+  | "phone";
+
+export interface CrmFieldDefinition {
+  id: string;
+  organization_id: string;
+  entity_type: CrmEntityType;
+  field_type: CrmFieldType;
+  label: string;
+  description: string | null;
+  placeholder: string | null;
+  is_required: boolean;
+  options: string[] | null;
+  field_group: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmFieldValue {
+  id: string;
+  organization_id: string;
+  field_id: string;
+  entity_id: string;
+  entity_type: CrmEntityType;
+  value: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ==========================================================
+// CRM 保存ビュー
+// ==========================================================
+
+export interface CrmSavedViewFilter {
+  field: string;
+  operator: "eq" | "neq" | "contains" | "gt" | "lt" | "gte" | "lte" | "empty" | "not_empty";
+  value: string;
+}
+
+export interface CrmSavedViewConfig {
+  columns?: string[];
+  filters?: CrmSavedViewFilter[];
+  sort?: { field: string; direction: "asc" | "desc" };
+}
+
+export interface CrmSavedView {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  entity_type: CrmEntityType;
+  name: string;
+  is_shared: boolean;
+  is_default: boolean;
+  config: CrmSavedViewConfig;
+  created_at: string;
+  updated_at: string;
+}
+
+// ==========================================================
+// CRM 自動化ルール
+// ==========================================================
+
+export type CrmAutomationTrigger =
+  | "deal_stage_changed"
+  | "deal_created"
+  | "deal_won"
+  | "deal_lost"
+  | "lead_created"
+  | "lead_status_changed"
+  | "lead_converted"
+  | "contact_created"
+  | "company_created"
+  | "activity_created";
+
+export type CrmAutomationActionType =
+  | "create_todo"
+  | "create_activity"
+  | "send_notification"
+  | "update_field"
+  | "send_webhook";
+
+export interface CrmAutomationCondition {
+  field: string;
+  operator: "eq" | "neq" | "gt" | "lt" | "gte" | "lte" | "contains" | "in";
+  value: string | number | string[];
+}
+
+export interface CrmAutomationAction {
+  type: CrmAutomationActionType;
+  params: Record<string, unknown>;
+}
+
+export interface CrmAutomationRule {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  trigger_type: CrmAutomationTrigger;
+  conditions: CrmAutomationCondition[];
+  actions: CrmAutomationAction[];
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CrmAutomationLogStatus = "success" | "partial" | "failed";
+
+export interface CrmAutomationLog {
+  id: string;
+  organization_id: string;
+  rule_id: string;
+  trigger_type: string;
+  entity_type: string;
+  entity_id: string;
+  actions_executed: CrmAutomationAction[];
+  status: CrmAutomationLogStatus;
+  error_message: string | null;
+  executed_at: string;
+  crm_automation_rules?: CrmAutomationRule;
+}
+
+// ==========================================================
+// CRM メールテンプレート
+// ==========================================================
+
+export type CrmEmailTemplateCategory =
+  | "general"
+  | "follow_up"
+  | "proposal"
+  | "thank_you"
+  | "introduction"
+  | "reminder";
+
+export interface CrmEmailTemplate {
+  id: string;
+  organization_id: string;
+  name: string;
+  subject: string;
+  body: string;
+  category: CrmEmailTemplateCategory;
+  is_active: boolean;
+  sort_order: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ==========================================================
+// CRM Webhook
+// ==========================================================
+
+export type CrmWebhookEvent =
+  | "deal.created"
+  | "deal.updated"
+  | "deal.won"
+  | "deal.lost"
+  | "lead.created"
+  | "lead.converted"
+  | "contact.created"
+  | "company.created"
+  | "quote.created"
+  | "quote.accepted";
+
+export interface CrmWebhook {
+  id: string;
+  organization_id: string;
+  name: string;
+  url: string;
+  secret: string | null;
+  is_active: boolean;
+  events: string[];
+  headers: Record<string, string>;
+  last_triggered_at: string | null;
+  success_count: number;
+  failure_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmWebhookLog {
+  id: string;
+  organization_id: string;
+  webhook_id: string;
+  event_type: string;
+  request_body: Record<string, unknown>;
+  response_status: number | null;
+  response_body: string | null;
+  success: boolean;
+  error_message: string | null;
+  executed_at: string;
+  crm_webhooks?: CrmWebhook;
 }

@@ -13,6 +13,7 @@ import type {
 } from "@/types/dashboard";
 import { DATA_SOURCE_REGISTRY } from "@/lib/dashboard/data-sources";
 import { dealStageLabels, dealStatusLabels } from "@/lib/constants/crm";
+import type { CrmPipelineStage } from "@/types/database";
 import { Panel, PanelHeader, PanelBody } from "./panel";
 import { GenericBarChart } from "./charts/generic-bar-chart";
 import type { ChartProps } from "./charts/generic-bar-chart";
@@ -62,9 +63,14 @@ export interface DashboardData {
     title: string;
     companyName: string;
     stage: string;
+    stageId: string | null;
     amount: number | null;
     status: string;
+    probability: number | null;
+    assignedToName: string | null;
+    expectedCloseDate: string | null;
   }[];
+  crmPipelineStages?: CrmPipelineStage[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -310,6 +316,140 @@ function resolveDataSource(
         ],
       }));
       return { type: "list", items, maxItems: 10, viewAllHref: "/crm" };
+    }
+
+    /* ---- crm_pipeline ---- */
+    case "crm_pipeline": {
+      const deals = data.crmDeals ?? [];
+      const openDeals = deals.filter((d) => d.status === "open");
+      const pipelineStages = data.crmPipelineStages ?? [];
+
+      // 動的パイプラインステージがあればそれを使い、なければレガシー定数にフォールバック
+      let stages: { name: string; count: number }[];
+      if (pipelineStages.length > 0) {
+        stages = pipelineStages.map((s) => ({
+          name: s.name,
+          count: openDeals.filter((d) => d.stageId === s.id || (!d.stageId && d.stage === s.name))
+            .length,
+        }));
+      } else {
+        const stageOrder = ["initial", "proposal", "negotiation", "closing"];
+        stages = stageOrder.map((s) => ({
+          name: dealStageLabels[s] ?? s,
+          count: openDeals.filter((d) => d.stage === s).length,
+        }));
+      }
+
+      if (displayType === "pipeline") {
+        return { type: "pipeline", data: stages };
+      }
+      return {
+        type: "bar_chart",
+        props: {
+          data: stages as unknown as Record<string, unknown>[],
+          categoryKey: "name",
+          series: [{ key: "count", label: "商談数", color: "#3b82f6" }],
+        },
+      };
+    }
+
+    /* ---- crm_monthly_revenue ---- */
+    case "crm_monthly_revenue": {
+      const deals = data.crmDeals ?? [];
+      const wonDeals = deals.filter((d) => d.status === "won" && d.expectedCloseDate);
+      const monthMap: Record<string, number> = {};
+      const now = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+        monthMap[key] = 0;
+      }
+      for (const d of wonDeals) {
+        if (!d.expectedCloseDate) continue;
+        const date = new Date(d.expectedCloseDate);
+        const key = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}`;
+        if (key in monthMap) {
+          monthMap[key] += d.amount ?? 0;
+        }
+      }
+      const trend = Object.entries(monthMap).map(([month, amount]) => ({
+        month,
+        amount: Math.round(amount / 10000),
+      }));
+      const series = [{ key: "amount", label: "受注金額（万円）", color: "#22c55e" }];
+      if (displayType === "area_chart") {
+        return {
+          type: "area_chart",
+          props: {
+            data: trend as unknown as Record<string, unknown>[],
+            categoryKey: "month",
+            series,
+          },
+        };
+      }
+      return {
+        type: "bar_chart",
+        props: {
+          data: trend as unknown as Record<string, unknown>[],
+          categoryKey: "month",
+          series,
+        },
+      };
+    }
+
+    /* ---- crm_deal_status ---- */
+    case "crm_deal_status": {
+      const deals = data.crmDeals ?? [];
+      const statusData = [
+        { name: "商談中", value: deals.filter((d) => d.status === "open").length },
+        { name: "受注", value: deals.filter((d) => d.status === "won").length },
+        { name: "失注", value: deals.filter((d) => d.status === "lost").length },
+      ];
+      if (displayType === "pie_chart") {
+        return {
+          type: "pie_chart",
+          props: { data: statusData, colors: ["#3b82f6", "#22c55e", "#ef4444"] },
+        };
+      }
+      return {
+        type: "bar_chart",
+        props: {
+          data: statusData as unknown as Record<string, unknown>[],
+          categoryKey: "name",
+          series: [{ key: "value", label: "件数", color: "#3b82f6" }],
+        },
+      };
+    }
+
+    /* ---- crm_rep_performance ---- */
+    case "crm_rep_performance": {
+      const deals = data.crmDeals ?? [];
+      const repMap: Record<string, { deals: number; wonAmount: number }> = {};
+      for (const d of deals) {
+        const name = d.assignedToName ?? "未割当";
+        if (!repMap[name]) repMap[name] = { deals: 0, wonAmount: 0 };
+        repMap[name].deals++;
+        if (d.status === "won") repMap[name].wonAmount += d.amount ?? 0;
+      }
+      const repData = Object.entries(repMap)
+        .map(([name, v]) => ({
+          name,
+          deals: v.deals,
+          wonAmount: Math.round(v.wonAmount / 10000),
+        }))
+        .sort((a, b) => b.wonAmount - a.wonAmount)
+        .slice(0, 10);
+      return {
+        type: "bar_chart",
+        props: {
+          data: repData as unknown as Record<string, unknown>[],
+          categoryKey: "name",
+          series: [
+            { key: "deals", label: "商談数", color: "#3b82f6" },
+            { key: "wonAmount", label: "受注（万円）", color: "#22c55e" },
+          ],
+        },
+      };
     }
 
     default:

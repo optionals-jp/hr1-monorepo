@@ -33,6 +33,10 @@ import {
   CreditCard,
   Contact,
   Handshake,
+  BarChart3,
+  Zap,
+  Mail,
+  Webhook,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
@@ -112,9 +116,17 @@ const clientSections: NavSection[] = [
   {
     labelKey: "nav.section.crm",
     items: [
+      { href: "/crm/leads", labelKey: "nav.crm.leads", icon: UserPlus },
       { href: "/crm/companies", labelKey: "nav.crm.companies", icon: Building2 },
       { href: "/crm/contacts", labelKey: "nav.crm.contacts", icon: Contact },
       { href: "/crm/deals", labelKey: "nav.crm.deals", icon: Handshake },
+      { href: "/crm/quotes", labelKey: "nav.crm.quotes", icon: FileText },
+      { href: "/crm/reports/forecast", labelKey: "nav.crm.forecast", icon: BarChart3 },
+      { href: "/crm/settings/pipelines", labelKey: "nav.crm.pipelines", icon: Settings },
+      { href: "/crm/settings/fields", labelKey: "nav.crm.fields", icon: Settings },
+      { href: "/crm/settings/automations", labelKey: "nav.crm.automations", icon: Zap },
+      { href: "/crm/settings/email-templates", labelKey: "nav.crm.emailTemplates", icon: Mail },
+      { href: "/crm/settings/webhooks", labelKey: "nav.crm.webhooks", icon: Webhook },
     ],
   },
   {

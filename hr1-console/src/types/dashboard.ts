@@ -78,7 +78,11 @@ export type DataSourceId =
   | "employee_department"
   | "hiring_type"
   | "client_summary"
-  | "recent_deals";
+  | "recent_deals"
+  | "crm_pipeline"
+  | "crm_monthly_revenue"
+  | "crm_deal_status"
+  | "crm_rep_performance";
 
 export interface DashboardWidgetConfigV1 {
   id: string;

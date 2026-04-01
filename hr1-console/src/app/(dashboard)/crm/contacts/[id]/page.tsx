@@ -1,11 +1,19 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { PageHeader } from "@/components/layout/page-header";
-import { InfoItem } from "@/components/ui/info-item";
+import { useParams, useRouter } from "next/navigation";
+import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { Badge } from "@/components/ui/badge";
-import { dealStatusLabels, dealStatusColors, activityTypeLabels } from "@/lib/constants";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { dealStatusLabels, dealStatusColors } from "@/lib/constants";
 import Link from "next/link";
 import {
   useCrmContact,
@@ -13,106 +21,193 @@ import {
   useCrmContactActivities,
   useCrmContactCards,
 } from "@/lib/hooks/use-crm";
+import { CrmCustomFields } from "@/components/crm/crm-custom-fields";
+import { ActivityTimeline } from "@/components/crm/activity-timeline";
+import { ActivityInputBar } from "@/components/crm/activity-input-bar";
+import { MessageSquare } from "lucide-react";
 
 export default function CrmContactDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
 
   const { data: contact, error } = useCrmContact(id);
   const { data: deals } = useCrmContactDeals(id);
-  const { data: activities } = useCrmContactActivities(id);
+  const { data: activities, mutate: mutateActivities } = useCrmContactActivities(id);
   const { data: cards } = useCrmContactCards(id);
 
   const fullName = contact ? `${contact.last_name} ${contact.first_name ?? ""}` : "連絡先詳細";
 
   return (
-    <div>
-      <PageHeader title={fullName} breadcrumb={[{ label: "連絡先", href: "/crm/contacts" }]} />
+    <div className="flex flex-col">
+      <PageHeader
+        title={fullName}
+        sticky={false}
+        border={false}
+        breadcrumb={[{ label: "連絡先", href: "/crm/contacts" }]}
+      />
       {error && <QueryErrorBanner error={error} />}
 
       {contact && (
-        <div className="space-y-8">
-          {/* 基本情報 */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <InfoItem label="氏名" value={fullName} />
-            <InfoItem
-              label="氏名（カナ）"
-              value={
-                contact.last_name_kana
-                  ? `${contact.last_name_kana} ${contact.first_name_kana ?? ""}`
-                  : null
-              }
-            />
-            <InfoItem label="企業" value={contact.bc_companies?.name} />
-            <InfoItem label="部署" value={contact.department} />
-            <InfoItem label="役職" value={contact.position} />
-            <InfoItem label="メール" value={contact.email} />
-            <InfoItem label="電話" value={contact.phone} />
-            <InfoItem label="携帯" value={contact.mobile_phone} />
-          </div>
+        <PageContent>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* ===== 左カラム (2/3) ===== */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* 基本情報 */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>基本情報</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">氏名</span>
+                    <span className="font-medium">{fullName}</span>
+                  </div>
+                  {contact.last_name_kana && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">カナ</span>
+                      <span>
+                        {contact.last_name_kana} {contact.first_name_kana ?? ""}
+                      </span>
+                    </div>
+                  )}
+                  {contact.bc_companies && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">企業</span>
+                      <Link
+                        href={`/crm/companies/${contact.company_id}`}
+                        className="text-primary hover:underline"
+                      >
+                        {contact.bc_companies.name}
+                      </Link>
+                    </div>
+                  )}
+                  {contact.department && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">部署</span>
+                      <span>{contact.department}</span>
+                    </div>
+                  )}
+                  {contact.position && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">役職</span>
+                      <span>{contact.position}</span>
+                    </div>
+                  )}
+                  {contact.email && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">メール</span>
+                      <span>{contact.email}</span>
+                    </div>
+                  )}
+                  {contact.phone && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">電話</span>
+                      <span>{contact.phone}</span>
+                    </div>
+                  )}
+                  {contact.mobile_phone && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">携帯</span>
+                      <span>{contact.mobile_phone}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-          {/* 名刺画像 */}
-          {(cards ?? []).length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold mb-3">名刺画像</h2>
-              <div className="flex gap-4 flex-wrap">
-                {cards!.map((card) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={card.id}
-                    src={card.image_url}
-                    alt="名刺"
-                    className="w-64 rounded-lg border object-cover"
-                  />
-                ))}
+              {/* カスタムフィールド */}
+              <CrmCustomFields entityId={contact.id} entityType="contact" />
+
+              {/* 名刺画像 */}
+              {(cards ?? []).length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>名刺画像</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex gap-4 flex-wrap">
+                      {cards!.map((card) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={card.id}
+                          src={card.image_url}
+                          alt="名刺"
+                          className="w-64 rounded-lg border object-cover"
+                        />
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* 商談 */}
+              <div>
+                <h2 className="text-sm font-semibold mb-2">商談（{deals?.length ?? 0}件）</h2>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>商談名</TableHead>
+                      <TableHead>金額</TableHead>
+                      <TableHead>ステータス</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(deals ?? []).length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center text-muted-foreground py-6">
+                          商談なし
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      (deals ?? []).map((deal) => (
+                        <TableRow
+                          key={deal.id}
+                          className="cursor-pointer"
+                          onClick={() => router.push(`/crm/deals/${deal.id}`)}
+                        >
+                          <TableCell className="font-medium">{deal.title}</TableCell>
+                          <TableCell>
+                            {deal.amount != null ? `¥${deal.amount.toLocaleString()}` : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={dealStatusColors[deal.status]}>
+                              {dealStatusLabels[deal.status]}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* 活動ログ + 入力バー */}
+              <div>
+                <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                  <MessageSquare className="size-4" />
+                  活動ログ（{activities?.length ?? 0}件）
+                </h2>
+                <ActivityTimeline activities={activities ?? []} emptyMessage="活動なし" />
+                <ActivityInputBar
+                  companyId={contact.company_id ?? undefined}
+                  onAdded={() => mutateActivities()}
+                />
               </div>
             </div>
-          )}
 
-          {/* 商談 */}
-          <div>
-            <h2 className="text-lg font-semibold mb-3">商談（{deals?.length ?? 0}件）</h2>
-            <div className="space-y-2">
-              {(deals ?? []).map((deal) => (
-                <Link
-                  key={deal.id}
-                  href={`/crm/deals/${deal.id}`}
-                  className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors"
-                >
-                  <p className="font-medium">{deal.title}</p>
-                  <Badge variant={dealStatusColors[deal.status]}>
-                    {dealStatusLabels[deal.status]}
-                  </Badge>
-                </Link>
-              ))}
-              {(deals ?? []).length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">商談なし</p>
-              )}
+            {/* ===== 右カラム (1/3) ===== */}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">登録情報</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-muted-foreground">
+                  <p>登録日: {new Date(contact.created_at).toLocaleDateString("ja-JP")}</p>
+                  <p>更新日: {new Date(contact.updated_at).toLocaleDateString("ja-JP")}</p>
+                </CardContent>
+              </Card>
             </div>
           </div>
-
-          {/* 活動 */}
-          <div>
-            <h2 className="text-lg font-semibold mb-3">活動ログ（{activities?.length ?? 0}件）</h2>
-            <div className="space-y-2">
-              {(activities ?? []).map((a) => (
-                <div key={a.id} className="rounded-lg border p-3">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium">{a.title}</p>
-                    <Badge variant="outline">
-                      {activityTypeLabels[a.activity_type] ?? a.activity_type}
-                    </Badge>
-                  </div>
-                  {a.description && (
-                    <p className="text-sm text-muted-foreground mt-1">{a.description}</p>
-                  )}
-                </div>
-              ))}
-              {(activities ?? []).length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">活動なし</p>
-              )}
-            </div>
-          </div>
-        </div>
+        </PageContent>
       )}
     </div>
   );
