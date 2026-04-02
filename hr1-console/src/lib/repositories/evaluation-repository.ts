@@ -128,14 +128,20 @@ export async function fetchEvaluations(client: SupabaseClient, templateId: strin
 export async function fetchEvaluationsByUser(
   client: SupabaseClient,
   orgId: string,
-  targetUserId: string
+  targetUserId: string,
+  applicationId?: string
 ) {
-  return client
+  let query = client
     .from("evaluations")
     .select("*")
     .eq("organization_id", orgId)
-    .eq("target_user_id", targetUserId)
-    .order("created_at", { ascending: false });
+    .eq("target_user_id", targetUserId);
+
+  if (applicationId) {
+    query = query.eq("application_id", applicationId);
+  }
+
+  return query.order("created_at", { ascending: false });
 }
 
 export async function countEvaluationsByApplication(

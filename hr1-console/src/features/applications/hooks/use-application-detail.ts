@@ -52,11 +52,10 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
     if (!organization) return;
     setLoading(true);
     const client = getSupabase();
-    const { data } = await applicationRepository.fetchApplicationDetail(
-      client,
-      id,
-      organization.id
-    );
+    const [{ data }, evalCount] = await Promise.all([
+      applicationRepository.fetchApplicationDetail(client, id, organization.id),
+      countEvaluationsByApplication(client, organization.id, id),
+    ]);
 
     if (data) {
       setApplication(data as unknown as Application);
@@ -64,10 +63,8 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
         (a: ApplicationStep, b: ApplicationStep) => a.step_order - b.step_order
       );
       setSteps(sortedSteps);
-
-      const count = await countEvaluationsByApplication(client, organization.id, id);
-      setEvaluationCount(count);
     }
+    setEvaluationCount(evalCount);
     setLoading(false);
   }, [id, organization]);
 

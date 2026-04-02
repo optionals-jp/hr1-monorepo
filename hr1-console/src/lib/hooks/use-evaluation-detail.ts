@@ -311,13 +311,19 @@ export async function updateCycleStatus(
 export async function loadEvaluationTabData(
   orgId: string,
   targetUserId: string,
-  targetType: string
+  targetType: string,
+  applicationId?: string
 ) {
   const client = getSupabase();
 
   const templates = await repo.fetchTemplatesByTarget(client, orgId, [targetType, "both"]);
 
-  const { data: evalData } = await repo.fetchEvaluationsByUser(client, orgId, targetUserId);
+  const { data: evalData } = await repo.fetchEvaluationsByUser(
+    client,
+    orgId,
+    targetUserId,
+    applicationId
+  );
 
   let evaluations: (Evaluation & {
     evaluator_name: string;

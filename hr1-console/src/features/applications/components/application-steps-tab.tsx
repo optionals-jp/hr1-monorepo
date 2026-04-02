@@ -23,7 +23,6 @@ interface ApplicationStepsTabProps {
   skipStep: (step: ApplicationStep) => void;
   unskipStep: (step: ApplicationStep) => void;
   onViewFormResponses: (step: ApplicationStep) => void;
-  evaluationCount?: number;
   onOpenEvaluation?: () => void;
 }
 
@@ -34,7 +33,6 @@ export function ApplicationStepsTab({
   skipStep,
   unskipStep,
   onViewFormResponses,
-  evaluationCount,
   onOpenEvaluation,
 }: ApplicationStepsTabProps) {
   return (
@@ -55,7 +53,6 @@ export function ApplicationStepsTab({
               skipStep={skipStep}
               unskipStep={unskipStep}
               onViewFormResponses={onViewFormResponses}
-              evaluationCount={evaluationCount}
               onOpenEvaluation={onOpenEvaluation}
             />
           </div>
@@ -73,7 +70,6 @@ export function ApplicationStepList({
   skipStep,
   unskipStep,
   onViewFormResponses,
-  evaluationCount,
   onOpenEvaluation,
 }: {
   steps: ApplicationStep[];
@@ -82,7 +78,6 @@ export function ApplicationStepList({
   skipStep: (step: ApplicationStep) => void;
   unskipStep: (step: ApplicationStep) => void;
   onViewFormResponses?: (step: ApplicationStep) => void;
-  evaluationCount?: number;
   onOpenEvaluation?: () => void;
 }) {
   if (steps.length === 0) {
@@ -158,11 +153,6 @@ export function ApplicationStepList({
                 <Button size="sm" variant="outline" onClick={onOpenEvaluation}>
                   <ClipboardCheck className="h-3.5 w-3.5 mr-1" />
                   評価する
-                  {evaluationCount != null && evaluationCount > 0 && (
-                    <Badge variant="secondary" className="ml-1 text-xs px-1.5">
-                      {evaluationCount}
-                    </Badge>
-                  )}
                 </Button>
               )}
             {step.status === StepStatus.Skipped && (

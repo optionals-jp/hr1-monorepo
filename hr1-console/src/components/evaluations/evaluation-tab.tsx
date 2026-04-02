@@ -80,22 +80,29 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
     if (!organization) return;
     let cancelled = false;
 
-    loadEvaluationTabData(organization.id, targetUserId, targetType).then((result) => {
-      if (cancelled) return;
-      setTemplates(result.templates);
-      setEvaluations(result.evaluations);
-      setLoading(false);
-    });
+    loadEvaluationTabData(organization.id, targetUserId, targetType, applicationId).then(
+      (result) => {
+        if (cancelled) return;
+        setTemplates(result.templates);
+        setEvaluations(result.evaluations);
+        setLoading(false);
+      }
+    );
 
     return () => {
       cancelled = true;
     };
-  }, [organization, targetUserId, targetType]);
+  }, [organization, targetUserId, targetType, applicationId]);
 
   const loadData = async () => {
     if (!organization) return;
     setLoading(true);
-    const result = await loadEvaluationTabData(organization.id, targetUserId, targetType);
+    const result = await loadEvaluationTabData(
+      organization.id,
+      targetUserId,
+      targetType,
+      applicationId
+    );
     setTemplates(result.templates);
     setEvaluations(result.evaluations);
     setLoading(false);

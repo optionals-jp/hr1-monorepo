@@ -79,7 +79,11 @@ export default function ApplicationDetailPage() {
   const tabs = [
     { value: "dashboard" as const, label: "ダッシュボード" },
     { value: "steps" as const, label: "選考ステップ", count: detail.steps.length },
-    { value: "evaluation" as const, label: "評価" },
+    {
+      value: "evaluation" as const,
+      label: "評価",
+      count: detail.evaluationCount > 0 ? detail.evaluationCount : undefined,
+    },
     { value: "history" as const, label: "選考ログ" },
     { value: "audit" as const, label: "変更ログ" },
   ];
@@ -126,7 +130,6 @@ export default function ApplicationDetailPage() {
             unskipStep={handleUnskipStep}
             onViewFormResponses={detail.openFormResponses}
             onConvertDialogOpen={() => detail.setConvertDialogOpen(true)}
-            evaluationCount={detail.evaluationCount}
             onOpenEvaluation={() => detail.setActiveTab("evaluation")}
           />
         )}
@@ -139,7 +142,6 @@ export default function ApplicationDetailPage() {
             skipStep={handleSkipStep}
             unskipStep={handleUnskipStep}
             onViewFormResponses={detail.openFormResponses}
-            evaluationCount={detail.evaluationCount}
             onOpenEvaluation={() => detail.setActiveTab("evaluation")}
           />
         )}
