@@ -873,6 +873,7 @@ export interface BcTodo {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  profiles?: { display_name: string | null; email: string } | null;
 }
 
 export type BcLeadSource = "web" | "referral" | "event" | "cold_call" | "other";

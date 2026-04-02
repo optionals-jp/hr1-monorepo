@@ -1,6 +1,35 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BcCompany, BcContact, BcDeal, BcActivity, BcCard, BcTodo } from "@/types/database";
 
+// --- Dashboard aggregation ---
+
+export async function fetchRecentActivities(
+  client: SupabaseClient,
+  organizationId: string,
+  limit = 10
+) {
+  const { data, error } = await client
+    .from("bc_activities")
+    .select("*, profiles:created_by(display_name, email)")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as BcActivity[];
+}
+
+export async function fetchUpcomingTodos(client: SupabaseClient, organizationId: string) {
+  const { data, error } = await client
+    .from("bc_todos")
+    .select("*, profiles:assigned_to(display_name, email)")
+    .eq("organization_id", organizationId)
+    .eq("is_completed", false)
+    .order("due_date", { ascending: true })
+    .limit(10);
+  if (error) throw error;
+  return (data ?? []) as BcTodo[];
+}
+
 // --- Dashboard ---
 
 export async function fetchDeals(client: SupabaseClient, organizationId: string) {

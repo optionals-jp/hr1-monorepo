@@ -25,9 +25,13 @@ import { useCrmCompaniesPage } from "@/lib/hooks/use-crm";
 import { SavedViewSelector } from "@/components/crm/saved-view-selector";
 import { applyFilters, applySort } from "@/lib/hooks/use-saved-views";
 import type { CrmSavedViewConfig } from "@/types/database";
-import { SlidersHorizontal, Upload } from "lucide-react";
+import { SlidersHorizontal, Upload, Trash2 } from "lucide-react";
 import { useOrg } from "@/lib/org-context";
 import { CompanyImportDialog } from "./company-import-dialog";
+import { Pagination, usePagination } from "@/components/crm/pagination";
+import { BulkActionBar, useBulkSelection } from "@/components/crm/bulk-action-bar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { removeCompany } from "@/lib/hooks/use-crm";
 
 export default function CrmCompaniesPage() {
   const { showToast } = useToast();
@@ -90,6 +94,20 @@ export default function CrmCompaniesPage() {
     return result as unknown as typeof filtered;
   }, [filtered, viewConfig.filters, viewConfig.sort]);
 
+  const { page, pageSize, totalCount, paginatedItems, onPageChange, onPageSizeChange } =
+    usePagination(viewFiltered);
+  const bulk = useBulkSelection(paginatedItems);
+
+  const handleBulkDelete = async (ids: string[]) => {
+    if (!organization) return;
+    for (const id of ids) {
+      await removeCompany(id, organization.id);
+    }
+    bulk.clear();
+    mutate();
+    showToast(`${ids.length}件の企業を削除しました`);
+  };
+
   return (
     <div className="flex flex-col">
       <PageHeader
@@ -127,6 +145,13 @@ export default function CrmCompaniesPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={bulk.isAllSelected}
+                  indeterminate={bulk.isIndeterminate}
+                  onCheckedChange={() => bulk.toggleAll()}
+                />
+              </TableHead>
               <TableHead>企業名</TableHead>
               <TableHead>法人番号</TableHead>
               <TableHead>業種</TableHead>
@@ -135,17 +160,23 @@ export default function CrmCompaniesPage() {
           </TableHeader>
           <TableBody>
             <TableEmptyState
-              colSpan={4}
+              colSpan={5}
               isLoading={!companies}
               isEmpty={viewFiltered.length === 0}
               emptyMessage="企業が見つかりません"
             >
-              {viewFiltered.map((company) => (
+              {paginatedItems.map((company) => (
                 <TableRow
                   key={company.id}
                   className="cursor-pointer"
                   onClick={() => router.push(`/crm/companies/${company.id}`)}
                 >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={bulk.isSelected(company.id)}
+                      onCheckedChange={() => bulk.toggle(company.id)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{company.name}</TableCell>
                   <TableCell>{company.corporate_number ?? "—"}</TableCell>
                   <TableCell>{company.industry ?? "—"}</TableCell>
@@ -155,7 +186,30 @@ export default function CrmCompaniesPage() {
             </TableEmptyState>
           </TableBody>
         </Table>
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+        />
       </TableSection>
+
+      <BulkActionBar
+        selectedIds={bulk.selectedIds}
+        totalCount={paginatedItems.length}
+        onClearSelection={bulk.clear}
+        actions={[
+          {
+            label: "一括削除",
+            icon: <Trash2 className="size-4 mr-1" />,
+            variant: "destructive",
+            confirm: true,
+            confirmMessage: `選択した${bulk.selectedIds.length}件の企業を削除しますか？`,
+            onClick: handleBulkDelete,
+          },
+        ]}
+      />
 
       <EditPanel
         open={editOpen}

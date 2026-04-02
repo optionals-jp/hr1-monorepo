@@ -26,14 +26,22 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { useCrmQuotes } from "@/lib/hooks/use-crm";
+import { useOrg } from "@/lib/org-context";
+import { getSupabase } from "@/lib/supabase/browser";
 import { quoteStatusLabels, quoteStatusColors } from "@/lib/constants/crm";
-import { Plus, SlidersHorizontal, X } from "lucide-react";
+import { Plus, SlidersHorizontal, X, Trash2 } from "lucide-react";
+import { Pagination, usePagination } from "@/components/crm/pagination";
+import { BulkActionBar, useBulkSelection } from "@/components/crm/bulk-action-bar";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function QuotesPage() {
   const router = useRouter();
-  const { data: quotes, error } = useCrmQuotes();
+  const { showToast } = useToast();
+  const { organization } = useOrg();
+  const { data: quotes, error, mutate } = useCrmQuotes();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -49,6 +57,21 @@ export default function QuotesPage() {
       );
     });
   }, [quotes, search, statusFilter]);
+
+  const { page, pageSize, totalCount, paginatedItems, onPageChange, onPageSizeChange } =
+    usePagination(filtered);
+  const bulk = useBulkSelection(paginatedItems);
+
+  const handleBulkDelete = async (ids: string[]) => {
+    if (!organization) return;
+    const client = getSupabase();
+    for (const id of ids) {
+      await client.from("bc_quotes").delete().eq("id", id).eq("organization_id", organization.id);
+    }
+    bulk.clear();
+    mutate();
+    showToast(`${ids.length}件の見積書を削除しました`);
+  };
 
   return (
     <div className="flex flex-col">
@@ -114,6 +137,13 @@ export default function QuotesPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={bulk.isAllSelected}
+                  indeterminate={bulk.isIndeterminate}
+                  onCheckedChange={() => bulk.toggleAll()}
+                />
+              </TableHead>
               <TableHead>見積番号</TableHead>
               <TableHead>タイトル</TableHead>
               <TableHead>取引先</TableHead>
@@ -126,17 +156,23 @@ export default function QuotesPage() {
           </TableHeader>
           <TableBody>
             <TableEmptyState
-              colSpan={8}
+              colSpan={9}
               isLoading={!quotes}
               isEmpty={filtered.length === 0}
               emptyMessage="見積書が見つかりません"
             >
-              {filtered.map((q) => (
+              {paginatedItems.map((q) => (
                 <TableRow
                   key={q.id}
                   className="cursor-pointer"
                   onClick={() => router.push(`/crm/quotes/${q.id}`)}
                 >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={bulk.isSelected(q.id)}
+                      onCheckedChange={() => bulk.toggle(q.id)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium text-primary">{q.quote_number}</TableCell>
                   <TableCell>{q.title}</TableCell>
                   <TableCell className="text-muted-foreground">
@@ -160,7 +196,30 @@ export default function QuotesPage() {
             </TableEmptyState>
           </TableBody>
         </Table>
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+        />
       </TableSection>
+
+      <BulkActionBar
+        selectedIds={bulk.selectedIds}
+        totalCount={paginatedItems.length}
+        onClearSelection={bulk.clear}
+        actions={[
+          {
+            label: "一括削除",
+            icon: <Trash2 className="size-4 mr-1" />,
+            variant: "destructive",
+            confirm: true,
+            confirmMessage: `選択した${bulk.selectedIds.length}件の見積書を削除しますか？`,
+            onClick: handleBulkDelete,
+          },
+        ]}
+      />
     </div>
   );
 }

@@ -46,8 +46,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { ArrowRightLeft, SlidersHorizontal, X, Upload } from "lucide-react";
+import { ArrowRightLeft, SlidersHorizontal, X, Upload, Trash2 } from "lucide-react";
 import { LeadImportDialog } from "./lead-import-dialog";
+import { Pagination, usePagination } from "@/components/crm/pagination";
+import { BulkActionBar, useBulkSelection } from "@/components/crm/bulk-action-bar";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function CrmLeadsPage() {
   const { showToast } = useToast();
@@ -79,6 +82,21 @@ export default function CrmLeadsPage() {
   const { data: existingCompanies } = useCrmCompanies();
 
   const [importOpen, setImportOpen] = useState(false);
+
+  const { page, pageSize, totalCount, paginatedItems, onPageChange, onPageSizeChange } =
+    usePagination(filtered);
+  const bulk = useBulkSelection(paginatedItems);
+
+  const handleBulkDelete = async (ids: string[]) => {
+    if (!organization) return;
+    const client = getSupabase();
+    for (const id of ids) {
+      await client.from("bc_leads").delete().eq("id", id).eq("organization_id", organization.id);
+    }
+    bulk.clear();
+    mutate();
+    showToast(`${ids.length}件のリードを削除しました`);
+  };
 
   // コンバージョンダイアログ
   const [convertOpen, setConvertOpen] = useState(false);
@@ -222,6 +240,13 @@ export default function CrmLeadsPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={bulk.isAllSelected}
+                  indeterminate={bulk.isIndeterminate}
+                  onCheckedChange={() => bulk.toggleAll()}
+                />
+              </TableHead>
               <TableHead>企業名</TableHead>
               <TableHead>担当者</TableHead>
               <TableHead>ソース</TableHead>
@@ -231,17 +256,23 @@ export default function CrmLeadsPage() {
           </TableHeader>
           <TableBody>
             <TableEmptyState
-              colSpan={5}
+              colSpan={6}
               isLoading={!leads}
               isEmpty={filtered.length === 0}
               emptyMessage="リードが見つかりません"
             >
-              {filtered.map((lead) => (
+              {paginatedItems.map((lead) => (
                 <TableRow
                   key={lead.id}
                   className="cursor-pointer"
                   onClick={() => router.push(`/crm/leads/${lead.id}`)}
                 >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={bulk.isSelected(lead.id)}
+                      onCheckedChange={() => bulk.toggle(lead.id)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{lead.name}</TableCell>
                   <TableCell>{lead.contact_name ?? "—"}</TableCell>
                   <TableCell>{leadSourceLabels[lead.source] ?? lead.source}</TableCell>
@@ -270,7 +301,30 @@ export default function CrmLeadsPage() {
             </TableEmptyState>
           </TableBody>
         </Table>
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+        />
       </TableSection>
+
+      <BulkActionBar
+        selectedIds={bulk.selectedIds}
+        totalCount={paginatedItems.length}
+        onClearSelection={bulk.clear}
+        actions={[
+          {
+            label: "一括削除",
+            icon: <Trash2 className="size-4 mr-1" />,
+            variant: "destructive",
+            confirm: true,
+            confirmMessage: `選択した${bulk.selectedIds.length}件のリードを削除しますか？`,
+            onClick: handleBulkDelete,
+          },
+        ]}
+      />
 
       {/* リード編集パネル */}
       <EditPanel

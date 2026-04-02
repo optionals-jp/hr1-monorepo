@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { dealStatusLabels, dealStatusColors } from "@/lib/constants";
 import { useRouter } from "next/navigation";
-import { useCrmDealsPage, useCrmCompanies, useCrmContacts } from "@/lib/hooks/use-crm";
+import { useCrmDealsPage, useCrmCompanies, useCrmContacts, removeDeal } from "@/lib/hooks/use-crm";
 import { DealKanban } from "@/components/crm/deal-kanban";
 import { getSupabase } from "@/lib/supabase/browser";
 import { updateDeal } from "@/lib/repositories/crm-repository";
@@ -49,8 +49,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { BcDeal, CrmSavedViewConfig } from "@/types/database";
-import { LayoutList, Kanban, Settings, SlidersHorizontal, X } from "lucide-react";
+import { LayoutList, Kanban, Settings, SlidersHorizontal, X, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { Pagination, usePagination } from "@/components/crm/pagination";
+import { BulkActionBar, useBulkSelection } from "@/components/crm/bulk-action-bar";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type ViewMode = "table" | "kanban";
 
@@ -133,6 +136,20 @@ export default function CrmDealsPage() {
     }
     return result as unknown as typeof filtered;
   }, [filtered, viewConfig.filters, viewConfig.sort]);
+
+  const { page, pageSize, totalCount, paginatedItems, onPageChange, onPageSizeChange } =
+    usePagination(viewFiltered);
+  const bulk = useBulkSelection(paginatedItems);
+
+  const handleBulkDelete = async (ids: string[]) => {
+    if (!organization) return;
+    for (const id of ids) {
+      await removeDeal(id, organization.id);
+    }
+    bulk.clear();
+    mutate();
+    showToast(`${ids.length}件の商談を削除しました`);
+  };
 
   const handleStageChange = async (dealId: string, newStageId: string, newProbability: number) => {
     if (!organization) return;
@@ -276,6 +293,13 @@ export default function CrmDealsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={bulk.isAllSelected}
+                      indeterminate={bulk.isIndeterminate}
+                      onCheckedChange={() => bulk.toggleAll()}
+                    />
+                  </TableHead>
                   <TableHead>商談名</TableHead>
                   <TableHead>企業</TableHead>
                   <TableHead>ステージ</TableHead>
@@ -287,17 +311,23 @@ export default function CrmDealsPage() {
               </TableHeader>
               <TableBody>
                 <TableEmptyState
-                  colSpan={7}
+                  colSpan={8}
                   isLoading={!deals}
                   isEmpty={viewFiltered.length === 0}
                   emptyMessage="商談が見つかりません"
                 >
-                  {viewFiltered.map((deal) => (
+                  {paginatedItems.map((deal) => (
                     <TableRow
                       key={deal.id}
                       className="cursor-pointer"
                       onClick={() => router.push(`/crm/deals/${deal.id}`)}
                     >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={bulk.isSelected(deal.id)}
+                          onCheckedChange={() => bulk.toggle(deal.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{deal.title}</TableCell>
                       <TableCell>{deal.bc_companies?.name ?? "—"}</TableCell>
                       <TableCell>
@@ -326,7 +356,30 @@ export default function CrmDealsPage() {
                 </TableEmptyState>
               </TableBody>
             </Table>
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalCount={totalCount}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+            />
           </TableSection>
+
+          <BulkActionBar
+            selectedIds={bulk.selectedIds}
+            totalCount={paginatedItems.length}
+            onClearSelection={bulk.clear}
+            actions={[
+              {
+                label: "一括削除",
+                icon: <Trash2 className="size-4 mr-1" />,
+                variant: "destructive",
+                confirm: true,
+                confirmMessage: `選択した${bulk.selectedIds.length}件の商談を削除しますか？`,
+                onClick: handleBulkDelete,
+              },
+            ]}
+          />
         </>
       )}
 
