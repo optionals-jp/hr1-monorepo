@@ -12,6 +12,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useCrmDealsAll } from "@/lib/hooks/use-crm";
 import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
 import type { BcDeal } from "@/types/database";
@@ -337,50 +345,48 @@ export default function ForecastReportPage() {
           <div className="p-4 border-b bg-muted/30">
             <h2 className="text-sm font-semibold">担当者別予測</h2>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/20">
-                  <th className="text-left px-4 py-2 font-medium">担当者</th>
-                  <th className="text-right px-4 py-2 font-medium">パイプライン</th>
-                  <th className="text-right px-4 py-2 font-medium">ベストケース</th>
-                  <th className="text-right px-4 py-2 font-medium">コミット</th>
-                  <th className="text-right px-4 py-2 font-medium">受注済</th>
-                  <th className="text-right px-4 py-2 font-medium">合計（加重）</th>
-                </tr>
-              </thead>
-              <tbody>
-                {repData.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-8 text-muted-foreground">
-                      データがありません
-                    </td>
-                  </tr>
-                ) : (
-                  repData.map((rep) => (
-                    <tr key={rep.name} className="border-b hover:bg-muted/30">
-                      <td className="px-4 py-2 font-medium">{rep.name}</td>
-                      <td className="px-4 py-2 text-right tabular-nums">
-                        ¥{rep.pipeline.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-2 text-right tabular-nums">
-                        ¥{rep.bestCase.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-2 text-right tabular-nums">
-                        ¥{rep.commit.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-2 text-right tabular-nums">
-                        ¥{rep.closed.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-2 text-right tabular-nums font-semibold">
-                        ¥{rep.total.toLocaleString()}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>担当者</TableHead>
+                <TableHead className="text-right">パイプライン</TableHead>
+                <TableHead className="text-right">ベストケース</TableHead>
+                <TableHead className="text-right">コミット</TableHead>
+                <TableHead className="text-right">受注済</TableHead>
+                <TableHead className="text-right">合計（加重）</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {repData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    データがありません
+                  </TableCell>
+                </TableRow>
+              ) : (
+                repData.map((rep) => (
+                  <TableRow key={rep.name}>
+                    <TableCell className="font-medium">{rep.name}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      ¥{rep.pipeline.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      ¥{rep.bestCase.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      ¥{rep.commit.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      ¥{rep.closed.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums font-semibold">
+                      ¥{rep.total.toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
       </PageContent>
     </div>

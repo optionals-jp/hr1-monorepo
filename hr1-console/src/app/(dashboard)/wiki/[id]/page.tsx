@@ -98,11 +98,7 @@ export default function WikiDetailPage() {
         sticky={false}
         action={
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onTogglePublished}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
+            <Button variant="ghost" size="icon-xs" onClick={onTogglePublished}>
               {page.is_published ? (
                 <Badge variant="default" className="gap-1">
                   <Eye className="h-3 w-3" />
@@ -114,7 +110,7 @@ export default function WikiDetailPage() {
                   下書き
                 </Badge>
               )}
-            </button>
+            </Button>
             {!editing && (
               <Button variant="outline" onClick={startEdit}>
                 <Pencil className="h-4 w-4 mr-1.5" />

@@ -189,7 +189,7 @@ export default function CrmDealsPage() {
         action={
           <div className="flex gap-2">
             <Link href="/crm/settings/pipelines">
-              <Button variant="outline" size="sm">
+              <Button variant="outline">
                 <Settings className="size-4 mr-1.5" />
                 パイプライン設定
               </Button>

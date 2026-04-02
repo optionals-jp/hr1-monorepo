@@ -129,8 +129,9 @@ export default function JobsPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
                         disabled={deletingId === job.id}
                         onClick={async (e) => {
                           e.stopPropagation();
@@ -141,10 +142,10 @@ export default function JobsPage() {
                             showToast("求人を削除しました");
                           }
                         }}
-                        className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-50"
+                        className="text-muted-foreground hover:text-red-600"
                       >
                         <Trash2 className="h-4 w-4" />
-                      </button>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );

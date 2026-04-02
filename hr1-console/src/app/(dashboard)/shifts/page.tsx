@@ -93,8 +93,8 @@ export default function ShiftsPage() {
 
   return (
     <div className="flex flex-col">
-      <QueryErrorBanner error={requestsError} onRetry={() => mutateReqs()} />
       <PageHeader title="シフト管理" sticky={false} border={false} />
+      <QueryErrorBanner error={requestsError} onRetry={() => mutateReqs()} />
 
       <StickyFilterBar>
         <TabBar

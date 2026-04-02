@@ -144,15 +144,15 @@ export default function WikiPage_() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
                       onClick={async () => {
                         const result = await h.togglePublished(page);
                         if (!result.success && result.error) {
                           showToast(result.error, "error");
                         }
                       }}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {page.is_published ? (
                         <Badge variant="default" className="gap-1">
@@ -165,20 +165,16 @@ export default function WikiPage_() {
                           下書き
                         </Badge>
                       )}
-                    </button>
+                    </Button>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {format(new Date(page.updated_at), "yyyy/MM/dd")}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <button
-                        type="button"
-                        onClick={() => h.openEdit(page)}
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                      >
+                      <Button variant="ghost" size="icon-xs" onClick={() => h.openEdit(page)}>
                         <Pencil className="h-4 w-4" />
-                      </button>
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>

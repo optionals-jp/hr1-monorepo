@@ -98,7 +98,7 @@ export default function CrmCompaniesPage() {
         border={false}
         action={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
               <Upload className="mr-1.5 h-4 w-4" />
               インポート
             </Button>

@@ -64,13 +64,6 @@ export default function CrmFieldSettingsPage() {
       ? (allFields ?? [])
       : (allFields ?? []).filter((f) => f.entity_type === filterEntity);
 
-  // グループ化して表示
-  const grouped = ENTITY_TYPES.map((et) => ({
-    entityType: et,
-    label: crmEntityTypeLabels[et],
-    fields: filtered.filter((f) => f.entity_type === et),
-  })).filter((g) => filterEntity === "all" || g.entityType === filterEntity);
-
   const openCreate = () => {
     setEditData({
       entity_type: filterEntity === "all" ? "deal" : filterEntity,

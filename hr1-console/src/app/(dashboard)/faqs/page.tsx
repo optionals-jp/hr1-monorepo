@@ -102,30 +102,26 @@ export default function FaqsPage() {
                     <Badge variant="secondary">{faqTargetLabels[faq.target] ?? faq.target}</Badge>
                   </TableCell>
                   <TableCell>
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
                       onClick={() => handleTogglePublished(faq)}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {faq.is_published ? (
                         <Eye className="h-4 w-4" />
                       ) : (
                         <EyeOff className="h-4 w-4" />
                       )}
-                    </button>
+                    </Button>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {format(new Date(faq.updated_at), "yyyy/MM/dd")}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <button
-                        type="button"
-                        onClick={() => openEdit(faq)}
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                      >
+                      <Button variant="ghost" size="icon-xs" onClick={() => openEdit(faq)}>
                         <Pencil className="h-4 w-4" />
-                      </button>
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>

@@ -33,7 +33,7 @@ import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { TableSection } from "@/components/layout/table-section";
-import { SlidersHorizontal, X, Download, Upload, ChevronDown, Trash2 } from "lucide-react";
+import { SlidersHorizontal, X, Download, Upload, ChevronDown } from "lucide-react";
 import { exportToCSV } from "@/lib/export-csv";
 import { genderLabels } from "@/lib/constants";
 import { useRouter } from "next/navigation";
@@ -158,7 +158,7 @@ export default function EmployeesPage() {
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger
-                render={<Button variant="outline" size="sm" disabled={h.employees.length === 0} />}
+                render={<Button variant="outline" disabled={h.employees.length === 0} />}
               >
                 <Download className="mr-1.5 h-4 w-4" />
                 エクスポート
@@ -173,7 +173,7 @@ export default function EmployeesPage() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline" size="sm" onClick={() => h.setImportOpen(true)}>
+            <Button variant="outline" onClick={() => h.setImportOpen(true)}>
               <Upload className="mr-1.5 h-4 w-4" />
               インポート
             </Button>
@@ -239,7 +239,6 @@ export default function EmployeesPage() {
               <TableHead>メールアドレス</TableHead>
               <TableHead>部署</TableHead>
               <TableHead>役職</TableHead>
-              <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -280,24 +279,6 @@ export default function EmployeesPage() {
                     )}
                   </TableCell>
                   <TableCell>{emp.position ?? "-"}</TableCell>
-                  <TableCell>
-                    <button
-                      type="button"
-                      disabled={h.deletingId === emp.id}
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        const result = await h.handleDelete(emp);
-                        if (result.success) {
-                          showToast("社員を削除しました");
-                        } else if (result.error) {
-                          showToast(result.error, "error");
-                        }
-                      }}
-                      className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </TableCell>
                 </TableRow>
               ))}
             </TableEmptyState>

@@ -56,7 +56,7 @@ export function PageHeader({
           tabs ? "pb-3" : sticky ? "pb-4 sm:pb-5" : "pb-2"
         )}
       >
-        <div className="min-w-0 flex flex-col justify-center min-h-10">
+        <div className="min-w-0 min-h-10">
           <h1 className="text-lg sm:text-xl font-bold tracking-tight truncate">{title}</h1>
           {description && (
             <p className="text-sm text-muted-foreground mt-0.5 truncate">{description}</p>

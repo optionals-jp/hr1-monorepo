@@ -349,7 +349,6 @@ export default function EvaluationsPage() {
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => {
                   if (templates.length === 0) return;
                   exportToCSV(
@@ -382,7 +381,6 @@ export default function EvaluationsPage() {
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => {
                   if (cycles.length === 0) return;
                   exportToCSV(
