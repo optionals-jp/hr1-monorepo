@@ -138,6 +138,20 @@ export async function fetchEvaluationsByUser(
     .order("created_at", { ascending: false });
 }
 
+export async function countEvaluationsByApplication(
+  client: SupabaseClient,
+  orgId: string,
+  applicationId: string
+) {
+  const { count } = await client
+    .from("evaluations")
+    .select("*", { count: "exact", head: true })
+    .eq("organization_id", orgId)
+    .eq("application_id", applicationId)
+    .eq("status", "submitted");
+  return count ?? 0;
+}
+
 export async function insertEvaluation(client: SupabaseClient, row: Record<string, unknown>) {
   return client.from("evaluations").insert(row);
 }
