@@ -257,7 +257,9 @@ export default function AutomationSettingsPage() {
               {(rules ?? []).map((rule) => (
                 <TableRow key={rule.id} className="cursor-pointer" onClick={() => openEdit(rule)}>
                   <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
                       onClick={() => handleToggleActive(rule)}
                       className={rule.is_active ? "text-primary" : "text-muted-foreground"}
                       title={
@@ -265,7 +267,7 @@ export default function AutomationSettingsPage() {
                       }
                     >
                       {rule.is_active ? <Zap className="size-4" /> : <ZapOff className="size-4" />}
-                    </button>
+                    </Button>
                   </TableCell>
                   <TableCell>
                     <span className="font-medium">{rule.name}</span>
@@ -389,12 +391,14 @@ export default function AutomationSettingsPage() {
                     placeholder="値"
                     className="flex-1"
                   />
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
                     onClick={() => removeCondition(idx)}
-                    className="text-muted-foreground hover:text-destructive"
+                    className="text-muted-foreground hover:text-red-600"
                   >
                     <Trash2 className="size-4" />
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
@@ -434,12 +438,14 @@ export default function AutomationSettingsPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
                       onClick={() => removeAction(idx)}
-                      className="text-muted-foreground hover:text-destructive"
+                      className="text-muted-foreground hover:text-red-600"
                     >
                       <Trash2 className="size-4" />
-                    </button>
+                    </Button>
                   </div>
                   <ActionParamsEditor
                     action={action}

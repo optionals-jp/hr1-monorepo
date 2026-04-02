@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useApplicantDetailPage } from "@/lib/hooks/use-applicant-detail";
 import type { TimelineEvent } from "@/lib/hooks/use-applicant-detail";
@@ -26,11 +27,19 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
-import { SearchBar } from "@/components/ui/search-bar";
 import { TabBar } from "@/components/layout/tab-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
-import { ExternalLink, SlidersHorizontal, X } from "lucide-react";
+import {
+  ExternalLink,
+  SlidersHorizontal,
+  X,
+  UserPlus,
+  FileCheck,
+  ClipboardList,
+  FileText,
+  CalendarCheck,
+} from "lucide-react";
 import { format } from "date-fns";
 import {
   applicationStatusLabels as statusLabels,
@@ -38,19 +47,24 @@ import {
   StepStatus,
   ApplicationStatus,
 } from "@/lib/constants";
-import { AuditLogPanel } from "@/components/ui/audit-log-panel";
+
+const CATEGORY_ICONS: Record<string, typeof UserPlus> = {
+  アカウント: UserPlus,
+  応募: FileCheck,
+  選考: ClipboardList,
+  フォーム: FileText,
+  面接: CalendarCheck,
+};
 
 const tabs = [
   { value: "profile", label: "プロフィール" },
   { value: "evaluations", label: "評価" },
   { value: "timeline", label: "ログ" },
-  { value: "audit", label: "変更ログ" },
 ];
 
 export default function ApplicantDetailPage() {
   const {
     id,
-    organization,
     profile,
     applications,
     timelineEvents,
@@ -62,8 +76,6 @@ export default function ApplicantDetailPage() {
     setStatusFilter,
     eventFilter,
     setEventFilter,
-    historySearch,
-    setHistorySearch,
     handleOpenMessage,
     creatingThread,
   } = useApplicantDetailPage();
@@ -85,12 +97,13 @@ export default function ApplicantDetailPage() {
   }
 
   return (
-    <>
+    <div className="flex flex-col">
       <PageHeader
         title={profile.display_name ?? profile.email}
         description="応募者詳細"
         breadcrumb={[{ label: "応募者一覧", href: "/applicants" }]}
         sticky={false}
+        border={false}
         action={
           <Button size="sm" onClick={handleOpenMessage} disabled={creatingThread}>
             メッセージを送る
@@ -136,49 +149,49 @@ export default function ApplicantDetailPage() {
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>応募ログ</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {applications.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">応募がありません</p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>求人</TableHead>
-                        <TableHead>ステータス</TableHead>
-                        <TableHead>応募日</TableHead>
-                        <TableHead className="w-15"></TableHead>
+            <div className="lg:col-span-2">
+              <h2 className="text-sm font-semibold mb-2">応募ログ</h2>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>求人</TableHead>
+                    <TableHead>ステータス</TableHead>
+                    <TableHead>応募日</TableHead>
+                    <TableHead className="w-15"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {applications.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
+                        応募がありません
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    applications.map((app) => (
+                      <TableRow key={app.id}>
+                        <TableCell className="font-medium">{app.jobs?.title ?? "-"}</TableCell>
+                        <TableCell>
+                          <Badge variant={statusColors[app.status]}>
+                            {statusLabels[app.status]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {format(new Date(app.applied_at), "yyyy/MM/dd")}
+                        </TableCell>
+                        <TableCell>
+                          <Link href={`/applications/${app.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {applications.map((app) => (
-                        <TableRow key={app.id}>
-                          <TableCell className="font-medium">{app.jobs?.title ?? "-"}</TableCell>
-                          <TableCell>
-                            <Badge variant={statusColors[app.status]}>
-                              {statusLabels[app.status]}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {format(new Date(app.applied_at), "yyyy/MM/dd")}
-                          </TableCell>
-                          <TableCell>
-                            <Link href={`/applications/${app.id}`}>
-                              <Button variant="ghost" size="sm">
-                                <ExternalLink className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </PageContent>
       )}
@@ -197,17 +210,9 @@ export default function ApplicantDetailPage() {
           setStatusFilter={setStatusFilter}
           eventFilter={eventFilter}
           setEventFilter={setEventFilter}
-          historySearch={historySearch}
-          setHistorySearch={setHistorySearch}
         />
       )}
-
-      {activeTab === "audit" && organization && (
-        <div className="px-4 sm:px-6 md:px-8 py-6">
-          <AuditLogPanel organizationId={organization.id} tableName="profiles" recordId={id} />
-        </div>
-      )}
-    </>
+    </div>
   );
 }
 
@@ -218,8 +223,6 @@ function TimelineTab({
   setStatusFilter,
   eventFilter,
   setEventFilter,
-  historySearch,
-  setHistorySearch,
 }: {
   timelineEvents: TimelineEvent[];
   filteredTimeline: TimelineEvent[];
@@ -227,8 +230,6 @@ function TimelineTab({
   setStatusFilter: (v: string | null) => void;
   eventFilter: string | null;
   setEventFilter: (v: string | null) => void;
-  historySearch: string;
-  setHistorySearch: (v: string) => void;
 }) {
   return (
     <>
@@ -306,64 +307,62 @@ function TimelineTab({
           </DropdownMenuSub>
         </DropdownMenuContent>
       </DropdownMenu>
-      <SearchBar
-        value={historySearch}
-        onChange={setHistorySearch}
-        placeholder="求人名・イベントで検索"
-      />
-      <div className="flex-1 overflow-y-auto bg-white">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>カテゴリ</TableHead>
-              <TableHead>イベント</TableHead>
-              <TableHead>関連求人</TableHead>
-              <TableHead>ステータス</TableHead>
-              <TableHead>日時</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredTimeline.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  {timelineEvents.length === 0 ? "ログがありません" : "該当するログがありません"}
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredTimeline.map((ev) => (
-                <TableRow key={ev.id}>
-                  <TableCell>
-                    <Badge variant="outline">{ev.category}</Badge>
-                  </TableCell>
-                  <TableCell className="font-medium">{ev.eventType}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {ev.source !== "-" ? ev.source : ""}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        ev.status === StepStatus.Completed ||
-                        ev.status === ApplicationStatus.Offered
-                          ? "secondary"
-                          : ev.status === ApplicationStatus.Rejected
-                            ? "destructive"
-                            : ev.status === ApplicationStatus.Withdrawn ||
-                                ev.status === StepStatus.Skipped
-                              ? "outline"
-                              : "default"
-                      }
-                    >
-                      {ev.label}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {format(new Date(ev.date), "yyyy/MM/dd HH:mm")}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 py-4">
+        {filteredTimeline.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            {timelineEvents.length === 0 ? "ログがありません" : "該当するログがありません"}
+          </p>
+        ) : (
+          <div className="relative">
+            <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
+            <div className="space-y-0">
+              {filteredTimeline.map((ev) => {
+                const Icon = CATEGORY_ICONS[ev.category] ?? ClipboardList;
+                const badgeVariant =
+                  ev.status === StepStatus.Completed || ev.status === ApplicationStatus.Offered
+                    ? "secondary"
+                    : ev.status === ApplicationStatus.Rejected
+                      ? "destructive"
+                      : ev.status === ApplicationStatus.Withdrawn ||
+                          ev.status === StepStatus.Skipped
+                        ? "outline"
+                        : "default";
+
+                return (
+                  <div key={ev.id} className="relative flex gap-3 py-3">
+                    <div className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-background">
+                      <Icon className="size-3.5 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0 pt-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {ev.actor && (
+                          <span className="inline-flex items-center gap-1">
+                            <Avatar className="h-4 w-4">
+                              <AvatarFallback className="bg-muted text-muted-foreground text-[8px] font-medium">
+                                {ev.actor[0].toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm font-semibold">{ev.actor}</span>
+                          </span>
+                        )}
+                        <span className="text-sm">{ev.eventType}</span>
+                        <Badge variant={badgeVariant} className="text-xs">
+                          {ev.label}
+                        </Badge>
+                        {ev.source !== "-" && (
+                          <span className="text-xs text-muted-foreground">{ev.source}</span>
+                        )}
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {format(new Date(ev.date), "yyyy/MM/dd HH:mm")}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

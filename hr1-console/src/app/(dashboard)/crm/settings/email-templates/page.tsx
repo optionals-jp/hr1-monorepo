@@ -301,13 +301,15 @@ export default function EmailTemplatesPage() {
               <Label className="text-xs text-muted-foreground">変数を挿入:</Label>
               <div className="flex flex-wrap gap-1 mt-1">
                 {TEMPLATE_VARIABLES.map((v) => (
-                  <button
+                  <Button
                     key={v.key}
+                    variant="ghost"
+                    size="icon-xs"
                     onClick={() => insertVariable(v.key)}
                     className="px-2 py-0.5 text-xs rounded border bg-muted hover:bg-muted/80"
                   >
                     {v.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>

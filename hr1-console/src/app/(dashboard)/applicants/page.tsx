@@ -64,7 +64,6 @@ export default function ApplicantsPage() {
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              size="sm"
               onClick={() => {
                 if (h.applicants.length === 0) return;
                 exportToCSV(
@@ -82,7 +81,7 @@ export default function ApplicantsPage() {
               <Download className="mr-1.5 h-4 w-4" />
               CSV出力
             </Button>
-            <Button variant="outline" size="sm" onClick={() => h.setImportOpen(true)}>
+            <Button variant="outline" onClick={() => h.setImportOpen(true)}>
               <Upload className="mr-1.5 h-4 w-4" />
               インポート
             </Button>

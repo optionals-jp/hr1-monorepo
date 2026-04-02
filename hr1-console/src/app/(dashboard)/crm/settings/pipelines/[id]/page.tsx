@@ -88,12 +88,17 @@ function SortableStageRow({
         <p className="font-medium text-sm">{stage.name}</p>
         <p className="text-xs text-muted-foreground">確度: {stage.probability_default}%</p>
       </div>
-      <button onClick={onEdit} className="text-muted-foreground hover:text-foreground">
+      <Button variant="ghost" size="icon-xs" onClick={onEdit}>
         <Pencil className="size-4" />
-      </button>
-      <button onClick={onDelete} className="text-muted-foreground hover:text-destructive">
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        onClick={onDelete}
+        className="text-muted-foreground hover:text-red-600"
+      >
         <Trash2 className="size-4" />
-      </button>
+      </Button>
     </div>
   );
 }

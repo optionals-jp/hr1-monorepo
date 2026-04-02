@@ -147,33 +147,30 @@ export default function AnnouncementsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
                         onClick={() => onTogglePublish(a)}
                         title={a.published_at ? "非公開にする" : "公開する"}
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                       >
                         {a.published_at ? (
                           <Undo2 className="h-4 w-4" />
                         ) : (
                           <Send className="h-4 w-4" />
                         )}
-                      </button>
-                      <button
-                        type="button"
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
                         onClick={() => onTogglePin(a)}
                         title={a.is_pinned ? "固定を解除" : "固定する"}
-                        className={`p-1.5 rounded-md transition-colors ${a.is_pinned ? "text-primary hover:text-primary/80" : "text-muted-foreground hover:text-foreground"} hover:bg-accent`}
+                        className={a.is_pinned ? "text-primary hover:text-primary/80" : ""}
                       >
                         <Pin className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openEdit(a)}
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                      >
+                      </Button>
+                      <Button variant="ghost" size="icon-xs" onClick={() => openEdit(a)}>
                         <Pencil className="h-4 w-4" />
-                      </button>
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
