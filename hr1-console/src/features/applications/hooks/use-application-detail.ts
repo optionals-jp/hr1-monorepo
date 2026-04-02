@@ -7,6 +7,7 @@ import { useOrg } from "@/lib/org-context";
 import { StepStatus, StepType } from "@/lib/constants";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as applicationRepository from "@/lib/repositories/application-repository";
+import { countEvaluationsByApplication } from "@/lib/repositories/evaluation-repository";
 import {
   isResourceStepType,
   canUnskipStep,
@@ -45,15 +46,16 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
   const [hireDate, setHireDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [converting, setConverting] = useState(false);
 
+  const [evaluationCount, setEvaluationCount] = useState(0);
+
   const load = useCallback(async () => {
     if (!organization) return;
     setLoading(true);
     const client = getSupabase();
-    const { data } = await applicationRepository.fetchApplicationDetail(
-      client,
-      id,
-      organization.id
-    );
+    const [{ data }, evalCount] = await Promise.all([
+      applicationRepository.fetchApplicationDetail(client, id, organization.id),
+      countEvaluationsByApplication(client, organization.id, id),
+    ]);
 
     if (data) {
       setApplication(data as unknown as Application);
@@ -62,6 +64,7 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
       );
       setSteps(sortedSteps);
     }
+    setEvaluationCount(evalCount);
     setLoading(false);
   }, [id, organization]);
 
@@ -293,6 +296,8 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
     currentStepOrder,
 
     updateApplicationStatus,
+
+    evaluationCount,
 
     load,
   };

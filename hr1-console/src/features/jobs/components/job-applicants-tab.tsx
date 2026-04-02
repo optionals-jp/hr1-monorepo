@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { TableSection } from "@/components/layout/table-section";
 import type { Application } from "@/types/database";
 import {
   DropdownMenu,
@@ -51,7 +52,7 @@ export function JobApplicantsTab({
         placeholder="名前・メールで検索"
       />
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white border-b px-4 sm:px-6 md:px-8 cursor-pointer">
+        <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
           <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
           <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
           {applicantStatusFilter !== "all" && (
@@ -88,7 +89,7 @@ export function JobApplicantsTab({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-      <div className="flex-1 overflow-y-auto bg-white">
+      <TableSection className="overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -158,7 +159,7 @@ export function JobApplicantsTab({
             })()}
           </TableBody>
         </Table>
-      </div>
+      </TableSection>
     </>
   );
 }

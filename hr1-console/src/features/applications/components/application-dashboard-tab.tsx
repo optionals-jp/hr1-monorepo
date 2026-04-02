@@ -19,6 +19,7 @@ interface ApplicationDashboardTabProps {
   unskipStep: (step: ApplicationStep) => void;
   onViewFormResponses: (step: ApplicationStep) => void;
   onConvertDialogOpen: () => void;
+  onOpenEvaluation?: () => void;
 }
 
 export function ApplicationDashboardTab({
@@ -31,6 +32,7 @@ export function ApplicationDashboardTab({
   unskipStep,
   onViewFormResponses,
   onConvertDialogOpen,
+  onOpenEvaluation,
 }: ApplicationDashboardTabProps) {
   return (
     <div className="space-y-6 max-w-3xl">
@@ -78,6 +80,7 @@ export function ApplicationDashboardTab({
               skipStep={skipStep}
               unskipStep={unskipStep}
               onViewFormResponses={onViewFormResponses}
+              onOpenEvaluation={onOpenEvaluation}
             />
           </div>
         </div>

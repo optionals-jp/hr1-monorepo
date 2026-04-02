@@ -7,7 +7,7 @@ import type {
 } from "@/types/database";
 import { RESOURCE_STEP_TYPES } from "@/lib/constants";
 
-export type ActiveTab = "dashboard" | "steps" | "history" | "audit";
+export type ActiveTab = "dashboard" | "steps" | "evaluation" | "history" | "audit";
 
 export type ResourceStepType = (typeof RESOURCE_STEP_TYPES)[number];
 
@@ -62,6 +62,9 @@ export interface UseApplicationDetailReturn {
 
   // ステータス変更
   updateApplicationStatus: (status: string | null) => Promise<void>;
+
+  // 評価
+  evaluationCount: number;
 
   // リロード
   load: () => Promise<void>;

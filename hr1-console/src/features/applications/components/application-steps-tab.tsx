@@ -5,7 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StepStatus, StepType, stepStatusLabels, stepTypeLabels } from "@/lib/constants";
 import type { ApplicationStep } from "@/types/database";
-import { Check, Circle, SkipForward, FileText, Calendar, ExternalLink } from "lucide-react";
+import {
+  Check,
+  Circle,
+  SkipForward,
+  FileText,
+  Calendar,
+  ExternalLink,
+  ClipboardCheck,
+} from "lucide-react";
 import { format } from "date-fns";
 
 interface ApplicationStepsTabProps {
@@ -15,6 +23,7 @@ interface ApplicationStepsTabProps {
   skipStep: (step: ApplicationStep) => void;
   unskipStep: (step: ApplicationStep) => void;
   onViewFormResponses: (step: ApplicationStep) => void;
+  onOpenEvaluation?: () => void;
 }
 
 export function ApplicationStepsTab({
@@ -24,6 +33,7 @@ export function ApplicationStepsTab({
   skipStep,
   unskipStep,
   onViewFormResponses,
+  onOpenEvaluation,
 }: ApplicationStepsTabProps) {
   return (
     <div className="space-y-6 max-w-3xl">
@@ -43,6 +53,7 @@ export function ApplicationStepsTab({
               skipStep={skipStep}
               unskipStep={unskipStep}
               onViewFormResponses={onViewFormResponses}
+              onOpenEvaluation={onOpenEvaluation}
             />
           </div>
         </div>
@@ -59,6 +70,7 @@ export function ApplicationStepList({
   skipStep,
   unskipStep,
   onViewFormResponses,
+  onOpenEvaluation,
 }: {
   steps: ApplicationStep[];
   canActOnStep: (step: ApplicationStep) => boolean;
@@ -66,6 +78,7 @@ export function ApplicationStepList({
   skipStep: (step: ApplicationStep) => void;
   unskipStep: (step: ApplicationStep) => void;
   onViewFormResponses?: (step: ApplicationStep) => void;
+  onOpenEvaluation?: () => void;
 }) {
   if (steps.length === 0) {
     return (
@@ -132,6 +145,14 @@ export function ApplicationStepList({
               onViewFormResponses && (
                 <Button size="sm" variant="outline" onClick={() => onViewFormResponses(step)}>
                   回答を確認
+                </Button>
+              )}
+            {step.step_type === StepType.Interview &&
+              step.status === StepStatus.Completed &&
+              onOpenEvaluation && (
+                <Button size="sm" variant="outline" onClick={onOpenEvaluation}>
+                  <ClipboardCheck className="h-3.5 w-3.5 mr-1" />
+                  評価する
                 </Button>
               )}
             {step.status === StepStatus.Skipped && (
