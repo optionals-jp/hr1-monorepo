@@ -1,5 +1,49 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { BcCompany, BcContact, BcDeal, BcActivity, BcCard, BcTodo } from "@/types/database";
+import type {
+  BcCompany,
+  BcContact,
+  BcDeal,
+  BcActivity,
+  BcCard,
+  BcTodo,
+  CrmDealStageHistory,
+} from "@/types/database";
+
+// --- Stage History ---
+
+export async function createStageHistory(
+  client: SupabaseClient,
+  data: {
+    organization_id: string;
+    deal_id: string;
+    from_stage_id: string | null;
+    to_stage_id: string;
+    from_stage_name: string | null;
+    to_stage_name: string;
+    changed_by: string | null;
+  }
+) {
+  const { error } = await client.from("crm_deal_stage_history").insert(data);
+  if (error) throw error;
+}
+
+export async function fetchStageHistory(
+  client: SupabaseClient,
+  organizationId: string,
+  dealId?: string
+) {
+  let query = client
+    .from("crm_deal_stage_history")
+    .select("*, profiles:changed_by(display_name, email)")
+    .eq("organization_id", organizationId)
+    .order("changed_at", { ascending: false });
+  if (dealId) {
+    query = query.eq("deal_id", dealId);
+  }
+  const { data, error } = await query.limit(500);
+  if (error) throw error;
+  return (data ?? []) as CrmDealStageHistory[];
+}
 
 // --- Dashboard aggregation ---
 

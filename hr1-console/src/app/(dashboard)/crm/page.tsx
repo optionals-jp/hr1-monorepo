@@ -352,6 +352,51 @@ export default function CrmDashboardPage() {
             <StatusSummaryCard label="受注" deals={wonDeals} status="won" color="bg-green-500" />
             <StatusSummaryCard label="失注" deals={lostDeals} status="lost" color="bg-red-500" />
           </div>
+
+          {/* レポートリンク */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">レポート</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  {
+                    href: "/crm/reports/forecast",
+                    label: "売上予測",
+                    description: "カテゴリ別・期間別の売上予測",
+                    icon: TrendingUp,
+                  },
+                  {
+                    href: "/crm/reports/pipeline",
+                    label: "パイプライン分析",
+                    description: "ステージ別分析・コンバージョン率",
+                    icon: Target,
+                  },
+                  {
+                    href: "/crm/reports/win-loss",
+                    label: "勝敗分析",
+                    description: "受注・失注の傾向と勝率推移",
+                    icon: Handshake,
+                  },
+                  {
+                    href: "/crm/reports/performance",
+                    label: "担当者パフォーマンス",
+                    description: "担当者別の実績と活動量",
+                    icon: UserPlus,
+                  },
+                ].map((report) => (
+                  <Link key={report.href} href={report.href}>
+                    <div className="rounded-lg border p-4 hover:border-primary/40 hover:bg-muted/30 transition-colors cursor-pointer h-full">
+                      <report.icon className="size-5 text-muted-foreground mb-2" />
+                      <p className="text-sm font-medium">{report.label}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{report.description}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </PageContent>
     </div>

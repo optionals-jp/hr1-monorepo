@@ -23,6 +23,7 @@ import {
 import { useCrmDealsAll } from "@/lib/hooks/use-crm";
 import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
 import type { BcDeal } from "@/types/database";
+import { ReportNav } from "@/components/crm/report-nav";
 import {
   Download,
   TrendingUp,
@@ -223,6 +224,7 @@ export default function ForecastReportPage() {
         }
       />
       {error && <QueryErrorBanner error={error} />}
+      <ReportNav />
 
       <StickyFilterBar>
         <div className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8">

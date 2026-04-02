@@ -58,6 +58,7 @@ export const ja: Record<string, string> = {
   "nav.crm.fields": "カスタムフィールド",
   "nav.crm.quotes": "見積書",
   "nav.crm.forecast": "売上予測",
+  "nav.crm.reports": "レポート",
   "nav.crm.automations": "自動化",
   "nav.crm.emailTemplates": "メールテンプレート",
   "nav.crm.webhooks": "Webhook",

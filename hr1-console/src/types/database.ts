@@ -876,6 +876,19 @@ export interface BcTodo {
   profiles?: { display_name: string | null; email: string } | null;
 }
 
+export interface CrmDealStageHistory {
+  id: string;
+  organization_id: string;
+  deal_id: string;
+  from_stage_id: string | null;
+  to_stage_id: string;
+  from_stage_name: string | null;
+  to_stage_name: string;
+  changed_by: string | null;
+  changed_at: string;
+  profiles?: { display_name: string | null; email: string } | null;
+}
+
 export type BcLeadSource = "web" | "referral" | "event" | "cold_call" | "other";
 export type BcLeadStatus = "new" | "contacted" | "qualified" | "unqualified" | "converted";
 
