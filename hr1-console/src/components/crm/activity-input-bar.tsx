@@ -20,10 +20,17 @@ interface ActivityInputBarProps {
   dealId?: string;
   leadId?: string;
   companyId?: string;
+  contactId?: string;
   onAdded: () => void;
 }
 
-export function ActivityInputBar({ dealId, leadId, companyId, onAdded }: ActivityInputBarProps) {
+export function ActivityInputBar({
+  dealId,
+  leadId,
+  companyId,
+  contactId,
+  onAdded,
+}: ActivityInputBarProps) {
   const { showToast } = useToast();
   const createActivity = useCreateActivity();
   const { user, profile } = useAuth();
@@ -43,6 +50,7 @@ export function ActivityInputBar({ dealId, leadId, companyId, onAdded }: Activit
       deal_id: dealId ?? null,
       lead_id: leadId ?? null,
       company_id: companyId ?? null,
+      contact_id: contactId ?? null,
       activity_date: new Date().toISOString(),
       created_by: user?.id ?? null,
     });
@@ -61,6 +69,7 @@ export function ActivityInputBar({ dealId, leadId, companyId, onAdded }: Activit
     dealId,
     leadId,
     companyId,
+    contactId,
     user,
     createActivity,
     onAdded,

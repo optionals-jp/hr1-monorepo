@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { useCrmDealContacts, useCrmContacts, useDealContactMutations } from "@/lib/hooks/use-crm";
-import { dealContactRoleLabels } from "@/lib/constants/crm";
+import { dealContactRoleLabels } from "@/lib/constants";
 import type { BcDealContact, DealContactRole } from "@/types/database";
 import { Plus, Star, Trash2, Users } from "lucide-react";
 import { useRouter } from "next/navigation";

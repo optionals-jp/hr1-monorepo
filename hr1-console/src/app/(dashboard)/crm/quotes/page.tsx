@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
 import { useCrmQuotes } from "@/lib/hooks/use-crm";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
-import { quoteStatusLabels, quoteStatusColors } from "@/lib/constants/crm";
+import { quoteStatusLabels, quoteStatusColors } from "@/lib/constants";
 import { Plus, SlidersHorizontal, X, Trash2 } from "lucide-react";
 import { Pagination, usePagination } from "@/components/crm/pagination";
 import { BulkActionBar, useBulkSelection } from "@/components/crm/bulk-action-bar";

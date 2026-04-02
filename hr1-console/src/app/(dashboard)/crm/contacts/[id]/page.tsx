@@ -188,6 +188,7 @@ export default function CrmContactDetailPage() {
                 </h2>
                 <ActivityTimeline activities={activities ?? []} emptyMessage="活動なし" />
                 <ActivityInputBar
+                  contactId={contact.id}
                   companyId={contact.company_id ?? undefined}
                   onAdded={() => mutateActivities()}
                 />

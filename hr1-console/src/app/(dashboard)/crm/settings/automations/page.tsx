@@ -25,7 +25,7 @@ import {
   automationActionLabels,
   automationConditionOperatorLabels,
   activityTypeLabels,
-} from "@/lib/constants/crm";
+} from "@/lib/constants";
 import type {
   CrmAutomationRule,
   CrmAutomationTrigger,

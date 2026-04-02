@@ -10,7 +10,7 @@ import * as leadRepository from "@/lib/repositories/lead-repository";
 import * as dealContactRepository from "@/lib/repositories/deal-contact-repository";
 import * as quoteRepository from "@/lib/repositories/quote-repository";
 import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
-import { dealStageProbability } from "@/lib/constants/crm";
+import { dealStageProbability } from "@/lib/constants";
 import { fireTrigger } from "@/lib/automation/engine";
 import type { BcCompany, BcDeal, BcLead } from "@/types/database";
 
@@ -143,6 +143,7 @@ export function useCreateActivity() {
     deal_id?: string | null;
     lead_id?: string | null;
     company_id?: string | null;
+    contact_id?: string | null;
     activity_date: string;
     created_by?: string | null;
   }): Promise<{ success: boolean }> => {

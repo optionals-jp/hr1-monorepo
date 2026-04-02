@@ -130,9 +130,16 @@ async function executeAction(
     case "update_field": {
       const table = getTableForEntityType(context.entityType);
       if (!table || !params.field) break;
+      const fieldName = String(params.field);
+      const allowed = ALLOWED_UPDATE_FIELDS[context.entityType];
+      if (!allowed?.has(fieldName)) {
+        throw new Error(
+          `Field "${fieldName}" is not allowed for update_field action on ${context.entityType}`
+        );
+      }
       const { error } = await client
         .from(table)
-        .update({ [String(params.field)]: params.value })
+        .update({ [fieldName]: params.value })
         .eq("id", context.entityId)
         .eq("organization_id", context.organizationId);
       if (error) throw error;
@@ -141,21 +148,66 @@ async function executeAction(
 
     case "send_webhook": {
       if (!params.url) break;
-      await fetch(String(params.url), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          trigger: context.triggerType,
-          entity_type: context.entityType,
-          entity_id: context.entityId,
-          data: context.entityData,
-          timestamp: new Date().toISOString(),
-        }),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10_000);
+      try {
+        await fetch(String(params.url), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            trigger: context.triggerType,
+            entity_type: context.entityType,
+            entity_id: context.entityId,
+            data: context.entityData,
+            timestamp: new Date().toISOString(),
+          }),
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
       break;
     }
   }
 }
+
+/**
+ * update_field アクションで更新を許可するフィールドのホワイトリスト
+ * セキュリティ上、id / organization_id 等のシステムカラムは変更不可
+ */
+const ALLOWED_UPDATE_FIELDS: Record<string, Set<string>> = {
+  deal: new Set([
+    "status",
+    "stage",
+    "stage_id",
+    "probability",
+    "amount",
+    "assigned_to",
+    "expected_close_date",
+    "title",
+    "description",
+    "lost_reason",
+  ]),
+  company: new Set([
+    "name",
+    "industry",
+    "phone",
+    "website",
+    "address",
+    "employee_count",
+    "description",
+  ]),
+  contact: new Set([
+    "department",
+    "position",
+    "phone",
+    "email",
+    "first_name",
+    "last_name",
+    "description",
+  ]),
+  lead: new Set(["status", "source", "assigned_to", "score", "title", "description"]),
+};
 
 function getTableForEntityType(entityType: string): string | null {
   switch (entityType) {

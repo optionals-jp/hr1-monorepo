@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { leadSourceLabels, leadStatusLabels, leadStatusColors } from "@/lib/constants/crm";
+import { leadSourceLabels, leadStatusLabels, leadStatusColors } from "@/lib/constants";
 import { useCrmLeadsPage, useCrmCompanies } from "@/lib/hooks/use-crm";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";

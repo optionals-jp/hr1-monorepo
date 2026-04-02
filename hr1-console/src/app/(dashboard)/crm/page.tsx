@@ -11,8 +11,7 @@ import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import { fetchRecentActivities, fetchUpcomingTodos } from "@/lib/repositories/crm-repository";
 import { useDefaultPipeline, getStagesFromPipeline } from "@/lib/hooks/use-pipelines";
-import { activityTypeLabels } from "@/lib/constants/crm";
-import { dealStatusLabels } from "@/lib/constants/crm";
+import { activityTypeLabels, dealStatusLabels } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import {
   Building2,
@@ -229,11 +228,14 @@ export default function CrmDashboardPage() {
                   <p className="text-sm text-muted-foreground text-center py-4">データなし</p>
                 ) : (
                   <div className="space-y-3">
-                    {assigneeSummary.slice(0, 8).map((a) => (
-                      <div key={a.name} className="flex items-center justify-between text-sm">
+                    {assigneeSummary.slice(0, 8).map((a, i) => (
+                      <div
+                        key={`assignee-${i}`}
+                        className="flex items-center justify-between text-sm"
+                      >
                         <div className="flex items-center gap-2 min-w-0">
                           <div className="size-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary shrink-0">
-                            {a.name[0]}
+                            {(a.name || "?")[0]}
                           </div>
                           <span className="truncate">{a.name}</span>
                         </div>

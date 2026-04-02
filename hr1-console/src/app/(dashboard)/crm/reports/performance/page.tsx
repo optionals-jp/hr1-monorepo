@@ -233,44 +233,49 @@ export default function PerformanceReportPage() {
                         </td>
                       </tr>
                     ) : (
-                      repPerformance.map((r, i) => (
-                        <tr key={r.name} className="border-b hover:bg-muted/30">
-                          <td className="px-4 py-2">
-                            <div className="flex items-center gap-2">
-                              {i === 0 && repPerformance.length > 1 && (
-                                <Badge
-                                  variant="secondary"
-                                  className="text-xs bg-yellow-100 text-yellow-800"
-                                >
-                                  1位
-                                </Badge>
-                              )}
-                              <span className="font-medium">{r.name}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-2 text-right tabular-nums">{r.deals}</td>
-                          <td className="px-4 py-2 text-right tabular-nums text-green-600">
-                            {r.won}
-                          </td>
-                          <td className="px-4 py-2 text-right tabular-nums text-red-500">
-                            {r.lost}
-                          </td>
-                          <td className="px-4 py-2 text-right">
-                            <span
-                              className={cn(
-                                "tabular-nums font-medium",
-                                r.winRate >= 50 ? "text-green-600" : "text-muted-foreground"
-                              )}
-                            >
-                              {r.won + r.lost > 0 ? `${r.winRate}%` : "—"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2 text-right tabular-nums font-semibold">
-                            ¥{r.wonAmount.toLocaleString()}
-                          </td>
-                          <td className="px-4 py-2 text-right tabular-nums">{r.activities}</td>
-                        </tr>
-                      ))
+                      repPerformance.map((r, i) => {
+                        const topWon = repPerformance[0]?.wonAmount ?? 0;
+                        const isTop =
+                          repPerformance.length > 1 && topWon > 0 && r.wonAmount === topWon;
+                        return (
+                          <tr key={`perf-${i}`} className="border-b hover:bg-muted/30">
+                            <td className="px-4 py-2">
+                              <div className="flex items-center gap-2">
+                                {isTop && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs bg-yellow-100 text-yellow-800"
+                                  >
+                                    1位
+                                  </Badge>
+                                )}
+                                <span className="font-medium">{r.name || "?"}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-2 text-right tabular-nums">{r.deals}</td>
+                            <td className="px-4 py-2 text-right tabular-nums text-green-600">
+                              {r.won}
+                            </td>
+                            <td className="px-4 py-2 text-right tabular-nums text-red-500">
+                              {r.lost}
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              <span
+                                className={cn(
+                                  "tabular-nums font-medium",
+                                  r.winRate >= 50 ? "text-green-600" : "text-muted-foreground"
+                                )}
+                              >
+                                {r.won + r.lost > 0 ? `${r.winRate}%` : "—"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2 text-right tabular-nums font-semibold">
+                              ¥{r.wonAmount.toLocaleString()}
+                            </td>
+                            <td className="px-4 py-2 text-right tabular-nums">{r.activities}</td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

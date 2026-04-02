@@ -12,7 +12,7 @@ import type {
   RecruitingTargets,
 } from "@/types/dashboard";
 import { DATA_SOURCE_REGISTRY } from "@/lib/dashboard/data-sources";
-import { dealStageLabels, dealStatusLabels } from "@/lib/constants/crm";
+import { dealStageLabels, dealStatusLabels } from "@/lib/constants";
 import type { CrmPipelineStage } from "@/types/database";
 import { Panel, PanelHeader, PanelBody } from "./panel";
 import { GenericBarChart } from "./charts/generic-bar-chart";

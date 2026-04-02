@@ -21,7 +21,7 @@ import { useWebhooks, useWebhookLogs } from "@/lib/hooks/use-webhooks";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as webhookRepo from "@/lib/repositories/webhook-repository";
-import { webhookEventLabels } from "@/lib/constants/crm";
+import { webhookEventLabels } from "@/lib/constants";
 import { TableSection } from "@/components/layout/table-section";
 import type { CrmWebhook } from "@/types/database";
 import { Plus, ScrollText } from "lucide-react";

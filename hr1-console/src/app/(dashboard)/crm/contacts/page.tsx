@@ -27,6 +27,7 @@ import { BulkActionBar, useBulkSelection } from "@/components/crm/bulk-action-ba
 import { Checkbox } from "@/components/ui/checkbox";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
+import { deleteContact } from "@/lib/repositories/crm-repository";
 
 export default function CrmContactsPage() {
   const router = useRouter();
@@ -80,7 +81,7 @@ export default function CrmContactsPage() {
     if (!organization) return;
     const client = getSupabase();
     for (const id of ids) {
-      await client.from("bc_contacts").delete().eq("id", id).eq("organization_id", organization.id);
+      await deleteContact(client, id, organization.id);
     }
     bulk.clear();
     mutate();

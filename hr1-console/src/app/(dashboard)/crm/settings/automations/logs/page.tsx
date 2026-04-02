@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { useAutomationLogs } from "@/lib/hooks/use-automation";
-import { automationTriggerLabels, automationActionLabels } from "@/lib/constants/crm";
+import { automationTriggerLabels, automationActionLabels } from "@/lib/constants";
 import type { BadgeVariant } from "@/lib/constants/types";
 import Link from "next/link";
 

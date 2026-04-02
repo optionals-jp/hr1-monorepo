@@ -22,7 +22,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useCrmQuote, useCrmCompanies, useCrmContacts, useCrmDealsAll } from "@/lib/hooks/use-crm";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as quoteRepo from "@/lib/repositories/quote-repository";
-import { quoteStatusLabels, quoteStatusColors } from "@/lib/constants/crm";
+import { quoteStatusLabels, quoteStatusColors } from "@/lib/constants";
 import type {
   BcQuote,
   BcQuoteItem,

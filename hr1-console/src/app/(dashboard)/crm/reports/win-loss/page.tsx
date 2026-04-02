@@ -303,10 +303,10 @@ export default function WinLossReportPage() {
                 {repWinRates.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">データなし</p>
                 ) : (
-                  repWinRates.map((r) => (
-                    <div key={r.name} className="flex items-center gap-3">
+                  repWinRates.map((r, i) => (
+                    <div key={`rep-${i}`} className="flex items-center gap-3">
                       <div className="size-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary shrink-0">
-                        {r.name[0]}
+                        {(r.name || "?")[0]}
                       </div>
                       <span className="text-sm font-medium w-24 truncate shrink-0">{r.name}</span>
                       <div className="flex-1 h-5 bg-muted rounded-full overflow-hidden flex">

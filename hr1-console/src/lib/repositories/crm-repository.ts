@@ -196,6 +196,15 @@ export async function fetchContactsByCompany(
   return (data ?? []) as BcContact[];
 }
 
+export async function deleteContact(client: SupabaseClient, id: string, organizationId: string) {
+  const { error } = await client
+    .from("bc_contacts")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+  if (error) throw error;
+}
+
 // --- Deals ---
 
 export async function fetchDealsAll(client: SupabaseClient, organizationId: string) {
