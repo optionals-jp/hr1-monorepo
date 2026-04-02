@@ -16,21 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { DatetimeInput } from "@/components/ui/datetime-input";
 import { TabBar } from "@/components/layout/tab-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { cn } from "@/lib/utils";
 import { useSchedulingDetailPage } from "@/lib/hooks/use-scheduling-detail";
-import { Calendar, Trash2, Search } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Calendar, Trash2, CalendarCheck } from "lucide-react";
 import { format } from "date-fns";
 import {
   interviewScheduleStatusLabels as statusLabels,
@@ -235,64 +228,44 @@ export default function SchedulingDetailPage() {
         </div>
       )}
 
-      {/* ===== ログタブ（白背景・全幅） ===== */}
+      {/* ===== ログタブ ===== */}
       {h.activeTab === "timeline" && (
-        <>
-          <div className="flex items-center h-12 bg-white border-b px-4 sm:px-6 md:px-8">
-            <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-            <Input
-              placeholder="名前・メールで検索"
-              value={h.historySearch}
-              onChange={(e) => h.setHistorySearch(e.target.value)}
-              className="border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-transparent h-12"
-            />
-          </div>
-          <div className="flex-1 overflow-y-auto bg-white">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>応募者</TableHead>
-                  <TableHead>メール</TableHead>
-                  <TableHead>予約日時</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(() => {
-                  const filtered = h.bookedApps.filter((app) => {
-                    if (!h.historySearch) return true;
-                    const q = h.historySearch.toLowerCase();
-                    return (
-                      app.applicantName.toLowerCase().includes(q) ||
-                      app.applicantEmail.toLowerCase().includes(q)
-                    );
-                  });
-                  if (filtered.length === 0) {
-                    return (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                          {h.bookedApps.length === 0
-                            ? "ログがありません"
-                            : "該当するログがありません"}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  }
-                  return filtered.map((app) => (
-                    <TableRow key={app.slotId}>
-                      <TableCell className="font-medium">{app.applicantName}</TableCell>
-                      <TableCell className="text-muted-foreground">{app.applicantEmail}</TableCell>
-                      <TableCell>
-                        {format(new Date(app.startAt), "yyyy/MM/dd HH:mm")}
-                        {" 〜 "}
-                        {format(new Date(app.endAt), "HH:mm")}
-                      </TableCell>
-                    </TableRow>
-                  ));
-                })()}
-              </TableBody>
-            </Table>
-          </div>
-        </>
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 py-4">
+          {h.bookedApps.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">ログがありません</p>
+          ) : (
+            <div className="relative">
+              <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
+              <div className="space-y-0">
+                {h.bookedApps.map((app) => (
+                  <div key={app.slotId} className="relative flex gap-3 py-3">
+                    <div className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-background">
+                      <CalendarCheck className="size-3.5 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0 pt-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex items-center gap-1">
+                          <Avatar className="h-4 w-4">
+                            <AvatarFallback className="bg-muted text-muted-foreground text-[8px] font-medium">
+                              {app.applicantName[0]?.toUpperCase() ?? "?"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-semibold">{app.applicantName}</span>
+                        </span>
+                        <span className="text-sm">面接予約</span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {format(new Date(app.startAt), "yyyy/MM/dd HH:mm")}
+                          {" 〜 "}
+                          {format(new Date(app.endAt), "HH:mm")}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       <EditPanel

@@ -24,6 +24,7 @@ interface TimelineEvent {
   label: string;
   status: string;
   date: string;
+  actor?: string;
 }
 
 export function useApplicantDetailPage() {
@@ -58,6 +59,8 @@ export function useApplicantDetailPage() {
 
       const events: TimelineEvent[] = [];
 
+      const applicantName = profileData?.display_name ?? profileData?.email ?? "応募者";
+
       if (profileData) {
         events.push({
           id: `profile-${profileData.id}`,
@@ -67,6 +70,7 @@ export function useApplicantDetailPage() {
           label: "作成",
           status: StepStatus.Completed,
           date: profileData.created_at,
+          actor: applicantName,
         });
       }
 
@@ -90,6 +94,7 @@ export function useApplicantDetailPage() {
           label: statusLabels[app.status] ?? app.status,
           status: app.status,
           date: app.applied_at,
+          actor: applicantName,
         });
 
         for (const step of (app.application_steps ?? []) as ApplicationStep[]) {
@@ -102,6 +107,7 @@ export function useApplicantDetailPage() {
               label: stepStatusLabels[step.status] ?? step.status,
               status: step.status,
               date: step.completed_at ?? app.applied_at,
+              actor: "システム",
             });
           }
 
@@ -139,6 +145,7 @@ export function useApplicantDetailPage() {
               label: "送信済み",
               status: StepStatus.Completed,
               date: fs.date,
+              actor: applicantName,
             });
           }
         }
@@ -159,6 +166,7 @@ export function useApplicantDetailPage() {
               label: interviewStatusLabels[interview.status] ?? interview.status,
               status: interview.status,
               date: is_.date,
+              actor: "システム",
             });
           }
         }
