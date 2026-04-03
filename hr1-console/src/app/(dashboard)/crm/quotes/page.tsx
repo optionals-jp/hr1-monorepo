@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { useCrmQuotes } from "@/lib/hooks/use-crm";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
+import { deleteQuote } from "@/lib/repositories/quote-repository";
 import { quoteStatusLabels, quoteStatusColors } from "@/lib/constants";
 import { Plus, SlidersHorizontal, X, Trash2 } from "lucide-react";
 import { Pagination, usePagination } from "@/components/crm/pagination";
@@ -64,9 +65,8 @@ export default function QuotesPage() {
 
   const handleBulkDelete = async (ids: string[]) => {
     if (!organization) return;
-    const client = getSupabase();
     for (const id of ids) {
-      await client.from("bc_quotes").delete().eq("id", id).eq("organization_id", organization.id);
+      await deleteQuote(getSupabase(), id, organization.id);
     }
     bulk.clear();
     mutate();

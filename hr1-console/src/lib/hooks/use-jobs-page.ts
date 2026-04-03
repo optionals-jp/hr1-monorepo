@@ -219,6 +219,22 @@ export function useNewJobPage() {
     }
   };
 
+  const reset = () => {
+    setTitle("");
+    setDescription("");
+    setDepartment("");
+    setLocation("");
+    setEmploymentType("");
+    setSalaryRange("");
+    setStatus("open");
+    setSteps([
+      { tempId: "1", step_type: StepType.Screening, label: "書類選考" },
+      { tempId: "2", step_type: StepType.Interview, label: "一次面接" },
+      { tempId: "3", step_type: StepType.Offer, label: "内定" },
+    ]);
+    setFormErrors({});
+  };
+
   return {
     title,
     setTitle: setTitleWithClear,
@@ -241,5 +257,6 @@ export function useNewJobPage() {
     saving,
     formErrors,
     handleSubmit,
+    reset,
   };
 }

@@ -16,17 +16,16 @@ import { useCrmDealsAll } from "@/lib/hooks/use-crm";
 import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
 import { cn } from "@/lib/utils";
 import { ReportNav } from "@/components/crm/report-nav";
+import {
+  getDateFilter,
+  computeWinLossSummary,
+  computeMonthlyTrend,
+  computeAmountBrackets,
+  computeRepWinRates,
+} from "@/features/crm/rules";
 import { Download, Trophy, XCircle, TrendingUp, ArrowRight } from "lucide-react";
 
 type Period = "all" | "3m" | "6m" | "12m";
-
-function getDateFilter(period: Period): Date | null {
-  if (period === "all") return null;
-  const d = new Date();
-  const months = period === "3m" ? 3 : period === "6m" ? 6 : 12;
-  d.setMonth(d.getMonth() - months);
-  return d;
-}
 
 export default function WinLossReportPage() {
   const { data: deals, error } = useCrmDealsAll();
@@ -42,76 +41,29 @@ export default function WinLossReportPage() {
     [deals, dateFilter]
   );
 
-  const wonDeals = useMemo(() => filteredDeals.filter((d) => d.status === "won"), [filteredDeals]);
-  const lostDeals = useMemo(
-    () => filteredDeals.filter((d) => d.status === "lost"),
-    [filteredDeals]
+  const summary = useMemo(() => computeWinLossSummary(filteredDeals), [filteredDeals]);
+  const {
+    wonDeals,
+    lostDeals,
+    closedCount: closedDeals,
+    winRate,
+    wonAmount,
+    lostAmount,
+    avgWonAmount,
+    avgLostAmount,
+  } = summary;
+
+  const monthlyTrend = useMemo(
+    () => computeMonthlyTrend(wonDeals, lostDeals),
+    [wonDeals, lostDeals]
   );
-  const closedDeals = wonDeals.length + lostDeals.length;
-  const winRate = closedDeals > 0 ? Math.round((wonDeals.length / closedDeals) * 100) : 0;
-  const wonAmount = wonDeals.reduce((s, d) => s + (d.amount ?? 0), 0);
-  const lostAmount = lostDeals.reduce((s, d) => s + (d.amount ?? 0), 0);
-  const avgWonAmount = wonDeals.length > 0 ? Math.round(wonAmount / wonDeals.length) : 0;
-  const avgLostAmount = lostDeals.length > 0 ? Math.round(lostAmount / lostDeals.length) : 0;
 
-  // 月別推移
-  const monthlyTrend = useMemo(() => {
-    const map = new Map<string, { month: string; won: number; lost: number }>();
-    for (const d of [...wonDeals, ...lostDeals]) {
-      const date = new Date(d.updated_at);
-      const key = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}`;
-      if (!map.has(key)) map.set(key, { month: key, won: 0, lost: 0 });
-      const entry = map.get(key)!;
-      if (d.status === "won") entry.won++;
-      else entry.lost++;
-    }
-    return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month));
-  }, [wonDeals, lostDeals]);
+  const amountBrackets = useMemo(
+    () => computeAmountBrackets(wonDeals, lostDeals),
+    [wonDeals, lostDeals]
+  );
 
-  // 企業規模別（金額帯別）分析
-  const amountBrackets = useMemo(() => {
-    const brackets = [
-      { label: "〜50万", min: 0, max: 500_000 },
-      { label: "50万〜100万", min: 500_000, max: 1_000_000 },
-      { label: "100万〜500万", min: 1_000_000, max: 5_000_000 },
-      { label: "500万〜", min: 5_000_000, max: Infinity },
-    ];
-    return brackets.map((b) => {
-      const bracketWon = wonDeals.filter(
-        (d) => (d.amount ?? 0) >= b.min && (d.amount ?? 0) < b.max
-      );
-      const bracketLost = lostDeals.filter(
-        (d) => (d.amount ?? 0) >= b.min && (d.amount ?? 0) < b.max
-      );
-      const total = bracketWon.length + bracketLost.length;
-      return {
-        ...b,
-        won: bracketWon.length,
-        lost: bracketLost.length,
-        total,
-        rate: total > 0 ? Math.round((bracketWon.length / total) * 100) : 0,
-      };
-    });
-  }, [wonDeals, lostDeals]);
-
-  // 担当者別勝率
-  const repWinRates = useMemo(() => {
-    const map = new Map<string, { name: string; won: number; lost: number }>();
-    for (const d of [...wonDeals, ...lostDeals]) {
-      const name = d.profiles?.display_name ?? "未割当";
-      if (!map.has(name)) map.set(name, { name, won: 0, lost: 0 });
-      const entry = map.get(name)!;
-      if (d.status === "won") entry.won++;
-      else entry.lost++;
-    }
-    return Array.from(map.values())
-      .map((r) => ({
-        ...r,
-        total: r.won + r.lost,
-        rate: r.won + r.lost > 0 ? Math.round((r.won / (r.won + r.lost)) * 100) : 0,
-      }))
-      .sort((a, b) => b.rate - a.rate);
-  }, [wonDeals, lostDeals]);
+  const repWinRates = useMemo(() => computeRepWinRates(wonDeals, lostDeals), [wonDeals, lostDeals]);
 
   const handleExportCSV = () => {
     const rows = [...wonDeals, ...lostDeals].map((d) => ({

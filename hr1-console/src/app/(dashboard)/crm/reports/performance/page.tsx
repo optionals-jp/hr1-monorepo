@@ -19,6 +19,7 @@ import { getSupabase } from "@/lib/supabase/browser";
 import { fetchRecentActivities } from "@/lib/repositories/crm-repository";
 import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
 import { cn } from "@/lib/utils";
+import { getDateFilter, computeRepPerformance } from "@/features/crm/rules";
 import { ReportNav } from "@/components/crm/report-nav";
 import { Download, Trophy, Handshake, Phone, Activity, Star } from "lucide-react";
 
@@ -32,12 +33,7 @@ export default function PerformanceReportPage() {
     fetchRecentActivities(getSupabase(), orgId, 1000)
   );
 
-  const dateFilter = useMemo(() => {
-    if (period === "all") return null;
-    const d = new Date();
-    d.setDate(d.getDate() - (period === "30d" ? 30 : 90));
-    return d;
-  }, [period]);
+  const dateFilter = useMemo(() => getDateFilter(period), [period]);
 
   const filteredDeals = useMemo(
     () =>
@@ -58,71 +54,10 @@ export default function PerformanceReportPage() {
   );
 
   // 担当者別パフォーマンス
-  const repPerformance = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        name: string;
-        deals: number;
-        won: number;
-        lost: number;
-        wonAmount: number;
-        totalAmount: number;
-        activities: number;
-        leads: number;
-      }
-    >();
-
-    for (const d of filteredDeals) {
-      const name = d.profiles?.display_name ?? "未割当";
-      if (!map.has(name)) {
-        map.set(name, {
-          name,
-          deals: 0,
-          won: 0,
-          lost: 0,
-          wonAmount: 0,
-          totalAmount: 0,
-          activities: 0,
-          leads: 0,
-        });
-      }
-      const entry = map.get(name)!;
-      entry.deals++;
-      entry.totalAmount += d.amount ?? 0;
-      if (d.status === "won") {
-        entry.won++;
-        entry.wonAmount += d.amount ?? 0;
-      } else if (d.status === "lost") {
-        entry.lost++;
-      }
-    }
-
-    // 活動数を加算
-    for (const a of filteredActivities) {
-      const name = a.profiles?.display_name ?? a.profiles?.email ?? "不明";
-      if (!map.has(name)) {
-        map.set(name, {
-          name,
-          deals: 0,
-          won: 0,
-          lost: 0,
-          wonAmount: 0,
-          totalAmount: 0,
-          activities: 0,
-          leads: 0,
-        });
-      }
-      map.get(name)!.activities++;
-    }
-
-    return Array.from(map.values())
-      .map((r) => ({
-        ...r,
-        winRate: r.won + r.lost > 0 ? Math.round((r.won / (r.won + r.lost)) * 100) : 0,
-      }))
-      .sort((a, b) => b.wonAmount - a.wonAmount);
-  }, [filteredDeals, filteredActivities]);
+  const repPerformance = useMemo(
+    () => computeRepPerformance(filteredDeals, filteredActivities),
+    [filteredDeals, filteredActivities]
+  );
 
   // トップKPI
   const totalWonAmount = repPerformance.reduce((s, r) => s + r.wonAmount, 0);

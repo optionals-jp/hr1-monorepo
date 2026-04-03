@@ -116,9 +116,23 @@ async function executeAction(
 
     case "send_notification": {
       if (!context.userId) break;
+      let targetUserId = context.userId;
+      if (params.notify_user_id) {
+        // 指定ユーザーが同一組織に属するか検証
+        const { data: targetProfile } = await client
+          .from("profiles")
+          .select("id")
+          .eq("id", String(params.notify_user_id))
+          .eq("organization_id", context.organizationId)
+          .maybeSingle();
+        if (!targetProfile) {
+          throw new Error("通知先ユーザーが同一組織に見つかりません");
+        }
+        targetUserId = targetProfile.id;
+      }
       const { error } = await client.from("notifications").insert({
         organization_id: context.organizationId,
-        user_id: params.notify_user_id ? String(params.notify_user_id) : context.userId,
+        user_id: targetUserId,
         title: String(params.title ?? "CRM通知"),
         body: String(params.body ?? ""),
         type: "crm_automation",
@@ -148,10 +162,16 @@ async function executeAction(
 
     case "send_webhook": {
       if (!params.url) break;
+      const webhookUrl = String(params.url);
+      if (!isAllowedWebhookUrl(webhookUrl)) {
+        throw new Error(
+          "Webhook URL must use HTTPS and must not target private/internal addresses"
+        );
+      }
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10_000);
       try {
-        await fetch(String(params.url), {
+        await fetch(webhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
@@ -168,6 +188,35 @@ async function executeAction(
       }
       break;
     }
+  }
+}
+
+/**
+ * Webhook URL のバリデーション
+ * HTTPS のみ許可、プライベート IP レンジ・ローカルホストをブロック
+ */
+function isAllowedWebhookUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return false;
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "[::1]" ||
+      hostname.endsWith(".local") ||
+      hostname.endsWith(".internal") ||
+      hostname === "metadata.google.internal" ||
+      hostname.startsWith("10.") ||
+      hostname.startsWith("192.168.") ||
+      hostname.startsWith("169.254.") ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
+    ) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
   }
 }
 

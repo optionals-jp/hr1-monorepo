@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,12 @@ import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import { fetchRecentActivities, fetchUpcomingTodos } from "@/lib/repositories/crm-repository";
 import { useDefaultPipeline, getStagesFromPipeline } from "@/lib/hooks/use-pipelines";
+import {
+  computeCrmKpi,
+  computeStageFunnel,
+  computeAssigneeSummary,
+  formatJpy,
+} from "@/features/crm/rules";
 import { activityTypeLabels, dealStatusLabels } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import {
@@ -65,44 +72,16 @@ export default function CrmDashboardPage() {
   );
 
   // KPI計算
-  const openDeals = (deals ?? []).filter((d) => d.status === "open");
-  const wonDeals = (deals ?? []).filter((d) => d.status === "won");
-  const lostDeals = (deals ?? []).filter((d) => d.status === "lost");
-  const closedDeals = wonDeals.length + lostDeals.length;
-  const winRate = closedDeals > 0 ? Math.round((wonDeals.length / closedDeals) * 100) : 0;
-  const pipelineAmount = openDeals.reduce((sum, d) => sum + (d.amount ?? 0), 0);
-  const wonAmount = wonDeals.reduce((sum, d) => sum + (d.amount ?? 0), 0);
-  const weightedAmount = openDeals.reduce(
-    (sum, d) => sum + (d.amount ?? 0) * ((d.probability ?? 0) / 100),
-    0
-  );
+  const kpi = useMemo(() => computeCrmKpi(deals ?? []), [deals]);
+  const { openDeals, wonDeals, lostDeals, winRate, pipelineAmount, wonAmount, weightedAmount } =
+    kpi;
 
   // パイプラインファネル
-  const stageData = stages.map((stage) => {
-    const stageDeals = openDeals.filter(
-      (d) => d.stage_id === stage.id || (!d.stage_id && d.stage === stage.name)
-    );
-    return {
-      ...stage,
-      count: stageDeals.length,
-      amount: stageDeals.reduce((sum, d) => sum + (d.amount ?? 0), 0),
-    };
-  });
+  const stageData = useMemo(() => computeStageFunnel(stages, openDeals), [stages, openDeals]);
   const maxStageCount = Math.max(...stageData.map((s) => s.count), 1);
 
   // 担当者別商談サマリー
-  const assigneeSummary = Object.values(
-    openDeals.reduce(
-      (acc, d) => {
-        const name = d.profiles?.display_name ?? "未割当";
-        if (!acc[name]) acc[name] = { name, count: 0, amount: 0 };
-        acc[name].count++;
-        acc[name].amount += d.amount ?? 0;
-        return acc;
-      },
-      {} as Record<string, { name: string; count: number; amount: number }>
-    )
-  ).sort((a, b) => b.amount - a.amount);
+  const assigneeSummary = useMemo(() => computeAssigneeSummary(openDeals), [openDeals]);
 
   // 新規リード数
   const newLeads = (leads ?? []).filter((l) => l.status === "new").length;
@@ -492,11 +471,4 @@ function StatusSummaryCard({
       </CardContent>
     </Card>
   );
-}
-
-function formatJpy(amount: number): string {
-  if (amount >= 100_000_000) return `¥${(amount / 100_000_000).toFixed(1)}億`;
-  if (amount >= 10_000) return `¥${(amount / 10_000).toFixed(0)}万`;
-  if (amount > 0) return `¥${amount.toLocaleString()}`;
-  return "¥0";
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -33,7 +32,7 @@ export function Pagination({
   const to = Math.min(page * pageSize, totalCount);
 
   return (
-    <div className="flex items-center justify-between px-4 sm:px-6 md:px-8 py-3 border-t text-sm">
+    <div className="flex items-center justify-between px-4 sm:px-6 md:px-8 py-3 text-sm">
       <div className="flex items-center gap-2 text-muted-foreground">
         <span>
           {from}〜{to} / {totalCount}件
@@ -97,33 +96,5 @@ export function Pagination({
   );
 }
 
-/**
- * クライアントサイドページネーションhook
- */
-export function usePagination<T>(items: T[], initialPageSize = 25) {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(initialPageSize);
-
-  const totalCount = items.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const paginatedItems = items.slice((safePage - 1) * pageSize, safePage * pageSize);
-
-  const onPageChange = (newPage: number) => {
-    setPage(Math.max(1, Math.min(newPage, totalPages)));
-  };
-
-  const onPageSizeChange = (newSize: number) => {
-    setPageSize(newSize);
-    setPage(1);
-  };
-
-  return {
-    page: safePage,
-    pageSize,
-    totalCount,
-    paginatedItems,
-    onPageChange,
-    onPageSizeChange,
-  };
-}
+// Re-export hook from lib/hooks for backwards compatibility
+export { usePagination } from "@/lib/hooks/use-pagination";

@@ -22,8 +22,15 @@ import {
 } from "@/components/ui/table";
 import { useCrmDealsAll } from "@/lib/hooks/use-crm";
 import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
-import type { BcDeal } from "@/types/database";
 import { ReportNav } from "@/components/crm/report-nav";
+import {
+  categorizeDeal,
+  getWeightedAmount,
+  computeCategorySummary,
+  computeChartData,
+  computeRepForecast,
+  type ForecastCategory,
+} from "@/features/crm/rules";
 import {
   Download,
   TrendingUp,
@@ -43,9 +50,6 @@ import {
   Legend,
 } from "recharts";
 
-// 予測カテゴリの定義
-type ForecastCategory = "pipeline" | "bestCase" | "commit" | "closed";
-
 const FORECAST_CATEGORIES: {
   key: ForecastCategory;
   label: string;
@@ -59,41 +63,6 @@ const FORECAST_CATEGORIES: {
   { key: "closed", label: "受注済", color: "#22c55e", icon: CheckCircle, range: "100%" },
 ];
 
-function categorizeDeal(deal: BcDeal): ForecastCategory {
-  if (deal.status === "won") return "closed";
-  const prob = deal.probability ?? 0;
-  if (prob >= 75) return "commit";
-  if (prob >= 50) return "bestCase";
-  return "pipeline";
-}
-
-function getWeightedAmount(deal: BcDeal): number {
-  if (deal.status === "won") return deal.amount ?? 0;
-  return ((deal.amount ?? 0) * (deal.probability ?? 0)) / 100;
-}
-
-function getMonthKey(dateStr: string | null): string {
-  if (!dateStr) return "未定";
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function getQuarterKey(dateStr: string | null): string {
-  if (!dateStr) return "未定";
-  const d = new Date(dateStr);
-  const q = Math.ceil((d.getMonth() + 1) / 3);
-  return `${d.getFullYear()} Q${q}`;
-}
-
-interface MonthlyForecast {
-  month: string;
-  pipeline: number;
-  bestCase: number;
-  commit: number;
-  closed: number;
-  total: number;
-}
-
 type PeriodMode = "monthly" | "quarterly";
 
 export default function ForecastReportPage() {
@@ -104,21 +73,7 @@ export default function ForecastReportPage() {
   const activeDeals = useMemo(() => (deals ?? []).filter((d) => d.status !== "lost"), [deals]);
 
   // カテゴリ別サマリー
-  const categorySummary = useMemo(() => {
-    const summary: Record<ForecastCategory, { count: number; amount: number; weighted: number }> = {
-      pipeline: { count: 0, amount: 0, weighted: 0 },
-      bestCase: { count: 0, amount: 0, weighted: 0 },
-      commit: { count: 0, amount: 0, weighted: 0 },
-      closed: { count: 0, amount: 0, weighted: 0 },
-    };
-    for (const deal of activeDeals) {
-      const cat = categorizeDeal(deal);
-      summary[cat].count++;
-      summary[cat].amount += deal.amount ?? 0;
-      summary[cat].weighted += getWeightedAmount(deal);
-    }
-    return summary;
-  }, [activeDeals]);
+  const categorySummary = useMemo(() => computeCategorySummary(activeDeals), [activeDeals]);
 
   const totalWeighted = useMemo(
     () => Object.values(categorySummary).reduce((sum, s) => sum + s.weighted, 0),
@@ -126,56 +81,13 @@ export default function ForecastReportPage() {
   );
 
   // 期間別集計（グラフ用）
-  const chartData = useMemo(() => {
-    const getKey = periodMode === "monthly" ? getMonthKey : getQuarterKey;
-    const map = new Map<string, MonthlyForecast>();
-
-    for (const deal of activeDeals) {
-      const key = getKey(deal.expected_close_date);
-      if (!map.has(key)) {
-        map.set(key, { month: key, pipeline: 0, bestCase: 0, commit: 0, closed: 0, total: 0 });
-      }
-      const entry = map.get(key)!;
-      const cat = categorizeDeal(deal);
-      const weighted = getWeightedAmount(deal);
-      entry[cat] += weighted;
-      entry.total += weighted;
-    }
-
-    // ソート（「未定」は末尾）
-    return Array.from(map.values()).sort((a, b) => {
-      if (a.month === "未定") return 1;
-      if (b.month === "未定") return -1;
-      return a.month.localeCompare(b.month);
-    });
-  }, [activeDeals, periodMode]);
+  const chartData = useMemo(
+    () => computeChartData(activeDeals, periodMode),
+    [activeDeals, periodMode]
+  );
 
   // 担当者別集計
-  const repData = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        name: string;
-        pipeline: number;
-        bestCase: number;
-        commit: number;
-        closed: number;
-        total: number;
-      }
-    >();
-    for (const deal of activeDeals) {
-      const name = deal.profiles?.display_name ?? "未割当";
-      if (!map.has(name)) {
-        map.set(name, { name, pipeline: 0, bestCase: 0, commit: 0, closed: 0, total: 0 });
-      }
-      const entry = map.get(name)!;
-      const cat = categorizeDeal(deal);
-      const weighted = getWeightedAmount(deal);
-      entry[cat] += weighted;
-      entry.total += weighted;
-    }
-    return Array.from(map.values()).sort((a, b) => b.total - a.total);
-  }, [activeDeals]);
+  const repData = useMemo(() => computeRepForecast(activeDeals), [activeDeals]);
 
   const handleExportCSV = () => {
     const rows = activeDeals.map((d) => ({
@@ -343,53 +255,49 @@ export default function ForecastReportPage() {
         </div>
 
         {/* 担当者別テーブル */}
-        <div className="rounded-lg border">
-          <div className="p-4 border-b bg-muted/30">
-            <h2 className="text-sm font-semibold">担当者別予測</h2>
-          </div>
-          <Table>
-            <TableHeader>
+        <h2 className="text-sm font-semibold mb-2">担当者別予測</h2>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>担当者</TableHead>
+              <TableHead className="text-right">パイプライン</TableHead>
+              <TableHead className="text-right">ベストケース</TableHead>
+              <TableHead className="text-right">コミット</TableHead>
+              <TableHead className="text-right">受注済</TableHead>
+              <TableHead className="text-right">合計（加重）</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {repData.length === 0 ? (
               <TableRow>
-                <TableHead>担当者</TableHead>
-                <TableHead className="text-right">パイプライン</TableHead>
-                <TableHead className="text-right">ベストケース</TableHead>
-                <TableHead className="text-right">コミット</TableHead>
-                <TableHead className="text-right">受注済</TableHead>
-                <TableHead className="text-right">合計（加重）</TableHead>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  データがありません
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {repData.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    データがありません
+            ) : (
+              repData.map((rep) => (
+                <TableRow key={rep.name}>
+                  <TableCell className="font-medium">{rep.name}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    ¥{rep.pipeline.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    ¥{rep.bestCase.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    ¥{rep.commit.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    ¥{rep.closed.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums font-semibold">
+                    ¥{rep.total.toLocaleString()}
                   </TableCell>
                 </TableRow>
-              ) : (
-                repData.map((rep) => (
-                  <TableRow key={rep.name}>
-                    <TableCell className="font-medium">{rep.name}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      ¥{rep.pipeline.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      ¥{rep.bestCase.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      ¥{rep.commit.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      ¥{rep.closed.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums font-semibold">
-                      ¥{rep.total.toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </PageContent>
     </div>
   );

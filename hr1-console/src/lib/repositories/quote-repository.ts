@@ -154,16 +154,23 @@ export async function syncQuoteItems(
 
 /**
  * 次の見積番号を生成（組織内で連番）
+ * 最大の見積番号から次番号を算出する（count ベースだと削除後に重複する）
  */
 export async function generateQuoteNumber(
   client: SupabaseClient,
   organizationId: string
 ): Promise<string> {
-  const { count, error } = await client
+  const { data, error } = await client
     .from("bc_quotes")
-    .select("id", { count: "exact", head: true })
-    .eq("organization_id", organizationId);
+    .select("quote_number")
+    .eq("organization_id", organizationId)
+    .order("quote_number", { ascending: false })
+    .limit(1);
   if (error) throw error;
-  const num = (count ?? 0) + 1;
+  let num = 1;
+  if (data && data.length > 0) {
+    const match = data[0].quote_number.match(/Q-(\d+)/);
+    if (match) num = Number(match[1]) + 1;
+  }
   return `Q-${String(num).padStart(5, "0")}`;
 }

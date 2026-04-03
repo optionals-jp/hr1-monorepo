@@ -4,9 +4,6 @@ import { useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -16,23 +13,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { EditPanel } from "@/components/ui/edit-panel";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { TableSection } from "@/components/layout/table-section";
 import { useToast } from "@/components/ui/toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { leadSourceLabels, leadStatusLabels, leadStatusColors } from "@/lib/constants";
 import { useCrmLeadsPage, useCrmCompanies } from "@/lib/hooks/use-crm";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
-import { convertLead } from "@/lib/repositories/lead-repository";
+import { convertLead, deleteLead } from "@/lib/repositories/lead-repository";
 import { fireTrigger } from "@/lib/automation/engine";
 import { useDefaultPipeline, getStagesFromPipeline } from "@/lib/hooks/use-pipelines";
 import type { BcLead } from "@/types/database";
@@ -47,6 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { ArrowRightLeft, SlidersHorizontal, X, Upload, Trash2 } from "lucide-react";
+import { LeadEditPanel, LeadConvertPanel } from "./lead-edit-panel";
 import { LeadImportDialog } from "./lead-import-dialog";
 import { Pagination, usePagination } from "@/components/crm/pagination";
 import { BulkActionBar, useBulkSelection } from "@/components/crm/bulk-action-bar";
@@ -89,9 +79,8 @@ export default function CrmLeadsPage() {
 
   const handleBulkDelete = async (ids: string[]) => {
     if (!organization) return;
-    const client = getSupabase();
     for (const id of ids) {
-      await client.from("bc_leads").delete().eq("id", id).eq("organization_id", organization.id);
+      await deleteLead(getSupabase(), id, organization.id);
     }
     bulk.clear();
     mutate();
@@ -326,191 +315,28 @@ export default function CrmLeadsPage() {
         ]}
       />
 
-      {/* リード編集パネル */}
-      <EditPanel
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        title={editData.id ? "リード編集" : "リード登録"}
-        onSave={() => handleSave(showToast)}
+      <LeadEditPanel
+        editOpen={editOpen}
+        setEditOpen={setEditOpen}
+        editData={editData}
+        setEditData={setEditData}
+        errors={errors}
+        handleSave={handleSave}
+        handleDelete={handleDelete}
         saving={saving}
-        onDelete={editData.id ? () => handleDelete(showToast) : undefined}
         deleting={deleting}
-        confirmDeleteMessage="このリードを削除しますか？この操作は元に戻せません。"
-      >
-        <div className="space-y-4">
-          <div>
-            <Label>企業名 *</Label>
-            <Input
-              value={editData.name ?? ""}
-              onChange={(e) => setEditData((p) => ({ ...p, name: e.target.value }))}
-              className={errors?.name ? "border-destructive" : ""}
-            />
-            {errors?.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
-          </div>
+        showToast={showToast}
+      />
 
-          <div>
-            <Label>担当者名</Label>
-            <Input
-              value={editData.contact_name ?? ""}
-              onChange={(e) => setEditData((p) => ({ ...p, contact_name: e.target.value }))}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>担当者メール</Label>
-              <Input
-                type="email"
-                value={editData.contact_email ?? ""}
-                onChange={(e) => setEditData((p) => ({ ...p, contact_email: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>担当者電話</Label>
-              <Input
-                value={editData.contact_phone ?? ""}
-                onChange={(e) => setEditData((p) => ({ ...p, contact_phone: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>ソース</Label>
-              <Select
-                value={editData.source ?? "other"}
-                onValueChange={(v) => setEditData((p) => ({ ...p, source: v as BcLead["source"] }))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(leadSourceLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>ステータス</Label>
-              <Select
-                value={editData.status ?? "new"}
-                onValueChange={(v) => setEditData((p) => ({ ...p, status: v as BcLead["status"] }))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(leadStatusLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div>
-            <Label>メモ</Label>
-            <Textarea
-              value={editData.notes ?? ""}
-              onChange={(e) => setEditData((p) => ({ ...p, notes: e.target.value }))}
-              rows={3}
-            />
-          </div>
-        </div>
-      </EditPanel>
-
-      {/* コンバージョンパネル */}
-      <EditPanel
-        open={convertOpen}
-        onOpenChange={setConvertOpen}
-        title="リードをコンバート"
-        onSave={handleConvert}
-        saveLabel={converting ? "変換中..." : "コンバート実行"}
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            このリードから企業・商談を作成します。担当者名がある場合は連絡先も作成されます。
-          </p>
-
-          <div>
-            <Label>企業 *</Label>
-            <Select
-              value={convertData.existingCompanyId || "__new__"}
-              onValueChange={(v) => {
-                if (!v || v === "__new__") {
-                  setConvertData((p) => ({ ...p, existingCompanyId: "" }));
-                } else {
-                  const company = (existingCompanies ?? []).find((c) => c.id === v);
-                  setConvertData((p) => ({
-                    ...p,
-                    existingCompanyId: v,
-                    companyName: company?.name || p.companyName,
-                  }));
-                }
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__new__">＋ 新規企業を作成</SelectItem>
-                {(existingCompanies ?? []).map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {!convertData.existingCompanyId && (
-              <Input
-                className="mt-2"
-                placeholder="企業名を入力"
-                value={convertData.companyName}
-                onChange={(e) => setConvertData((p) => ({ ...p, companyName: e.target.value }))}
-              />
-            )}
-          </div>
-
-          <div>
-            <Label>担当者名</Label>
-            <Input
-              value={convertData.contactName}
-              onChange={(e) => setConvertData((p) => ({ ...p, contactName: e.target.value }))}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>担当者メール</Label>
-              <Input
-                type="email"
-                value={convertData.contactEmail}
-                onChange={(e) => setConvertData((p) => ({ ...p, contactEmail: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>担当者電話</Label>
-              <Input
-                value={convertData.contactPhone}
-                onChange={(e) => setConvertData((p) => ({ ...p, contactPhone: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label>商談名 *</Label>
-            <Input
-              value={convertData.dealTitle}
-              onChange={(e) => setConvertData((p) => ({ ...p, dealTitle: e.target.value }))}
-            />
-          </div>
-        </div>
-      </EditPanel>
+      <LeadConvertPanel
+        convertOpen={convertOpen}
+        setConvertOpen={setConvertOpen}
+        convertData={convertData}
+        setConvertData={setConvertData}
+        existingCompanies={existingCompanies}
+        handleConvert={handleConvert}
+        converting={converting}
+      />
 
       {organization && (
         <LeadImportDialog

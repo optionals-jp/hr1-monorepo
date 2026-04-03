@@ -12,6 +12,11 @@ import { fetchStageHistory } from "@/lib/repositories/crm-repository";
 import { useDefaultPipeline, getStagesFromPipeline } from "@/lib/hooks/use-pipelines";
 import { cn } from "@/lib/utils";
 import { ReportNav } from "@/components/crm/report-nav";
+import {
+  computeStageMetrics,
+  computeConversionRates,
+  computePipelineVelocity,
+} from "@/features/crm/rules";
 import { Clock, TrendingDown, Zap } from "lucide-react";
 
 export default function PipelineReportPage() {
@@ -26,88 +31,20 @@ export default function PipelineReportPage() {
   const openDeals = useMemo(() => (deals ?? []).filter((d) => d.status === "open"), [deals]);
   const wonDeals = useMemo(() => (deals ?? []).filter((d) => d.status === "won"), [deals]);
 
-  // ステージ別の商談数と金額
-  const stageMetrics = useMemo(() => {
-    return stages.map((stage) => {
-      const stageDeals = openDeals.filter(
-        (d) => d.stage_id === stage.id || (!d.stage_id && d.stage === stage.name)
-      );
-      const amount = stageDeals.reduce((sum, d) => sum + (d.amount ?? 0), 0);
-      const weighted = stageDeals.reduce(
-        (sum, d) => sum + (d.amount ?? 0) * ((d.probability ?? 0) / 100),
-        0
-      );
+  const stageMetrics = useMemo(
+    () => computeStageMetrics(stages, openDeals, stageHistory ?? []),
+    [stages, openDeals, stageHistory]
+  );
 
-      // 滞留日数: ステージ変更履歴から平均日数を計算
-      const transitions = (stageHistory ?? []).filter((h) => h.to_stage_id === stage.id);
-      let avgDays = 0;
-      if (transitions.length > 0) {
-        const durations = transitions
-          .map((t) => {
-            const exit = (stageHistory ?? []).find(
-              (h) =>
-                h.deal_id === t.deal_id &&
-                h.from_stage_id === stage.id &&
-                h.changed_at > t.changed_at
-            );
-            if (!exit) return null;
-            return (
-              (new Date(exit.changed_at).getTime() - new Date(t.changed_at).getTime()) /
-              (1000 * 60 * 60 * 24)
-            );
-          })
-          .filter((d): d is number => d !== null);
-        avgDays =
-          durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
-      }
+  const conversionRates = useMemo(
+    () => computeConversionRates(stages, stageMetrics),
+    [stages, stageMetrics]
+  );
 
-      return {
-        stage,
-        count: stageDeals.length,
-        amount,
-        weighted,
-        avgDays: Math.round(avgDays * 10) / 10,
-      };
-    });
-  }, [stages, openDeals, stageHistory]);
-
-  // コンバージョン率: ステージ間の進行率
-  const conversionRates = useMemo(() => {
-    if (stages.length < 2) return [];
-    return stages.slice(0, -1).map((stage, i) => {
-      const nextStage = stages[i + 1];
-      const currentCount = stageMetrics[i]?.count ?? 0;
-      const nextCount = stageMetrics[i + 1]?.count ?? 0;
-      const rate = currentCount > 0 ? Math.round((nextCount / currentCount) * 100) : 0;
-      return {
-        from: stage.name,
-        to: nextStage.name,
-        rate,
-        fromColor: stage.color,
-        toColor: nextStage.color,
-      };
-    });
-  }, [stages, stageMetrics]);
-
-  // パイプライン速度: (商談数 × 平均金額 × 勝率) / 平均商談日数
-  const pipelineVelocity = useMemo(() => {
-    const allDeals = deals ?? [];
-    const closedDeals = allDeals.filter((d) => d.status === "won" || d.status === "lost");
-    const winRate = closedDeals.length > 0 ? wonDeals.length / closedDeals.length : 0;
-    const avgAmount =
-      openDeals.length > 0
-        ? openDeals.reduce((s, d) => s + (d.amount ?? 0), 0) / openDeals.length
-        : 0;
-    const totalAvgDays = stageMetrics.reduce((s, m) => s + m.avgDays, 0) || 1;
-
-    return {
-      dealCount: openDeals.length,
-      avgAmount,
-      winRate: Math.round(winRate * 100),
-      avgDays: Math.round(totalAvgDays),
-      velocity: Math.round((openDeals.length * avgAmount * winRate) / totalAvgDays),
-    };
-  }, [deals, openDeals, wonDeals, stageMetrics]);
+  const pipelineVelocity = useMemo(
+    () => computePipelineVelocity(deals ?? [], openDeals, wonDeals, stageMetrics),
+    [deals, openDeals, wonDeals, stageMetrics]
+  );
 
   return (
     <div className="flex flex-col bg-white">
