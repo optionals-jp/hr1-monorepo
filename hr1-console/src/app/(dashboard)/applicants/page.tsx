@@ -3,8 +3,7 @@
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField, FormInput } from "@/components/ui/form-field";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -40,6 +39,7 @@ import { TableSection } from "@/components/layout/table-section";
 import { SlidersHorizontal, X, Download, Upload } from "lucide-react";
 import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
 import { ApplicantImportDialog } from "./applicant-import-dialog";
 
 const addTabs: EditPanelTab[] = [
@@ -144,11 +144,13 @@ export default function ApplicantsPage() {
               <TableHead>名前</TableHead>
               <TableHead>メールアドレス</TableHead>
               <TableHead>採用区分</TableHead>
+              <TableHead>ステータス</TableHead>
+              <TableHead>登録日</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableEmptyState
-              colSpan={3}
+              colSpan={5}
               isLoading={h.isLoading}
               isEmpty={h.filtered.length === 0}
               emptyMessage="応募者がいません"
@@ -179,6 +181,16 @@ export default function ApplicantsPage() {
                       <span className="text-muted-foreground text-sm">-</span>
                     )}
                   </TableCell>
+                  <TableCell>
+                    {applicant.invited_at ? (
+                      <Badge variant="secondary">招待済み</Badge>
+                    ) : (
+                      <Badge variant="outline">未招待</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {format(new Date(applicant.created_at), "yyyy/MM/dd")}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableEmptyState>
@@ -207,33 +219,27 @@ export default function ApplicantsPage() {
       >
         {h.addTab === "basic" && (
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>メールアドレス *</Label>
-              <Input
-                type="email"
-                value={h.newEmail}
-                onChange={(e) => h.setNewEmail(e.target.value)}
-                placeholder="example@email.com"
-                className={h.formErrors.email ? "border-red-500" : ""}
-              />
-              {h.formErrors.email && <p className="text-sm text-red-500">{h.formErrors.email}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label>名前</Label>
-              <Input
-                value={h.newName}
-                onChange={(e) => h.setNewName(e.target.value)}
-                placeholder="山田 花子"
-                className={h.formErrors.name ? "border-red-500" : ""}
-              />
-              {h.formErrors.name && <p className="text-sm text-red-500">{h.formErrors.name}</p>}
-            </div>
+            <FormInput
+              label="メールアドレス"
+              required
+              type="email"
+              value={h.newEmail}
+              onChange={(e) => h.setNewEmail(e.target.value)}
+              placeholder="example@email.com"
+              error={h.formErrors.email}
+            />
+            <FormInput
+              label="名前"
+              value={h.newName}
+              onChange={(e) => h.setNewName(e.target.value)}
+              placeholder="山田 花子"
+              error={h.formErrors.name}
+            />
           </div>
         )}
         {h.addTab === "hiring" && (
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>採用区分</Label>
+            <FormField label="採用区分">
               <Select value={h.newHiringType} onValueChange={(v) => h.setNewHiringType(v ?? "")}>
                 <SelectTrigger>
                   <SelectValue placeholder="未設定">
@@ -247,10 +253,9 @@ export default function ApplicantsPage() {
                   <SelectItem value="mid_career">中途採用</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </FormField>
             {h.newHiringType === "new_grad" && (
-              <div className="space-y-2">
-                <Label>卒業年</Label>
+              <FormField label="卒業年">
                 <Select value={h.newGradYear} onValueChange={(v) => h.setNewGradYear(v ?? "")}>
                   <SelectTrigger>
                     <SelectValue placeholder="選択してください">
@@ -265,7 +270,7 @@ export default function ApplicantsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+              </FormField>
             )}
           </div>
         )}

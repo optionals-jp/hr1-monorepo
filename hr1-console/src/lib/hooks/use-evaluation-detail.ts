@@ -335,33 +335,28 @@ export async function loadEvaluationTabData(
   if (evalData && evalData.length > 0) {
     const templateIds = [...new Set(evalData.map((e) => e.template_id))];
     const evalIds = evalData.map((e) => e.id);
-    const evaluatorIds = [...new Set(evalData.map((e) => e.evaluator_id))];
 
-    const [{ data: crData }, { data: scoreData }, { data: profiles }, { data: tpls }] =
-      await Promise.all([
-        repo.fetchCriteriaByTemplates(client, templateIds),
-        repo.fetchScores(client, evalIds),
-        repo.fetchProfiles(client, evaluatorIds),
-        repo.fetchTemplateTitles(client, templateIds),
-      ]);
+    const [{ data: crData }, { data: scoreData }] = await Promise.all([
+      repo.fetchCriteriaByTemplates(client, templateIds),
+      repo.fetchScores(client, evalIds),
+    ]);
 
-    const nameMap = new Map<string, string>();
-    for (const p of profiles ?? []) {
-      nameMap.set(p.id, p.display_name ?? p.email);
-    }
-
-    const titleMap = new Map<string, string>();
-    for (const t of tpls ?? []) {
-      titleMap.set(t.id, t.title);
-    }
-
-    evaluations = evalData.map((e) => ({
-      ...e,
-      evaluator_name: nameMap.get(e.evaluator_id) ?? e.evaluator_id,
-      scores: (scoreData ?? []).filter((s) => s.evaluation_id === e.id),
-      criteria: (crData ?? []).filter((c) => c.template_id === e.template_id),
-      template_title: titleMap.get(e.template_id) ?? "",
-    }));
+    evaluations = evalData.map((e) => {
+      const ev = e as Evaluation & {
+        evaluation_templates?: { title: string };
+        evaluator?: { display_name: string | null; email: string };
+      };
+      return {
+        ...e,
+        evaluator_name: ev.evaluator?.display_name ?? ev.evaluator?.email ?? e.evaluator_id,
+        scores: (scoreData ?? []).filter((s) => s.evaluation_id === e.id),
+        criteria: (crData ?? []).filter((c) => c.template_id === e.template_id),
+        template_title:
+          ev.evaluation_templates?.title ??
+          templates.find((t) => t.id === e.template_id)?.title ??
+          e.template_id,
+      };
+    });
   }
 
   return { templates, evaluations };
@@ -387,6 +382,7 @@ export async function submitEvaluation(
   orgId: string,
   userId: string,
   data: {
+    evaluationId?: string;
     templateId: string;
     targetUserId: string;
     applicationId?: string;
@@ -397,25 +393,38 @@ export async function submitEvaluation(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const client = getSupabase();
-    const evalId = `eval-${Date.now()}`;
+    const isUpdate = !!data.evaluationId;
+    const evalId = data.evaluationId ?? `eval-${Date.now()}`;
 
-    const { error: evalError } = await repo.insertEvaluation(client, {
-      id: evalId,
-      organization_id: orgId,
-      template_id: data.templateId,
-      target_user_id: data.targetUserId,
-      evaluator_id: userId,
-      application_id: data.applicationId ?? null,
-      status: data.status,
-      overall_comment: data.overallComment || null,
-      submitted_at: data.status === "submitted" ? new Date().toISOString() : null,
-    });
-    if (evalError) throw evalError;
+    if (isUpdate) {
+      const { error: evalError } = await repo.updateEvaluation(client, evalId, orgId, {
+        status: data.status,
+        overall_comment: data.overallComment || null,
+        submitted_at: data.status === "submitted" ? new Date().toISOString() : null,
+      });
+      if (evalError) throw evalError;
+
+      const { error: delError } = await repo.deleteScoresByEvaluation(client, evalId);
+      if (delError) throw delError;
+    } else {
+      const { error: evalError } = await repo.insertEvaluation(client, {
+        id: evalId,
+        organization_id: orgId,
+        template_id: data.templateId,
+        target_user_id: data.targetUserId,
+        evaluator_id: userId,
+        application_id: data.applicationId ?? null,
+        status: data.status,
+        overall_comment: data.overallComment || null,
+        submitted_at: data.status === "submitted" ? new Date().toISOString() : null,
+      });
+      if (evalError) throw evalError;
+    }
 
     const scoreRows = data.scores
       .filter((s) => s.score !== null || s.value || s.comment)
       .map((s, i) => ({
-        id: `evalscore-${evalId}-${i}`,
+        id: `evalscore-${evalId}-${i}-${Date.now()}`,
         evaluation_id: evalId,
         criterion_id: s.criterion_id,
         score: s.score,

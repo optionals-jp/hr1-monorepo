@@ -36,6 +36,12 @@ export interface Profile {
   registered_city: string | null;
   registered_street_address: string | null;
   registered_building: string | null;
+  school_name: string | null;
+  school_faculty: string | null;
+  work_history: string | null;
+  skills: string | null;
+  self_introduction: string | null;
+  invited_at: string | null;
   created_at: string;
 }
 

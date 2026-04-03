@@ -35,7 +35,7 @@ export function TabBar({ tabs, activeTab, onTabChange, trailing }: TabBarProps) 
             onClick={() => onTabChange(tab.value)}
             className={cn(
               "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors flex items-center gap-1.5",
-              isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
             )}
           >
             {Icon && <Icon className="h-4 w-4" />}
