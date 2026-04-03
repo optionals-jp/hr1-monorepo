@@ -116,9 +116,23 @@ async function executeAction(
 
     case "send_notification": {
       if (!context.userId) break;
+      let targetUserId = context.userId;
+      if (params.notify_user_id) {
+        // 指定ユーザーが同一組織に属するか検証
+        const { data: targetProfile } = await client
+          .from("profiles")
+          .select("id")
+          .eq("id", String(params.notify_user_id))
+          .eq("organization_id", context.organizationId)
+          .maybeSingle();
+        if (!targetProfile) {
+          throw new Error("通知先ユーザーが同一組織に見つかりません");
+        }
+        targetUserId = targetProfile.id;
+      }
       const { error } = await client.from("notifications").insert({
         organization_id: context.organizationId,
-        user_id: params.notify_user_id ? String(params.notify_user_id) : context.userId,
+        user_id: targetUserId,
         title: String(params.title ?? "CRM通知"),
         body: String(params.body ?? ""),
         type: "crm_automation",
@@ -130,9 +144,16 @@ async function executeAction(
     case "update_field": {
       const table = getTableForEntityType(context.entityType);
       if (!table || !params.field) break;
+      const fieldName = String(params.field);
+      const allowed = ALLOWED_UPDATE_FIELDS[context.entityType];
+      if (!allowed?.has(fieldName)) {
+        throw new Error(
+          `Field "${fieldName}" is not allowed for update_field action on ${context.entityType}`
+        );
+      }
       const { error } = await client
         .from(table)
-        .update({ [String(params.field)]: params.value })
+        .update({ [fieldName]: params.value })
         .eq("id", context.entityId)
         .eq("organization_id", context.organizationId);
       if (error) throw error;
@@ -141,21 +162,101 @@ async function executeAction(
 
     case "send_webhook": {
       if (!params.url) break;
-      await fetch(String(params.url), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          trigger: context.triggerType,
-          entity_type: context.entityType,
-          entity_id: context.entityId,
-          data: context.entityData,
-          timestamp: new Date().toISOString(),
-        }),
-      });
+      const webhookUrl = String(params.url);
+      if (!isAllowedWebhookUrl(webhookUrl)) {
+        throw new Error(
+          "Webhook URL must use HTTPS and must not target private/internal addresses"
+        );
+      }
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10_000);
+      try {
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            trigger: context.triggerType,
+            entity_type: context.entityType,
+            entity_id: context.entityId,
+            data: context.entityData,
+            timestamp: new Date().toISOString(),
+          }),
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
       break;
     }
   }
 }
+
+/**
+ * Webhook URL のバリデーション
+ * HTTPS のみ許可、プライベート IP レンジ・ローカルホストをブロック
+ */
+function isAllowedWebhookUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return false;
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "[::1]" ||
+      hostname.endsWith(".local") ||
+      hostname.endsWith(".internal") ||
+      hostname === "metadata.google.internal" ||
+      hostname.startsWith("10.") ||
+      hostname.startsWith("192.168.") ||
+      hostname.startsWith("169.254.") ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
+    ) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * update_field アクションで更新を許可するフィールドのホワイトリスト
+ * セキュリティ上、id / organization_id 等のシステムカラムは変更不可
+ */
+const ALLOWED_UPDATE_FIELDS: Record<string, Set<string>> = {
+  deal: new Set([
+    "status",
+    "stage",
+    "stage_id",
+    "probability",
+    "amount",
+    "assigned_to",
+    "expected_close_date",
+    "title",
+    "description",
+    "lost_reason",
+  ]),
+  company: new Set([
+    "name",
+    "industry",
+    "phone",
+    "website",
+    "address",
+    "employee_count",
+    "description",
+  ]),
+  contact: new Set([
+    "department",
+    "position",
+    "phone",
+    "email",
+    "first_name",
+    "last_name",
+    "description",
+  ]),
+  lead: new Set(["status", "source", "assigned_to", "score", "title", "description"]),
+};
 
 function getTableForEntityType(entityType: string): string | null {
   switch (entityType) {

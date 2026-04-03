@@ -6,7 +6,7 @@ import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repo from "@/lib/repositories/pipeline-repository";
 import type { CrmPipeline, CrmPipelineStage } from "@/types/database";
-import { dealStageLabels, dealStageProbability } from "@/lib/constants/crm";
+import { dealStageLabels, dealStageProbability } from "@/lib/constants";
 
 /**
  * テナントの全パイプライン（ステージ含む）を取得

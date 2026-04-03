@@ -21,7 +21,7 @@ import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as templateRepo from "@/lib/repositories/email-template-repository";
-import { emailTemplateCategoryLabels } from "@/lib/constants/crm";
+import { emailTemplateCategoryLabels } from "@/lib/constants";
 import {
   Table,
   TableBody,

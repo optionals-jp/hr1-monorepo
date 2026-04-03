@@ -15,18 +15,27 @@ import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { TableSection } from "@/components/layout/table-section";
+import { useToast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
 import { useCrmContacts } from "@/lib/hooks/use-crm";
 import { SavedViewSelector } from "@/components/crm/saved-view-selector";
 import { applyFilters, applySort } from "@/lib/hooks/use-saved-views";
 import type { CrmSavedViewConfig } from "@/types/database";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, Trash2 } from "lucide-react";
+import { Pagination, usePagination } from "@/components/crm/pagination";
+import { BulkActionBar, useBulkSelection } from "@/components/crm/bulk-action-bar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useOrg } from "@/lib/org-context";
+import { getSupabase } from "@/lib/supabase/browser";
+import { deleteContact } from "@/lib/repositories/crm-repository";
 
 export default function CrmContactsPage() {
   const router = useRouter();
+  const { showToast } = useToast();
+  const { organization } = useOrg();
   const [search, setSearch] = useState("");
 
-  const { data: contacts, error } = useCrmContacts();
+  const { data: contacts, error, mutate } = useCrmContacts();
 
   const [viewConfig, setViewConfig] = useState<CrmSavedViewConfig>({});
 
@@ -64,6 +73,21 @@ export default function CrmContactsPage() {
     return result as unknown as typeof filtered;
   }, [filtered, viewConfig.filters, viewConfig.sort]);
 
+  const { page, pageSize, totalCount, paginatedItems, onPageChange, onPageSizeChange } =
+    usePagination(viewFiltered);
+  const bulk = useBulkSelection(paginatedItems);
+
+  const handleBulkDelete = async (ids: string[]) => {
+    if (!organization) return;
+    const client = getSupabase();
+    for (const id of ids) {
+      await deleteContact(client, id, organization.id);
+    }
+    bulk.clear();
+    mutate();
+    showToast(`${ids.length}件の連絡先を削除しました`);
+  };
+
   return (
     <div className="flex flex-col">
       <PageHeader title="連絡先" sticky={false} border={false} />
@@ -87,6 +111,13 @@ export default function CrmContactsPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={bulk.isAllSelected}
+                  indeterminate={bulk.isIndeterminate}
+                  onCheckedChange={() => bulk.toggleAll()}
+                />
+              </TableHead>
               <TableHead>氏名</TableHead>
               <TableHead>企業</TableHead>
               <TableHead>部署・役職</TableHead>
@@ -96,17 +127,23 @@ export default function CrmContactsPage() {
           </TableHeader>
           <TableBody>
             <TableEmptyState
-              colSpan={5}
+              colSpan={6}
               isLoading={!contacts}
               isEmpty={viewFiltered.length === 0}
               emptyMessage="連絡先が見つかりません"
             >
-              {viewFiltered.map((c) => (
+              {paginatedItems.map((c) => (
                 <TableRow
                   key={c.id}
                   className="cursor-pointer"
                   onClick={() => router.push(`/crm/contacts/${c.id}`)}
                 >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={bulk.isSelected(c.id)}
+                      onCheckedChange={() => bulk.toggle(c.id)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">
                     {c.last_name} {c.first_name ?? ""}
                   </TableCell>
@@ -121,7 +158,30 @@ export default function CrmContactsPage() {
             </TableEmptyState>
           </TableBody>
         </Table>
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+        />
       </TableSection>
+
+      <BulkActionBar
+        selectedIds={bulk.selectedIds}
+        totalCount={paginatedItems.length}
+        onClearSelection={bulk.clear}
+        actions={[
+          {
+            label: "一括削除",
+            icon: <Trash2 className="size-4 mr-1" />,
+            variant: "destructive",
+            confirm: true,
+            confirmMessage: `選択した${bulk.selectedIds.length}件の連絡先を削除しますか？`,
+            onClick: handleBulkDelete,
+          },
+        ]}
+      />
     </div>
   );
 }

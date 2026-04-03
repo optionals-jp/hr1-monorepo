@@ -6,7 +6,7 @@ import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { leadSourceLabels, leadStatusLabels, leadStatusColors } from "@/lib/constants/crm";
+import { leadSourceLabels, leadStatusLabels, leadStatusColors } from "@/lib/constants";
 import { useCrmLead, useCrmLeadActivities } from "@/lib/hooks/use-crm";
 import { ActivityInputBar } from "@/components/crm/activity-input-bar";
 import { ActivityTimeline } from "@/components/crm/activity-timeline";

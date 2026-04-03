@@ -4,9 +4,7 @@ import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -16,7 +14,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { EditPanel } from "@/components/ui/edit-panel";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
@@ -31,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { dealStatusLabels, dealStatusColors } from "@/lib/constants";
 import { useRouter } from "next/navigation";
-import { useCrmDealsPage, useCrmCompanies, useCrmContacts } from "@/lib/hooks/use-crm";
+import { useCrmDealsPage, useCrmCompanies, useCrmContacts, removeDeal } from "@/lib/hooks/use-crm";
 import { DealKanban } from "@/components/crm/deal-kanban";
 import { getSupabase } from "@/lib/supabase/browser";
 import { updateDeal } from "@/lib/repositories/crm-repository";
@@ -48,9 +45,13 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { BcDeal, CrmSavedViewConfig } from "@/types/database";
-import { LayoutList, Kanban, Settings, SlidersHorizontal, X } from "lucide-react";
+import type { CrmSavedViewConfig } from "@/types/database";
+import { LayoutList, Kanban, Settings, SlidersHorizontal, X, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { Pagination, usePagination } from "@/components/crm/pagination";
+import { BulkActionBar, useBulkSelection } from "@/components/crm/bulk-action-bar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { DealEditPanel } from "./deal-edit-panel";
 
 type ViewMode = "table" | "kanban";
 
@@ -89,10 +90,6 @@ export default function CrmDealsPage() {
   const [kanbanPipelineId, setKanbanPipelineId] = useState<string | null>(null);
   const kanbanPipeline = pipelines?.find((p) => p.id === kanbanPipelineId) ?? defaultPipeline;
   const kanbanStages = getStagesFromPipeline(kanbanPipeline);
-
-  // 編集フォーム用: editData.pipeline_id に連動したステージ
-  const editPipeline = pipelines?.find((p) => p.id === editData.pipeline_id) ?? defaultPipeline;
-  const editStages = getStagesFromPipeline(editPipeline);
 
   const openCreate = () => {
     openCreateBase();
@@ -133,6 +130,20 @@ export default function CrmDealsPage() {
     }
     return result as unknown as typeof filtered;
   }, [filtered, viewConfig.filters, viewConfig.sort]);
+
+  const { page, pageSize, totalCount, paginatedItems, onPageChange, onPageSizeChange } =
+    usePagination(viewFiltered);
+  const bulk = useBulkSelection(paginatedItems);
+
+  const handleBulkDelete = async (ids: string[]) => {
+    if (!organization) return;
+    for (const id of ids) {
+      await removeDeal(id, organization.id);
+    }
+    bulk.clear();
+    mutate();
+    showToast(`${ids.length}件の商談を削除しました`);
+  };
 
   const handleStageChange = async (dealId: string, newStageId: string, newProbability: number) => {
     if (!organization) return;
@@ -276,6 +287,13 @@ export default function CrmDealsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={bulk.isAllSelected}
+                      indeterminate={bulk.isIndeterminate}
+                      onCheckedChange={() => bulk.toggleAll()}
+                    />
+                  </TableHead>
                   <TableHead>商談名</TableHead>
                   <TableHead>企業</TableHead>
                   <TableHead>ステージ</TableHead>
@@ -287,17 +305,23 @@ export default function CrmDealsPage() {
               </TableHeader>
               <TableBody>
                 <TableEmptyState
-                  colSpan={7}
+                  colSpan={8}
                   isLoading={!deals}
                   isEmpty={viewFiltered.length === 0}
                   emptyMessage="商談が見つかりません"
                 >
-                  {viewFiltered.map((deal) => (
+                  {paginatedItems.map((deal) => (
                     <TableRow
                       key={deal.id}
                       className="cursor-pointer"
                       onClick={() => router.push(`/crm/deals/${deal.id}`)}
                     >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={bulk.isSelected(deal.id)}
+                          onCheckedChange={() => bulk.toggle(deal.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{deal.title}</TableCell>
                       <TableCell>{deal.bc_companies?.name ?? "—"}</TableCell>
                       <TableCell>
@@ -326,7 +350,30 @@ export default function CrmDealsPage() {
                 </TableEmptyState>
               </TableBody>
             </Table>
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalCount={totalCount}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+            />
           </TableSection>
+
+          <BulkActionBar
+            selectedIds={bulk.selectedIds}
+            totalCount={paginatedItems.length}
+            onClearSelection={bulk.clear}
+            actions={[
+              {
+                label: "一括削除",
+                icon: <Trash2 className="size-4 mr-1" />,
+                variant: "destructive",
+                confirm: true,
+                confirmMessage: `選択した${bulk.selectedIds.length}件の商談を削除しますか？`,
+                onClick: handleBulkDelete,
+              },
+            ]}
+          />
         </>
       )}
 
@@ -363,212 +410,22 @@ export default function CrmDealsPage() {
         </>
       )}
 
-      <EditPanel
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        title={editData.id ? "商談編集" : "商談登録"}
-        onSave={() => handleSave(showToast)}
+      <DealEditPanel
+        editOpen={editOpen}
+        setEditOpen={setEditOpen}
+        editData={editData}
+        setEditData={setEditData}
+        errors={errors}
+        handleSave={handleSave}
+        handleDelete={handleDelete}
         saving={saving}
-        onDelete={editData.id ? () => handleDelete(showToast) : undefined}
         deleting={deleting}
-        confirmDeleteMessage="この商談を削除しますか？関連する見積書・連絡先の紐付けも削除されます。"
-      >
-        <div className="space-y-4">
-          <div>
-            <Label>商談名 *</Label>
-            <Input
-              value={editData.title ?? ""}
-              onChange={(e) => setEditData((p) => ({ ...p, title: e.target.value }))}
-              className={errors?.title ? "border-destructive" : ""}
-            />
-            {errors?.title && <p className="text-xs text-destructive mt-1">{errors.title}</p>}
-          </div>
-
-          <div>
-            <Label>企業</Label>
-            <Select
-              value={editData.company_id ?? ""}
-              onValueChange={(v) => setEditData((p) => ({ ...p, company_id: v || null }))}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="企業を選択" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">未選択</SelectItem>
-                {(companies ?? []).map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label>連絡先</Label>
-            <Select
-              value={editData.contact_id ?? ""}
-              onValueChange={(v) => setEditData((p) => ({ ...p, contact_id: v || null }))}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="連絡先を選択" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">未選択</SelectItem>
-                {(contacts ?? []).map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.last_name} {c.first_name ?? ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {(pipelines ?? []).length > 1 && (
-            <div>
-              <Label>パイプライン</Label>
-              <Select
-                value={editData.pipeline_id ?? defaultPipeline?.id ?? ""}
-                onValueChange={(v) => {
-                  const selectedPipeline = pipelines?.find((p) => p.id === v);
-                  const newStages = getStagesFromPipeline(selectedPipeline ?? null);
-                  const firstStage = newStages[0];
-                  setEditData((p) => ({
-                    ...p,
-                    pipeline_id: v,
-                    stage_id: firstStage?.id ?? p.stage_id,
-                    stage: firstStage?.name ?? p.stage,
-                    probability: firstStage?.probability_default ?? p.probability,
-                  }));
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(pipelines ?? []).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>ステージ</Label>
-              <Select
-                value={editData.stage_id ?? editData.stage ?? editStages[0]?.id ?? ""}
-                onValueChange={(v) => {
-                  const selectedStage = editStages.find((s) => s.id === v);
-                  const newStage = selectedStage?.name ?? v;
-                  setEditData(
-                    (p) =>
-                      ({
-                        ...p,
-                        stage_id: v,
-                        stage: newStage,
-                        probability: selectedStage?.probability_default ?? p.probability,
-                      }) as Partial<BcDeal>
-                  );
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {editStages.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>ステータス</Label>
-              <Select
-                value={editData.status ?? "open"}
-                onValueChange={(v) =>
-                  setEditData((p) => ({
-                    ...p,
-                    status: v as "open" | "won" | "lost",
-                  }))
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(dealStatusLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div>
-            <Label>確度（{editData.probability ?? 0}%）</Label>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={5}
-              value={editData.probability ?? 0}
-              onChange={(e) => setEditData((p) => ({ ...p, probability: Number(e.target.value) }))}
-              className="w-full accent-primary"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground mt-1">
-              <span>0%</span>
-              <span>50%</span>
-              <span>100%</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>金額</Label>
-              <Input
-                type="number"
-                value={editData.amount ?? ""}
-                onChange={(e) =>
-                  setEditData((p) => ({
-                    ...p,
-                    amount: e.target.value ? Number(e.target.value) : null,
-                  }))
-                }
-                placeholder="¥"
-              />
-            </div>
-
-            <div>
-              <Label>見込み日</Label>
-              <Input
-                type="date"
-                value={editData.expected_close_date ?? ""}
-                onChange={(e) =>
-                  setEditData((p) => ({ ...p, expected_close_date: e.target.value }))
-                }
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label>説明</Label>
-            <Textarea
-              value={editData.description ?? ""}
-              onChange={(e) => setEditData((p) => ({ ...p, description: e.target.value }))}
-              rows={3}
-            />
-          </div>
-        </div>
-      </EditPanel>
+        showToast={showToast}
+        companies={companies}
+        contacts={contacts}
+        pipelines={pipelines}
+        defaultPipeline={defaultPipeline}
+      />
     </div>
   );
 }

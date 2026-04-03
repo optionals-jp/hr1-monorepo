@@ -1,5 +1,78 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { BcCompany, BcContact, BcDeal, BcActivity, BcCard, BcTodo } from "@/types/database";
+import type {
+  BcCompany,
+  BcContact,
+  BcDeal,
+  BcActivity,
+  BcCard,
+  BcTodo,
+  CrmDealStageHistory,
+} from "@/types/database";
+
+// --- Stage History ---
+
+export async function createStageHistory(
+  client: SupabaseClient,
+  data: {
+    organization_id: string;
+    deal_id: string;
+    from_stage_id: string | null;
+    to_stage_id: string;
+    from_stage_name: string | null;
+    to_stage_name: string;
+    changed_by: string | null;
+  }
+) {
+  const { error } = await client.from("crm_deal_stage_history").insert(data);
+  if (error) throw error;
+}
+
+export async function fetchStageHistory(
+  client: SupabaseClient,
+  organizationId: string,
+  dealId?: string
+) {
+  let query = client
+    .from("crm_deal_stage_history")
+    .select("*, profiles:changed_by(display_name, email)")
+    .eq("organization_id", organizationId)
+    .order("changed_at", { ascending: false });
+  if (dealId) {
+    query = query.eq("deal_id", dealId);
+  }
+  const { data, error } = await query.limit(500);
+  if (error) throw error;
+  return (data ?? []) as CrmDealStageHistory[];
+}
+
+// --- Dashboard aggregation ---
+
+export async function fetchRecentActivities(
+  client: SupabaseClient,
+  organizationId: string,
+  limit = 10
+) {
+  const { data, error } = await client
+    .from("bc_activities")
+    .select("*, profiles:created_by(display_name, email)")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as BcActivity[];
+}
+
+export async function fetchUpcomingTodos(client: SupabaseClient, organizationId: string) {
+  const { data, error } = await client
+    .from("bc_todos")
+    .select("*, profiles:assigned_to(display_name, email)")
+    .eq("organization_id", organizationId)
+    .eq("is_completed", false)
+    .order("due_date", { ascending: true })
+    .limit(10);
+  if (error) throw error;
+  return (data ?? []) as BcTodo[];
+}
 
 // --- Dashboard ---
 
@@ -121,6 +194,15 @@ export async function fetchContactsByCompany(
     .order("last_name");
   if (error) throw error;
   return (data ?? []) as BcContact[];
+}
+
+export async function deleteContact(client: SupabaseClient, id: string, organizationId: string) {
+  const { error } = await client
+    .from("bc_contacts")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+  if (error) throw error;
 }
 
 // --- Deals ---

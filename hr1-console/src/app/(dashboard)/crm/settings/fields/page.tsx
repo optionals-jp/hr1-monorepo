@@ -21,11 +21,7 @@ import { useOrg } from "@/lib/org-context";
 import { useCrmFieldDefinitions } from "@/lib/hooks/use-crm-fields";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as fieldRepo from "@/lib/repositories/crm-field-repository";
-import {
-  crmFieldTypeLabels,
-  crmEntityTypeLabels,
-  fieldTypeNeedsOptions,
-} from "@/lib/constants/crm";
+import { crmFieldTypeLabels, crmEntityTypeLabels, fieldTypeNeedsOptions } from "@/lib/constants";
 import {
   Table,
   TableBody,

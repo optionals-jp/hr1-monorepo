@@ -23,7 +23,7 @@ import {
   useCrmDealTodos,
   useCrmQuotesByDeal,
 } from "@/lib/hooks/use-crm";
-import { quoteStatusLabels, quoteStatusColors } from "@/lib/constants/crm";
+import { quoteStatusLabels, quoteStatusColors } from "@/lib/constants";
 import { FileText, Plus, CheckCircle2, Circle, Clock, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePipelines, getStagesFromPipeline } from "@/lib/hooks/use-pipelines";

@@ -132,13 +132,9 @@ export async function syncQuoteItems(
     .single();
   if (quoteErr || !quote) throw quoteErr ?? new Error("見積書が見つかりません");
 
-  // 1. 既存明細IDを取得
-  const { data: existing, error: fetchErr } = await client
-    .from("bc_quote_items")
-    .select("id")
-    .eq("quote_id", quoteId);
-  if (fetchErr) throw fetchErr;
-  const existingIds = new Set((existing ?? []).map((e: { id: string }) => e.id));
+  // 1. 既存明細を削除
+  const { error: deleteErr } = await client.from("bc_quote_items").delete().eq("quote_id", quoteId);
+  if (deleteErr) throw deleteErr;
 
   // 2. 新しい明細を挿入
   if (items.length > 0) {
@@ -154,29 +150,27 @@ export async function syncQuoteItems(
     const { error: insertErr } = await client.from("bc_quote_items").insert(rows);
     if (insertErr) throw insertErr;
   }
-
-  // 3. 挿入成功後に旧明細を削除（データ消失リスクを排除）
-  if (existingIds.size > 0) {
-    const { error: deleteErr } = await client
-      .from("bc_quote_items")
-      .delete()
-      .in("id", Array.from(existingIds));
-    if (deleteErr) throw deleteErr;
-  }
 }
 
 /**
  * 次の見積番号を生成（組織内で連番）
+ * 最大の見積番号から次番号を算出する（count ベースだと削除後に重複する）
  */
 export async function generateQuoteNumber(
   client: SupabaseClient,
   organizationId: string
 ): Promise<string> {
-  const { count, error } = await client
+  const { data, error } = await client
     .from("bc_quotes")
-    .select("id", { count: "exact", head: true })
-    .eq("organization_id", organizationId);
+    .select("quote_number")
+    .eq("organization_id", organizationId)
+    .order("quote_number", { ascending: false })
+    .limit(1);
   if (error) throw error;
-  const num = (count ?? 0) + 1;
+  let num = 1;
+  if (data && data.length > 0) {
+    const match = data[0].quote_number.match(/Q-(\d+)/);
+    if (match) num = Number(match[1]) + 1;
+  }
   return `Q-${String(num).padStart(5, "0")}`;
 }
