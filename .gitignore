@@ -50,6 +50,15 @@ app.*.map.json
 **/.next/
 **/out/
 
+# MCP (contains credentials)
+.mcp.json
+
+# Python
+__pycache__/
+*.egg-info/
+dist/
+.venv/
+
 # Misc
 *.log
 *.pyc
@@ -57,4 +66,5 @@ app.*.map.json
 *.class
 .env
 .env.*
+!.env.example
 .vercel

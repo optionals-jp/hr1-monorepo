@@ -1,0 +1,17 @@
+[project]
+name = "hr1-mcp"
+version = "0.1.0"
+description = "HR1 MCP Server - テナント企業向けHRデータアクセス"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp[cli]>=1.0.0",
+    "supabase>=2.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+hr1-mcp = "hr1_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
