@@ -237,6 +237,116 @@ function LeftPanel() {
   );
 }
 
+/* ─── OTP Verification Screen ─── */
+function OtpVerification({
+  email,
+  onVerified,
+  onBack,
+}: {
+  email: string;
+  onVerified: () => void;
+  onBack: () => void;
+}) {
+  const [otp, setOtp] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleVerify = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (otp.length !== 6) {
+      setError("6桁のコードを入力してください");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const supabase = getSupabase();
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: "signup",
+      });
+
+      if (verifyError) {
+        setError("コードが正しくありません。もう一度お試しください。");
+        return;
+      }
+
+      onVerified();
+    } catch {
+      setError("予期しないエラーが発生しました。");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-1 flex-col justify-center px-6 py-12 sm:px-12 lg:px-16 xl:px-24">
+      <div className="mx-auto w-full max-w-lg">
+        <button
+          onClick={onBack}
+          className="mb-6 inline-flex items-center gap-1.5 text-sm text-gray-400 transition hover:text-gray-600"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          戻る
+        </button>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+          メールアドレスの確認
+        </h1>
+        <p className="mt-2 text-sm text-gray-500">
+          <span className="font-medium text-gray-700">{email}</span>{" "}
+          に送信された6桁の確認コードを入力してください。
+        </p>
+
+        {error && (
+          <div className="mt-6 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleVerify} className="mt-8 space-y-6">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+              確認コード<span className="ml-0.5 text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="000000"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+              className="block w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-center text-2xl font-bold tracking-[0.5em] text-gray-900 shadow-sm outline-none transition placeholder:text-gray-300 focus:border-red-400 focus:ring-2 focus:ring-red-100"
+              autoComplete="one-time-code"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={submitting || otp.length !== 6}
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-red-600 to-red-500 text-sm font-semibold text-white shadow-lg shadow-red-600/25 transition-all hover:shadow-xl hover:shadow-red-600/30 disabled:opacity-60 disabled:shadow-none sm:h-13"
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                確認中...
+              </>
+            ) : (
+              <>
+                確認する
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Signup Form ─── */
 function SignupForm() {
   const router = useRouter();
@@ -255,6 +365,7 @@ function SignupForm() {
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [step, setStep] = useState<"form" | "otp">("form");
 
   const updateField = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -287,7 +398,7 @@ function SignupForm() {
     try {
       const supabase = getSupabase();
 
-      // 1. Create auth user
+      // 1. ユーザー作成（メール確認コードが送信される）
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -313,67 +424,53 @@ function SignupForm() {
         return;
       }
 
-      // 2. Create organization
-      const { data: org, error: orgError } = await supabase
-        .from("organizations")
-        .insert({
-          name: formData.companyName,
-          industry: formData.industry,
-          employee_count: formData.employeeCount,
-        })
-        .select("id")
-        .single();
-
-      if (orgError) {
-        setServerError("組織の作成に失敗しました: " + orgError.message);
-        return;
-      }
-
-      // 3. Create profile
-      const { error: profileError } = await supabase.from("profiles").upsert({
-        id: authData.user.id,
-        email: formData.email,
-        display_name: `${formData.lastName} ${formData.firstName}`,
-        phone: formData.phone,
-        role: "admin",
-      });
-
-      if (profileError) {
-        setServerError("プロフィールの作成に失敗しました: " + profileError.message);
-        return;
-      }
-
-      // 4. Link user to organization
-      const { error: linkError } = await supabase.from("user_organizations").insert({
-        user_id: authData.user.id,
-        organization_id: org.id,
-      });
-
-      if (linkError) {
-        setServerError("組織への紐付けに失敗しました: " + linkError.message);
-        return;
-      }
-
-      // 5. Sign in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (signInError) {
-        // Signup succeeded but auto-login failed — redirect to login
-        router.push("/login");
-        return;
-      }
-
-      // Success — redirect to dashboard
-      router.push("/");
+      // 2. OTP確認画面へ遷移
+      setStep("otp");
     } catch {
       setServerError("予期しないエラーが発生しました。もう一度お試しください。");
     } finally {
       setSubmitting(false);
     }
   };
+
+  const handleOtpVerified = async () => {
+    try {
+      const supabase = getSupabase();
+
+      // OTP確認完了後、認証済みセッションでRPC関数を呼び出す
+      const { error: setupError } = await supabase.rpc("signup_setup", {
+        p_email: formData.email,
+        p_display_name: `${formData.lastName} ${formData.firstName}`,
+        p_phone: formData.phone,
+        p_company_name: formData.companyName,
+        p_industry: formData.industry,
+        p_employee_count: formData.employeeCount,
+      });
+
+      if (setupError) {
+        setStep("form");
+        setServerError("初期設定に失敗しました: " + setupError.message);
+        return;
+      }
+
+      router.push("/");
+    } catch {
+      setStep("form");
+      setServerError("予期しないエラーが発生しました。もう一度お試しください。");
+    }
+  };
+
+  if (step === "otp") {
+    return (
+      <div className="flex min-h-screen flex-1 flex-col overflow-y-auto bg-white">
+        <OtpVerification
+          email={formData.email}
+          onVerified={handleOtpVerified}
+          onBack={() => setStep("form")}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-1 flex-col overflow-y-auto bg-white">
