@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { format } from "date-fns";
 import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrg } from "@/lib/org-context";
@@ -39,6 +39,9 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
   const [steps, setSteps] = useState<ApplicationStep[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const applicationRef = useRef(application);
+  applicationRef.current = application;
+
   const logActivity = useCallback(
     async (action: string, summary: string, detail?: Record<string, unknown>) => {
       if (!organization) return;
@@ -52,7 +55,7 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
           target_type: "application",
           target_id: id,
           parent_type: "job",
-          parent_id: application?.job_id ?? null,
+          parent_id: applicationRef.current?.job_id ?? null,
           summary,
           detail,
         });
@@ -60,7 +63,7 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
         // ログ記録失敗は握りつぶす（業務処理をブロックしない）
       }
     },
-    [organization, application, user, authProfile, id]
+    [organization, user, authProfile, id]
   );
 
   const [formSheetOpen, setFormSheetOpen] = useState(false);

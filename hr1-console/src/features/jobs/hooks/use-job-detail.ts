@@ -267,39 +267,44 @@ export function useJobDetail() {
     deletedIds: string[]
   ) => {
     setSavingStepManage(true);
-    const client = getSupabase();
+    try {
+      const client = getSupabase();
 
-    for (const delId of deletedIds) {
-      await jobRepository.deleteJobStep(client, delId);
+      for (const delId of deletedIds) {
+        await jobRepository.deleteJobStep(client, delId);
+      }
+
+      for (let i = 0; i < updatedSteps.length; i++) {
+        const s = updatedSteps[i];
+        await jobRepository.updateJobStep(client, s.id, {
+          step_type: s.step_type,
+          label: s.label,
+          related_id: s.related_id,
+          step_order: s.step_order,
+        });
+      }
+
+      const baseOrder = updatedSteps.length;
+      for (let i = 0; i < newSteps.length; i++) {
+        const s = newSteps[i];
+        await jobRepository.insertJobStep(client, {
+          id: crypto.randomUUID(),
+          job_id: id,
+          step_type: s.step_type,
+          step_order: baseOrder + i + 1,
+          label: s.label,
+          related_id: s.related_id,
+        });
+      }
+
+      await load();
+      setAuditRefreshKey((k) => k + 1);
+      setStepManageOpen(false);
+    } catch (err) {
+      console.error("ステップ保存エラー:", err);
+    } finally {
+      setSavingStepManage(false);
     }
-
-    for (let i = 0; i < updatedSteps.length; i++) {
-      const s = updatedSteps[i];
-      await jobRepository.updateJobStep(client, s.id, {
-        step_type: s.step_type,
-        label: s.label,
-        related_id: s.related_id,
-        step_order: i + 1,
-      });
-    }
-
-    const baseOrder = updatedSteps.length;
-    for (let i = 0; i < newSteps.length; i++) {
-      const s = newSteps[i];
-      await jobRepository.insertJobStep(client, {
-        id: crypto.randomUUID(),
-        job_id: id,
-        step_type: s.step_type,
-        step_order: baseOrder + i + 1,
-        label: s.label,
-        related_id: s.related_id,
-      });
-    }
-
-    await load();
-    setAuditRefreshKey((k) => k + 1);
-    setSavingStepManage(false);
-    setStepManageOpen(false);
   };
 
   function startEditingInfo() {

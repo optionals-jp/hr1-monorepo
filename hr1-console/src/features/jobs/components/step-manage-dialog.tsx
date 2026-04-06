@@ -118,23 +118,33 @@ export function StepManageDialog({
   };
 
   const handleSave = async () => {
-    const existing = editSteps
-      .filter((s) => !s.isNew)
-      .map((s, i) => ({
-        ...initialSteps.find((is_) => is_.id === s.id)!,
-        step_order: i + 1,
-        label: s.label,
-        step_type: s.step_type,
-        related_id: s.related_id,
-      }));
+    let order = 0;
+    const existing: typeof initialSteps = [];
+    const newSteps: { step_type: string; label: string; related_id: string | null }[] = [];
 
-    const newSteps = editSteps
-      .filter((s) => s.isNew && s.label.trim())
-      .map((s) => ({
-        step_type: s.step_type,
-        label: s.label.trim(),
-        related_id: s.related_id,
-      }));
+    for (const s of editSteps) {
+      order++;
+      if (s.isNew) {
+        if (s.label.trim()) {
+          newSteps.push({
+            step_type: s.step_type,
+            label: s.label.trim(),
+            related_id: s.related_id,
+          });
+        }
+      } else {
+        const original = initialSteps.find((is_) => is_.id === s.id);
+        if (original) {
+          existing.push({
+            ...original,
+            step_order: order,
+            label: s.label,
+            step_type: s.step_type,
+            related_id: s.related_id,
+          });
+        }
+      }
+    }
 
     await onSave(existing, newSteps, deletedIds);
   };

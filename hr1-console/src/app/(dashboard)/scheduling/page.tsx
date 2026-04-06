@@ -1,19 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { DatetimeInput } from "@/components/ui/datetime-input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { EditPanel } from "@/components/ui/edit-panel";
+import { FormInput, FormTextarea } from "@/components/ui/form-field";
 import {
   Table,
   TableBody,
@@ -36,22 +30,9 @@ import { TableSection } from "@/components/layout/table-section";
 export default function SchedulingPage() {
   const router = useRouter();
   const { data: interviews = [], isLoading, error: interviewsError, mutate } = useSchedulingList();
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  const {
-    dialogOpen,
-    setDialogOpen,
-    newTitle,
-    setNewTitle,
-    newLocation,
-    setNewLocation,
-    newNotes,
-    setNewNotes,
-    slots,
-    addSlot,
-    updateSlot,
-    removeSlot,
-    handleCreate,
-  } = useCreateInterview();
+  const create = useCreateInterview();
 
   return (
     <div className="flex flex-col">
@@ -59,103 +40,7 @@ export default function SchedulingPage() {
         title="日程調整"
         description="面接の日程管理"
         sticky={false}
-        action={
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger render={<Button />}>面接を作成</DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>面接を作成</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-4 max-h-[60vh] overflow-y-auto">
-                <div className="space-y-2">
-                  <Label>タイトル *</Label>
-                  <Input
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    placeholder="一次面接"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>場所</Label>
-                  <Input
-                    value={newLocation}
-                    onChange={(e) => setNewLocation(e.target.value)}
-                    placeholder="オンライン (Google Meet)"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>備考</Label>
-                  <Textarea
-                    value={newNotes}
-                    onChange={(e) => setNewNotes(e.target.value)}
-                    placeholder="面接に関する備考"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>候補日時</Label>
-                    <Button variant="outline" size="sm" onClick={addSlot}>
-                      追加
-                    </Button>
-                  </div>
-                  {slots.map((slot, index) => (
-                    <div key={index} className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <DatetimeInput
-                          value={slot.startAt}
-                          onChange={(v) => updateSlot(index, "startAt", v)}
-                          className="flex-1"
-                        />
-                        <span className="text-muted-foreground shrink-0">〜</span>
-                        <DatetimeInput
-                          value={slot.endAt}
-                          onChange={(v) => updateSlot(index, "endAt", v)}
-                          className="flex-1"
-                          minDateTime={slot.startAt}
-                        />
-                        <Button variant="ghost" size="sm" onClick={() => removeSlot(index)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      {slot.startAt &&
-                        slot.endAt &&
-                        (new Date(slot.endAt).getTime() - new Date(slot.startAt).getTime()) /
-                          (1000 * 60) >
-                          180 && (
-                          <p className="text-xs text-amber-600 pl-1">
-                            ⚠ 面接枠が3時間以上あります。設定に誤りがないか確認してください。
-                          </p>
-                        )}
-                      <div className="flex items-center gap-2 pl-1">
-                        <span className="text-xs text-muted-foreground shrink-0">応募上限</span>
-                        <Input
-                          type="number"
-                          min={1}
-                          value={slot.maxApplicants}
-                          onChange={(e) =>
-                            updateSlot(
-                              index,
-                              "maxApplicants",
-                              Math.max(1, parseInt(e.target.value) || 1)
-                            )
-                          }
-                          className="w-20 h-7 text-xs"
-                        />
-                        <span className="text-xs text-muted-foreground">名</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <Button onClick={handleCreate} className="w-full" disabled={!newTitle}>
-                  作成する
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        }
+        action={<Button onClick={() => setDialogOpen(true)}>面接を作成</Button>}
       />
 
       <QueryErrorBanner error={interviewsError} onRetry={() => mutate()} />
@@ -204,6 +89,115 @@ export default function SchedulingPage() {
           </TableBody>
         </Table>
       </TableSection>
+
+      <EditPanel
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) {
+            create.setNewTitle("");
+            create.setNewLocation("");
+            create.setNewNotes("");
+          }
+        }}
+        title="面接を作成"
+        onSave={async () => {
+          await create.handleCreate();
+          setDialogOpen(false);
+        }}
+        saving={create.saving}
+        saveDisabled={!create.newTitle.trim()}
+        saveLabel="作成する"
+      >
+        <div className="space-y-4">
+          <FormInput
+            label="タイトル"
+            required
+            value={create.newTitle}
+            onChange={(e) => create.setNewTitle(e.target.value)}
+            placeholder="一次面接"
+          />
+          <FormInput
+            label="場所"
+            value={create.newLocation}
+            onChange={(e) => create.setNewLocation(e.target.value)}
+            placeholder="オンライン (Google Meet)"
+          />
+          <FormTextarea
+            label="備考"
+            value={create.newNotes}
+            onChange={(e) => create.setNewNotes(e.target.value)}
+            placeholder="面接に関する備考"
+            rows={3}
+          />
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">候補日時</span>
+              <Button variant="outline" size="xs" onClick={create.addSlot}>
+                追加
+              </Button>
+            </div>
+            {create.slots.map((slot, index) => (
+              <div key={index} className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <DatetimeInput
+                    value={slot.startAt}
+                    onChange={(v) => create.updateSlot(index, "startAt", v)}
+                    className="flex-1"
+                  />
+                  <span className="text-muted-foreground shrink-0">〜</span>
+                  <DatetimeInput
+                    value={slot.endAt}
+                    onChange={(v) => create.updateSlot(index, "endAt", v)}
+                    className="flex-1"
+                    minDateTime={slot.startAt}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => create.removeSlot(index)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                {slot.startAt &&
+                  slot.endAt &&
+                  (new Date(slot.endAt).getTime() - new Date(slot.startAt).getTime()) /
+                    (1000 * 60) >
+                    180 && (
+                    <p className="text-xs text-amber-600 pl-1">
+                      ⚠ 面接枠が3時間以上あります。設定に誤りがないか確認してください。
+                    </p>
+                  )}
+                <div className="flex items-center gap-2 pl-1">
+                  <span className="text-xs text-muted-foreground shrink-0">応募上限</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={slot.maxApplicants}
+                    onChange={(e) =>
+                      create.updateSlot(
+                        index,
+                        "maxApplicants",
+                        Math.max(1, parseInt(e.target.value) || 1)
+                      )
+                    }
+                    className="w-20 h-7 text-xs"
+                  />
+                  <span className="text-xs text-muted-foreground">名</span>
+                </div>
+              </div>
+            ))}
+            {create.slots.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-3">
+                候補日時を追加してください
+              </p>
+            )}
+          </div>
+        </div>
+      </EditPanel>
     </div>
   );
 }
