@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { StepStatus, StepType, stepStatusLabels, stepTypeLabels } from "@/lib/constants";
+import { StepStatus, StepType, stepTypeLabels } from "@/lib/constants";
 import type { ApplicationStep } from "@/types/database";
 import {
   Check,
@@ -14,6 +14,7 @@ import {
   ExternalLink,
   ClipboardCheck,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
 interface ApplicationStepsTabProps {
@@ -87,107 +88,137 @@ export function ApplicationStepList({
   }
 
   return (
-    <>
-      {steps.map((step) => (
-        <div
-          key={step.id}
-          className={`flex items-center gap-3 rounded-lg border p-4 ${
-            step.status === StepStatus.InProgress ? "border-primary bg-primary/5" : ""
-          }`}
-        >
-          {/* Icon */}
-          <div className="shrink-0">
-            {step.status === StepStatus.Completed ? (
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-600">
-                <Check className="h-4 w-4" />
-              </div>
-            ) : step.status === StepStatus.InProgress ? (
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Circle className="h-4 w-4 fill-current" />
-              </div>
-            ) : step.status === StepStatus.Skipped ? (
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-orange-500">
-                <SkipForward className="h-4 w-4" />
-              </div>
-            ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                <span className="text-xs font-bold">{step.step_order}</span>
-              </div>
-            )}
-          </div>
+    <div className="space-y-0">
+      {steps.map((step, index) => {
+        const isLast = index === steps.length - 1;
+        const isCompleted = step.status === StepStatus.Completed;
+        const isInProgress = step.status === StepStatus.InProgress;
+        const isSkipped = step.status === StepStatus.Skipped;
 
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-medium">{step.label}</p>
-              <Badge variant="outline" className="text-xs">
-                {stepTypeLabels[step.step_type] ?? step.step_type}
-              </Badge>
+        return (
+          <div key={step.id}>
+            <div
+              className={cn(
+                "flex items-start gap-4 rounded-xl border bg-white p-4 transition-colors",
+                isInProgress && "border-primary bg-primary/5!",
+                isSkipped && "opacity-60"
+              )}
+            >
+              {/* ステップアイコン */}
+              <div className="shrink-0 pt-0.5">
+                {isCompleted ? (
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100 text-green-600">
+                    <Check className="h-4 w-4" />
+                  </div>
+                ) : isInProgress ? (
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary ring-2 ring-primary/20">
+                    <Circle className="h-4 w-4 fill-current" />
+                  </div>
+                ) : isSkipped ? (
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-orange-500">
+                    <SkipForward className="h-4 w-4" />
+                  </div>
+                ) : (
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                    <span className="text-xs font-bold">{step.step_order}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* コンテンツ */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium">{step.label}</p>
+                  <Badge variant="outline" className="text-xs">
+                    {stepTypeLabels[step.step_type] ?? step.step_type}
+                  </Badge>
+                  {isCompleted && (
+                    <Badge variant="secondary" className="text-xs">
+                      完了
+                    </Badge>
+                  )}
+                  {isInProgress && (
+                    <Badge className="text-xs bg-primary/10 text-primary border-primary/20">
+                      進行中
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {step.started_at &&
+                    isInProgress &&
+                    `開始: ${format(new Date(step.started_at), "yyyy/MM/dd")}`}
+                  {step.completed_at &&
+                    isCompleted &&
+                    `完了: ${format(new Date(step.completed_at), "yyyy/MM/dd")}`}
+                  {isSkipped && "スキップ"}
+                  {step.status === StepStatus.Pending && "未着手"}
+                </p>
+                {step.related_id && <ResourceLink step={step} />}
+              </div>
+
+              {/* アクション */}
+              <div className="flex gap-2 shrink-0">
+                {step.step_type === StepType.Form &&
+                  isCompleted &&
+                  step.related_id &&
+                  onViewFormResponses && (
+                    <Button size="xs" variant="outline" onClick={() => onViewFormResponses(step)}>
+                      回答を確認
+                    </Button>
+                  )}
+                {step.step_type === StepType.Interview && isCompleted && onOpenEvaluation && (
+                  <Button size="xs" variant="outline" onClick={onOpenEvaluation}>
+                    <ClipboardCheck className="h-3.5 w-3.5 mr-1" />
+                    評価する
+                  </Button>
+                )}
+                {isSkipped && (
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    onClick={() => unskipStep(step)}
+                    className="text-orange-600 hover:text-orange-700"
+                  >
+                    元に戻す
+                  </Button>
+                )}
+                {canActOnStep(step) && !isSkipped && (
+                  <>
+                    <Button
+                      size="xs"
+                      variant={isInProgress ? "default" : "outline"}
+                      onClick={() => advanceStep(step)}
+                    >
+                      {step.status === StepStatus.Pending ? "開始" : "完了"}
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      onClick={() => skipStep(step)}
+                      className="text-muted-foreground"
+                    >
+                      スキップ
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {stepStatusLabels[step.status]}
-              {step.started_at &&
-                step.status === StepStatus.InProgress &&
-                ` (開始: ${format(new Date(step.started_at), "yyyy/MM/dd")})`}
-              {step.completed_at &&
-                step.status === StepStatus.Completed &&
-                ` (完了: ${format(new Date(step.completed_at), "yyyy/MM/dd")})`}
-            </p>
-            {/* 紐付けリソースへのリンク */}
-            {step.related_id && <ResourceLink step={step} />}
-          </div>
 
-          {/* Actions */}
-          <div className="flex gap-2 shrink-0">
-            {step.step_type === StepType.Form &&
-              step.status === StepStatus.Completed &&
-              step.related_id &&
-              onViewFormResponses && (
-                <Button size="sm" variant="outline" onClick={() => onViewFormResponses(step)}>
-                  回答を確認
-                </Button>
-              )}
-            {step.step_type === StepType.Interview &&
-              step.status === StepStatus.Completed &&
-              onOpenEvaluation && (
-                <Button size="sm" variant="outline" onClick={onOpenEvaluation}>
-                  <ClipboardCheck className="h-3.5 w-3.5 mr-1" />
-                  評価する
-                </Button>
-              )}
-            {step.status === StepStatus.Skipped && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => unskipStep(step)}
-                className="text-orange-600 hover:text-orange-700"
-              >
-                元に戻す
-              </Button>
-            )}
-            {canActOnStep(step) && step.status !== StepStatus.Skipped && (
-              <>
-                <Button
-                  size="sm"
-                  variant={step.status === StepStatus.InProgress ? "default" : "outline"}
-                  onClick={() => advanceStep(step)}
-                >
-                  {step.status === StepStatus.Pending ? "開始" : "完了"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => skipStep(step)}
-                  className="text-muted-foreground"
-                >
-                  スキップ
-                </Button>
-              </>
+            {/* ステップ間の接続線 */}
+            {!isLast && (
+              <div className="flex justify-start pl-6.5">
+                <div
+                  className={cn(
+                    "w-0.5 h-6",
+                    isCompleted ? "bg-green-400" : "bg-muted-foreground/20"
+                  )}
+                />
+              </div>
             )}
           </div>
-        </div>
-      ))}
-    </>
+        );
+      })}
+    </div>
   );
 }
 

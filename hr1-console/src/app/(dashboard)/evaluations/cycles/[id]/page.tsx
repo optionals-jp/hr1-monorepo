@@ -185,14 +185,7 @@ export default function EvaluationCycleDetailPage() {
       />
 
       <StickyFilterBar>
-        <TabBar
-          tabs={tabs.map((tab) => ({
-            ...tab,
-            count: tab.value === "assignments" && total > 0 ? total : undefined,
-          }))}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
+        <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
       </StickyFilterBar>
 
       <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">

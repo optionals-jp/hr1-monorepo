@@ -1,9 +1,1 @@
-export interface HistoryEvent {
-  id: string;
-  applicantName: string;
-  applicantEmail: string;
-  eventType: string;
-  label: string;
-  status: string;
-  date: string;
-}
+// 求人管理の型定義（将来の型追加用に保持）

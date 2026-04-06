@@ -69,10 +69,7 @@ export default function WorkflowsPage() {
 
       <StickyFilterBar>
         <TabBar
-          tabs={tabList.map((t) => ({
-            ...t,
-            count: t.value === "requests" && h.pendingCount > 0 ? h.pendingCount : undefined,
-          }))}
+          tabs={tabList}
           activeTab={h.activeTab}
           onTabChange={(v) => h.setActiveTab(v as TabValue)}
         />

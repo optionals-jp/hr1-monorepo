@@ -420,19 +420,7 @@ export default function EvaluationsPage() {
 
       {/* サブナビゲーション */}
       <StickyFilterBar>
-        <TabBar
-          tabs={subTabs.map((tab) => ({
-            ...tab,
-            count:
-              tab.value === "sheets"
-                ? templates.length
-                : tab.value === "cycles"
-                  ? cycles.length
-                  : undefined,
-          }))}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
+        <TabBar tabs={subTabs} activeTab={activeTab} onTabChange={setActiveTab} />
       </StickyFilterBar>
 
       {/* 評価シート一覧 */}

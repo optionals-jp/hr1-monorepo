@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import type { Profile } from "@/types/database";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
+import { ProfileInfoList } from "@/components/ui/profile-info-list";
+import { SectionCard } from "@/components/ui/section-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -119,27 +120,15 @@ export default function ApplicantDetailPage() {
       />
 
       <StickyFilterBar>
-        <TabBar
-          tabs={tabs.map((tab) => ({
-            ...tab,
-            count:
-              tab.value === "timeline"
-                ? timelineEvents.length
-                : tab.value === "forms"
-                  ? formResponses.length
-                  : undefined,
-          }))}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
+        <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
       </StickyFilterBar>
 
       {activeTab === "profile" && (
         <PageContent>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div>
-              <div className="flex items-start gap-4 mb-6">
-                <Avatar className="size-24">
+            <SectionCard className="self-start">
+              <div className="flex flex-col mb-6">
+                <Avatar className="size-24 mb-3">
                   {profile.avatar_url ? (
                     <AvatarImage src={profile.avatar_url} alt={profile.display_name ?? ""} />
                   ) : (
@@ -148,21 +137,19 @@ export default function ApplicantDetailPage() {
                     </AvatarFallback>
                   )}
                 </Avatar>
-                <div className="pt-1">
-                  <h2 className="text-lg font-semibold">{profile.display_name ?? "-"}</h2>
-                  <p className="text-sm text-muted-foreground">{profile.email}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="secondary">応募者</Badge>
-                    {profile.invited_at ? (
-                      <Badge variant="secondary">招待済み</Badge>
-                    ) : (
-                      <Badge variant="outline">未招待</Badge>
-                    )}
-                  </div>
+                <h2 className="text-lg font-semibold">{profile.display_name ?? "-"}</h2>
+                <p className="text-sm text-muted-foreground">{profile.email}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge variant="secondary">応募者</Badge>
+                  {profile.invited_at ? (
+                    <Badge variant="secondary">招待済み</Badge>
+                  ) : (
+                    <Badge variant="outline">未招待</Badge>
+                  )}
                 </div>
               </div>
               <ProfileInfoList profile={profile} />
-            </div>
+            </SectionCard>
 
             <div className="lg:col-span-2 space-y-8">
               <div>
@@ -473,7 +460,7 @@ function TimelineTab({
                           <span className="inline-flex items-center gap-1">
                             <Avatar className="h-4 w-4">
                               <AvatarFallback className="bg-muted text-muted-foreground text-[8px] font-medium">
-                                {ev.actor[0].toUpperCase()}
+                                {ev.actor[0]?.toUpperCase() ?? ""}
                               </AvatarFallback>
                             </Avatar>
                             <span className="text-sm font-semibold">{ev.actor}</span>
@@ -499,85 +486,5 @@ function TimelineTab({
         )}
       </div>
     </>
-  );
-}
-
-function ProfileInfoList({ profile }: { profile: Profile }) {
-  const genderLabels: Record<string, string> = {
-    male: "男性",
-    female: "女性",
-    other: "その他",
-  };
-
-  const currentAddress = [
-    profile.current_prefecture,
-    profile.current_city,
-    profile.current_street_address,
-    profile.current_building,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  const sections: { title: string; items: { label: string; value: string | null }[] }[] = [
-    {
-      title: "基本情報",
-      items: [
-        { label: "ふりがな", value: profile.name_kana },
-        {
-          label: "採用区分",
-          value: profile.hiring_type
-            ? profile.hiring_type === "new_grad"
-              ? `新卒（${profile.graduation_year}年卒）`
-              : "中途採用"
-            : null,
-        },
-        { label: "生年月日", value: profile.birth_date },
-        {
-          label: "性別",
-          value: profile.gender ? (genderLabels[profile.gender] ?? profile.gender) : null,
-        },
-        { label: "電話番号", value: profile.phone },
-        { label: "居住地", value: currentAddress || null },
-        { label: "登録日", value: format(new Date(profile.created_at), "yyyy/MM/dd") },
-      ],
-    },
-    {
-      title: "学歴",
-      items: [
-        { label: "学校名", value: profile.school_name },
-        { label: "学部・学科", value: profile.school_faculty },
-      ],
-    },
-    {
-      title: "職歴・スキル",
-      items: [
-        { label: "職歴", value: profile.work_history },
-        { label: "スキル", value: profile.skills },
-      ],
-    },
-    {
-      title: "自己紹介",
-      items: [{ label: "自己紹介", value: profile.self_introduction }],
-    },
-  ];
-
-  return (
-    <div className="space-y-6 text-sm">
-      {sections.map((section, i) => (
-        <div key={section.title} className={i > 0 ? "border-t pt-6" : ""}>
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-            {section.title}
-          </h3>
-          <div className="space-y-4">
-            {section.items.map((item) => (
-              <div key={item.label} className="flex gap-8">
-                <span className="text-muted-foreground w-24 shrink-0">{item.label}</span>
-                <span className="whitespace-pre-wrap">{item.value || "-"}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
   );
 }

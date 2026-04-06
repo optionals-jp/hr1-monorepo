@@ -4,6 +4,8 @@ import type {
   CustomForm,
   FormField,
   Interview,
+  EvaluationScore,
+  EvaluationCriterion,
 } from "@/types/database";
 import { RESOURCE_STEP_TYPES } from "@/lib/constants";
 
@@ -12,8 +14,13 @@ export type ActiveTab = "dashboard" | "steps" | "evaluation" | "history" | "audi
 export type ResourceStepType = (typeof RESOURCE_STEP_TYPES)[number];
 
 export interface ApplicationProfile {
+  id: string;
   display_name: string | null;
   email: string;
+  avatar_url: string | null;
+  hiring_type: "new_grad" | "mid_career" | null;
+  graduation_year: number | null;
+  invited_at: string | null;
 }
 
 export interface FormSheetField {
@@ -65,6 +72,16 @@ export interface UseApplicationDetailReturn {
 
   // 評価
   evaluationCount: number;
+  evaluationSummaries: {
+    id: string;
+    template_title: string;
+    evaluator_name: string;
+    status: string;
+    submitted_at: string | null;
+    created_at: string;
+    scores: EvaluationScore[];
+    criteria: EvaluationCriterion[];
+  }[];
 
   // リロード
   load: () => Promise<void>;

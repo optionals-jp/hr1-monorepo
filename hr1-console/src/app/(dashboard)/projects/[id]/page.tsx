@@ -26,7 +26,8 @@ import { TabBar } from "@/components/layout/tab-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { projectStatusLabels, projectStatusColors, teamMemberRoleLabels } from "@/lib/constants";
+import { teamMemberRoleLabels } from "@/lib/constants";
+import { ProjectOverviewTab } from "@/features/projects/components/project-overview-tab";
 import { format } from "date-fns";
 import { Trash2, Plus, Users, Pencil } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -130,72 +131,17 @@ export default function ProjectDetailPage() {
       />
 
       <StickyFilterBar>
-        <TabBar
-          tabs={tabs.map((tab) => ({
-            ...tab,
-            count: tab.value === "teams" ? h.teams.length : undefined,
-          }))}
-          activeTab={h.activeTab}
-          onTabChange={h.setActiveTab}
-        />
+        <TabBar tabs={tabs} activeTab={h.activeTab} onTabChange={h.setActiveTab} />
       </StickyFilterBar>
 
       {h.activeTab === "overview" && (
         <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
-          <div className="space-y-4 max-w-3xl">
-            <Card>
-              <CardContent>
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-semibold text-muted-foreground">プロジェクト情報</h2>
-                  <Button variant="outline" size="sm" onClick={h.startEditing}>
-                    編集
-                  </Button>
-                </div>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">プロジェクト名</span>
-                    <span className="font-medium">{h.project.name}</span>
-                  </div>
-                  {h.project.description && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">説明</span>
-                      <span className="text-right max-w-xs">{h.project.description}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">ステータス</span>
-                    <Badge variant={projectStatusColors[h.project.status]}>
-                      {projectStatusLabels[h.project.status]}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">チーム数</span>
-                    <span>{h.teams.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">総メンバー数</span>
-                    <span>{h.totalMembers} 名</span>
-                  </div>
-                  {h.project.start_date && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">開始日</span>
-                      <span>{format(new Date(h.project.start_date), "yyyy/MM/dd")}</span>
-                    </div>
-                  )}
-                  {h.project.end_date && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">終了日</span>
-                      <span>{format(new Date(h.project.end_date), "yyyy/MM/dd")}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">作成日</span>
-                    <span>{format(new Date(h.project.created_at), "yyyy/MM/dd")}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <ProjectOverviewTab
+            project={h.project}
+            teamCount={h.teams.length}
+            totalMembers={h.totalMembers}
+            onEdit={h.startEditing}
+          />
         </div>
       )}
 

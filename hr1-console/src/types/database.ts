@@ -129,6 +129,22 @@ export interface FormResponse {
   submitted_at: string;
 }
 
+export interface ActivityLog {
+  id: string;
+  organization_id: string;
+  actor_id: string | null;
+  actor_name: string | null;
+  action: string;
+  category: string;
+  target_type: string;
+  target_id: string;
+  parent_type: string | null;
+  parent_id: string | null;
+  summary: string;
+  detail: Record<string, unknown>;
+  created_at: string;
+}
+
 export interface AuditLog {
   id: string;
   sequence_number: number;

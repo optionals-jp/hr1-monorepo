@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 export interface TabItem {
   value: string;
   label: string;
-  count?: number;
   icon?: React.ElementType;
 }
 
@@ -40,9 +39,6 @@ export function TabBar({ tabs, activeTab, onTabChange, trailing }: TabBarProps) 
           >
             {Icon && <Icon className="h-4 w-4" />}
             {tab.label}
-            {tab.count !== undefined && (
-              <span className="text-xs text-muted-foreground">{tab.count}</span>
-            )}
             {isActive && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
             )}

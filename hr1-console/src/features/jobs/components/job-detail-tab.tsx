@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import type { Job, JobStep, Interview } from "@/types/database";
-import { GripVertical } from "lucide-react";
+import type { Job, JobStep, Interview, Application } from "@/types/database";
+import { SectionCard } from "@/components/ui/section-card";
+import { Users, CheckCircle2, Clock, XCircle, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import {
   StepType,
@@ -13,287 +13,210 @@ import {
   stepTypeLabels,
   jobStatusLabels as statusLabels,
 } from "@/lib/constants";
-import type { MutableRefObject } from "react";
 
 interface JobDetailTabProps {
   job: Job;
   steps: JobStep[];
+  applications: Application[];
   forms: { id: string; title: string }[];
   interviews: Interview[];
-  reorderMode: boolean;
-  setReorderMode: (v: boolean) => void;
-  dragIndex: number | null;
-  setDragIndex: (v: number | null) => void;
-  dragOverIndex: number | null;
-  setDragOverIndex: (v: number | null) => void;
-  confirmingReorder: boolean;
-  confirmReorder: () => void;
-  reorderSteps: (fromIndex: number, toIndex: number) => void;
-  stepsBeforeReorderRef: MutableRefObject<JobStep[]>;
-  setSteps: (fn: (prev: JobStep[]) => JobStep[]) => void;
-  startEditStep: (step: JobStep) => void;
   startEditingInfo: () => void;
-  openAddStep: () => void;
+  onEditSteps: () => void;
 }
 
 export function JobDetailTab({
   job,
   steps,
+  applications,
   forms,
   interviews,
-  reorderMode,
-  setReorderMode,
-  dragIndex,
-  setDragIndex,
-  dragOverIndex,
-  setDragOverIndex,
-  confirmingReorder,
-  confirmReorder,
-  reorderSteps,
-  stepsBeforeReorderRef,
-  setSteps,
-  startEditStep,
   startEditingInfo,
-  openAddStep,
+  onEditSteps,
 }: JobDetailTabProps) {
+  const activeApps = applications.filter((a) => a.status === "active");
+  const offeredApps = applications.filter((a) => a.status === "offered");
+  const rejectedApps = applications.filter((a) => a.status === "rejected");
+  const withdrawnApps = applications.filter((a) => a.status === "withdrawn");
+
   return (
-    <div className="space-y-6 max-w-3xl">
-      {/* 求人情報セクション */}
-      <section>
-        <div className="rounded-lg bg-white border">
-          <div className="flex items-center justify-between px-5 pt-4 pb-2">
-            <h2 className="text-sm font-semibold text-muted-foreground">求人情報</h2>
-            <Button variant="outline" size="sm" onClick={startEditingInfo}>
-              編集
-            </Button>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {/* 左カラム: 求人情報 */}
+      <SectionCard className="self-start">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold">求人情報</h2>
+          <Button variant="outline" size="xs" onClick={startEditingInfo}>
+            編集
+          </Button>
+        </div>
+        <div className="space-y-4 text-sm">
+          <div className="flex gap-8">
+            <span className="text-muted-foreground w-20 shrink-0">部署</span>
+            <span>{job.department ?? "-"}</span>
           </div>
-          <div className="px-5 py-4 space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">タイトル</span>
-              <span className="font-medium">{job.title}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">部署</span>
-              <span>{job.department ?? "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">勤務地</span>
-              <span>{job.location ?? "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">雇用形態</span>
-              <span>{job.employment_type ?? "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">年収</span>
-              <span>{job.salary_range ?? "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">ステータス</span>
-              <Badge
-                variant={
-                  job.status === "open"
-                    ? "default"
-                    : job.status === "closed"
-                      ? "destructive"
-                      : "outline"
-                }
-              >
-                {statusLabels[job.status]}
-              </Badge>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">作成日</span>
-              <span>{format(new Date(job.created_at), "yyyy/MM/dd")}</span>
-            </div>
-            {job.description && (
-              <div className="pt-3 border-t">
-                <p className="text-muted-foreground mb-1">説明</p>
-                <p className="whitespace-pre-wrap">{job.description}</p>
-              </div>
-            )}
+          <div className="flex gap-8">
+            <span className="text-muted-foreground w-20 shrink-0">勤務地</span>
+            <span>{job.location ?? "-"}</span>
+          </div>
+          <div className="flex gap-8">
+            <span className="text-muted-foreground w-20 shrink-0">雇用形態</span>
+            <span>{job.employment_type ?? "-"}</span>
+          </div>
+          <div className="flex gap-8">
+            <span className="text-muted-foreground w-20 shrink-0">年収</span>
+            <span>{job.salary_range ?? "-"}</span>
+          </div>
+          <div className="flex gap-8">
+            <span className="text-muted-foreground w-20 shrink-0">ステータス</span>
+            <Badge
+              variant={
+                job.status === "open"
+                  ? "default"
+                  : job.status === "closed"
+                    ? "destructive"
+                    : "outline"
+              }
+            >
+              {statusLabels[job.status]}
+            </Badge>
+          </div>
+          <div className="flex gap-8">
+            <span className="text-muted-foreground w-20 shrink-0">作成日</span>
+            <span>{format(new Date(job.created_at), "yyyy/MM/dd")}</span>
           </div>
         </div>
-      </section>
+        {job.description && (
+          <div className="mt-4 pt-4 border-t">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+              説明
+            </p>
+            <p className="text-sm whitespace-pre-wrap">{job.description}</p>
+          </div>
+        )}
+      </SectionCard>
 
-      {/* 選考ステップセクション */}
-      <section>
-        <div className="rounded-lg bg-white border">
-          <div className="flex items-center justify-between px-5 pt-4 pb-2">
-            <h2 className="text-sm font-semibold text-muted-foreground">
+      {/* 右カラム: 応募サマリー + 選考ステップ */}
+      <div className="lg:col-span-2 space-y-6">
+        {/* 応募サマリー */}
+        <SectionCard>
+          <h2 className="text-sm font-semibold mb-3">応募サマリー</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="rounded-xl bg-white border p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Users className="size-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">総応募数</span>
+              </div>
+              <span className="text-2xl font-bold">{applications.length}</span>
+            </div>
+            <div className="rounded-xl bg-white border p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Clock className="size-4 text-blue-500" />
+                <span className="text-xs text-muted-foreground">選考中</span>
+              </div>
+              <span className="text-2xl font-bold">{activeApps.length}</span>
+            </div>
+            <div className="rounded-xl bg-white border p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <CheckCircle2 className="size-4 text-green-500" />
+                <span className="text-xs text-muted-foreground">内定</span>
+              </div>
+              <span className="text-2xl font-bold text-green-600">{offeredApps.length}</span>
+            </div>
+            <div className="rounded-xl bg-white border p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <XCircle className="size-4 text-red-400" />
+                <span className="text-xs text-muted-foreground">不採用・辞退</span>
+              </div>
+              <span className="text-2xl font-bold text-muted-foreground">
+                {rejectedApps.length + withdrawnApps.length}
+              </span>
+            </div>
+          </div>
+        </SectionCard>
+        <SectionCard>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold">
               選考ステップ
-              <span className="ml-1.5 text-xs font-normal">
+              <span className="ml-1.5 text-xs font-normal text-muted-foreground">
                 {steps.filter((s) => s.step_type !== StepType.Offer).length + 1}
               </span>
             </h2>
-            <div className="flex items-center gap-2">
-              {!reorderMode && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={steps.length < 2}
-                    onClick={() => {
-                      stepsBeforeReorderRef.current = [...steps];
-                      setReorderMode(true);
-                    }}
-                  >
-                    並び替え
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={openAddStep}>
-                    追加
-                  </Button>
-                </>
-              )}
-              {reorderMode && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={confirmingReorder}
-                    onClick={() => {
-                      setSteps(() => stepsBeforeReorderRef.current);
-                      setReorderMode(false);
-                    }}
-                  >
-                    キャンセル
-                  </Button>
-                  <Button size="sm" onClick={confirmReorder} disabled={confirmingReorder}>
-                    {confirmingReorder ? "保存中..." : "確定"}
-                  </Button>
-                </>
-              )}
-            </div>
+            <Button variant="outline" size="xs" onClick={onEditSteps}>
+              <Pencil className="size-3 mr-1" />
+              編集
+            </Button>
           </div>
 
-          <div
-            onDragOver={reorderMode ? (e) => e.preventDefault() : undefined}
-            onDrop={
-              reorderMode
-                ? () => {
-                    if (
-                      dragIndex !== null &&
-                      dragOverIndex !== null &&
-                      dragIndex !== dragOverIndex
-                    ) {
-                      reorderSteps(dragIndex, dragOverIndex);
-                    }
-                    setDragIndex(null);
-                    setDragOverIndex(null);
-                  }
-                : undefined
-            }
-          >
+          <div>
             {steps
               .filter((s) => s.step_type !== StepType.Offer)
-              .map((step, index) => (
-                <div
-                  key={step.id}
-                  draggable={reorderMode}
-                  onDragStart={reorderMode ? () => setDragIndex(index) : undefined}
-                  onDragOver={
-                    reorderMode
-                      ? (e) => {
-                          e.preventDefault();
-                          if (index !== dragIndex) setDragOverIndex(index);
-                        }
-                      : undefined
-                  }
-                  onDragEnd={
-                    reorderMode
-                      ? () => {
-                          setDragIndex(null);
-                          setDragOverIndex(null);
-                        }
-                      : undefined
-                  }
-                  onClick={!reorderMode ? () => startEditStep(step) : undefined}
-                  className={cn(
-                    "flex items-center gap-3 px-5 py-4 border-b",
-                    reorderMode ? "cursor-grab" : "cursor-pointer hover:bg-accent/40",
-                    reorderMode && dragOverIndex === index && dragIndex !== index && "bg-accent/60"
-                  )}
-                >
-                  <GripVertical
-                    className={cn(
-                      "h-4 w-4 shrink-0",
-                      reorderMode ? "text-muted-foreground" : "text-muted-foreground/30"
-                    )}
-                  />
-                  <span className="text-sm font-bold text-muted-foreground w-6 text-center shrink-0">
-                    {index + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{step.label}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {stepTypeLabels[step.step_type] ?? step.step_type}
-                      {step.related_id &&
-                        FORM_STEP_TYPES.includes(step.step_type as StepType) &&
-                        forms.find((f) => f.id === step.related_id) && (
-                          <>
-                            {" — "}
-                            <Link
-                              href={`/forms/${step.related_id}`}
-                              className="text-primary hover:underline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {forms.find((f) => f.id === step.related_id)!.title}
-                            </Link>
-                          </>
-                        )}
-                      {step.related_id &&
-                        step.step_type === StepType.Interview &&
-                        (() => {
-                          const iv = interviews.find((i) => i.id === step.related_id);
-                          if (!iv) return null;
-                          return (
+              .map((step, index, arr) => (
+                <div key={step.id}>
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white border">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary shrink-0">
+                      <span className="text-xs font-bold">{index + 1}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{step.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {stepTypeLabels[step.step_type] ?? step.step_type}
+                        {step.related_id &&
+                          FORM_STEP_TYPES.includes(step.step_type as StepType) &&
+                          forms.find((f) => f.id === step.related_id) && (
                             <>
                               {" — "}
                               <Link
-                                href={`/scheduling/${iv.id}`}
+                                href={`/forms/${step.related_id}`}
                                 className="text-primary hover:underline"
-                                onClick={(e) => e.stopPropagation()}
                               >
-                                {iv.title}
+                                {forms.find((f) => f.id === step.related_id)!.title}
                               </Link>
                             </>
-                          );
-                        })()}
-                    </p>
+                          )}
+                        {step.related_id &&
+                          step.step_type === StepType.Interview &&
+                          (() => {
+                            const iv = interviews.find((i) => i.id === step.related_id);
+                            if (!iv) return null;
+                            return (
+                              <>
+                                {" — "}
+                                <Link
+                                  href={`/scheduling/${iv.id}`}
+                                  className="text-primary hover:underline"
+                                >
+                                  {iv.title}
+                                </Link>
+                              </>
+                            );
+                          })()}
+                      </p>
+                    </div>
                   </div>
+                  {index < arr.length - 1 && (
+                    <div className="flex justify-start pl-7">
+                      <div className="w-0.5 h-5 bg-primary/20" />
+                    </div>
+                  )}
                 </div>
               ))}
-            {/* 末尾ドロップゾーン */}
-            {reorderMode && (
-              <div
-                className={cn(
-                  "h-10 border-b transition-colors",
-                  dragOverIndex !== null &&
-                    dragOverIndex >= steps.filter((s) => s.step_type !== StepType.Offer).length &&
-                    dragIndex !== null &&
-                    "bg-accent/60"
-                )}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  const count = steps.filter((s) => s.step_type !== StepType.Offer).length;
-                  setDragOverIndex(count);
-                }}
-              />
+            {/* 内定への接続線 */}
+            {steps.filter((s) => s.step_type !== StepType.Offer).length > 0 && (
+              <div className="flex justify-start pl-7">
+                <div className="w-0.5 h-5 bg-muted-foreground/20" />
+              </div>
             )}
-            {/* 内定ステップ（固定・末尾） */}
-            <div className="flex items-center gap-3 px-5 py-4 bg-muted/30">
-              <div className="h-4 w-4 shrink-0" />
-              <span className="text-sm font-bold text-muted-foreground w-6 text-center shrink-0">
-                ✓
-              </span>
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/60 border border-dashed">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-600 shrink-0">
+                <span className="text-xs font-bold">✓</span>
+              </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-muted-foreground">内定</p>
                 <p className="text-xs text-muted-foreground">すべてのステップ完了後に自動適用</p>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </SectionCard>
+      </div>
     </div>
   );
 }

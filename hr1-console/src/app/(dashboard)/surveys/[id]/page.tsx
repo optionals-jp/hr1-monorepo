@@ -150,8 +150,8 @@ export default function SurveyDetailPage() {
       <StickyFilterBar>
         <TabBar
           tabs={[
-            { value: "questions", label: "質問", count: h.questions.length },
-            { value: "responses", label: "回答", count: h.completedCount },
+            { value: "questions", label: "質問" },
+            { value: "responses", label: "回答" },
             { value: "analytics", label: "分析" },
           ]}
           activeTab={h.tab}

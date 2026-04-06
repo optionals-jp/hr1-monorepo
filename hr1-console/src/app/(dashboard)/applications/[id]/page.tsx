@@ -24,8 +24,8 @@ import { FormResponseSheet } from "@/features/applications/components/form-respo
 import { ResourceSelectDialog } from "@/features/applications/components/resource-select-dialog";
 import { ConvertEmployeeDialog } from "@/features/applications/components/convert-employee-dialog";
 import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
-import type { ApplicationProfile } from "@/features/applications/types";
-import type { ApplicationStep } from "@/types/database";
+import { LayoutDashboard, ListChecks, Star, ScrollText, FileText } from "lucide-react";
+import type { ApplicationStep, Profile } from "@/types/database";
 
 export default function ApplicationDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -74,18 +74,14 @@ export default function ApplicationDetailPage() {
     );
   }
 
-  const profile = detail.application.profiles as unknown as ApplicationProfile;
+  const profile = detail.application.profiles as unknown as Profile;
 
   const tabs = [
-    { value: "dashboard" as const, label: "ダッシュボード" },
-    { value: "steps" as const, label: "選考ステップ", count: detail.steps.length },
-    {
-      value: "evaluation" as const,
-      label: "評価",
-      count: detail.evaluationCount > 0 ? detail.evaluationCount : undefined,
-    },
-    { value: "history" as const, label: "選考ログ" },
-    { value: "audit" as const, label: "変更ログ" },
+    { value: "dashboard" as const, label: "ダッシュボード", icon: LayoutDashboard },
+    { value: "steps" as const, label: "選考ステップ", icon: ListChecks },
+    { value: "evaluation" as const, label: "評価", icon: Star },
+    { value: "history" as const, label: "選考ログ", icon: ScrollText },
+    { value: "audit" as const, label: "変更ログ", icon: FileText },
   ];
 
   return (
@@ -131,6 +127,8 @@ export default function ApplicationDetailPage() {
             onViewFormResponses={detail.openFormResponses}
             onConvertDialogOpen={() => detail.setConvertDialogOpen(true)}
             onOpenEvaluation={() => detail.setActiveTab("evaluation")}
+            evaluationCount={detail.evaluationCount}
+            evaluationSummaries={detail.evaluationSummaries}
           />
         )}
 
@@ -154,7 +152,9 @@ export default function ApplicationDetailPage() {
           />
         )}
 
-        {detail.activeTab === "history" && <ApplicationLogTab steps={detail.steps} />}
+        {detail.activeTab === "history" && organization && (
+          <ApplicationLogTab applicationId={id} organizationId={organization.id} />
+        )}
 
         {detail.activeTab === "audit" && organization && (
           <AuditLogPanel organizationId={organization.id} tableName="applications" recordId={id} />

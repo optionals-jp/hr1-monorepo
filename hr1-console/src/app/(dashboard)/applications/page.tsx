@@ -71,17 +71,7 @@ export default function ApplicationsPage() {
       />
 
       <StickyFilterBar>
-        <TabBar
-          tabs={statusTabs.map((tab) => ({
-            ...tab,
-            count:
-              tab.value === "all"
-                ? applications.length
-                : applications.filter((a) => a.status === tab.value).length,
-          }))}
-          activeTab={statusFilter}
-          onTabChange={setStatusFilter}
-        />
+        <TabBar tabs={statusTabs} activeTab={statusFilter} onTabChange={setStatusFilter} />
         <SearchBar value={search} onChange={setSearch} />
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">

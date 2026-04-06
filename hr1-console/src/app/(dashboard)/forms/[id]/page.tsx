@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useOrg } from "@/lib/org-context";
+import { SectionCard } from "@/components/ui/section-card";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,8 +49,7 @@ export default function FormDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { organization } = useOrg();
   const h = useFormDetailPage();
-  const [auditLogCount, setAuditLogCount] = useState<number | undefined>(undefined);
-  const handleAuditLoaded = useCallback((count: number) => setAuditLogCount(count), []);
+  const handleAuditLoaded = useCallback(() => {}, []);
 
   if (h.loading) {
     return (
@@ -78,19 +78,7 @@ export default function FormDetailPage() {
       />
 
       <StickyFilterBar>
-        <TabBar
-          tabs={tabs.map((tab) => ({
-            ...tab,
-            count:
-              tab.value === "fields"
-                ? h.fields.length
-                : tab.value === "responses"
-                  ? h.responses.length
-                  : auditLogCount,
-          }))}
-          activeTab={h.activeTab}
-          onTabChange={h.setActiveTab}
-        />
+        <TabBar tabs={tabs} activeTab={h.activeTab} onTabChange={h.setActiveTab} />
       </StickyFilterBar>
 
       <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
@@ -105,7 +93,7 @@ export default function FormDetailPage() {
             {h.fields.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground">フィールドがありません</p>
             ) : (
-              <div className="rounded-lg bg-white border">
+              <SectionCard>
                 {h.fields.map((field, index) => (
                   <div key={field.id} className="flex items-start gap-4 px-5 py-4">
                     <span className="text-sm font-bold text-muted-foreground w-6 pt-0.5">
@@ -138,7 +126,7 @@ export default function FormDetailPage() {
                     </div>
                   </div>
                 ))}
-              </div>
+              </SectionCard>
             )}
           </div>
         )}
