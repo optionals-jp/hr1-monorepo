@@ -39,18 +39,30 @@ export async function fetchFormResponses(
 ) {
   const { data } = await client
     .from("form_responses")
-    .select("*, custom_forms(title)")
+    .select("*, custom_forms!inner(title)")
     .eq("applicant_id", applicantId)
-    .eq("organization_id", organizationId)
-    .order("created_at", { ascending: false });
+    .eq("custom_forms.organization_id", organizationId)
+    .order("submitted_at", { ascending: false });
   return data ?? [];
 }
 
-export async function fetchInterviewSlots(client: SupabaseClient, applicantId: string) {
+export async function fetchInterviewSlotsByApplicant(
+  client: SupabaseClient,
+  applicantId: string,
+  organizationId: string
+) {
+  const { data: apps } = await client
+    .from("applications")
+    .select("id")
+    .eq("applicant_id", applicantId)
+    .eq("organization_id", organizationId);
+  const appIds = (apps ?? []).map((a) => a.id);
+  if (appIds.length === 0) return [];
+
   const { data } = await client
     .from("interview_slots")
     .select("*, interviews(title, location, notes)")
-    .eq("application_id", applicantId)
+    .in("application_id", appIds)
     .order("start_at", { ascending: false });
   return data ?? [];
 }

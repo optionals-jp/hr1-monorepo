@@ -7,7 +7,8 @@ import { getSupabase } from "@/lib/supabase/browser";
 import { useOrg } from "@/lib/org-context";
 import { useCreateMessageThread } from "@/lib/hooks/use-create-message-thread";
 import * as applicantRepo from "@/lib/repositories/applicant-repository";
-import type { Profile, Application, ApplicationStep } from "@/types/database";
+import * as evalRepo from "@/lib/repositories/evaluation-repository";
+import type { Profile, Application, ApplicationStep, Evaluation } from "@/types/database";
 import {
   applicationStatusLabels as statusLabels,
   stepStatusLabels,
@@ -32,6 +33,23 @@ export function useApplicantDetailPage() {
   const { organization } = useOrg();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
+  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [formResponses, setFormResponses] = useState<
+    {
+      form_id: string;
+      form_title: string;
+      submitted_at: string;
+      fields: { label: string; value: string }[];
+    }[]
+  >([]);
+  const [interviewSlots, setInterviewSlots] = useState<
+    {
+      id: string;
+      start_at: string;
+      end_at: string;
+      interviews?: { title: string; location: string | null } | null;
+    }[]
+  >([]);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useTabParam("profile");
@@ -44,18 +62,56 @@ export function useApplicantDetailPage() {
     async function load() {
       setLoading(true);
       const client = getSupabase();
-      const appsData = await applicantRepo.fetchApplicantApplications(client, id, organization!.id);
-
-      if (appsData.length === 0) {
+      const profileData = await applicantRepo.fetchProfile(client, id);
+      if (!profileData) {
         setProfile(null);
         setApplications([]);
         setLoading(false);
         return;
       }
 
-      const profileData = await applicantRepo.fetchProfile(client, id);
+      const appsData = await applicantRepo.fetchApplicantApplications(client, id, organization!.id);
+      const { data: evalData } = await evalRepo.fetchEvaluationsByUser(
+        client,
+        organization!.id,
+        id
+      );
+      const slotsData = await applicantRepo.fetchInterviewSlotsByApplicant(
+        client,
+        id,
+        organization!.id
+      );
+      const rawFormResponses = await applicantRepo.fetchFormResponses(client, id, organization!.id);
+
+      // フォーム回答を form_id + submitted_at でグルーピング
+      const formMap = new Map<
+        string,
+        {
+          form_id: string;
+          form_title: string;
+          submitted_at: string;
+          fields: { label: string; value: string }[];
+        }
+      >();
+      for (const r of rawFormResponses) {
+        const key = `${r.form_id}:${r.submitted_at}`;
+        if (!formMap.has(key)) {
+          formMap.set(key, {
+            form_id: r.form_id,
+            form_title:
+              (r as unknown as { custom_forms?: { title: string } }).custom_forms?.title ?? "-",
+            submitted_at: r.submitted_at,
+            fields: [],
+          });
+        }
+        formMap.get(key)!.fields.push({ label: r.field_id, value: r.value });
+      }
+
       setProfile(profileData);
       setApplications(appsData);
+      setEvaluations((evalData ?? []) as Evaluation[]);
+      setFormResponses(Array.from(formMap.values()));
+      setInterviewSlots(slotsData);
 
       const events: TimelineEvent[] = [];
 
@@ -201,6 +257,9 @@ export function useApplicantDetailPage() {
     organization,
     profile,
     applications,
+    evaluations,
+    formResponses,
+    interviewSlots,
     timelineEvents,
     filteredTimeline,
     loading,

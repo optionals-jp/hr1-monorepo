@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useOrg } from "@/lib/org-context";
 import { PageHeader } from "@/components/layout/page-header";
@@ -13,28 +13,28 @@ import {
 } from "@/components/ui/select";
 import { TabBar } from "@/components/layout/tab-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { jobStatusLabels as statusLabels, StepType } from "@/lib/constants";
+import { jobStatusLabels as statusLabels } from "@/lib/constants";
+import { FileText, Users, ScrollText, FileClock } from "lucide-react";
 import { useJobDetail } from "@/features/jobs/hooks/use-job-detail";
 import { JobApplicantsTab } from "@/features/jobs/components/job-applicants-tab";
 import { JobDetailTab } from "@/features/jobs/components/job-detail-tab";
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 import { JobTimelineTab } from "@/features/jobs/components/job-timeline-tab";
 import { JobEditPanel } from "@/features/jobs/components/job-edit-panel";
-import { StepEditPanel } from "@/features/jobs/components/step-edit-panel";
+import { StepManageDialog } from "@/features/jobs/components/step-manage-dialog";
 
 const tabs = [
-  { value: "detail", label: "求人詳細" },
-  { value: "applicants", label: "応募者" },
-  { value: "timeline", label: "ログ" },
-  { value: "history", label: "編集ログ" },
+  { value: "detail", label: "概要", icon: FileText },
+  { value: "applicants", label: "応募者", icon: Users },
+  { value: "timeline", label: "ログ", icon: ScrollText },
+  { value: "history", label: "編集履歴", icon: FileClock },
 ];
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { organization } = useOrg();
   const h = useJobDetail();
-  const [auditLogCount, setAuditLogCount] = useState<number | undefined>(undefined);
-  const handleAuditLoaded = useCallback((count: number) => setAuditLogCount(count), []);
+  const handleAuditLoaded = useCallback(() => {}, []);
 
   if (h.loading) {
     return (
@@ -77,21 +77,7 @@ export default function JobDetailPage() {
       />
 
       <StickyFilterBar>
-        <TabBar
-          tabs={tabs.map((tab) => ({
-            ...tab,
-            count:
-              tab.value === "applicants"
-                ? h.applications.length
-                : tab.value === "timeline"
-                  ? h.historyEvents.length
-                  : tab.value === "history"
-                    ? auditLogCount
-                    : undefined,
-          }))}
-          activeTab={h.activeTab}
-          onTabChange={h.setActiveTab}
-        />
+        <TabBar tabs={tabs} activeTab={h.activeTab} onTabChange={h.setActiveTab} />
       </StickyFilterBar>
 
       {h.activeTab === "applicants" && (
@@ -110,28 +96,11 @@ export default function JobDetailPage() {
             <JobDetailTab
               job={h.job}
               steps={h.steps}
+              applications={h.applications}
               forms={h.forms}
               interviews={h.interviews}
-              reorderMode={h.reorderMode}
-              setReorderMode={h.setReorderMode}
-              dragIndex={h.dragIndex}
-              setDragIndex={h.setDragIndex}
-              dragOverIndex={h.dragOverIndex}
-              setDragOverIndex={h.setDragOverIndex}
-              confirmingReorder={h.confirmingReorder}
-              confirmReorder={h.confirmReorder}
-              reorderSteps={h.reorderSteps}
-              stepsBeforeReorderRef={h.stepsBeforeReorder}
-              setSteps={h.setSteps}
-              startEditStep={h.startEditStep}
               startEditingInfo={h.startEditingInfo}
-              openAddStep={() => {
-                h.setNewStepType(StepType.Interview);
-                h.setNewStepLabel("");
-                h.setNewStepFormId("");
-                h.setNewStepInterviewId("");
-                h.setDialogOpen(true);
-              }}
+              onEditSteps={() => h.setStepManageOpen(true)}
             />
           )}
           {h.activeTab === "history" && organization && (
@@ -146,16 +115,8 @@ export default function JobDetailPage() {
         </div>
       )}
 
-      {h.activeTab === "timeline" && (
-        <JobTimelineTab
-          historyEvents={h.historyEvents}
-          historySearch={h.historySearch}
-          setHistorySearch={h.setHistorySearch}
-          statusFilter={h.statusFilter}
-          setStatusFilter={h.setStatusFilter}
-          eventFilter={h.eventFilter}
-          setEventFilter={h.setEventFilter}
-        />
+      {h.activeTab === "timeline" && organization && (
+        <JobTimelineTab jobId={id} organizationId={organization.id} />
       )}
 
       <JobEditPanel
@@ -179,43 +140,17 @@ export default function JobDetailPage() {
         saveInfo={h.saveInfo}
       />
 
-      <StepEditPanel
-        mode="edit"
-        open={h.editStepOpen}
-        onOpenChange={h.setEditStepOpen}
-        stepType={h.editStepType}
-        setStepType={h.setEditStepType}
-        stepLabel={h.editStepLabel}
-        setStepLabel={h.setEditStepLabel}
-        stepFormId={h.editStepFormId}
-        setStepFormId={h.setEditStepFormId}
-        stepInterviewId={h.editStepInterviewId}
-        setStepInterviewId={h.setEditStepInterviewId}
-        forms={h.forms}
-        interviews={h.interviews}
-        saving={h.savingEditStep}
-        onSave={h.saveEditStep}
-        onDelete={h.deleteEditStep}
-        deleting={h.deletingEditStep}
-      />
-
-      <StepEditPanel
-        mode="add"
-        open={h.dialogOpen}
-        onOpenChange={h.setDialogOpen}
-        stepType={h.newStepType}
-        setStepType={h.setNewStepType}
-        stepLabel={h.newStepLabel}
-        setStepLabel={h.setNewStepLabel}
-        stepFormId={h.newStepFormId}
-        setStepFormId={h.setNewStepFormId}
-        stepInterviewId={h.newStepInterviewId}
-        setStepInterviewId={h.setNewStepInterviewId}
-        forms={h.forms}
-        interviews={h.interviews}
-        saving={h.savingStep}
-        onSave={h.addStep}
-      />
+      {h.stepManageOpen && (
+        <StepManageDialog
+          open={h.stepManageOpen}
+          onOpenChange={h.setStepManageOpen}
+          steps={h.steps}
+          forms={h.forms}
+          interviews={h.interviews}
+          onSave={h.saveStepsManage}
+          saving={h.savingStepManage}
+        />
+      )}
     </>
   );
 }

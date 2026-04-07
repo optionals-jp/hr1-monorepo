@@ -94,6 +94,16 @@ const ALLOWED_EXCEPTIONS: Record<string, string> = {
   // organizations テーブルは .eq("id", organizationId) でフィルタ（自テーブルなので organization_id ではない）
   "settings-repository.ts:fetchOrganization": ".eq('id', organizationId) でフィルタ",
   "settings-repository.ts:updateOrganization": ".eq('id', organizationId) でフィルタ",
+
+  // .or() で organization_id フィルタ — 共通データ（null）と自社データを両方取得
+  "settings-repository.ts:fetchSkillMasters":
+    ".or() で organization_id.is.null + organization_id.eq フィルタ",
+  "settings-repository.ts:fetchCertificationMasters":
+    ".or() で organization_id.is.null + organization_id.eq フィルタ",
+
+  // skill_masters は .eq("id") で単一取得/更新 — RLS で保護
+  "settings-repository.ts:fetchSkillMaster": ".eq('id') で単一取得、RLS で閲覧制御",
+  "settings-repository.ts:updateSkillMasterDescription": ".eq('id') で単一更新、RLS で更新制御",
 };
 
 function collectFiles(dir: string): string[] {

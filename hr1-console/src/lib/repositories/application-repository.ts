@@ -8,9 +8,7 @@ export async function fetchApplicationDetail(
 ) {
   return client
     .from("applications")
-    .select(
-      "*, jobs(*), profiles:applicant_id(id, email, display_name, role), application_steps(*)"
-    )
+    .select("*, jobs(*), profiles:applicant_id(*), application_steps(*)")
     .eq("id", applicationId)
     .eq("organization_id", organizationId)
     .single();

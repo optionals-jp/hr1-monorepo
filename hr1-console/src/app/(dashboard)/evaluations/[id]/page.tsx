@@ -2,6 +2,7 @@
 
 import { format } from "date-fns";
 import { PageHeader } from "@/components/layout/page-header";
+import { SectionCard } from "@/components/ui/section-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -132,17 +133,7 @@ export default function EvaluationTemplateDetailPage() {
 
       <StickyFilterBar>
         <TabBar
-          tabs={getTabs(template.evaluation_type).map((tab) => ({
-            ...tab,
-            count:
-              tab.value === "criteria"
-                ? criteria.length
-                : tab.value === "evaluations"
-                  ? evaluations.length
-                  : tab.value === "cycles"
-                    ? cycles.length
-                    : undefined,
-          }))}
+          tabs={getTabs(template.evaluation_type)}
           activeTab={activeTab}
           onTabChange={setActiveTab}
         />
@@ -160,7 +151,7 @@ export default function EvaluationTemplateDetailPage() {
             {criteria.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground">評価項目がありません</p>
             ) : (
-              <div className="rounded-lg bg-white border">
+              <SectionCard>
                 {criteria.map((c, index) => (
                   <div key={c.id} className="flex items-start gap-4 px-5 py-4">
                     <span className="text-sm font-bold text-muted-foreground w-6 pt-0.5">
@@ -188,7 +179,7 @@ export default function EvaluationTemplateDetailPage() {
                     </div>
                   </div>
                 ))}
-              </div>
+              </SectionCard>
             )}
           </div>
         )}
@@ -310,7 +301,7 @@ export default function EvaluationTemplateDetailPage() {
                 </Button>
               </div>
             ) : (
-              <div className="rounded-lg bg-white border divide-y">
+              <SectionCard>
                 {cycles.map((cycle) => (
                   <div
                     key={cycle.id}
@@ -329,7 +320,7 @@ export default function EvaluationTemplateDetailPage() {
                     </Badge>
                   </div>
                 ))}
-              </div>
+              </SectionCard>
             )}
           </div>
         )}

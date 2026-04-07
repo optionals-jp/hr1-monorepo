@@ -43,6 +43,10 @@ import {
 import { cn } from "@/lib/utils";
 import { t } from "@/lib/i18n";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { usePermission } from "@/lib/hooks/use-permission";
+
+/** sidebar 内部用のエイリアス（usePermission を直接呼ぶとコンポーネント名と紛らわしいため） */
+const usePermissionSidebar = usePermission;
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -50,9 +54,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 export type ProductTab = "recruiting" | "workspace" | "client";
 
+interface NavItem {
+  href: string;
+  labelKey: string;
+  icon: React.ElementType;
+  resource?: string;
+}
+
 interface NavSection {
   labelKey: string;
-  items: { href: string; labelKey: string; icon: React.ElementType }[];
+  items: NavItem[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -63,22 +74,32 @@ const recruitingSections: NavSection[] = [
   {
     labelKey: "nav.section.recruitment",
     items: [
-      { href: "/applicants", labelKey: "nav.applicants", icon: UserPlus },
-      { href: "/jobs", labelKey: "nav.jobs", icon: Briefcase },
-      { href: "/applications", labelKey: "nav.applications", icon: ClipboardList },
-      { href: "/scheduling", labelKey: "nav.scheduling", icon: Calendar },
-      { href: "/forms", labelKey: "nav.forms", icon: FileText },
+      { href: "/applicants", labelKey: "nav.applicants", icon: UserPlus, resource: "applicants" },
+      { href: "/jobs", labelKey: "nav.jobs", icon: Briefcase, resource: "jobs" },
+      {
+        href: "/applications",
+        labelKey: "nav.applications",
+        icon: ClipboardList,
+        resource: "applications",
+      },
+      { href: "/scheduling", labelKey: "nav.scheduling", icon: Calendar, resource: "scheduling" },
+      { href: "/forms", labelKey: "nav.forms", icon: FileText, resource: "forms" },
     ],
   },
   {
     labelKey: "nav.section.common",
     items: [
-      { href: "/evaluations", labelKey: "nav.evaluations", icon: Star },
-      { href: "/messages", labelKey: "nav.messages", icon: MessageSquare },
-      { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays },
-      { href: "/tasks", labelKey: "nav.tasks", icon: ListTodo },
-      { href: "/announcements", labelKey: "nav.announcements", icon: Megaphone },
-      { href: "/faqs", labelKey: "nav.faqs", icon: CircleHelp },
+      { href: "/evaluations", labelKey: "nav.evaluations", icon: Star, resource: "evaluations" },
+      { href: "/messages", labelKey: "nav.messages", icon: MessageSquare, resource: "messages" },
+      { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, resource: "calendar" },
+      { href: "/tasks", labelKey: "nav.tasks", icon: ListTodo, resource: "tasks" },
+      {
+        href: "/announcements",
+        labelKey: "nav.announcements",
+        icon: Megaphone,
+        resource: "announcements",
+      },
+      { href: "/faqs", labelKey: "nav.faqs", icon: CircleHelp, resource: "faqs" },
     ],
   },
 ];
@@ -87,27 +108,37 @@ const workspaceSections: NavSection[] = [
   {
     labelKey: "nav.section.internal",
     items: [
-      { href: "/employees", labelKey: "nav.employees", icon: Users },
-      { href: "/departments", labelKey: "nav.departments", icon: Building2 },
-      { href: "/attendance", labelKey: "nav.attendance", icon: Clock },
-      { href: "/shifts", labelKey: "nav.shifts", icon: CalendarRange },
-      { href: "/workflows", labelKey: "nav.workflows", icon: FileCheck },
-      { href: "/leave", labelKey: "nav.leave", icon: CalendarOff },
-      { href: "/payslips", labelKey: "nav.payslips", icon: Receipt },
+      { href: "/employees", labelKey: "nav.employees", icon: Users, resource: "employees" },
+      {
+        href: "/departments",
+        labelKey: "nav.departments",
+        icon: Building2,
+        resource: "departments",
+      },
+      { href: "/attendance", labelKey: "nav.attendance", icon: Clock, resource: "attendance" },
+      { href: "/shifts", labelKey: "nav.shifts", icon: CalendarRange, resource: "shifts" },
+      { href: "/workflows", labelKey: "nav.workflows", icon: FileCheck, resource: "workflows" },
+      { href: "/leave", labelKey: "nav.leave", icon: CalendarOff, resource: "leave" },
+      { href: "/payslips", labelKey: "nav.payslips", icon: Receipt, resource: "payslips" },
     ],
   },
   {
     labelKey: "nav.section.common",
     items: [
-      { href: "/evaluations", labelKey: "nav.evaluations", icon: Star },
-      { href: "/projects", labelKey: "nav.projects", icon: FolderKanban },
-      { href: "/tasks", labelKey: "nav.tasks", icon: ListTodo },
-      { href: "/surveys", labelKey: "nav.surveys", icon: HeartPulse },
-      { href: "/messages", labelKey: "nav.messages", icon: MessageSquare },
-      { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays },
-      { href: "/announcements", labelKey: "nav.announcements", icon: Megaphone },
-      { href: "/faqs", labelKey: "nav.faqs", icon: CircleHelp },
-      { href: "/wiki", labelKey: "nav.wiki", icon: BookOpen },
+      { href: "/evaluations", labelKey: "nav.evaluations", icon: Star, resource: "evaluations" },
+      { href: "/projects", labelKey: "nav.projects", icon: FolderKanban, resource: "projects" },
+      { href: "/tasks", labelKey: "nav.tasks", icon: ListTodo, resource: "tasks" },
+      { href: "/surveys", labelKey: "nav.surveys", icon: HeartPulse, resource: "surveys" },
+      { href: "/messages", labelKey: "nav.messages", icon: MessageSquare, resource: "messages" },
+      { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, resource: "calendar" },
+      {
+        href: "/announcements",
+        labelKey: "nav.announcements",
+        icon: Megaphone,
+        resource: "announcements",
+      },
+      { href: "/faqs", labelKey: "nav.faqs", icon: CircleHelp, resource: "faqs" },
+      { href: "/wiki", labelKey: "nav.wiki", icon: BookOpen, resource: "wiki" },
     ],
   },
 ];
@@ -116,25 +147,65 @@ const clientSections: NavSection[] = [
   {
     labelKey: "nav.section.crm",
     items: [
-      { href: "/crm/leads", labelKey: "nav.crm.leads", icon: UserPlus },
-      { href: "/crm/companies", labelKey: "nav.crm.companies", icon: Building2 },
-      { href: "/crm/contacts", labelKey: "nav.crm.contacts", icon: Contact },
-      { href: "/crm/deals", labelKey: "nav.crm.deals", icon: Handshake },
-      { href: "/crm/quotes", labelKey: "nav.crm.quotes", icon: FileText },
-      { href: "/crm/reports/forecast", labelKey: "nav.crm.reports", icon: BarChart3 },
-      { href: "/crm/settings/pipelines", labelKey: "nav.crm.pipelines", icon: Settings },
-      { href: "/crm/settings/fields", labelKey: "nav.crm.fields", icon: Settings },
-      { href: "/crm/settings/automations", labelKey: "nav.crm.automations", icon: Zap },
-      { href: "/crm/settings/email-templates", labelKey: "nav.crm.emailTemplates", icon: Mail },
-      { href: "/crm/settings/webhooks", labelKey: "nav.crm.webhooks", icon: Webhook },
+      { href: "/crm/leads", labelKey: "nav.crm.leads", icon: UserPlus, resource: "crm.leads" },
+      {
+        href: "/crm/companies",
+        labelKey: "nav.crm.companies",
+        icon: Building2,
+        resource: "crm.companies",
+      },
+      {
+        href: "/crm/contacts",
+        labelKey: "nav.crm.contacts",
+        icon: Contact,
+        resource: "crm.contacts",
+      },
+      { href: "/crm/deals", labelKey: "nav.crm.deals", icon: Handshake, resource: "crm.deals" },
+      { href: "/crm/quotes", labelKey: "nav.crm.quotes", icon: FileText, resource: "crm.quotes" },
+      {
+        href: "/crm/reports/forecast",
+        labelKey: "nav.crm.reports",
+        icon: BarChart3,
+        resource: "crm.reports",
+      },
+      {
+        href: "/crm/settings/pipelines",
+        labelKey: "nav.crm.pipelines",
+        icon: Settings,
+        resource: "crm.settings",
+      },
+      {
+        href: "/crm/settings/fields",
+        labelKey: "nav.crm.fields",
+        icon: Settings,
+        resource: "crm.settings",
+      },
+      {
+        href: "/crm/settings/automations",
+        labelKey: "nav.crm.automations",
+        icon: Zap,
+        resource: "crm.settings",
+      },
+      {
+        href: "/crm/settings/email-templates",
+        labelKey: "nav.crm.emailTemplates",
+        icon: Mail,
+        resource: "crm.settings",
+      },
+      {
+        href: "/crm/settings/webhooks",
+        labelKey: "nav.crm.webhooks",
+        icon: Webhook,
+        resource: "crm.settings",
+      },
     ],
   },
   {
     labelKey: "nav.section.common",
     items: [
-      { href: "/messages", labelKey: "nav.messages", icon: MessageSquare },
-      { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays },
-      { href: "/tasks", labelKey: "nav.tasks", icon: ListTodo },
+      { href: "/messages", labelKey: "nav.messages", icon: MessageSquare, resource: "messages" },
+      { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, resource: "calendar" },
+      { href: "/tasks", labelKey: "nav.tasks", icon: ListTodo, resource: "tasks" },
     ],
   },
 ];
@@ -420,7 +491,14 @@ export function SidebarNav({
 }) {
   const pathname = usePathname();
   const activeTab = useProductTab();
-  const sections: NavSection[] = sectionsByTab[activeTab];
+  const { can } = usePermissionSidebar();
+  const rawSections: NavSection[] = sectionsByTab[activeTab];
+  const sections = rawSections
+    .map((s) => ({
+      ...s,
+      items: s.items.filter((item) => !item.resource || can(item.resource, "view")),
+    }))
+    .filter((s) => s.items.length > 0);
   const dashboardHref: string = dashboardByTab[activeTab];
 
   return (
@@ -453,22 +531,26 @@ export function SidebarNav({
       {/* 共通メニュー（下部固定） */}
       <div className={cn("border-t pt-2 mt-2 space-y-0.5", collapsed && "border-t-0")}>
         {collapsed && <div className="mx-2 my-1 h-px bg-border" />}
-        <NavLink
-          href="/compliance"
-          labelKey="nav.compliance"
-          icon={ShieldAlert}
-          pathname={pathname}
-          onNavigate={onNavigate}
-          collapsed={collapsed}
-        />
-        <NavLink
-          href="/audit-logs"
-          labelKey="nav.auditLogs"
-          icon={ShieldCheck}
-          pathname={pathname}
-          onNavigate={onNavigate}
-          collapsed={collapsed}
-        />
+        {can("compliance", "view") && (
+          <NavLink
+            href="/compliance"
+            labelKey="nav.compliance"
+            icon={ShieldAlert}
+            pathname={pathname}
+            onNavigate={onNavigate}
+            collapsed={collapsed}
+          />
+        )}
+        {can("audit-logs", "view") && (
+          <NavLink
+            href="/audit-logs"
+            labelKey="nav.auditLogs"
+            icon={ShieldCheck}
+            pathname={pathname}
+            onNavigate={onNavigate}
+            collapsed={collapsed}
+          />
+        )}
         <NavLink
           href="/settings"
           labelKey="nav.settings"

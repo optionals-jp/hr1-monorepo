@@ -3,6 +3,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const mockSignIn = vi.fn();
+const mockSignInWithOtp = vi.fn();
+const mockVerifyOtp = vi.fn();
 
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({
@@ -10,6 +12,8 @@ vi.mock("@/lib/auth-context", () => ({
     profile: null,
     loading: false,
     signIn: mockSignIn,
+    signInWithOtp: mockSignInWithOtp,
+    verifyOtp: mockVerifyOtp,
     signOut: vi.fn(),
   }),
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
@@ -37,6 +41,8 @@ import LoginPage from "@/app/(auth)/login/page";
 describe("LoginPage", () => {
   beforeEach(() => {
     mockSignIn.mockReset();
+    mockSignInWithOtp.mockReset();
+    mockVerifyOtp.mockReset();
     // window.location.search をリセット
     Object.defineProperty(window, "location", {
       value: { search: "", href: "http://localhost:3000/login" },
@@ -49,7 +55,7 @@ describe("LoginPage", () => {
 
     expect(screen.getByLabelText("メールアドレス")).toBeInTheDocument();
     expect(screen.getByLabelText("パスワード")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /ログイン/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^ログイン$/ })).toBeInTheDocument();
     expect(screen.getByText("おかえりなさい")).toBeInTheDocument();
   });
 
@@ -61,7 +67,7 @@ describe("LoginPage", () => {
 
     await user.type(screen.getByLabelText("メールアドレス"), "admin@test.com");
     await user.type(screen.getByLabelText("パスワード"), "password123");
-    await user.click(screen.getByRole("button", { name: /ログイン/ }));
+    await user.click(screen.getByRole("button", { name: /^ログイン$/ }));
 
     await waitFor(() => {
       expect(mockSignIn).toHaveBeenCalledWith("admin@test.com", "password123");
@@ -78,7 +84,7 @@ describe("LoginPage", () => {
 
     await user.type(screen.getByLabelText("メールアドレス"), "bad@test.com");
     await user.type(screen.getByLabelText("パスワード"), "wrong");
-    await user.click(screen.getByRole("button", { name: /ログイン/ }));
+    await user.click(screen.getByRole("button", { name: /^ログイン$/ }));
 
     await waitFor(() => {
       expect(screen.getByText("Invalid login credentials")).toBeInTheDocument();
@@ -96,13 +102,13 @@ describe("LoginPage", () => {
 
     await user.type(screen.getByLabelText("メールアドレス"), "admin@test.com");
     await user.type(screen.getByLabelText("パスワード"), "password123");
-    await user.click(screen.getByRole("button", { name: /ログイン/ }));
+    await user.click(screen.getByRole("button", { name: /^ログイン$/ }));
 
     expect(screen.getByRole("button", { name: /ログイン中/ })).toBeDisabled();
 
     // 完了後にボタンが有効に戻る
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /ログイン/ })).toBeEnabled();
+      expect(screen.getByRole("button", { name: /^ログイン$/ })).toBeEnabled();
     });
   });
 

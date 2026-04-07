@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useOrg } from "@/lib/org-context";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { FormInput, FormTextarea } from "@/components/ui/form-field";
 import {
   Select,
   SelectContent,
@@ -20,21 +19,18 @@ import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { DatetimeInput } from "@/components/ui/datetime-input";
 import { TabBar } from "@/components/layout/tab-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { cn } from "@/lib/utils";
 import { useSchedulingDetailPage } from "@/lib/hooks/use-scheduling-detail";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, Trash2, CalendarCheck } from "lucide-react";
+import { Trash2, CalendarCheck, ScrollText, FileText } from "lucide-react";
 import { format } from "date-fns";
-import {
-  interviewScheduleStatusLabels as statusLabels,
-  interviewScheduleStatusColors as statusColors,
-} from "@/lib/constants";
+import { interviewScheduleStatusLabels as statusLabels } from "@/lib/constants";
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";
+import { SchedulingDetailTab } from "@/features/scheduling/components/scheduling-detail-tab";
 
 const tabs = [
-  { value: "detail", label: "面接詳細" },
-  { value: "timeline", label: "ログ" },
-  { value: "history", label: "編集ログ" },
+  { value: "detail", label: "面接詳細", icon: CalendarCheck },
+  { value: "timeline", label: "ログ", icon: ScrollText },
+  { value: "history", label: "編集履歴", icon: FileText },
 ];
 
 const editTabs: EditPanelTab[] = [
@@ -46,8 +42,7 @@ export default function SchedulingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { organization } = useOrg();
   const h = useSchedulingDetailPage();
-  const [auditLogCount, setAuditLogCount] = useState<number | undefined>(undefined);
-  const handleAuditLoaded = useCallback((count: number) => setAuditLogCount(count), []);
+  const handleAuditLoaded = useCallback(() => {}, []);
 
   if (h.loading) {
     return (
@@ -90,145 +85,15 @@ export default function SchedulingDetailPage() {
       />
 
       <StickyFilterBar>
-        <TabBar
-          tabs={tabs.map((tab) => ({
-            ...tab,
-            count:
-              tab.value === "timeline"
-                ? h.bookedApps.length
-                : tab.value === "history"
-                  ? auditLogCount
-                  : undefined,
-          }))}
-          activeTab={h.activeTab}
-          onTabChange={h.setActiveTab}
-        />
+        <TabBar tabs={tabs} activeTab={h.activeTab} onTabChange={h.setActiveTab} />
       </StickyFilterBar>
 
-      {(h.activeTab === "detail" || h.activeTab === "history") && (
+      {h.activeTab === "detail" && (
         <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
-          {/* ===== 面接詳細タブ ===== */}
-          {h.activeTab === "detail" && (
-            <div className="space-y-6 max-w-3xl">
-              {/* 面接情報セクション */}
-              <section>
-                <div className="rounded-lg bg-white border">
-                  <div className="flex items-center justify-between px-5 pt-4 pb-2">
-                    <h2 className="text-sm font-semibold text-muted-foreground">面接情報</h2>
-                    <Button variant="outline" size="sm" onClick={h.startEditing}>
-                      編集
-                    </Button>
-                  </div>
-                  <div className="px-5 py-4 space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">タイトル</span>
-                      <span className="font-medium">{interview.title}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">場所</span>
-                      <span>{interview.location ?? "-"}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">ステータス</span>
-                      <Badge variant={statusColors[interview.status]}>
-                        {statusLabels[interview.status]}
-                      </Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">枠の予約状況</span>
-                      <span>
-                        {h.slots.filter((s) => s.application_id).length} / {h.slots.length} 予約済み
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">作成日</span>
-                      <span>{format(new Date(interview.created_at), "yyyy/MM/dd")}</span>
-                    </div>
-                    {interview.notes && (
-                      <div className="pt-3 border-t">
-                        <p className="text-muted-foreground mb-1">備考</p>
-                        <p className="whitespace-pre-wrap">{interview.notes}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </section>
-
-              {/* 候補日時セクション */}
-              <section>
-                <div className="rounded-lg bg-white border">
-                  <div className="flex items-center justify-between px-5 pt-4 pb-2">
-                    <h2 className="text-sm font-semibold text-muted-foreground">
-                      候補日時
-                      <span className="ml-1.5 text-xs font-normal">{h.slots.length}</span>
-                    </h2>
-                  </div>
-                  {h.slots.length === 0 ? (
-                    <p className="text-center py-8 text-muted-foreground">候補日時がありません</p>
-                  ) : (
-                    <div>
-                      {h.slots.map((slot) => (
-                        <div
-                          key={slot.id}
-                          className={cn(
-                            "flex items-center gap-3 px-5 py-4",
-                            slot.is_selected && "bg-primary/5"
-                          )}
-                        >
-                          <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">
-                              {format(new Date(slot.start_at), "yyyy/MM/dd HH:mm")}
-                              {" 〜 "}
-                              {format(new Date(slot.end_at), "HH:mm")}
-                            </p>
-                            {slot.application_id ? (
-                              <p className="text-xs text-primary font-medium">
-                                予約済み：
-                                {(() => {
-                                  const app = slot.applications as unknown as {
-                                    profiles?: { display_name: string | null; email: string };
-                                  } | null;
-                                  return (
-                                    app?.profiles?.display_name ?? app?.profiles?.email ?? "不明"
-                                  );
-                                })()}
-                              </p>
-                            ) : (
-                              <p className="text-xs text-muted-foreground">空き</p>
-                            )}
-                          </div>
-                          <span className="text-xs text-muted-foreground shrink-0">
-                            上限: {`${slot.max_applicants}名`}
-                          </span>
-                          {!slot.application_id && interview.status !== "completed" && (
-                            <Badge variant="outline" className="text-xs shrink-0">
-                              空き枠
-                            </Badge>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </section>
-            </div>
-          )}
-
-          {/* ===== 編集ログタブ ===== */}
-          {h.activeTab === "history" && organization && (
-            <AuditLogPanel
-              organizationId={organization.id}
-              tableName="interviews"
-              recordId={id}
-              refreshKey={h.auditRefreshKey}
-              onLoaded={handleAuditLoaded}
-            />
-          )}
+          <SchedulingDetailTab interview={interview} slots={h.slots} onEdit={h.startEditing} />
         </div>
       )}
 
-      {/* ===== ログタブ ===== */}
       {h.activeTab === "timeline" && (
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 py-4">
           {h.bookedApps.length === 0 ? (
@@ -268,6 +133,18 @@ export default function SchedulingDetailPage() {
         </div>
       )}
 
+      {h.activeTab === "history" && organization && (
+        <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
+          <AuditLogPanel
+            organizationId={organization.id}
+            tableName="interviews"
+            recordId={id}
+            refreshKey={h.auditRefreshKey}
+            onLoaded={handleAuditLoaded}
+          />
+        </div>
+      )}
+
       <EditPanel
         open={h.editing}
         onOpenChange={h.setEditing}
@@ -281,31 +158,26 @@ export default function SchedulingDetailPage() {
       >
         {h.editTab === "info" && (
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>タイトル *</Label>
-              <Input
-                value={h.editTitle}
-                onChange={(e) => h.setEditTitle(e.target.value)}
-                placeholder="一次面接"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>場所</Label>
-              <Input
-                value={h.editLocation}
-                onChange={(e) => h.setEditLocation(e.target.value)}
-                placeholder="オンライン (Google Meet)"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>備考</Label>
-              <Textarea
-                value={h.editNotes}
-                onChange={(e) => h.setEditNotes(e.target.value)}
-                placeholder="面接に関する備考"
-                rows={3}
-              />
-            </div>
+            <FormInput
+              label="タイトル"
+              required
+              value={h.editTitle}
+              onChange={(e) => h.setEditTitle(e.target.value)}
+              placeholder="一次面接"
+            />
+            <FormInput
+              label="場所"
+              value={h.editLocation}
+              onChange={(e) => h.setEditLocation(e.target.value)}
+              placeholder="オンライン (Google Meet)"
+            />
+            <FormTextarea
+              label="備考"
+              value={h.editNotes}
+              onChange={(e) => h.setEditNotes(e.target.value)}
+              placeholder="面接に関する備考"
+              rows={3}
+            />
           </div>
         )}
         {h.editTab === "slots" && (

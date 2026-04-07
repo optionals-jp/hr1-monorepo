@@ -39,14 +39,14 @@ import { TableSection } from "@/components/layout/table-section";
 import { usePayslipsPage } from "@/lib/hooks/use-payslips-page";
 import { TabBar } from "@/components/layout/tab-bar";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, FileDown, Download, SlidersHorizontal, X } from "lucide-react";
+import { Plus, Trash2, FileDown, Download, SlidersHorizontal, X, List, Upload } from "lucide-react";
 import { exportToCSV } from "@/lib/export-csv";
 
 type TabValue = "list" | "upload";
 
-const tabList: { value: TabValue; label: string }[] = [
-  { value: "list", label: "明細一覧" },
-  { value: "upload", label: "CSV取込" },
+const tabList: { value: TabValue; label: string; icon: React.ElementType }[] = [
+  { value: "list", label: "明細一覧", icon: List },
+  { value: "upload", label: "CSV取込", icon: Upload },
 ];
 
 function formatCurrency(amount: number): string {

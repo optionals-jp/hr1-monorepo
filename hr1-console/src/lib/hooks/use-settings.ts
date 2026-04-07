@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as settingsRepo from "@/lib/repositories/settings-repository";
@@ -181,6 +181,8 @@ export function useSkillMastersPage() {
   const { organization } = useOrg();
   const [masters, setMasters] = useState<SkillMaster[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
   const [newName, setNewName] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [adding, setAdding] = useState(false);
@@ -197,6 +199,31 @@ export function useSkillMastersPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- load is an async data fetcher
     if (organization) void load();
   }, [organization, load]);
+
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    for (const m of masters) set.add(m.category ?? "未分類");
+    return [...set].sort((a, b) => {
+      if (a === "未分類") return 1;
+      if (b === "未分類") return -1;
+      return a.localeCompare(b, "ja");
+    });
+  }, [masters]);
+
+  const filtered = useMemo(() => {
+    let result = masters;
+    if (filterCategory !== "all") {
+      result = result.filter((m) => (m.category ?? "未分類") === filterCategory);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (m) =>
+          m.name.toLowerCase().includes(q) || (m.category && m.category.toLowerCase().includes(q))
+      );
+    }
+    return result;
+  }, [masters, search, filterCategory]);
 
   const handleAdd = async () => {
     if (!organization || !newName.trim()) return;
@@ -221,7 +248,13 @@ export function useSkillMastersPage() {
   return {
     organization,
     masters,
+    filtered,
     loading,
+    search,
+    setSearch,
+    filterCategory,
+    setFilterCategory,
+    categories,
     newName,
     setNewName,
     newCategory,
@@ -238,6 +271,8 @@ export function useCertificationMastersPage() {
   const { organization } = useOrg();
   const [masters, setMasters] = useState<CertificationMaster[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
   const [newName, setNewName] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [adding, setAdding] = useState(false);
@@ -254,6 +289,31 @@ export function useCertificationMastersPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- load is an async data fetcher
     if (organization) void load();
   }, [organization, load]);
+
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    for (const m of masters) set.add(m.category ?? "未分類");
+    return [...set].sort((a, b) => {
+      if (a === "未分類") return 1;
+      if (b === "未分類") return -1;
+      return a.localeCompare(b, "ja");
+    });
+  }, [masters]);
+
+  const filtered = useMemo(() => {
+    let result = masters;
+    if (filterCategory !== "all") {
+      result = result.filter((m) => (m.category ?? "未分類") === filterCategory);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (m) =>
+          m.name.toLowerCase().includes(q) || (m.category && m.category.toLowerCase().includes(q))
+      );
+    }
+    return result;
+  }, [masters, search, filterCategory]);
 
   const handleAdd = async () => {
     if (!organization || !newName.trim()) return;
@@ -278,7 +338,13 @@ export function useCertificationMastersPage() {
   return {
     organization,
     masters,
+    filtered,
     loading,
+    search,
+    setSearch,
+    filterCategory,
+    setFilterCategory,
+    categories,
     newName,
     setNewName,
     newCategory,

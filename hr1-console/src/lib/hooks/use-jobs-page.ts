@@ -10,6 +10,12 @@ import { validators, validateForm, type ValidationErrors } from "@/lib/validatio
 import { StepType } from "@/lib/constants";
 import type { Job } from "@/types/database";
 
+export const JOB_TAB_STATUSES: Record<string, string[]> = {
+  active: ["open", "draft"],
+  closed: ["closed"],
+  archived: ["archived"],
+};
+
 interface AppCounts {
   total: number;
   offered: number;
@@ -34,15 +40,18 @@ export async function deleteJob(jobId: string, organizationId: string) {
 export function useJobsPage() {
   const { organization } = useOrg();
   const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useTabParam("open");
+  const [activeTab, setActiveTab] = useTabParam("active");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: jobs = [], isLoading, error: jobsError, mutate: mutateJobs } = useJobsList();
 
   const { data: appCounts = {} } = useJobAppCounts();
 
+  const tabStatuses = JOB_TAB_STATUSES;
+
   const filtered = jobs.filter((job) => {
-    if (job.status !== activeTab) return false;
+    const allowed = tabStatuses[activeTab] ?? [activeTab];
+    if (!allowed.includes(job.status)) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (

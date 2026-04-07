@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { EditPanel } from "@/components/ui/edit-panel";
 import { useToast } from "@/components/ui/toast";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
 
@@ -18,33 +20,44 @@ const TARGET_TYPES = [
   { key: "offers", label: "内定数目標" },
 ] as const;
 
+type HiringKey = (typeof HIRING_TYPES)[number]["key"];
+type TargetKey = (typeof TARGET_TYPES)[number]["key"];
+type EditValues = Record<HiringKey, Record<TargetKey, string>>;
+
+function getDisplayValue(
+  hiringKey: HiringKey,
+  targetKey: TargetKey,
+  targets: ReturnType<typeof useDashboard>["targets"]
+): number {
+  if (!targets) return 0;
+  const group = hiringKey === "new_grad" ? targets.newGrad : targets.midCareer;
+  return targetKey === "applications" ? group.applicationTarget : group.offerTarget;
+}
+
 export default function RecruitingTargetsPage() {
   const { showToast } = useToast();
   const { targets, fiscalYear, saveTarget } = useDashboard();
 
-  const [values, setValues] = useState<Record<string, Record<string, string>>>({
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [values, setValues] = useState<EditValues>({
     new_grad: { applications: "", offers: "" },
     mid_career: { applications: "", offers: "" },
   });
-  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (!targets) return;
+  const startEditing = () => {
     setValues({
       new_grad: {
-        applications:
-          targets.newGrad.applicationTarget > 0 ? String(targets.newGrad.applicationTarget) : "",
-        offers: targets.newGrad.offerTarget > 0 ? String(targets.newGrad.offerTarget) : "",
+        applications: String(getDisplayValue("new_grad", "applications", targets) || ""),
+        offers: String(getDisplayValue("new_grad", "offers", targets) || ""),
       },
       mid_career: {
-        applications:
-          targets.midCareer.applicationTarget > 0
-            ? String(targets.midCareer.applicationTarget)
-            : "",
-        offers: targets.midCareer.offerTarget > 0 ? String(targets.midCareer.offerTarget) : "",
+        applications: String(getDisplayValue("mid_career", "applications", targets) || ""),
+        offers: String(getDisplayValue("mid_career", "offers", targets) || ""),
       },
     });
-  }, [targets]);
+    setEditing(true);
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -56,6 +69,7 @@ export default function RecruitingTargetsPage() {
         }
       }
       showToast("採用目標を保存しました");
+      setEditing(false);
     } catch {
       showToast("保存に失敗しました", "error");
     } finally {
@@ -68,40 +82,69 @@ export default function RecruitingTargetsPage() {
       <PageHeader
         title="採用目標"
         description={`${fiscalYear}年度の採用目標を設定`}
-        action={
-          <Button variant="primary" onClick={handleSave} disabled={saving}>
-            {saving ? "保存中..." : "保存"}
-          </Button>
-        }
+        sticky={false}
+        border={false}
       />
       <PageContent>
-        <div className="max-w-xl space-y-8">
+        <div className="max-w-2xl space-y-4">
           {HIRING_TYPES.map((ht) => (
-            <div key={ht.key} className="space-y-4">
-              <h2 className="text-[15px] font-semibold">{ht.label}</h2>
-              <div className="grid grid-cols-2 gap-4">
-                {TARGET_TYPES.map((tt) => (
-                  <div key={tt.key} className="space-y-2">
-                    <Label>{tt.label}</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      placeholder="0"
-                      value={values[ht.key][tt.key]}
-                      onChange={(e) =>
-                        setValues((prev) => ({
-                          ...prev,
-                          [ht.key]: { ...prev[ht.key], [tt.key]: e.target.value },
-                        }))
-                      }
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
+            <Card key={ht.key}>
+              <CardContent>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-semibold text-muted-foreground">{ht.label}</h2>
+                  <Button variant="outline" size="sm" onClick={startEditing}>
+                    編集
+                  </Button>
+                </div>
+                <div className="space-y-3 text-sm">
+                  {TARGET_TYPES.map((tt) => {
+                    const value = getDisplayValue(ht.key, tt.key, targets);
+                    return (
+                      <div key={tt.key} className="flex justify-between">
+                        <span className="text-muted-foreground">{tt.label}</span>
+                        <span>{value > 0 ? `${value}人` : "-"}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </PageContent>
+
+      <EditPanel
+        open={editing}
+        onOpenChange={setEditing}
+        title="採用目標を編集"
+        onSave={handleSave}
+        saving={saving}
+      >
+        <div className="space-y-6">
+          {HIRING_TYPES.map((ht) => (
+            <div key={ht.key} className="space-y-4">
+              <h3 className="text-sm font-semibold text-muted-foreground">{ht.label}</h3>
+              {TARGET_TYPES.map((tt) => (
+                <div key={tt.key} className="space-y-2">
+                  <Label>{tt.label}</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder="0"
+                    value={values[ht.key][tt.key]}
+                    onChange={(e) =>
+                      setValues((prev) => ({
+                        ...prev,
+                        [ht.key]: { ...prev[ht.key], [tt.key]: e.target.value },
+                      }))
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </EditPanel>
     </>
   );
 }

@@ -15,7 +15,6 @@ export function useCreateInterview() {
   const { organization } = useOrg();
   const { mutate } = useSchedulingList();
 
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newLocation, setNewLocation] = useState("");
   const [newNotes, setNewNotes] = useState("");
@@ -49,28 +48,32 @@ export function useCreateInterview() {
     setSlots((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
+  const [saving, setSaving] = useState(false);
+
   const handleCreate = useCallback(async () => {
     if (!organization || !newTitle) return;
+    setSaving(true);
 
-    await createInterview({
-      organizationId: organization.id,
-      title: newTitle,
-      location: newLocation,
-      notes: newNotes,
-      slots,
-    });
+    try {
+      await createInterview({
+        organizationId: organization.id,
+        title: newTitle,
+        location: newLocation,
+        notes: newNotes,
+        slots,
+      });
 
-    setNewTitle("");
-    setNewLocation("");
-    setNewNotes("");
-    setSlots([]);
-    setDialogOpen(false);
-    mutate();
+      setNewTitle("");
+      setNewLocation("");
+      setNewNotes("");
+      setSlots([]);
+      mutate();
+    } finally {
+      setSaving(false);
+    }
   }, [organization, newTitle, newLocation, newNotes, slots, mutate]);
 
   return {
-    dialogOpen,
-    setDialogOpen,
     newTitle,
     setNewTitle,
     newLocation,
@@ -81,6 +84,7 @@ export function useCreateInterview() {
     addSlot,
     updateSlot,
     removeSlot,
+    saving,
     handleCreate,
   };
 }

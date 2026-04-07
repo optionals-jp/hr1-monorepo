@@ -133,7 +133,7 @@ export async function fetchEvaluationsByUser(
 ) {
   let query = client
     .from("evaluations")
-    .select("*")
+    .select("*, evaluation_templates(title), evaluator:evaluator_id(display_name, email)")
     .eq("organization_id", orgId)
     .eq("target_user_id", targetUserId);
 
@@ -162,6 +162,15 @@ export async function insertEvaluation(client: SupabaseClient, row: Record<strin
   return client.from("evaluations").insert(row);
 }
 
+export async function updateEvaluation(
+  client: SupabaseClient,
+  id: string,
+  orgId: string,
+  data: Record<string, unknown>
+) {
+  return client.from("evaluations").update(data).eq("id", id).eq("organization_id", orgId);
+}
+
 // ─── Scores ───
 
 export async function fetchScores(client: SupabaseClient, evaluationIds: string[]) {
@@ -170,6 +179,10 @@ export async function fetchScores(client: SupabaseClient, evaluationIds: string[
 
 export async function insertScores(client: SupabaseClient, rows: Record<string, unknown>[]) {
   return client.from("evaluation_scores").insert(rows);
+}
+
+export async function deleteScoresByEvaluation(client: SupabaseClient, evaluationId: string) {
+  return client.from("evaluation_scores").delete().eq("evaluation_id", evaluationId);
 }
 
 // ─── Cycles ───

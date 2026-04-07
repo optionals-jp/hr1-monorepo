@@ -36,6 +36,12 @@ export interface Profile {
   registered_city: string | null;
   registered_street_address: string | null;
   registered_building: string | null;
+  school_name: string | null;
+  school_faculty: string | null;
+  work_history: string | null;
+  skills: string | null;
+  self_introduction: string | null;
+  invited_at: string | null;
   created_at: string;
 }
 
@@ -121,6 +127,22 @@ export interface FormResponse {
   field_id: string;
   value: string;
   submitted_at: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  organization_id: string;
+  actor_id: string | null;
+  actor_name: string | null;
+  action: string;
+  category: string;
+  target_type: string;
+  target_id: string;
+  parent_type: string | null;
+  parent_id: string | null;
+  summary: string;
+  detail: Record<string, unknown>;
+  created_at: string;
 }
 
 export interface AuditLog {
@@ -472,6 +494,8 @@ export interface EmployeeSkill {
   user_id: string;
   organization_id: string;
   name: string;
+  level: number;
+  skill_master_id: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -505,6 +529,7 @@ export interface SkillMaster {
   organization_id: string | null;
   name: string;
   category: string | null;
+  description: string | null;
   created_at: string;
 }
 
@@ -1151,4 +1176,58 @@ export interface CrmWebhookLog {
   error_message: string | null;
   executed_at: string;
   crm_webhooks?: CrmWebhook;
+}
+
+// ==========================================================
+// 権限グループ
+// ==========================================================
+
+export type PermissionAction = "view" | "create" | "edit" | "delete";
+
+export interface PermissionGroup {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  is_system: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PermissionGroupPermission {
+  id: string;
+  group_id: string;
+  resource: string;
+  actions: PermissionAction[];
+}
+
+export interface MemberPermissionGroup {
+  user_id: string;
+  group_id: string;
+  created_at: string;
+}
+
+// ==========================================================
+// カスタムワークフロー
+// ==========================================================
+
+export interface WorkflowTemplateField {
+  key: string;
+  label: string;
+  type: "text" | "number" | "date" | "textarea" | "select";
+  required?: boolean;
+  options?: string[];
+}
+
+export interface WorkflowTemplate {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  icon: string;
+  fields: WorkflowTemplateField[];
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }

@@ -1,13 +1,22 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { format } from "date-fns";
 import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrg } from "@/lib/org-context";
 import { StepStatus, StepType } from "@/lib/constants";
 import { getSupabase } from "@/lib/supabase/browser";
+import { useAuth } from "@/lib/auth-context";
 import * as applicationRepository from "@/lib/repositories/application-repository";
-import { countEvaluationsByApplication } from "@/lib/repositories/evaluation-repository";
+import * as activityLogRepo from "@/lib/repositories/activity-log-repository";
+import {
+  countEvaluationsByApplication,
+  fetchEvaluationsByUser,
+  fetchScores,
+  fetchCriteriaByTemplates,
+  fetchTemplateTitles,
+} from "@/lib/repositories/evaluation-repository";
+import type { Evaluation, EvaluationScore, EvaluationCriterion } from "@/types/database";
 import {
   isResourceStepType,
   canUnskipStep,
@@ -25,9 +34,37 @@ import type {
 
 export function useApplicationDetail(id: string): UseApplicationDetailReturn {
   const { organization } = useOrg();
+  const { user, profile: authProfile } = useAuth();
   const [application, setApplication] = useState<Application | null>(null);
   const [steps, setSteps] = useState<ApplicationStep[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const applicationRef = useRef(application);
+  applicationRef.current = application;
+
+  const logActivity = useCallback(
+    async (action: string, summary: string, detail?: Record<string, unknown>) => {
+      if (!organization) return;
+      try {
+        await activityLogRepo.createActivityLog(getSupabase(), {
+          organization_id: organization.id,
+          actor_id: user?.id ?? null,
+          actor_name: authProfile?.display_name ?? user?.email ?? null,
+          action,
+          category: "application",
+          target_type: "application",
+          target_id: id,
+          parent_type: "job",
+          parent_id: applicationRef.current?.job_id ?? null,
+          summary,
+          detail,
+        });
+      } catch {
+        // ログ記録失敗は握りつぶす（業務処理をブロックしない）
+      }
+    },
+    [organization, user, authProfile, id]
+  );
 
   const [formSheetOpen, setFormSheetOpen] = useState(false);
   const [formSheetStep, setFormSheetStep] = useState<ApplicationStep | null>(null);
@@ -47,6 +84,18 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
   const [converting, setConverting] = useState(false);
 
   const [evaluationCount, setEvaluationCount] = useState(0);
+  const [evaluationSummaries, setEvaluationSummaries] = useState<
+    {
+      id: string;
+      template_title: string;
+      evaluator_name: string;
+      status: string;
+      submitted_at: string | null;
+      created_at: string;
+      scores: EvaluationScore[];
+      criteria: EvaluationCriterion[];
+    }[]
+  >([]);
 
   const load = useCallback(async () => {
     if (!organization) return;
@@ -63,6 +112,44 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
         (a: ApplicationStep, b: ApplicationStep) => a.step_order - b.step_order
       );
       setSteps(sortedSteps);
+
+      // 評価サマリー取得
+      const applicantId = (data as unknown as Application).applicant_id;
+      const { data: evalData } = await fetchEvaluationsByUser(
+        client,
+        organization.id,
+        applicantId,
+        id
+      );
+      if (evalData && evalData.length > 0) {
+        const templateIds = [...new Set(evalData.map((e) => e.template_id))];
+        const evalIds = evalData.map((e) => e.id);
+        const [{ data: crData }, { data: scoreData }, { data: tpls }] = await Promise.all([
+          fetchCriteriaByTemplates(client, templateIds),
+          fetchScores(client, evalIds),
+          fetchTemplateTitles(client, templateIds),
+        ]);
+        const titleMap = new Map((tpls ?? []).map((t) => [t.id, t.title]));
+        setEvaluationSummaries(
+          evalData.map((e) => {
+            const ev = e as Evaluation & {
+              evaluator?: { display_name: string | null; email: string };
+            };
+            return {
+              id: e.id,
+              template_title: titleMap.get(e.template_id) ?? e.template_id,
+              evaluator_name: ev.evaluator?.display_name ?? ev.evaluator?.email ?? "-",
+              status: e.status,
+              submitted_at: e.submitted_at,
+              created_at: e.created_at,
+              scores: (scoreData ?? []).filter((s) => s.evaluation_id === e.id),
+              criteria: (crData ?? []).filter((c) => c.template_id === e.template_id),
+            };
+          })
+        );
+      } else {
+        setEvaluationSummaries([]);
+      }
     }
     setEvaluationCount(evalCount);
     setLoading(false);
@@ -107,17 +194,28 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
     async (resourceId: string) => {
       if (!resourceDialogStep) return;
 
-      await applicationRepository.updateStepStatus(getSupabase(), resourceDialogStep.id, {
-        status: StepStatus.InProgress,
-        related_id: resourceId,
-        started_at: new Date().toISOString(),
+      const { error } = await applicationRepository.updateStepStatus(
+        getSupabase(),
+        resourceDialogStep.id,
+        {
+          status: StepStatus.InProgress,
+          related_id: resourceId,
+          started_at: new Date().toISOString(),
+        }
+      );
+      if (error) throw error;
+
+      logActivity("step_started", `${resourceDialogStep.label}を開始`, {
+        step_id: resourceDialogStep.id,
+        step_label: resourceDialogStep.label,
+        resource_id: resourceId,
       });
 
       setResourceDialogOpen(false);
       setResourceDialogStep(null);
       load();
     },
-    [resourceDialogStep, load]
+    [resourceDialogStep, load, logActivity]
   );
 
   const advanceStep = useCallback(
@@ -136,12 +234,20 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
             started_at: new Date().toISOString(),
           });
           if (error) throw error;
+          logActivity("step_started", `${step.label}を開始`, {
+            step_id: step.id,
+            step_label: step.label,
+          });
         } else if (step.status === StepStatus.InProgress) {
           const { error } = await applicationRepository.updateStepStatus(client, step.id, {
             status: StepStatus.Completed,
             completed_at: new Date().toISOString(),
           });
           if (error) throw error;
+          logActivity("step_completed", `${step.label}を完了`, {
+            step_id: step.id,
+            step_label: step.label,
+          });
 
           const nextStep = findNextAutoStartStep(steps, step.step_order);
           if (nextStep && !isResourceStepType(nextStep.step_type)) {
@@ -156,7 +262,7 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
         console.error("ステップ更新エラー:", err);
       }
     },
-    [steps, openResourceDialog, load]
+    [steps, openResourceDialog, load, logActivity]
   );
 
   const skipStep = useCallback(
@@ -168,10 +274,14 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
       if (error) {
         return { success: false, error: "ステップのスキップに失敗しました" };
       }
+      logActivity("step_skipped", `${step.label}をスキップ`, {
+        step_id: step.id,
+        step_label: step.label,
+      });
       load();
       return { success: true };
     },
-    [load]
+    [load, logActivity]
   );
 
   const unskipStep = useCallback(
@@ -188,10 +298,14 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
       if (error) {
         return { success: false, error: "ステップの復元に失敗しました" };
       }
+      logActivity("step_unskipped", `${step.label}のスキップを取り消し`, {
+        step_id: step.id,
+        step_label: step.label,
+      });
       load();
       return { success: true };
     },
-    [load, steps]
+    [load, steps, logActivity]
   );
 
   const currentStepOrder = getCurrentStepOrder(steps);
@@ -224,6 +338,7 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
     async (status: string | null) => {
       if (!status) return;
       if (!organization) return;
+      const prevStatus = application?.status;
       await applicationRepository.updateApplicationStatus(
         getSupabase(),
         id,
@@ -233,8 +348,12 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
       setApplication((prev) =>
         prev ? { ...prev, status: status as Application["status"] } : prev
       );
+      logActivity("status_changed", `ステータスを「${status}」に変更`, {
+        from: prevStatus,
+        to: status,
+      });
     },
-    [id, organization]
+    [id, organization, application, logActivity]
   );
 
   const handleConvertToEmployee = useCallback(async (): Promise<{
@@ -251,6 +370,9 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
         hireDate
       );
       setConvertDialogOpen(false);
+      logActivity("converted_to_employee", "入社確定（社員に変換）", {
+        hire_date: hireDate,
+      });
       load();
       return { success: true };
     } catch (e) {
@@ -258,7 +380,7 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
     } finally {
       setConverting(false);
     }
-  }, [application, organization, hireDate, load]);
+  }, [application, organization, hireDate, load, logActivity]);
 
   return {
     application,
@@ -298,6 +420,7 @@ export function useApplicationDetail(id: string): UseApplicationDetailReturn {
     updateApplicationStatus,
 
     evaluationCount,
+    evaluationSummaries,
 
     load,
   };

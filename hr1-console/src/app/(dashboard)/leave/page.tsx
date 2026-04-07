@@ -45,14 +45,23 @@ import {
 import { useLeavePage } from "@/lib/hooks/use-leave-page";
 import { TabBar } from "@/components/layout/tab-bar";
 import { cn } from "@/lib/utils";
-import { Plus, Calculator, Users, Download, SlidersHorizontal, X } from "lucide-react";
+import {
+  Plus,
+  Calculator,
+  Users,
+  Download,
+  SlidersHorizontal,
+  X,
+  CalendarDays,
+  Gift,
+} from "lucide-react";
 import { exportToCSV } from "@/lib/export-csv";
 
 type TabValue = "balances" | "grant";
 
-const tabList: { value: TabValue; label: string }[] = [
-  { value: "balances", label: "残日数一覧" },
-  { value: "grant", label: "有給付与" },
+const tabList: { value: TabValue; label: string; icon: React.ElementType }[] = [
+  { value: "balances", label: "残日数一覧", icon: CalendarDays },
+  { value: "grant", label: "有給付与", icon: Gift },
 ];
 
 function formatDays(n: number): string {

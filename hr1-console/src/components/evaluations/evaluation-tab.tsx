@@ -4,16 +4,6 @@ import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/lib/auth-context";
@@ -23,12 +13,7 @@ import {
   loadTemplateCriteria,
   submitEvaluation,
 } from "@/lib/hooks/use-evaluation-detail";
-import {
-  scoreTypeLabels,
-  evaluationStatusLabels,
-  evaluationStatusColors,
-  raterTypeLabels,
-} from "@/lib/constants";
+import { evaluationStatusLabels, evaluationStatusColors, raterTypeLabels } from "@/lib/constants";
 import type {
   EvaluationTemplate,
   EvaluationCriterion,
@@ -36,8 +21,11 @@ import type {
   Evaluation,
   EvaluationScore,
 } from "@/types/database";
-import { Star } from "lucide-react";
+import { Star, Plus, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TemplateSelectDialog } from "@/components/evaluations/template-select-dialog";
+import { EvaluationFormDialog } from "@/components/evaluations/evaluation-form-dialog";
+import type { ScoreDraft } from "@/components/evaluations/evaluation-form-dialog";
 
 interface EvaluationTabProps {
   targetUserId: string;
@@ -52,13 +40,6 @@ interface EvalWithDetails extends Evaluation {
   template_title: string;
 }
 
-interface ScoreDraft {
-  criterion_id: string;
-  score: number | null;
-  value: string;
-  comment: string;
-}
-
 export function EvaluationTab({ targetUserId, targetType, applicationId }: EvaluationTabProps) {
   const { user } = useAuth();
   const { organization } = useOrg();
@@ -67,14 +48,16 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
   const [evaluations, setEvaluations] = useState<EvalWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // New evaluation form
+  // Evaluation form (new or edit)
   const [showForm, setShowForm] = useState(false);
+  const [editingEvaluationId, setEditingEvaluationId] = useState<string | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [formCriteria, setFormCriteria] = useState<EvaluationCriterion[]>([]);
   const [formAnchors, setFormAnchors] = useState<EvaluationAnchor[]>([]);
   const [scores, setScores] = useState<ScoreDraft[]>([]);
   const [overallComment, setOverallComment] = useState("");
   const [saving, setSaving] = useState(false);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!organization) return;
@@ -127,6 +110,32 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
     setOverallComment("");
   }
 
+  async function handleEdit(ev: EvalWithDetails) {
+    setEditingEvaluationId(ev.id);
+    setSelectedTemplateId(ev.template_id);
+    const result = await loadTemplateCriteria(ev.template_id);
+    setFormCriteria(result.criteria);
+    setFormAnchors(result.anchors);
+    setScores(
+      result.criteria.map((c) => {
+        const existing = ev.scores.find((s) => s.criterion_id === c.id);
+        return {
+          criterion_id: c.id,
+          score: existing?.score ?? null,
+          value: existing?.value ?? "",
+          comment: existing?.comment ?? "",
+        };
+      })
+    );
+    setOverallComment(ev.overall_comment ?? "");
+    setShowForm(true);
+  }
+
+  function handleCancelForm() {
+    setShowForm(false);
+    setEditingEvaluationId(null);
+  }
+
   function updateScore(criterionId: string, field: string, value: string | number | null) {
     setScores(scores.map((s) => (s.criterion_id === criterionId ? { ...s, [field]: value } : s)));
   }
@@ -136,6 +145,7 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
     setSaving(true);
 
     const result = await submitEvaluation(organization.id, user.id, {
+      evaluationId: editingEvaluationId ?? undefined,
       templateId: selectedTemplateId,
       targetUserId,
       applicationId,
@@ -145,8 +155,15 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
     });
 
     if (result.success) {
-      showToast(status === "submitted" ? "評価を提出しました" : "下書きを保存しました");
+      showToast(
+        editingEvaluationId
+          ? "評価を更新しました"
+          : status === "submitted"
+            ? "評価を提出しました"
+            : "下書きを保存しました"
+      );
       setShowForm(false);
+      setEditingEvaluationId(null);
       await loadData();
     } else {
       showToast(result.error ?? "評価の保存に失敗しました", "error");
@@ -158,212 +175,56 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
     return <p className="text-center py-8 text-muted-foreground">読み込み中...</p>;
   }
 
-  // --- 新規評価フォーム ---
-  if (showForm) {
-    return (
-      <div className="max-w-3xl space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">新規評価</h3>
-          <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>
-            キャンセル
-          </Button>
-        </div>
-
-        <div className="space-y-2">
-          <Label>評価シート *</Label>
-          <Select value={selectedTemplateId} onValueChange={handleTemplateSelect}>
-            <SelectTrigger>
-              <SelectValue placeholder="評価シートを選択" />
-            </SelectTrigger>
-            <SelectContent>
-              {templates.map((t) => (
-                <SelectItem key={t.id} value={t.id}>
-                  {t.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {formCriteria.length > 0 && (
-          <>
-            <div className="space-y-4">
-              {formCriteria.map((c) => {
-                const scoreDraft = scores.find((s) => s.criterion_id === c.id);
-                return (
-                  <Card key={c.id}>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        {c.label}
-                        <Badge variant="outline" className="text-xs font-normal">
-                          {scoreTypeLabels[c.score_type]}
-                        </Badge>
-                      </CardTitle>
-                      {c.description && (
-                        <p className="text-xs text-muted-foreground">{c.description}</p>
-                      )}
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      {c.score_type === "five_star" &&
-                        (() => {
-                          const criterionAnchors = formAnchors.filter(
-                            (a) => a.criterion_id === c.id
-                          );
-                          const selectedAnchor = criterionAnchors.find(
-                            (a) => a.score_value === scoreDraft?.score
-                          );
-                          return (
-                            <div className="space-y-1">
-                              <div className="flex gap-1">
-                                {[1, 2, 3, 4, 5].map((n) => (
-                                  <button
-                                    key={n}
-                                    type="button"
-                                    onClick={() => updateScore(c.id, "score", n)}
-                                    className="p-0.5"
-                                    title={
-                                      criterionAnchors.find((a) => a.score_value === n)?.description
-                                    }
-                                  >
-                                    <Star
-                                      className={cn(
-                                        "h-6 w-6 transition-colors",
-                                        scoreDraft &&
-                                          scoreDraft.score !== null &&
-                                          n <= scoreDraft.score
-                                          ? "fill-amber-400 text-amber-400"
-                                          : "text-gray-300"
-                                      )}
-                                    />
-                                  </button>
-                                ))}
-                                {scoreDraft?.score && (
-                                  <span className="ml-2 text-sm text-muted-foreground">
-                                    {scoreDraft.score}/5
-                                  </span>
-                                )}
-                              </div>
-                              {selectedAnchor && (
-                                <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
-                                  {selectedAnchor.description}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      {c.score_type === "ten_point" &&
-                        (() => {
-                          const criterionAnchors = formAnchors.filter(
-                            (a) => a.criterion_id === c.id
-                          );
-                          const selectedAnchor = criterionAnchors.find(
-                            (a) => a.score_value === scoreDraft?.score
-                          );
-                          return (
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  type="number"
-                                  min={1}
-                                  max={10}
-                                  value={scoreDraft?.score ?? ""}
-                                  onChange={(e) =>
-                                    updateScore(
-                                      c.id,
-                                      "score",
-                                      e.target.value ? Number(e.target.value) : null
-                                    )
-                                  }
-                                  className="w-20"
-                                />
-                                <span className="text-sm text-muted-foreground">/ 10</span>
-                              </div>
-                              {selectedAnchor && (
-                                <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
-                                  {selectedAnchor.description}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      {c.score_type === "text" && (
-                        <Textarea
-                          value={scoreDraft?.value ?? ""}
-                          onChange={(e) => updateScore(c.id, "value", e.target.value)}
-                          placeholder="自由記述"
-                          rows={3}
-                        />
-                      )}
-                      {c.score_type === "select" && c.options && (
-                        <Select
-                          value={scoreDraft?.value ?? ""}
-                          onValueChange={(v) => updateScore(c.id, "value", v)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="選択してください" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {c.options.map((opt) => (
-                              <SelectItem key={opt} value={opt}>
-                                {opt}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                      <div className="space-y-1">
-                        <Label className="text-xs">コメント</Label>
-                        <Input
-                          value={scoreDraft?.comment ?? ""}
-                          onChange={(e) => updateScore(c.id, "comment", e.target.value)}
-                          placeholder="補足コメント"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-
-            <div className="space-y-2">
-              <Label>総合コメント</Label>
-              <Textarea
-                value={overallComment}
-                onChange={(e) => setOverallComment(e.target.value)}
-                placeholder="全体を通しての所感"
-                rows={3}
-              />
-            </div>
-
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => handleSubmit("draft")} disabled={saving}>
-                下書き保存
-              </Button>
-              <Button onClick={() => handleSubmit("submitted")} disabled={saving}>
-                {saving ? "保存中..." : "評価を提出"}
-              </Button>
-            </div>
-          </>
-        )}
-      </div>
-    );
-  }
+  const handleSelectTemplate = (templateId: string) => {
+    setTemplateDialogOpen(false);
+    setEditingEvaluationId(null);
+    handleTemplateSelect(templateId);
+    setShowForm(true);
+  };
 
   // --- 評価一覧表示 ---
   return (
     <div className="max-w-3xl space-y-4">
       <div className="flex justify-end">
         {templates.length > 0 && (
-          <Button variant="outline" size="sm" onClick={() => setShowForm(true)}>
+          <Button onClick={() => setTemplateDialogOpen(true)}>
+            <Plus className="size-4 mr-1.5" />
             評価を追加
           </Button>
         )}
       </div>
 
+      <TemplateSelectDialog
+        open={templateDialogOpen}
+        onOpenChange={setTemplateDialogOpen}
+        templates={templates}
+        onSelect={handleSelectTemplate}
+      />
+
+      <EvaluationFormDialog
+        open={showForm}
+        onOpenChange={(open) => {
+          if (!open) handleCancelForm();
+        }}
+        title={editingEvaluationId ? "評価を編集" : "新規評価"}
+        templates={templates}
+        selectedTemplateId={selectedTemplateId}
+        onTemplateChange={editingEvaluationId ? undefined : handleTemplateSelect}
+        formCriteria={formCriteria}
+        formAnchors={formAnchors}
+        scores={scores}
+        updateScore={updateScore}
+        overallComment={overallComment}
+        setOverallComment={setOverallComment}
+        saving={saving}
+        onSubmit={handleSubmit}
+      />
+
       {evaluations.length === 0 ? (
-        <p className="text-center py-8 text-muted-foreground">
-          {templates.length === 0 ? "評価シートを先に作成してください" : "まだ評価がありません"}
-        </p>
+        <EvaluationEmptyState
+          hasTemplates={templates.length > 0}
+          onAdd={() => setTemplateDialogOpen(true)}
+        />
       ) : (
         <div className="space-y-4">
           {evaluations.map((ev) => (
@@ -371,9 +232,16 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm">{ev.template_title}</CardTitle>
-                  <Badge variant={evaluationStatusColors[ev.status]}>
-                    {evaluationStatusLabels[ev.status]}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {user?.id === ev.evaluator_id && (
+                      <Button variant="ghost" size="xs" onClick={() => handleEdit(ev)}>
+                        編集
+                      </Button>
+                    )}
+                    <Badge variant={evaluationStatusColors[ev.status]}>
+                      {evaluationStatusLabels[ev.status]}
+                    </Badge>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   評価者: {ev.evaluator_name}
@@ -435,6 +303,34 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
             </Card>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+function EvaluationEmptyState({
+  hasTemplates,
+  onAdd,
+}: {
+  hasTemplates: boolean;
+  onAdd: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="size-24 mb-6 rounded-full bg-muted/50 flex items-center justify-center">
+        <ClipboardCheck className="size-12 text-muted-foreground/50" />
+      </div>
+      <h3 className="text-lg font-semibold mb-2">まだ評価がありません</h3>
+      <p className="text-sm text-muted-foreground max-w-sm mb-6">
+        {hasTemplates
+          ? "評価を追加して、この応募者のスキルや適性を記録しましょう。複数の評価者による多面的な評価が可能です。"
+          : "評価を行うには、まず評価シートを作成してください。設定 → 評価シート管理から作成できます。"}
+      </p>
+      {hasTemplates && (
+        <Button onClick={onAdd}>
+          <Plus className="size-4 mr-1.5" />
+          評価を追加
+        </Button>
       )}
     </div>
   );

@@ -401,7 +401,7 @@ function DashboardEditorInner({
 export function DashboardEditor({ open, onOpenChange, config, tab, onSave }: DashboardEditorProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl" showCloseButton={false}>
+      <DialogContent className="sm:max-w-4xl">
         {open && (
           <DashboardEditorInner
             key={String(open)}

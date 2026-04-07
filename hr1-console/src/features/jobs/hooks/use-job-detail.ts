@@ -11,8 +11,7 @@ import { StepType, FORM_STEP_TYPES } from "@/lib/constants";
 import * as jobRepository from "@/lib/repositories/job-repository";
 import * as auditRepository from "@/lib/repositories/audit-repository";
 import { getCurrentUserId } from "@/lib/get-current-user-id";
-import { buildHistoryEvents, resolveRelatedId } from "@/features/jobs/rules";
-import type { HistoryEvent } from "@/features/jobs/types";
+import { resolveRelatedId } from "@/features/jobs/rules";
 
 export function useJobDetail() {
   const { id } = useParams<{ id: string }>();
@@ -20,17 +19,12 @@ export function useJobDetail() {
   const [job, setJob] = useState<Job | null>(null);
   const [steps, setSteps] = useState<JobStep[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
-  const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>([]);
   const [auditRefreshKey, setAuditRefreshKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useTabParam("detail");
 
   const [applicantSearch, setApplicantSearch] = useState("");
   const [applicantStatusFilter, setApplicantStatusFilter] = useState<string>("all");
-
-  const [historySearch, setHistorySearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [eventFilter, setEventFilter] = useState<string | null>(null);
 
   // Step dialog (add)
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -79,7 +73,6 @@ export function useJobDetail() {
     setJob(result.job);
     setSteps(result.steps);
     setApplications(result.applications);
-    setHistoryEvents(buildHistoryEvents(result.applications));
     setLoading(false);
   };
 
@@ -265,6 +258,55 @@ export function useJobDetail() {
     setEditStepOpen(false);
   };
 
+  const [stepManageOpen, setStepManageOpen] = useState(false);
+  const [savingStepManage, setSavingStepManage] = useState(false);
+
+  const saveStepsManage = async (
+    updatedSteps: JobStep[],
+    newSteps: { step_type: string; label: string; related_id: string | null }[],
+    deletedIds: string[]
+  ) => {
+    setSavingStepManage(true);
+    try {
+      const client = getSupabase();
+
+      for (const delId of deletedIds) {
+        await jobRepository.deleteJobStep(client, delId);
+      }
+
+      for (let i = 0; i < updatedSteps.length; i++) {
+        const s = updatedSteps[i];
+        await jobRepository.updateJobStep(client, s.id, {
+          step_type: s.step_type,
+          label: s.label,
+          related_id: s.related_id,
+          step_order: s.step_order,
+        });
+      }
+
+      const baseOrder = updatedSteps.length;
+      for (let i = 0; i < newSteps.length; i++) {
+        const s = newSteps[i];
+        await jobRepository.insertJobStep(client, {
+          id: crypto.randomUUID(),
+          job_id: id,
+          step_type: s.step_type,
+          step_order: baseOrder + i + 1,
+          label: s.label,
+          related_id: s.related_id,
+        });
+      }
+
+      await load();
+      setAuditRefreshKey((k) => k + 1);
+      setStepManageOpen(false);
+    } catch (err) {
+      console.error("ステップ保存エラー:", err);
+    } finally {
+      setSavingStepManage(false);
+    }
+  };
+
   function startEditingInfo() {
     if (!job) return;
     setEditTitle(job.title);
@@ -300,7 +342,6 @@ export function useJobDetail() {
     job,
     steps,
     applications,
-    historyEvents,
     auditRefreshKey,
     loading,
     forms,
@@ -317,12 +358,6 @@ export function useJobDetail() {
     setApplicantStatusFilter,
 
     // Timeline tab
-    historySearch,
-    setHistorySearch,
-    statusFilter,
-    setStatusFilter,
-    eventFilter,
-    setEventFilter,
 
     // Mutations
     updateJobStatus,
@@ -371,6 +406,12 @@ export function useJobDetail() {
     reorderSteps,
     stepsBeforeReorder,
     setSteps,
+
+    // Step manage dialog
+    stepManageOpen,
+    setStepManageOpen,
+    savingStepManage,
+    saveStepsManage,
 
     // Info edit
     editingInfo,
