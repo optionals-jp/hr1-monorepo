@@ -1,10 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { ActivityLog } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
-import { getSupabase } from "@/lib/supabase/browser";
-import * as activityLogRepo from "@/lib/repositories/activity-log-repository";
+import { useActivityLogs } from "@/lib/hooks/use-activity-logs";
 import { format } from "date-fns";
 import {
   Play,
@@ -34,30 +31,10 @@ const ACTION_CONFIG: Record<
 };
 
 export function ApplicationLogTab({ applicationId, organizationId }: ApplicationLogTabProps) {
-  const [logs, setLogs] = useState<ActivityLog[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      try {
-        const data = await activityLogRepo.fetchActivityLogs(getSupabase(), organizationId, {
-          targetType: "application",
-          targetId: applicationId,
-        });
-        if (!cancelled) setLogs(data);
-      } catch {
-        if (!cancelled) setLogs([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [applicationId, organizationId]);
+  const { logs, loading } = useActivityLogs(organizationId, {
+    targetType: "application",
+    targetId: applicationId,
+  });
 
   if (loading) {
     return <p className="text-center py-12 text-sm text-muted-foreground">読み込み中...</p>;

@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
+import { SectionCard } from "@/components/ui/section-card";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useProfileSettings } from "@/lib/hooks/use-profile-settings";
@@ -74,8 +74,8 @@ export default function ProfileSettingsPage() {
       <PageContent>
         <div className="max-w-2xl space-y-4">
           {/* Avatar */}
-          <Card>
-            <CardContent className="flex items-center gap-4">
+          <SectionCard>
+            <div className="flex items-center gap-4">
               <Avatar className="h-14 w-14">
                 <AvatarFallback className="bg-purple-600 text-white text-xl font-medium">
                   {avatarInitial}
@@ -88,123 +88,119 @@ export default function ProfileSettingsPage() {
                   {roleLabels[h.profile.role] ?? h.profile.role}
                 </Badge>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </SectionCard>
 
           {/* 基本情報 */}
-          <Card>
-            <CardContent>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-muted-foreground">基本情報</h2>
-                <Button variant="outline" size="sm" onClick={h.startEditing}>
-                  編集
-                </Button>
+          <SectionCard>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-muted-foreground">基本情報</h2>
+              <Button variant="outline" size="sm" onClick={h.startEditing}>
+                編集
+              </Button>
+            </div>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">氏名</span>
+                <span>{h.profile.display_name ?? "-"}</span>
               </div>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">氏名</span>
-                  <span>{h.profile.display_name ?? "-"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">氏名（カナ）</span>
-                  <span>{h.profile.name_kana ?? "-"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">メールアドレス</span>
-                  <span>{h.profile.email}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">役職</span>
-                  <span>{h.profile.position ?? "-"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">部署</span>
-                  <div className="flex flex-wrap gap-1 justify-end">
-                    {h.departments.length === 0 ? (
-                      <span>-</span>
-                    ) : (
-                      h.departments.map((d) => (
-                        <Badge key={d.id} variant="secondary">
-                          {d.name}
-                        </Badge>
-                      ))
-                    )}
-                  </div>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">ロール</span>
-                  <span>{roleLabels[h.profile.role] ?? h.profile.role}</span>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">氏名（カナ）</span>
+                <span>{h.profile.name_kana ?? "-"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">メールアドレス</span>
+                <span>{h.profile.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">役職</span>
+                <span>{h.profile.position ?? "-"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">部署</span>
+                <div className="flex flex-wrap gap-1 justify-end">
+                  {h.departments.length === 0 ? (
+                    <span>-</span>
+                  ) : (
+                    h.departments.map((d) => (
+                      <Badge key={d.id} variant="secondary">
+                        {d.name}
+                      </Badge>
+                    ))
+                  )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">ロール</span>
+                <span>{roleLabels[h.profile.role] ?? h.profile.role}</span>
+              </div>
+            </div>
+          </SectionCard>
 
           {/* 個人情報 */}
-          <Card>
-            <CardContent>
-              <h2 className="text-sm font-semibold text-muted-foreground mb-3">個人情報</h2>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">生年月日</span>
-                  <span>
-                    {h.profile.birth_date
-                      ? `${format(new Date(h.profile.birth_date), "yyyy/MM/dd")}（${calcAge(h.profile.birth_date)}）`
-                      : "-"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">性別</span>
-                  <span>
-                    {h.profile.gender ? (genderLabels[h.profile.gender] ?? h.profile.gender) : "-"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">入社日</span>
-                  <span>
-                    {h.profile.hire_date
-                      ? `${format(new Date(h.profile.hire_date), "yyyy/MM/dd")}（勤続${calcTenure(h.profile.hire_date)}）`
-                      : "-"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">電話番号</span>
-                  <span>{h.profile.phone ?? "-"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">現住所</span>
-                  <span className="text-right max-w-[60%]">
-                    {[
-                      h.profile.current_postal_code && `〒${h.profile.current_postal_code}`,
-                      h.profile.current_prefecture,
-                      h.profile.current_city,
-                      h.profile.current_street_address,
-                      h.profile.current_building,
-                    ]
-                      .filter(Boolean)
-                      .join(" ") || "-"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">住民票住所</span>
-                  <span className="text-right max-w-[60%]">
-                    {[
-                      h.profile.registered_postal_code && `〒${h.profile.registered_postal_code}`,
-                      h.profile.registered_prefecture,
-                      h.profile.registered_city,
-                      h.profile.registered_street_address,
-                      h.profile.registered_building,
-                    ]
-                      .filter(Boolean)
-                      .join(" ") || "-"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">登録日</span>
-                  <span>{format(new Date(h.profile.created_at), "yyyy/MM/dd")}</span>
-                </div>
+          <SectionCard>
+            <h2 className="text-sm font-semibold text-muted-foreground mb-3">個人情報</h2>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">生年月日</span>
+                <span>
+                  {h.profile.birth_date
+                    ? `${format(new Date(h.profile.birth_date), "yyyy/MM/dd")}（${calcAge(h.profile.birth_date)}）`
+                    : "-"}
+                </span>
               </div>
-            </CardContent>
-          </Card>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">性別</span>
+                <span>
+                  {h.profile.gender ? (genderLabels[h.profile.gender] ?? h.profile.gender) : "-"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">入社日</span>
+                <span>
+                  {h.profile.hire_date
+                    ? `${format(new Date(h.profile.hire_date), "yyyy/MM/dd")}（勤続${calcTenure(h.profile.hire_date)}）`
+                    : "-"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">電話番号</span>
+                <span>{h.profile.phone ?? "-"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">現住所</span>
+                <span className="text-right max-w-[60%]">
+                  {[
+                    h.profile.current_postal_code && `〒${h.profile.current_postal_code}`,
+                    h.profile.current_prefecture,
+                    h.profile.current_city,
+                    h.profile.current_street_address,
+                    h.profile.current_building,
+                  ]
+                    .filter(Boolean)
+                    .join(" ") || "-"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">住民票住所</span>
+                <span className="text-right max-w-[60%]">
+                  {[
+                    h.profile.registered_postal_code && `〒${h.profile.registered_postal_code}`,
+                    h.profile.registered_prefecture,
+                    h.profile.registered_city,
+                    h.profile.registered_street_address,
+                    h.profile.registered_building,
+                  ]
+                    .filter(Boolean)
+                    .join(" ") || "-"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">登録日</span>
+                <span>{format(new Date(h.profile.created_at), "yyyy/MM/dd")}</span>
+              </div>
+            </div>
+          </SectionCard>
         </div>
       </PageContent>
 

@@ -19,7 +19,19 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { useEvaluationCycleDetail } from "@/lib/hooks/use-evaluation-cycle-detail";
 import type { Profile } from "@/types/database";
-import { Star, Trash2, Plus, Users, UserPlus, Building2, Check } from "lucide-react";
+import {
+  Star,
+  Trash2,
+  Plus,
+  Users,
+  UserPlus,
+  Building2,
+  Check,
+  Info,
+  UserCheck,
+  BarChart3,
+  History,
+} from "lucide-react";
 import {
   cycleStatusLabels,
   cycleStatusColors,
@@ -30,10 +42,10 @@ import {
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 
 const tabs = [
-  { value: "overview", label: "概要" },
-  { value: "assignments", label: "対象者・評価者" },
-  { value: "report", label: "集計レポート" },
-  { value: "audit", label: "変更ログ" },
+  { value: "overview", label: "概要", icon: Info },
+  { value: "assignments", label: "対象者・評価者", icon: UserCheck },
+  { value: "report", label: "集計レポート", icon: BarChart3 },
+  { value: "audit", label: "変更ログ", icon: History },
 ];
 
 export default function EvaluationCycleDetailPage() {

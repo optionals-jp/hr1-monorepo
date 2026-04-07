@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useOrg } from "@/lib/org-context";
 import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { getSupabase } from "@/lib/supabase/browser";
@@ -45,6 +45,19 @@ export function useDepartmentDetail(id: string) {
     await load();
   };
 
+  // Member search
+  const [memberSearch, setMemberSearch] = useState("");
+  const filteredMembers = useMemo(() => {
+    if (!memberSearch.trim()) return members;
+    const q = memberSearch.toLowerCase();
+    return members.filter(
+      (m) =>
+        m.email.toLowerCase().includes(q) ||
+        (m.display_name && m.display_name.toLowerCase().includes(q)) ||
+        (m.position && m.position.toLowerCase().includes(q))
+    );
+  }, [members, memberSearch]);
+
   // Edit panel state
   const [activeTab, setActiveTab] = useTabParam("overview");
   const [editing, setEditing] = useState(false);
@@ -65,10 +78,27 @@ export function useDepartmentDetail(id: string) {
     setSaving(false);
   };
 
+  const [deleting, setDeleting] = useState(false);
+  const handleDelete = async (): Promise<{ success: boolean; error?: string }> => {
+    if (!department || !organization) return { success: false };
+    setDeleting(true);
+    try {
+      await departmentRepository.remove(getSupabase(), department.id, organization.id);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : "削除に失敗しました" };
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return {
     organization,
     department,
     members,
+    memberSearch,
+    setMemberSearch,
+    filteredMembers,
     loading,
     load,
     updateName,
@@ -81,5 +111,7 @@ export function useDepartmentDetail(id: string) {
     saving,
     startEditing,
     saveEdit,
+    deleting,
+    handleDelete,
   };
 }

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { SectionCard } from "@/components/ui/section-card";
 import {
   Select,
   SelectContent,
@@ -14,11 +15,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { TabBar } from "@/components/layout/tab-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useCreateMessageThread } from "@/lib/hooks/use-create-message-thread";
 import { useEmployeeDetail, type MembershipRecord } from "@/lib/hooks/use-employee-detail";
@@ -30,16 +39,16 @@ import {
 } from "@/lib/constants";
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 import { useRouter } from "next/navigation";
-import { FolderKanban, Users, LogIn, LogOut } from "lucide-react";
+import { FolderKanban, LogIn, LogOut, User, Wrench, Star, History } from "lucide-react";
 
 import { format, differenceInYears, differenceInMonths, parseISO } from "date-fns";
 
 const pageTabs = [
-  { value: "profile", label: "プロフィール" },
-  { value: "projects", label: "プロジェクト" },
-  { value: "skills", label: "スキル" },
-  { value: "evaluations", label: "評価" },
-  { value: "audit", label: "変更ログ" },
+  { value: "profile", label: "プロフィール", icon: User },
+  { value: "projects", label: "プロジェクト", icon: FolderKanban },
+  { value: "skills", label: "スキル", icon: Wrench },
+  { value: "evaluations", label: "評価", icon: Star },
+  { value: "audit", label: "変更ログ", icon: History },
 ];
 
 const editTabs: EditPanelTab[] = [
@@ -63,6 +72,15 @@ function calcTenure(hireDate: string | null): string {
   if (years === 0) return `${months}ヶ月`;
   if (months === 0) return `${years}年`;
   return `${years}年${months}ヶ月`;
+}
+
+function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex gap-8">
+      <span className="text-muted-foreground w-24 shrink-0">{label}</span>
+      <span className="whitespace-pre-wrap">{children}</span>
+    </div>
+  );
 }
 
 export default function EmployeeDetailPage() {
@@ -92,17 +110,43 @@ export default function EmployeeDetailPage() {
     );
   }
 
+  const currentAddress = [
+    h.profile.current_postal_code && `〒${h.profile.current_postal_code}`,
+    h.profile.current_prefecture,
+    h.profile.current_city,
+    h.profile.current_street_address,
+    h.profile.current_building,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const registeredAddress = [
+    h.profile.registered_postal_code && `〒${h.profile.registered_postal_code}`,
+    h.profile.registered_prefecture,
+    h.profile.registered_city,
+    h.profile.registered_street_address,
+    h.profile.registered_building,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <>
+    <div className="flex flex-col">
       <PageHeader
         title={h.profile.display_name ?? h.profile.email}
         description="社員詳細"
         breadcrumb={[{ label: "社員一覧", href: "/employees" }]}
         sticky={false}
+        border={false}
         action={
-          <Button size="sm" onClick={handleOpenMessage} disabled={creatingThread}>
-            メッセージを送る
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={h.startEditing}>
+              編集
+            </Button>
+            <Button size="sm" onClick={handleOpenMessage} disabled={creatingThread}>
+              メッセージを送る
+            </Button>
+          </div>
         }
       />
 
@@ -112,123 +156,180 @@ export default function EmployeeDetailPage() {
 
       {h.activeTab === "profile" && (
         <PageContent>
-          <div className="max-w-2xl space-y-4">
-            {/* 基本情報 */}
-            <Card>
-              <CardContent>
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-semibold text-muted-foreground">基本情報</h2>
-                  <Button variant="outline" size="sm" onClick={h.startEditing}>
-                    編集
-                  </Button>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* 左カラム: プロフィール */}
+            <SectionCard className="self-start">
+              <div className="flex flex-col mb-6">
+                <Avatar className="size-24 mb-3">
+                  <AvatarFallback className="bg-green-100 text-green-700 text-3xl font-semibold">
+                    {(h.profile.display_name ?? h.profile.email)[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <h2 className="text-lg font-semibold">{h.profile.display_name ?? "-"}</h2>
+                <p className="text-sm text-muted-foreground">{h.profile.email}</p>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <Badge variant="secondary">
+                    {h.profile.role === "admin" ? "管理者" : "社員"}
+                  </Badge>
+                  {h.profile.position && <Badge variant="outline">{h.profile.position}</Badge>}
                 </div>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">氏名</span>
-                    <span>{h.profile.display_name ?? "-"}</span>
+                {h.departments.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {h.departments.map((d) => (
+                      <Badge key={d.id} variant="secondary">
+                        {d.name}
+                      </Badge>
+                    ))}
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">氏名（カナ）</span>
-                    <span>{h.profile.name_kana ?? "-"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">メール</span>
-                    <span>{h.profile.email}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">部署</span>
-                    <div className="flex flex-wrap gap-1 justify-end">
-                      {h.departments.length === 0 ? (
-                        <span>-</span>
-                      ) : (
-                        h.departments.map((d) => (
-                          <Badge key={d.id} variant="secondary">
-                            {d.name}
-                          </Badge>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">役職</span>
-                    <span>{h.profile.position ?? "-"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">ロール</span>
-                    <Badge variant="secondary">社員</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                )}
+              </div>
 
-            {/* 個人情報 */}
-            <Card>
-              <CardContent>
-                <h2 className="text-sm font-semibold text-muted-foreground mb-3">個人情報</h2>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">生年月日</span>
-                    <span>
+              <div className="space-y-6 text-sm">
+                {/* 基本情報 */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                    基本情報
+                  </h3>
+                  <div className="space-y-4">
+                    <InfoRow label="ふりがな">{h.profile.name_kana || "-"}</InfoRow>
+                    <InfoRow label="生年月日">
                       {h.profile.birth_date
                         ? `${format(new Date(h.profile.birth_date), "yyyy/MM/dd")}（${calcAge(h.profile.birth_date)}）`
                         : "-"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">性別</span>
-                    <span>
+                    </InfoRow>
+                    <InfoRow label="性別">
                       {h.profile.gender
                         ? (genderLabels[h.profile.gender] ?? h.profile.gender)
                         : "-"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">入社日</span>
-                    <span>
+                    </InfoRow>
+                    <InfoRow label="電話番号">{h.profile.phone || "-"}</InfoRow>
+                    <InfoRow label="入社日">
                       {h.profile.hire_date
                         ? `${format(new Date(h.profile.hire_date), "yyyy/MM/dd")}（勤続${calcTenure(h.profile.hire_date)}）`
                         : "-"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">電話番号</span>
-                    <span>{h.profile.phone ?? "-"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">現住所</span>
-                    <span className="text-right max-w-[60%]">
-                      {[
-                        h.profile.current_postal_code && `〒${h.profile.current_postal_code}`,
-                        h.profile.current_prefecture,
-                        h.profile.current_city,
-                        h.profile.current_street_address,
-                        h.profile.current_building,
-                      ]
-                        .filter(Boolean)
-                        .join(" ") || "-"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">住民票住所</span>
-                    <span className="text-right max-w-[60%]">
-                      {[
-                        h.profile.registered_postal_code && `〒${h.profile.registered_postal_code}`,
-                        h.profile.registered_prefecture,
-                        h.profile.registered_city,
-                        h.profile.registered_street_address,
-                        h.profile.registered_building,
-                      ]
-                        .filter(Boolean)
-                        .join(" ") || "-"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">登録日</span>
-                    <span>{format(new Date(h.profile.created_at), "yyyy/MM/dd")}</span>
+                    </InfoRow>
+                    <InfoRow label="登録日">
+                      {format(new Date(h.profile.created_at), "yyyy/MM/dd")}
+                    </InfoRow>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+
+                {/* 住所 */}
+                <div className="border-t pt-6">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                    住所
+                  </h3>
+                  <div className="space-y-4">
+                    <InfoRow label="現住所">{currentAddress || "-"}</InfoRow>
+                    <InfoRow label="住民票住所">{registeredAddress || "-"}</InfoRow>
+                  </div>
+                </div>
+              </div>
+            </SectionCard>
+
+            {/* 右カラム: 関連情報 */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* プロジェクト */}
+              <div>
+                <h2 className="text-sm font-semibold mb-2">現在のプロジェクト</h2>
+                {(() => {
+                  const active = h.memberships.filter((m) => !m.left_at);
+                  if (active.length === 0) {
+                    return (
+                      <p className="text-sm text-muted-foreground py-4">
+                        参加中のプロジェクトはありません
+                      </p>
+                    );
+                  }
+                  return (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>プロジェクト</TableHead>
+                          <TableHead>チーム</TableHead>
+                          <TableHead>ロール</TableHead>
+                          <TableHead>参加日</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {active.map((m) => (
+                          <TableRow
+                            key={m.id}
+                            className="cursor-pointer"
+                            onClick={() => router.push(`/projects/${m.team.project.id}`)}
+                          >
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{m.team.project.name}</span>
+                                <Badge variant={projectStatusColors[m.team.project.status]}>
+                                  {projectStatusLabels[m.team.project.status]}
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell>{m.team.name}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{teamMemberRoleLabels[m.role]}</Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {format(parseISO(m.joined_at), "yyyy/MM/dd")}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  );
+                })()}
+              </div>
+
+              {/* スキル */}
+              <div>
+                <h2 className="text-sm font-semibold mb-2">スキル</h2>
+                {h.skills.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4">スキルが登録されていません</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {h.skills.map((skill) => (
+                      <Badge key={skill.id} variant="secondary" className="text-sm py-1 px-3">
+                        {skill.name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 資格 */}
+              <div>
+                <h2 className="text-sm font-semibold mb-2">資格・認定</h2>
+                {h.certifications.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4">資格が登録されていません</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>資格名</TableHead>
+                        <TableHead>スコア</TableHead>
+                        <TableHead>取得日</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {h.certifications.map((cert) => (
+                        <TableRow key={cert.id}>
+                          <TableCell className="font-medium">{cert.name}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {cert.score != null ? `${cert.score}点` : "-"}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {cert.acquired_date
+                              ? format(new Date(cert.acquired_date), "yyyy/MM")
+                              : "-"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </div>
           </div>
         </PageContent>
       )}
@@ -236,59 +337,6 @@ export default function EmployeeDetailPage() {
       {h.activeTab === "projects" && (
         <PageContent>
           <div className="max-w-2xl space-y-6">
-            {/* 現在のプロジェクト */}
-            {(() => {
-              const active = h.memberships.filter((m) => !m.left_at);
-              return active.length > 0 ? (
-                <section>
-                  <h2 className="text-sm font-semibold text-muted-foreground mb-3">
-                    現在のプロジェクト
-                  </h2>
-                  <div className="space-y-2">
-                    {active.map((m) => (
-                      <Card
-                        key={m.id}
-                        className="cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => router.push(`/projects/${m.team.project.id}`)}
-                      >
-                        <CardContent className="py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-700 shrink-0">
-                              <FolderKanban className="h-4 w-4" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-sm truncate">
-                                  {m.team.project.name}
-                                </span>
-                                <Badge variant={projectStatusColors[m.team.project.status]}>
-                                  {projectStatusLabels[m.team.project.status]}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <Users className="h-3 w-3 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground">{m.team.name}</span>
-                                <Badge variant="outline" className="text-xs py-0 px-1.5">
-                                  {teamMemberRoleLabels[m.role]}
-                                </Badge>
-                              </div>
-                            </div>
-                            <div className="text-xs text-muted-foreground shrink-0">
-                              {format(parseISO(m.joined_at), "yyyy/MM/dd")} 〜
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </section>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  現在参加中のプロジェクトはありません
-                </p>
-              );
-            })()}
-
             {/* 在籍ログタイムライン */}
             <section>
               <h2 className="text-sm font-semibold text-muted-foreground mb-3">在籍ログ</h2>
@@ -296,38 +344,31 @@ export default function EmployeeDetailPage() {
                 <p className="text-sm text-muted-foreground">ログがありません</p>
               ) : (
                 <div className="relative">
-                  {/* タイムラインの縦線 */}
-                  <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-gray-200" />
-
+                  <div className="absolute left-3.75 top-2 bottom-2 w-0.5 bg-gray-200" />
                   <div className="space-y-0">
                     {(() => {
-                      // 全イベントを時系列に並べる（新しい順）
                       const events: {
                         type: "joined" | "left";
                         date: string;
                         membership: MembershipRecord;
                       }[] = [];
-
                       for (const m of h.memberships) {
                         events.push({ type: "joined", date: m.joined_at, membership: m });
                         if (m.left_at) {
                           events.push({ type: "left", date: m.left_at, membership: m });
                         }
                       }
-
                       events.sort(
                         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
                       );
-
                       return events.map((event) => (
                         <div
                           key={`${event.membership.id}-${event.type}`}
                           className="relative flex items-start gap-4 py-3"
                         >
-                          {/* ドット */}
                           <div
                             className={cn(
-                              "relative z-10 flex h-[31px] w-[31px] items-center justify-center rounded-full border-2 bg-white shrink-0",
+                              "relative z-10 flex h-7.75 w-7.75 items-center justify-center rounded-full border-2 bg-white shrink-0",
                               event.type === "joined" ? "border-green-400" : "border-gray-300"
                             )}
                           >
@@ -337,8 +378,6 @@ export default function EmployeeDetailPage() {
                               <LogOut className="h-3.5 w-3.5 text-gray-400" />
                             )}
                           </div>
-
-                          {/* コンテンツ */}
                           <div className="flex-1 min-w-0 pt-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span
@@ -380,7 +419,6 @@ export default function EmployeeDetailPage() {
       {h.activeTab === "skills" && (
         <PageContent>
           <div className="max-w-2xl space-y-6">
-            {/* スキル */}
             <section>
               <h2 className="text-sm font-semibold text-muted-foreground mb-3">スキル</h2>
               {h.skills.length === 0 ? (
@@ -395,34 +433,30 @@ export default function EmployeeDetailPage() {
                 </div>
               )}
             </section>
-
-            {/* 資格・認定 */}
             <section>
               <h2 className="text-sm font-semibold text-muted-foreground mb-3">資格・認定</h2>
               {h.certifications.length === 0 ? (
                 <p className="text-sm text-muted-foreground">資格が登録されていません</p>
               ) : (
-                <Card>
-                  <CardContent>
-                    <div className="space-y-3 text-sm">
-                      {h.certifications.map((cert) => (
-                        <div key={cert.id} className="flex justify-between">
-                          <span>
-                            {cert.name}
-                            {cert.score != null && (
-                              <span className="ml-1.5 text-muted-foreground">{cert.score}点</span>
-                            )}
-                          </span>
-                          <span className="text-muted-foreground">
-                            {cert.acquired_date
-                              ? format(new Date(cert.acquired_date), "yyyy/MM")
-                              : "-"}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                <SectionCard>
+                  <div className="space-y-3 text-sm">
+                    {h.certifications.map((cert) => (
+                      <div key={cert.id} className="flex justify-between">
+                        <span>
+                          {cert.name}
+                          {cert.score != null && (
+                            <span className="ml-1.5 text-muted-foreground">{cert.score}点</span>
+                          )}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {cert.acquired_date
+                            ? format(new Date(cert.acquired_date), "yyyy/MM")
+                            : "-"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </SectionCard>
               )}
             </section>
           </div>
@@ -639,6 +673,6 @@ export default function EmployeeDetailPage() {
           </div>
         )}
       </EditPanel>
-    </>
+    </div>
   );
 }

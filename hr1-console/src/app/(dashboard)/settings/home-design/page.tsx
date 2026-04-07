@@ -1,6 +1,7 @@
 "use client";
 
 import { PageHeader, PageContent } from "@/components/layout/page-header";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,11 +16,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
   useHomeDesign,
   SECTION_TYPE_LABELS,
   SECTION_ITEM_FIELDS,
 } from "@/lib/hooks/use-home-design";
 import { cn } from "@/lib/utils";
+import { ChevronDown, Plus, Settings2 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Types (re-exported for JSX type narrowing)
@@ -51,7 +60,7 @@ export default function HomeDesignPage() {
   }
 
   return (
-    <>
+    <div className="flex flex-col">
       <PageHeader
         title="アプリのホームデザイン"
         description="応募者アプリのホーム画面に表示するタブとコンテンツを設定します"
@@ -72,167 +81,157 @@ export default function HomeDesignPage() {
         </div>
       )}
 
-      <PageContent>
-        <div className="flex gap-4 max-w-4xl min-h-96">
-          {/* ---------------------------------------------------------------- */}
-          {/* Left panel: Tab list                                             */}
-          {/* ---------------------------------------------------------------- */}
-          <div className="w-52 shrink-0">
-            <div className="rounded-lg bg-white border overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b">
-                <h2 className="text-sm font-semibold">タブ</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  onClick={h.openAddTab}
+      <StickyFilterBar>
+        <div
+          role="tablist"
+          className="flex items-center gap-6 border-b px-4 sm:px-6 md:px-8 bg-white"
+        >
+          {h.tabs.map((tab) => {
+            const isActive = h.selectedTabId === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => h.setSelectedTabId(tab.id)}
+                className={cn(
+                  "relative pb-2.5 pt-2 text-[15px] font-medium transition-colors flex items-center gap-1.5",
+                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {tab.label}
+                <span className="text-xs text-muted-foreground">{tab.page_sections.length}</span>
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                )}
+              </button>
+            );
+          })}
+          {h.tabs.length === 0 && (
+            <span className="pb-2.5 pt-2 text-sm text-muted-foreground">タブがありません</span>
+          )}
+          <div className="flex-1" />
+          <div className="flex items-center gap-1 pb-1">
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={h.openAddTab}>
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              タブ追加
+            </Button>
+            {h.selectedTab && (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={<Button variant="ghost" size="sm" className="h-7 px-2 text-xs" />}
                 >
-                  + 追加
+                  <Settings2 className="h-3.5 w-3.5 mr-1" />
+                  タブ管理
+                  <ChevronDown className="h-3 w-3 ml-0.5" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => h.openEditTab(h.selectedTab!)}>
+                    タブ名を編集
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => h.moveTab(h.selectedTab!.id, "up")}
+                    disabled={h.tabs.indexOf(h.selectedTab!) === 0}
+                  >
+                    左へ移動
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => h.moveTab(h.selectedTab!.id, "down")}
+                    disabled={h.tabs.indexOf(h.selectedTab!) === h.tabs.length - 1}
+                  >
+                    右へ移動
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </div>
+      </StickyFilterBar>
+
+      <PageContent>
+        <div className="max-w-3xl">
+          {!h.selectedTab ? (
+            <div className="rounded-lg bg-muted/40 flex items-center justify-center h-40 text-sm text-muted-foreground">
+              タブを追加してください
+            </div>
+          ) : (
+            <div className="rounded-lg bg-white border overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 border-b">
+                <h2 className="text-sm font-semibold">「{h.selectedTab.label}」のセクション</h2>
+                <Button variant="outline" size="sm" onClick={h.openAddSection}>
+                  セクションを追加
                 </Button>
               </div>
-              {h.tabs.length === 0 ? (
-                <p className="text-xs text-muted-foreground p-4 text-center">タブがありません</p>
+              {h.selectedTab.page_sections.length === 0 ? (
+                <p className="text-sm text-muted-foreground p-8 text-center">
+                  セクションがありません。追加してください。
+                </p>
               ) : (
-                <ul>
-                  {h.tabs.map((tab, idx) => (
+                <ul className="divide-y">
+                  {h.selectedTab.page_sections.map((section, idx) => (
                     <li
-                      key={tab.id}
-                      className={cn(
-                        "group flex items-center gap-1 px-3 py-2.5 cursor-pointer border-b last:border-b-0 hover:bg-accent/50 transition-colors",
-                        h.selectedTabId === tab.id && "bg-accent font-medium text-foreground"
-                      )}
-                      onClick={() => h.setSelectedTabId(tab.id)}
+                      key={section.id}
+                      className="group flex items-center gap-3 px-5 py-3 hover:bg-accent/30 transition-colors"
                     >
-                      <span className="flex-1 text-sm truncate">{tab.label}</span>
-                      <span className="text-xs text-muted-foreground shrink-0">
-                        {tab.page_sections.length}
-                      </span>
-                      <div className="hidden group-hover:flex items-center gap-0.5 shrink-0 ml-1">
+                      {/* Reorder buttons */}
+                      <div className="flex flex-col gap-0.5 shrink-0">
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            h.moveTab(tab.id, "up");
-                          }}
+                          onClick={() => h.moveSection(section.id, "up")}
                           disabled={idx === 0}
-                          className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-25 text-xs"
+                          className="text-muted-foreground hover:text-foreground disabled:opacity-25 text-xs leading-tight"
                         >
                           ↑
                         </button>
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            h.moveTab(tab.id, "down");
-                          }}
-                          disabled={idx === h.tabs.length - 1}
-                          className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-25 text-xs"
+                          onClick={() => h.moveSection(section.id, "down")}
+                          disabled={idx === h.selectedTab!.page_sections.length - 1}
+                          className="text-muted-foreground hover:text-foreground disabled:opacity-25 text-xs leading-tight"
                         >
                           ↓
                         </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            h.openEditTab(tab);
-                          }}
-                          className="p-0.5 text-muted-foreground hover:text-foreground text-xs"
-                        >
-                          ✎
-                        </button>
                       </div>
+
+                      {/* Section info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium shrink-0">
+                            {SECTION_TYPE_LABELS[section.type]}
+                          </span>
+                          {section.title && (
+                            <span className="text-sm font-medium truncate">{section.title}</span>
+                          )}
+                        </div>
+                        {section.type === "markdown" && section.content && (
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                            {section.content}
+                          </p>
+                        )}
+                        {section.items && section.items.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {section.items.length}件
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Edit button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="opacity-0 group-hover:opacity-100 h-7 px-2 text-xs shrink-0"
+                        onClick={() => h.openEditSection(section)}
+                      >
+                        編集
+                      </Button>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
-          </div>
-
-          {/* ---------------------------------------------------------------- */}
-          {/* Right panel: Section list                                        */}
-          {/* ---------------------------------------------------------------- */}
-          <div className="flex-1 min-w-0">
-            {!h.selectedTab ? (
-              <div className="rounded-lg bg-white border flex items-center justify-center h-40 text-sm text-muted-foreground">
-                タブを選択してください
-              </div>
-            ) : (
-              <div className="rounded-lg bg-white border overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-3 border-b">
-                  <h2 className="text-sm font-semibold">「{h.selectedTab.label}」のセクション</h2>
-                  <Button variant="outline" size="sm" onClick={h.openAddSection}>
-                    セクションを追加
-                  </Button>
-                </div>
-                {h.selectedTab.page_sections.length === 0 ? (
-                  <p className="text-sm text-muted-foreground p-8 text-center">
-                    セクションがありません。追加してください。
-                  </p>
-                ) : (
-                  <ul className="divide-y">
-                    {h.selectedTab.page_sections.map((section, idx) => (
-                      <li
-                        key={section.id}
-                        className="group flex items-center gap-3 px-5 py-3 hover:bg-accent/30 transition-colors"
-                      >
-                        {/* Reorder buttons */}
-                        <div className="flex flex-col gap-0.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => h.moveSection(section.id, "up")}
-                            disabled={idx === 0}
-                            className="text-muted-foreground hover:text-foreground disabled:opacity-25 text-xs leading-tight"
-                          >
-                            ↑
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => h.moveSection(section.id, "down")}
-                            disabled={idx === h.selectedTab!.page_sections.length - 1}
-                            className="text-muted-foreground hover:text-foreground disabled:opacity-25 text-xs leading-tight"
-                          >
-                            ↓
-                          </button>
-                        </div>
-
-                        {/* Section info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium shrink-0">
-                              {SECTION_TYPE_LABELS[section.type]}
-                            </span>
-                            {section.title && (
-                              <span className="text-sm font-medium truncate">{section.title}</span>
-                            )}
-                          </div>
-                          {section.type === "markdown" && section.content && (
-                            <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                              {section.content}
-                            </p>
-                          )}
-                          {section.items && section.items.length > 0 && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {section.items.length}件
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Edit button */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="opacity-0 group-hover:opacity-100 h-7 px-2 text-xs shrink-0"
-                          onClick={() => h.openEditSection(section)}
-                        >
-                          編集
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </PageContent>
 
@@ -388,6 +387,6 @@ export default function HomeDesignPage() {
           )}
         </div>
       </EditPanel>
-    </>
+    </div>
   );
 }

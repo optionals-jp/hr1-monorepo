@@ -30,14 +30,14 @@ import { TabBar } from "@/components/layout/tab-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { useFormDetailPage } from "@/lib/hooks/use-form-detail";
 import { format } from "date-fns";
-import { Trash2 } from "lucide-react";
+import { Trash2, List, MessageSquare, History } from "lucide-react";
 import { fieldTypeLabels, formTargetLabels } from "@/lib/constants";
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 
 const tabs = [
-  { value: "fields", label: "フィールド" },
-  { value: "responses", label: "回答" },
-  { value: "history", label: "変更ログ" },
+  { value: "fields", label: "フィールド", icon: List },
+  { value: "responses", label: "回答", icon: MessageSquare },
+  { value: "history", label: "変更ログ", icon: History },
 ];
 
 const editTabs: EditPanelTab[] = [

@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { ActivityLog } from "@/types/database";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { getSupabase } from "@/lib/supabase/browser";
-import * as activityLogRepo from "@/lib/repositories/activity-log-repository";
+import { useActivityLogs } from "@/lib/hooks/use-activity-logs";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -41,31 +39,11 @@ interface JobTimelineTabProps {
 }
 
 export function JobTimelineTab({ jobId, organizationId }: JobTimelineTabProps) {
-  const [logs, setLogs] = useState<ActivityLog[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { logs, loading } = useActivityLogs(organizationId, {
+    parentType: "job",
+    parentId: jobId,
+  });
   const [actionFilter, setActionFilter] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      try {
-        const data = await activityLogRepo.fetchActivityLogs(getSupabase(), organizationId, {
-          parentType: "job",
-          parentId: jobId,
-        });
-        if (!cancelled) setLogs(data);
-      } catch {
-        if (!cancelled) setLogs([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [jobId, organizationId]);
 
   if (loading) {
     return <p className="text-center py-12 text-sm text-muted-foreground">読み込み中...</p>;

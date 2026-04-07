@@ -2,14 +2,22 @@
 
 ## Project Structure
 
-Monorepo with four apps:
+Monorepo with the following apps and packages:
+
+### Apps
 - `hr1-console/` — Next.js (App Router) tenant admin console (TypeScript) — 各テナント企業の管理画面
 - `hr1-admin/` — Next.js (App Router) platform admin (TypeScript) — HR1運営側の管理画面（契約・プラン・MRR管理）
+- `hr1-lp/` — Next.js (App Router) landing page (TypeScript) — HR1サービスサイト
 - `hr1-applicant-app/` — Flutter applicant app (Dart)
 - `hr1-employee-app/` — Flutter employee app (Dart)
 
+### Shared
+- `hr1_shared/` — Flutter shared package (Dart) — 両Flutterアプリ共通のウィジェット・定数・サービス
+- `supabase/` — Supabase migrations / Edge Functions
+- `scripts/` — ビルド・デプロイ用スクリプト
+
 Backend: Supabase (Auth, Database, Edge Functions)
-Deploy: Console/Admin → Vercel (main merge), Mobile → TestFlight (manual via `./scripts/build-all-ipa.sh`)
+Deploy: Console/Admin/LP → Vercel (main merge), Mobile → TestFlight (manual via `./scripts/build-all-ipa.sh`)
 
 ## Commands
 
@@ -21,6 +29,7 @@ Deploy: Console/Admin → Vercel (main merge), Mobile → TestFlight (manual via
 - `npm run format:check` — Prettier format check
 - `npm run test` — Vitest run
 - `npm run test:watch` — Vitest watch
+- `npm run test:e2e` — Playwright E2E test
 
 ### hr1-admin (run from `hr1-admin/`)
 - `npm run dev` — Start dev server (port 3001)
@@ -29,10 +38,21 @@ Deploy: Console/Admin → Vercel (main merge), Mobile → TestFlight (manual via
 - `npm run format` — Prettier format (write)
 - `npm run format:check` — Prettier format check
 - `npm run test` — Vitest run
+- `npm run test:watch` — Vitest watch
+
+### hr1-lp (run from `hr1-lp/`)
+- `npm run dev` — Start dev server (port 3002)
+- `npm run build` — Production build
+- `npm run lint` — ESLint
+- `npm run format` — Prettier format (write)
+- `npm run format:check` — Prettier format check
 
 ### Flutter apps (run from each app directory)
+- `flutter pub get` — Install dependencies
 - `flutter run` — Run app
 - `flutter build` — Build app
+- `dart format --set-exit-if-changed .` — Format check (CI enforced)
+- `flutter analyze` — Static analysis (CI enforced, warning/info も失敗扱い)
 - `flutter test` — Run tests
 
 ## Supabase Safety Rules（絶対遵守）
@@ -96,11 +116,25 @@ class MyScreen extends ConsumerWidget {
 
 ## CI Pipeline (GitHub Actions)
 
-`hr1-console` only:
+PR to `main` で以下の3ジョブが並列実行される:
+
+### Console (hr1-console)
 1. `format:check` — Prettier
 2. `lint` — ESLint
 3. `test` — Vitest
 4. `build` — Next.js build
+
+### Employee App (hr1-employee-app)
+1. `flutter pub get`
+2. `dart format --set-exit-if-changed .`
+3. `flutter analyze`
+4. `flutter test`
+
+### Applicant App (hr1-applicant-app)
+1. `flutter pub get`
+2. `dart format --set-exit-if-changed .`
+3. `flutter analyze`
+4. `flutter test`
 
 ## Commit Message Format
 
@@ -143,8 +177,13 @@ class MyScreen extends ConsumerWidget {
 
 ## Task Completion Checklist
 
-Before considering a task complete in `hr1-console/`:
+### hr1-console / hr1-admin
 1. `npm run format` — Apply Prettier formatting (also checked by stop hook)
 2. `npm run lint` — Check for ESLint errors
 3. `npm run build` — Verify production build succeeds
 4. `npm run test` — Verify tests pass
+
+### Flutter apps (hr1-applicant-app / hr1-employee-app)
+1. `dart format --set-exit-if-changed .` — Format check
+2. `flutter analyze` — Static analysis (warning/info も失敗扱い)
+3. `flutter test` — Verify tests pass

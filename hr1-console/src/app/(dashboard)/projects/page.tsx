@@ -40,12 +40,20 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { SlidersHorizontal, X, Building2, FolderKanban, ArrowRight } from "lucide-react";
+import {
+  SlidersHorizontal,
+  X,
+  Building2,
+  FolderKanban,
+  ArrowRight,
+  List,
+  HelpCircle,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const pageTabs = [
-  { value: "list", label: "プロジェクト一覧" },
-  { value: "guide", label: "部署との違い" },
+  { value: "list", label: "プロジェクト一覧", icon: List },
+  { value: "guide", label: "部署との違い", icon: HelpCircle },
 ];
 
 const statusOptions = [

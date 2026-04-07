@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionCard } from "@/components/ui/section-card";
 import {
   Table,
   TableBody,
@@ -21,6 +21,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -34,21 +42,34 @@ import { TableSection } from "@/components/layout/table-section";
 import {
   useWorkflowsPage,
   formatRequestSummary,
+  FIELD_TYPE_LABELS,
   type TabValue,
 } from "@/lib/hooks/use-workflows-page";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { TabBar } from "@/components/layout/tab-bar";
 import { cn } from "@/lib/utils";
 import {
-  workflowRequestTypeLabels,
   workflowRequestTypeColors,
   workflowStatusLabels,
   workflowStatusColors,
 } from "@/lib/constants";
-import { FileCheck, Settings2, SlidersHorizontal, X, Bell, Loader2, Save } from "lucide-react";
+import {
+  FileCheck,
+  Settings2,
+  SlidersHorizontal,
+  X,
+  Bell,
+  Loader2,
+  Save,
+  Plus,
+  Pencil,
+  LayoutTemplate,
+  Trash2,
+} from "lucide-react";
 
 const tabList: { value: TabValue; label: string; icon: React.ElementType }[] = [
   { value: "requests", label: "申請一覧", icon: FileCheck },
+  { value: "templates", label: "テンプレート", icon: LayoutTemplate },
   { value: "settings", label: "設定", icon: Settings2 },
 ];
 
@@ -100,7 +121,7 @@ export default function WorkflowsPage() {
                   )}
                   {h.filterType !== "all" && (
                     <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
-                      種別：{workflowRequestTypeLabels[h.filterType]}
+                      種別：{h.getRequestTypeLabel(h.filterType)}
                       <span
                         role="button"
                         onClick={(e) => {
@@ -133,16 +154,26 @@ export default function WorkflowsPage() {
               <DropdownMenuItem className="py-2" onClick={() => h.setFilterType("all")}>
                 <span className={cn(h.filterType === "all" && "font-medium")}>すべて</span>
               </DropdownMenuItem>
-              {Object.entries(workflowRequestTypeLabels).map(([k, v]) => (
-                <DropdownMenuItem className="py-2" key={k} onClick={() => h.setFilterType(k)}>
-                  <span className={cn(h.filterType === k && "font-medium")}>{v}</span>
-                </DropdownMenuItem>
-              ))}
+              {Object.entries(workflowStatusLabels).length > 0 &&
+                h.templates
+                  .filter((t) => t.is_active)
+                  .map((t) => (
+                    <DropdownMenuItem
+                      className="py-2"
+                      key={t.id}
+                      onClick={() => h.setFilterType(t.id)}
+                    >
+                      <span className={cn(h.filterType === t.id && "font-medium")}>
+                        {t.icon} {t.name}
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
       </StickyFilterBar>
 
+      {/* ===== 申請一覧タブ ===== */}
       {h.activeTab === "requests" && (
         <TableSection>
           <Table>
@@ -181,7 +212,7 @@ export default function WorkflowsPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={workflowRequestTypeColors[req.request_type] ?? "outline"}>
-                          {workflowRequestTypeLabels[req.request_type] ?? req.request_type}
+                          {h.getRequestTypeLabel(req.request_type)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm max-w-60 truncate">
@@ -215,6 +246,89 @@ export default function WorkflowsPage() {
         </TableSection>
       )}
 
+      {/* ===== テンプレートタブ ===== */}
+      {h.activeTab === "templates" && (
+        <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
+          <div className="max-w-3xl space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                カスタムワークフローのテンプレートを作成・管理します。
+              </p>
+              <Button onClick={h.openAddTemplate}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                テンプレート作成
+              </Button>
+            </div>
+
+            {/* 組み込みワークフロー */}
+            <SectionCard>
+              <h2 className="text-sm font-semibold text-muted-foreground mb-3">
+                組み込みワークフロー
+              </h2>
+              <div className="space-y-2">
+                {[
+                  { icon: "🏖️", name: "有給休暇", desc: "有給休暇の申請" },
+                  { icon: "⏰", name: "残業申請", desc: "残業時間の申請" },
+                  { icon: "✈️", name: "出張申請", desc: "出張の申請" },
+                  { icon: "💰", name: "経費申請", desc: "経費精算の申請" },
+                ].map((item) => (
+                  <div
+                    key={item.name}
+                    className="flex items-center gap-3 rounded-lg border border-transparent bg-white/60 px-3 py-2.5"
+                  >
+                    <span className="text-lg">{item.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">{item.desc}</p>
+                    </div>
+                    <Badge variant="outline">組み込み</Badge>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+
+            {/* カスタムテンプレート */}
+            {h.templatesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <SectionCard>
+                <h2 className="text-sm font-semibold text-muted-foreground mb-3">
+                  カスタムテンプレート
+                </h2>
+                {h.templates.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">
+                    カスタムテンプレートはまだありません
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {h.templates.map((tpl) => (
+                      <div
+                        key={tpl.id}
+                        className="group flex items-center gap-3 rounded-lg border border-transparent bg-white/60 px-3 py-2.5 cursor-pointer hover:bg-white transition-colors"
+                        onClick={() => h.openEditTemplate(tpl)}
+                      >
+                        <span className="text-lg">{tpl.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">{tpl.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {tpl.description || `${tpl.fields.length}個のフィールド`}
+                          </p>
+                        </div>
+                        {!tpl.is_active && <Badge variant="secondary">無効</Badge>}
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </SectionCard>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ===== 設定タブ ===== */}
       {h.activeTab === "settings" && (
         <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
           <div className="max-w-xl space-y-6">
@@ -224,11 +338,11 @@ export default function WorkflowsPage() {
               </div>
             ) : (
               <>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>自動承認ルール</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-5">
+                <SectionCard>
+                  <h2 className="text-sm font-semibold text-muted-foreground mb-4">
+                    自動承認ルール
+                  </h2>
+                  <div className="space-y-5">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium">有給休暇の自動承認</p>
@@ -355,35 +469,29 @@ export default function WorkflowsPage() {
                         }
                       />
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </SectionCard>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>通知設定</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Bell className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-sm font-medium">申請時に管理者へ通知</p>
-                      </div>
-                      <Switch checked={h.notifyAdmins} onCheckedChange={h.setNotifyAdmins} />
+                <SectionCard>
+                  <h2 className="text-sm font-semibold text-muted-foreground mb-4">通知設定</h2>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Bell className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm font-medium">申請時に管理者へ通知</p>
                     </div>
-                  </CardContent>
-                </Card>
+                    <Switch checked={h.notifyAdmins} onCheckedChange={h.setNotifyAdmins} />
+                  </div>
+                </SectionCard>
 
-                <Card>
-                  <CardContent className="p-6 space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      承認者の設定は勤怠管理の承認者設定を共有します。
-                    </p>
-                    <Button variant="outline" onClick={h.navigateToAttendance}>
-                      <Settings2 className="h-4 w-4 mr-1.5" />
-                      勤怠管理の承認者設定へ
-                    </Button>
-                  </CardContent>
-                </Card>
+                <SectionCard>
+                  <p className="text-sm text-muted-foreground">
+                    承認者の設定は勤怠管理の承認者設定を共有します。
+                  </p>
+                  <Button variant="outline" className="mt-3" onClick={h.navigateToAttendance}>
+                    <Settings2 className="h-4 w-4 mr-1.5" />
+                    勤怠管理の承認者設定へ
+                  </Button>
+                </SectionCard>
 
                 <div className="flex justify-end">
                   <Button
@@ -411,6 +519,7 @@ export default function WorkflowsPage() {
         </div>
       )}
 
+      {/* ===== 申請確認パネル ===== */}
       <EditPanel
         open={h.reviewDialogOpen}
         onOpenChange={h.handleReviewDialogOpenChange}
@@ -442,8 +551,7 @@ export default function WorkflowsPage() {
                 <Badge
                   variant={workflowRequestTypeColors[h.selectedRequest.request_type] ?? "outline"}
                 >
-                  {workflowRequestTypeLabels[h.selectedRequest.request_type] ??
-                    h.selectedRequest.request_type}
+                  {h.getRequestTypeLabel(h.selectedRequest.request_type)}
                 </Badge>
               </p>
             </div>
@@ -497,6 +605,169 @@ export default function WorkflowsPage() {
             </div>
           </div>
         )}
+      </EditPanel>
+
+      {/* ===== テンプレート編集パネル ===== */}
+      <EditPanel
+        open={h.templatePanelOpen}
+        onOpenChange={h.setTemplatePanelOpen}
+        title={h.editingTemplate ? "テンプレートを編集" : "テンプレートを作成"}
+        onSave={async () => {
+          const result = await h.handleSaveTemplate();
+          if (result.success) {
+            showToast(
+              h.editingTemplate ? "テンプレートを更新しました" : "テンプレートを作成しました",
+              "success"
+            );
+          } else {
+            showToast(result.error ?? "保存に失敗しました", "error");
+          }
+        }}
+        saving={h.savingTemplate}
+        saveDisabled={!h.editTemplateName.trim()}
+        onDelete={
+          h.editingTemplate
+            ? async () => {
+                const result = await h.handleDeleteTemplate();
+                if (result.success) {
+                  showToast("テンプレートを削除しました", "success");
+                } else {
+                  showToast(result.error ?? "削除に失敗しました", "error");
+                }
+              }
+            : undefined
+        }
+        deleteLabel="テンプレートを削除"
+        deleting={h.deletingTemplate}
+      >
+        <div className="space-y-4">
+          <div className="flex gap-3">
+            <div className="space-y-2 w-16">
+              <Label>アイコン</Label>
+              <Input
+                value={h.editTemplateIcon}
+                onChange={(e) => h.setEditTemplateIcon(e.target.value)}
+                className="text-center text-lg"
+                maxLength={2}
+              />
+            </div>
+            <div className="space-y-2 flex-1">
+              <Label>テンプレート名 *</Label>
+              <Input
+                value={h.editTemplateName}
+                onChange={(e) => h.setEditTemplateName(e.target.value)}
+                placeholder="例：備品購入申請、在宅勤務申請"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>説明</Label>
+            <Textarea
+              value={h.editTemplateDescription}
+              onChange={(e) => h.setEditTemplateDescription(e.target.value)}
+              placeholder="このワークフローの説明"
+              rows={2}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label>有効</Label>
+            <Switch checked={h.editTemplateActive} onCheckedChange={h.setEditTemplateActive} />
+          </div>
+
+          {/* フィールド定義 */}
+          <div className="space-y-3 pt-2 border-t">
+            <div className="flex items-center justify-between">
+              <Label>入力フィールド</Label>
+              <Button variant="outline" size="sm" onClick={h.addTemplateField}>
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                フィールド追加
+              </Button>
+            </div>
+
+            {h.editTemplateFields.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-3">
+                フィールドがありません。追加してください。
+              </p>
+            )}
+
+            {h.editTemplateFields.map((field, idx) => (
+              <div key={idx} className="rounded-lg border p-3 space-y-3 bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    フィールド #{idx + 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => h.removeTemplateField(idx)}
+                    className="text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">ラベル *</label>
+                    <Input
+                      value={field.label}
+                      onChange={(e) => h.updateTemplateField(idx, { label: e.target.value })}
+                      placeholder="例：金額"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">種類</label>
+                    <Select
+                      value={field.type}
+                      onValueChange={(v) =>
+                        h.updateTemplateField(idx, {
+                          type: v as "text" | "number" | "date" | "textarea" | "select",
+                        })
+                      }
+                    >
+                      <SelectTrigger size="sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(FIELD_TYPE_LABELS).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>
+                            {v}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                {field.type === "select" && (
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">選択肢（カンマ区切り）</label>
+                    <Input
+                      value={(field.options ?? []).join(", ")}
+                      onChange={(e) =>
+                        h.updateTemplateField(idx, {
+                          options: e.target.value
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean),
+                        })
+                      }
+                      placeholder="選択肢A, 選択肢B, 選択肢C"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                )}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={field.required ?? false}
+                    onCheckedChange={(checked) =>
+                      h.updateTemplateField(idx, { required: !!checked })
+                    }
+                  />
+                  <span className="text-xs text-muted-foreground">必須</span>
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
       </EditPanel>
     </div>
   );

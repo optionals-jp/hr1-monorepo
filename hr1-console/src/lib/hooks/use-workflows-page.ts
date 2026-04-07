@@ -9,7 +9,12 @@ import { getSupabase } from "@/lib/supabase/browser";
 import * as workflowRepo from "@/lib/repositories/workflow-repository";
 import { getCurrentUserId } from "@/lib/get-current-user-id";
 import { workflowRequestTypeLabels } from "@/lib/constants";
-import type { WorkflowRequest, WorkflowRule } from "@/types/database";
+import type {
+  WorkflowRequest,
+  WorkflowRule,
+  WorkflowTemplate,
+  WorkflowTemplateField,
+} from "@/types/database";
 
 interface Employee {
   id: string;
@@ -116,7 +121,25 @@ export async function saveWorkflowSettings(params: {
   }
 }
 
-export type TabValue = "requests" | "settings";
+export type TabValue = "requests" | "templates" | "settings";
+
+export function useWorkflowTemplates(enabled: boolean) {
+  const { organization } = useOrg();
+  return useQuery<WorkflowTemplate[]>(
+    organization && enabled ? `workflow-templates-${organization.id}` : null,
+    async () => workflowRepo.fetchTemplates(getSupabase(), organization!.id)
+  );
+}
+
+const FIELD_TYPE_LABELS: Record<string, string> = {
+  text: "テキスト",
+  number: "数値",
+  date: "日付",
+  textarea: "テキストエリア",
+  select: "選択肢",
+};
+
+export { FIELD_TYPE_LABELS };
 
 export interface AutoApproveConfig {
   paid_leave: { is_active: boolean; max_days: number };
@@ -178,8 +201,12 @@ export function formatRequestSummary(req: WorkflowRequest): string {
       if (description) parts.push(description);
       return parts.length > 0 ? parts.join(" / ") : "-";
     }
-    default:
-      return "-";
+    default: {
+      // カスタムワークフロー: request_data のキー・値を表示
+      const entries = Object.entries(data).filter(([, v]) => v != null && v !== "");
+      if (entries.length === 0) return "-";
+      return entries.map(([, v]) => String(v)).join(" / ");
+    }
   }
 }
 
@@ -202,6 +229,17 @@ export function useWorkflowsPage() {
   const [notifyAdmins, setNotifyAdmins] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
 
+  // Template editing state
+  const [templatePanelOpen, setTemplatePanelOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<WorkflowTemplate | null>(null);
+  const [editTemplateName, setEditTemplateName] = useState("");
+  const [editTemplateDescription, setEditTemplateDescription] = useState("");
+  const [editTemplateIcon, setEditTemplateIcon] = useState("📝");
+  const [editTemplateFields, setEditTemplateFields] = useState<WorkflowTemplateField[]>([]);
+  const [editTemplateActive, setEditTemplateActive] = useState(true);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [deletingTemplate, setDeletingTemplate] = useState(false);
+
   const { data: employees = [] } = useWorkflowEmployees();
 
   const {
@@ -216,6 +254,12 @@ export function useWorkflowsPage() {
     isLoading: rulesLoading,
     mutate: mutateRules,
   } = useWorkflowRules(activeTab === "settings");
+
+  const {
+    data: templates = [],
+    isLoading: templatesLoading,
+    mutate: mutateTemplates,
+  } = useWorkflowTemplates(activeTab === "templates" || activeTab === "requests");
 
   useEffect(() => {
     if (rules.length === 0) return;
@@ -383,6 +427,120 @@ export function useWorkflowsPage() {
     if (!open) setSelectedRequest(null);
   }, []);
 
+  // Template helpers
+  const openAddTemplate = useCallback(() => {
+    setEditingTemplate(null);
+    setEditTemplateName("");
+    setEditTemplateDescription("");
+    setEditTemplateIcon("📝");
+    setEditTemplateFields([]);
+    setEditTemplateActive(true);
+    setTemplatePanelOpen(true);
+  }, []);
+
+  const openEditTemplate = useCallback((tpl: WorkflowTemplate) => {
+    setEditingTemplate(tpl);
+    setEditTemplateName(tpl.name);
+    setEditTemplateDescription(tpl.description ?? "");
+    setEditTemplateIcon(tpl.icon);
+    setEditTemplateFields(tpl.fields);
+    setEditTemplateActive(tpl.is_active);
+    setTemplatePanelOpen(true);
+  }, []);
+
+  const addTemplateField = useCallback(() => {
+    setEditTemplateFields((prev) => [
+      ...prev,
+      { key: `field_${Date.now()}`, label: "", type: "text", required: false },
+    ]);
+  }, []);
+
+  const updateTemplateField = useCallback(
+    (index: number, patch: Partial<WorkflowTemplateField>) => {
+      setEditTemplateFields((prev) => prev.map((f, i) => (i === index ? { ...f, ...patch } : f)));
+    },
+    []
+  );
+
+  const removeTemplateField = useCallback((index: number) => {
+    setEditTemplateFields((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleSaveTemplate = useCallback(async (): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    if (!organization || !editTemplateName.trim()) {
+      return { success: false, error: "テンプレート名は必須です" };
+    }
+    setSavingTemplate(true);
+    try {
+      const client = getSupabase();
+      const payload = {
+        name: editTemplateName.trim(),
+        description: editTemplateDescription.trim() || null,
+        icon: editTemplateIcon,
+        fields: editTemplateFields,
+        is_active: editTemplateActive,
+      };
+
+      if (editingTemplate) {
+        await workflowRepo.updateTemplate(client, editingTemplate.id, organization.id, payload);
+      } else {
+        await workflowRepo.createTemplate(client, {
+          ...payload,
+          organization_id: organization.id,
+          sort_order: templates.length,
+        });
+      }
+      await mutateTemplates();
+      setTemplatePanelOpen(false);
+      return { success: true };
+    } catch {
+      return { success: false, error: "保存に失敗しました" };
+    } finally {
+      setSavingTemplate(false);
+    }
+  }, [
+    organization,
+    editingTemplate,
+    editTemplateName,
+    editTemplateDescription,
+    editTemplateIcon,
+    editTemplateFields,
+    editTemplateActive,
+    templates.length,
+    mutateTemplates,
+  ]);
+
+  const handleDeleteTemplate = useCallback(async (): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    if (!editingTemplate || !organization) return { success: false };
+    setDeletingTemplate(true);
+    try {
+      await workflowRepo.deleteTemplate(getSupabase(), editingTemplate.id, organization.id);
+      await mutateTemplates();
+      setTemplatePanelOpen(false);
+      return { success: true };
+    } catch {
+      return { success: false, error: "削除に失敗しました" };
+    } finally {
+      setDeletingTemplate(false);
+    }
+  }, [editingTemplate, organization, mutateTemplates]);
+
+  // Template name lookup for custom request types
+  const getRequestTypeLabel = useCallback(
+    (requestType: string): string => {
+      if (workflowRequestTypeLabels[requestType]) return workflowRequestTypeLabels[requestType];
+      const tpl = templates.find((t) => t.id === requestType);
+      return tpl ? `${tpl.icon} ${tpl.name}` : requestType;
+    },
+    [templates]
+  );
+
   const pendingCount = requests.filter((r) => r.status === "pending").length;
 
   const activeFilterCount = [filterStatus !== "all", filterType !== "all"].filter(Boolean).length;
@@ -423,5 +581,32 @@ export function useWorkflowsPage() {
     openReviewDialog,
     navigateToAttendance,
     mutate,
+
+    // Templates
+    templates,
+    templatesLoading,
+    templatePanelOpen,
+    setTemplatePanelOpen,
+    editingTemplate,
+    editTemplateName,
+    setEditTemplateName,
+    editTemplateDescription,
+    setEditTemplateDescription,
+    editTemplateIcon,
+    setEditTemplateIcon,
+    editTemplateFields,
+    setEditTemplateFields,
+    editTemplateActive,
+    setEditTemplateActive,
+    savingTemplate,
+    deletingTemplate,
+    openAddTemplate,
+    openEditTemplate,
+    addTemplateField,
+    updateTemplateField,
+    removeTemplateField,
+    handleSaveTemplate,
+    handleDeleteTemplate,
+    getRequestTypeLabel,
   };
 }

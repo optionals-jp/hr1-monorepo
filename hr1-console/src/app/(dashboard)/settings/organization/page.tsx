@@ -1,15 +1,27 @@
 "use client";
 
+import { useState } from "react";
 import { PageHeader, PageContent } from "@/components/layout/page-header";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { TabBar, type TabItem } from "@/components/layout/tab-bar";
+import { Info, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { SectionCard } from "@/components/ui/section-card";
 import { EditPanel } from "@/components/ui/edit-panel";
+import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 import { useOrganizationSettings } from "@/lib/hooks/use-organization-settings";
+
+const tabs: TabItem[] = [
+  { value: "basic", label: "基本情報", icon: Info },
+  { value: "history", label: "履歴", icon: History },
+];
 
 export default function OrganizationSettingsPage() {
   const h = useOrganizationSettings();
+  const [activeTab, setActiveTab] = useState("basic");
 
   if (!h.organization || h.loading) {
     return (
@@ -28,7 +40,7 @@ export default function OrganizationSettingsPage() {
   }
 
   return (
-    <>
+    <div className="flex flex-col">
       <PageHeader
         title="組織情報"
         description="企業の基本情報を管理します"
@@ -36,50 +48,62 @@ export default function OrganizationSettingsPage() {
         border={false}
       />
 
-      <PageContent>
-        <div className="max-w-2xl space-y-4">
-          <div className="rounded-lg bg-white border">
-            <div className="flex items-center justify-between px-5 pt-4 pb-2">
-              <h2 className="text-sm font-semibold text-muted-foreground">基本情報</h2>
-              <Button variant="outline" size="sm" onClick={h.startEditing}>
-                編集
-              </Button>
-            </div>
-            <div className="px-5 py-4 space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">組織名</span>
-                <span className="font-medium">{h.org.name}</span>
+      <StickyFilterBar>
+        <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+      </StickyFilterBar>
+
+      {activeTab === "basic" && (
+        <PageContent>
+          <div className="max-w-2xl space-y-4">
+            <SectionCard>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-muted-foreground">基本情報</h2>
+                <Button variant="outline" size="sm" onClick={h.startEditing}>
+                  編集
+                </Button>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">業種</span>
-                <span>{h.org.industry ?? "-"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">所在地</span>
-                <span>{h.org.location ?? "-"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">従業員数</span>
-                <span>{h.org.employee_count ?? "-"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">設立年</span>
-                <span>{h.org.founded_year ?? "-"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">ウェブサイト</span>
-                <span className="truncate max-w-xs">{h.org.website_url ?? "-"}</span>
-              </div>
-              {h.org.mission && (
-                <div className="pt-3 border-t">
-                  <p className="text-muted-foreground mb-1">ミッション</p>
-                  <p className="whitespace-pre-wrap">{h.org.mission}</p>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">組織名</span>
+                  <span className="font-medium">{h.org.name}</span>
                 </div>
-              )}
-            </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">業種</span>
+                  <span>{h.org.industry ?? "-"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">所在地</span>
+                  <span>{h.org.location ?? "-"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">従業員数</span>
+                  <span>{h.org.employee_count ?? "-"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">設立年</span>
+                  <span>{h.org.founded_year ?? "-"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">ウェブサイト</span>
+                  <span className="truncate max-w-xs">{h.org.website_url ?? "-"}</span>
+                </div>
+                {h.org.mission && (
+                  <div className="pt-3 border-t">
+                    <p className="text-muted-foreground mb-1">ミッション</p>
+                    <p className="whitespace-pre-wrap">{h.org.mission}</p>
+                  </div>
+                )}
+              </div>
+            </SectionCard>
           </div>
-        </div>
-      </PageContent>
+        </PageContent>
+      )}
+
+      {activeTab === "history" && (
+        <PageContent>
+          <AuditLogPanel organizationId={h.org.id} tableName="organizations" recordId={h.org.id} />
+        </PageContent>
+      )}
 
       <EditPanel
         open={h.editing}
@@ -151,6 +175,6 @@ export default function OrganizationSettingsPage() {
           </div>
         </div>
       </EditPanel>
-    </>
+    </div>
   );
 }

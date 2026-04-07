@@ -23,14 +23,14 @@ import {
 } from "@/lib/hooks/use-shifts";
 import { cn, weekdayLabel } from "@/lib/utils";
 import { TabBar } from "@/components/layout/tab-bar";
-import { ChevronLeft, ChevronRight, ClipboardList, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, ClipboardList, Send, Hand, CalendarRange } from "lucide-react";
 import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 
 type TabValue = "requests" | "schedule";
 
-const tabList: { value: TabValue; label: string }[] = [
-  { value: "requests", label: "シフト希望" },
-  { value: "schedule", label: "シフト表" },
+const tabList: { value: TabValue; label: string; icon: React.ElementType }[] = [
+  { value: "requests", label: "シフト希望", icon: Hand },
+  { value: "schedule", label: "シフト表", icon: CalendarRange },
 ];
 
 // ---------------------------------------------------------------------------

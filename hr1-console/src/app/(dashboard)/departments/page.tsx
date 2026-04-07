@@ -1,6 +1,7 @@
 "use client";
 
 import { useToast } from "@/components/ui/toast";
+import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,14 +29,150 @@ import { QueryErrorBanner } from "@/components/ui/query-error-banner";
 import { SearchBar } from "@/components/ui/search-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { TableSection } from "@/components/layout/table-section";
-import { Trash2, Pencil, Users, ZoomIn, ZoomOut, Maximize } from "lucide-react";
+import { Users, ZoomIn, ZoomOut, Maximize, List, GitBranchPlus, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
+import type { Department } from "@/types/database";
 
 const pageTabs = [
-  { value: "list", label: "一覧" },
-  { value: "orgchart", label: "組織図" },
+  { value: "list", label: "一覧", icon: List },
+  { value: "orgchart", label: "組織図", icon: GitBranchPlus },
 ];
+
+function DeptTreeRows({
+  departments,
+  allDepartments,
+  search,
+  onNavigate,
+}: {
+  departments: Department[];
+  allDepartments: Department[];
+  search: string;
+  onNavigate: (id: string) => void;
+}) {
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const isSearching = search.trim().length > 0;
+
+  const filteredIds = useMemo(() => new Set(departments.map((d) => d.id)), [departments]);
+
+  const childrenMap = useMemo(() => {
+    const map = new Map<string | null, Department[]>();
+    for (const d of allDepartments) {
+      const pid = d.parent_id ?? null;
+      const list = map.get(pid) ?? [];
+      list.push(d);
+      map.set(pid, list);
+    }
+    return map;
+  }, [allDepartments]);
+
+  const hasVisibleDescendant = useMemo(() => {
+    const cache = new Map<string, boolean>();
+    const check = (id: string): boolean => {
+      if (cache.has(id)) return cache.get(id)!;
+      const children = childrenMap.get(id) ?? [];
+      const result = children.some((c) => filteredIds.has(c.id) || check(c.id));
+      cache.set(id, result);
+      return result;
+    };
+    return check;
+  }, [childrenMap, filteredIds]);
+
+  const toggleCollapse = (id: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const rows: React.ReactNode[] = [];
+
+  const renderTree = (parentId: string | null, depth: number) => {
+    const children = childrenMap.get(parentId) ?? [];
+    for (const dept of children) {
+      const isVisible = filteredIds.has(dept.id) || hasVisibleDescendant(dept.id);
+      if (isSearching && !isVisible) continue;
+
+      const hasChildren = (childrenMap.get(dept.id) ?? []).length > 0;
+      const isCollapsed = collapsed.has(dept.id);
+
+      rows.push(
+        <TableRow key={dept.id} className="cursor-pointer" onClick={() => onNavigate(dept.id)}>
+          <TableCell>
+            <div className="flex items-center" style={{ paddingLeft: `${depth * 24}px` }}>
+              {hasChildren ? (
+                <button
+                  type="button"
+                  className="p-0.5 mr-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleCollapse(dept.id);
+                  }}
+                >
+                  <ChevronRight
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200",
+                      !isCollapsed && "rotate-90"
+                    )}
+                  />
+                </button>
+              ) : (
+                <span className="w-5.5 shrink-0" />
+              )}
+              <span className="font-medium">{dept.name}</span>
+            </div>
+          </TableCell>
+          <TableCell className="text-muted-foreground">
+            {(childrenMap.get(dept.id) ?? []).length > 0
+              ? `${(childrenMap.get(dept.id) ?? []).length}子部署`
+              : "-"}
+          </TableCell>
+          <TableCell className="text-muted-foreground">
+            {format(new Date(dept.created_at), "yyyy/MM/dd")}
+          </TableCell>
+        </TableRow>
+      );
+
+      if (hasChildren && !isCollapsed) {
+        renderTree(dept.id, depth + 1);
+      }
+    }
+  };
+
+  renderTree(null, 0);
+
+  // orphan departments (parent_id references a non-existent dept)
+  const rootIds = new Set((childrenMap.get(null) ?? []).map((d) => d.id));
+  for (const dept of departments) {
+    if (
+      !rootIds.has(dept.id) &&
+      dept.parent_id &&
+      !allDepartments.some((d) => d.id === dept.parent_id)
+    ) {
+      if (!rows.some((r) => (r as React.ReactElement).key === dept.id)) {
+        rows.push(
+          <TableRow key={dept.id} className="cursor-pointer" onClick={() => onNavigate(dept.id)}>
+            <TableCell>
+              <div className="flex items-center">
+                <span className="w-5.5 shrink-0" />
+                <span className="font-medium">{dept.name}</span>
+              </div>
+            </TableCell>
+            <TableCell className="text-muted-foreground">-</TableCell>
+            <TableCell className="text-muted-foreground">
+              {format(new Date(dept.created_at), "yyyy/MM/dd")}
+            </TableCell>
+          </TableRow>
+        );
+      }
+    }
+  }
+
+  return <>{rows}</>;
+}
 
 export default function DepartmentsPage() {
   const router = useRouter();
@@ -77,12 +214,9 @@ export default function DepartmentsPage() {
     zoomOut,
     openAddDialog,
     handleAdd,
-    handleDelete,
-    startEditing,
     saveEdit,
     filtered,
     getDescendantIds,
-    getParentName,
     topLevelDepts,
   } = useDepartmentsPage();
 
@@ -102,9 +236,6 @@ export default function DepartmentsPage() {
           <h3 className="text-sm font-semibold truncate">{dept.name}</h3>
           <p className="text-xs text-muted-foreground">{dept.members.length}名</p>
         </div>
-        <Button size="sm" variant="ghost" className="shrink-0" onClick={() => startEditing(dept)}>
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
       </div>
       {dept.members.length > 0 && (
         <div className="px-4 py-2.5">
@@ -203,72 +334,30 @@ export default function DepartmentsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>部署名</TableHead>
-                <TableHead>親部署</TableHead>
+                <TableHead>メンバー数</TableHead>
                 <TableHead>作成日</TableHead>
-                <TableHead className="w-24" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
                     読み込み中...
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
                     {search ? "一致する部署がありません" : "部署がありません"}
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((dept) => (
-                  <TableRow
-                    key={dept.id}
-                    className="cursor-pointer"
-                    onClick={() => router.push(`/departments/${dept.id}`)}
-                  >
-                    <TableCell>
-                      <span className="font-medium">{dept.name}</span>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {getParentName(dept.parent_id) ?? "-"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {format(new Date(dept.created_at), "yyyy/MM/dd")}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startEditing(dept);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-destructive hover:text-destructive"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            const result = await handleDelete(dept.id);
-                            if (result.success) {
-                              showToast("部署を削除しました");
-                            } else {
-                              showToast(result.error ?? "部署の削除に失敗しました", "error");
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                <DeptTreeRows
+                  departments={filtered}
+                  allDepartments={departments}
+                  search={search}
+                  onNavigate={(id) => router.push(`/departments/${id}`)}
+                />
               )}
             </TableBody>
           </Table>

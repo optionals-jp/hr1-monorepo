@@ -29,13 +29,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { teamMemberRoleLabels } from "@/lib/constants";
 import { ProjectOverviewTab } from "@/features/projects/components/project-overview-tab";
 import { format } from "date-fns";
-import { Trash2, Plus, Users, Pencil } from "lucide-react";
+import { Trash2, Plus, Users, Pencil, Info } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProjectDetail } from "@/lib/hooks/use-project-detail";
 
 const tabs = [
-  { value: "overview", label: "概要" },
-  { value: "teams", label: "チーム" },
+  { value: "overview", label: "概要", icon: Info },
+  { value: "teams", label: "チーム", icon: Users },
 ];
 
 export default function ProjectDetailPage() {

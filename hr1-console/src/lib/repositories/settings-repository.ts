@@ -72,7 +72,7 @@ export async function fetchSkillMasters(client: SupabaseClient, organizationId: 
   const { data } = await client
     .from("skill_masters")
     .select("*")
-    .eq("organization_id", organizationId)
+    .or(`organization_id.is.null,organization_id.eq.${organizationId}`)
     .order("category", { nullsFirst: false })
     .order("name");
   return (data ?? []) as SkillMaster[];
@@ -93,13 +93,65 @@ export async function deleteSkillMaster(
   return client.from("skill_masters").delete().eq("id", id).eq("organization_id", organizationId);
 }
 
+export async function fetchSkillMaster(client: SupabaseClient, id: string) {
+  const { data } = await client.from("skill_masters").select("*").eq("id", id).single();
+  return data as SkillMaster | null;
+}
+
+export async function updateSkillMasterDescription(
+  client: SupabaseClient,
+  id: string,
+  description: string | null
+) {
+  return client.from("skill_masters").update({ description }).eq("id", id);
+}
+
+export interface SkillMasterEmployee {
+  user_id: string;
+  name: string;
+  level: number;
+  display_name: string | null;
+  email: string;
+  position: string | null;
+}
+
+export async function fetchSkillMasterEmployees(
+  client: SupabaseClient,
+  skillMasterId: string,
+  organizationId: string
+) {
+  const { data } = await client
+    .from("employee_skills")
+    .select("user_id, name, level, profiles!inner(display_name, email, position)")
+    .eq("skill_master_id", skillMasterId)
+    .eq("organization_id", organizationId)
+    .order("level", { ascending: false });
+
+  return (data ?? []).map((row) => {
+    const r = row as unknown as {
+      user_id: string;
+      name: string;
+      level: number;
+      profiles: { display_name: string | null; email: string; position: string | null };
+    };
+    return {
+      user_id: r.user_id,
+      name: r.name,
+      level: r.level,
+      display_name: r.profiles.display_name,
+      email: r.profiles.email,
+      position: r.profiles.position,
+    } as SkillMasterEmployee;
+  });
+}
+
 // --- Certifications ---
 
 export async function fetchCertificationMasters(client: SupabaseClient, organizationId: string) {
   const { data } = await client
     .from("certification_masters")
     .select("*")
-    .eq("organization_id", organizationId)
+    .or(`organization_id.is.null,organization_id.eq.${organizationId}`)
     .order("category", { nullsFirst: false })
     .order("name");
   return (data ?? []) as CertificationMaster[];

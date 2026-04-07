@@ -4,13 +4,18 @@ import { ReactNode, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { OrgProvider } from "@/lib/org-context";
 import { Sidebar } from "@/components/layout/sidebar";
+import { SettingsSidebar } from "@/components/layout/settings-sidebar";
 import { Header } from "@/components/layout/header";
+import { AccessDenied } from "@/components/ui/access-denied";
 import { useAuth } from "@/lib/auth-context";
+import { usePermission } from "@/lib/hooks/use-permission";
+import { getResourceForPath } from "@/lib/constants/permissions";
 
 function DashboardShell({ children }: { children: ReactNode }) {
   const { user, profile, loading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+  const { can } = usePermission();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -31,13 +36,17 @@ function DashboardShell({ children }: { children: ReactNode }) {
   }
 
   const isSettings = pathname.startsWith("/settings");
+  const requiredResource = getResourceForPath(pathname);
+  const hasAccess = !requiredResource || can(requiredResource, "view");
 
   return (
     <OrgProvider>
       <Header />
       <div className="flex min-h-0">
-        {!isSettings && <Sidebar />}
-        <main className="flex-1 min-w-0 overflow-y-auto">{children}</main>
+        {isSettings ? <SettingsSidebar /> : <Sidebar />}
+        <main className="flex-1 min-w-0 overflow-y-auto">
+          {hasAccess ? children : <AccessDenied />}
+        </main>
       </div>
     </OrgProvider>
   );

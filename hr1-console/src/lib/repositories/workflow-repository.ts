@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { WorkflowRequest, WorkflowRule } from "@/types/database";
+import type { WorkflowRequest, WorkflowRule, WorkflowTemplate } from "@/types/database";
 
 export async function countPendingRequests(client: SupabaseClient, organizationId: string) {
   const { count } = await client
@@ -111,6 +111,60 @@ export async function upsertRule(
       .eq("organization_id", data.organization_id);
   }
   return client.from("workflow_rules").insert(data);
+}
+
+// --- Workflow Templates ---
+
+export async function fetchTemplates(client: SupabaseClient, organizationId: string) {
+  const { data } = await client
+    .from("workflow_templates")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("sort_order")
+    .order("name");
+  return (data ?? []) as WorkflowTemplate[];
+}
+
+export async function createTemplate(
+  client: SupabaseClient,
+  data: {
+    organization_id: string;
+    name: string;
+    description: string | null;
+    icon: string;
+    fields: unknown[];
+    is_active: boolean;
+    sort_order: number;
+  }
+) {
+  return client.from("workflow_templates").insert(data).select().single();
+}
+
+export async function updateTemplate(
+  client: SupabaseClient,
+  id: string,
+  organizationId: string,
+  data: {
+    name: string;
+    description: string | null;
+    icon: string;
+    fields: unknown[];
+    is_active: boolean;
+  }
+) {
+  return client
+    .from("workflow_templates")
+    .update(data)
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+}
+
+export async function deleteTemplate(client: SupabaseClient, id: string, organizationId: string) {
+  return client
+    .from("workflow_templates")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", organizationId);
 }
 
 // --- Audit logs page ---
