@@ -1,9 +1,9 @@
 "use client";
 
 import { Dispatch, SetStateAction } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
 import { EditPanel } from "@/components/ui/edit-panel";
 import {
   Select,
@@ -11,7 +11,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import { dealStatusLabels } from "@/lib/constants";
 import { getStagesFromPipeline } from "@/lib/hooks/use-pipelines";
 import type { ValidationErrors } from "@/lib/validation";

@@ -3,24 +3,24 @@
 import { useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useOrg } from "@/lib/org-context";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { FormInput, FormTextarea } from "@/components/ui/form-field";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { FormInput, FormTextarea } from "@hr1/shared-ui/components/ui/form-field";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { DatetimeInput } from "@/components/ui/datetime-input";
-import { TabBar } from "@/components/layout/tab-bar";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { useSchedulingDetailPage } from "@/lib/hooks/use-scheduling-detail";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { Trash2, CalendarCheck, ScrollText, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { interviewScheduleStatusLabels as statusLabels } from "@/lib/constants";

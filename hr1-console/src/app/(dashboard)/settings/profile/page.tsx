@@ -1,21 +1,21 @@
 "use client";
 
-import { PageHeader, PageContent } from "@/components/layout/page-header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { SectionCard } from "@/components/ui/section-card";
+} from "@hr1/shared-ui/components/ui/select";
+import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { useProfileSettings } from "@/lib/hooks/use-profile-settings";
 import { genderLabels } from "@/lib/constants";
 import { format, differenceInYears, differenceInMonths } from "date-fns";

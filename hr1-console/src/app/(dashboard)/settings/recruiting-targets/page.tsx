@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Card, CardContent } from "@hr1/shared-ui/components/ui/card";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
 
 const HIRING_TYPES = [

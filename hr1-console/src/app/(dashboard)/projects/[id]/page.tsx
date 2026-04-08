@@ -1,11 +1,11 @@
 "use client";
 
-import { useToast } from "@/components/ui/toast";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -13,24 +13,24 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@hr1/shared-ui/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { TabBar } from "@/components/layout/tab-bar";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent } from "@hr1/shared-ui/components/ui/card";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { teamMemberRoleLabels } from "@/lib/constants";
 import { ProjectOverviewTab } from "@/features/projects/components/project-overview-tab";
 import { format } from "date-fns";
 import { Trash2, Plus, Users, Pencil, Info } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
 import { useProjectDetail } from "@/lib/hooks/use-project-detail";
 
 const tabs = [

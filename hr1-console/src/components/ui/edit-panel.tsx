@@ -3,8 +3,8 @@
 import { ReactNode, useState } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { ConfirmDialog } from "@hr1/shared-ui/components/ui/confirm-dialog";
 
 export interface EditPanelTab {
   value: string;

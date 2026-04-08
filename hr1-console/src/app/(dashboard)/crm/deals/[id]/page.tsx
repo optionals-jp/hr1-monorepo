@@ -2,10 +2,10 @@
 
 import { useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
 import {
   Table,
   TableBody,
@@ -13,9 +13,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/toast";
+} from "@hr1/shared-ui/components/ui/table";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import Link from "next/link";
 import {
   useCrmDeal,
@@ -25,7 +25,7 @@ import {
 } from "@/lib/hooks/use-crm";
 import { quoteStatusLabels, quoteStatusColors } from "@/lib/constants";
 import { FileText, Plus, CheckCircle2, Circle, Clock, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import { usePipelines, getStagesFromPipeline } from "@/lib/hooks/use-pipelines";
 import { CrmCustomFields } from "@/components/crm/crm-custom-fields";
 import { StageChevrons } from "@/components/crm/stage-chevrons";

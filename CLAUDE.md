@@ -7,17 +7,21 @@ Monorepo with the following apps and packages:
 ### Apps
 - `hr1-console/` — Next.js (App Router) tenant admin console (TypeScript) — 各テナント企業の管理画面
 - `hr1-admin/` — Next.js (App Router) platform admin (TypeScript) — HR1運営側の管理画面（契約・プラン・MRR管理）
+- `hr1-employee-web/` — Next.js (App Router) employee web app (TypeScript) — 社員向けWebアプリ（ポート3003）
 - `hr1-lp/` — Next.js (App Router) landing page (TypeScript) — HR1サービスサイト
 - `hr1-applicant-app/` — Flutter applicant app (Dart)
 - `hr1-employee-app/` — Flutter employee app (Dart)
 
 ### Shared
+- `packages/shared-ui/` — Next.js 共有UIパッケージ (@hr1/shared-ui) — Button, Card, Dialog 等の基本コンポーネント
 - `hr1_shared/` — Flutter shared package (Dart) — 両Flutterアプリ共通のウィジェット・定数・サービス
 - `supabase/` — Supabase migrations / Edge Functions
 - `scripts/` — ビルド・デプロイ用スクリプト
 
+npm workspaces でモノレポ管理（ルートに package.json）。Next.js アプリは `@hr1/shared-ui` から共通コンポーネントを import する。
+
 Backend: Supabase (Auth, Database, Edge Functions)
-Deploy: Console/Admin/LP → Vercel (main merge), Mobile → TestFlight (manual via `./scripts/build-all-ipa.sh`)
+Deploy: Console/Admin/Employee-Web/LP → Vercel (main merge), Mobile → TestFlight (manual via `./scripts/build-all-ipa.sh`)
 
 ## Commands
 
@@ -39,6 +43,14 @@ Deploy: Console/Admin/LP → Vercel (main merge), Mobile → TestFlight (manual 
 - `npm run format:check` — Prettier format check
 - `npm run test` — Vitest run
 - `npm run test:watch` — Vitest watch
+
+### hr1-employee-web (run from `hr1-employee-web/`)
+- `npm run dev` — Start dev server (port 3003)
+- `npm run build` — Production build
+- `npm run lint` — ESLint
+- `npm run format` — Prettier format (write)
+- `npm run format:check` — Prettier format check
+- `npm run test` — Vitest run
 
 ### hr1-lp (run from `hr1-lp/`)
 - `npm run dev` — Start dev server (port 3002)
@@ -116,13 +128,19 @@ class MyScreen extends ConsumerWidget {
 
 ## CI Pipeline (GitHub Actions)
 
-PR to `main` で以下の3ジョブが並列実行される:
+PR to `main` で以下の5ジョブが並列実行される。npm workspaces でルートから `npm ci` → `--workspace` で各アプリを実行。
 
 ### Console (hr1-console)
 1. `format:check` — Prettier
 2. `lint` — ESLint
 3. `test` — Vitest
 4. `build` — Next.js build
+
+### Admin (hr1-admin)
+1. `build` — Next.js build
+
+### Employee Web (hr1-employee-web)
+1. `build` — Next.js build
 
 ### Employee App (hr1-employee-app)
 1. `flutter pub get`
@@ -177,7 +195,7 @@ PR to `main` で以下の3ジョブが並列実行される:
 
 ## Task Completion Checklist
 
-### hr1-console / hr1-admin
+### hr1-console / hr1-admin / hr1-employee-web
 1. `npm run format` — Apply Prettier formatting (also checked by stop hook)
 2. `npm run lint` — Check for ESLint errors
 3. `npm run build` — Verify production build succeeds

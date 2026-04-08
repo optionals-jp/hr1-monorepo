@@ -1,7 +1,7 @@
 "use client";
 
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import {
   Table,
   TableBody,
@@ -9,15 +9,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import type { Announcement } from "@/types/database";
 import { useAnnouncements, useAnnouncementPanel } from "@/lib/hooks/use-announcements";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { announcementTargetLabels } from "@/lib/constants";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Input } from "@hr1/shared-ui/components/ui/input";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import {
   Select,
@@ -25,13 +25,13 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/components/ui/toast";
-import { TableSection } from "@/components/layout/table-section";
+} from "@hr1/shared-ui/components/ui/select";
+import { Switch } from "@hr1/shared-ui/components/ui/switch";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { format } from "date-fns";
 import { Pencil, Pin, Send, Undo2 } from "lucide-react";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 
 function statusBadge(a: Announcement) {
   if (a.is_pinned && a.published_at) {

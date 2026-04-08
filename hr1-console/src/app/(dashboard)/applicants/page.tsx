@@ -1,10 +1,10 @@
 "use client";
 
-import { useToast } from "@/components/ui/toast";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { FormField, FormInput } from "@/components/ui/form-field";
-import { Badge } from "@/components/ui/badge";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { FormField, FormInput } from "@hr1/shared-ui/components/ui/form-field";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -12,30 +12,30 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
 import { useApplicantsPage } from "@/lib/hooks/use-applicants-page";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+} from "@hr1/shared-ui/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { SearchBar } from "@/components/ui/search-bar";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { TableSection } from "@/components/layout/table-section";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { SlidersHorizontal, X, Download, Upload } from "lucide-react";
 import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
 import { useRouter } from "next/navigation";

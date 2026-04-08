@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { useCrmDealsAll } from "@/lib/hooks/use-crm";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";

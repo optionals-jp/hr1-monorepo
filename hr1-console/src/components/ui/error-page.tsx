@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@hr1/shared-ui/components/ui/button";
 import Link from "next/link";
 
 export function ErrorPage({

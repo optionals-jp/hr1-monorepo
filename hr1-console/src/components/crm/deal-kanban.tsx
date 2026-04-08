@@ -15,7 +15,7 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useDroppable } from "@dnd-kit/core";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import type { BcDeal, CrmPipelineStage } from "@/types/database";
 
 interface DealKanbanProps {

@@ -1,17 +1,17 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import { useWikiPageDetail } from "@/lib/hooks/use-wiki";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Input } from "@hr1/shared-ui/components/ui/input";
 import { MarkdownEditor, markdownToHtml } from "@/components/ui/markdown-editor";
 import { format } from "date-fns";
 import { Pencil, Eye, EyeOff } from "lucide-react";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { useToast } from "@/components/ui/toast";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 
 function MarkdownPreview({ content }: { content: string }) {
   return (

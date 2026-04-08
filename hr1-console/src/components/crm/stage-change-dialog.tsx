@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from "@hr1/shared-ui/components/ui/dialog";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ChevronBar } from "@/components/crm/stage-chevrons";
 import type { CrmPipelineStage } from "@/types/database";

@@ -2,10 +2,10 @@
 
 import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Card, CardContent } from "@hr1/shared-ui/components/ui/card";
 import {
   Table,
   TableBody,
@@ -13,20 +13,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { SearchBar } from "@/components/ui/search-bar";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+} from "@hr1/shared-ui/components/ui/dropdown-menu";
+import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { TableSection } from "@/components/layout/table-section";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { cn, formatDateLocal, formatTime, formatMinutesHM } from "@/lib/utils";
 import type { AttendancePunch, AttendanceRecord, AttendanceSettingsRow } from "@/types/database";
 import { attendanceStatusLabels, attendanceStatusColors, punchTypeLabels } from "@/lib/constants";

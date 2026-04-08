@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@hr1/shared-ui": ["../packages/shared-ui/src/index.ts"],
+      "@hr1/shared-ui/*": ["../packages/shared-ui/src/*"]
     }
   },
   "include": [
@@ -28,7 +30,9 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    "../packages/shared-ui/src/**/*.ts",
+    "../packages/shared-ui/src/**/*.tsx"
   ],
   "exclude": ["node_modules"]
 }

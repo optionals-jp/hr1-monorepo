@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@hr1/shared-ui/components/ui/tooltip";
 
 function AuthGuard({ children }: { children: ReactNode }) {
   const { user, profile, loading } = useAuth();

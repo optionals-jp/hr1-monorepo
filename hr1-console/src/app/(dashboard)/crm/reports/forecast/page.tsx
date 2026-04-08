@@ -1,17 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { Button } from "@/components/ui/button";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+} from "@hr1/shared-ui/components/ui/select";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import {
   Table,
   TableBody,
@@ -19,7 +19,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@hr1/shared-ui/components/ui/table";
 import { useCrmDealsAll } from "@/lib/hooks/use-crm";
 import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
 import { ReportNav } from "@/components/crm/report-nav";

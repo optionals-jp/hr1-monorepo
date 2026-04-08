@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@hr1/shared-ui/components/ui/dialog";
 import type { ApplicationStep, CustomForm, Interview } from "@/types/database";
 import { StepType } from "@/lib/constants";
 import { format } from "date-fns";

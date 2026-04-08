@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { useOrg } from "@/lib/org-context";
 import {
   useUnthreadedApplicants,
@@ -12,7 +12,7 @@ import {
 } from "@/lib/hooks/use-messages-page";
 import type { Profile } from "@/types/database";
 import { Search, X } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@hr1/shared-ui/components/ui/tabs";
 
 export function NewThreadPanel({
   onCreated,

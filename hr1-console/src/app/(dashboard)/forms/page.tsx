@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import {
   Table,
   TableBody,
@@ -11,15 +11,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import { useOrg } from "@/lib/org-context";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import type { CustomForm } from "@/types/database";
 import { useForms, deleteForm } from "@/lib/hooks/use-forms";
-import { Badge } from "@/components/ui/badge";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { TableSection } from "@/components/layout/table-section";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { formTargetLabels } from "@/lib/constants";
 import { Trash2 } from "lucide-react";
 

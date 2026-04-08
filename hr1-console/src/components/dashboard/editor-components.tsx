@@ -1,15 +1,15 @@
 "use client";
 
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import { cn } from "@/lib/utils";
 import { DATA_SOURCE_REGISTRY, getSourcesForTab } from "@/lib/dashboard/data-sources";
 import type { DashboardWidgetConfigV2, WidgetDisplayType } from "@/types/dashboard";

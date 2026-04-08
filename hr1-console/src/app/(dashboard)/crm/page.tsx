@@ -2,11 +2,11 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { useCrmDealsAll, useCrmCompanies, useCrmContacts, useCrmLeads } from "@/lib/hooks/use-crm";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";

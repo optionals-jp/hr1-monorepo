@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { Button } from "@/components/ui/button";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import {
   Table,
   TableBody,
@@ -13,13 +13,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { Badge } from "@/components/ui/badge";
-import { TabBar } from "@/components/layout/tab-bar";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { useOrg } from "@/lib/org-context";
-import { TableSection } from "@/components/layout/table-section";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import {
   formTargetLabels,
   evaluationTypeLabels,

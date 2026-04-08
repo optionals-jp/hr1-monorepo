@@ -1,27 +1,27 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
+import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+} from "@hr1/shared-ui/components/ui/select";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from "@hr1/shared-ui/components/ui/dialog";
 import { useOrg } from "@/lib/org-context";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { useCrmFieldDefinitions, useCrmFieldValues } from "@/lib/hooks/use-crm-fields";
 import { upsertFieldValues } from "@/lib/repositories/crm-field-repository";
 import { getSupabase } from "@/lib/supabase/browser";

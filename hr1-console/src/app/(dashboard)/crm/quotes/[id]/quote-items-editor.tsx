@@ -1,7 +1,7 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import { FileText, Plus, Trash2 } from "lucide-react";
 
 export interface EditableItem {

@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import { useToast } from "@/components/ui/toast";
-import { PageHeader } from "@/components/layout/page-header";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { TableSection } from "@/components/layout/table-section";
-import { Button } from "@/components/ui/button";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import {
   Table,
   TableBody,
@@ -13,8 +13,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+} from "@hr1/shared-ui/components/ui/table";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import {
   useShifts,
   type Employee,
@@ -22,9 +22,9 @@ import {
   type ScheduleWithProfile,
 } from "@/lib/hooks/use-shifts";
 import { cn, weekdayLabel } from "@/lib/utils";
-import { TabBar } from "@/components/layout/tab-bar";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { ChevronLeft, ChevronRight, ClipboardList, Send, Hand, CalendarRange } from "lucide-react";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 
 type TabValue = "requests" | "schedule";
 

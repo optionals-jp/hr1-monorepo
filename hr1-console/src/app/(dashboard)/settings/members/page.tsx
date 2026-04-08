@@ -1,14 +1,14 @@
 "use client";
 
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { TableSection } from "@/components/layout/table-section";
-import { SearchBar } from "@/components/ui/search-bar";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
+import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import {
   Table,
   TableBody,
@@ -16,8 +16,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import {
   Dialog,
   DialogContent,
@@ -25,15 +25,15 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from "@hr1/shared-ui/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+} from "@hr1/shared-ui/components/ui/select";
+import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
 import { EditPanel } from "@/components/ui/edit-panel";
 import { useMembersPage } from "@/lib/hooks/use-members-page";
 import { AlertCircle, CheckCircle2, Loader2, Mail, UserPlus, Shield } from "lucide-react";

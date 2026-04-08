@@ -1,8 +1,13 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@hr1/shared-ui/components/ui/dialog";
+import { Input } from "@hr1/shared-ui/components/ui/input";
 
 interface ConvertEmployeeDialogProps {
   open: boolean;

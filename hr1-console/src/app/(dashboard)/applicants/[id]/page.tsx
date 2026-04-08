@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { ProfileInfoList } from "@/components/ui/profile-info-list";
-import { SectionCard } from "@/components/ui/section-card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import {
   Table,
   TableBody,
@@ -13,10 +13,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+} from "@hr1/shared-ui/components/ui/table";
+import { Avatar, AvatarImage, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { useApplicantDetailPage } from "@/lib/hooks/use-applicant-detail";
-import { TabBar } from "@/components/layout/tab-bar";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
 import { TimelineTab } from "@/features/applicants/components/timeline-tab";

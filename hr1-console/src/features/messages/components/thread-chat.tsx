@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
 import {
   getSupabaseClient,

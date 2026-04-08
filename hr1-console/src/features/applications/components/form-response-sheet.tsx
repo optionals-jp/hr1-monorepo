@@ -1,6 +1,11 @@
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@hr1/shared-ui/components/ui/dialog";
 import type { ApplicationStep } from "@/types/database";
 import type { FormSheetField } from "@/features/applications/types";
 

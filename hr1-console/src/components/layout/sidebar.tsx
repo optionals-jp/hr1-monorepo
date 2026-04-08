@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { t } from "@/lib/i18n";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@hr1/shared-ui/components/ui/tooltip";
 import { usePermission } from "@/lib/hooks/use-permission";
 
 /** sidebar 内部用のエイリアス（usePermission を直接呼ぶとコンポーネント名と紛らわしいため） */

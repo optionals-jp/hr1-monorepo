@@ -11,9 +11,9 @@ import {
   pointerWithin,
 } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
-import { Button } from "@/components/ui/button";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
 import { DATA_SOURCE_REGISTRY } from "@/lib/dashboard/data-sources";
 import {

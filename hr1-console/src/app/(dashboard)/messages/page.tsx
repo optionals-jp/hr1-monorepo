@@ -1,13 +1,13 @@
 "use client";
 
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { useMessagesPage } from "@/lib/hooks/use-messages-page";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { Search, MessageSquare, Hash, Users, Plus } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@hr1/shared-ui/components/ui/tabs";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ThreadChat } from "@/features/messages/components/thread-chat";

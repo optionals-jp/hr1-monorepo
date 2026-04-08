@@ -1,11 +1,11 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import { leadSourceLabels, leadStatusLabels, leadStatusColors } from "@/lib/constants";
 import { useCrmLead, useCrmLeadActivities } from "@/lib/hooks/use-crm";
 import { ActivityInputBar } from "@/components/crm/activity-input-bar";

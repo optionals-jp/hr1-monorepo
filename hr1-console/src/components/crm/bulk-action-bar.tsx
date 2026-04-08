@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { ConfirmDialog } from "@hr1/shared-ui/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 

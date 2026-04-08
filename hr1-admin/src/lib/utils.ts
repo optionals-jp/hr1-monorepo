@@ -1,9 +1,4 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+export { cn } from "@hr1/shared-ui/lib/utils";
 
 /** Date → yyyy-MM-dd（ローカルタイムゾーン） */
 export function formatDateLocal(d: Date): string {

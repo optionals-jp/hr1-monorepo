@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import { useOrg } from "@/lib/org-context";
 import {
   useDepartmentsForChannel,
@@ -19,7 +19,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 
 export function CreateChannelPanel({
   onCreated,

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useToast } from "@/components/ui/toast";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -12,14 +12,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { TableSection } from "@/components/layout/table-section";
-import { SearchBar } from "@/components/ui/search-bar";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
+import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { useJobsPage, useNewJobPage } from "@/lib/hooks/use-jobs-page";
-import { TabBar } from "@/components/layout/tab-bar";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import {
   jobStatusLabels as statusLabels,
   jobStatusColors as statusColors,
@@ -29,15 +29,15 @@ import {
 import { Trash2, GripVertical, Briefcase, XCircle, Archive } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { FormInput, FormTextarea, FormField } from "@/components/ui/form-field";
+import { FormInput, FormTextarea, FormField } from "@hr1/shared-ui/components/ui/form-field";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+} from "@hr1/shared-ui/components/ui/select";
+import { Input } from "@hr1/shared-ui/components/ui/input";
 
 const pageTabs = [
   { value: "active", label: "公開中・ドラフト", icon: Briefcase },

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { PageHeader } from "@/components/layout/page-header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Label } from "@hr1/shared-ui/components/ui/label";
 import {
   Table,
   TableBody,
@@ -12,20 +12,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { SearchBar } from "@/components/ui/search-bar";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { TableSection } from "@/components/layout/table-section";
-import { useToast } from "@/components/ui/toast";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import { dealStatusLabels, dealStatusColors } from "@/lib/constants";
 import { useRouter } from "next/navigation";
 import { useCrmDealsPage, useCrmCompanies, useCrmContacts, removeDeal } from "@/lib/hooks/use-crm";
@@ -43,14 +43,14 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+} from "@hr1/shared-ui/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { CrmSavedViewConfig } from "@/types/database";
 import { LayoutList, Kanban, Settings, SlidersHorizontal, X, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Pagination, usePagination } from "@/components/crm/pagination";
 import { BulkActionBar, useBulkSelection } from "@/components/crm/bulk-action-bar";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
 import { DealEditPanel } from "./deal-edit-panel";
 
 type ViewMode = "table" | "kanban";

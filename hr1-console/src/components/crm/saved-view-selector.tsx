@@ -1,20 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useToast } from "@/components/ui/toast";
+} from "@hr1/shared-ui/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@hr1/shared-ui/components/ui/popover";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { useSavedViews } from "@/lib/hooks/use-saved-views";
 import type { CrmEntityType, CrmSavedViewConfig, CrmSavedViewFilter } from "@/types/database";
 import { Bookmark, Plus, Trash2, Share2, X } from "lucide-react";

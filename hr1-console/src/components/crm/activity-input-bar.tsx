@@ -1,17 +1,17 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { useToast } from "@/components/ui/toast";
+} from "@hr1/shared-ui/components/ui/select";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { activityTypeLabels } from "@/lib/constants";
 import { useCreateActivity } from "@/lib/hooks/use-crm";
 import { useAuth } from "@/lib/auth-context";

@@ -2,18 +2,18 @@
 
 import { useCallback } from "react";
 import { useParams } from "next/navigation";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import { useOrg } from "@/lib/org-context";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { applicationStatusLabels as statusLabels } from "@/lib/constants";
-import { TabBar } from "@/components/layout/tab-bar";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 import { useApplicationDetail } from "@/features/applications/hooks/use-application-detail";

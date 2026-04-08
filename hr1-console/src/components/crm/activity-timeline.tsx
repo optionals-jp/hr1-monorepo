@@ -1,7 +1,7 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { activityTypeLabels } from "@/lib/constants";
 import { Phone, Mail, MapPin, FileText, MessageSquare, Calendar } from "lucide-react";
 import type { BcActivity } from "@/types/database";

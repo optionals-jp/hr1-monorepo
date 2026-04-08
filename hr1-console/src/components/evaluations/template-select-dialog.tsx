@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import type { EvaluationTemplate } from "@/types/database";
 

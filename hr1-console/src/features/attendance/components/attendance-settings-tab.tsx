@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useToast } from "@/components/ui/toast";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
 import { EditPanel } from "@/components/ui/edit-panel";
 import { upsertAttendanceSettings } from "@/features/attendance/hooks/use-attendance-queries";
 import { attendanceStatusLabels, attendanceStatusColors, punchTypeLabels } from "@/lib/constants";

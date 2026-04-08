@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { SectionCard } from "@/components/ui/section-card";
-import { DetailField } from "@/components/ui/detail-field";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
+import { DetailField } from "@hr1/shared-ui/components/ui/detail-field";
 import { cn } from "@/lib/utils";
 import { genderLabels } from "@/lib/constants";
 import { format, differenceInYears } from "date-fns";

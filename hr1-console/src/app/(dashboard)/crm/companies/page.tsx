@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
 import {
   Table,
   TableBody,
@@ -12,14 +12,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { SearchBar } from "@/components/ui/search-bar";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { TableSection } from "@/components/layout/table-section";
-import { useToast } from "@/components/ui/toast";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { useRouter } from "next/navigation";
 import { useCrmCompaniesPage } from "@/lib/hooks/use-crm";
 import { SavedViewSelector } from "@/components/crm/saved-view-selector";
@@ -30,7 +30,7 @@ import { useOrg } from "@/lib/org-context";
 import { CompanyImportDialog } from "./company-import-dialog";
 import { Pagination, usePagination } from "@/components/crm/pagination";
 import { BulkActionBar, useBulkSelection } from "@/components/crm/bulk-action-bar";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
 import { removeCompany } from "@/lib/hooks/use-crm";
 
 export default function CrmCompaniesPage() {

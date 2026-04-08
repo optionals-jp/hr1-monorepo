@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import type { Job, JobStep, Interview, Application } from "@/types/database";
-import { SectionCard } from "@/components/ui/section-card";
+import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
 import { Users, CheckCircle2, Clock, XCircle, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import {

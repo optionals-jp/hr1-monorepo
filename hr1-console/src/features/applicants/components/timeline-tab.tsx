@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -10,8 +10,8 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+} from "@hr1/shared-ui/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import type { TimelineEvent } from "@/lib/hooks/use-applicant-detail";
 import {

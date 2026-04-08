@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
 import { useProductTab } from "@/components/layout/sidebar";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { DashboardGrid } from "@/components/dashboard/dashboard-grid";
 import type { DashboardData } from "@/components/dashboard/widget-renderer";
 import type { DashboardWidgetConfigV2 } from "@/types/dashboard";

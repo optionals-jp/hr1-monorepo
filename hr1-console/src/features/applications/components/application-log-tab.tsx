@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { useActivityLogs } from "@/lib/hooks/use-activity-logs";
 import { format } from "date-fns";
 import {

@@ -3,12 +3,12 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { SearchBar } from "@/components/ui/search-bar";
-import { TableSection } from "@/components/layout/table-section";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -16,17 +16,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { useToast } from "@/components/ui/toast";
+} from "@hr1/shared-ui/components/ui/dropdown-menu";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { useCrmQuotes } from "@/lib/hooks/use-crm";
 import { useOrg } from "@/lib/org-context";
@@ -36,7 +36,7 @@ import { quoteStatusLabels, quoteStatusColors } from "@/lib/constants";
 import { Plus, SlidersHorizontal, X, Trash2 } from "lucide-react";
 import { Pagination, usePagination } from "@/components/crm/pagination";
 import { BulkActionBar, useBulkSelection } from "@/components/crm/bulk-action-bar";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
 
 export default function QuotesPage() {
   const router = useRouter();

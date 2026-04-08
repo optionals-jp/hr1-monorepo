@@ -1,20 +1,20 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { SectionCard } from "@/components/ui/section-card";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
+import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import {
   Table,
   TableBody,
@@ -22,12 +22,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@hr1/shared-ui/components/ui/table";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
-import { TabBar } from "@/components/layout/tab-bar";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useCreateMessageThread } from "@/lib/hooks/use-create-message-thread";
 import { useEmployeeDetail, type MembershipRecord } from "@/lib/hooks/use-employee-detail";
