@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Profile } from "@/types/database";
+import { assertNotUnauthorized } from "@/lib/supabase/browser";
 
 export interface MemberWithRole {
   id: string;
@@ -50,7 +51,7 @@ export async function inviteMember(
     },
   });
 
-  if (error) throw error;
+  if (error) assertNotUnauthorized(error);
   if (data?.error) throw new Error(data.error);
   return data;
 }

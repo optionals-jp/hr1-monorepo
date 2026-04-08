@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
-import { getSupabase } from "@/lib/supabase/browser";
+import { getSupabase, assertNotUnauthorized } from "@/lib/supabase/browser";
 import * as applicantRepo from "@/lib/repositories/applicant-repository";
 import type { Profile } from "@/types/database";
 import { useOrg } from "@/lib/org-context";
@@ -31,7 +31,7 @@ export async function addApplicant(params: {
       graduation_year: params.graduation_year,
     },
   });
-  if (error) throw error;
+  if (error) assertNotUnauthorized(error);
   if (data?.error) throw new Error(data.error);
 }
 
