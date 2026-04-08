@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { SectionCard } from "@/components/ui/section-card";
-import { DetailField } from "@/components/ui/detail-field";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
+import { DetailField } from "@hr1/shared-ui/components/ui/detail-field";
 import { Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";

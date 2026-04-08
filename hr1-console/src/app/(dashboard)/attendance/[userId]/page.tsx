@@ -2,10 +2,10 @@
 
 import React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { PageHeader } from "@/components/layout/page-header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Card, CardContent } from "@hr1/shared-ui/components/ui/card";
 import {
   Table,
   TableBody,
@@ -13,10 +13,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { useOrg } from "@/lib/org-context";
 import { useAttendanceDetail } from "@/lib/hooks/use-attendance-detail";
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";

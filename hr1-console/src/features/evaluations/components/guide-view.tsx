@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Card, CardContent } from "@hr1/shared-ui/components/ui/card";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
   FileText,

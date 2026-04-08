@@ -2,9 +2,9 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { Menu, LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import {
   DropdownMenu,
@@ -12,13 +12,13 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@hr1/shared-ui/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
+} from "@hr1/shared-ui/components/ui/sheet";
 import { SidebarNav } from "./sidebar";
 
 export function Header() {

@@ -3,15 +3,15 @@
 import { useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useOrg } from "@/lib/org-context";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { TabBar } from "@/components/layout/tab-bar";
+} from "@hr1/shared-ui/components/ui/select";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { jobStatusLabels as statusLabels } from "@/lib/constants";
 import { FileText, Users, ScrollText, FileClock } from "lucide-react";

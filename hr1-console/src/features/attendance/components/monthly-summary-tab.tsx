@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Card, CardContent } from "@hr1/shared-ui/components/ui/card";
 import {
   Table,
   TableBody,
@@ -12,11 +12,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { TableSection } from "@/components/layout/table-section";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { formatMinutesHM } from "@/lib/utils";
 import {
   ChevronLeft,

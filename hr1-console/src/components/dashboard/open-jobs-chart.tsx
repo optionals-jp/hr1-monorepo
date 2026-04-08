@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { Briefcase } from "lucide-react";
 import type { OpenJobStat } from "@/types/dashboard";
 

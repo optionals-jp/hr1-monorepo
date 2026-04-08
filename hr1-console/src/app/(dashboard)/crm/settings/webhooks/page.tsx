@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { PageHeader } from "@/components/layout/page-header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
 import { EditPanel } from "@/components/ui/edit-panel";
 import {
   Table,
@@ -14,15 +14,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { useToast } from "@/components/ui/toast";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { useWebhooks, useWebhookLogs } from "@/lib/hooks/use-webhooks";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as webhookRepo from "@/lib/repositories/webhook-repository";
 import { webhookEventLabels } from "@/lib/constants";
-import { TableSection } from "@/components/layout/table-section";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import type { CrmWebhook } from "@/types/database";
 import { Plus, ScrollText } from "lucide-react";
 

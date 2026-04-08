@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useSyncExternalStore } from "react";
-import Link from "next/link";
+import React, { useSyncExternalStore } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
@@ -16,9 +15,7 @@ import {
   Building2,
   FolderKanban,
   Clock,
-  MessageSquare,
   Settings,
-  ChevronDown,
   Star,
   ListTodo,
   CircleHelp,
@@ -31,18 +28,16 @@ import {
   Megaphone,
   BookOpen,
   CreditCard,
-  Contact,
   Handshake,
-  BarChart3,
   Zap,
   Mail,
   Webhook,
-  PanelLeftClose,
-  PanelLeftOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { t } from "@/lib/i18n";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { NavLink } from "@hr1/shared-ui/components/layout/nav-link";
+import { CollapsibleSection } from "@hr1/shared-ui/components/layout/collapsible-section";
+import { SidebarShell } from "@hr1/shared-ui/components/layout/sidebar-shell";
 import { usePermission } from "@/lib/hooks/use-permission";
 
 /** sidebar 内部用のエイリアス（usePermission を直接呼ぶとコンポーネント名と紛らわしいため） */
@@ -90,7 +85,6 @@ const recruitingSections: NavSection[] = [
     labelKey: "nav.section.common",
     items: [
       { href: "/evaluations", labelKey: "nav.evaluations", icon: Star, resource: "evaluations" },
-      { href: "/messages", labelKey: "nav.messages", icon: MessageSquare, resource: "messages" },
       { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, resource: "calendar" },
       { href: "/tasks", labelKey: "nav.tasks", icon: ListTodo, resource: "tasks" },
       {
@@ -129,7 +123,6 @@ const workspaceSections: NavSection[] = [
       { href: "/projects", labelKey: "nav.projects", icon: FolderKanban, resource: "projects" },
       { href: "/tasks", labelKey: "nav.tasks", icon: ListTodo, resource: "tasks" },
       { href: "/surveys", labelKey: "nav.surveys", icon: HeartPulse, resource: "surveys" },
-      { href: "/messages", labelKey: "nav.messages", icon: MessageSquare, resource: "messages" },
       { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, resource: "calendar" },
       {
         href: "/announcements",
@@ -147,27 +140,6 @@ const clientSections: NavSection[] = [
   {
     labelKey: "nav.section.crm",
     items: [
-      { href: "/crm/leads", labelKey: "nav.crm.leads", icon: UserPlus, resource: "crm.leads" },
-      {
-        href: "/crm/companies",
-        labelKey: "nav.crm.companies",
-        icon: Building2,
-        resource: "crm.companies",
-      },
-      {
-        href: "/crm/contacts",
-        labelKey: "nav.crm.contacts",
-        icon: Contact,
-        resource: "crm.contacts",
-      },
-      { href: "/crm/deals", labelKey: "nav.crm.deals", icon: Handshake, resource: "crm.deals" },
-      { href: "/crm/quotes", labelKey: "nav.crm.quotes", icon: FileText, resource: "crm.quotes" },
-      {
-        href: "/crm/reports/forecast",
-        labelKey: "nav.crm.reports",
-        icon: BarChart3,
-        resource: "crm.reports",
-      },
       {
         href: "/crm/settings/pipelines",
         labelKey: "nav.crm.pipelines",
@@ -203,7 +175,6 @@ const clientSections: NavSection[] = [
   {
     labelKey: "nav.section.common",
     items: [
-      { href: "/messages", labelKey: "nav.messages", icon: MessageSquare, resource: "messages" },
       { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, resource: "calendar" },
       { href: "/tasks", labelKey: "nav.tasks", icon: ListTodo, resource: "tasks" },
     ],
@@ -346,139 +317,6 @@ function toggleSidebarCollapsed() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  NavLink / CollapsibleSection                                       */
-/* ------------------------------------------------------------------ */
-
-function NavLink({
-  href,
-  labelKey,
-  icon: Icon,
-  pathname,
-  onNavigate,
-  collapsed,
-}: {
-  href: string;
-  labelKey: string;
-  icon: React.ElementType;
-  pathname: string;
-  onNavigate?: () => void;
-  collapsed?: boolean;
-}) {
-  const isActive = href === "/" || href === "/crm" ? pathname === href : pathname.startsWith(href);
-
-  const link = (
-    <Link
-      href={href}
-      onClick={onNavigate}
-      className={cn(
-        "group relative flex items-center rounded-lg transition-all duration-200",
-        collapsed ? "justify-center px-0 py-2" : "gap-3 px-3 py-2",
-        isActive
-          ? "bg-primary/8 font-semibold text-primary"
-          : "text-muted-foreground hover:bg-accent hover:text-foreground"
-      )}
-    >
-      {isActive && !collapsed && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.75 rounded-r-full bg-primary" />
-      )}
-      {isActive && collapsed && (
-        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.75 rounded-t-full bg-primary" />
-      )}
-      <Icon
-        className={cn(
-          "h-4.5 w-4.5 shrink-0 transition-all duration-200",
-          isActive ? "text-primary" : "group-hover:scale-110"
-        )}
-      />
-      {!collapsed && (
-        <span className="text-[14px] transition-transform duration-200 group-hover:translate-x-0.5">
-          {t(labelKey)}
-        </span>
-      )}
-    </Link>
-  );
-
-  if (collapsed) {
-    return (
-      <Tooltip>
-        <TooltipTrigger render={<div />}>{link}</TooltipTrigger>
-        <TooltipContent side="right" sideOffset={8}>
-          {t(labelKey)}
-        </TooltipContent>
-      </Tooltip>
-    );
-  }
-
-  return link;
-}
-
-function CollapsibleSection({
-  section,
-  pathname,
-  onNavigate,
-  collapsed,
-}: {
-  section: NavSection;
-  pathname: string;
-  onNavigate?: () => void;
-  collapsed?: boolean;
-}) {
-  const hasActiveItem = section.items.some(({ href }) =>
-    href === "/" || href === "/crm" ? pathname === href : pathname.startsWith(href)
-  );
-  const [open, setOpen] = useState(true);
-
-  if (collapsed) {
-    return (
-      <div className="space-y-0.5">
-        <div className="mx-2 my-1 h-px bg-border" />
-        {section.items.map(({ href, labelKey, icon }) => (
-          <NavLink
-            key={href}
-            href={href}
-            labelKey={labelKey}
-            icon={icon}
-            pathname={pathname}
-            onNavigate={onNavigate}
-            collapsed
-          />
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-0.5">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-3 pb-1 pt-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-      >
-        {t(section.labelKey)}
-        <ChevronDown
-          className={cn("h-3.5 w-3.5 transition-transform duration-200", !open && "-rotate-90")}
-        />
-      </button>
-      {open && (
-        <>
-          {section.items.map(({ href, labelKey, icon }) => (
-            <NavLink
-              key={href}
-              href={href}
-              labelKey={labelKey}
-              icon={icon}
-              pathname={pathname}
-              onNavigate={onNavigate}
-            />
-          ))}
-        </>
-      )}
-      {!open && hasActiveItem && <div className="mx-3 h-0.5 rounded-full bg-primary/30" />}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /*  SidebarNav                                                         */
 /* ------------------------------------------------------------------ */
 
@@ -501,6 +339,16 @@ export function SidebarNav({
     .filter((s) => s.items.length > 0);
   const dashboardHref: string = dashboardByTab[activeTab];
 
+  const resolvedSections = sections.map((s) => ({
+    label: t(s.labelKey),
+    items: s.items.map((item) => ({
+      href: item.href,
+      label: t(item.labelKey),
+      icon: item.icon,
+      resource: item.resource,
+    })),
+  }));
+
   return (
     <nav className={cn("flex flex-col h-full py-3 overflow-y-auto", collapsed ? "px-1" : "px-2")}>
       <div className="flex-1 space-y-4">
@@ -508,7 +356,7 @@ export function SidebarNav({
         <div className="space-y-0.5">
           <NavLink
             href={dashboardHref}
-            labelKey="nav.dashboard"
+            label={t("nav.dashboard")}
             icon={activeTab === "client" ? CreditCard : LayoutDashboard}
             pathname={pathname}
             onNavigate={onNavigate}
@@ -517,9 +365,9 @@ export function SidebarNav({
         </div>
 
         {/* タブ別セクション */}
-        {sections.map((section) => (
+        {resolvedSections.map((section) => (
           <CollapsibleSection
-            key={section.labelKey}
+            key={section.label}
             section={section}
             pathname={pathname}
             onNavigate={onNavigate}
@@ -534,7 +382,7 @@ export function SidebarNav({
         {can("compliance", "view") && (
           <NavLink
             href="/compliance"
-            labelKey="nav.compliance"
+            label={t("nav.compliance")}
             icon={ShieldAlert}
             pathname={pathname}
             onNavigate={onNavigate}
@@ -544,7 +392,7 @@ export function SidebarNav({
         {can("audit-logs", "view") && (
           <NavLink
             href="/audit-logs"
-            labelKey="nav.auditLogs"
+            label={t("nav.auditLogs")}
             icon={ShieldCheck}
             pathname={pathname}
             onNavigate={onNavigate}
@@ -553,7 +401,7 @@ export function SidebarNav({
         )}
         <NavLink
           href="/settings"
-          labelKey="nav.settings"
+          label={t("nav.settings")}
           icon={Settings}
           pathname={pathname}
           onNavigate={onNavigate}
@@ -568,26 +416,8 @@ export function Sidebar() {
   const collapsed = useSidebarCollapsed();
 
   return (
-    <aside
-      className={cn(
-        "hidden md:flex sticky top-14 h-[calc(100dvh-3.5rem)] flex-col border-r border-border bg-white shrink-0 z-20 transition-[width] duration-200",
-        collapsed ? "w-14" : "w-56"
-      )}
-    >
+    <SidebarShell collapsed={collapsed} onToggleCollapse={toggleSidebarCollapsed}>
       <SidebarNav collapsed={collapsed} />
-      <div className={cn("border-t px-2 py-2", collapsed && "px-1")}>
-        <button
-          type="button"
-          onClick={toggleSidebarCollapsed}
-          className="flex w-full items-center justify-center rounded-lg py-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-        >
-          {collapsed ? (
-            <PanelLeftOpen className="h-4 w-4" />
-          ) : (
-            <PanelLeftClose className="h-4 w-4" />
-          )}
-        </button>
-      </div>
-    </aside>
+    </SidebarShell>
   );
 }

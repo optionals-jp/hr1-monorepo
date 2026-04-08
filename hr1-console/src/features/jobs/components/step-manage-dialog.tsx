@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Input } from "@hr1/shared-ui/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -12,7 +12,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import type { JobStep, Interview } from "@/types/database";
 import { StepType, FORM_STEP_TYPES, stepTypeLabels, selectableStepTypes } from "@/lib/constants";
 import { GripVertical, Trash2, Plus } from "lucide-react";

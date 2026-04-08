@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -11,8 +11,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -22,11 +22,11 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
-} from "@/components/ui/dropdown-menu";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { TableSection } from "@/components/layout/table-section";
+} from "@hr1/shared-ui/components/ui/dropdown-menu";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { useCompliancePage } from "@/lib/hooks/use-compliance";
 import {
   Play,

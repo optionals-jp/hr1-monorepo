@@ -1,9 +1,9 @@
 "use client";
 
 import { useTabParam } from "@/lib/hooks/use-tab-param";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { TabBar } from "@/components/layout/tab-bar";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { Calendar, Clock, ShieldCheck, FileEdit, Settings2 } from "lucide-react";
 import { useAttendanceData } from "@/features/attendance/hooks/use-attendance-data";
 import { DailyAttendanceTab } from "@/features/attendance/components/daily-attendance-tab";

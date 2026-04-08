@@ -2,15 +2,15 @@
 
 import { use } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { TabBar } from "@/components/layout/tab-bar";
-import { TableSection } from "@/components/layout/table-section";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { SectionCard } from "@/components/ui/section-card";
-import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
+import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import {
   Table,
   TableBody,
@@ -18,8 +18,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import { useSkillMasterDetail, LEVEL_LABELS } from "@/lib/hooks/use-skill-master-detail";
 import { Loader2, Pencil, Star, Info, Users } from "lucide-react";
 import { cn } from "@/lib/utils";

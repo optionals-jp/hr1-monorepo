@@ -1,8 +1,8 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import {
   Table,
   TableBody,
@@ -10,10 +10,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import { useSurveyDetailPage } from "@/lib/hooks/use-surveys";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import {
   surveyStatusLabels,
   surveyStatusColors,
@@ -21,23 +21,23 @@ import {
   surveyQuestionTypeLabels,
 } from "@/lib/constants";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import { format } from "date-fns";
 import { Pencil, Trash2, Plus, Play, Square, Loader2 } from "lucide-react";
-import { useToast } from "@/components/ui/toast";
-import { TabBar } from "@/components/layout/tab-bar";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { TableSection } from "@/components/layout/table-section";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { SurveyAnalyticsTab } from "./survey-analytics-tab";
 
 export default function SurveyDetailPage() {

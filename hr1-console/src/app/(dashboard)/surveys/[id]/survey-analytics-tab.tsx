@@ -11,9 +11,9 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Download } from "lucide-react";
 import { format } from "date-fns";
 import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";

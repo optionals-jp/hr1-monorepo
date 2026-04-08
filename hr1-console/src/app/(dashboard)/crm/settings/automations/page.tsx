@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { PageHeader } from "@/components/layout/page-header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { useAutomationRules } from "@/lib/hooks/use-automation";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
@@ -23,9 +23,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { TableSection } from "@/components/layout/table-section";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { Plus, Zap, ZapOff, ScrollText } from "lucide-react";
 import Link from "next/link";
 import { AutomationEditPanel } from "./automation-edit-panel";

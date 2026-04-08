@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
 import { EditPanel } from "@/components/ui/edit-panel";
 import {
   Select,
@@ -11,7 +11,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import {
   automationTriggerLabels,
   automationActionLabels,

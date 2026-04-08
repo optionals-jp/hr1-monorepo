@@ -19,18 +19,18 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { usePipelines } from "@/lib/hooks/use-pipelines";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as pipelineRepo from "@/lib/repositories/pipeline-repository";
 import type { CrmPipelineStage } from "@/types/database";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ConfirmDialog } from "@hr1/shared-ui/components/ui/confirm-dialog";
 import { GripVertical, Plus, Trash2, Pencil, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -277,7 +277,7 @@ export default function PipelineDetailPage() {
           sticky={false}
           border={false}
           breadcrumb={[
-            { label: "商談管理", href: "/crm/deals" },
+            { label: "CRM設定", href: "/crm/settings/pipelines" },
             { label: "パイプライン設定", href: "/crm/settings/pipelines" },
           ]}
         />
@@ -297,7 +297,7 @@ export default function PipelineDetailPage() {
         sticky={false}
         border={false}
         breadcrumb={[
-          { label: "商談管理", href: "/crm/deals" },
+          { label: "CRM設定", href: "/crm/settings/pipelines" },
           { label: "パイプライン設定", href: "/crm/settings/pipelines" },
         ]}
         action={

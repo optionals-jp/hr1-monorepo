@@ -7,17 +7,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+} from "@hr1/shared-ui/components/ui/dialog";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Switch } from "@hr1/shared-ui/components/ui/switch";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import { cn } from "@/lib/utils";
 import { DATA_SOURCE_REGISTRY, getSourcesForTab } from "@/lib/dashboard/data-sources";
 import type {

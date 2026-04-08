@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import { useToast } from "@/components/ui/toast";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
 import {
   Table,
   TableBody,
@@ -13,31 +13,31 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { SearchBar } from "@/components/ui/search-bar";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+} from "@hr1/shared-ui/components/ui/dropdown-menu";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { TableSection } from "@/components/layout/table-section";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { usePayslipsPage } from "@/lib/hooks/use-payslips-page";
-import { TabBar } from "@/components/layout/tab-bar";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { cn } from "@/lib/utils";
 import { Plus, Trash2, FileDown, Download, SlidersHorizontal, X, List, Upload } from "lucide-react";
 import { exportToCSV } from "@/lib/export-csv";

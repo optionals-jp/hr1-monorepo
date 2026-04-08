@@ -1,7 +1,7 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { EvalWithScores } from "@/lib/hooks/use-evaluation-detail";
 import type { EvaluationCriterion } from "@/types/database";

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 
 // TableRow/TableCell は <table><tbody> 内に配置する必要がある
 function renderInTable(ui: React.ReactNode) {

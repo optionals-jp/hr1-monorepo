@@ -49,6 +49,9 @@ app.*.map.json
 **/node_modules/
 **/.next/
 **/out/
+**/dist/
+**/*.tsbuildinfo
+package-lock.json
 
 # Misc
 *.log

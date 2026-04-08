@@ -1,9 +1,9 @@
 "use client";
 
-import { PageHeader } from "@/components/layout/page-header";
-import { Badge } from "@/components/ui/badge";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { SearchBar } from "@/components/ui/search-bar";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import {
   Table,
   TableBody,
@@ -11,20 +11,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@hr1/shared-ui/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+} from "@hr1/shared-ui/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useApplicationsPage } from "@/lib/hooks/use-applications-page";
-import { TabBar } from "@/components/layout/tab-bar";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { TableSection } from "@/components/layout/table-section";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { SlidersHorizontal, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";

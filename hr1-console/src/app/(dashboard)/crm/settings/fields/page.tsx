@@ -1,22 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
+import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import { useOrg } from "@/lib/org-context";
 import { useCrmFieldDefinitions } from "@/lib/hooks/use-crm-fields";
 import { getSupabase } from "@/lib/supabase/browser";
@@ -29,9 +29,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { TableSection } from "@/components/layout/table-section";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import {
   DropdownMenu,
@@ -39,7 +39,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+} from "@hr1/shared-ui/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { CrmEntityType, CrmFieldDefinition, CrmFieldType } from "@/types/database";
 import { Plus, SlidersHorizontal, X } from "lucide-react";
@@ -143,7 +143,7 @@ export default function CrmFieldSettingsPage() {
         title="カスタムフィールド設定"
         sticky={false}
         border={false}
-        breadcrumb={[{ label: "商談管理", href: "/crm/deals" }]}
+        breadcrumb={[{ label: "CRM設定", href: "/crm/settings/pipelines" }]}
         action={
           <Button onClick={openCreate}>
             <Plus className="size-4 mr-1.5" />

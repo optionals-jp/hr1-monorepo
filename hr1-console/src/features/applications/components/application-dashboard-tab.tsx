@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import {
   applicationStatusLabels as statusLabels,
   stepStatusLabels,
@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ApplicationStepList } from "@/features/applications/components/application-steps-tab";
 import { ProfileInfoList } from "@/components/ui/profile-info-list";
-import { SectionCard } from "@/components/ui/section-card";
+import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
 import { UserCheck, ExternalLink, Star } from "lucide-react";
 
 interface ApplicationDashboardTabProps {

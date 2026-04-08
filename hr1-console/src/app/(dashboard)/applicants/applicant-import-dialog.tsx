@@ -2,8 +2,8 @@
 
 import { useState, useCallback } from "react";
 import { CsvImportDialog, type CsvImportField } from "@/components/ui/csv-import-dialog";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Switch } from "@hr1/shared-ui/components/ui/switch";
+import { Label } from "@hr1/shared-ui/components/ui/label";
 import { invokeCreateUser } from "@/lib/hooks/use-import";
 import { Mail } from "lucide-react";
 

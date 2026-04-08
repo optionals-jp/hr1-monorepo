@@ -1,20 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/toast";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+} from "@hr1/shared-ui/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
 import { useNewJobPage } from "@/lib/hooks/use-jobs-page";
 import { Trash2, GripVertical } from "lucide-react";
 import { jobStatusLabels, stepTypeLabels, selectableStepTypes } from "@/lib/constants";

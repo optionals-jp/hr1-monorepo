@@ -2,8 +2,8 @@
 
 import { ReactNode } from "react";
 import { AuthProvider } from "@/lib/auth-context";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { ToastProvider } from "@/components/ui/toast";
+import { TooltipProvider } from "@hr1/shared-ui/components/ui/tooltip";
+import { ToastProvider } from "@hr1/shared-ui/components/ui/toast";
 
 export function ClientLayout({ children }: { children: ReactNode }) {
   return (

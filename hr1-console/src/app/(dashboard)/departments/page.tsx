@@ -1,11 +1,11 @@
 "use client";
 
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { cn } from "@/lib/utils";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
 import {
   Table,
   TableBody,
@@ -13,22 +13,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@hr1/shared-ui/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import { EditPanel } from "@/components/ui/edit-panel";
 import { useDepartmentsPage, type DeptWithMembers } from "@/lib/hooks/use-departments-page";
-import { TabBar } from "@/components/layout/tab-bar";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { SearchBar } from "@/components/ui/search-bar";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { TableSection } from "@/components/layout/table-section";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { Users, ZoomIn, ZoomOut, Maximize, List, GitBranchPlus, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";

@@ -8,21 +8,41 @@ jobs:
   console:
     name: Console (Next.js)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: hr1-console
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: hr1-console/package-lock.json
       - run: npm ci
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run test
-      - run: npm run build
+      - run: npm run format:check --workspace=hr1-console
+      - run: npm run lint --workspace=hr1-console
+      - run: npm run test --workspace=hr1-console
+      - run: npm run build --workspace=hr1-console
+
+  admin:
+    name: Admin (Next.js)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace=hr1-admin
+
+  employee-web:
+    name: Employee Web (Next.js)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace=hr1-employee-web
 
   employee-app:
     name: Employee App (Flutter)

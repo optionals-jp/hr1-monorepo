@@ -1,7 +1,7 @@
 "use client";
 
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import {
   Table,
   TableBody,
@@ -9,14 +9,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import { useFaqs, useFaqPanel } from "@/lib/hooks/use-faqs";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { faqTargetLabels, faqCategoryLabels } from "@/lib/constants";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Input } from "@hr1/shared-ui/components/ui/input";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import {
   Select,
@@ -24,11 +24,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import { format } from "date-fns";
 import { Pencil, GripVertical, Eye, EyeOff } from "lucide-react";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { TableSection } from "@/components/layout/table-section";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 
 export default function FaqsPage() {
   const { data: faqs = [], isLoading, error: faqsError, mutate: mutateFaqs } = useFaqs();

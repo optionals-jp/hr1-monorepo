@@ -1,7 +1,7 @@
 "use client";
 
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import {
   Table,
   TableBody,
@@ -9,12 +9,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { Badge } from "@/components/ui/badge";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Input } from "@hr1/shared-ui/components/ui/input";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import {
   Select,
@@ -22,13 +22,13 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@hr1/shared-ui/components/ui/select";
 import { format } from "date-fns";
 import { Pencil, Eye, EyeOff, FolderOpen, SlidersHorizontal, X } from "lucide-react";
-import { SearchBar } from "@/components/ui/search-bar";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { TableSection } from "@/components/layout/table-section";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -36,8 +36,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { useToast } from "@/components/ui/toast";
+} from "@hr1/shared-ui/components/ui/dropdown-menu";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { useWikiPageEditor } from "@/lib/hooks/use-wiki";
 
 export default function WikiPage_() {

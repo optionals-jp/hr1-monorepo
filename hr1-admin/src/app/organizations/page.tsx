@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@hr1/shared-ui/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -19,18 +19,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@hr1/shared-ui/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
+} from "@hr1/shared-ui/components/ui/select";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { formatCurrency } from "@/lib/utils";
 import { contractStatusLabels, contractStatusColors } from "@/lib/constants";
 import { Search, Plus, AlertCircle, CheckCircle2 } from "lucide-react";

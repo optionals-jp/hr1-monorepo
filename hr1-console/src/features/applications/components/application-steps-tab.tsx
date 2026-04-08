@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import { StepStatus, StepType, stepTypeLabels } from "@/lib/constants";
 import type { ApplicationStep } from "@/types/database";
 import {

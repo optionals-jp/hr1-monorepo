@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { Popover, PopoverContent, PopoverTrigger } from "@hr1/shared-ui/components/ui/popover";
 import { useCalendarEvents, type CalendarEvent } from "@/lib/hooks/use-calendar";
 import { ChevronLeft, ChevronRight, MapPin, Briefcase, Clock, User, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";

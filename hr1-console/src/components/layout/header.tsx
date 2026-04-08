@@ -2,10 +2,10 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { Bell, Search, HelpCircle, ChevronDown, Menu, LogOut, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
 import { usePendingCount } from "@/lib/hooks/use-header";
@@ -16,8 +16,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+} from "@hr1/shared-ui/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@hr1/shared-ui/components/ui/sheet";
 import {
   SidebarNav,
   useProductTab,

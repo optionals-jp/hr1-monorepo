@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { DatetimeInput } from "@/components/ui/datetime-input";
 import { EditPanel } from "@/components/ui/edit-panel";
-import { FormInput, FormTextarea } from "@/components/ui/form-field";
+import { FormInput, FormTextarea } from "@hr1/shared-ui/components/ui/form-field";
 import {
   Table,
   TableBody,
@@ -15,8 +15,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import { useSchedulingList, useCreateInterview } from "@/lib/hooks/use-scheduling";
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -24,8 +24,8 @@ import {
   interviewScheduleStatusLabels as statusLabels,
   interviewScheduleStatusColors as statusColors,
 } from "@/lib/constants";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
-import { TableSection } from "@/components/layout/table-section";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 
 export default function SchedulingPage() {
   const router = useRouter();

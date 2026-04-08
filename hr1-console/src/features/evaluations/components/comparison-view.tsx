@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Label } from "@hr1/shared-ui/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { EvalWithScores } from "@/lib/hooks/use-evaluation-detail";
 import type { EvaluationCriterion } from "@/types/database";

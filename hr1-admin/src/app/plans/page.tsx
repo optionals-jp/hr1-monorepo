@@ -1,22 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
+} from "@hr1/shared-ui/components/ui/dialog";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { formatCurrency } from "@/lib/utils";
 import { Plus, Pencil, AlertCircle } from "lucide-react";
 import type { Plan } from "@/types/database";

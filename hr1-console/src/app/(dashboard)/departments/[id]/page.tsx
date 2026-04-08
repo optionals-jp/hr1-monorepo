@@ -1,8 +1,8 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/toast";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import {
   Table,
   TableBody,
@@ -10,17 +10,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { TabBar } from "@/components/layout/tab-bar";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
-import { TableSection } from "@/components/layout/table-section";
-import { SearchBar } from "@/components/ui/search-bar";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
+import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { useDepartmentDetail } from "@/lib/hooks/use-department-detail";
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
-import { FormInput } from "@/components/ui/form-field";
+import { FormInput } from "@hr1/shared-ui/components/ui/form-field";
 import { DepartmentOverviewTab } from "@/features/departments/components/department-overview-tab";
 import { Info, Users, History } from "lucide-react";
 

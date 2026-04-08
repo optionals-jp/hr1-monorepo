@@ -2,9 +2,9 @@
 
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
-import { PageHeader, PageContent } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -12,10 +12,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@hr1/shared-ui/components/ui/table";
 import { useOrg } from "@/lib/org-context";
-import { TableSection } from "@/components/layout/table-section";
-import { QueryErrorBanner } from "@/components/ui/query-error-banner";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { cycleStatusLabels, cycleStatusColors } from "@/lib/constants";
 import { useEvaluationCyclesWithDetails } from "@/lib/hooks/use-evaluations";
 

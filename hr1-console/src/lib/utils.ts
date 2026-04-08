@@ -1,9 +1,4 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+export { cn } from "@hr1/shared-ui/lib/utils";
 
 /** 開始日時から30分後の終了日時文字列を生成する */
 export function autoFillEndAt(startValue: string): string {

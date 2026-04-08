@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -9,9 +9,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@hr1/shared-ui/components/ui/table";
 import { cn } from "@/lib/utils";
-import { TableSection } from "@/components/layout/table-section";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import type { Application } from "@/types/database";
 import {
   DropdownMenu,
@@ -19,9 +19,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SearchBar } from "@/components/ui/search-bar";
+} from "@hr1/shared-ui/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
+import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { X, SlidersHorizontal } from "lucide-react";
 import { format } from "date-fns";
 import {

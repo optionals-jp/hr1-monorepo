@@ -2,11 +2,11 @@
 
 import { useState, Fragment } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -14,10 +14,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableEmptyState } from "@/components/ui/table-empty-state";
-import { TableSection } from "@/components/layout/table-section";
-import { useToast } from "@/components/ui/toast";
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { usePipelines } from "@/lib/hooks/use-pipelines";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
@@ -75,7 +75,7 @@ export default function PipelineSettingsPage() {
         title="パイプライン設定"
         sticky={false}
         border={false}
-        breadcrumb={[{ label: "商談管理", href: "/crm/deals" }]}
+        breadcrumb={[{ label: "CRM設定", href: "/crm/settings/pipelines" }]}
         action={
           <Button onClick={() => setEditOpen(true)}>
             <Plus className="size-4 mr-1.5" />
