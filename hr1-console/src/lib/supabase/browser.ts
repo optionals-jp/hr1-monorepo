@@ -30,7 +30,11 @@ function isFunctions401(error: unknown): boolean {
  */
 export function assertNotUnauthorized(error: unknown): never {
   if (isFunctions401(error)) {
-    window.location.replace("/login");
+    getSupabase()
+      .auth.signOut()
+      .finally(() => {
+        window.location.replace("/login");
+      });
   }
   throw error as Error;
 }
