@@ -1,19 +1,23 @@
 "use client";
 
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { MessageSquare } from "lucide-react";
 
 export default function MessagesPage() {
   return (
-    <div className="px-4 py-6">
-      <h1 className="mb-4 text-lg font-bold text-foreground">メッセージ</h1>
-      <div className="flex flex-col items-center gap-4 rounded-xl border border-border bg-card p-8">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-          <MessageSquare className="h-8 w-8 text-primary" />
+    <div className="flex flex-col">
+      <PageHeader
+        title="メッセージ"
+        description="チームとのコミュニケーション"
+        sticky={false}
+        border={false}
+      />
+      <PageContent>
+        <div className="flex flex-col items-center gap-3 py-12 text-muted-foreground">
+          <MessageSquare className="h-10 w-10" />
+          <p className="text-sm">メッセージ機能は準備中です</p>
         </div>
-        <p className="text-sm text-muted-foreground">
-          メッセージ機能は準備中です
-        </p>
-      </div>
+      </PageContent>
     </div>
   );
 }

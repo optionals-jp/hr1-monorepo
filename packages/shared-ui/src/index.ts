@@ -31,6 +31,13 @@ export * from "./components/ui/tooltip";
 export * from "./components/layout/page-header";
 export * from "./components/layout/tab-bar";
 export * from "./components/layout/table-section";
+export * from "./components/layout/nav-types";
+export * from "./components/layout/nav-link";
+export * from "./components/layout/collapsible-section";
+export * from "./components/layout/sidebar-shell";
+export * from "./components/layout/mobile-bottom-nav";
+export * from "./components/layout/header-shell";
+export * from "./components/layout/dashboard-layout";
 
 // Utils
 export * from "./lib/utils";

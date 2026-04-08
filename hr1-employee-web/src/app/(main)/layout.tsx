@@ -1,37 +1,52 @@
 "use client";
 
-import { useAuth } from "@/lib/auth-context";
+import { ReactNode, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect, ReactNode } from "react";
-import { Loader2 } from "lucide-react";
+import { OrgProvider } from "@/lib/org-context";
+import { useAuth } from "@/lib/auth-context";
 import { AppHeader } from "@/components/layout/app-header";
-import { BottomNav } from "@/components/layout/bottom-nav";
+import { Sidebar } from "@/components/layout/sidebar";
 
-export default function MainLayout({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
+function MainShell({ children }: { children: ReactNode }) {
+  const { user, profile, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/login");
     }
-  }, [user, loading, router]);
+  }, [loading, user, router]);
 
-  if (loading) {
+  // profile取得失敗時は未認証扱いでログインへ
+  useEffect(() => {
+    if (!loading && user && !profile) {
+      router.replace("/login?error=unauthorized");
+    }
+  }, [loading, user, profile, router]);
+
+  if (loading || !user || !profile) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="fixed inset-0 flex items-center justify-center bg-main-pattern">
+        <div className="flex flex-col items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="HR1" className="h-8" />
+          <p className="text-sm text-muted-foreground">読み込み中...</p>
+        </div>
       </div>
     );
   }
 
-  if (!user) return null;
-
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <OrgProvider>
       <AppHeader />
-      <main className="flex-1 pb-20">{children}</main>
-      <BottomNav />
-    </div>
+      <div className="flex min-h-0">
+        <Sidebar />
+        <main className="flex-1 min-w-0 overflow-y-auto">{children}</main>
+      </div>
+    </OrgProvider>
   );
+}
+
+export default function MainLayout({ children }: { children: ReactNode }) {
+  return <MainShell>{children}</MainShell>;
 }

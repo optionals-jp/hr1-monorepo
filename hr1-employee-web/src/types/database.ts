@@ -5,6 +5,7 @@ export interface Profile {
   role: "admin" | "employee" | "applicant";
   organization_id: string | null;
   avatar_url: string | null;
+  position: string | null;
   created_at: string;
   updated_at: string;
 }

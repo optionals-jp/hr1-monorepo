@@ -16,11 +16,9 @@ interface AuthContextValue {
   user: { id: string; email: string } | null;
   profile: Profile | null;
   loading: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signInWithOtp: (email: string) => Promise<{ error: string | null }>;
-  verifyOtp: (
-    email: string,
-    token: string
-  ) => Promise<{ error: string | null }>;
+  verifyOtp: (email: string, token: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -35,7 +33,7 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
     .single();
 
   if (error || !data) return null;
-  if (data.role !== "employee") return null;
+  if (data.role !== "employee" && data.role !== "admin") return null;
   return data;
 }
 
@@ -85,6 +83,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const signIn = useCallback(async (email: string, password: string) => {
+    signingIn.current = true;
+    try {
+      const { data: authData, error: authError } = await getSupabase().auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) return { error: authError.message };
+
+      const prof = await fetchProfile(authData.user.id);
+      if (!prof) {
+        await getSupabase().auth.signOut();
+        return { error: "このアカウントには社員ポータルへのアクセス権限がありません。" };
+      }
+
+      setUser({ id: authData.user.id, email: authData.user.email ?? "" });
+      setProfile(prof);
+      return { error: null };
+    } finally {
+      setTimeout(() => {
+        signingIn.current = false;
+      }, 0);
+    }
+  }, []);
+
   const signInWithOtp = useCallback(async (email: string) => {
     const { error } = await getSupabase().auth.signInWithOtp({ email });
     if (error) return { error: error.message };
@@ -94,12 +118,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const verifyOtp = useCallback(async (email: string, token: string) => {
     signingIn.current = true;
     try {
-      const { data: authData, error: authError } =
-        await getSupabase().auth.verifyOtp({
-          email,
-          token,
-          type: "email",
-        });
+      const { data: authData, error: authError } = await getSupabase().auth.verifyOtp({
+        email,
+        token,
+        type: "email",
+      });
 
       if (authError) {
         return { error: authError.message };
@@ -150,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         profile,
         loading,
+        signIn,
         signInWithOtp,
         verifyOtp,
         signOut,

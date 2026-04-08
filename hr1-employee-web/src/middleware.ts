@@ -28,7 +28,7 @@ export async function middleware(request: NextRequest) {
     .eq("id", user.id)
     .single();
 
-  if (!profile || profile.role !== "employee") {
+  if (!profile || (profile.role !== "employee" && profile.role !== "admin")) {
     await supabase.auth.signOut();
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("error", "unauthorized");
@@ -43,7 +43,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };
