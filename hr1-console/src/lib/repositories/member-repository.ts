@@ -51,7 +51,7 @@ export async function inviteMember(
     },
   });
 
-  if (error) assertNotUnauthorized(error);
+  if (error) await assertNotUnauthorized(error);
   if (data?.error) throw new Error(data.error);
   return data;
 }

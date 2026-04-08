@@ -31,7 +31,7 @@ export async function addApplicant(params: {
       graduation_year: params.graduation_year,
     },
   });
-  if (error) assertNotUnauthorized(error);
+  if (error) await assertNotUnauthorized(error);
   if (data?.error) throw new Error(data.error);
 }
 

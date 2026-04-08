@@ -94,7 +94,7 @@ export async function createEmployee(
     },
   });
 
-  if (error) assertNotUnauthorized(error);
+  if (error) await assertNotUnauthorized(error);
   if (data?.error) throw new Error(data.error);
 }
 
