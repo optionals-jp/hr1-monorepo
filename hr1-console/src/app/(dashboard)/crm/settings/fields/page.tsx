@@ -143,7 +143,7 @@ export default function CrmFieldSettingsPage() {
         title="カスタムフィールド設定"
         sticky={false}
         border={false}
-        breadcrumb={[{ label: "商談管理", href: "/crm/deals" }]}
+        breadcrumb={[{ label: "CRM設定", href: "/crm/settings/pipelines" }]}
         action={
           <Button onClick={openCreate}>
             <Plus className="size-4 mr-1.5" />

@@ -6,14 +6,14 @@ import { NavLink } from "@hr1/shared-ui/components/layout/nav-link";
 import { CollapsibleSection } from "@hr1/shared-ui/components/layout/collapsible-section";
 import { SidebarShell } from "@hr1/shared-ui/components/layout/sidebar-shell";
 import {
-  useProductTab,
   useSidebarCollapsed,
   toggleSidebarCollapsed,
-  sectionsByTab,
-  dashboardByTab,
+  sectionsByProduct,
+  dashboardHref,
   bottomItems,
   dashboardIcon,
 } from "@/lib/nav-config";
+import { useProduct } from "@/lib/product-context";
 
 /* ------------------------------------------------------------------ */
 /*  SidebarNav                                                         */
@@ -27,9 +27,8 @@ export function SidebarNav({
   collapsed?: boolean;
 }) {
   const pathname = usePathname();
-  const activeTab = useProductTab();
-  const sections = sectionsByTab[activeTab];
-  const dashboardHref = dashboardByTab[activeTab];
+  const product = useProduct();
+  const sections = sectionsByProduct[product];
   const DashboardIcon = dashboardIcon;
 
   return (

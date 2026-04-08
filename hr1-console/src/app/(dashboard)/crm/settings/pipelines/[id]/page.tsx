@@ -277,7 +277,7 @@ export default function PipelineDetailPage() {
           sticky={false}
           border={false}
           breadcrumb={[
-            { label: "商談管理", href: "/crm/deals" },
+            { label: "CRM設定", href: "/crm/settings/pipelines" },
             { label: "パイプライン設定", href: "/crm/settings/pipelines" },
           ]}
         />
@@ -297,7 +297,7 @@ export default function PipelineDetailPage() {
         sticky={false}
         border={false}
         breadcrumb={[
-          { label: "商談管理", href: "/crm/deals" },
+          { label: "CRM設定", href: "/crm/settings/pipelines" },
           { label: "パイプライン設定", href: "/crm/settings/pipelines" },
         ]}
         action={

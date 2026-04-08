@@ -305,7 +305,7 @@ function resolveDataSource(
       const deals = data.crmDeals ?? [];
       const items: ListItem[] = deals.map((d) => ({
         id: d.id,
-        href: `/crm/deals/${d.id}`,
+        href: undefined,
         title: d.title,
         subtitle: `${d.companyName} / ${dealStageLabels[d.stage] ?? d.stage}`,
         values: [
@@ -315,7 +315,7 @@ function resolveDataSource(
           },
         ],
       }));
-      return { type: "list", items, maxItems: 10, viewAllHref: "/crm" };
+      return { type: "list", items, maxItems: 10 };
     }
 
     /* ---- crm_pipeline ---- */

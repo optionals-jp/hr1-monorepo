@@ -75,7 +75,7 @@ export default function PipelineSettingsPage() {
         title="パイプライン設定"
         sticky={false}
         border={false}
-        breadcrumb={[{ label: "商談管理", href: "/crm/deals" }]}
+        breadcrumb={[{ label: "CRM設定", href: "/crm/settings/pipelines" }]}
         action={
           <Button onClick={() => setEditOpen(true)}>
             <Plus className="size-4 mr-1.5" />

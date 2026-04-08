@@ -88,7 +88,6 @@ const ALLOWED_EXCEPTIONS: Record<string, string> = {
   "audit-repository.ts:insertAuditLog": "INSERT データに organization_id 含む",
   "attendance-repository.ts:addApprover": "INSERT データに organization_id 含む",
   "scheduling-repository.ts:insertAuditLogs": "INSERT データに organization_id 含む",
-  "message-repository.ts:insertNotification": "INSERT データに organization_id 含む",
   "workflow-repository.ts:insertNotification": "INSERT データに organization_id 含む",
 
   // organizations テーブルは .eq("id", organizationId) でフィルタ（自テーブルなので organization_id ではない）

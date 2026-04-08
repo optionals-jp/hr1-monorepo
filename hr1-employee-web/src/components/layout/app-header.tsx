@@ -18,22 +18,23 @@ import {
 } from "@hr1/shared-ui/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@hr1/shared-ui/components/ui/sheet";
 import { SidebarNav } from "./sidebar";
-import { useProductTab, saveProductTab, productTabDefs } from "@/lib/nav-config";
+import { useProduct } from "@/lib/product-context";
+import { type Product, PRODUCT_LABELS, getProductUrl } from "@/lib/product";
+import { UserPlus, Briefcase, Handshake } from "lucide-react";
 
 export function AppHeader() {
   const { organization, organizations, setOrganization } = useOrg();
   const { profile, signOut } = useAuth();
   const router = useRouter();
+  const product = useProduct();
+  const productLabel = PRODUCT_LABELS[product];
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const activeProduct = useProductTab();
-  const activeProductDef =
-    productTabDefs.find((d) => d.value === activeProduct) ?? productTabDefs[0];
-
-  const handleProductChange = (tab: (typeof productTabDefs)[number]["value"]) => {
-    saveProductTab(tab);
-    router.push(`/dashboard?product=${tab}`);
-  };
+  const productDefs: { value: Product; label: string; icon: React.ElementType }[] = [
+    { value: "recruiting", label: "HR1 Recruiting", icon: UserPlus },
+    { value: "working", label: "HR1 Working", icon: Briefcase },
+    { value: "client", label: "HR1 Client", icon: Handshake },
+  ];
 
   const handleSignOut = useCallback(async () => {
     await signOut();
@@ -62,27 +63,38 @@ export function AppHeader() {
           <DropdownMenuTrigger className="flex items-center gap-1.5 sm:gap-2 shrink-0 rounded-md px-1.5 sm:px-2 py-1.5 hover:bg-accent text-left transition-colors">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.svg" alt="HR1" className="h-5 shrink-0" />
-            <span className="hidden sm:inline text-[18px] font-extrabold tracking-tight text-[#1C1E1E] max-w-40 truncate">
-              {activeProductDef.label}
+            <span className="hidden sm:inline text-[18px] font-extrabold tracking-tight text-[#1C1E1E] max-w-48 truncate">
+              {productLabel}
             </span>
             <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-56 p-1.5">
-            {productTabDefs.map((p) => {
+            {productDefs.map((p) => {
               const Icon = p.icon;
               return (
                 <DropdownMenuItem
                   key={p.value}
-                  onClick={() => handleProductChange(p.value)}
+                  asChild={product !== p.value}
                   className={cn(
                     "group gap-3 rounded-lg px-3 py-2.5 text-[14px] cursor-pointer",
-                    activeProduct === p.value && "bg-accent font-medium"
+                    product === p.value && "bg-accent font-medium"
                   )}
                 >
-                  <Icon className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110 group-data-highlighted:scale-110" />
-                  <span className="font-extrabold tracking-tight text-[#1C1E1E] transition-transform group-hover:translate-x-0.5 group-data-highlighted:translate-x-0.5">
-                    {p.label}
-                  </span>
+                  {product === p.value ? (
+                    <div className="flex items-center gap-3">
+                      <Icon className="h-5 w-5 shrink-0" />
+                      <span className="font-extrabold tracking-tight text-[#1C1E1E]">
+                        {p.label}
+                      </span>
+                    </div>
+                  ) : (
+                    <a href={getProductUrl(p.value)} className="flex items-center gap-3">
+                      <Icon className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110 group-data-highlighted:scale-110" />
+                      <span className="font-extrabold tracking-tight text-[#1C1E1E] transition-transform group-hover:translate-x-0.5 group-data-highlighted:translate-x-0.5">
+                        {p.label}
+                      </span>
+                    </a>
+                  )}
                 </DropdownMenuItem>
               );
             })}
@@ -185,7 +197,7 @@ export function AppHeader() {
             <SheetTitle className="flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo.svg" alt="HR1" className="h-5" />
-              {activeProductDef.label}
+              {productLabel}
             </SheetTitle>
           </SheetHeader>
           <SidebarNav onNavigate={() => setMobileMenuOpen(false)} />

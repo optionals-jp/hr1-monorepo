@@ -15,7 +15,6 @@ import {
   Building2,
   FolderKanban,
   Clock,
-  MessageSquare,
   Settings,
   Star,
   ListTodo,
@@ -29,9 +28,7 @@ import {
   Megaphone,
   BookOpen,
   CreditCard,
-  Contact,
   Handshake,
-  BarChart3,
   Zap,
   Mail,
   Webhook,
@@ -88,7 +85,6 @@ const recruitingSections: NavSection[] = [
     labelKey: "nav.section.common",
     items: [
       { href: "/evaluations", labelKey: "nav.evaluations", icon: Star, resource: "evaluations" },
-      { href: "/messages", labelKey: "nav.messages", icon: MessageSquare, resource: "messages" },
       { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, resource: "calendar" },
       { href: "/tasks", labelKey: "nav.tasks", icon: ListTodo, resource: "tasks" },
       {
@@ -127,7 +123,6 @@ const workspaceSections: NavSection[] = [
       { href: "/projects", labelKey: "nav.projects", icon: FolderKanban, resource: "projects" },
       { href: "/tasks", labelKey: "nav.tasks", icon: ListTodo, resource: "tasks" },
       { href: "/surveys", labelKey: "nav.surveys", icon: HeartPulse, resource: "surveys" },
-      { href: "/messages", labelKey: "nav.messages", icon: MessageSquare, resource: "messages" },
       { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, resource: "calendar" },
       {
         href: "/announcements",
@@ -145,27 +140,6 @@ const clientSections: NavSection[] = [
   {
     labelKey: "nav.section.crm",
     items: [
-      { href: "/crm/leads", labelKey: "nav.crm.leads", icon: UserPlus, resource: "crm.leads" },
-      {
-        href: "/crm/companies",
-        labelKey: "nav.crm.companies",
-        icon: Building2,
-        resource: "crm.companies",
-      },
-      {
-        href: "/crm/contacts",
-        labelKey: "nav.crm.contacts",
-        icon: Contact,
-        resource: "crm.contacts",
-      },
-      { href: "/crm/deals", labelKey: "nav.crm.deals", icon: Handshake, resource: "crm.deals" },
-      { href: "/crm/quotes", labelKey: "nav.crm.quotes", icon: FileText, resource: "crm.quotes" },
-      {
-        href: "/crm/reports/forecast",
-        labelKey: "nav.crm.reports",
-        icon: BarChart3,
-        resource: "crm.reports",
-      },
       {
         href: "/crm/settings/pipelines",
         labelKey: "nav.crm.pipelines",
@@ -201,7 +175,6 @@ const clientSections: NavSection[] = [
   {
     labelKey: "nav.section.common",
     items: [
-      { href: "/messages", labelKey: "nav.messages", icon: MessageSquare, resource: "messages" },
       { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, resource: "calendar" },
       { href: "/tasks", labelKey: "nav.tasks", icon: ListTodo, resource: "tasks" },
     ],

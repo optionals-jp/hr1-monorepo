@@ -51,8 +51,6 @@ export default function ApplicantDetailPage() {
     setStatusFilter,
     eventFilter,
     setEventFilter,
-    handleOpenMessage,
-    creatingThread,
   } = useApplicantDetailPage();
 
   if (loading) {
@@ -79,11 +77,6 @@ export default function ApplicantDetailPage() {
         breadcrumb={[{ label: "応募者一覧", href: "/applicants" }]}
         sticky={false}
         border={false}
-        action={
-          <Button onClick={handleOpenMessage} disabled={creatingThread}>
-            メッセージを送る
-          </Button>
-        }
       />
 
       <StickyFilterBar>

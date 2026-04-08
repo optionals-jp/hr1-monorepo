@@ -29,7 +29,7 @@ import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { useCreateMessageThread } from "@/lib/hooks/use-create-message-thread";
+
 import { useEmployeeDetail, type MembershipRecord } from "@/lib/hooks/use-employee-detail";
 import {
   genderLabels,
@@ -88,12 +88,6 @@ export default function EmployeeDetailPage() {
   const router = useRouter();
   const h = useEmployeeDetail(id);
 
-  const { handleOpenMessage, creatingThread } = useCreateMessageThread({
-    participantId: h.profile?.id,
-    participantType: "employee",
-    organizationId: h.organization?.id,
-  });
-
   if (h.loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
@@ -139,14 +133,9 @@ export default function EmployeeDetailPage() {
         sticky={false}
         border={false}
         action={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={h.startEditing}>
-              編集
-            </Button>
-            <Button size="sm" onClick={handleOpenMessage} disabled={creatingThread}>
-              メッセージを送る
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" onClick={h.startEditing}>
+            編集
+          </Button>
         }
       />
 

@@ -3,7 +3,14 @@
 import { useAuth } from "@/lib/auth-context";
 import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { Card, CardContent } from "@hr1/shared-ui/components/ui/card";
-import { Clock, MessageSquare, CheckSquare, CalendarDays, Megaphone, User } from "lucide-react";
+import {
+  Clock,
+  MessageSquare,
+  CheckSquare,
+  CalendarDays,
+  Megaphone,
+  FileInput,
+} from "lucide-react";
 import Link from "next/link";
 
 function getGreeting(): string {
@@ -14,7 +21,7 @@ function getGreeting(): string {
 }
 
 const quickActions = [
-  { label: "出退勤", icon: Clock, href: "/attendance", color: "bg-blue-50 text-blue-600" },
+  { label: "出退勤", icon: Clock, href: "/my-attendance", color: "bg-blue-50 text-blue-600" },
   {
     label: "メッセージ",
     icon: MessageSquare,
@@ -29,7 +36,12 @@ const quickActions = [
     color: "bg-purple-50 text-purple-600",
   },
   { label: "お知らせ", icon: Megaphone, href: "/announcements", color: "bg-red-50 text-red-600" },
-  { label: "プロフィール", icon: User, href: "/profile", color: "bg-gray-50 text-gray-600" },
+  {
+    label: "各種申請",
+    icon: FileInput,
+    href: "/workflows",
+    color: "bg-gray-50 text-gray-600",
+  },
 ];
 
 export default function DashboardPage() {

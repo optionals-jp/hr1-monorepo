@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { getSupabase } from "@/lib/supabase/browser";
 import { useOrg } from "@/lib/org-context";
-import { useCreateMessageThread } from "@/lib/hooks/use-create-message-thread";
+
 import * as applicantRepo from "@/lib/repositories/applicant-repository";
 import * as evalRepo from "@/lib/repositories/evaluation-repository";
 import type { Profile, Application, ApplicationStep, Evaluation } from "@/types/database";
@@ -236,12 +236,6 @@ export function useApplicantDetailPage() {
     load();
   }, [id, organization]);
 
-  const { handleOpenMessage, creatingThread } = useCreateMessageThread({
-    participantId: profile?.id,
-    participantType: "applicant",
-    organizationId: organization?.id,
-  });
-
   const filteredTimeline = useMemo(() => {
     return timelineEvents.filter((ev) => {
       if (statusFilter && ev.label !== statusFilter) return false;
@@ -271,8 +265,6 @@ export function useApplicantDetailPage() {
     setEventFilter,
     historySearch,
     setHistorySearch,
-    handleOpenMessage,
-    creatingThread,
   };
 }
 
