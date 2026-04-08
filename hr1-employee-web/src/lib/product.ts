@@ -1,5 +1,7 @@
 export type Product = "recruiting" | "working" | "client";
 
+export const PRODUCT_COOKIE = "hr1-product";
+
 const HOST_PRODUCT_MAP: Record<string, Product> = {
   "recruit.hr1.jp": "recruiting",
   "work.hr1.jp": "working",
@@ -18,6 +20,15 @@ const PRODUCT_HOSTS: Record<Product, string> = {
   client: "client.hr1.jp",
 };
 
+export function detectProductFromHost(host: string): Product {
+  const hostname = host.split(":")[0];
+  return HOST_PRODUCT_MAP[hostname] ?? "working";
+}
+
+export function isValidProduct(value: string): value is Product {
+  return value === "recruiting" || value === "working" || value === "client";
+}
+
 export function getProductUrl(product: Product): string {
   if (typeof window === "undefined") return "/";
   const hostname = window.location.hostname;
@@ -28,17 +39,4 @@ export function getProductUrl(product: Product): string {
   }
 
   return `https://${PRODUCT_HOSTS[product]}/dashboard`;
-}
-
-export function detectProduct(hostname: string, searchParams?: string): Product {
-  if (searchParams) {
-    const params = new URLSearchParams(searchParams);
-    const param = params.get("product");
-    if (param === "recruiting" || param === "working" || param === "client") return param;
-  }
-
-  const mapped = HOST_PRODUCT_MAP[hostname];
-  if (mapped) return mapped;
-
-  return "working";
 }

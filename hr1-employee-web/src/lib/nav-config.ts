@@ -10,6 +10,7 @@ import {
   Receipt,
   CalendarClock,
   FileInput,
+  Headset,
   MessageSquare,
   ListTodo,
   CalendarDays,
@@ -70,6 +71,7 @@ const workingSections: NavSection[] = [
       { href: "/payslips", label: "給与明細", icon: Receipt },
       { href: "/shifts", label: "シフト", icon: CalendarClock },
       { href: "/workflows", label: "各種申請", icon: FileInput },
+      { href: "/service-requests", label: "サービスリクエスト", icon: Headset },
     ],
   },
   {
