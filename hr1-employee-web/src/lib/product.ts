@@ -1,8 +1,8 @@
 export type Product = "recruiting" | "working" | "client";
 
 const HOST_PRODUCT_MAP: Record<string, Product> = {
-  "recruiting.hr1.jp": "recruiting",
-  "working.hr1.jp": "working",
+  "recruit.hr1.jp": "recruiting",
+  "work.hr1.jp": "working",
   "client.hr1.jp": "client",
 };
 
@@ -13,8 +13,8 @@ export const PRODUCT_LABELS: Record<Product, string> = {
 };
 
 const PRODUCT_HOSTS: Record<Product, string> = {
-  recruiting: "recruiting.hr1.jp",
-  working: "working.hr1.jp",
+  recruiting: "recruit.hr1.jp",
+  working: "work.hr1.jp",
   client: "client.hr1.jp",
 };
 
