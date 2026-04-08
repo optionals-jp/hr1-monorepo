@@ -2,6 +2,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
 
+const mockPush = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: mockPush,
+    replace: vi.fn(),
+    refresh: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+  usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 // vi.hoisted で vi.mock ファクトリーから参照可能なモックを定義
 const mockSupabase = vi.hoisted(() => {
   function createQueryBuilder(data: unknown, error: unknown) {
@@ -62,6 +77,7 @@ function mockProfileQuery(profile: { role: string; id?: string; email?: string }
 describe("AuthProvider", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPush.mockReset();
     mockSupabase.auth.signOut.mockResolvedValue({ error: null });
     mockSupabase.from.mockReturnValue(
       mockSupabase._createQueryBuilder(null, { message: "Not found" })
@@ -187,7 +203,7 @@ describe("AuthProvider", () => {
     });
   });
 
-  it("signOut: user と profile がクリアされる", async () => {
+  it("signOut: user と profile がクリアされ、/login へのリダイレクトは発生しない", async () => {
     // セッションありの初期状態を作る
     mockProfileQuery({ role: "admin", id: "user-1", email: "admin@example.com" });
     mockSupabase.auth.onAuthStateChange.mockImplementation(
@@ -212,6 +228,51 @@ describe("AuthProvider", () => {
     expect(result.current.user).toBeNull();
     expect(result.current.profile).toBeNull();
     expect(mockSupabase.auth.signOut).toHaveBeenCalled();
+    // signOut は wasAuthenticated を事前にクリアするため、二重リダイレクトしない
+    expect(mockPush).not.toHaveBeenCalledWith("/login");
+  });
+
+  it("セッション期限切れ（認証後に null セッション）→ /login にリダイレクト", async () => {
+    let authCb: ((event: string, session: unknown) => void) | null = null;
+    mockSupabase.auth.onAuthStateChange.mockImplementation(
+      (cb: (event: string, session: unknown) => void) => {
+        authCb = cb;
+        Promise.resolve().then(() => cb("INITIAL_SESSION", null));
+        return { data: { subscription: { unsubscribe: vi.fn() } } };
+      }
+    );
+
+    mockProfileQuery({ role: "admin", id: "user-1", email: "admin@example.com" });
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // ユーザーをログイン済み状態にする
+    await act(async () => {
+      authCb!("SIGNED_IN", { user: { id: "user-1", email: "admin@example.com" } });
+    });
+    await waitFor(() => expect(result.current.user).not.toBeNull());
+
+    // セッション切れをシミュレート（トークンリフレッシュ失敗など）
+    await act(async () => {
+      authCb!("SIGNED_OUT", null);
+    });
+
+    await waitFor(() => {
+      expect(result.current.user).toBeNull();
+      expect(result.current.profile).toBeNull();
+      expect(mockPush).toHaveBeenCalledWith("/login");
+    });
+  });
+
+  it("未ログイン状態の初期化（INITIAL_SESSION null）→ リダイレクトしない", async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.user).toBeNull();
+    // 未ログイン状態では wasAuthenticated が false のままなのでリダイレクトしない
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });
 

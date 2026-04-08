@@ -9,6 +9,7 @@ import {
   useRef,
   ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import { getSupabase } from "./supabase/browser";
 import type { Profile, PermissionAction } from "@/types/database";
 import { fetchMyPermissions } from "@/lib/repositories/permission-group-repository";
@@ -60,11 +61,18 @@ async function loadPermissions(role: string): Promise<PermissionMap> {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [permissionMap, setPermissionMap] = useState<PermissionMap>(new Map());
   const [loading, setLoading] = useState(true);
   const signingIn = useRef(false);
+  // 認証済み状態を追跡するためのフラグ。
+  // セッション切れを「ログイン後のセッション切れ」と「未ログイン時の初期化」で区別するために使用。
+  const wasAuthenticated = useRef(false);
+  // useEffect の依存配列から router を除外しつつ常に最新の router を参照するための ref
+  const routerRef = useRef(router);
+  routerRef.current = router;
 
   useEffect(() => {
     const {
@@ -79,6 +87,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (!session?.user) {
+        // 認証済みだった場合のみセッション切れとしてログインページへリダイレクト
+        if (wasAuthenticated.current) {
+          wasAuthenticated.current = false;
+          routerRef.current.push("/login");
+        }
         setUser(null);
         setProfile(null);
         setLoading(false);
@@ -91,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .then(async (prof) => {
           if (prof) {
             const perms = await loadPermissions(prof.role);
+            wasAuthenticated.current = true;
             setUser({ id: sessionUser.id, email: sessionUser.email ?? "" });
             setProfile(prof);
             setPermissionMap(perms);
@@ -135,6 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const perms = await loadPermissions(prof.role);
+      wasAuthenticated.current = true;
       setUser({ id: authData.user.id, email: authData.user.email ?? "" });
       setProfile(prof);
       setPermissionMap(perms);
@@ -178,6 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const perms = await loadPermissions(prof.role);
+      wasAuthenticated.current = true;
       setUser({ id: authData.user.id, email: authData.user.email ?? "" });
       setProfile(prof);
       setPermissionMap(perms);
@@ -190,6 +206,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    // onAuthStateChange が null セッションで発火した際に
+    // 二重リダイレクトされないよう、先にフラグをクリアする
+    wasAuthenticated.current = false;
     await getSupabase().auth.signOut();
     setUser(null);
     setProfile(null);
