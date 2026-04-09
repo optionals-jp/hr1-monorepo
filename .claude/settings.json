@@ -13,11 +13,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd hr1-console && npm run format:check 2>&1 | tail -5"
-          },
-          {
-            "type": "command",
-            "command": "cd hr1-console && npm run lint 2>&1 | tail -10"
+            "command": "changed_dirs=$({ git diff --name-only HEAD 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; } | sed 's|/.*||' | sort -u); for dir in $changed_dirs; do if [ -f \"$dir/package.json\" ] && grep -q '\"format\"' \"$dir/package.json\" 2>/dev/null; then echo \"=== $dir: format ===\"; npm run format --workspace=$dir 2>&1 | tail -3; echo \"=== $dir: lint ===\"; npm run lint --workspace=$dir 2>&1 | tail -5; fi; done"
           }
         ]
       }

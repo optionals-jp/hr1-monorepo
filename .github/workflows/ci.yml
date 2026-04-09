@@ -42,6 +42,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm run format:check --workspace=hr1-employee-web
+      - run: npm run lint --workspace=hr1-employee-web
       - run: npm run build --workspace=hr1-employee-web
 
   employee-app:
