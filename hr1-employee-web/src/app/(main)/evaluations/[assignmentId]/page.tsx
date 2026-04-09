@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { Button } from "@hr1/shared-ui/components/ui/button";
@@ -55,7 +55,6 @@ export default function EvaluationFormPage() {
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Load assignment, criteria, and existing evaluation
   useEffect(() => {
@@ -137,13 +136,8 @@ export default function EvaluationFormPage() {
     setSaving(false);
   }, [ensureEvaluation, scores, overallComment, showToast]);
 
-  // Auto-save debounce
   const handleScoreChange = useCallback((criterionId: string, val: ScoreMap[string]) => {
     setScores((prev) => ({ ...prev, [criterionId]: val }));
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      // Auto-save will be triggered via manual save for now
-    }, 3000);
   }, []);
 
   const handleSubmit = async () => {
