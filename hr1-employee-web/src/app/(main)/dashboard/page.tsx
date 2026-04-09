@@ -6,6 +6,7 @@ import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-h
 import { Card, CardContent } from "@hr1/shared-ui/components/ui/card";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { useDashboard, DEFAULT_WIDGETS } from "@/lib/hooks/use-dashboard";
+import { useMyAttendance } from "@/lib/hooks/use-my-attendance";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import {
   Clock,
@@ -76,6 +77,18 @@ const widgetMeta: Record<string, WidgetMeta> = {
 
 const widgetLabels = Object.fromEntries(DEFAULT_WIDGETS.map((w) => [w.id, w.label]));
 
+function AttendanceStatus() {
+  const { isClockedIn, isOnBreak, todayPunches } = useMyAttendance();
+  const label = isOnBreak ? "休憩中" : isClockedIn ? "勤務中" : "未出勤";
+  const punchCount = todayPunches.length;
+  return (
+    <span className="text-xs text-muted-foreground">
+      {label}
+      {punchCount > 0 && ` (${punchCount}件の打刻)`}
+    </span>
+  );
+}
+
 export default function DashboardPage() {
   const { profile } = useAuth();
   const { widgetConfig, visibleWidgets, saveWidgetConfig } = useDashboard();
@@ -86,7 +99,8 @@ export default function DashboardPage() {
     try {
       await saveWidgetConfig(config);
       showToast("ダッシュボード設定を保存しました");
-    } catch {
+    } catch (e) {
+      console.error("Failed to save dashboard config:", e);
       showToast("設定の保存に失敗しました", "error");
     }
   };
@@ -127,7 +141,11 @@ export default function DashboardPage() {
                     <span className="text-sm font-medium">
                       {widgetLabels[w.widget_id] ?? w.widget_id}
                     </span>
-                    <span className="text-xs text-muted-foreground">{meta.description}</span>
+                    {w.widget_id === "attendance" ? (
+                      <AttendanceStatus />
+                    ) : (
+                      <span className="text-xs text-muted-foreground">{meta.description}</span>
+                    )}
                   </CardContent>
                 </Card>
               </Link>

@@ -55,6 +55,9 @@ export function CorrectionDialog({ open, onOpenChange, record, onSubmit }: Corre
 
   const handleSubmit = async () => {
     if (!record || !reason.trim()) return;
+    if (clockIn && clockOut && clockIn >= clockOut) {
+      return;
+    }
     setSubmitting(true);
     try {
       const datePrefix = record.date;
@@ -106,6 +109,9 @@ export function CorrectionDialog({ open, onOpenChange, record, onSubmit }: Corre
               className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
+          {clockIn && clockOut && clockIn >= clockOut && (
+            <p className="text-xs text-red-600">出勤時刻は退勤時刻より前にしてください</p>
+          )}
           <div className="space-y-2">
             <Label htmlFor="correction-reason">修正理由（必須）</Label>
             <textarea

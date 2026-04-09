@@ -48,6 +48,7 @@ export default function EvaluationFormPage() {
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [creatingEval, setCreatingEval] = useState(false);
 
   // Load assignment, criteria, and existing evaluation
   useEffect(() => {
@@ -102,7 +103,8 @@ export default function EvaluationFormPage() {
 
   const ensureEvaluation = useCallback(async () => {
     if (evaluationId) return evaluationId;
-    if (!user || !organization || !assignment) return null;
+    if (creatingEval || !user || !organization || !assignment) return null;
+    setCreatingEval(true);
 
     const id = await evalRepo.createEvaluation(getSupabase(), {
       organization_id: organization.id,
@@ -114,8 +116,9 @@ export default function EvaluationFormPage() {
       assignment_id: assignmentId,
     });
     setEvaluationId(id);
+    setCreatingEval(false);
     return id;
-  }, [evaluationId, user, organization, assignment, assignmentId]);
+  }, [evaluationId, creatingEval, user, organization, assignment, assignmentId]);
 
   const handleSaveDraft = useCallback(async () => {
     setSaving(true);
