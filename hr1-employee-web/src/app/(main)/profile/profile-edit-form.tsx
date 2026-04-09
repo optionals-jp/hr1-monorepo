@@ -14,6 +14,7 @@ export function ProfileEditForm({ onClose }: { onClose: () => void }) {
   const { user, profile, refreshProfile } = useAuth();
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const [displayName, setDisplayName] = useState(profile?.display_name ?? "");
   const [nameKana, setNameKana] = useState(profile?.name_kana ?? "");
@@ -21,6 +22,22 @@ export function ProfileEditForm({ onClose }: { onClose: () => void }) {
   const [position, setPosition] = useState(profile?.position ?? "");
   const [birthDate, setBirthDate] = useState(profile?.birth_date ?? "");
   const [gender, setGender] = useState(profile?.gender ?? "");
+
+  const hasChanges =
+    displayName !== (profile?.display_name ?? "") ||
+    nameKana !== (profile?.name_kana ?? "") ||
+    phone !== (profile?.phone ?? "") ||
+    position !== (profile?.position ?? "") ||
+    birthDate !== (profile?.birth_date ?? "") ||
+    gender !== (profile?.gender ?? "");
+
+  const handleCancel = () => {
+    if (hasChanges) {
+      setShowCancelConfirm(true);
+    } else {
+      onClose();
+    }
+  };
 
   const handleSave = async () => {
     if (!user || !displayName.trim()) return;
@@ -136,7 +153,7 @@ export function ProfileEditForm({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="flex gap-2 justify-end pt-2">
-            <Button variant="ghost" size="sm" onClick={onClose}>
+            <Button variant="ghost" size="sm" onClick={handleCancel}>
               キャンセル
             </Button>
             <Button size="sm" onClick={handleSave} disabled={!displayName.trim() || saving}>
@@ -145,6 +162,30 @@ export function ProfileEditForm({ onClose }: { onClose: () => void }) {
           </div>
         </CardContent>
       </Card>
+
+      {showCancelConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-background rounded-lg p-6 max-w-sm mx-4 shadow-lg">
+            <h3 className="text-sm font-semibold mb-2">編集を破棄しますか？</h3>
+            <p className="text-xs text-muted-foreground mb-4">保存されていない変更が失われます。</p>
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" size="sm" onClick={() => setShowCancelConfirm(false)}>
+                編集を続ける
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  setShowCancelConfirm(false);
+                  onClose();
+                }}
+              >
+                破棄する
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

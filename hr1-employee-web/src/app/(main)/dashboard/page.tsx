@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { Card, CardContent } from "@hr1/shared-ui/components/ui/card";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { useDashboard, DEFAULT_WIDGETS } from "@/lib/hooks/use-dashboard";
 import { useMyAttendance } from "@/lib/hooks/use-my-attendance";
+import { useMyTasks } from "@/lib/hooks/use-my-tasks";
+import { useNotifications } from "@/lib/hooks/use-notifications";
+import { useAnnouncements } from "@/lib/hooks/use-announcements";
+import { useMyWorkflows } from "@/lib/hooks/use-workflows";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import {
   Clock,
@@ -33,61 +37,80 @@ interface WidgetMeta {
   icon: LucideIcon;
   href: string;
   color: string;
-  description: string;
 }
 
 const widgetMeta: Record<string, WidgetMeta> = {
-  attendance: {
-    icon: Clock,
-    href: "/my-attendance",
-    color: "bg-blue-50 text-blue-600",
-    description: "今日の出退勤状況",
-  },
-  tasks: {
-    icon: CheckSquare,
-    href: "/tasks",
-    color: "bg-orange-50 text-orange-600",
-    description: "未完了のタスク",
-  },
-  messages: {
-    icon: MessageSquare,
-    href: "/messages",
-    color: "bg-green-50 text-green-600",
-    description: "未読メッセージ",
-  },
-  announcements: {
-    icon: Megaphone,
-    href: "/announcements",
-    color: "bg-red-50 text-red-600",
-    description: "最新のお知らせ",
-  },
-  calendar: {
-    icon: CalendarDays,
-    href: "/calendar",
-    color: "bg-purple-50 text-purple-600",
-    description: "今日の予定",
-  },
-  workflows: {
-    icon: FileInput,
-    href: "/workflows",
-    color: "bg-gray-50 text-gray-600",
-    description: "申請の状況",
-  },
+  attendance: { icon: Clock, href: "/my-attendance", color: "bg-blue-50 text-blue-600" },
+  tasks: { icon: CheckSquare, href: "/tasks", color: "bg-orange-50 text-orange-600" },
+  messages: { icon: MessageSquare, href: "/messages", color: "bg-green-50 text-green-600" },
+  announcements: { icon: Megaphone, href: "/announcements", color: "bg-red-50 text-red-600" },
+  calendar: { icon: CalendarDays, href: "/calendar", color: "bg-purple-50 text-purple-600" },
+  workflows: { icon: FileInput, href: "/workflows", color: "bg-gray-50 text-gray-600" },
 };
 
 const widgetLabels = Object.fromEntries(DEFAULT_WIDGETS.map((w) => [w.id, w.label]));
 
-function AttendanceStatus() {
+function AttendanceInfo() {
   const { isClockedIn, isOnBreak, todayPunches } = useMyAttendance();
   const label = isOnBreak ? "休憩中" : isClockedIn ? "勤務中" : "未出勤";
-  const punchCount = todayPunches.length;
   return (
     <span className="text-xs text-muted-foreground">
       {label}
-      {punchCount > 0 && ` (${punchCount}件の打刻)`}
+      {todayPunches.length > 0 && ` (${todayPunches.length}件の打刻)`}
     </span>
   );
 }
+
+function TasksInfo() {
+  const { data: tasks = [] } = useMyTasks();
+  const pending = tasks.filter((t) => t.status !== "completed" && t.status !== "cancelled").length;
+  return (
+    <span className="text-xs text-muted-foreground">
+      {pending > 0 ? `${pending}件の未完了タスク` : "すべて完了"}
+    </span>
+  );
+}
+
+function MessagesInfo() {
+  const { unreadCount } = useNotifications();
+  return (
+    <span className="text-xs text-muted-foreground">
+      {unreadCount > 0 ? `${unreadCount}件の未読通知` : "新着なし"}
+    </span>
+  );
+}
+
+function AnnouncementsInfo() {
+  const { data: list = [] } = useAnnouncements();
+  return (
+    <span className="text-xs text-muted-foreground">
+      {list.length > 0 ? `${list.length}件のお知らせ` : "お知らせはありません"}
+    </span>
+  );
+}
+
+function WorkflowsInfo() {
+  const { data: requests = [] } = useMyWorkflows();
+  const pending = requests.filter((r) => r.status === "pending").length;
+  return (
+    <span className="text-xs text-muted-foreground">
+      {pending > 0 ? `${pending}件の申請中` : "申請なし"}
+    </span>
+  );
+}
+
+function CalendarInfo() {
+  return <span className="text-xs text-muted-foreground">今日の予定</span>;
+}
+
+const widgetInfoComponents: Record<string, () => React.ReactNode> = {
+  attendance: AttendanceInfo,
+  tasks: TasksInfo,
+  messages: MessagesInfo,
+  announcements: AnnouncementsInfo,
+  calendar: CalendarInfo,
+  workflows: WorkflowsInfo,
+};
 
 export default function DashboardPage() {
   const { profile } = useAuth();
@@ -125,6 +148,7 @@ export default function DashboardPage() {
             const meta = widgetMeta[w.widget_id];
             if (!meta) return null;
             const Icon = meta.icon;
+            const InfoComponent = widgetInfoComponents[w.widget_id];
             return (
               <Link
                 key={w.widget_id}
@@ -141,11 +165,7 @@ export default function DashboardPage() {
                     <span className="text-sm font-medium">
                       {widgetLabels[w.widget_id] ?? w.widget_id}
                     </span>
-                    {w.widget_id === "attendance" ? (
-                      <AttendanceStatus />
-                    ) : (
-                      <span className="text-xs text-muted-foreground">{meta.description}</span>
-                    )}
+                    {InfoComponent ? <InfoComponent /> : null}
                   </CardContent>
                 </Card>
               </Link>

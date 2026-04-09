@@ -200,6 +200,7 @@ export default function EvaluationFormPage() {
         }
         sticky={false}
         border={false}
+        breadcrumb={[{ label: "評価", href: "/evaluations" }]}
         action={
           <Button variant="ghost" size="sm" onClick={() => router.push("/evaluations")}>
             <ArrowLeft className="h-4 w-4 mr-1" />
@@ -221,6 +222,15 @@ export default function EvaluationFormPage() {
               </Badge>
             )}
           </div>
+
+          {isSubmitted && (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+              <p className="text-sm font-medium text-green-800">この評価は提出済みです</p>
+              <p className="text-xs text-green-600 mt-0.5">
+                以下の内容は閲覧のみ可能です。変更が必要な場合は管理者にご連絡ください。
+              </p>
+            </div>
+          )}
 
           {/* Progress */}
           {criteria.length > 0 && (

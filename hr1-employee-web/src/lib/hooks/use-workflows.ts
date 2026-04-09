@@ -6,6 +6,7 @@ import { useQuery } from "@/lib/use-query";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as workflowRepo from "@/lib/repositories/workflow-repository";
+import * as notificationRepo from "@/lib/repositories/notification-repository";
 import type { WorkflowRequest, WorkflowTemplate } from "@/types/database";
 
 export function useMyWorkflows() {
@@ -61,11 +62,33 @@ export function usePendingApprovals() {
     status: "approved" | "rejected",
     comment: string | null
   ) => {
+    // 対象申請の申請者IDを取得
+    const target = result.data?.find((r) => r.id === requestId);
+
     if (requestType === "paid_leave" && status === "approved") {
       await workflowRepo.approveLeaveRequest(getSupabase(), requestId, user!.id, comment);
     } else {
       await workflowRepo.reviewRequest(getSupabase(), requestId, user!.id, status, comment);
     }
+
+    // 申請者に通知を送信
+    if (target && organization) {
+      try {
+        const statusLabel = status === "approved" ? "承認" : "却下";
+        await notificationRepo.createNotification(getSupabase(), {
+          user_id: target.user_id,
+          organization_id: organization.id,
+          title: `申請が${statusLabel}されました`,
+          body: comment ? `コメント: ${comment}` : `あなたの申請が${statusLabel}されました。`,
+          type: "workflow",
+          resource_type: "workflow_request",
+          resource_id: requestId,
+        });
+      } catch (e) {
+        console.error("Failed to send notification:", e);
+      }
+    }
+
     result.mutate();
   };
 

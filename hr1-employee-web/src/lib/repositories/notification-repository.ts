@@ -26,6 +26,22 @@ export async function markAsRead(client: SupabaseClient, id: string, userId: str
   if (error) throw error;
 }
 
+export async function createNotification(
+  client: SupabaseClient,
+  data: {
+    user_id: string;
+    organization_id: string;
+    title: string;
+    body: string;
+    type: string;
+    resource_type?: string;
+    resource_id?: string;
+  }
+) {
+  const { error } = await client.from("notifications").insert(data);
+  if (error) throw error;
+}
+
 export async function markAllAsRead(
   client: SupabaseClient,
   userId: string,
