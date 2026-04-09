@@ -152,3 +152,33 @@ describe("middleware - プロダクト別ルート制限", () => {
     expect(response.status).toBe(200);
   });
 });
+
+describe("middleware - セキュリティヘッダー", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("公開パスでCSPヘッダーが付与される", async () => {
+    const response = await middleware(createRequest("/login"));
+    expect(response.headers.has("Content-Security-Policy")).toBe(true);
+    expect(response.headers.get("Content-Security-Policy")).toContain("default-src 'self'");
+  });
+
+  it("認証済みリクエストでCSPヘッダーが付与される", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+    });
+    createProfileQuery("employee");
+
+    const response = await middleware(createRequest("/dashboard"));
+    expect(response.headers.has("Content-Security-Policy")).toBe(true);
+    expect(response.headers.get("Content-Security-Policy")).toContain("frame-ancestors 'none'");
+  });
+
+  it("未認証リダイレクトでもCSPヘッダーが付与される", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } });
+
+    const response = await middleware(createRequest("/dashboard"));
+    expect(response.headers.has("Content-Security-Policy")).toBe(true);
+  });
+});

@@ -74,26 +74,34 @@ export function AppHeader() {
               return (
                 <DropdownMenuItem
                   key={p.value}
+                  onClick={
+                    product !== p.value
+                      ? () => {
+                          window.location.href = getProductUrl(p.value);
+                        }
+                      : undefined
+                  }
                   className={cn(
                     "group gap-3 rounded-lg px-3 py-2.5 text-[14px] cursor-pointer",
                     product === p.value && "bg-accent font-medium"
                   )}
                 >
-                  {product === p.value ? (
-                    <div className="flex items-center gap-3">
-                      <Icon className="h-5 w-5 shrink-0" />
-                      <span className="font-extrabold tracking-tight text-[#1C1E1E]">
-                        {p.label}
-                      </span>
-                    </div>
-                  ) : (
-                    <a href={getProductUrl(p.value)} className="flex items-center gap-3">
-                      <Icon className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110 group-data-highlighted:scale-110" />
-                      <span className="font-extrabold tracking-tight text-[#1C1E1E] transition-transform group-hover:translate-x-0.5 group-data-highlighted:translate-x-0.5">
-                        {p.label}
-                      </span>
-                    </a>
-                  )}
+                  <Icon
+                    className={cn(
+                      "h-5 w-5 shrink-0",
+                      product !== p.value &&
+                        "transition-transform group-hover:scale-110 group-data-highlighted:scale-110"
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      "font-extrabold tracking-tight text-[#1C1E1E]",
+                      product !== p.value &&
+                        "transition-transform group-hover:translate-x-0.5 group-data-highlighted:translate-x-0.5"
+                    )}
+                  >
+                    {p.label}
+                  </span>
                 </DropdownMenuItem>
               );
             })}
