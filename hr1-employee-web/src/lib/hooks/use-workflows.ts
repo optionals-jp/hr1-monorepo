@@ -3,9 +3,10 @@
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
 import { useQuery } from "@/lib/use-query";
+import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as workflowRepo from "@/lib/repositories/workflow-repository";
-import type { WorkflowRequest } from "@/types/database";
+import type { WorkflowRequest, WorkflowTemplate } from "@/types/database";
 
 export function useMyWorkflows() {
   const { user } = useAuth();
@@ -37,6 +38,12 @@ export function useMyWorkflows() {
   };
 
   return { ...result, createRequest, cancelRequest };
+}
+
+export function useWorkflowTemplates() {
+  return useOrgQuery<WorkflowTemplate[]>("workflow-templates", (orgId) =>
+    workflowRepo.fetchTemplates(getSupabase(), orgId)
+  );
 }
 
 export function usePendingApprovals() {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { Card, CardContent } from "@hr1/shared-ui/components/ui/card";
 import { Button } from "@hr1/shared-ui/components/ui/button";
@@ -7,10 +8,20 @@ import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { useMyAttendance } from "@/lib/hooks/use-my-attendance";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
-import { cn } from "@hr1/shared-ui/lib/utils";
-import { Clock, LogIn, LogOut, Coffee, Play, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Clock,
+  LogIn,
+  LogOut,
+  Coffee,
+  Play,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+} from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
 import { ja } from "date-fns/locale";
+import { CorrectionDialog } from "./correction-dialog";
+import type { AttendanceRecord } from "@/types/database";
 
 const statusLabels: Record<string, string> = {
   present: "出勤",
@@ -22,6 +33,12 @@ const statusLabels: Record<string, string> = {
   holiday: "休日",
 };
 
+const correctionStatusLabels: Record<string, string> = {
+  pending: "申請中",
+  approved: "承認済",
+  rejected: "却下",
+};
+
 export default function MyAttendancePage() {
   const {
     currentMonth,
@@ -31,15 +48,18 @@ export default function MyAttendancePage() {
     isLoading,
     error,
     mutateRecords,
-    lastPunch,
     isClockedIn,
     isOnBreak,
     doPunch,
+    corrections,
+    requestCorrection,
   } = useMyAttendance();
 
   const { showToast } = useToast();
   const now = new Date();
   const currentTime = format(now, "HH:mm");
+  const [correctionOpen, setCorrectionOpen] = useState(false);
+  const [correctionTarget, setCorrectionTarget] = useState<AttendanceRecord | null>(null);
 
   const handlePunch = async (type: Parameters<typeof doPunch>[0]) => {
     try {
@@ -55,6 +75,22 @@ export default function MyAttendancePage() {
       );
     } catch {
       showToast("打刻に失敗しました", "error");
+    }
+  };
+
+  const handleCorrectionSubmit = async (data: {
+    record_id: string;
+    original_clock_in: string | null;
+    original_clock_out: string | null;
+    requested_clock_in: string | null;
+    requested_clock_out: string | null;
+    reason: string;
+  }) => {
+    try {
+      await requestCorrection(data);
+      showToast("補正申請を提出しました");
+    } catch {
+      showToast("補正申請に失敗しました", "error");
     }
   };
 
@@ -125,6 +161,7 @@ export default function MyAttendancePage() {
               <Button
                 variant="outline"
                 size="sm"
+                aria-label="前の月"
                 onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -135,6 +172,7 @@ export default function MyAttendancePage() {
               <Button
                 variant="outline"
                 size="sm"
+                aria-label="次の月"
                 onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
               >
                 <ChevronRight className="h-4 w-4" />
@@ -142,7 +180,9 @@ export default function MyAttendancePage() {
             </div>
 
             {isLoading ? (
-              <div className="py-8 text-center text-sm text-muted-foreground">読み込み中...</div>
+              <div className="py-8 text-center text-sm text-muted-foreground" aria-busy="true">
+                読み込み中...
+              </div>
             ) : records.length === 0 ? (
               <div className="py-8 text-center text-sm text-muted-foreground">
                 この月の勤務記録はありません
@@ -174,13 +214,63 @@ export default function MyAttendancePage() {
                     <span className="text-xs text-muted-foreground ml-auto">
                       {Math.floor(r.work_minutes / 60)}h{r.work_minutes % 60}m
                     </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 h-7 w-7 p-0"
+                      aria-label="修正"
+                      onClick={() => {
+                        setCorrectionTarget(r);
+                        setCorrectionOpen(true);
+                      }}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 ))}
               </div>
             )}
           </div>
+
+          {/* 修正申請履歴 */}
+          {corrections.length > 0 && (
+            <div>
+              <h2 className="text-sm font-semibold mb-3">修正申請履歴</h2>
+              <div className="divide-y rounded-lg border">
+                {corrections.map((c) => (
+                  <div key={c.id} className="flex items-center gap-3 px-4 py-3">
+                    <span className="text-sm text-muted-foreground w-28 shrink-0">
+                      {format(new Date(c.created_at), "MM/dd HH:mm")}
+                    </span>
+                    <Badge
+                      variant={
+                        c.status === "approved"
+                          ? "default"
+                          : c.status === "rejected"
+                            ? "destructive"
+                            : "secondary"
+                      }
+                      className="text-[10px] w-16 justify-center"
+                    >
+                      {correctionStatusLabels[c.status] ?? c.status}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground truncate flex-1">
+                      {c.reason}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </PageContent>
+
+      <CorrectionDialog
+        open={correctionOpen}
+        onOpenChange={setCorrectionOpen}
+        record={correctionTarget}
+        onSubmit={handleCorrectionSubmit}
+      />
     </div>
   );
 }

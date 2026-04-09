@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useQuery } from "@/lib/use-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as attendanceRepo from "@/lib/repositories/attendance-repository";
-import type { AttendancePunch, AttendanceRecord } from "@/types/database";
+import type { AttendanceCorrection, AttendancePunch, AttendanceRecord } from "@/types/database";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 
 export function useMyAttendance() {
@@ -20,6 +20,8 @@ export function useMyAttendance() {
   const punchKey = user && organization ? `my-punches-${organization.id}-${user.id}-today` : null;
   const recordsKey =
     user && organization ? `my-attendance-${organization.id}-${user.id}-${startDate}` : null;
+  const correctionsKey =
+    user && organization ? `my-corrections-${organization.id}-${user.id}` : null;
 
   const { data: todayPunches = [], mutate: mutatePunches } = useQuery<AttendancePunch[]>(
     punchKey,
@@ -33,6 +35,11 @@ export function useMyAttendance() {
     mutate: mutateRecords,
   } = useQuery<AttendanceRecord[]>(recordsKey, () =>
     attendanceRepo.fetchMyRecords(getSupabase(), organization!.id, user!.id, startDate, endDate)
+  );
+
+  const { data: corrections = [], mutate: mutateCorrections } = useQuery<AttendanceCorrection[]>(
+    correctionsKey,
+    () => attendanceRepo.fetchMyCorrections(getSupabase(), organization!.id, user!.id)
   );
 
   const lastPunch = todayPunches.length > 0 ? todayPunches[todayPunches.length - 1] : null;
@@ -49,6 +56,22 @@ export function useMyAttendance() {
     mutateRecords();
   };
 
+  const requestCorrection = async (data: {
+    record_id: string;
+    original_clock_in: string | null;
+    original_clock_out: string | null;
+    requested_clock_in: string | null;
+    requested_clock_out: string | null;
+    reason: string;
+  }) => {
+    await attendanceRepo.requestCorrection(getSupabase(), {
+      organization_id: organization!.id,
+      user_id: user!.id,
+      ...data,
+    });
+    mutateCorrections();
+  };
+
   return {
     currentMonth,
     setCurrentMonth,
@@ -61,5 +84,7 @@ export function useMyAttendance() {
     isClockedIn,
     isOnBreak,
     doPunch,
+    corrections,
+    requestCorrection,
   };
 }

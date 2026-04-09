@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { WorkflowRequest } from "@/types/database";
+import type { WorkflowRequest, WorkflowTemplate } from "@/types/database";
 
 export async function fetchMyRequests(
   client: SupabaseClient,
@@ -73,6 +73,17 @@ export async function reviewRequest(
     .eq("id", requestId)
     .eq("status", "pending");
   if (error) throw error;
+}
+
+export async function fetchTemplates(client: SupabaseClient, organizationId: string) {
+  const { data, error } = await client
+    .from("workflow_templates")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("is_active", true)
+    .order("sort_order");
+  if (error) throw error;
+  return (data ?? []) as WorkflowTemplate[];
 }
 
 export async function approveLeaveRequest(

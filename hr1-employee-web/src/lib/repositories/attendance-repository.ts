@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { AttendancePunch, AttendanceRecord } from "@/types/database";
+import type { AttendancePunch, AttendanceCorrection, AttendanceRecord } from "@/types/database";
 
 export async function punch(
   client: SupabaseClient,
@@ -51,4 +51,37 @@ export async function fetchMyRecords(
     .order("date", { ascending: false });
   if (error) throw error;
   return (data ?? []) as AttendanceRecord[];
+}
+
+export async function requestCorrection(
+  client: SupabaseClient,
+  data: {
+    organization_id: string;
+    record_id: string;
+    user_id: string;
+    original_clock_in: string | null;
+    original_clock_out: string | null;
+    requested_clock_in: string | null;
+    requested_clock_out: string | null;
+    reason: string;
+  }
+) {
+  const { error } = await client.from("attendance_corrections").insert(data);
+  if (error) throw error;
+}
+
+export async function fetchMyCorrections(
+  client: SupabaseClient,
+  organizationId: string,
+  userId: string
+) {
+  const { data, error } = await client
+    .from("attendance_corrections")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []) as AttendanceCorrection[];
 }

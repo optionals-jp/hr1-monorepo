@@ -2,6 +2,9 @@
 
 import { useState, useMemo } from "react";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Label } from "@hr1/shared-ui/components/ui/label";
 import {
   Table,
   TableBody,
@@ -11,13 +14,14 @@ import {
   TableRow,
 } from "@hr1/shared-ui/components/ui/table";
 import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
+import { EditPanel } from "@/components/ui/edit-panel";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { useRouter } from "next/navigation";
-import { useCrmContacts } from "@/lib/hooks/use-crm";
+import { useCrmContactsPage, useCrmCompanies } from "@/lib/hooks/use-crm";
 import { SavedViewSelector } from "@/components/crm/saved-view-selector";
 import { applyFilters, applySort } from "@/lib/hooks/use-saved-views";
 import type { CrmSavedViewConfig } from "@/types/database";
@@ -28,14 +32,39 @@ import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import { deleteContact } from "@/lib/repositories/crm-repository";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@hr1/shared-ui/components/ui/select";
 
 export default function CrmContactsPage() {
   const router = useRouter();
   const { showToast } = useToast();
   const { organization } = useOrg();
-  const [search, setSearch] = useState("");
 
-  const { data: contacts, error, mutate } = useCrmContacts();
+  const {
+    search,
+    setSearch,
+    editOpen,
+    setEditOpen,
+    editData,
+    setEditData,
+    errors,
+    contacts,
+    error,
+    filtered,
+    openCreate,
+    handleSave,
+    handleDelete,
+    saving,
+    deleting,
+    mutate,
+  } = useCrmContactsPage();
+
+  const { data: companies } = useCrmCompanies();
 
   const [viewConfig, setViewConfig] = useState<CrmSavedViewConfig>({});
 
@@ -50,17 +79,6 @@ export default function CrmContactsPage() {
     ],
     []
   );
-
-  const filtered = (contacts ?? []).filter((c) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    const fullName = `${c.last_name}${c.first_name ?? ""}`.toLowerCase();
-    return (
-      fullName.includes(q) ||
-      c.email?.toLowerCase().includes(q) ||
-      c.bc_companies?.name.toLowerCase().includes(q)
-    );
-  });
 
   const viewFiltered = useMemo(() => {
     let result = filtered as unknown as Record<string, unknown>[];
@@ -90,7 +108,12 @@ export default function CrmContactsPage() {
 
   return (
     <div className="flex flex-col">
-      <PageHeader title="連絡先" sticky={false} border={false} />
+      <PageHeader
+        title="連絡先"
+        sticky={false}
+        border={false}
+        action={<Button onClick={openCreate}>新規登録</Button>}
+      />
       {error && <QueryErrorBanner error={error} />}
 
       <StickyFilterBar>
@@ -182,6 +205,99 @@ export default function CrmContactsPage() {
           },
         ]}
       />
+
+      <EditPanel
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        title={editData.id ? "連絡先編集" : "連絡先登録"}
+        onSave={() => handleSave(showToast)}
+        saving={saving}
+        onDelete={editData.id ? () => handleDelete(showToast) : undefined}
+        deleting={deleting}
+        confirmDeleteMessage="この連絡先を削除しますか？関連する商談・活動の紐付けも解除されます。"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>姓 *</Label>
+              <Input
+                value={editData.last_name ?? ""}
+                onChange={(e) => setEditData((p) => ({ ...p, last_name: e.target.value }))}
+                className={errors?.last_name ? "border-destructive" : ""}
+              />
+              {errors?.last_name && (
+                <p className="text-xs text-destructive mt-1">{errors.last_name}</p>
+              )}
+            </div>
+            <div>
+              <Label>名</Label>
+              <Input
+                value={editData.first_name ?? ""}
+                onChange={(e) => setEditData((p) => ({ ...p, first_name: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div>
+            <Label>メール</Label>
+            <Input
+              type="email"
+              value={editData.email ?? ""}
+              onChange={(e) => setEditData((p) => ({ ...p, email: e.target.value }))}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>電話</Label>
+              <Input
+                value={editData.phone ?? ""}
+                onChange={(e) => setEditData((p) => ({ ...p, phone: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>携帯</Label>
+              <Input
+                value={editData.mobile_phone ?? ""}
+                onChange={(e) => setEditData((p) => ({ ...p, mobile_phone: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div>
+            <Label>企業</Label>
+            <Select
+              value={editData.company_id ?? ""}
+              onValueChange={(v) => setEditData((p) => ({ ...p, company_id: v || null }))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="企業を選択" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">未選択</SelectItem>
+                {(companies ?? []).map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>部署</Label>
+              <Input
+                value={editData.department ?? ""}
+                onChange={(e) => setEditData((p) => ({ ...p, department: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>役職</Label>
+              <Input
+                value={editData.position ?? ""}
+                onChange={(e) => setEditData((p) => ({ ...p, position: e.target.value }))}
+              />
+            </div>
+          </div>
+        </div>
+      </EditPanel>
     </div>
   );
 }

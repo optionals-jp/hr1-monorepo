@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
-import { useMyWorkflows } from "@/lib/hooks/use-workflows";
+import { useMyWorkflows, useWorkflowTemplates } from "@/lib/hooks/use-workflows";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { cn } from "@hr1/shared-ui/lib/utils";
@@ -23,9 +23,17 @@ import { format } from "date-fns";
 import { canApproveWorkflows } from "@/lib/role-utils";
 import { WORKFLOW_TYPE_LABELS, WORKFLOW_STATUS_CONFIG } from "@/lib/workflow-utils";
 import { PendingApprovalsTab } from "./pending-approvals-tab";
-import type { WorkflowRequestStatus, WorkflowRequestType } from "@/types/database";
+import { CustomTemplateForm } from "./custom-template-form";
+import type {
+  WorkflowRequestStatus,
+  WorkflowRequestType,
+  WorkflowTemplate,
+} from "@/types/database";
 
 type Tab = "my-requests" | "pending-approvals";
+
+/** 組み込み種別のキー一覧 */
+const BUILTIN_TYPES = Object.keys(WORKFLOW_TYPE_LABELS) as WorkflowRequestType[];
 
 export default function WorkflowsPage() {
   const { profile } = useAuth();
@@ -38,21 +46,55 @@ export default function WorkflowsPage() {
     cancelRequest,
     createRequest,
   } = useMyWorkflows();
+  const { data: templates = [] } = useWorkflowTemplates();
   const [filter, setFilter] = useState<WorkflowRequestStatus | "all">("all");
   const [showForm, setShowForm] = useState(false);
-  const [requestType, setRequestType] = useState<WorkflowRequestType>("paid_leave");
+  const [requestType, setRequestType] = useState<string>("paid_leave");
   const [reason, setReason] = useState("");
+  const [templateValues, setTemplateValues] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const showApprovalTab = canApproveWorkflows(profile?.role ?? null);
   const [activeTab, setActiveTab] = useState<Tab>("my-requests");
 
+  /** 現在選択中のカスタムテンプレート（組み込み種別の場合は null） */
+  const selectedTemplate: WorkflowTemplate | null = useMemo(() => {
+    if (BUILTIN_TYPES.includes(requestType as WorkflowRequestType)) return null;
+    return templates.find((t) => t.id === requestType) ?? null;
+  }, [requestType, templates]);
+
+  /** カスタムテンプレートの必須バリデーション */
+  const isTemplateValid = useMemo(() => {
+    if (!selectedTemplate) return true;
+    return selectedTemplate.fields
+      .filter((f) => f.required)
+      .every((f) => (templateValues[f.key] ?? "").trim() !== "");
+  }, [selectedTemplate, templateValues]);
+
   const handleSubmit = async () => {
-    if (!reason.trim()) return;
+    if (!selectedTemplate && !reason.trim()) return;
+    if (selectedTemplate && !isTemplateValid) {
+      showToast("必須項目を入力してください", "error");
+      return;
+    }
     setSubmitting(true);
     try {
-      await createRequest(requestType, {}, reason.trim());
+      if (selectedTemplate) {
+        // カスタムテンプレート: request_type にテンプレート ID を格納
+        await createRequest(
+          selectedTemplate.id as WorkflowRequestType,
+          {
+            template_id: selectedTemplate.id,
+            template_name: selectedTemplate.name,
+            ...templateValues,
+          },
+          reason.trim() || null
+        );
+      } else {
+        await createRequest(requestType as WorkflowRequestType, {}, reason.trim());
+      }
       setShowForm(false);
       setReason("");
+      setTemplateValues({});
       showToast("申請しました");
     } catch {
       showToast("申請に失敗しました", "error");
@@ -60,10 +102,26 @@ export default function WorkflowsPage() {
     setSubmitting(false);
   };
 
+  /** 種別変更時にテンプレート値をリセット */
+  const handleTypeChange = (value: string | null) => {
+    if (!value) return;
+    setRequestType(value);
+    setTemplateValues({});
+  };
+
   const filtered = useMemo(() => {
     if (filter === "all") return requests;
     return requests.filter((r) => r.status === filter);
   }, [requests, filter]);
+
+  /** request_type のラベル解決: 組み込み or カスタムテンプレート名 */
+  const resolveTypeLabel = (type: string): string => {
+    if (WORKFLOW_TYPE_LABELS[type as WorkflowRequestType]) {
+      return WORKFLOW_TYPE_LABELS[type as WorkflowRequestType];
+    }
+    const tpl = templates.find((t) => t.id === type);
+    return tpl?.name ?? type;
+  };
 
   return (
     <div className="flex flex-col">
@@ -85,8 +143,10 @@ export default function WorkflowsPage() {
       <PageContent>
         <div className="space-y-4 max-w-2xl">
           {showApprovalTab && (
-            <div className="flex gap-1 border-b">
+            <div className="flex gap-1 border-b" role="tablist">
               <button
+                role="tab"
+                aria-selected={activeTab === "my-requests"}
                 className={cn(
                   "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
                   activeTab === "my-requests"
@@ -98,6 +158,8 @@ export default function WorkflowsPage() {
                 自分の申請
               </button>
               <button
+                role="tab"
+                aria-selected={activeTab === "pending-approvals"}
                 className={cn(
                   "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
                   activeTab === "pending-approvals"
@@ -122,22 +184,37 @@ export default function WorkflowsPage() {
                   <CardContent className="pt-4 space-y-4">
                     <div className="space-y-2">
                       <Label>申請種別</Label>
-                      <Select
-                        value={requestType}
-                        onValueChange={(v) => setRequestType(v as WorkflowRequestType)}
-                      >
+                      <Select value={requestType} onValueChange={handleTypeChange}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
+                          {/* 組み込み種別 */}
                           {Object.entries(WORKFLOW_TYPE_LABELS).map(([value, label]) => (
                             <SelectItem key={value} value={value}>
                               {label}
                             </SelectItem>
                           ))}
+                          {/* カスタムテンプレート */}
+                          {templates.map((tpl) => (
+                            <SelectItem key={tpl.id} value={tpl.id}>
+                              {tpl.icon ? `${tpl.icon} ` : ""}
+                              {tpl.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {/* カスタムテンプレートの動的フォーム */}
+                    {selectedTemplate && (
+                      <CustomTemplateForm
+                        template={selectedTemplate}
+                        values={templateValues}
+                        onChange={setTemplateValues}
+                      />
+                    )}
+
                     <div className="space-y-2">
                       <Label>理由</Label>
                       <textarea
@@ -155,7 +232,11 @@ export default function WorkflowsPage() {
                       <Button
                         size="sm"
                         onClick={handleSubmit}
-                        disabled={!reason.trim() || submitting}
+                        disabled={
+                          submitting ||
+                          (!selectedTemplate && !reason.trim()) ||
+                          (!!selectedTemplate && !isTemplateValid)
+                        }
                       >
                         申請
                       </Button>
@@ -206,7 +287,7 @@ export default function WorkflowsPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium">
-                              {WORKFLOW_TYPE_LABELS[req.request_type] ?? req.request_type}
+                              {resolveTypeLabel(req.request_type)}
                             </p>
                             <Badge variant={config.variant} className="text-[10px]">
                               {config.label}

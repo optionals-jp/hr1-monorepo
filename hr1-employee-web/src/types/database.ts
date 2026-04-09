@@ -910,3 +910,69 @@ export interface EvaluationAnchor {
   score_value: number;
   description: string;
 }
+
+// ==========================================================
+// 勤怠補正申請
+// ==========================================================
+
+export interface AttendanceCorrection {
+  id: string;
+  organization_id: string;
+  record_id: string;
+  user_id: string;
+  original_clock_in: string | null;
+  original_clock_out: string | null;
+  requested_clock_in: string | null;
+  requested_clock_out: string | null;
+  punch_corrections: Record<string, unknown> | null;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  reviewed_by: string | null;
+  review_comment: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ==========================================================
+// ダッシュボードウィジェット設定
+// ==========================================================
+
+export interface DashboardWidgetConfig {
+  widget_id: string;
+  visible: boolean;
+  sort_order: number;
+}
+
+export interface DashboardWidgetPreference {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  product_tab: "recruiting" | "workspace" | "client";
+  widget_config: DashboardWidgetConfig[];
+  updated_at: string;
+}
+
+// ==========================================================
+// ワークフローテンプレート
+// ==========================================================
+
+export interface WorkflowTemplateField {
+  key: string;
+  label: string;
+  type: "text" | "number" | "date" | "textarea" | "select";
+  required?: boolean;
+  options?: string[];
+}
+
+export interface WorkflowTemplate {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  fields: WorkflowTemplateField[];
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
