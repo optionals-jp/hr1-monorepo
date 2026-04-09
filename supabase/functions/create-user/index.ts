@@ -66,15 +66,13 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // リクエスト元ユーザーの権限チェック（anon keyで検証）
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const callerClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    // service role client を使って JWT を直接検証（ES256 対応）
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    const jwt = authHeader.replace(/^Bearer\s+/i, "");
     const {
       data: { user: caller },
       error: callerError,
-    } = await callerClient.auth.getUser();
+    } = await adminClient.auth.getUser(jwt);
     if (callerError || !caller) {
       return new Response(
         JSON.stringify({ error: "認証に失敗しました" }),
@@ -85,8 +83,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // 呼び出し元がadminロールか確認
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    // 呼び出し元がadminロールか確認（adminClient を再利用）
     const { data: callerProfile } = await adminClient
       .from("profiles")
       .select("role")
