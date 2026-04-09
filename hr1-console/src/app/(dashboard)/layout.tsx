@@ -25,7 +25,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
 
   if (loading || !user || !profile) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-main-pattern">
+      <div className="fixed inset-0 flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.svg" alt="HR1" className="h-8" />
