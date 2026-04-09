@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
 import {
   Table,
@@ -24,13 +26,15 @@ import {
 import { CrmCustomFields } from "@/components/crm/crm-custom-fields";
 import { ActivityTimeline } from "@/components/crm/activity-timeline";
 import { ActivityInputBar } from "@/components/crm/activity-input-bar";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Pencil } from "lucide-react";
+import { ContactEditPanel } from "./contact-edit-panel";
 
 export default function CrmContactDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const [editOpen, setEditOpen] = useState(false);
 
-  const { data: contact, error } = useCrmContact(id);
+  const { data: contact, error, mutate } = useCrmContact(id);
   const { data: deals } = useCrmContactDeals(id);
   const { data: activities, mutate: mutateActivities } = useCrmContactActivities(id);
   const { data: cards } = useCrmContactCards(id);
@@ -44,6 +48,14 @@ export default function CrmContactDetailPage() {
         sticky={false}
         border={false}
         breadcrumb={[{ label: "連絡先", href: "/crm/contacts" }]}
+        action={
+          contact ? (
+            <Button variant="outline" onClick={() => setEditOpen(true)}>
+              <Pencil className="mr-1.5 h-4 w-4" />
+              編集
+            </Button>
+          ) : undefined
+        }
       />
       {error && <QueryErrorBanner error={error} />}
 
@@ -209,6 +221,15 @@ export default function CrmContactDetailPage() {
             </div>
           </div>
         </PageContent>
+      )}
+
+      {contact && (
+        <ContactEditPanel
+          contact={contact}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          onSaved={() => mutate()}
+        />
       )}
     </div>
   );

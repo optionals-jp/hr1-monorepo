@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
 import {
   Table,
@@ -23,13 +25,15 @@ import {
 import { CrmCustomFields } from "@/components/crm/crm-custom-fields";
 import { ActivityInputBar } from "@/components/crm/activity-input-bar";
 import { ActivityTimeline } from "@/components/crm/activity-timeline";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Pencil } from "lucide-react";
+import { CompanyEditPanel } from "./company-edit-panel";
 
 export default function CrmCompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const [editOpen, setEditOpen] = useState(false);
 
-  const { data: company, error } = useCrmCompany(id);
+  const { data: company, error, mutate } = useCrmCompany(id);
   const { data: contacts } = useCrmCompanyContacts(id);
   const { data: deals } = useCrmCompanyDeals(id);
   const { data: activities, mutate: mutateActivities } = useCrmCompanyActivities(id);
@@ -41,6 +45,14 @@ export default function CrmCompanyDetailPage() {
         sticky={false}
         border={false}
         breadcrumb={[{ label: "取引先企業", href: "/crm/companies" }]}
+        action={
+          company ? (
+            <Button variant="outline" onClick={() => setEditOpen(true)}>
+              <Pencil className="mr-1.5 h-4 w-4" />
+              編集
+            </Button>
+          ) : undefined
+        }
       />
       {error && <QueryErrorBanner error={error} />}
 
@@ -202,8 +214,38 @@ export default function CrmCompanyDetailPage() {
                   <ActivityInputBar companyId={id} onAdded={() => mutateActivities()} />
                 </div>
               </div>
+
+              {/* ===== 右カラム (1/3) ===== */}
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">登録情報</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm text-muted-foreground">
+                    <p>登録日: {new Date(company.created_at).toLocaleDateString("ja-JP")}</p>
+                    <p>更新日: {new Date(company.updated_at).toLocaleDateString("ja-JP")}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">サマリー</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm text-muted-foreground">
+                    <p>連絡先: {contacts?.length ?? 0}名</p>
+                    <p>商談: {deals?.length ?? 0}件</p>
+                    <p>活動: {activities?.length ?? 0}件</p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </PageContent>
+
+          <CompanyEditPanel
+            company={company}
+            open={editOpen}
+            onOpenChange={setEditOpen}
+            onSaved={() => mutate()}
+          />
         </>
       )}
     </div>

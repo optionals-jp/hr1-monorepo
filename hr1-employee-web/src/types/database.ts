@@ -1,11 +1,19 @@
+export type ProfileRole = "admin" | "employee" | "applicant" | "manager" | "approver";
+
 export interface Profile {
   id: string;
   email: string;
   display_name: string | null;
-  role: "admin" | "employee" | "applicant";
+  role: ProfileRole;
   organization_id: string | null;
   avatar_url: string | null;
   position: string | null;
+  department: string | null;
+  name_kana: string | null;
+  phone: string | null;
+  hire_date: string | null;
+  birth_date: string | null;
+  gender: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -23,30 +31,6 @@ export interface Organization {
   name: string;
   slug: string;
   logo_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AttendanceRecord {
-  id: string;
-  profile_id: string;
-  organization_id: string;
-  clock_in: string | null;
-  clock_out: string | null;
-  date: string;
-  note: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Task {
-  id: string;
-  title: string;
-  description: string | null;
-  status: "todo" | "in_progress" | "done";
-  assignee_id: string | null;
-  organization_id: string;
-  due_date: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -518,4 +502,477 @@ export interface CrmWebhookLog {
   error_message: string | null;
   executed_at: string;
   crm_webhooks?: CrmWebhook;
+}
+
+// ==========================================================
+// FAQ
+// ==========================================================
+
+export interface Faq {
+  id: string;
+  organization_id: string;
+  question: string;
+  answer: string;
+  category: string;
+  target: "employee" | "applicant" | "both";
+  sort_order: number;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ==========================================================
+// お知らせ
+// ==========================================================
+
+export interface Announcement {
+  id: string;
+  organization_id: string;
+  title: string;
+  body: string;
+  is_pinned: boolean;
+  target: "all" | "employee" | "applicant";
+  published_at: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ==========================================================
+// 通知
+// ==========================================================
+
+export interface AttendancePunch {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  punch_type: "clock_in" | "clock_out" | "break_start" | "break_end";
+  punched_at: string;
+  created_at: string;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  date: string;
+  clock_in: string | null;
+  clock_out: string | null;
+  break_minutes: number;
+  work_minutes: number;
+  overtime_minutes: number;
+  status: "present" | "absent" | "late" | "early_leave" | "paid_leave" | "half_leave" | "holiday";
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LeaveBalance {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  fiscal_year: number;
+  granted_days: number;
+  used_days: number;
+  carried_over_days: number;
+  expired_days: number;
+  grant_date: string;
+  expiry_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShiftRequest {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  target_date: string;
+  is_available: boolean;
+  start_time: string | null;
+  end_time: string | null;
+  note: string | null;
+  submitted_at: string;
+  created_at: string;
+}
+
+export interface ShiftSchedule {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  target_date: string;
+  start_time: string;
+  end_time: string;
+  status: "draft" | "published";
+  published_at: string | null;
+  created_at: string;
+}
+
+export interface ComplianceAlert {
+  id: string;
+  organization_id: string;
+  user_id: string | null;
+  alert_type: string;
+  severity: "critical" | "warning" | "info";
+  title: string;
+  description: string;
+  metadata: Record<string, unknown> | null;
+  is_resolved: boolean;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  created_at: string;
+}
+
+export interface PayslipAllowance {
+  label: string;
+  amount: number;
+}
+
+export interface PayslipDeduction {
+  label: string;
+  amount: number;
+}
+
+export interface Payslip {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  year: number;
+  month: number;
+  base_salary: number;
+  allowances: PayslipAllowance[];
+  deductions: PayslipDeduction[];
+  gross_pay: number;
+  net_pay: number;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WikiPage {
+  id: string;
+  organization_id: string;
+  title: string;
+  content: string;
+  category: string | null;
+  parent_id: string | null;
+  is_published: boolean;
+  created_by: string;
+  updated_by: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  type: string;
+  title: string;
+  startAt: string;
+  endAt: string;
+  durationMin: number;
+  applicantName?: string;
+  applicantEmail?: string;
+  jobTitle?: string;
+  location?: string;
+  status?: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  title: string;
+  body: string;
+  type: string;
+  read_at: string | null;
+  resource_type: string | null;
+  resource_id: string | null;
+  created_at: string;
+}
+
+// ==========================================================
+// サービスリクエスト
+// ==========================================================
+
+export interface ServiceRequest {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  category: string;
+  title: string;
+  description: string;
+  status: "open" | "in_progress" | "closed";
+  created_at: string;
+  updated_at: string;
+}
+
+// ==========================================================
+// タスク
+// ==========================================================
+
+export type TaskStatus = "open" | "in_progress" | "completed" | "cancelled";
+export type TaskPriority = "low" | "medium" | "high" | "urgent";
+
+export interface EmployeeTask {
+  id: string;
+  organization_id: string;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
+  task_assignees?: TaskAssignee[];
+}
+
+export interface TaskAssignee {
+  id: string;
+  task_id: string;
+  user_id: string;
+  status: "pending" | "in_progress" | "completed";
+  completed_at: string | null;
+  created_at: string;
+  profiles?: { display_name: string | null; email: string };
+}
+
+// ==========================================================
+// プロジェクト
+// ==========================================================
+
+export interface Project {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  status: "active" | "completed" | "archived";
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectTeam {
+  id: string;
+  project_id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+}
+
+export interface ProjectTeamMember {
+  id: string;
+  team_id: string;
+  user_id: string;
+  role: "leader" | "member";
+  joined_at: string;
+  created_at: string;
+  profiles?: { display_name: string | null; email: string; avatar_url: string | null };
+}
+
+// ==========================================================
+// サーベイ
+// ==========================================================
+
+export interface PulseSurvey {
+  id: string;
+  organization_id: string;
+  title: string;
+  description: string | null;
+  target: "applicant" | "employee" | "both";
+  status: "draft" | "active" | "closed";
+  deadline: string | null;
+  created_at: string;
+  updated_at: string;
+  question_count?: number;
+}
+
+export interface PulseSurveyQuestion {
+  id: string;
+  survey_id: string;
+  type: "rating" | "text" | "single_choice" | "multiple_choice";
+  label: string;
+  description: string | null;
+  is_required: boolean;
+  options: string[] | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface PulseSurveyResponse {
+  id: string;
+  survey_id: string;
+  organization_id: string;
+  user_id: string;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export interface PulseSurveyAnswer {
+  id: string;
+  response_id: string;
+  question_id: string;
+  value: string;
+  created_at: string;
+}
+
+// ==========================================================
+// ワークフロー申請
+// ==========================================================
+
+export type WorkflowRequestType = "paid_leave" | "overtime" | "business_trip" | "expense";
+export type WorkflowRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
+
+export interface WorkflowRequest {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  request_type: WorkflowRequestType;
+  status: WorkflowRequestStatus;
+  request_data: Record<string, unknown>;
+  reason: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_comment: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ==========================================================
+// 評価
+// ==========================================================
+
+export interface EvaluationCycle {
+  id: string;
+  organization_id: string;
+  title: string;
+  description: string | null;
+  template_id: string;
+  status: "draft" | "active" | "closed" | "calibrating" | "finalized";
+  start_date: string;
+  end_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EvaluationAssignment {
+  id: string;
+  cycle_id: string;
+  target_user_id: string;
+  evaluator_id: string;
+  rater_type: "supervisor" | "peer" | "subordinate" | "self" | "external";
+  evaluation_id: string | null;
+  status: "pending" | "in_progress" | "submitted" | "skipped";
+  due_date: string | null;
+  created_at: string;
+  target_profile?: { display_name: string | null; email: string };
+  evaluator_profile?: { display_name: string | null; email: string };
+}
+
+export interface EvaluationCriterion {
+  id: string;
+  template_id: string;
+  label: string;
+  description: string | null;
+  score_type: "five_star" | "ten_point" | "text" | "select";
+  options: string[] | null;
+  sort_order: number;
+  weight: number;
+}
+
+export interface Evaluation {
+  id: string;
+  organization_id: string;
+  template_id: string;
+  target_user_id: string;
+  evaluator_id: string;
+  cycle_id: string | null;
+  rater_type: string;
+  assignment_id: string | null;
+  status: "draft" | "submitted";
+  overall_comment: string | null;
+  created_at: string;
+  submitted_at: string | null;
+}
+
+export interface EvaluationScore {
+  id: string;
+  evaluation_id: string;
+  criterion_id: string;
+  score: number | null;
+  value: string | null;
+  comment: string | null;
+}
+
+export interface EvaluationAnchor {
+  id: string;
+  criterion_id: string;
+  score_value: number;
+  description: string;
+}
+
+// ==========================================================
+// 勤怠補正申請
+// ==========================================================
+
+export interface AttendanceCorrection {
+  id: string;
+  organization_id: string;
+  record_id: string;
+  user_id: string;
+  original_clock_in: string | null;
+  original_clock_out: string | null;
+  requested_clock_in: string | null;
+  requested_clock_out: string | null;
+  punch_corrections: Record<string, unknown> | null;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  reviewed_by: string | null;
+  review_comment: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ==========================================================
+// ダッシュボードウィジェット設定
+// ==========================================================
+
+export interface DashboardWidgetConfig {
+  widget_id: string;
+  visible: boolean;
+  sort_order: number;
+}
+
+export interface DashboardWidgetPreference {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  product_tab: "recruiting" | "workspace" | "client";
+  widget_config: DashboardWidgetConfig[];
+  updated_at: string;
+}
+
+// ==========================================================
+// ワークフローテンプレート
+// ==========================================================
+
+export interface WorkflowTemplateField {
+  key: string;
+  label: string;
+  type: "text" | "number" | "date" | "textarea" | "select";
+  required?: boolean;
+  options?: string[];
+}
+
+export interface WorkflowTemplate {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  fields: WorkflowTemplateField[];
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }

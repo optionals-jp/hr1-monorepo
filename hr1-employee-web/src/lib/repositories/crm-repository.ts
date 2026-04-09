@@ -196,6 +196,28 @@ export async function fetchContactsByCompany(
   return (data ?? []) as BcContact[];
 }
 
+export async function createContact(
+  client: SupabaseClient,
+  data: Partial<BcContact> & { organization_id: string; last_name: string }
+) {
+  const { error } = await client.from("bc_contacts").insert(data);
+  if (error) throw error;
+}
+
+export async function updateContact(
+  client: SupabaseClient,
+  id: string,
+  organizationId: string,
+  data: Partial<BcContact>
+) {
+  const { error } = await client
+    .from("bc_contacts")
+    .update(data)
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+  if (error) throw error;
+}
+
 export async function deleteContact(client: SupabaseClient, id: string, organizationId: string) {
   const { error } = await client
     .from("bc_contacts")

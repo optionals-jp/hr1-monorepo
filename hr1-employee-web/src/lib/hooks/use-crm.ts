@@ -12,7 +12,7 @@ import * as quoteRepository from "@/lib/repositories/quote-repository";
 import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
 import { dealStageProbability } from "@/lib/constants";
 import { fireTrigger } from "@/lib/automation/engine";
-import type { BcCompany, BcDeal, BcLead } from "@/types/database";
+import type { BcCompany, BcContact, BcDeal, BcLead } from "@/types/database";
 
 // --- Dashboard ---
 export function useCrmDeals() {
@@ -244,6 +244,150 @@ export function useCrmQuote(id: string) {
   return useQuery(organization ? `crm-quote-${organization.id}-${id}` : null, () =>
     quoteRepository.fetchQuote(getSupabase(), id, organization!.id)
   );
+}
+
+// --- Contact Mutations ---
+export async function saveContact(params: {
+  organizationId: string;
+  data: Record<string, unknown>;
+}): Promise<{ success: boolean; error?: string }> {
+  const client = getSupabase();
+  const { data } = params;
+  try {
+    const commonFields = {
+      last_name: data.last_name as string,
+      first_name: (data.first_name as string) || null,
+      email: (data.email as string) || null,
+      phone: (data.phone as string) || null,
+      mobile_phone: (data.mobile_phone as string) || null,
+      company_id: (data.company_id as string) || null,
+      department: (data.department as string) || null,
+      position: (data.position as string) || null,
+      notes: (data.notes as string) || null,
+    };
+    if (data.id) {
+      await repository.updateContact(
+        client,
+        data.id as string,
+        params.organizationId,
+        commonFields
+      );
+    } else {
+      await repository.createContact(client, {
+        organization_id: params.organizationId,
+        ...commonFields,
+      });
+    }
+    return { success: true };
+  } catch (err) {
+    console.error("saveContact failed:", err);
+    return { success: false, error: "保存に失敗しました" };
+  }
+}
+
+export async function removeContact(
+  id: string,
+  organizationId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await repository.deleteContact(getSupabase(), id, organizationId);
+    return { success: true };
+  } catch (err) {
+    console.error("removeContact failed:", err);
+    return { success: false, error: "削除に失敗しました" };
+  }
+}
+
+export function useCrmContactsPage() {
+  const { organization } = useOrg();
+  const [search, setSearch] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editData, setEditData] = useState<Partial<BcContact>>({});
+  const [errors, setErrors] = useState<ValidationErrors | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const { data: contacts, error, mutate } = useCrmContacts();
+
+  const filtered = (contacts ?? []).filter((c) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    const fullName = `${c.last_name}${c.first_name ?? ""}`.toLowerCase();
+    return (
+      fullName.includes(q) ||
+      c.email?.toLowerCase().includes(q) ||
+      c.bc_companies?.name.toLowerCase().includes(q)
+    );
+  });
+
+  const openCreate = () => {
+    setEditData({});
+    setErrors(null);
+    setEditOpen(true);
+  };
+
+  const handleSave = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    if (!organization || saving) return;
+    const rules = { last_name: [validators.required("姓")] };
+    const validationErrors = validateForm(rules, editData);
+    if (validationErrors) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const result = await saveContact({
+        organizationId: organization.id,
+        data: editData,
+      });
+      if (result.success) {
+        showToast(editData.id ? "連絡先を更新しました" : "連絡先を登録しました");
+        setEditOpen(false);
+        mutate();
+      } else {
+        showToast(result.error!, "error");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (showToast: (msg: string, type?: "success" | "error") => void) => {
+    if (!editData.id || !organization || deleting) return;
+    setDeleting(true);
+    try {
+      const result = await removeContact(editData.id, organization.id);
+      if (result.success) {
+        showToast("連絡先を削除しました");
+        setEditOpen(false);
+        mutate();
+      } else {
+        showToast(result.error!, "error");
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return {
+    search,
+    setSearch,
+    editOpen,
+    setEditOpen,
+    editData,
+    setEditData,
+    errors,
+    contacts,
+    error,
+    filtered,
+    openCreate,
+    handleSave,
+    handleDelete,
+    saving,
+    deleting,
+    mutate,
+  };
 }
 
 // --- Mutations ---

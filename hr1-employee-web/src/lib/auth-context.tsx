@@ -33,7 +33,8 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
     .single();
 
   if (error || !data) return null;
-  if (data.role !== "employee" && data.role !== "admin") return null;
+  const allowedRoles = ["employee", "admin", "manager", "approver"];
+  if (!allowedRoles.includes(data.role)) return null;
   return data;
 }
 
