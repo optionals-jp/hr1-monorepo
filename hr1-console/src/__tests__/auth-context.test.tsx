@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { ReactNode } from "react";
+import { AuthEvent } from "@hr1/shared-ui/lib/auth-events";
 
 // vi.hoisted で vi.mock ファクトリーから参照可能なモックを定義
 const mockSupabase = vi.hoisted(() => {
@@ -20,7 +21,7 @@ const mockSupabase = vi.hoisted(() => {
       onAuthStateChange: vi
         .fn()
         .mockImplementation((cb: (event: string, session: unknown) => void) => {
-          Promise.resolve().then(() => cb("INITIAL_SESSION", null));
+          Promise.resolve().then(() => cb(AuthEvent.INITIAL_SESSION, null));
           return { data: { subscription: { unsubscribe: vi.fn() } } };
         }),
     },
@@ -68,7 +69,7 @@ describe("AuthProvider", () => {
     );
     mockSupabase.auth.onAuthStateChange.mockImplementation(
       (cb: (event: string, session: unknown) => void) => {
-        Promise.resolve().then(() => cb("INITIAL_SESSION", null));
+        Promise.resolve().then(() => cb(AuthEvent.INITIAL_SESSION, null));
         return { data: { subscription: { unsubscribe: vi.fn() } } };
       }
     );
@@ -167,7 +168,7 @@ describe("AuthProvider", () => {
     mockSupabase.auth.onAuthStateChange.mockImplementation(
       (cb: (event: string, session: unknown) => void) => {
         authCb = cb;
-        Promise.resolve().then(() => cb("INITIAL_SESSION", null));
+        Promise.resolve().then(() => cb(AuthEvent.INITIAL_SESSION, null));
         return { data: { subscription: { unsubscribe: vi.fn() } } };
       }
     );
@@ -178,7 +179,7 @@ describe("AuthProvider", () => {
     mockProfileQuery({ role: "admin", id: "user-1", email: "admin@example.com" });
 
     await act(async () => {
-      authCb!("SIGNED_IN", { user: { id: "user-1", email: "admin@example.com" } });
+      authCb!(AuthEvent.SIGNED_IN, { user: { id: "user-1", email: "admin@example.com" } });
     });
 
     await waitFor(() => {
@@ -190,10 +191,12 @@ describe("AuthProvider", () => {
   it("signOut: user と profile がクリアされる", async () => {
     // セッションありの初期状態を作る
     mockProfileQuery({ role: "admin", id: "user-1", email: "admin@example.com" });
+    let authCb: ((event: string, session: unknown) => void) | null = null;
     mockSupabase.auth.onAuthStateChange.mockImplementation(
       (cb: (event: string, session: unknown) => void) => {
+        authCb = cb;
         Promise.resolve().then(() =>
-          cb("INITIAL_SESSION", { user: { id: "user-1", email: "admin@example.com" } })
+          cb(AuthEvent.INITIAL_SESSION, { user: { id: "user-1", email: "admin@example.com" } })
         );
         return { data: { subscription: { unsubscribe: vi.fn() } } };
       }
@@ -209,9 +212,65 @@ describe("AuthProvider", () => {
       await result.current.signOut();
     });
 
+    expect(mockSupabase.auth.signOut).toHaveBeenCalled();
+
+    // signOut() で signingOut=true → SIGNED_OUT イベントではリダイレクトしない
+    await act(async () => {
+      authCb!(AuthEvent.SIGNED_OUT, null);
+    });
+
     expect(result.current.user).toBeNull();
     expect(result.current.profile).toBeNull();
-    expect(mockSupabase.auth.signOut).toHaveBeenCalled();
+  });
+
+  it("signOut 後に signingOut フラグがリセットされ、セッション失効でリダイレクトする", async () => {
+    mockProfileQuery({ role: "admin", id: "user-1", email: "admin@example.com" });
+    let authCb: ((event: string, session: unknown) => void) | null = null;
+    mockSupabase.auth.onAuthStateChange.mockImplementation(
+      (cb: (event: string, session: unknown) => void) => {
+        authCb = cb;
+        Promise.resolve().then(() =>
+          cb(AuthEvent.INITIAL_SESSION, { user: { id: "user-1", email: "admin@example.com" } })
+        );
+        return { data: { subscription: { unsubscribe: vi.fn() } } };
+      }
+    );
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.user).not.toBeNull();
+    });
+
+    // signOut → SIGNED_OUT でフラグリセット
+    await act(async () => {
+      await result.current.signOut();
+    });
+    await act(async () => {
+      authCb!(AuthEvent.SIGNED_OUT, null);
+    });
+
+    // フラグリセット後、セッション失効による SIGNED_OUT では /login リダイレクトが発動する
+    const originalLocation = window.location;
+    delete (window as { location?: unknown }).location;
+    Object.defineProperty(window, "location", {
+      value: { href: "" },
+      writable: true,
+      configurable: true,
+    });
+
+    await act(async () => {
+      authCb!(AuthEvent.SIGNED_OUT, null);
+    });
+
+    expect(window.location.href).toBe("/login");
+
+    // window.location を復元
+    Object.defineProperty(window, "location", {
+      value: originalLocation,
+      writable: true,
+      configurable: true,
+    });
   });
 });
 

@@ -10,6 +10,7 @@ import {
   ReactNode,
 } from "react";
 import { getSupabase } from "./supabase";
+import { AuthEvent } from "@hr1/shared-ui/lib/auth-events";
 import type { Profile } from "@/types/database";
 
 interface AuthContextValue {
@@ -44,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const signingIn = useRef(false);
+  const signingOut = useRef(false);
 
   useEffect(() => {
     const {
@@ -60,13 +62,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setProfile(null);
         setLoading(false);
+        if (
+          event === AuthEvent.SIGNED_OUT &&
+          !signingOut.current &&
+          typeof window !== "undefined"
+        ) {
+          window.location.href = "/login";
+        }
+        signingOut.current = false;
         return;
       }
 
       const sessionUser = session.user;
 
       // TOKEN_REFRESHED ではプロフィール再取得不要（セッション維持のみ）
-      if (event === "TOKEN_REFRESHED") {
+      if (event === AuthEvent.TOKEN_REFRESHED) {
         setUser((prev) =>
           prev?.id === sessionUser.id
             ? prev
@@ -78,14 +88,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // INITIAL_SESSION / SIGNED_IN でのみプロフィール取得
       fetchProfile(sessionUser.id)
-        .then((prof) => {
+        .then(async (prof) => {
           if (prof) {
             setUser({ id: sessionUser.id, email: sessionUser.email ?? "" });
             setProfile(prof);
           } else {
-            getSupabase().auth.signOut();
-            setUser(null);
-            setProfile(null);
+            await getSupabase().auth.signOut();
           }
         })
         .catch(() => {
@@ -132,9 +140,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    signingOut.current = true;
     await getSupabase().auth.signOut();
-    setUser(null);
-    setProfile(null);
   }, []);
 
   return (
