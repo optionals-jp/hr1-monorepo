@@ -6,6 +6,7 @@ export interface Profile {
   organization_id: string | null;
   avatar_url: string | null;
   position: string | null;
+  department: string | null;
   created_at: string;
   updated_at: string;
 }

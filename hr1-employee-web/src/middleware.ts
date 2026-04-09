@@ -87,6 +87,23 @@ function setProductCookie(request: NextRequest, response: NextResponse, product:
   response.cookies.set(PRODUCT_COOKIE, product, { path: "/", sameSite: "lax", domain });
 }
 
+function applySecurityHeaders(response: NextResponse) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const isDev = process.env.NODE_ENV === "development";
+
+  const cspDirectives = [
+    "default-src 'self'",
+    `script-src 'self'${isDev ? " 'unsafe-eval' 'unsafe-inline'" : " 'unsafe-inline'"}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' https://fonts.gstatic.com",
+    `connect-src 'self' ${supabaseUrl} wss://*.supabase.co${isDev ? " ws://localhost:*" : ""}`,
+    "frame-ancestors 'none'",
+  ];
+
+  response.headers.set("Content-Security-Policy", cspDirectives.join("; "));
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const product = detectProduct(request);
@@ -94,6 +111,7 @@ export async function middleware(request: NextRequest) {
   if (PUBLIC_PATHS.has(pathname)) {
     const { response } = createSupabaseMiddlewareClient(request);
     setProductCookie(request, response, product);
+    applySecurityHeaders(response);
     return response;
   }
 
@@ -102,6 +120,7 @@ export async function middleware(request: NextRequest) {
     const dashboardUrl = new URL("/dashboard", request.url);
     const redirectResponse = NextResponse.redirect(dashboardUrl);
     setProductCookie(request, redirectResponse, product);
+    applySecurityHeaders(redirectResponse);
     return redirectResponse;
   }
 
@@ -116,6 +135,7 @@ export async function middleware(request: NextRequest) {
     const loginUrl = new URL("/login", request.url);
     const redirectResponse = NextResponse.redirect(loginUrl);
     setProductCookie(request, redirectResponse, product);
+    applySecurityHeaders(redirectResponse);
     return redirectResponse;
   }
 
@@ -134,10 +154,12 @@ export async function middleware(request: NextRequest) {
       redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
     }
     setProductCookie(request, redirectResponse, product);
+    applySecurityHeaders(redirectResponse);
     return redirectResponse;
   }
 
   setProductCookie(request, response, product);
+  applySecurityHeaders(response);
   return response;
 }
 

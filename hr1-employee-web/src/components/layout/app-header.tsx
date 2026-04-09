@@ -74,7 +74,6 @@ export function AppHeader() {
               return (
                 <DropdownMenuItem
                   key={p.value}
-                  asChild={product !== p.value}
                   className={cn(
                     "group gap-3 rounded-lg px-3 py-2.5 text-[14px] cursor-pointer",
                     product === p.value && "bg-accent font-medium"
