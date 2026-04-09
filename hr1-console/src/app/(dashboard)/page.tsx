@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
-import { useProductTab } from "@/components/layout/sidebar";
+import { useDashboardTab, saveDashboardTab, type ProductTab } from "@/components/layout/sidebar";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { DashboardGrid } from "@/components/dashboard/dashboard-grid";
 import type { DashboardData } from "@/components/dashboard/widget-renderer";
@@ -13,6 +13,13 @@ import {
   DEFAULT_CLIENT_WIDGETS,
 } from "@/lib/dashboard/defaults";
 import { Settings2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const dashboardTabs: { value: ProductTab; label: string }[] = [
+  { value: "recruiting", label: "採用" },
+  { value: "workspace", label: "組織" },
+  { value: "client", label: "CRM" },
+];
 
 function DashboardSkeleton() {
   return (
@@ -25,7 +32,7 @@ function DashboardSkeleton() {
 }
 
 export default function DashboardPage() {
-  const activeTab = useProductTab();
+  const activeTab = useDashboardTab();
   const {
     stats,
     statsError,
@@ -122,6 +129,25 @@ export default function DashboardPage() {
             <Settings2 className="h-4 w-4" />
             カスタマイズ
           </Link>
+        </div>
+
+        {/* ダッシュボードタブ */}
+        <div className="flex gap-1 border-b">
+          {dashboardTabs.map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => saveDashboardTab(tab.value)}
+              className={cn(
+                "px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
+                activeTab === tab.value
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {isLoading ? (

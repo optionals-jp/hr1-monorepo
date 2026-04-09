@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useSyncExternalStore } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -27,8 +27,6 @@ import {
   ShieldAlert,
   Megaphone,
   BookOpen,
-  CreditCard,
-  Handshake,
   Zap,
   Mail,
   Webhook,
@@ -62,10 +60,10 @@ interface NavSection {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Navigation definitions per product                                 */
+/*  Unified navigation sections                                        */
 /* ------------------------------------------------------------------ */
 
-const recruitingSections: NavSection[] = [
+const unifiedSections: NavSection[] = [
   {
     labelKey: "nav.section.recruitment",
     items: [
@@ -81,24 +79,6 @@ const recruitingSections: NavSection[] = [
       { href: "/forms", labelKey: "nav.forms", icon: FileText, resource: "forms" },
     ],
   },
-  {
-    labelKey: "nav.section.common",
-    items: [
-      { href: "/evaluations", labelKey: "nav.evaluations", icon: Star, resource: "evaluations" },
-      { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, resource: "calendar" },
-      { href: "/tasks", labelKey: "nav.tasks", icon: ListTodo, resource: "tasks" },
-      {
-        href: "/announcements",
-        labelKey: "nav.announcements",
-        icon: Megaphone,
-        resource: "announcements",
-      },
-      { href: "/faqs", labelKey: "nav.faqs", icon: CircleHelp, resource: "faqs" },
-    ],
-  },
-];
-
-const workspaceSections: NavSection[] = [
   {
     labelKey: "nav.section.internal",
     items: [
@@ -116,27 +96,6 @@ const workspaceSections: NavSection[] = [
       { href: "/payslips", labelKey: "nav.payslips", icon: Receipt, resource: "payslips" },
     ],
   },
-  {
-    labelKey: "nav.section.common",
-    items: [
-      { href: "/evaluations", labelKey: "nav.evaluations", icon: Star, resource: "evaluations" },
-      { href: "/projects", labelKey: "nav.projects", icon: FolderKanban, resource: "projects" },
-      { href: "/tasks", labelKey: "nav.tasks", icon: ListTodo, resource: "tasks" },
-      { href: "/surveys", labelKey: "nav.surveys", icon: HeartPulse, resource: "surveys" },
-      { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, resource: "calendar" },
-      {
-        href: "/announcements",
-        labelKey: "nav.announcements",
-        icon: Megaphone,
-        resource: "announcements",
-      },
-      { href: "/faqs", labelKey: "nav.faqs", icon: CircleHelp, resource: "faqs" },
-      { href: "/wiki", labelKey: "nav.wiki", icon: BookOpen, resource: "wiki" },
-    ],
-  },
-];
-
-const clientSections: NavSection[] = [
   {
     labelKey: "nav.section.crm",
     items: [
@@ -175,54 +134,28 @@ const clientSections: NavSection[] = [
   {
     labelKey: "nav.section.common",
     items: [
-      { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, resource: "calendar" },
+      { href: "/evaluations", labelKey: "nav.evaluations", icon: Star, resource: "evaluations" },
+      { href: "/projects", labelKey: "nav.projects", icon: FolderKanban, resource: "projects" },
       { href: "/tasks", labelKey: "nav.tasks", icon: ListTodo, resource: "tasks" },
+      { href: "/surveys", labelKey: "nav.surveys", icon: HeartPulse, resource: "surveys" },
+      { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, resource: "calendar" },
+      {
+        href: "/announcements",
+        labelKey: "nav.announcements",
+        icon: Megaphone,
+        resource: "announcements",
+      },
+      { href: "/faqs", labelKey: "nav.faqs", icon: CircleHelp, resource: "faqs" },
+      { href: "/wiki", labelKey: "nav.wiki", icon: BookOpen, resource: "wiki" },
     ],
   },
 ];
 
-const sectionsByTab: Record<ProductTab, NavSection[]> = {
-  recruiting: recruitingSections,
-  workspace: workspaceSections,
-  client: clientSections,
-};
-
-export const dashboardByTab: Record<ProductTab, string> = {
-  recruiting: "/",
-  workspace: "/",
-  client: "/",
-};
-
 /* ------------------------------------------------------------------ */
-/*  Tab detection from URL path                                        */
+/*  Dashboard tab (used only by dashboard settings page)               */
 /* ------------------------------------------------------------------ */
 
-const RECRUITING_ONLY_PATHS = ["/applicants", "/jobs", "/applications", "/scheduling", "/forms"];
-const CLIENT_ONLY_PATHS = ["/crm"];
-const WORKSPACE_ONLY_PATHS = [
-  "/employees",
-  "/departments",
-  "/attendance",
-  "/shifts",
-  "/workflows",
-  "/leave",
-  "/payslips",
-  "/projects",
-  "/surveys",
-  "/wiki",
-];
-// 複数タブに存在するパス — localStorage から最後のタブを復元
-const SHARED_PATHS = [
-  "/messages",
-  "/calendar",
-  "/tasks",
-  "/evaluations",
-  "/announcements",
-  "/faqs",
-];
 const STORAGE_KEY = "hr1-product-tab";
-
-/* ---- useSyncExternalStore で localStorage を SSR 安全に共有 ---- */
 
 const tabListeners = new Set<() => void>();
 function emitTabChange() {
@@ -243,46 +176,16 @@ function getTabServerSnapshot(): ProductTab {
   return "recruiting";
 }
 
-export function saveProductTab(tab: ProductTab) {
+export function saveDashboardTab(tab: ProductTab) {
   if (typeof window !== "undefined") {
     localStorage.setItem(STORAGE_KEY, tab);
     emitTabChange();
   }
 }
 
-export function useProductTab(): ProductTab {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const savedTab = useSyncExternalStore(subscribeTab, getTabSnapshot, getTabServerSnapshot);
-
-  // 1. URL パスで一意に判定できるルート
-  if (CLIENT_ONLY_PATHS.some((p) => pathname.startsWith(p))) return "client";
-  if (RECRUITING_ONLY_PATHS.some((p) => pathname.startsWith(p))) return "recruiting";
-  if (WORKSPACE_ONLY_PATHS.some((p) => pathname.startsWith(p))) return "workspace";
-
-  // 2. ?product= search param（タブ切替時に付与）
-  const paramProduct = searchParams.get("product");
-  if (paramProduct === "recruiting" || paramProduct === "workspace" || paramProduct === "client") {
-    return paramProduct;
-  }
-
-  // 3. 共通パスやダッシュボード（/）は localStorage から復元
-  if (pathname === "/" || SHARED_PATHS.some((p) => pathname.startsWith(p))) {
-    return savedTab;
-  }
-
-  return "recruiting";
+export function useDashboardTab(): ProductTab {
+  return useSyncExternalStore(subscribeTab, getTabSnapshot, getTabServerSnapshot);
 }
-
-export const productTabDefs: {
-  value: ProductTab;
-  labelKey: string;
-  icon: React.ElementType;
-}[] = [
-  { value: "recruiting", labelKey: "nav.tab.recruiting", icon: UserPlus },
-  { value: "workspace", labelKey: "nav.tab.workspace", icon: Briefcase },
-  { value: "client", labelKey: "nav.tab.client", icon: Handshake },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar collapse state (localStorage + useSyncExternalStore)       */
@@ -328,16 +231,13 @@ export function SidebarNav({
   collapsed?: boolean;
 }) {
   const pathname = usePathname();
-  const activeTab = useProductTab();
   const { can } = usePermissionSidebar();
-  const rawSections: NavSection[] = sectionsByTab[activeTab];
-  const sections = rawSections
+  const sections = unifiedSections
     .map((s) => ({
       ...s,
       items: s.items.filter((item) => !item.resource || can(item.resource, "view")),
     }))
     .filter((s) => s.items.length > 0);
-  const dashboardHref: string = dashboardByTab[activeTab];
 
   const resolvedSections = sections.map((s) => ({
     label: t(s.labelKey),
@@ -355,16 +255,16 @@ export function SidebarNav({
         {/* ダッシュボード（常にトップ） */}
         <div className="space-y-0.5">
           <NavLink
-            href={dashboardHref}
+            href="/"
             label={t("nav.dashboard")}
-            icon={activeTab === "client" ? CreditCard : LayoutDashboard}
+            icon={LayoutDashboard}
             pathname={pathname}
             onNavigate={onNavigate}
             collapsed={collapsed}
           />
         </div>
 
-        {/* タブ別セクション */}
+        {/* 統合セクション */}
         {resolvedSections.map((section) => (
           <CollapsibleSection
             key={section.label}
