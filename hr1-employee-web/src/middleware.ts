@@ -145,7 +145,8 @@ export async function middleware(request: NextRequest) {
     .eq("id", user.id)
     .single();
 
-  if (!profile || (profile.role !== "employee" && profile.role !== "admin")) {
+  const allowedRoles = ["employee", "admin", "manager", "approver"];
+  if (!profile || !allowedRoles.includes(profile.role)) {
     await supabase.auth.signOut();
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("error", "unauthorized");

@@ -38,3 +38,29 @@ export function useMyWorkflows() {
 
   return { ...result, createRequest, cancelRequest };
 }
+
+export function usePendingApprovals() {
+  const { user } = useAuth();
+  const { organization } = useOrg();
+  const key = user && organization ? `pending-approvals-${organization.id}` : null;
+
+  const result = useQuery<
+    (WorkflowRequest & { requester?: { display_name: string | null; email: string } })[]
+  >(key, () => workflowRepo.fetchPendingRequests(getSupabase(), organization!.id));
+
+  const reviewRequest = async (
+    requestId: string,
+    requestType: string,
+    status: "approved" | "rejected",
+    comment: string | null
+  ) => {
+    if (requestType === "paid_leave" && status === "approved") {
+      await workflowRepo.approveLeaveRequest(getSupabase(), requestId, user!.id, comment);
+    } else {
+      await workflowRepo.reviewRequest(getSupabase(), requestId, user!.id, status, comment);
+    }
+    result.mutate();
+  };
+
+  return { ...result, reviewRequest };
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
@@ -33,6 +34,7 @@ const raterTypeLabels: Record<string, string> = {
 };
 
 export default function EvaluationsPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const {
     data: cycles = [],
@@ -118,7 +120,19 @@ export default function EvaluationsPage() {
                         </h3>
                         <div className="divide-y rounded-lg border">
                           {myToEvaluate.map((a) => (
-                            <div key={a.id} className="flex items-center gap-3 px-4 py-3">
+                            <div
+                              key={a.id}
+                              className={cn(
+                                "flex items-center gap-3 px-4 py-3",
+                                a.status !== "skipped" &&
+                                  "cursor-pointer hover:bg-accent/30 transition-colors"
+                              )}
+                              onClick={() => {
+                                if (a.status !== "skipped") {
+                                  router.push(`/evaluations/${a.id}`);
+                                }
+                              }}
+                            >
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium">
                                   {a.target_profile?.display_name ??

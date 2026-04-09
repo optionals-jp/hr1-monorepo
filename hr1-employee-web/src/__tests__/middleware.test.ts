@@ -77,6 +77,26 @@ describe("middleware", () => {
     expect(response.status).toBe(200);
   });
 
+  it("manager ロールのリクエストは通過する", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-m1" } },
+    });
+    createProfileQuery("manager");
+
+    const response = await middleware(createRequest("/dashboard"));
+    expect(response.status).toBe(200);
+  });
+
+  it("approver ロールのリクエストは通過する", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-a1" } },
+    });
+    createProfileQuery("approver");
+
+    const response = await middleware(createRequest("/dashboard"));
+    expect(response.status).toBe(200);
+  });
+
   it("applicant ロールは /login?error=unauthorized にリダイレクトされる", async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: "user-3" } },

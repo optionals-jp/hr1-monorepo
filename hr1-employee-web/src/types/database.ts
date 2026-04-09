@@ -1,12 +1,19 @@
+export type ProfileRole = "admin" | "employee" | "applicant" | "manager" | "approver";
+
 export interface Profile {
   id: string;
   email: string;
   display_name: string | null;
-  role: "admin" | "employee" | "applicant";
+  role: ProfileRole;
   organization_id: string | null;
   avatar_url: string | null;
   position: string | null;
   department: string | null;
+  name_kana: string | null;
+  phone: string | null;
+  hire_date: string | null;
+  birth_date: string | null;
+  gender: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -895,4 +902,11 @@ export interface EvaluationScore {
   score: number | null;
   value: string | null;
   comment: string | null;
+}
+
+export interface EvaluationAnchor {
+  id: string;
+  criterion_id: string;
+  score_value: number;
+  description: string;
 }
