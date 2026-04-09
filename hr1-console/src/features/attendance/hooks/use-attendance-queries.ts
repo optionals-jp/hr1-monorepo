@@ -4,7 +4,6 @@ import { getSupabase } from "@/lib/supabase/browser";
 import { useOrg } from "@/lib/org-context";
 import { useQuery } from "@/lib/use-query";
 import * as attendanceRepo from "@/lib/repositories/attendance-repository";
-import { getCurrentUserId } from "@/lib/get-current-user-id";
 import type { AttendancePunch } from "@/types/database";
 import type {
   MonthlySummaryRow,
@@ -82,10 +81,10 @@ export async function reviewCorrection(
   reviewComment: string | null,
   recordId: string,
   requestedClockIn: string | null,
-  requestedClockOut: string | null
+  requestedClockOut: string | null,
+  userId: string
 ) {
   const client = getSupabase();
-  const userId = await getCurrentUserId();
 
   await attendanceRepo.reviewCorrection(
     client,

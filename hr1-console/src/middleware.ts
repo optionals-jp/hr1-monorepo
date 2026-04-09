@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createSupabaseMiddlewareClient } from "@/lib/supabase/middleware";
+import { getCachedRole, setCachedRole, clearCachedRole } from "@hr1/shared-ui/lib/role-cache";
 
 const PUBLIC_PATHS = new Set(["/login", "/signup"]);
 
@@ -14,36 +15,48 @@ export async function middleware(request: NextRequest) {
 
   const { supabase, response } = createSupabaseMiddlewareClient(request);
 
-  // セッション検証（トークンリフレッシュも行われる）
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // セッション検証
+  // 非本番: getSession()（ローカルJWT検証のみ、API呼び出しなし）
+  // 本番: getUser()（サーバーサイド検証、失効セッション検知あり）
+  const user =
+    process.env.NODE_ENV !== "production"
+      ? ((await supabase.auth.getSession()).data.session?.user ?? null)
+      : ((await supabase.auth.getUser()).data.user ?? null);
 
   if (!user) {
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
   }
 
-  // サーバーサイドでロールチェック
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  // ロールチェック（HMAC署名付きcookieキャッシュ）
+  let role = await getCachedRole(request, user.id);
+  let roleFreshlyFetched = false;
 
-  if (!profile || (profile.role !== "admin" && profile.role !== "employee")) {
-    // 不正なロール → サインアウトしてログインへリダイレクト
+  if (!role) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    role = profile?.role ?? null;
+    roleFreshlyFetched = true;
+  }
+
+  if (!role || (role !== "admin" && role !== "employee")) {
     await supabase.auth.signOut();
+    clearCachedRole(response);
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("error", "unauthorized");
     const redirectResponse = NextResponse.redirect(loginUrl);
-    // signOut で設定された Cookie を redirect レスポンスにコピー
     for (const cookie of response.cookies.getAll()) {
       redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
     }
     return redirectResponse;
   }
 
+  if (roleFreshlyFetched) {
+    await setCachedRole(response, user.id, role);
+  }
   return response;
 }
 

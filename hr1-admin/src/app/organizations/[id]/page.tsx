@@ -2,8 +2,16 @@
 
 import { use } from "react";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
-import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@hr1/shared-ui/components/ui/card";
+import {
+  PageHeader,
+  PageContent,
+} from "@hr1/shared-ui/components/layout/page-header";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";

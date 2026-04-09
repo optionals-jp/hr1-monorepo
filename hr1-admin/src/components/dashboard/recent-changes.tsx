@@ -1,6 +1,11 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@hr1/shared-ui/components/ui/card";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";

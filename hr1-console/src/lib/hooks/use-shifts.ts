@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { useOrg } from "@/lib/org-context";
+import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as shiftRepository from "@/lib/repositories/shift-repository";
 import type { ShiftRequest, ShiftSchedule } from "@/types/database";
@@ -28,6 +29,7 @@ export type { TabValue, RequestWithProfile, ScheduleWithProfile, Employee };
 
 export function useShifts() {
   const { organization } = useOrg();
+  const { user } = useAuth();
   const orgId = organization?.id ?? null;
 
   const now = new Date();
@@ -109,11 +111,9 @@ export function useShifts() {
 
   const publish = async (organizationId: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const sb = getSupabase();
-      const userId = (await sb.auth.getUser()).data.user?.id;
       await shiftRepository.publishDrafts(getSupabase(), {
         organizationId,
-        publishedBy: userId,
+        publishedBy: user?.id,
         ym,
         totalDays,
       });

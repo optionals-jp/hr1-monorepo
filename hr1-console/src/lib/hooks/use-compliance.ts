@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useOrg } from "@/lib/org-context";
+import { useAuth } from "@/lib/auth-context";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repository from "@/lib/repositories/compliance-repository";
@@ -12,6 +13,7 @@ export function useComplianceAlerts() {
 
 export function useCompliancePage() {
   const { organization } = useOrg();
+  const { user } = useAuth();
   const [running, setRunning] = useState(false);
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
   const [filterType, setFilterType] = useState<string>("all");
@@ -64,7 +66,7 @@ export function useCompliancePage() {
   };
 
   const handleResolve = async (alertId: string): Promise<{ success: boolean; error?: string }> => {
-    const result = await resolveAlert(alertId, organization!.id);
+    const result = await resolveAlert(alertId, organization!.id, user!.id);
     if (!result.success) {
       return { success: false, error: result.error };
     }
@@ -100,9 +102,9 @@ export async function runComplianceCheck(
 
 export async function resolveAlert(
   alertId: string,
-  organizationId: string
+  organizationId: string,
+  userId: string | null
 ): Promise<{ success: boolean; error?: string }> {
-  const userId = (await getSupabase().auth.getUser()).data.user?.id ?? null;
   const { error } = await repository.resolve(getSupabase(), alertId, organizationId, userId);
   if (error) return { success: false, error: "更新に失敗しました" };
   return { success: true };

@@ -240,6 +240,7 @@ export async function saveFormEdit(
   form: CustomForm,
   originalFields: FormField[],
   orgId: string,
+  userId: string,
   editTitle: string,
   editTarget: string,
   editDescription: string,
@@ -345,8 +346,6 @@ export async function saveFormEdit(
     }
 
     if (fieldLogs.length > 0) {
-      const userId = await repo.getCurrentUserId(client);
-      if (!userId) throw new Error("認証ユーザーが取得できません");
       await repo.insertAuditLogs(
         client,
         fieldLogs.map((log) => ({

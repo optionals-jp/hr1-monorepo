@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createSupabaseMiddlewareClient } from "@/lib/supabase/middleware";
 import { type Product, PRODUCT_COOKIE, detectProductFromHost, isValidProduct } from "@/lib/product";
+import { getCachedRole, setCachedRole, clearCachedRole } from "@hr1/shared-ui/lib/role-cache";
 
 const PUBLIC_PATHS = new Set(["/login"]);
 
@@ -127,9 +128,13 @@ export async function middleware(request: NextRequest) {
   // --- 認証 ---
   const { supabase, response } = createSupabaseMiddlewareClient(request);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // セッション検証
+  // 非本番: getSession()（ローカルJWT検証のみ、API呼び出しなし）
+  // 本番: getUser()（サーバーサイド検証、失効セッション検知あり）
+  const user =
+    process.env.NODE_ENV !== "production"
+      ? ((await supabase.auth.getSession()).data.session?.user ?? null)
+      : ((await supabase.auth.getUser()).data.user ?? null);
 
   if (!user) {
     const loginUrl = new URL("/login", request.url);
@@ -139,15 +144,24 @@ export async function middleware(request: NextRequest) {
     return redirectResponse;
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  // ロールチェック（HMAC署名付きcookieキャッシュ）
+  let role = await getCachedRole(request, user.id);
+  let roleFreshlyFetched = false;
+
+  if (!role) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    role = profile?.role ?? null;
+    roleFreshlyFetched = true;
+  }
 
   const allowedRoles = ["employee", "admin", "manager", "approver"];
-  if (!profile || !allowedRoles.includes(profile.role)) {
+  if (!role || !allowedRoles.includes(role)) {
     await supabase.auth.signOut();
+    clearCachedRole(response);
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("error", "unauthorized");
     const redirectResponse = NextResponse.redirect(loginUrl);
@@ -159,6 +173,9 @@ export async function middleware(request: NextRequest) {
     return redirectResponse;
   }
 
+  if (roleFreshlyFetched) {
+    await setCachedRole(response, user.id, role);
+  }
   setProductCookie(request, response, product);
   applySecurityHeaders(response);
   return response;
