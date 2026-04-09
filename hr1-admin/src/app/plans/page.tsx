@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@hr1/shared-ui/components/ui/card";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Input } from "@hr1/shared-ui/components/ui/input";
@@ -13,7 +18,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@hr1/shared-ui/components/ui/dialog";
-import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
+import {
+  PageHeader,
+  PageContent,
+} from "@hr1/shared-ui/components/layout/page-header";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";

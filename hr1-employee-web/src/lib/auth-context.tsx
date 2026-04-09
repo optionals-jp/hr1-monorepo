@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const {
       data: { subscription },
-    } = getSupabase().auth.onAuthStateChange((_event, session) => {
+    } = getSupabase().auth.onAuthStateChange((event, session) => {
       if (signingIn.current) {
         setLoading(false);
         return;
@@ -61,6 +61,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const sessionUser = session.user;
+
+      // TOKEN_REFRESHED ではプロフィール再取得不要（セッション維持のみ）
+      if (event === "TOKEN_REFRESHED") {
+        setUser((prev) =>
+          prev?.id === sessionUser.id
+            ? prev
+            : { id: sessionUser.id, email: sessionUser.email ?? "" }
+        );
+        setLoading(false);
+        return;
+      }
+
+      // INITIAL_SESSION / SIGNED_IN でのみプロフィール取得
       fetchProfile(sessionUser.id)
         .then((prof) => {
           if (prof) {

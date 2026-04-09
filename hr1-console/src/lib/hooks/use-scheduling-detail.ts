@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as schedulingRepo from "@/lib/repositories/scheduling-repository";
-import { getCurrentUserId } from "@/lib/get-current-user-id";
+import { useAuth } from "@/lib/auth-context";
 import { autoFillEndAt } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
 import type { Interview, InterviewSlot } from "@/types/database";
@@ -22,6 +22,7 @@ export async function updateInterviewStatus(id: string, organizationId: string, 
 export async function saveSchedulingDetail(params: {
   interviewId: string;
   organizationId: string;
+  userId: string;
   title: string;
   location: string | null;
   notes: string | null;
@@ -107,12 +108,11 @@ export async function saveSchedulingDetail(params: {
   }
 
   if (slotLogs.length > 0) {
-    const userId = await getCurrentUserId();
     await schedulingRepo.insertAuditLogs(
       client,
       slotLogs.map((log) => ({
         organization_id: params.organizationId,
-        user_id: userId,
+        user_id: params.userId,
         action: log.detail_action.includes("deleted")
           ? "delete"
           : log.detail_action.includes("added")
@@ -155,6 +155,7 @@ export interface EditSlot {
 export function useSchedulingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { organization } = useOrg();
+  const { user } = useAuth();
   const [interview, setInterview] = useState<Interview | null>(null);
   const [slots, setSlots] = useState<InterviewSlot[]>([]);
   const [auditRefreshKey, setAuditRefreshKey] = useState(0);
@@ -295,6 +296,7 @@ export function useSchedulingDetailPage() {
       await saveSchedulingDetail({
         interviewId: interview.id,
         organizationId: organization.id,
+        userId: user!.id,
         title: editTitle,
         location: editLocation || null,
         notes: editNotes || null,

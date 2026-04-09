@@ -27,7 +27,10 @@ import {
   TableHeader,
   TableRow,
 } from "@hr1/shared-ui/components/ui/table";
-import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
+import {
+  PageHeader,
+  PageContent,
+} from "@hr1/shared-ui/components/layout/page-header";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";

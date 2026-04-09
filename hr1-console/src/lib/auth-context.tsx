@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const {
       data: { subscription },
-    } = getSupabase().auth.onAuthStateChange((_event, session) => {
+    } = getSupabase().auth.onAuthStateChange((event, session) => {
       // onAuthStateChange は内部ロックを保持するため、
       // コールバック内で await してはいけない（デッドロックになる）。
       // 非同期処理はコールバックの外で実行する。
@@ -85,8 +85,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // セッション情報を保持し、ロック解放後にプロフィール取得を実行
       const sessionUser = session.user;
+
+      // TOKEN_REFRESHED ではプロフィール再取得不要（セッション維持のみ）
+      if (event === "TOKEN_REFRESHED") {
+        setUser((prev) =>
+          prev?.id === sessionUser.id
+            ? prev
+            : { id: sessionUser.id, email: sessionUser.email ?? "" }
+        );
+        setLoading(false);
+        return;
+      }
+
+      // INITIAL_SESSION / SIGNED_IN でのみプロフィール取得
       fetchProfile(sessionUser.id)
         .then(async (prof) => {
           if (prof) {

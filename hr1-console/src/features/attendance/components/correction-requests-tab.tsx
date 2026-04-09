@@ -28,6 +28,7 @@ import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { cn, formatTime } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";
+import { useAuth } from "@/lib/auth-context";
 import {
   useCorrections,
   reviewCorrection as reviewCorrectionAction,
@@ -39,6 +40,7 @@ import type { CorrectionRow } from "@/features/attendance/types";
 export function CorrectionRequestsTab() {
   const { showToast } = useToast();
   const { organization } = useOrg();
+  const { user } = useAuth();
   const [correctionFilter, setCorrectionFilter] = useState("all");
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [reviewTarget, setReviewTarget] = useState<CorrectionRow | null>(null);
@@ -68,7 +70,8 @@ export function CorrectionRequestsTab() {
         reviewComment || null,
         reviewTarget.record_id,
         reviewTarget.requested_clock_in,
-        reviewTarget.requested_clock_out
+        reviewTarget.requested_clock_out,
+        user!.id
       );
 
       await mutateCorrections();

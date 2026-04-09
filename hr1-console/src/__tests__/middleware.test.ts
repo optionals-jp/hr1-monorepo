@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 
 // @supabase/ssr モジュールをモック
 const mockGetUser = vi.fn();
+const mockGetSession = vi.fn();
 const mockSignOut = vi.fn().mockResolvedValue({ error: null });
 const mockFrom = vi.fn();
 
@@ -10,10 +11,17 @@ vi.mock("@supabase/ssr", () => ({
   createServerClient: () => ({
     auth: {
       getUser: mockGetUser,
+      getSession: mockGetSession,
       signOut: mockSignOut,
     },
     from: mockFrom,
   }),
+}));
+
+vi.mock("@hr1/shared-ui/lib/role-cache", () => ({
+  getCachedRole: vi.fn().mockResolvedValue(null),
+  setCachedRole: vi.fn().mockResolvedValue(undefined),
+  clearCachedRole: vi.fn(),
 }));
 
 import { middleware } from "@/middleware";
@@ -48,7 +56,7 @@ describe("middleware", () => {
   });
 
   it("未認証のリクエストは /login にリダイレクトされる", async () => {
-    mockGetUser.mockResolvedValue({ data: { user: null } });
+    mockGetSession.mockResolvedValue({ data: { session: null } });
 
     const response = await middleware(createRequest("/"));
     expect(response.status).toBe(307);
@@ -56,8 +64,8 @@ describe("middleware", () => {
   });
 
   it("admin ロールのリクエストは通過する", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: { id: "user-1" } },
+    mockGetSession.mockResolvedValue({
+      data: { session: { user: { id: "user-1" } } },
     });
     createProfileQuery("admin");
 
@@ -66,8 +74,8 @@ describe("middleware", () => {
   });
 
   it("employee ロールのリクエストは通過する", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: { id: "user-2" } },
+    mockGetSession.mockResolvedValue({
+      data: { session: { user: { id: "user-2" } } },
     });
     createProfileQuery("employee");
 
@@ -76,8 +84,8 @@ describe("middleware", () => {
   });
 
   it("applicant ロールのリクエストは /login?error=unauthorized にリダイレクトされる", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: { id: "user-3" } },
+    mockGetSession.mockResolvedValue({
+      data: { session: { user: { id: "user-3" } } },
     });
     createProfileQuery("applicant");
 
@@ -90,8 +98,8 @@ describe("middleware", () => {
   });
 
   it("プロフィールが存在しないリクエストはリダイレクトされる", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: { id: "user-4" } },
+    mockGetSession.mockResolvedValue({
+      data: { session: { user: { id: "user-4" } } },
     });
     createProfileQuery(null);
 
@@ -101,7 +109,7 @@ describe("middleware", () => {
   });
 
   it("/login-other のような類似パスは公開パスとして扱わない", async () => {
-    mockGetUser.mockResolvedValue({ data: { user: null } });
+    mockGetSession.mockResolvedValue({ data: { session: null } });
 
     const response = await middleware(createRequest("/login-other"));
     // 未認証なのでリダイレクトされるはず（公開パスとしてスキップされない）

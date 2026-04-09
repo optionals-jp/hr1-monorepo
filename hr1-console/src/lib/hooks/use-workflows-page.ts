@@ -7,7 +7,7 @@ import { useOrg } from "@/lib/org-context";
 import { useQuery } from "@/lib/use-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as workflowRepo from "@/lib/repositories/workflow-repository";
-import { getCurrentUserId } from "@/lib/get-current-user-id";
+import { useAuth } from "@/lib/auth-context";
 import { workflowRequestTypeLabels } from "@/lib/constants";
 import type {
   WorkflowRequest,
@@ -51,10 +51,10 @@ export async function reviewRequest(
   organizationId: string,
   status: "approved" | "rejected",
   requestType: string,
-  reviewComment: string | null
+  reviewComment: string | null,
+  userId: string
 ) {
   const client = getSupabase();
-  const userId = await getCurrentUserId();
 
   if (status === "approved" && requestType === "paid_leave") {
     const { data: result } = await workflowRepo.approveLeaveRequest(
@@ -213,6 +213,7 @@ export function formatRequestSummary(req: WorkflowRequest): string {
 export function useWorkflowsPage() {
   const router = useRouter();
   const { organization } = useOrg();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useTabParam<TabValue>("requests");
 
   const [search, setSearch] = useState("");
@@ -328,7 +329,8 @@ export function useWorkflowsPage() {
         organization!.id,
         status,
         selectedRequest.request_type,
-        reviewComment || null
+        reviewComment || null,
+        user!.id
       );
 
       if (result.error) {

@@ -10,12 +10,13 @@ import { useOrg } from "@/lib/org-context";
 import { StepType, FORM_STEP_TYPES } from "@/lib/constants";
 import * as jobRepository from "@/lib/repositories/job-repository";
 import * as auditRepository from "@/lib/repositories/audit-repository";
-import { getCurrentUserId } from "@/lib/get-current-user-id";
+import { useAuth } from "@/lib/auth-context";
 import { resolveRelatedId } from "@/features/jobs/rules";
 
 export function useJobDetail() {
   const { id } = useParams<{ id: string }>();
   const { organization } = useOrg();
+  const { user } = useAuth();
   const [job, setJob] = useState<Job | null>(null);
   const [steps, setSteps] = useState<JobStep[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -130,8 +131,7 @@ export function useJobDetail() {
       return;
     }
 
-    if (organization) {
-      const userId = await getCurrentUserId();
+    if (organization && user) {
       await auditRepository.insertAuditLog(client, {
         organization_id: organization.id,
         table_name: "jobs",
@@ -140,9 +140,9 @@ export function useJobDetail() {
         metadata: {
           summary: `ステップ「${newStepLabel}」を追加`,
           detail_action: "step_added",
-          user_id: userId,
+          user_id: user.id,
         },
-        performed_by: userId,
+        performed_by: user.id,
       });
     }
 
@@ -170,8 +170,7 @@ export function useJobDetail() {
     const step = steps.find((s) => s.id === stepId);
     await jobRepository.deleteJobStep(client, stepId);
 
-    if (step && organization) {
-      const userId = await getCurrentUserId();
+    if (step && organization && user) {
       await auditRepository.insertAuditLog(client, {
         organization_id: organization.id,
         table_name: "jobs",
@@ -180,9 +179,9 @@ export function useJobDetail() {
         metadata: {
           summary: `ステップ「${step.label}」を削除`,
           detail_action: "step_deleted",
-          user_id: userId,
+          user_id: user.id,
         },
-        performed_by: userId,
+        performed_by: user.id,
       });
     }
 

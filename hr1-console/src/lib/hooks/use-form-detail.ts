@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrg } from "@/lib/org-context";
+import { useAuth } from "@/lib/auth-context";
 import type { CustomForm, FormField } from "@/types/database";
 import { loadFormDetail, saveFormEdit } from "@/lib/hooks/use-forms";
 
@@ -31,6 +32,7 @@ export type { FieldDraft, ResponseRow };
 export function useFormDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { organization } = useOrg();
+  const { user } = useAuth();
   const [form, setForm] = useState<CustomForm | null>(null);
   const [fields, setFields] = useState<FormField[]>([]);
   const [responses, setResponses] = useState<ResponseRow[]>([]);
@@ -120,6 +122,7 @@ export function useFormDetailPage() {
       form,
       fields,
       organization.id,
+      user!.id,
       editTitle,
       editTarget,
       editDescription,

@@ -92,8 +92,3 @@ export async function fetchProfiles(client: SupabaseClient, ids: string[]) {
 export async function insertAuditLogs(client: SupabaseClient, rows: Record<string, unknown>[]) {
   return client.from("audit_logs").insert(rows);
 }
-
-export async function getCurrentUserId(client: SupabaseClient) {
-  const { data } = await client.auth.getUser();
-  return data.user?.id;
-}
