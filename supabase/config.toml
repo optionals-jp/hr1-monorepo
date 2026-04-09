@@ -363,6 +363,25 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Edge Functions の JWT 検証設定
+# Supabase の新しいプロジェクトは ES256 アルゴリズムを使用するが、
+# ゲートウェイの verify_jwt は HS256 のみ対応のため false に設定する。
+# 各関数内部で callerClient.auth.getUser() により認証を行う。
+[functions.create-user]
+verify_jwt = false
+
+[functions.setup-organization]
+verify_jwt = false
+
+[functions.auto-grant-leave]
+verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = false
+
+[functions.parse-business-card]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
