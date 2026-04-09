@@ -27,3 +27,28 @@ CREATE POLICY "eval_assignments_update_evaluator"
   ON public.evaluation_assignments FOR UPDATE
   USING (evaluator_id = auth.uid()::text)
   WITH CHECK (evaluator_id = auth.uid()::text);
+
+-- evaluation_scores: evaluator が自分の評価スコアを操作可能
+CREATE POLICY "eval_scores_select_evaluator"
+  ON public.evaluation_scores FOR SELECT
+  USING (
+    evaluation_id IN (
+      SELECT id FROM public.evaluations WHERE evaluator_id = auth.uid()::text
+    )
+  );
+
+CREATE POLICY "eval_scores_insert_evaluator"
+  ON public.evaluation_scores FOR INSERT
+  WITH CHECK (
+    evaluation_id IN (
+      SELECT id FROM public.evaluations WHERE evaluator_id = auth.uid()::text
+    )
+  );
+
+CREATE POLICY "eval_scores_update_evaluator"
+  ON public.evaluation_scores FOR UPDATE
+  USING (
+    evaluation_id IN (
+      SELECT id FROM public.evaluations WHERE evaluator_id = auth.uid()::text
+    )
+  );

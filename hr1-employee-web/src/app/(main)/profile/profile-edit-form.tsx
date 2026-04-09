@@ -37,7 +37,8 @@ export function ProfileEditForm({ onClose }: { onClose: () => void }) {
       await refreshProfile();
       showToast("プロフィールを更新しました");
       onClose();
-    } catch {
+    } catch (e) {
+      console.error("Failed to update profile:", e);
       showToast("更新に失敗しました", "error");
     }
     setSaving(false);

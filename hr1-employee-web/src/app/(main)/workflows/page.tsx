@@ -18,32 +18,12 @@ import { useMyWorkflows } from "@/lib/hooks/use-workflows";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { cn } from "@hr1/shared-ui/lib/utils";
-import { FileInput, Clock, CheckCircle2, XCircle, Ban, Plus } from "lucide-react";
+import { FileInput, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { canApproveWorkflows } from "@/lib/role-utils";
+import { WORKFLOW_TYPE_LABELS, WORKFLOW_STATUS_CONFIG } from "@/lib/workflow-utils";
 import { PendingApprovalsTab } from "./pending-approvals-tab";
 import type { WorkflowRequestStatus, WorkflowRequestType } from "@/types/database";
-
-const statusConfig: Record<
-  WorkflowRequestStatus,
-  {
-    label: string;
-    icon: typeof Clock;
-    variant: "default" | "secondary" | "destructive" | "outline";
-  }
-> = {
-  pending: { label: "申請中", icon: Clock, variant: "secondary" },
-  approved: { label: "承認済", icon: CheckCircle2, variant: "default" },
-  rejected: { label: "却下", icon: XCircle, variant: "destructive" },
-  cancelled: { label: "取消", icon: Ban, variant: "outline" },
-};
-
-const typeLabels: Record<string, string> = {
-  paid_leave: "有給休暇",
-  overtime: "残業申請",
-  business_trip: "出張申請",
-  expense: "経費精算",
-};
 
 type Tab = "my-requests" | "pending-approvals";
 
@@ -150,7 +130,7 @@ export default function WorkflowsPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {Object.entries(typeLabels).map(([value, label]) => (
+                          {Object.entries(WORKFLOW_TYPE_LABELS).map(([value, label]) => (
                             <SelectItem key={value} value={value}>
                               {label}
                             </SelectItem>
@@ -192,7 +172,7 @@ export default function WorkflowsPage() {
                     className="cursor-pointer"
                     onClick={() => setFilter(s)}
                   >
-                    {s === "all" ? "すべて" : statusConfig[s].label}
+                    {s === "all" ? "すべて" : WORKFLOW_STATUS_CONFIG[s].label}
                   </Badge>
                 ))}
               </div>
@@ -207,7 +187,7 @@ export default function WorkflowsPage() {
               ) : (
                 <div className="divide-y rounded-lg border">
                   {filtered.map((req) => {
-                    const config = statusConfig[req.status];
+                    const config = WORKFLOW_STATUS_CONFIG[req.status];
                     const Icon = config.icon;
                     return (
                       <div key={req.id} className="flex items-start gap-3 px-4 py-3">
@@ -226,7 +206,7 @@ export default function WorkflowsPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium">
-                              {typeLabels[req.request_type] ?? req.request_type}
+                              {WORKFLOW_TYPE_LABELS[req.request_type] ?? req.request_type}
                             </p>
                             <Badge variant={config.variant} className="text-[10px]">
                               {config.label}

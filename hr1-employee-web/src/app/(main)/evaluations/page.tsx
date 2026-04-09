@@ -11,27 +11,11 @@ import { useAuth } from "@/lib/auth-context";
 import { cn } from "@hr1/shared-ui/lib/utils";
 import { Star, ClipboardCheck, UserCheck } from "lucide-react";
 import { format } from "date-fns";
-
-const cycleStatusLabels: Record<string, string> = {
-  active: "実施中",
-  closed: "終了",
-  finalized: "確定",
-};
-
-const assignmentStatusLabels: Record<string, string> = {
-  pending: "未着手",
-  in_progress: "進行中",
-  submitted: "提出済",
-  skipped: "スキップ",
-};
-
-const raterTypeLabels: Record<string, string> = {
-  supervisor: "上司",
-  peer: "同僚",
-  subordinate: "部下",
-  self: "自己",
-  external: "外部",
-};
+import {
+  CYCLE_STATUS_LABELS,
+  ASSIGNMENT_STATUS_LABELS,
+  RATER_TYPE_LABELS,
+} from "@/lib/evaluation-utils";
 
 export default function EvaluationsPage() {
   const router = useRouter();
@@ -87,7 +71,7 @@ export default function EvaluationsPage() {
                         variant={cycle.status === "active" ? "default" : "secondary"}
                         className="text-[10px]"
                       >
-                        {cycleStatusLabels[cycle.status] ?? cycle.status}
+                        {CYCLE_STATUS_LABELS[cycle.status] ?? cycle.status}
                       </Badge>
                     </div>
                   </CardHeader>
@@ -141,7 +125,7 @@ export default function EvaluationsPage() {
                                 </p>
                                 <div className="flex items-center gap-2 mt-1">
                                   <Badge variant="outline" className="text-[10px]">
-                                    {raterTypeLabels[a.rater_type] ?? a.rater_type}
+                                    {RATER_TYPE_LABELS[a.rater_type] ?? a.rater_type}
                                   </Badge>
                                   <Badge
                                     variant={
@@ -153,7 +137,7 @@ export default function EvaluationsPage() {
                                     }
                                     className="text-[10px]"
                                   >
-                                    {assignmentStatusLabels[a.status] ?? a.status}
+                                    {ASSIGNMENT_STATUS_LABELS[a.status] ?? a.status}
                                   </Badge>
                                 </div>
                               </div>
@@ -183,13 +167,13 @@ export default function EvaluationsPage() {
                                 </p>
                                 <div className="flex items-center gap-2 mt-1">
                                   <Badge variant="outline" className="text-[10px]">
-                                    {raterTypeLabels[a.rater_type] ?? a.rater_type}
+                                    {RATER_TYPE_LABELS[a.rater_type] ?? a.rater_type}
                                   </Badge>
                                   <Badge
                                     variant={a.status === "submitted" ? "default" : "secondary"}
                                     className="text-[10px]"
                                   >
-                                    {assignmentStatusLabels[a.status] ?? a.status}
+                                    {ASSIGNMENT_STATUS_LABELS[a.status] ?? a.status}
                                   </Badge>
                                 </div>
                               </div>

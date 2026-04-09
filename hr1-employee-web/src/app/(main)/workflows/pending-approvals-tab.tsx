@@ -6,16 +6,10 @@ import { Button } from "@hr1/shared-ui/components/ui/button";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { usePendingApprovals } from "@/lib/hooks/use-workflows";
+import { WORKFLOW_TYPE_LABELS } from "@/lib/workflow-utils";
 import { ReviewDialog } from "./review-dialog";
 import { Clock, CheckCircle2, XCircle, Inbox } from "lucide-react";
 import { format } from "date-fns";
-
-const typeLabels: Record<string, string> = {
-  paid_leave: "有給休暇",
-  overtime: "残業申請",
-  business_trip: "出張申請",
-  expense: "経費精算",
-};
 
 export function PendingApprovalsTab() {
   const { showToast } = useToast();
@@ -56,7 +50,7 @@ export function PendingApprovalsTab() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium">
-                      {typeLabels[req.request_type] ?? req.request_type}
+                      {WORKFLOW_TYPE_LABELS[req.request_type] ?? req.request_type}
                     </p>
                     <Badge variant="secondary" className="text-[10px]">
                       申請中

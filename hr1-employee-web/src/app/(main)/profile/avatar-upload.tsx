@@ -37,7 +37,8 @@ export function AvatarUpload() {
       await profileRepo.uploadAvatar(getSupabase(), user.id, file);
       await refreshProfile();
       showToast("アバターを更新しました");
-    } catch {
+    } catch (e) {
+      console.error("Failed to upload avatar:", e);
       showToast("アップロードに失敗しました", "error");
     }
     setUploading(false);

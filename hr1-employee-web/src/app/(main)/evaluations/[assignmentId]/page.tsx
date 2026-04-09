@@ -13,6 +13,7 @@ import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as evalRepo from "@/lib/repositories/evaluation-repository";
 import { CriterionField } from "./criterion-field";
+import { RATER_TYPE_LABELS } from "@/lib/evaluation-utils";
 import { ArrowLeft, Save, Send } from "lucide-react";
 import type {
   EvaluationCriterion,
@@ -26,14 +27,6 @@ type ScoreMap = Record<
   string,
   { score: number | null; value: string | null; comment: string | null }
 >;
-
-const raterTypeLabels: Record<string, string> = {
-  supervisor: "上司評価",
-  peer: "同僚評価",
-  subordinate: "部下評価",
-  self: "自己評価",
-  external: "外部評価",
-};
 
 export default function EvaluationFormPage() {
   const params = useParams();
@@ -59,9 +52,11 @@ export default function EvaluationFormPage() {
   // Load assignment, criteria, and existing evaluation
   useEffect(() => {
     if (!user || !organization) return;
+    let cancelled = false;
     const load = async () => {
       try {
         const a = await evalRepo.fetchAssignmentDetail(getSupabase(), assignmentId, user.id);
+        if (cancelled) return;
         setAssignment(a);
 
         if (a.status === "submitted") setIsSubmitted(true);
@@ -70,14 +65,15 @@ export default function EvaluationFormPage() {
           getSupabase(),
           a.evaluation_cycles.template_id
         );
+        if (cancelled) return;
         setCriteria(c);
 
-        // Load existing evaluation (draft or submitted)
         const existing = await evalRepo.fetchExistingEvaluation(
           getSupabase(),
           assignmentId,
           user.id
         );
+        if (cancelled) return;
         if (existing) {
           setEvaluationId(existing.id);
           setOverallComment(existing.overall_comment ?? "");
@@ -92,11 +88,16 @@ export default function EvaluationFormPage() {
           setScores(map);
         }
       } catch (e) {
+        if (cancelled) return;
+        console.error("Failed to load evaluation data:", e);
         setError(e instanceof Error ? e : new Error("読み込みに失敗しました"));
       }
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     };
     load();
+    return () => {
+      cancelled = true;
+    };
   }, [user, organization, assignmentId]);
 
   const ensureEvaluation = useCallback(async () => {
@@ -130,7 +131,8 @@ export default function EvaluationFormPage() {
       }
       await evalRepo.saveOverallComment(getSupabase(), id, overallComment.trim() || null);
       showToast("下書きを保存しました");
-    } catch {
+    } catch (e) {
+      console.error("Failed to save draft:", e);
       showToast("保存に失敗しました", "error");
     }
     setSaving(false);
@@ -139,6 +141,8 @@ export default function EvaluationFormPage() {
   const handleScoreChange = useCallback((criterionId: string, val: ScoreMap[string]) => {
     setScores((prev) => ({ ...prev, [criterionId]: val }));
   }, []);
+
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -154,7 +158,8 @@ export default function EvaluationFormPage() {
       await evalRepo.submitEvaluation(getSupabase(), id, assignmentId);
       setIsSubmitted(true);
       showToast("評価を提出しました");
-    } catch {
+    } catch (e) {
+      console.error("Failed to submit evaluation:", e);
       showToast("提出に失敗しました", "error");
     }
     setSubmitting(false);
@@ -204,7 +209,7 @@ export default function EvaluationFormPage() {
           {/* Header info */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Badge variant="outline" className="text-[10px]">
-              {raterTypeLabels[assignment?.rater_type ?? ""] ?? assignment?.rater_type}
+              {RATER_TYPE_LABELS[assignment?.rater_type ?? ""] ?? assignment?.rater_type}
             </Badge>
             <span>{assignment?.evaluation_cycles.title}</span>
             {isSubmitted && (
@@ -213,6 +218,20 @@ export default function EvaluationFormPage() {
               </Badge>
             )}
           </div>
+
+          {/* Progress */}
+          {criteria.length > 0 && (
+            <div className="text-xs text-muted-foreground">
+              入力済み:{" "}
+              {
+                Object.keys(scores).filter((k) => {
+                  const v = scores[k];
+                  return v.score != null || (v.value != null && v.value !== "");
+                }).length
+              }{" "}
+              / {criteria.length} 項目
+            </div>
+          )}
 
           {/* Criteria fields */}
           {criteria.map((c) => (
@@ -245,10 +264,37 @@ export default function EvaluationFormPage() {
                 <Save className="h-4 w-4 mr-1" />
                 {saving ? "保存中..." : "下書き保存"}
               </Button>
-              <Button size="sm" onClick={handleSubmit} disabled={submitting}>
+              <Button size="sm" onClick={() => setShowSubmitConfirm(true)} disabled={submitting}>
                 <Send className="h-4 w-4 mr-1" />
-                {submitting ? "提出中..." : "提出する"}
+                提出する
               </Button>
+            </div>
+          )}
+
+          {/* Submit confirmation dialog */}
+          {showSubmitConfirm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <div className="bg-background rounded-lg p-6 max-w-sm mx-4 shadow-lg">
+                <h3 className="text-sm font-semibold mb-2">評価を提出しますか？</h3>
+                <p className="text-xs text-muted-foreground mb-4">
+                  提出後は変更できません。内容をご確認ください。
+                </p>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => setShowSubmitConfirm(false)}>
+                    キャンセル
+                  </Button>
+                  <Button
+                    size="sm"
+                    disabled={submitting}
+                    onClick={async () => {
+                      setShowSubmitConfirm(false);
+                      await handleSubmit();
+                    }}
+                  >
+                    {submitting ? "提出中..." : "提出する"}
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </div>
