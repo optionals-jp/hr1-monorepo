@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Profile } from "@/types/database";
+import { assertNotUnauthorized } from "@/lib/supabase/browser";
 
 export async function findEmployeesWithDepartments(client: SupabaseClient, organizationId: string) {
   const { data } = await client
@@ -93,7 +94,7 @@ export async function createEmployee(
     },
   });
 
-  if (error) throw error;
+  if (error) await assertNotUnauthorized(error);
   if (data?.error) throw new Error(data.error);
 }
 
