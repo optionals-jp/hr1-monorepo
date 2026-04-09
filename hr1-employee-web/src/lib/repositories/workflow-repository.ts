@@ -44,15 +44,31 @@ export async function cancelRequest(client: SupabaseClient, requestId: string, u
 export async function fetchPendingRequests(client: SupabaseClient, organizationId: string) {
   const { data, error } = await client
     .from("workflow_requests")
-    .select("*, requester:user_id(display_name, email)")
+    .select("*")
     .eq("organization_id", organizationId)
     .eq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(100);
   if (error) throw error;
-  return (data ?? []) as (WorkflowRequest & {
-    requester?: { display_name: string | null; email: string };
-  })[];
+
+  const requests = (data ?? []) as WorkflowRequest[];
+  if (requests.length === 0) return [];
+
+  const userIds = [...new Set(requests.map((r) => r.user_id))];
+  const { data: profiles, error: profilesError } = await client
+    .from("profiles")
+    .select("id, display_name, email")
+    .in("id", userIds);
+  if (profilesError) throw profilesError;
+
+  const profileMap = new Map(
+    (profiles ?? []).map((p) => [p.id, { display_name: p.display_name, email: p.email }])
+  );
+
+  return requests.map((r) => ({
+    ...r,
+    requester: profileMap.get(r.user_id) ?? undefined,
+  }));
 }
 
 export async function reviewRequest(

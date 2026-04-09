@@ -40,7 +40,14 @@ export function useDashboard() {
     dashboardRepo.fetchWidgetPreferences(getSupabase(), organization!.id, user!.id)
   );
 
-  const widgetConfig: DashboardWidgetConfig[] = preference?.widget_config ?? buildDefaultConfig();
+  // hr1-console形式のconfigはwidget_idを持たないので互換性チェック
+  const firstWidget = preference?.widget_config?.[0];
+  const isEmployeeWebConfig =
+    firstWidget != null && typeof firstWidget === "object" && "widget_id" in firstWidget;
+
+  const widgetConfig: DashboardWidgetConfig[] = isEmployeeWebConfig
+    ? preference!.widget_config
+    : buildDefaultConfig();
 
   const visibleWidgets = widgetConfig
     .filter((w) => w.visible)

@@ -11,6 +11,8 @@ export async function fetchWidgetPreferences(
     .select("*")
     .eq("organization_id", organizationId)
     .eq("user_id", userId)
+    .order("updated_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
   if (error) throw error;
   return data as DashboardWidgetPreference | null;
@@ -26,7 +28,7 @@ export async function upsertWidgetPreferences(
   }
 ) {
   const { error } = await client.from("dashboard_widget_preferences").upsert(data, {
-    onConflict: "organization_id,user_id",
+    onConflict: "user_id,organization_id,product_tab",
   });
   if (error) throw error;
 }

@@ -16,6 +16,7 @@ import {
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { useMyWorkflows, useWorkflowTemplates } from "@/lib/hooks/use-workflows";
 import { useAuth } from "@/lib/auth-context";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { cn } from "@hr1/shared-ui/lib/utils";
 import { FileInput, Plus } from "lucide-react";
@@ -140,39 +141,19 @@ export default function WorkflowsPage() {
         }
       />
 
+      {showApprovalTab && (
+        <TabBar
+          tabs={[
+            { value: "my-requests", label: "自分の申請" },
+            { value: "pending-approvals", label: "承認待ち" },
+          ]}
+          activeTab={activeTab}
+          onTabChange={(v) => setActiveTab(v as Tab)}
+        />
+      )}
+
       <PageContent>
         <div className="space-y-4 max-w-2xl">
-          {showApprovalTab && (
-            <div className="flex gap-1 border-b" role="tablist">
-              <button
-                role="tab"
-                aria-selected={activeTab === "my-requests"}
-                className={cn(
-                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-                  activeTab === "my-requests"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("my-requests")}
-              >
-                自分の申請
-              </button>
-              <button
-                role="tab"
-                aria-selected={activeTab === "pending-approvals"}
-                className={cn(
-                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-                  activeTab === "pending-approvals"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("pending-approvals")}
-              >
-                承認待ち
-              </button>
-            </div>
-          )}
-
           {activeTab === "pending-approvals" && showApprovalTab ? (
             <PendingApprovalsTab />
           ) : (

@@ -10,3 +10,9 @@ export function useEmployees() {
     employeeRepo.fetchEmployees(getSupabase(), orgId)
   );
 }
+
+export function useEmployee(userId: string) {
+  return useOrgQuery<Profile>(`employee-${userId}`, (orgId) =>
+    employeeRepo.fetchEmployee(getSupabase(), orgId, userId)
+  );
+}

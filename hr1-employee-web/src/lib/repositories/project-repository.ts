@@ -32,6 +32,17 @@ export async function fetchMyProjects(
   return (data ?? []) as Project[];
 }
 
+export async function fetchAllProjects(client: SupabaseClient, organizationId: string) {
+  const { data, error } = await client
+    .from("projects")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .in("status", ["active", "completed"])
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Project[];
+}
+
 export async function fetchTeams(client: SupabaseClient, projectId: string) {
   const { data, error } = await client
     .from("project_teams")
