@@ -75,8 +75,8 @@ class BcContact {
       createdBy: json['created_by'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      company: json['bc_companies'] != null
-          ? BcCompany.fromJson(json['bc_companies'] as Map<String, dynamic>)
+      company: json['crm_companies'] != null
+          ? BcCompany.fromJson(json['crm_companies'] as Map<String, dynamic>)
           : null,
     );
   }

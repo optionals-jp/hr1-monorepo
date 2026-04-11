@@ -38,10 +38,12 @@ function MainShell({ children }: { children: ReactNode }) {
 
   return (
     <OrgProvider>
-      <AppHeader />
-      <div className="flex min-h-0">
+      <div className="flex min-h-dvh">
         <Sidebar />
-        <main className="flex-1 min-w-0 overflow-y-auto">{children}</main>
+        <div className="flex flex-col flex-1 min-w-0">
+          <AppHeader />
+          <main className="flex-1 min-w-0 overflow-y-auto">{children}</main>
+        </div>
       </div>
     </OrgProvider>
   );

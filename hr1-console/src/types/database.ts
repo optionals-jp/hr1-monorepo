@@ -663,7 +663,7 @@ export interface BcContact {
   created_by: string | null;
   created_at: string;
   updated_at: string;
-  bc_companies?: BcCompany;
+  crm_companies?: BcCompany;
 }
 
 export interface BcCard {
@@ -684,8 +684,7 @@ export interface BcDeal {
   contact_id: string | null;
   title: string;
   amount: number | null;
-  status: "open" | "won" | "lost";
-  stage: string;
+  status: "open" | "won" | "lost" | "cancelled";
   probability: number | null;
   expected_close_date: string | null;
   description: string | null;
@@ -695,8 +694,8 @@ export interface BcDeal {
   stage_id: string | null;
   created_at: string;
   updated_at: string;
-  bc_companies?: BcCompany;
-  bc_contacts?: BcContact;
+  crm_companies?: BcCompany;
+  crm_contacts?: BcContact;
   profiles?: Profile;
   crm_pipeline_stages?: CrmPipelineStage;
 }
@@ -719,7 +718,7 @@ export interface BcDealContact {
   notes: string | null;
   created_at: string;
   updated_at: string;
-  bc_contacts?: BcContact;
+  crm_contacts?: BcContact;
 }
 
 export type QuoteStatus = "draft" | "sent" | "accepted" | "rejected" | "expired";
@@ -744,10 +743,10 @@ export interface BcQuote {
   created_by: string | null;
   created_at: string;
   updated_at: string;
-  bc_companies?: BcCompany;
-  bc_contacts?: BcContact;
-  bc_deals?: BcDeal;
-  bc_quote_items?: BcQuoteItem[];
+  crm_companies?: BcCompany;
+  crm_contacts?: BcContact;
+  crm_deals?: BcDeal;
+  crm_quote_items?: BcQuoteItem[];
 }
 
 export interface BcQuoteItem {

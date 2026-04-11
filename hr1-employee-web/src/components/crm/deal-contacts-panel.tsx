@@ -147,7 +147,7 @@ export function DealContactsPanel({ dealId }: DealContactsPanelProps) {
             </TableRow>
           ) : (
             (dealContacts ?? []).map((dc) => {
-              const contact = dc.bc_contacts;
+              const contact = dc.crm_contacts;
               if (!contact) return null;
               return (
                 <TableRow
@@ -233,7 +233,7 @@ export function DealContactsPanel({ dealId }: DealContactsPanelProps) {
                   availableContacts.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.last_name} {c.first_name ?? ""}
-                      {c.bc_companies?.name ? ` (${c.bc_companies.name})` : ""}
+                      {c.crm_companies?.name ? ` (${c.crm_companies.name})` : ""}
                     </SelectItem>
                   ))
                 )}

@@ -422,9 +422,9 @@ export function useDashboard(activeTab?: ProductTab) {
   const crmDealsMapped = crmDeals?.map((d) => ({
     id: d.id,
     title: d.title,
-    companyName: d.bc_companies?.name ?? "—",
-    stage: d.stage,
+    companyName: d.crm_companies?.name ?? "—",
     stageId: d.stage_id ?? null,
+    stageName: d.crm_pipeline_stages?.name ?? null,
     amount: d.amount,
     status: d.status,
     probability: d.probability ?? null,

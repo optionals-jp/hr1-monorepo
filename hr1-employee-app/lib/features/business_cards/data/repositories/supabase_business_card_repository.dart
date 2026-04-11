@@ -68,7 +68,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   }) async {
     final orgId = await _getOrganizationId();
     final result = await _client
-        .from('bc_cards')
+        .from('crm_cards')
         .insert({
           'organization_id': orgId,
           'image_url': imageUrl,
@@ -88,7 +88,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<List<BcCompany>> getCompanies({String? query}) async {
     final orgId = await _getOrganizationId();
-    var q = _client.from('bc_companies').select().eq('organization_id', orgId);
+    var q = _client.from('crm_companies').select().eq('organization_id', orgId);
 
     if (query != null && query.isNotEmpty) {
       q = q.or('name.ilike.%$query%,name_kana.ilike.%$query%');
@@ -101,7 +101,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<BcCompany?> getCompany(String id) async {
     final result = await _client
-        .from('bc_companies')
+        .from('crm_companies')
         .select()
         .eq('id', id)
         .maybeSingle();
@@ -114,7 +114,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   ) async {
     final orgId = await _getOrganizationId();
     final result = await _client
-        .from('bc_companies')
+        .from('crm_companies')
         .select()
         .eq('organization_id', orgId)
         .eq('corporate_number', corporateNumber)
@@ -126,7 +126,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   Future<BcCompany?> findCompanyByName(String name) async {
     final orgId = await _getOrganizationId();
     final result = await _client
-        .from('bc_companies')
+        .from('crm_companies')
         .select()
         .eq('organization_id', orgId)
         .eq('name', name)
@@ -138,7 +138,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   Future<BcCompany> createCompany(Map<String, dynamic> data) async {
     final orgId = await _getOrganizationId();
     final result = await _client
-        .from('bc_companies')
+        .from('crm_companies')
         .insert({...data, 'organization_id': orgId, 'created_by': _userId})
         .select()
         .single();
@@ -147,12 +147,12 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<void> updateCompany(String id, Map<String, dynamic> data) async {
-    await _client.from('bc_companies').update(data).eq('id', id);
+    await _client.from('crm_companies').update(data).eq('id', id);
   }
 
   @override
   Future<void> deleteCompany(String id) async {
-    await _client.from('bc_companies').delete().eq('id', id);
+    await _client.from('crm_companies').delete().eq('id', id);
   }
 
   // ==========================================================
@@ -166,8 +166,8 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   }) async {
     final orgId = await _getOrganizationId();
     var q = _client
-        .from('bc_contacts')
-        .select('*, bc_companies(*)')
+        .from('crm_contacts')
+        .select('*, crm_companies(*)')
         .eq('organization_id', orgId);
 
     if (companyId != null) {
@@ -187,8 +187,8 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<BcContact?> getContact(String id) async {
     final result = await _client
-        .from('bc_contacts')
-        .select('*, bc_companies(*)')
+        .from('crm_contacts')
+        .select('*, crm_companies(*)')
         .eq('id', id)
         .maybeSingle();
     return result != null ? BcContact.fromJson(result) : null;
@@ -198,8 +198,8 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   Future<BcContact?> findContactByEmail(String email) async {
     final orgId = await _getOrganizationId();
     final result = await _client
-        .from('bc_contacts')
-        .select('*, bc_companies(*)')
+        .from('crm_contacts')
+        .select('*, crm_companies(*)')
         .eq('organization_id', orgId)
         .eq('email', email)
         .maybeSingle();
@@ -210,21 +210,21 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   Future<BcContact> createContact(Map<String, dynamic> data) async {
     final orgId = await _getOrganizationId();
     final result = await _client
-        .from('bc_contacts')
+        .from('crm_contacts')
         .insert({...data, 'organization_id': orgId, 'created_by': _userId})
-        .select('*, bc_companies(*)')
+        .select('*, crm_companies(*)')
         .single();
     return BcContact.fromJson(result);
   }
 
   @override
   Future<void> updateContact(String id, Map<String, dynamic> data) async {
-    await _client.from('bc_contacts').update(data).eq('id', id);
+    await _client.from('crm_contacts').update(data).eq('id', id);
   }
 
   @override
   Future<void> deleteContact(String id) async {
-    await _client.from('bc_contacts').delete().eq('id', id);
+    await _client.from('crm_contacts').delete().eq('id', id);
   }
 
   // ==========================================================
@@ -235,8 +235,8 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   Future<List<BcDeal>> getDeals({String? companyId, String? contactId}) async {
     final orgId = await _getOrganizationId();
     var q = _client
-        .from('bc_deals')
-        .select('*, bc_companies(*), bc_contacts(*)')
+        .from('crm_deals')
+        .select('*, crm_companies(*), crm_contacts(*)')
         .eq('organization_id', orgId);
 
     if (companyId != null) q = q.eq('company_id', companyId);
@@ -249,8 +249,8 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<BcDeal?> getDeal(String id) async {
     final result = await _client
-        .from('bc_deals')
-        .select('*, bc_companies(*), bc_contacts(*)')
+        .from('crm_deals')
+        .select('*, crm_companies(*), crm_contacts(*)')
         .eq('id', id)
         .maybeSingle();
     return result != null ? BcDeal.fromJson(result) : null;
@@ -260,21 +260,21 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   Future<BcDeal> createDeal(Map<String, dynamic> data) async {
     final orgId = await _getOrganizationId();
     final result = await _client
-        .from('bc_deals')
+        .from('crm_deals')
         .insert({...data, 'organization_id': orgId, 'created_by': _userId})
-        .select('*, bc_companies(*), bc_contacts(*)')
+        .select('*, crm_companies(*), crm_contacts(*)')
         .single();
     return BcDeal.fromJson(result);
   }
 
   @override
   Future<void> updateDeal(String id, Map<String, dynamic> data) async {
-    await _client.from('bc_deals').update(data).eq('id', id);
+    await _client.from('crm_deals').update(data).eq('id', id);
   }
 
   @override
   Future<void> deleteDeal(String id) async {
-    await _client.from('bc_deals').delete().eq('id', id);
+    await _client.from('crm_deals').delete().eq('id', id);
   }
 
   // ==========================================================
@@ -288,7 +288,10 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
     String? dealId,
   }) async {
     final orgId = await _getOrganizationId();
-    var q = _client.from('bc_activities').select().eq('organization_id', orgId);
+    var q = _client
+        .from('crm_activities')
+        .select()
+        .eq('organization_id', orgId);
 
     if (companyId != null) q = q.eq('company_id', companyId);
     if (contactId != null) q = q.eq('contact_id', contactId);
@@ -302,7 +305,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   Future<BcActivity> createActivity(Map<String, dynamic> data) async {
     final orgId = await _getOrganizationId();
     final result = await _client
-        .from('bc_activities')
+        .from('crm_activities')
         .insert({...data, 'organization_id': orgId, 'created_by': _userId})
         .select()
         .single();
@@ -311,12 +314,12 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<void> updateActivity(String id, Map<String, dynamic> data) async {
-    await _client.from('bc_activities').update(data).eq('id', id);
+    await _client.from('crm_activities').update(data).eq('id', id);
   }
 
   @override
   Future<void> deleteActivity(String id) async {
-    await _client.from('bc_activities').delete().eq('id', id);
+    await _client.from('crm_activities').delete().eq('id', id);
   }
 
   // ==========================================================
@@ -327,9 +330,9 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   Future<List<BcTodo>> getTodos({bool includeCompleted = false}) async {
     final orgId = await _getOrganizationId();
     var q = _client
-        .from('bc_todos')
+        .from('crm_todos')
         .select(
-          '*, bc_companies(name), bc_contacts(last_name, first_name), bc_deals(title)',
+          '*, crm_companies(name), crm_contacts(last_name, first_name), crm_deals(title)',
         )
         .eq('organization_id', orgId);
 
@@ -344,9 +347,9 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<List<BcTodo>> getMyTodos({bool includeCompleted = false}) async {
     var q = _client
-        .from('bc_todos')
+        .from('crm_todos')
         .select(
-          '*, bc_companies(name), bc_contacts(last_name, first_name), bc_deals(title)',
+          '*, crm_companies(name), crm_contacts(last_name, first_name), crm_deals(title)',
         )
         .eq('assigned_to', _userId);
 
@@ -362,10 +365,10 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   Future<BcTodo> createTodo(Map<String, dynamic> data) async {
     final orgId = await _getOrganizationId();
     final result = await _client
-        .from('bc_todos')
+        .from('crm_todos')
         .insert({...data, 'organization_id': orgId, 'created_by': _userId})
         .select(
-          '*, bc_companies(name), bc_contacts(last_name, first_name), bc_deals(title)',
+          '*, crm_companies(name), crm_contacts(last_name, first_name), crm_deals(title)',
         )
         .single();
     return BcTodo.fromJson(result);
@@ -373,13 +376,13 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<void> updateTodo(String id, Map<String, dynamic> data) async {
-    await _client.from('bc_todos').update(data).eq('id', id);
+    await _client.from('crm_todos').update(data).eq('id', id);
   }
 
   @override
   Future<void> toggleTodoComplete(String id, bool isCompleted) async {
     await _client
-        .from('bc_todos')
+        .from('crm_todos')
         .update({
           'is_completed': isCompleted,
           'completed_at': isCompleted ? DateTime.now().toIso8601String() : null,
@@ -389,7 +392,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<void> deleteTodo(String id) async {
-    await _client.from('bc_todos').delete().eq('id', id);
+    await _client.from('crm_todos').delete().eq('id', id);
   }
 
   // ==========================================================
@@ -399,7 +402,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<List<BcCard>> getCards({String? contactId}) async {
     final orgId = await _getOrganizationId();
-    var q = _client.from('bc_cards').select().eq('organization_id', orgId);
+    var q = _client.from('crm_cards').select().eq('organization_id', orgId);
 
     if (contactId != null) q = q.eq('contact_id', contactId);
 
@@ -415,8 +418,8 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   Future<List<BcContact>> searchContacts(String query) async {
     final orgId = await _getOrganizationId();
     final data = await _client
-        .from('bc_contacts')
-        .select('*, bc_companies(*)')
+        .from('crm_contacts')
+        .select('*, crm_companies(*)')
         .eq('organization_id', orgId)
         .or(
           'last_name.ilike.%$query%,first_name.ilike.%$query%,'
@@ -432,7 +435,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   Future<List<BcCompany>> searchCompanies(String query) async {
     final orgId = await _getOrganizationId();
     final data = await _client
-        .from('bc_companies')
+        .from('crm_companies')
         .select()
         .eq('organization_id', orgId)
         .or('name.ilike.%$query%,name_kana.ilike.%$query%')

@@ -9,9 +9,9 @@ const HOST_PRODUCT_MAP: Record<string, Product> = {
 };
 
 export const PRODUCT_LABELS: Record<Product, string> = {
-  recruiting: "HR1 Recruiting",
-  working: "HR1 Working",
-  client: "HR1 Client",
+  recruiting: "Recruiting",
+  working: "Working",
+  client: "Client",
 };
 
 const PRODUCT_HOSTS: Record<Product, string> = {

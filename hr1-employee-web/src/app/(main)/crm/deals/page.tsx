@@ -98,7 +98,6 @@ export default function CrmDealsPage() {
         ...p,
         pipeline_id: defaultPipeline.id,
         stage_id: firstStage?.id ?? undefined,
-        stage: firstStage?.name ?? "initial",
       }));
     }
   };
@@ -109,7 +108,7 @@ export default function CrmDealsPage() {
   const DEAL_AVAILABLE_FIELDS = useMemo(
     () => [
       { key: "title", label: "商談名" },
-      { key: "stage", label: "ステージ" },
+      { key: "stage_id", label: "ステージ" },
       { key: "status", label: "ステータス" },
       { key: "probability", label: "確度" },
       { key: "amount", label: "金額" },
@@ -146,7 +145,6 @@ export default function CrmDealsPage() {
 
   const handleStageChange = async (dealId: string, newStageId: string, newProbability: number) => {
     if (!organization) return;
-    const targetStage = kanbanStages.find((s) => s.id === newStageId);
     // 楽観的更新: UI を先に更新し、失敗時にリバート
     const previousDeals = deals;
     mutate(
@@ -155,7 +153,6 @@ export default function CrmDealsPage() {
           ? {
               ...d,
               stage_id: newStageId,
-              stage: targetStage?.name ?? d.stage,
               probability: newProbability,
             }
           : d
@@ -165,7 +162,6 @@ export default function CrmDealsPage() {
     try {
       await updateDeal(getSupabase(), dealId, organization.id, {
         stage_id: newStageId,
-        stage: targetStage?.name ?? newStageId,
         probability: newProbability,
       });
       // ステージ変更トリガー（非同期）
@@ -179,7 +175,6 @@ export default function CrmDealsPage() {
           entityData: {
             ...deal,
             stage_id: newStageId,
-            stage: targetStage?.name ?? newStageId,
           } as unknown as Record<string, unknown>,
         }).catch(() => {});
       }
@@ -318,10 +313,9 @@ export default function CrmDealsPage() {
                         />
                       </TableCell>
                       <TableCell className="font-medium">{deal.title}</TableCell>
-                      <TableCell>{deal.bc_companies?.name ?? "—"}</TableCell>
+                      <TableCell>{deal.crm_companies?.name ?? "—"}</TableCell>
                       <TableCell>
                         {resolveStageLabel(
-                          deal.stage,
                           deal.stage_id,
                           getStagesFromPipeline(
                             pipelines?.find((p) => p.id === deal.pipeline_id) ?? defaultPipeline

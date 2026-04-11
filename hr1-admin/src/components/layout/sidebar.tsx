@@ -76,7 +76,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
 export function Sidebar() {
   return (
-    <aside className="hidden md:flex sticky top-14 h-[calc(100dvh-3.5rem)] w-56 flex-col border-r border-border bg-white shrink-0 shadow-md z-20">
+    <aside className="hidden md:flex sticky top-0 h-dvh w-56 flex-col border-r border-border bg-white shrink-0 shadow-md z-30">
       <SidebarNav />
     </aside>
   );

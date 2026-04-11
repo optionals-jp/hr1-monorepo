@@ -1,23 +1,25 @@
 -- ========================================================================
 -- 重複・古い・セキュリティホールのある RLS ポリシーを一括削除
 --
--- 背景: 83 本の旧マイグレーションを 20260413 baseline に集約した後、
--- 新旧ポリシーの併存で以下の問題が判明:
+-- 背景: 旧マイグレーション 83 本を 20260413000000_baseline に集約した後、
+-- Supabase Studio / 旧 helper (user_org_ids) / qual=true 等の混在を掃除。
 --
--- 1. qual=true のポリシー: 実質全公開。CRITICAL なセキュリティホール
--- 2. 旧ヘルパー user_org_ids() に依存する authenticated_* ポリシー:
---    新しい get_my_organization_ids() に統一するため削除
--- 3. 「Users can X...」英文ポリシーと `<table>_<action>` の機能重複
--- 4. 日本語名ポリシーと英名ポリシーの機能重複
+-- 削除カテゴリ:
+-- 1. qual=true のセキュリティホール (完全公開ポリシー)
+-- 2. 旧ヘルパー user_org_ids() 依存の authenticated_* ポリシー
+-- 3. 「Users can X...」英文ポリシー (新スタイルと機能重複)
+-- 4. 日本語名のうち英名ポリシーと完全重複するもの
+-- 5. approvers_* / corrections_* / attendance_*_own 等の旧重複
 --
 -- 方針:
---   - 重複していても機能的に別軸 (admin/self/hr1_admin/manager 等) は保持
---   - qual=true は即削除
---   - authenticated_* は削除し、必要なら get_my_organization_ids() 系を残す
---   - 同一機能の古い別名 (「Users can X」「日本語名」) は削除
+-- * 新スタイル (*_select_org / *_all_admin / *_select_own) がある場合は旧を削除
+-- * 新スタイルが無く旧ポリシーだけの場合は keep (カバレッジを壊さない)
+-- * 不足カバレッジは後続の fix migration で追加
 -- ========================================================================
 
--- ======== 1. qual=true (完全公開) のセキュリティホールを全削除 ========
+-- ================================================================
+-- 1. qual=true (完全公開) のセキュリティホール
+-- ================================================================
 DROP POLICY IF EXISTS "authenticated_write_application_steps" ON public.application_steps;
 DROP POLICY IF EXISTS "authenticated_read_application_steps" ON public.application_steps;
 DROP POLICY IF EXISTS "authenticated_read_anchors" ON public.evaluation_anchors;
@@ -25,42 +27,113 @@ DROP POLICY IF EXISTS "authenticated_all_job_steps" ON public.job_steps;
 DROP POLICY IF EXISTS "authenticated_write_jobs" ON public.jobs;
 DROP POLICY IF EXISTS "authenticated_read_profiles" ON public.profiles;
 DROP POLICY IF EXISTS "project_team_members_select" ON public.project_team_members;
+DROP POLICY IF EXISTS "project_team_members_delete" ON public.project_team_members;
+DROP POLICY IF EXISTS "project_team_members_update" ON public.project_team_members;
 DROP POLICY IF EXISTS "project_teams_select" ON public.project_teams;
+DROP POLICY IF EXISTS "project_teams_delete" ON public.project_teams;
+DROP POLICY IF EXISTS "project_teams_update" ON public.project_teams;
 DROP POLICY IF EXISTS "projects_select" ON public.projects;
+DROP POLICY IF EXISTS "projects_delete" ON public.projects;
+DROP POLICY IF EXISTS "projects_update" ON public.projects;
+-- project_*_insert (WITH CHECK null) は INSERT で何も許可しない (実質無効)
+DROP POLICY IF EXISTS "project_team_members_insert" ON public.project_team_members;
+DROP POLICY IF EXISTS "project_teams_insert" ON public.project_teams;
+DROP POLICY IF EXISTS "projects_insert" ON public.projects;
 
--- ======== 2. 旧ヘルパー user_org_ids() 依存の authenticated_* を削除 ========
+-- ================================================================
+-- 2. 旧ヘルパー user_org_ids() 依存の authenticated_* を全削除
+-- ================================================================
+-- applications
 DROP POLICY IF EXISTS "authenticated_insert_applications" ON public.applications;
 DROP POLICY IF EXISTS "authenticated_read_applications" ON public.applications;
 DROP POLICY IF EXISTS "authenticated_update_applications" ON public.applications;
+
+-- custom_forms (新: 管理者がフォームを管理 [ALL])
+DROP POLICY IF EXISTS "authenticated_delete_custom_forms" ON public.custom_forms;
+DROP POLICY IF EXISTS "authenticated_write_custom_forms" ON public.custom_forms;
 DROP POLICY IF EXISTS "authenticated_read_custom_forms" ON public.custom_forms;
+DROP POLICY IF EXISTS "authenticated_update_custom_forms" ON public.custom_forms;
+
+-- departments
 DROP POLICY IF EXISTS "authenticated_read_departments" ON public.departments;
+
+-- employee_departments
 DROP POLICY IF EXISTS "authenticated_read_employee_departments" ON public.employee_departments;
+
+-- evaluation_criteria (新: eval_criteria_all_admin, eval_criteria_select_org)
+DROP POLICY IF EXISTS "authenticated_delete_evaluation_criteria" ON public.evaluation_criteria;
+DROP POLICY IF EXISTS "authenticated_write_evaluation_criteria" ON public.evaluation_criteria;
 DROP POLICY IF EXISTS "authenticated_read_evaluation_criteria" ON public.evaluation_criteria;
-DROP POLICY IF EXISTS "authenticated_read_evaluation_templates" ON public.evaluation_templates;
+DROP POLICY IF EXISTS "authenticated_update_evaluation_criteria" ON public.evaluation_criteria;
+
+-- evaluation_scores (新: eval_scores_*)
+DROP POLICY IF EXISTS "authenticated_delete_evaluation_scores" ON public.evaluation_scores;
 DROP POLICY IF EXISTS "authenticated_write_evaluation_scores" ON public.evaluation_scores;
 DROP POLICY IF EXISTS "authenticated_read_evaluation_scores" ON public.evaluation_scores;
 DROP POLICY IF EXISTS "authenticated_update_evaluation_scores" ON public.evaluation_scores;
+
+-- evaluation_templates (新: eval_templates_*)
+DROP POLICY IF EXISTS "authenticated_delete_evaluation_templates" ON public.evaluation_templates;
+DROP POLICY IF EXISTS "authenticated_insert_evaluation_templates" ON public.evaluation_templates;
+DROP POLICY IF EXISTS "authenticated_read_evaluation_templates" ON public.evaluation_templates;
+DROP POLICY IF EXISTS "authenticated_update_evaluation_templates" ON public.evaluation_templates;
+
+-- evaluations (新: evaluations_*)
+DROP POLICY IF EXISTS "authenticated_delete_evaluations" ON public.evaluations;
 DROP POLICY IF EXISTS "authenticated_insert_evaluations" ON public.evaluations;
 DROP POLICY IF EXISTS "authenticated_read_evaluations" ON public.evaluations;
 DROP POLICY IF EXISTS "authenticated_update_evaluations" ON public.evaluations;
+
+-- form_fields (新: 管理者がフィールドを管理 [ALL])
+DROP POLICY IF EXISTS "authenticated_delete_form_fields" ON public.form_fields;
+DROP POLICY IF EXISTS "authenticated_write_form_fields" ON public.form_fields;
 DROP POLICY IF EXISTS "authenticated_read_form_fields" ON public.form_fields;
-DROP POLICY IF EXISTS "authenticated_read_form_responses" ON public.form_responses;
+DROP POLICY IF EXISTS "authenticated_update_form_fields" ON public.form_fields;
+
+-- form_responses (新: 自分の回答を送信/閲覧, 管理者が回答を閲覧)
 DROP POLICY IF EXISTS "authenticated_write_form_responses" ON public.form_responses;
+DROP POLICY IF EXISTS "authenticated_read_form_responses" ON public.form_responses;
+DROP POLICY IF EXISTS "authenticated_update_form_responses" ON public.form_responses;
+
+-- interview_slots (新: interview_slots_*)
+DROP POLICY IF EXISTS "authenticated_delete_interview_slots" ON public.interview_slots;
+DROP POLICY IF EXISTS "authenticated_write_interview_slots" ON public.interview_slots;
 DROP POLICY IF EXISTS "authenticated_read_interview_slots" ON public.interview_slots;
+DROP POLICY IF EXISTS "authenticated_update_interview_slots" ON public.interview_slots;
+
+-- interviews (新: interviews_*)
+DROP POLICY IF EXISTS "authenticated_delete_interviews" ON public.interviews;
+DROP POLICY IF EXISTS "authenticated_write_interviews" ON public.interviews;
 DROP POLICY IF EXISTS "authenticated_read_interviews" ON public.interviews;
+DROP POLICY IF EXISTS "authenticated_update_interviews" ON public.interviews;
+
+-- job_sections (新: public_read_open_job_sections + 後で追加する job_sections_select_org)
+DROP POLICY IF EXISTS "authenticated_delete_job_sections" ON public.job_sections;
+DROP POLICY IF EXISTS "authenticated_write_job_sections" ON public.job_sections;
 DROP POLICY IF EXISTS "authenticated_read_job_sections" ON public.job_sections;
+DROP POLICY IF EXISTS "authenticated_update_job_sections" ON public.job_sections;
+
+-- jobs (新: jobs_all_admin, jobs_select_org, public_read_open_jobs)
 DROP POLICY IF EXISTS "authenticated_read_jobs" ON public.jobs;
+
+-- organizations (新: org_select_member, organizations_select_hr1_admin)
 DROP POLICY IF EXISTS "authenticated_read_organizations" ON public.organizations;
+
+-- profiles (新: profiles_update_own)
 DROP POLICY IF EXISTS "authenticated_update_own" ON public.profiles;
 
--- org_manage_* / org_read_* 系 (authenticated_* と同じく user_org_ids 依存)
+-- ================================================================
+-- 3. org_manage_* / org_read_* (新 eval_*_all_admin / eval_*_select_org と重複)
+-- ================================================================
 DROP POLICY IF EXISTS "org_manage_anchors" ON public.evaluation_anchors;
 DROP POLICY IF EXISTS "org_manage_assignments" ON public.evaluation_assignments;
 DROP POLICY IF EXISTS "org_read_assignments" ON public.evaluation_assignments;
 DROP POLICY IF EXISTS "org_manage_cycles" ON public.evaluation_cycles;
 DROP POLICY IF EXISTS "org_read_cycles" ON public.evaluation_cycles;
 
--- ======== 3. "Users can X..." 英文ポリシー (新スタイルと機能重複) ========
+-- ================================================================
+-- 4. "Users can X..." 英文ポリシー (新 employee_tasks_* / employee_task_steps_* と重複)
+-- ================================================================
 DROP POLICY IF EXISTS "Users can delete steps of own employee tasks" ON public.employee_task_steps;
 DROP POLICY IF EXISTS "Users can create steps for own employee tasks" ON public.employee_task_steps;
 DROP POLICY IF EXISTS "Users can view steps of own employee tasks" ON public.employee_task_steps;
@@ -71,13 +144,18 @@ DROP POLICY IF EXISTS "Users can view own employee tasks" ON public.employee_tas
 DROP POLICY IF EXISTS "Users can update own employee tasks" ON public.employee_tasks;
 DROP POLICY IF EXISTS "Users can send messages to accessible threads" ON public.messages;
 
--- ======== 4. 日本語名の機能重複ポリシー (英名に統一) ========
-DROP POLICY IF EXISTS "同一組織メンバーがフォームを閲覧" ON public.custom_forms;
+-- ================================================================
+-- 5. 日本語名の機能重複 (英名に統一)
+--   注: form_fields「フォームフィールドを閲覧」と form_responses「自分の回答を閲覧」等は
+--   英名対応物が無い (authenticated_* を今 drop したため) → 新規追加で置換
+-- ================================================================
 DROP POLICY IF EXISTS "フォームフィールドを閲覧" ON public.form_fields;
 DROP POLICY IF EXISTS "管理者は組織内の申請を閲覧" ON public.workflow_requests;
 DROP POLICY IF EXISTS "管理者は組織内の申請を更新" ON public.workflow_requests;
 
--- ======== 5. 古い重複 (approvers_* / corrections_* / attendance_*_own 等) ========
+-- ================================================================
+-- 6. 勤怠系の旧重複
+-- ================================================================
 DROP POLICY IF EXISTS "approvers_admin_all" ON public.attendance_approvers;
 DROP POLICY IF EXISTS "approvers_employee_read" ON public.attendance_approvers;
 DROP POLICY IF EXISTS "corrections_admin_all" ON public.attendance_corrections;
@@ -89,26 +167,21 @@ DROP POLICY IF EXISTS "attendance_punches_org_read" ON public.attendance_punches
 DROP POLICY IF EXISTS "attendance_records_own" ON public.attendance_records;
 DROP POLICY IF EXISTS "attendance_records_org_read" ON public.attendance_records;
 DROP POLICY IF EXISTS "attendance_settings_manage" ON public.attendance_settings;
--- attendance_settings_select と attendance_settings_select_org は qual が同一なので片方削除
 DROP POLICY IF EXISTS "attendance_settings_select" ON public.attendance_settings;
 
--- task_assignees_access (FOR ALL, 全組織メンバーに全権限) は広すぎ。
--- admin 専用の all + 本人参照の select + org 閲覧の select に絞る
+-- ================================================================
+-- 7. task_assignees_access / tasks_org_access (FOR ALL 広すぎ)
+--   tasks は tasks_all_admin + tasks_select_org (後で追加) に統一
+--   task_assignees は task_assignees_all_admin + task_assignees_select_org + task_assignees_select_own に統一
+-- ================================================================
 DROP POLICY IF EXISTS "task_assignees_access" ON public.task_assignees;
-
--- tasks_org_access (FOR ALL, 全組織メンバーに全権限) も同様に広すぎ。
--- tasks_all_admin を残し、org 閲覧用の SELECT ポリシーを別途追加
 DROP POLICY IF EXISTS "tasks_org_access" ON public.tasks;
 
--- ======== 6. 削除で欠けた coverage を補完するポリシー追加 ========
+-- ================================================================
+-- 8. 不足カバレッジの補完
+-- ================================================================
 
--- application_steps: qual=true を落としたので、応募者 (本人) と組織管理者のみに絞る
--- 既存の app_steps_all_admin (admin) / app_steps_select_own (applicant) で足りている
-
--- jobs: SELECT は jobs_select_org (org 全員) + public_read_open_jobs (anon) で足る
--- ALL は jobs_all_admin (admin のみ) で足る
-
--- job_sections: SELECT は public_read_open_job_sections (anon) のみでは組織員が読めない
+-- job_sections: 組織員が読めるポリシーを追加 (削除した authenticated_read_job_sections の代替)
 CREATE POLICY "job_sections_select_org" ON public.job_sections FOR SELECT
   USING (
     job_id IN (
@@ -117,21 +190,30 @@ CREATE POLICY "job_sections_select_org" ON public.job_sections FOR SELECT
     )
   );
 
--- job_steps: SELECT が qual=true 削除で失われるので組織員読み取りを追加
-CREATE POLICY "job_steps_select_org" ON public.job_steps FOR SELECT
+-- form_fields: 組織員が読める + 応募者が所属組織のフォームフィールドを読めるように
+CREATE POLICY "form_fields_select_org" ON public.form_fields FOR SELECT
   USING (
-    job_id IN (
-      SELECT id FROM public.jobs
-      WHERE organization_id IN (SELECT public.get_my_organization_ids())
+    form_id IN (
+      SELECT cf.id FROM public.custom_forms cf
+      WHERE cf.organization_id IN (SELECT public.get_my_organization_ids())
     )
   );
 
--- tasks: tasks_org_access を落としたので org 閲覧 SELECT を追加
-CREATE POLICY "tasks_select_org" ON public.tasks FOR SELECT
-  USING (organization_id IN (SELECT public.get_my_organization_ids()));
+-- tasks: 組織メンバーが SELECT (tasks_org_access の後継)
+-- tasks_select_org が既存の場合もあるのでチェック
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname='public' AND tablename='tasks' AND policyname='tasks_select_org'
+  ) THEN
+    CREATE POLICY "tasks_select_org" ON public.tasks FOR SELECT
+      USING (organization_id IN (SELECT public.get_my_organization_ids()));
+  END IF;
+END $$;
 
--- tasks: 組織メンバーが自分で新規作成・自分のものを更新できるポリシー追加
-CREATE POLICY "tasks_insert_org_member" ON public.tasks FOR INSERT
+-- tasks: 組織メンバーが自分のタスクを作成・更新できる
+CREATE POLICY "tasks_insert_own" ON public.tasks FOR INSERT
   WITH CHECK (
     organization_id IN (SELECT public.get_my_organization_ids())
     AND created_by = (auth.uid())::text
@@ -143,75 +225,14 @@ CREATE POLICY "tasks_update_own" ON public.tasks FOR UPDATE
     AND organization_id IN (SELECT public.get_my_organization_ids())
   );
 
--- task_assignees: task_assignees_access を落としたので org 操作用を追加
--- (task_assignees_all_admin は既にあるので admin は足りる)
--- アサイン本人が自分のアサインを更新できる
-CREATE POLICY "task_assignees_update_own" ON public.task_assignees FOR UPDATE
-  USING (user_id = (auth.uid())::text);
-
--- project_teams / project_team_members / projects:
--- qual=true を落としたので組織員 SELECT を追加
-CREATE POLICY "projects_select_org" ON public.projects FOR SELECT
-  USING (organization_id IN (SELECT public.get_my_organization_ids()));
-
-CREATE POLICY "project_teams_select_org" ON public.project_teams FOR SELECT
-  USING (
-    project_id IN (
-      SELECT id FROM public.projects
-      WHERE organization_id IN (SELECT public.get_my_organization_ids())
-    )
-  );
-
-CREATE POLICY "project_team_members_select_org" ON public.project_team_members FOR SELECT
-  USING (
-    team_id IN (
-      SELECT pt.id FROM public.project_teams pt
-      JOIN public.projects pr ON pr.id = pt.project_id
-      WHERE pr.organization_id IN (SELECT public.get_my_organization_ids())
-    )
-  );
-
--- 管理者が project / project_teams / project_team_members を管理
-CREATE POLICY "projects_all_admin" ON public.projects FOR ALL
-  USING (
-    public.get_my_role() = 'admin'
-    AND organization_id IN (SELECT public.get_my_organization_ids())
-  )
-  WITH CHECK (
-    public.get_my_role() = 'admin'
-    AND organization_id IN (SELECT public.get_my_organization_ids())
-  );
-
-CREATE POLICY "project_teams_all_admin" ON public.project_teams FOR ALL
-  USING (
-    public.get_my_role() = 'admin'
-    AND project_id IN (
-      SELECT id FROM public.projects
-      WHERE organization_id IN (SELECT public.get_my_organization_ids())
-    )
-  )
-  WITH CHECK (
-    public.get_my_role() = 'admin'
-    AND project_id IN (
-      SELECT id FROM public.projects
-      WHERE organization_id IN (SELECT public.get_my_organization_ids())
-    )
-  );
-
-CREATE POLICY "project_team_members_all_admin" ON public.project_team_members FOR ALL
-  USING (
-    public.get_my_role() = 'admin'
-    AND team_id IN (
-      SELECT pt.id FROM public.project_teams pt
-      JOIN public.projects pr ON pr.id = pt.project_id
-      WHERE pr.organization_id IN (SELECT public.get_my_organization_ids())
-    )
-  )
-  WITH CHECK (
-    public.get_my_role() = 'admin'
-    AND team_id IN (
-      SELECT pt.id FROM public.project_teams pt
-      JOIN public.projects pr ON pr.id = pt.project_id
-      WHERE pr.organization_id IN (SELECT public.get_my_organization_ids())
-    )
-  );
+-- task_assignees: アサイン本人が自分のアサインを更新 (既存の可能性あるので冪等)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname='public' AND tablename='task_assignees' AND policyname='task_assignees_update_own'
+  ) THEN
+    CREATE POLICY "task_assignees_update_own" ON public.task_assignees FOR UPDATE
+      USING (user_id = (auth.uid())::text);
+  END IF;
+END $$;

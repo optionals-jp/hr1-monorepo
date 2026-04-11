@@ -92,8 +92,8 @@ export default function ForecastReportPage() {
   const handleExportCSV = () => {
     const rows = activeDeals.map((d) => ({
       title: d.title,
-      company: d.bc_companies?.name ?? "",
-      stage: d.stage,
+      company: d.crm_companies?.name ?? "",
+      stage: d.crm_pipeline_stages?.name ?? "",
       status: d.status,
       amount: d.amount ?? 0,
       probability: d.probability ?? 0,

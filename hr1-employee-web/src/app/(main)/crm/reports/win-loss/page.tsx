@@ -68,7 +68,7 @@ export default function WinLossReportPage() {
   const handleExportCSV = () => {
     const rows = [...wonDeals, ...lostDeals].map((d) => ({
       title: d.title,
-      company: d.bc_companies?.name ?? "",
+      company: d.crm_companies?.name ?? "",
       status: d.status === "won" ? "受注" : "失注",
       amount: d.amount ?? 0,
       assigned_to: d.profiles?.display_name ?? "",

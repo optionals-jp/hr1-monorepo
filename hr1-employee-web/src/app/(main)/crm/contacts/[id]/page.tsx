@@ -82,14 +82,14 @@ export default function CrmContactDetailPage() {
                       </span>
                     </div>
                   )}
-                  {contact.bc_companies && (
+                  {contact.crm_companies && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">企業</span>
                       <Link
                         href={`/crm/companies/${contact.company_id}`}
                         className="text-primary hover:underline"
                       >
-                        {contact.bc_companies.name}
+                        {contact.crm_companies.name}
                       </Link>
                     </div>
                   )}

@@ -20,7 +20,7 @@ interface StageChangeDialogProps {
   stages: CrmPipelineStage[];
   currentIndex: number;
   currentStageName: string;
-  status: "open" | "won" | "lost";
+  status: "open" | "won" | "lost" | "cancelled";
   onStageChange: (stageId: string, stageName: string, probability: number) => Promise<void>;
 }
 

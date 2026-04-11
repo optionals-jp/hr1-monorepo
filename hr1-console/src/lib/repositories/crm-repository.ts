@@ -53,7 +53,7 @@ export async function fetchRecentActivities(
   limit = 10
 ) {
   const { data, error } = await client
-    .from("bc_activities")
+    .from("crm_activities")
     .select("*, profiles:created_by(display_name, email)")
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false })
@@ -64,7 +64,7 @@ export async function fetchRecentActivities(
 
 export async function fetchUpcomingTodos(client: SupabaseClient, organizationId: string) {
   const { data, error } = await client
-    .from("bc_todos")
+    .from("crm_todos")
     .select("*, profiles:assigned_to(display_name, email)")
     .eq("organization_id", organizationId)
     .eq("is_completed", false)
@@ -78,8 +78,8 @@ export async function fetchUpcomingTodos(client: SupabaseClient, organizationId:
 
 export async function fetchDeals(client: SupabaseClient, organizationId: string) {
   const { data, error } = await client
-    .from("bc_deals")
-    .select("*, bc_companies(*), bc_contacts(*), profiles(display_name)")
+    .from("crm_deals")
+    .select("*, crm_companies(*), crm_contacts(*), profiles(display_name)")
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -88,7 +88,7 @@ export async function fetchDeals(client: SupabaseClient, organizationId: string)
 
 export async function fetchCompanyIds(client: SupabaseClient, organizationId: string) {
   const { data, error } = await client
-    .from("bc_companies")
+    .from("crm_companies")
     .select("id")
     .eq("organization_id", organizationId);
   if (error) throw error;
@@ -97,7 +97,7 @@ export async function fetchCompanyIds(client: SupabaseClient, organizationId: st
 
 export async function fetchContactIds(client: SupabaseClient, organizationId: string) {
   const { data, error } = await client
-    .from("bc_contacts")
+    .from("crm_contacts")
     .select("id")
     .eq("organization_id", organizationId);
   if (error) throw error;
@@ -108,7 +108,7 @@ export async function fetchContactIds(client: SupabaseClient, organizationId: st
 
 export async function fetchCompanies(client: SupabaseClient, organizationId: string) {
   const { data, error } = await client
-    .from("bc_companies")
+    .from("crm_companies")
     .select("*")
     .eq("organization_id", organizationId)
     .order("name");
@@ -118,7 +118,7 @@ export async function fetchCompanies(client: SupabaseClient, organizationId: str
 
 export async function fetchCompany(client: SupabaseClient, id: string, organizationId: string) {
   const { data, error } = await client
-    .from("bc_companies")
+    .from("crm_companies")
     .select("*")
     .eq("id", id)
     .eq("organization_id", organizationId)
@@ -131,7 +131,7 @@ export async function createCompany(
   client: SupabaseClient,
   data: Partial<BcCompany> & { organization_id: string; name: string }
 ) {
-  const { error } = await client.from("bc_companies").insert(data);
+  const { error } = await client.from("crm_companies").insert(data);
   if (error) throw error;
 }
 
@@ -142,7 +142,7 @@ export async function updateCompany(
   data: Partial<BcCompany>
 ) {
   const { error } = await client
-    .from("bc_companies")
+    .from("crm_companies")
     .update(data)
     .eq("id", id)
     .eq("organization_id", organizationId);
@@ -151,7 +151,7 @@ export async function updateCompany(
 
 export async function deleteCompany(client: SupabaseClient, id: string, organizationId: string) {
   const { error } = await client
-    .from("bc_companies")
+    .from("crm_companies")
     .delete()
     .eq("id", id)
     .eq("organization_id", organizationId);
@@ -162,8 +162,8 @@ export async function deleteCompany(client: SupabaseClient, id: string, organiza
 
 export async function fetchContacts(client: SupabaseClient, organizationId: string) {
   const { data, error } = await client
-    .from("bc_contacts")
-    .select("*, bc_companies(name)")
+    .from("crm_contacts")
+    .select("*, crm_companies(name)")
     .eq("organization_id", organizationId)
     .order("last_name");
   if (error) throw error;
@@ -172,8 +172,8 @@ export async function fetchContacts(client: SupabaseClient, organizationId: stri
 
 export async function fetchContact(client: SupabaseClient, id: string, organizationId: string) {
   const { data, error } = await client
-    .from("bc_contacts")
-    .select("*, bc_companies(*)")
+    .from("crm_contacts")
+    .select("*, crm_companies(*)")
     .eq("id", id)
     .eq("organization_id", organizationId)
     .single();
@@ -187,7 +187,7 @@ export async function fetchContactsByCompany(
   organizationId: string
 ) {
   const { data, error } = await client
-    .from("bc_contacts")
+    .from("crm_contacts")
     .select("*")
     .eq("company_id", companyId)
     .eq("organization_id", organizationId)
@@ -198,7 +198,7 @@ export async function fetchContactsByCompany(
 
 export async function deleteContact(client: SupabaseClient, id: string, organizationId: string) {
   const { error } = await client
-    .from("bc_contacts")
+    .from("crm_contacts")
     .delete()
     .eq("id", id)
     .eq("organization_id", organizationId);
@@ -209,8 +209,8 @@ export async function deleteContact(client: SupabaseClient, id: string, organiza
 
 export async function fetchDealsAll(client: SupabaseClient, organizationId: string) {
   const { data, error } = await client
-    .from("bc_deals")
-    .select("*, bc_companies(name), bc_contacts(last_name, first_name)")
+    .from("crm_deals")
+    .select("*, crm_companies(name), crm_contacts(last_name, first_name)")
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -219,8 +219,8 @@ export async function fetchDealsAll(client: SupabaseClient, organizationId: stri
 
 export async function fetchDeal(client: SupabaseClient, id: string, organizationId: string) {
   const { data, error } = await client
-    .from("bc_deals")
-    .select("*, bc_companies(*), bc_contacts(*)")
+    .from("crm_deals")
+    .select("*, crm_companies(*), crm_contacts(*)")
     .eq("id", id)
     .eq("organization_id", organizationId)
     .single();
@@ -234,7 +234,7 @@ export async function fetchDealsByCompany(
   organizationId: string
 ) {
   const { data, error } = await client
-    .from("bc_deals")
+    .from("crm_deals")
     .select("*")
     .eq("company_id", companyId)
     .eq("organization_id", organizationId)
@@ -249,7 +249,7 @@ export async function fetchDealsByContact(
   organizationId: string
 ) {
   const { data, error } = await client
-    .from("bc_deals")
+    .from("crm_deals")
     .select("*")
     .eq("contact_id", contactId)
     .eq("organization_id", organizationId)
@@ -262,7 +262,7 @@ export async function createDeal(
   client: SupabaseClient,
   data: Partial<BcDeal> & { organization_id: string; title: string }
 ): Promise<BcDeal> {
-  const { data: created, error } = await client.from("bc_deals").insert(data).select().single();
+  const { data: created, error } = await client.from("crm_deals").insert(data).select().single();
   if (error) throw error;
   return created as BcDeal;
 }
@@ -274,7 +274,7 @@ export async function updateDeal(
   data: Partial<BcDeal>
 ) {
   const { error } = await client
-    .from("bc_deals")
+    .from("crm_deals")
     .update(data)
     .eq("id", id)
     .eq("organization_id", organizationId);
@@ -283,7 +283,7 @@ export async function updateDeal(
 
 export async function deleteDeal(client: SupabaseClient, id: string, organizationId: string) {
   const { error } = await client
-    .from("bc_deals")
+    .from("crm_deals")
     .delete()
     .eq("id", id)
     .eq("organization_id", organizationId);
@@ -298,7 +298,7 @@ export async function fetchActivitiesByContact(
   organizationId: string
 ) {
   const { data, error } = await client
-    .from("bc_activities")
+    .from("crm_activities")
     .select("*, profiles:created_by(display_name, email)")
     .eq("contact_id", contactId)
     .eq("organization_id", organizationId)
@@ -313,7 +313,7 @@ export async function fetchActivitiesByCompany(
   organizationId: string
 ) {
   const { data, error } = await client
-    .from("bc_activities")
+    .from("crm_activities")
     .select("*, profiles:created_by(display_name, email)")
     .eq("company_id", companyId)
     .eq("organization_id", organizationId)
@@ -328,7 +328,7 @@ export async function fetchActivitiesByDeal(
   organizationId: string
 ) {
   const { data, error } = await client
-    .from("bc_activities")
+    .from("crm_activities")
     .select("*, profiles:created_by(display_name, email)")
     .eq("deal_id", dealId)
     .eq("organization_id", organizationId)
@@ -353,7 +353,7 @@ export async function createActivity(
   }
 ): Promise<BcActivity> {
   const { data: created, error } = await client
-    .from("bc_activities")
+    .from("crm_activities")
     .insert(data)
     .select()
     .single();
@@ -376,7 +376,7 @@ export async function createTodo(
     created_by?: string | null;
   }
 ): Promise<BcTodo> {
-  const { data: created, error } = await client.from("bc_todos").insert(data).select().single();
+  const { data: created, error } = await client.from("crm_todos").insert(data).select().single();
   if (error) throw error;
   return created as BcTodo;
 }
@@ -388,7 +388,7 @@ export async function toggleTodoComplete(
   isCompleted: boolean
 ): Promise<void> {
   const { error } = await client
-    .from("bc_todos")
+    .from("crm_todos")
     .update({
       is_completed: isCompleted,
       completed_at: isCompleted ? new Date().toISOString() : null,
@@ -406,7 +406,7 @@ export async function fetchCardsByContact(
   organizationId: string
 ) {
   const { data, error } = await client
-    .from("bc_cards")
+    .from("crm_cards")
     .select("*")
     .eq("contact_id", contactId)
     .eq("organization_id", organizationId)
@@ -423,7 +423,7 @@ export async function fetchActivitiesByLead(
   organizationId: string
 ) {
   const { data, error } = await client
-    .from("bc_activities")
+    .from("crm_activities")
     .select("*, profiles:created_by(display_name, email)")
     .eq("lead_id", leadId)
     .eq("organization_id", organizationId)
@@ -438,7 +438,7 @@ export async function fetchTodosByDeal(
   organizationId: string
 ) {
   const { data, error } = await client
-    .from("bc_todos")
+    .from("crm_todos")
     .select("*")
     .eq("deal_id", dealId)
     .eq("organization_id", organizationId)

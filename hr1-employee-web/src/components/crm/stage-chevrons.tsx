@@ -11,7 +11,7 @@ interface StageChevronsProps {
   stages: CrmPipelineStage[];
   currentStageId: string | null;
   currentStageName: string;
-  status: "open" | "won" | "lost";
+  status: "open" | "won" | "lost" | "cancelled";
   onStageChange?: (stageId: string, stageName: string, probability: number) => Promise<void>;
 }
 
@@ -63,7 +63,7 @@ export function StageChevrons({
 interface ChevronBarProps {
   stages: CrmPipelineStage[];
   currentIndex: number;
-  status: "open" | "won" | "lost";
+  status: "open" | "won" | "lost" | "cancelled";
   onClick?: () => void;
   onStageClick?: (stage: CrmPipelineStage, index: number) => void;
 }

@@ -56,7 +56,7 @@ export default function QuotesPage() {
       return (
         q.title.toLowerCase().includes(s) ||
         q.quote_number.toLowerCase().includes(s) ||
-        q.bc_companies?.name?.toLowerCase().includes(s)
+        q.crm_companies?.name?.toLowerCase().includes(s)
       );
     });
   }, [quotes, search, statusFilter]);
@@ -178,10 +178,10 @@ export default function QuotesPage() {
                   <TableCell className="font-medium text-primary">{q.quote_number}</TableCell>
                   <TableCell>{q.title}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {q.bc_companies?.name ?? "—"}
+                    {q.crm_companies?.name ?? "—"}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {q.bc_deals?.title ?? "—"}
+                    {q.crm_deals?.title ?? "—"}
                   </TableCell>
                   <TableCell>
                     <Badge variant={quoteStatusColors[q.status]}>

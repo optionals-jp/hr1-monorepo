@@ -3,8 +3,8 @@ import type { BcQuote, BcQuoteItem } from "@/types/database";
 
 export async function fetchQuotes(client: SupabaseClient, organizationId: string) {
   const { data, error } = await client
-    .from("bc_quotes")
-    .select("*, bc_companies(name), bc_contacts(last_name, first_name), bc_deals:deal_id(title)")
+    .from("crm_quotes")
+    .select("*, crm_companies(name), crm_contacts(last_name, first_name), crm_deals:deal_id(title)")
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -17,8 +17,8 @@ export async function fetchQuotesByDeal(
   organizationId: string
 ) {
   const { data, error } = await client
-    .from("bc_quotes")
-    .select("*, bc_companies(name), bc_contacts(last_name, first_name)")
+    .from("crm_quotes")
+    .select("*, crm_companies(name), crm_contacts(last_name, first_name)")
     .eq("deal_id", dealId)
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
@@ -28,17 +28,17 @@ export async function fetchQuotesByDeal(
 
 export async function fetchQuote(client: SupabaseClient, id: string, organizationId: string) {
   const { data, error } = await client
-    .from("bc_quotes")
+    .from("crm_quotes")
     .select(
-      "*, bc_companies(name), bc_contacts(last_name, first_name), bc_deals:deal_id(title), bc_quote_items(*)"
+      "*, crm_companies(name), crm_contacts(last_name, first_name), crm_deals:deal_id(title), crm_quote_items(*)"
     )
     .eq("id", id)
     .eq("organization_id", organizationId)
     .single();
   if (error) throw error;
   // 明細をsort_order順にソート
-  if (data?.bc_quote_items) {
-    data.bc_quote_items.sort((a: BcQuoteItem, b: BcQuoteItem) => a.sort_order - b.sort_order);
+  if (data?.crm_quote_items) {
+    data.crm_quote_items.sort((a: BcQuoteItem, b: BcQuoteItem) => a.sort_order - b.sort_order);
   }
   return data as BcQuote;
 }
@@ -63,7 +63,7 @@ export async function createQuote(
     created_by?: string | null;
   }
 ) {
-  const { data: result, error } = await client.from("bc_quotes").insert(data).select().single();
+  const { data: result, error } = await client.from("crm_quotes").insert(data).select().single();
   if (error) throw error;
   return result as BcQuote;
 }
@@ -92,7 +92,7 @@ export async function updateQuote(
   >
 ) {
   const { error } = await client
-    .from("bc_quotes")
+    .from("crm_quotes")
     .update({ ...data, updated_at: new Date().toISOString() })
     .eq("id", id)
     .eq("organization_id", organizationId);
@@ -101,7 +101,7 @@ export async function updateQuote(
 
 export async function deleteQuote(client: SupabaseClient, id: string, organizationId: string) {
   const { error } = await client
-    .from("bc_quotes")
+    .from("crm_quotes")
     .delete()
     .eq("id", id)
     .eq("organization_id", organizationId);
@@ -125,7 +125,7 @@ export async function syncQuoteItems(
 ) {
   // 0. 見積が当該テナントに属するか検証
   const { data: quote, error: quoteErr } = await client
-    .from("bc_quotes")
+    .from("crm_quotes")
     .select("id")
     .eq("id", quoteId)
     .eq("organization_id", organizationId)
@@ -133,7 +133,7 @@ export async function syncQuoteItems(
   if (quoteErr || !quote) throw quoteErr ?? new Error("見積書が見つかりません");
 
   // 1. 既存明細を削除
-  const { error: deleteErr } = await client.from("bc_quote_items").delete().eq("quote_id", quoteId);
+  const { error: deleteErr } = await client.from("crm_quote_items").delete().eq("quote_id", quoteId);
   if (deleteErr) throw deleteErr;
 
   // 2. 新しい明細を挿入
@@ -147,7 +147,7 @@ export async function syncQuoteItems(
       unit_price: item.unit_price,
       amount: item.amount,
     }));
-    const { error: insertErr } = await client.from("bc_quote_items").insert(rows);
+    const { error: insertErr } = await client.from("crm_quote_items").insert(rows);
     if (insertErr) throw insertErr;
   }
 }
@@ -161,7 +161,7 @@ export async function generateQuoteNumber(
   organizationId: string
 ): Promise<string> {
   const { data, error } = await client
-    .from("bc_quotes")
+    .from("crm_quotes")
     .select("quote_number")
     .eq("organization_id", organizationId)
     .order("quote_number", { ascending: false })

@@ -432,7 +432,7 @@ function StatusSummaryCard({
   color,
 }: {
   label: string;
-  deals: { amount?: number | null; title: string; bc_companies?: { name?: string } | null }[];
+  deals: { amount?: number | null; title: string; crm_companies?: { name?: string } | null }[];
   status: string;
   color: string;
 }) {

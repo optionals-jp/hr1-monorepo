@@ -39,15 +39,15 @@ function AuthGuard({ children }: { children: ReactNode }) {
 
   // 認証済み → メインレイアウト
   return (
-    <>
-      <Header />
-      <div className="flex min-h-0">
-        <Sidebar />
+    <div className="flex min-h-dvh">
+      <Sidebar />
+      <div className="flex flex-col flex-1 min-w-0">
+        <Header />
         <main className="flex flex-col flex-1 min-w-0 bg-slate-50">
           {children}
         </main>
       </div>
-    </>
+    </div>
   );
 }
 

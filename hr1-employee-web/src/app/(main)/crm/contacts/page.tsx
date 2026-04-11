@@ -174,7 +174,7 @@ export default function CrmContactsPage() {
                   <TableCell className="font-medium">
                     {c.last_name} {c.first_name ?? ""}
                   </TableCell>
-                  <TableCell>{c.bc_companies?.name ?? "—"}</TableCell>
+                  <TableCell>{c.crm_companies?.name ?? "—"}</TableCell>
                   <TableCell>
                     {[c.department, c.position].filter(Boolean).join(" / ") || "—"}
                   </TableCell>

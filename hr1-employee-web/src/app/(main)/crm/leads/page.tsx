@@ -138,7 +138,6 @@ export default function CrmLeadsPage() {
         contactEmail: convertData.contactEmail || null,
         contactPhone: convertData.contactPhone || null,
         dealTitle: convertData.dealTitle,
-        dealStage: firstStage?.name ?? "initial",
         dealStageId: firstStage?.id,
         dealPipelineId: firstStage?.pipeline_id,
       });

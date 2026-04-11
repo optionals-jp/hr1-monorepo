@@ -83,7 +83,7 @@ async function executeAction(
       const dueDate = params.due_days
         ? new Date(Date.now() + Number(params.due_days) * 86400000).toISOString().slice(0, 10)
         : null;
-      const { error } = await client.from("bc_todos").insert({
+      const { error } = await client.from("crm_todos").insert({
         organization_id: context.organizationId,
         title: String(params.title ?? "自動作成タスク"),
         description: params.description ? String(params.description) : null,
@@ -99,7 +99,7 @@ async function executeAction(
     }
 
     case "create_activity": {
-      const { error } = await client.from("bc_activities").insert({
+      const { error } = await client.from("crm_activities").insert({
         organization_id: context.organizationId,
         activity_type: params.activity_type ?? "memo",
         title: String(params.title ?? "自動記録"),
@@ -227,7 +227,6 @@ function isAllowedWebhookUrl(url: string): boolean {
 const ALLOWED_UPDATE_FIELDS: Record<string, Set<string>> = {
   deal: new Set([
     "status",
-    "stage",
     "stage_id",
     "probability",
     "amount",
@@ -261,13 +260,13 @@ const ALLOWED_UPDATE_FIELDS: Record<string, Set<string>> = {
 function getTableForEntityType(entityType: string): string | null {
   switch (entityType) {
     case "deal":
-      return "bc_deals";
+      return "crm_deals";
     case "company":
-      return "bc_companies";
+      return "crm_companies";
     case "contact":
-      return "bc_contacts";
+      return "crm_contacts";
     case "lead":
-      return "bc_leads";
+      return "crm_leads";
     default:
       return null;
   }

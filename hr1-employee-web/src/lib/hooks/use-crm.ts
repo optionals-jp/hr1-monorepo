@@ -316,7 +316,7 @@ export function useCrmContactsPage() {
     return (
       fullName.includes(q) ||
       c.email?.toLowerCase().includes(q) ||
-      c.bc_companies?.name.toLowerCase().includes(q)
+      c.crm_companies?.name.toLowerCase().includes(q)
     );
   });
 
@@ -453,7 +453,6 @@ export async function saveDeal(params: {
       company_id: (data.company_id as string) || null,
       contact_id: (data.contact_id as string) || null,
       amount: data.amount ? Number(data.amount) : null,
-      stage: (data.stage as string) || "initial",
       stage_id: (data.stage_id as string) || null,
       pipeline_id: (data.pipeline_id as string) || null,
       probability: data.probability != null ? Number(data.probability) : null,
@@ -463,7 +462,7 @@ export async function saveDeal(params: {
     };
     if (data.id) {
       const previousStatus = data._previousStatus as string | undefined;
-      const previousStage = data._previousStage as string | undefined;
+      const previousStageId = data._previousStageId as string | undefined;
       await repository.updateDeal(client, data.id as string, params.organizationId, {
         ...commonFields,
         status: (data.status as BcDeal["status"]) || "open",
@@ -481,7 +480,7 @@ export async function saveDeal(params: {
       } else if (data.status === "lost" && previousStatus !== "lost") {
         fireTrigger(client, { ...entityCtx, triggerType: "deal_lost" }).catch(() => {});
       }
-      if (commonFields.stage !== previousStage) {
+      if (commonFields.stage_id !== previousStageId) {
         fireTrigger(client, { ...entityCtx, triggerType: "deal_stage_changed" }).catch(() => {});
       }
     } else {
@@ -489,7 +488,7 @@ export async function saveDeal(params: {
         ...commonFields,
         organization_id: params.organizationId,
         status: "open",
-        probability: commonFields.probability ?? dealStageProbability[commonFields.stage] ?? null,
+        probability: commonFields.probability ?? null,
       });
       // 自動化トリガー（非同期）
       fireTrigger(client, {
@@ -536,11 +535,11 @@ export function useCrmDealsPage() {
     if (statusFilter !== "all" && d.status !== statusFilter) return false;
     if (!search) return true;
     const q = search.toLowerCase();
-    return d.title.toLowerCase().includes(q) || d.bc_companies?.name?.toLowerCase().includes(q);
+    return d.title.toLowerCase().includes(q) || d.crm_companies?.name?.toLowerCase().includes(q);
   });
 
   const openCreate = () => {
-    setEditData({ stage: "initial", status: "open" });
+    setEditData({ status: "open" });
     setErrors(null);
     setEditOpen(true);
   };

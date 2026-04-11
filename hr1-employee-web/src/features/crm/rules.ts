@@ -154,9 +154,7 @@ export function computeStageFunnel(
   openDeals: BcDeal[]
 ): StageData[] {
   return stages.map((stage) => {
-    const stageDeals = openDeals.filter(
-      (d) => d.stage_id === stage.id || (!d.stage_id && d.stage === stage.name)
-    );
+    const stageDeals = openDeals.filter((d) => d.stage_id === stage.id);
     return {
       ...stage,
       count: stageDeals.length,
@@ -209,9 +207,7 @@ export function computeStageMetrics(
   stageHistory: CrmDealStageHistory[]
 ): StageMetric[] {
   return stages.map((stage) => {
-    const stageDeals = openDeals.filter(
-      (d) => d.stage_id === stage.id || (!d.stage_id && d.stage === stage.name)
-    );
+    const stageDeals = openDeals.filter((d) => d.stage_id === stage.id);
     const amount = stageDeals.reduce((sum, d) => sum + (d.amount ?? 0), 0);
     const weighted = stageDeals.reduce(
       (sum, d) => sum + (d.amount ?? 0) * ((d.probability ?? 0) / 100),
