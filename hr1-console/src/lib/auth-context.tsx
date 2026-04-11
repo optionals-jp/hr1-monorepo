@@ -10,6 +10,7 @@ import {
   ReactNode,
 } from "react";
 import { getSupabase } from "./supabase/browser";
+import { AuthEvent } from "@hr1/shared-ui/lib/auth-events";
 import type { Profile, PermissionAction } from "@/types/database";
 import { fetchMyPermissions } from "@/lib/repositories/permission-group-repository";
 
@@ -65,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [permissionMap, setPermissionMap] = useState<PermissionMap>(new Map());
   const [loading, setLoading] = useState(true);
   const signingIn = useRef(false);
+  const signingOut = useRef(false);
 
   useEffect(() => {
     const {
@@ -81,14 +83,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!session?.user) {
         setUser(null);
         setProfile(null);
+        setPermissionMap(new Map());
         setLoading(false);
+        // リフレッシュ失敗等でセッションが失われた場合、即座にログイン画面へ遷移
+        // 意図的な signOut() の場合は呼び出し元がリダイレクトを制御する
+        if (
+          event === AuthEvent.SIGNED_OUT &&
+          !signingOut.current &&
+          typeof window !== "undefined"
+        ) {
+          window.location.href = "/login";
+        }
+        signingOut.current = false;
         return;
       }
 
       const sessionUser = session.user;
 
       // TOKEN_REFRESHED ではプロフィール再取得不要（セッション維持のみ）
-      if (event === "TOKEN_REFRESHED") {
+      if (event === AuthEvent.TOKEN_REFRESHED) {
         setUser((prev) =>
           prev?.id === sessionUser.id
             ? prev
@@ -107,10 +120,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setProfile(prof);
             setPermissionMap(perms);
           } else {
-            getSupabase().auth.signOut();
-            setUser(null);
-            setProfile(null);
-            setPermissionMap(new Map());
+            await getSupabase().auth.signOut();
+            // onAuthStateChange(SIGNED_OUT) → /login リダイレクト
           }
         })
         .catch(() => {
@@ -202,10 +213,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    signingOut.current = true;
     await getSupabase().auth.signOut();
-    setUser(null);
-    setProfile(null);
-    setPermissionMap(new Map());
+    // onAuthStateChange(SIGNED_OUT) で state はクリアされる
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -221,8 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hasPermission = useCallback(
     (resource: string, action: PermissionAction): boolean => {
       if (profile?.role === "admin") return true;
-      if (!permissionMap) return false;
-      const actions = permissionMap.get(resource);
+      const actions = permissionMap?.get(resource);
       return actions?.has(action) ?? false;
     },
     [profile, permissionMap]

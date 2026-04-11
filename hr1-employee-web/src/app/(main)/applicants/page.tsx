@@ -1,0 +1,251 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useToast } from "@hr1/shared-ui/components/ui/toast";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { Button } from "@hr1/shared-ui/components/ui/button";
+import { FormField, FormInput } from "@hr1/shared-ui/components/ui/form-field";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@hr1/shared-ui/components/ui/select";
+import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
+import { useApplicantsPage } from "@/features/recruiting/hooks/use-applicants-page";
+import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@hr1/shared-ui/components/ui/dropdown-menu";
+import { cn } from "@hr1/shared-ui/lib/utils";
+import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
+import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
+import { SlidersHorizontal, X } from "lucide-react";
+import { format } from "date-fns";
+
+const addTabs: EditPanelTab[] = [
+  { value: "basic", label: "基本情報" },
+  { value: "hiring", label: "採用区分" },
+];
+
+export default function ApplicantsPage() {
+  const router = useRouter();
+  const { showToast } = useToast();
+  const h = useApplicantsPage();
+
+  return (
+    <div className="flex flex-col">
+      <QueryErrorBanner error={h.applicantsError} onRetry={() => h.mutate()} />
+      <PageHeader
+        title="応募者一覧"
+        description="応募者の管理・招待"
+        sticky={false}
+        border={false}
+        action={<Button onClick={h.openAddDialog}>応募者を追加</Button>}
+      />
+
+      <StickyFilterBar>
+        <SearchBar value={h.search} onChange={h.setSearch} />
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
+            {h.filterHiringType !== "all" && (
+              <div className="flex items-center gap-1.5 overflow-x-auto">
+                <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                  採用区分：
+                  {h.filterHiringType === "new_grad"
+                    ? "新卒"
+                    : h.filterHiringType === "mid_career"
+                      ? "中途"
+                      : "未設定"}
+                  <span
+                    role="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      h.setFilterHiringType("all");
+                    }}
+                    className="ml-0.5 hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </span>
+                </Badge>
+              </div>
+            )}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-auto py-2">
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterHiringType("all")}>
+              <span className={cn(h.filterHiringType === "all" && "font-medium")}>すべて</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterHiringType("new_grad")}>
+              <span className={cn(h.filterHiringType === "new_grad" && "font-medium")}>新卒</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterHiringType("mid_career")}>
+              <span className={cn(h.filterHiringType === "mid_career" && "font-medium")}>中途</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterHiringType("none")}>
+              <span className={cn(h.filterHiringType === "none" && "font-medium")}>未設定</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </StickyFilterBar>
+
+      <TableSection>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>名前</TableHead>
+              <TableHead>メールアドレス</TableHead>
+              <TableHead>採用区分</TableHead>
+              <TableHead>ステータス</TableHead>
+              <TableHead>登録日</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableEmptyState
+              colSpan={5}
+              isLoading={h.isLoading}
+              isEmpty={h.filtered.length === 0}
+              emptyMessage="応募者がいません"
+            >
+              {h.filtered.map((applicant) => (
+                <TableRow
+                  key={applicant.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/applicants/${applicant.id}`)}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-medium">
+                          {(applicant.display_name ?? applicant.email)[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{applicant.display_name ?? "-"}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>{applicant.email}</TableCell>
+                  <TableCell>
+                    {applicant.hiring_type === "new_grad" ? (
+                      <Badge variant="secondary">新卒（{applicant.graduation_year}年卒）</Badge>
+                    ) : applicant.hiring_type === "mid_career" ? (
+                      <Badge variant="outline">中途採用</Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {applicant.invited_at ? (
+                      <Badge variant="secondary">招待済み</Badge>
+                    ) : (
+                      <Badge variant="outline">未招待</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {format(new Date(applicant.created_at), "yyyy/MM/dd")}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableEmptyState>
+          </TableBody>
+        </Table>
+      </TableSection>
+
+      <EditPanel
+        open={h.dialogOpen}
+        onOpenChange={h.setDialogOpen}
+        title="応募者を追加"
+        tabs={addTabs}
+        activeTab={h.addTab}
+        onTabChange={h.setAddTab}
+        onSave={async () => {
+          const result = await h.handleAdd();
+          if (result.success) {
+            showToast("応募者を追加しました");
+          } else if (result.error) {
+            showToast(result.error, "error");
+          }
+        }}
+        saving={h.saving}
+        saveDisabled={!h.newEmail}
+        saveLabel="追加"
+      >
+        {h.addTab === "basic" && (
+          <div className="space-y-4">
+            <FormInput
+              label="メールアドレス"
+              required
+              type="email"
+              value={h.newEmail}
+              onChange={(e) => h.setNewEmail(e.target.value)}
+              placeholder="example@email.com"
+              error={h.formErrors.email}
+            />
+            <FormInput
+              label="名前"
+              value={h.newName}
+              onChange={(e) => h.setNewName(e.target.value)}
+              placeholder="山田 花子"
+              error={h.formErrors.name}
+            />
+          </div>
+        )}
+        {h.addTab === "hiring" && (
+          <div className="space-y-4">
+            <FormField label="採用区分">
+              <Select value={h.newHiringType} onValueChange={(v) => h.setNewHiringType(v ?? "")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="未設定">
+                    {(v: string) =>
+                      v === "new_grad" ? "新卒採用" : v === "mid_career" ? "中途採用" : v
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new_grad">新卒採用</SelectItem>
+                  <SelectItem value="mid_career">中途採用</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormField>
+            {h.newHiringType === "new_grad" && (
+              <FormField label="卒業年">
+                <Select value={h.newGradYear} onValueChange={(v) => h.setNewGradYear(v ?? "")}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="選択してください">
+                      {(v: string) => (v ? `${v}年卒` : v)}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i).map((y) => (
+                      <SelectItem key={y} value={String(y)}>
+                        {y}年卒
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            )}
+          </div>
+        )}
+      </EditPanel>
+    </div>
+  );
+}

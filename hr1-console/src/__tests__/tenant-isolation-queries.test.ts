@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { fetchJobDetail, fetchTaskDetail } from "@/lib/repositories/job-repository";
+import { describe, it, expect } from "vitest";
+import { fetchTaskDetail } from "@/lib/repositories/task-repository";
 
 // ---------------------------------------------------------------------------
 // Supabase クライアントモック
@@ -58,53 +58,6 @@ function hasOrgFilter(queries: QueryRecord[], table: string, orgId: string): boo
     (c) => c.column === "organization_id" && c.value === orgId
   );
 }
-
-// ---------------------------------------------------------------------------
-// fetchJobDetail
-// ---------------------------------------------------------------------------
-
-describe("fetchJobDetail", () => {
-  const ORG = "org-001";
-  const JOB = "job-001";
-  let queries: QueryRecord[];
-
-  beforeEach(async () => {
-    const mock = createMockClient();
-    queries = mock.queries;
-    await fetchJobDetail(mock.client, JOB, ORG);
-  });
-
-  describe("テナント分離", () => {
-    it("jobs クエリに organization_id フィルタがある", () => {
-      expect(hasOrgFilter(queries, "jobs", ORG)).toBe(true);
-    });
-
-    it("applications クエリに organization_id フィルタがある", () => {
-      expect(hasOrgFilter(queries, "applications", ORG)).toBe(true);
-    });
-  });
-
-  describe("レコード特定", () => {
-    it("jobs クエリに id フィルタがある", () => {
-      expect(eqCallsFor(queries, "jobs")).toContainEqual({ column: "id", value: JOB });
-    });
-
-    it("applications クエリに job_id フィルタがある", () => {
-      expect(eqCallsFor(queries, "applications")).toContainEqual({ column: "job_id", value: JOB });
-    });
-
-    it("job_steps クエリに job_id フィルタがある", () => {
-      expect(eqCallsFor(queries, "job_steps")).toContainEqual({ column: "job_id", value: JOB });
-    });
-  });
-
-  describe("クエリ対象テーブル", () => {
-    it("3 テーブルにクエリを発行する", () => {
-      const tables = new Set(queries.map((q) => q.table));
-      expect(tables).toEqual(new Set(["jobs", "job_steps", "applications"]));
-    });
-  });
-});
 
 // ---------------------------------------------------------------------------
 // fetchTaskDetail

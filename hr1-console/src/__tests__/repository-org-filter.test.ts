@@ -73,8 +73,6 @@ const ORG_SCOPED_TABLES = [
  */
 const ALLOWED_EXCEPTIONS: Record<string, string> = {
   // .in("id", ids) パターン — ID は既に org フィルタ済みのクエリ結果から取得
-  "applicant-repository.ts:fetchLinkedForms": ".in() で ID 指定（ID は org フィルタ済み）",
-  "applicant-repository.ts:fetchLinkedInterviews": ".in() で ID 指定（ID は org フィルタ済み）",
   "evaluation-repository.ts:fetchTemplateTitles": ".in() で ID 指定（ID は org フィルタ済み）",
 
   // upsert — onConflict に organization_id が含まれる
@@ -87,7 +85,6 @@ const ALLOWED_EXCEPTIONS: Record<string, string> = {
   // INSERT — データに organization_id が含まれる（静的解析で UPDATE/DELETE と区別困難）
   "audit-repository.ts:insertAuditLog": "INSERT データに organization_id 含む",
   "attendance-repository.ts:addApprover": "INSERT データに organization_id 含む",
-  "scheduling-repository.ts:insertAuditLogs": "INSERT データに organization_id 含む",
   "workflow-repository.ts:insertNotification": "INSERT データに organization_id 含む",
 
   // organizations テーブルは .eq("id", organizationId) でフィルタ（自テーブルなので organization_id ではない）

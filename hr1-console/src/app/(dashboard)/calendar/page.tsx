@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
@@ -47,16 +46,6 @@ function formatMonth(d: Date) {
 // ---------- Event Popover ----------
 
 function EventPopover({ event, children }: { event: CalendarEvent; children: React.ReactNode }) {
-  const router = useRouter();
-
-  const handleNavigate = () => {
-    if (event.applicationId) {
-      router.push(`/applications/${event.applicationId}`);
-    } else {
-      router.push(`/scheduling/${event.interviewId}`);
-    }
-  };
-
   return (
     <Popover>
       <PopoverTrigger render={<button type="button" className="w-full text-left" />}>
@@ -106,10 +95,6 @@ function EventPopover({ event, children }: { event: CalendarEvent; children: Rea
               </div>
             )}
           </div>
-
-          <Button variant="primary" size="sm" className="w-full" onClick={handleNavigate}>
-            詳細を開く
-          </Button>
         </div>
       </PopoverContent>
     </Popover>

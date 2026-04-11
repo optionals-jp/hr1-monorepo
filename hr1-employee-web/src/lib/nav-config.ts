@@ -15,6 +15,9 @@ import {
   CalendarDays,
   FolderKanban,
   Users,
+  UsersRound,
+  Briefcase,
+  ClipboardList,
   BookOpen,
   Megaphone,
   HeartPulse,
@@ -49,10 +52,13 @@ const commonItems: NavItem[] = [
 
 const recruitingSections: NavSection[] = [
   {
-    label: "個人",
+    label: "採用",
     items: [
-      { href: "/my-attendance", label: "勤怠", icon: Clock },
-      { href: "/my-leave", label: "休暇", icon: CalendarOff },
+      { href: "/applicants", label: "応募者", icon: UsersRound },
+      { href: "/applications", label: "応募管理", icon: ClipboardList },
+      { href: "/jobs", label: "求人", icon: Briefcase },
+      { href: "/scheduling", label: "日程調整", icon: CalendarClock },
+      { href: "/forms", label: "フォーム", icon: FileText },
     ],
   },
   {

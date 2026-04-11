@@ -24,6 +24,27 @@ export async function fetchTaskById(client: SupabaseClient, id: string, orgId: s
     .single();
 }
 
+/**
+ * タスク詳細データを取得する
+ */
+export async function fetchTaskDetail(
+  client: SupabaseClient,
+  taskId: string,
+  organizationId: string
+) {
+  const { data, error } = await client
+    .from("tasks")
+    .select(
+      "*, creator:profiles!tasks_created_by_fkey(display_name, email), projects(id, name), project_teams(id, name)"
+    )
+    .eq("id", taskId)
+    .eq("organization_id", organizationId)
+    .single();
+
+  if (error) return null;
+  return data;
+}
+
 export async function insertTask(client: SupabaseClient, row: Record<string, unknown>) {
   return client.from("tasks").insert(row).select("id").single();
 }

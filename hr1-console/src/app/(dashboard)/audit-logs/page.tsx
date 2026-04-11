@@ -45,10 +45,6 @@ const ACTION_OPTIONS = [
 
 const TABLE_OPTIONS = [
   { value: "all", label: "すべて" },
-  { value: "jobs", label: "jobs" },
-  { value: "applications", label: "applications" },
-  { value: "interviews", label: "interviews" },
-  { value: "custom_forms", label: "custom_forms" },
   { value: "evaluation_templates", label: "evaluation_templates" },
   { value: "evaluation_cycles", label: "evaluation_cycles" },
   { value: "workflow_requests", label: "workflow_requests" },

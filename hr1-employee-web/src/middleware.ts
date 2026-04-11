@@ -9,8 +9,11 @@ const ALLOWED_ROUTES: Record<Product, string[]> = {
   recruiting: [
     "/",
     "/dashboard",
-    "/my-attendance",
-    "/my-leave",
+    "/applicants",
+    "/applications",
+    "/jobs",
+    "/scheduling",
+    "/forms",
     "/evaluations",
     "/messages",
     "/calendar",
@@ -71,6 +74,8 @@ function detectProduct(request: NextRequest): Product {
   if (isLocal) {
     const queryProduct = request.nextUrl.searchParams.get("product");
     if (queryProduct && isValidProduct(queryProduct)) return queryProduct;
+    const cookieProduct = request.cookies.get(PRODUCT_COOKIE)?.value;
+    if (cookieProduct && isValidProduct(cookieProduct)) return cookieProduct;
   }
 
   return detectProductFromHost(host);

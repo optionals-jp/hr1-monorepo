@@ -79,7 +79,7 @@ describe("middleware", () => {
     });
     createProfileQuery("employee");
 
-    const response = await middleware(createRequest("/applicants"));
+    const response = await middleware(createRequest("/employees"));
     expect(response.status).toBe(200);
   });
 

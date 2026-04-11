@@ -6,12 +6,6 @@ import type { PermissionAction } from "@/types/database";
  * ここに含まれないパスは常にアクセス可能（ダッシュボード、プロフィール等）。
  */
 export const ROUTE_RESOURCE_MAP: { prefix: string; resource: string }[] = [
-  // 採用
-  { prefix: "/applicants", resource: "applicants" },
-  { prefix: "/jobs", resource: "jobs" },
-  { prefix: "/applications", resource: "applications" },
-  { prefix: "/scheduling", resource: "scheduling" },
-  { prefix: "/forms", resource: "forms" },
   // 労務
   { prefix: "/employees", resource: "employees" },
   { prefix: "/departments", resource: "departments" },
@@ -80,23 +74,9 @@ export interface PermissionResourceDef {
   category: string;
 }
 
-export const PERMISSION_RESOURCE_CATEGORIES = [
-  "採用",
-  "労務",
-  "共通",
-  "CRM",
-  "設定",
-  "その他",
-] as const;
+export const PERMISSION_RESOURCE_CATEGORIES = ["労務", "共通", "CRM", "設定", "その他"] as const;
 
 export const PERMISSION_RESOURCES: PermissionResourceDef[] = [
-  // 採用
-  { key: "applicants", label: "応募者", category: "採用" },
-  { key: "jobs", label: "求人", category: "採用" },
-  { key: "applications", label: "応募管理", category: "採用" },
-  { key: "scheduling", label: "日程調整", category: "採用" },
-  { key: "forms", label: "フォーム", category: "採用" },
-
   // 労務
   { key: "employees", label: "社員", category: "労務" },
   { key: "departments", label: "部署", category: "労務" },
