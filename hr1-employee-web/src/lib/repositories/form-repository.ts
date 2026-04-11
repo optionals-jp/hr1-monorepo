@@ -22,8 +22,22 @@ export async function fetchFormById(client: SupabaseClient, id: string, orgId: s
   return { data: data as CustomForm | null };
 }
 
-export async function insertForm(client: SupabaseClient, row: Record<string, unknown>) {
-  return client.from("custom_forms").insert(row);
+/**
+ * custom_forms に行を作成し、DB 側で採番された id を返す。
+ * `row.id` を渡してはならない（uuid カラムに非 UUID 文字列を入れるとキャストエラー）。
+ */
+export async function createForm(
+  client: SupabaseClient,
+  row: {
+    organization_id: string;
+    title: string;
+    description: string | null;
+    target: string;
+  }
+): Promise<string> {
+  const { data, error } = await client.from("custom_forms").insert(row).select("id").single();
+  if (error) throw error;
+  return (data as { id: string }).id;
 }
 
 export async function updateForm(

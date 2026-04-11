@@ -10,24 +10,35 @@ export async function findByOrg(client: SupabaseClient, organizationId: string) 
   return (data ?? []) as (Interview & { interview_slots: InterviewSlot[] })[];
 }
 
+/**
+ * interviews に行を作成し、DB 側で採番された id を返す。
+ * id を渡してはならない（uuid カラムに非 UUID 文字列を入れるとキャストエラー）。
+ */
 export async function createInterview(
   client: SupabaseClient,
   data: {
-    id: string;
     organization_id: string;
     title: string;
     location: string | null;
     notes: string | null;
     status: string;
   }
-) {
-  return client.from("interviews").insert(data);
+): Promise<string> {
+  const { data: inserted, error } = await client
+    .from("interviews")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) throw error;
+  return (inserted as { id: string }).id;
 }
 
+/**
+ * interview_slots に行を一括作成する。id は DB 側で採番される。
+ */
 export async function createSlots(
   client: SupabaseClient,
   slots: {
-    id: string;
     interview_id: string;
     start_at: string;
     end_at: string;

@@ -66,22 +66,20 @@ export function useCreateForm() {
 
     try {
       const client = getSupabase();
-      const formId = `form-${Date.now()}`;
 
-      const { error: formError } = await repo.insertForm(client, {
-        id: formId,
+      // id は custom_forms.id の DEFAULT gen_random_uuid() に任せ、RETURNING で取得する。
+      const formId = await repo.createForm(client, {
         organization_id: organization.id,
         title,
         target,
         description: description || null,
       });
-      if (formError) throw formError;
 
       if (fields.length > 0) {
+        // form_fields.id も DB 側で採番させる（フロント採番は禁止）。
         const { error: fieldsError } = await repo.insertFields(
           client,
           fields.map((field, index) => ({
-            id: `field-${formId}-${index + 1}`,
             form_id: formId,
             type: field.field_type,
             label: field.label,
@@ -102,7 +100,8 @@ export function useCreateForm() {
       router.push("/forms");
       setSaving(false);
       return { success: true };
-    } catch {
+    } catch (err) {
+      console.error("createForm failed", err);
       setSaving(false);
       return { success: false, error: "フォームの作成に失敗しました" };
     }
@@ -143,7 +142,8 @@ export async function deleteForm(
     const { error } = await repo.deleteForm(client, form.id, orgId);
     if (error) throw error;
     return { success: true };
-  } catch {
+  } catch (err) {
+    console.error("deleteForm failed", err);
     return { success: false, error: "削除に失敗しました" };
   }
 }
@@ -250,10 +250,10 @@ export async function saveFormEdit(
 
     const newFields = editFields.filter((f) => f.isNew);
     if (newFields.length > 0) {
+      // form_fields.id は DB 側の DEFAULT gen_random_uuid() に任せる。
       await repo.insertFields(
         client,
-        newFields.map((f, i) => ({
-          id: `field-${form.id}-${Date.now()}-${i}`,
+        newFields.map((f) => ({
           form_id: form.id,
           type: f.field_type,
           label: f.label,
@@ -297,7 +297,8 @@ export async function saveFormEdit(
     }
 
     return { success: true };
-  } catch {
+  } catch (err) {
+    console.error("saveFormEdit failed", err);
     return { success: false, error: "フォームの更新に失敗しました" };
   }
 }
