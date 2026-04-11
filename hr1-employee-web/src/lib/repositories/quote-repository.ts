@@ -133,7 +133,10 @@ export async function syncQuoteItems(
   if (quoteErr || !quote) throw quoteErr ?? new Error("見積書が見つかりません");
 
   // 1. 既存明細を削除
-  const { error: deleteErr } = await client.from("crm_quote_items").delete().eq("quote_id", quoteId);
+  const { error: deleteErr } = await client
+    .from("crm_quote_items")
+    .delete()
+    .eq("quote_id", quoteId);
   if (deleteErr) throw deleteErr;
 
   // 2. 新しい明細を挿入

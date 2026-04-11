@@ -135,9 +135,7 @@ export default function CrmDealDetailPage() {
               <StageChevrons
                 stages={stages}
                 currentStageId={deal.stage_id}
-                currentStageName={
-                  stages.find((s) => s.id === deal.stage_id)?.name ?? ""
-                }
+                currentStageName={stages.find((s) => s.id === deal.stage_id)?.name ?? ""}
                 status={deal.status}
                 onStageChange={handleStageChange}
               />

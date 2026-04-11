@@ -46,10 +46,7 @@ export function getStagesFromPipeline(pipeline: CrmPipeline | null): CrmPipeline
 /**
  * ステージIDからステージ名を解決するヘルパー
  */
-export function resolveStageLabel(
-  stageId: string | null,
-  stages: CrmPipelineStage[]
-): string {
+export function resolveStageLabel(stageId: string | null, stages: CrmPipelineStage[]): string {
   if (!stageId) return "—";
   const found = stages.find((s) => s.id === stageId);
   return found?.name ?? "—";

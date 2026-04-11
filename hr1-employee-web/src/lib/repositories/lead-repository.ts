@@ -145,7 +145,11 @@ export async function convertLead(
   } catch (err) {
     // 途中で失敗した場合、作成済みレコードをクリーンアップ（ベストエフォート）
     if (dealId) {
-      await client.from("crm_deals").delete().eq("id", dealId).eq("organization_id", organizationId);
+      await client
+        .from("crm_deals")
+        .delete()
+        .eq("id", dealId)
+        .eq("organization_id", organizationId);
     }
     if (contactId) {
       await client

@@ -1,10 +1,4 @@
-export type ProfileRole =
-  | "admin"
-  | "employee"
-  | "applicant"
-  | "manager"
-  | "approver"
-  | "hr1_admin";
+export type ProfileRole = "admin" | "employee" | "applicant" | "manager" | "approver" | "hr1_admin";
 
 export interface Profile {
   id: string;

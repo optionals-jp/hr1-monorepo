@@ -13,7 +13,6 @@ import {
   stepStatusLabels,
   interviewStatusLabels,
   StepStatus,
-  StepType,
 } from "@/lib/constants";
 
 export interface TimelineEvent {
