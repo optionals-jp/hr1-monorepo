@@ -82,7 +82,8 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
           'step_type': s['step_type'],
           'step_order': s['step_order'],
           'label': s['label'],
-          'related_id': s['related_id'],
+          'form_id': s['form_id'],
+          'interview_id': s['interview_id'],
           'status': isFirst
               ? StepStatus.inProgress.value
               : StepStatus.pending.value,

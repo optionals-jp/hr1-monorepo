@@ -155,18 +155,16 @@ export function JobDetailTab({
                       <p className="text-sm font-medium">{step.label}</p>
                       <p className="text-xs text-muted-foreground">
                         {stepTypeLabels[step.step_type] ?? step.step_type}
-                        {step.related_id &&
-                          FORM_STEP_TYPES.includes(step.step_type as StepType) &&
-                          forms.find((f) => f.id === step.related_id) && (
+                        {step.form_id &&
+                          forms.find((f) => f.id === step.form_id) && (
                             <>
                               {" — "}
-                              <span>{forms.find((f) => f.id === step.related_id)!.title}</span>
+                              <span>{forms.find((f) => f.id === step.form_id)!.title}</span>
                             </>
                           )}
-                        {step.related_id &&
-                          step.step_type === StepType.Interview &&
+                        {step.interview_id &&
                           (() => {
-                            const iv = interviews.find((i) => i.id === step.related_id);
+                            const iv = interviews.find((i) => i.id === step.interview_id);
                             if (!iv) return null;
                             return (
                               <>

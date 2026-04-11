@@ -239,13 +239,14 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-class _DealsSection extends StatelessWidget {
+class _DealsSection extends ConsumerWidget {
   const _DealsSection({required this.deals});
 
   final List<BcDeal> deals;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stages = ref.watch(crmPipelineStagesProvider).value ?? const [];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -256,7 +257,7 @@ class _DealsSection extends StatelessWidget {
             child: ListTile(
               title: Text(deal.title, style: AppTextStyles.body1),
               subtitle: Text(
-                '${deal.status.label} / ${deal.stage.label}',
+                '${deal.status.label} / ${resolveStageLabel(deal.stageId, stages)}',
                 style: AppTextStyles.caption1,
               ),
               trailing: deal.amount != null

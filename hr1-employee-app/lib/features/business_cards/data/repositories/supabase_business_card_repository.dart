@@ -7,6 +7,7 @@ import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_comp
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_contact.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_deal.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_todo.dart';
+import 'package:hr1_employee_app/features/business_cards/domain/entities/crm_pipeline_stage.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/repositories/business_card_repository.dart';
 
 class SupabaseBusinessCardRepository implements BusinessCardRepository {
@@ -275,6 +276,35 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<void> deleteDeal(String id) async {
     await _client.from('crm_deals').delete().eq('id', id);
+  }
+
+  // ==========================================================
+  // パイプラインステージ
+  // ==========================================================
+
+  @override
+  Future<List<CrmPipelineStage>> getPipelineStages() async {
+    final orgId = await _getOrganizationId();
+    // デフォルトパイプライン（最初に見つかった is_default=true）から
+    // ステージ一覧を取得
+    final pipelines = await _client
+        .from('crm_pipelines')
+        .select('id')
+        .eq('organization_id', orgId)
+        .eq('is_default', true)
+        .limit(1);
+    if (pipelines.isEmpty) return [];
+    final pipelineId = pipelines.first['id'] as String;
+
+    final result = await _client
+        .from('crm_pipeline_stages')
+        .select()
+        .eq('pipeline_id', pipelineId)
+        .order('sort_order');
+
+    return (result as List)
+        .map((e) => CrmPipelineStage.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   // ==========================================================

@@ -157,18 +157,18 @@ export function useApplicantDetailPage() {
             });
           }
 
-          if (step.related_id && step.step_type === StepType.Form) {
+          if (step.form_id) {
             formStepIds.push({
               stepId: step.id,
-              relatedId: step.related_id,
+              relatedId: step.form_id,
               jobTitle,
               date: step.completed_at ?? app.applied_at,
             });
           }
-          if (step.related_id && step.step_type === StepType.Interview) {
+          if (step.interview_id) {
             interviewStepIds.push({
               stepId: step.id,
-              relatedId: step.related_id,
+              relatedId: step.interview_id,
               jobTitle,
               date: step.completed_at ?? app.applied_at,
             });

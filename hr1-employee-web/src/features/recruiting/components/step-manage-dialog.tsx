@@ -28,7 +28,8 @@ interface StepManageDialogProps {
     newSteps: {
       step_type: string;
       label: string;
-      related_id: string | null;
+      form_id: string | null;
+      interview_id: string | null;
     }[],
     deletedIds: string[]
   ) => Promise<void>;
@@ -39,7 +40,8 @@ interface EditableStep {
   id: string;
   step_type: string;
   label: string;
-  related_id: string | null;
+  form_id: string | null;
+  interview_id: string | null;
   step_order: number;
   isNew?: boolean;
 }
@@ -60,7 +62,8 @@ export function StepManageDialog({
         id: s.id,
         step_type: s.step_type,
         label: s.label,
-        related_id: s.related_id,
+        form_id: s.form_id,
+        interview_id: s.interview_id,
         step_order: s.step_order,
       }))
   );
@@ -75,7 +78,8 @@ export function StepManageDialog({
         id: `new-${Date.now()}`,
         step_type: StepType.Interview,
         label: "",
-        related_id: null,
+        form_id: null,
+        interview_id: null,
         step_order: prev.length + 1,
         isNew: true,
       },
@@ -95,7 +99,8 @@ export function StepManageDialog({
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
       if (field === "step_type") {
-        next[index].related_id = null;
+        next[index].form_id = null;
+        next[index].interview_id = null;
       }
       return next;
     });
@@ -120,7 +125,12 @@ export function StepManageDialog({
   const handleSave = async () => {
     let order = 0;
     const existing: typeof initialSteps = [];
-    const newSteps: { step_type: string; label: string; related_id: string | null }[] = [];
+    const newSteps: {
+      step_type: string;
+      label: string;
+      form_id: string | null;
+      interview_id: string | null;
+    }[] = [];
 
     for (const s of editSteps) {
       order++;
@@ -129,7 +139,8 @@ export function StepManageDialog({
           newSteps.push({
             step_type: s.step_type,
             label: s.label.trim(),
-            related_id: s.related_id,
+            form_id: s.form_id,
+            interview_id: s.interview_id,
           });
         }
       } else {
@@ -140,7 +151,8 @@ export function StepManageDialog({
             step_order: order,
             label: s.label,
             step_type: s.step_type,
-            related_id: s.related_id,
+            form_id: s.form_id,
+            interview_id: s.interview_id,
           });
         }
       }
@@ -222,8 +234,8 @@ export function StepManageDialog({
               </div>
               {FORM_STEP_TYPES.includes(step.step_type as StepType) && (
                 <Select
-                  value={step.related_id ?? ""}
-                  onValueChange={(v) => updateStep(index, "related_id", v || null)}
+                  value={step.form_id ?? ""}
+                  onValueChange={(v) => updateStep(index, "form_id", v || null)}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="フォームを選択（任意）">
@@ -243,8 +255,8 @@ export function StepManageDialog({
               )}
               {step.step_type === StepType.Interview && (
                 <Select
-                  value={step.related_id ?? ""}
-                  onValueChange={(v) => updateStep(index, "related_id", v || null)}
+                  value={step.interview_id ?? ""}
+                  onValueChange={(v) => updateStep(index, "interview_id", v || null)}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="日程調整を選択（任意）">

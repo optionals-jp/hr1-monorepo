@@ -26,7 +26,7 @@ export async function fetchContactDeals(
 ) {
   const { data, error } = await client
     .from("crm_deal_contacts")
-    .select("*, crm_deals:deal_id(id, title, amount, status, stage)")
+    .select("*, crm_deals:deal_id(id, title, amount, status, stage_id)")
     .eq("contact_id", contactId)
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });

@@ -7,6 +7,7 @@ import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_comp
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_contact.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_deal.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_todo.dart';
+import 'package:hr1_employee_app/features/business_cards/domain/entities/crm_pipeline_stage.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/repositories/business_card_repository.dart';
 
 /// リポジトリプロバイダー
@@ -104,6 +105,26 @@ final bcDealDetailProvider = FutureProvider.autoDispose.family<BcDeal?, String>(
     return repo.getDeal(id);
   },
 );
+
+// ==========================================================
+// パイプラインステージ
+// ==========================================================
+
+/// 自テナントのデフォルトパイプラインのステージ一覧
+final crmPipelineStagesProvider =
+    FutureProvider.autoDispose<List<CrmPipelineStage>>((ref) async {
+      final repo = ref.watch(bcRepositoryProvider);
+      return repo.getPipelineStages();
+    });
+
+/// stage_id → ステージ名 (label) を解決するヘルパー
+String resolveStageLabel(String? stageId, List<CrmPipelineStage> stages) {
+  if (stageId == null) return '—';
+  for (final s in stages) {
+    if (s.id == stageId) return s.name;
+  }
+  return '—';
+}
 
 // ==========================================================
 // 活動

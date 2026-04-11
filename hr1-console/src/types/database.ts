@@ -16,7 +16,11 @@ export interface Profile {
   email: string;
   display_name: string | null;
   name_kana: string | null;
-  role: "admin" | "employee" | "applicant";
+  last_name: string | null;
+  first_name: string | null;
+  last_name_kana: string | null;
+  first_name_kana: string | null;
+  role: "admin" | "employee" | "applicant" | "manager" | "approver" | "hr1_admin";
   avatar_url: string | null;
   department: string | null;
   position: string | null;

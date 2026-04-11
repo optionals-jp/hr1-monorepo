@@ -4,6 +4,7 @@ import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_comp
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_contact.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_deal.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_todo.dart';
+import 'package:hr1_employee_app/features/business_cards/domain/entities/crm_pipeline_stage.dart';
 
 /// OCR解析結果
 class ParsedCardData {
@@ -101,6 +102,9 @@ abstract class BusinessCardRepository {
   Future<BcDeal> createDeal(Map<String, dynamic> data);
   Future<void> updateDeal(String id, Map<String, dynamic> data);
   Future<void> deleteDeal(String id);
+
+  // === パイプラインステージ ===
+  Future<List<CrmPipelineStage>> getPipelineStages();
 
   // === 活動 ===
   Future<List<BcActivity>> getActivities({

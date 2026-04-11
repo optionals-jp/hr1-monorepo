@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_deal.dart';
 import 'package:hr1_employee_app/features/business_cards/presentation/controllers/deal_controller.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/providers/business_card_providers.dart';
 import 'package:hr1_shared/hr1_shared.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -19,9 +19,17 @@ class DealFormScreen extends HookConsumerWidget {
     final titleCtl = useTextEditingController();
     final amountCtl = useTextEditingController();
     final descriptionCtl = useTextEditingController();
-    final selectedStage = useState(DealStage.initial);
+    final stagesAsync = ref.watch(crmPipelineStagesProvider);
+    final selectedStageId = useState<String?>(null);
     final closeDate = useState<DateTime?>(null);
     final isSaving = useState(false);
+
+    // ステージ取得後に最初のステージを既定値に
+    stagesAsync.whenData((stages) {
+      if (selectedStageId.value == null && stages.isNotEmpty) {
+        selectedStageId.value = stages.first.id;
+      }
+    });
 
     Future<void> pickCloseDate() async {
       final picked = await showDatePicker(
@@ -49,7 +57,7 @@ class DealFormScreen extends HookConsumerWidget {
           'amount': amountCtl.text.isNotEmpty
               ? int.tryParse(amountCtl.text.replaceAll(',', ''))
               : null,
-          'stage': selectedStage.value.name,
+          'stage_id': selectedStageId.value,
           'expected_close_date': closeDate.value
               ?.toIso8601String()
               .split('T')
@@ -103,15 +111,24 @@ class DealFormScreen extends HookConsumerWidget {
 
             Text('ステージ', style: AppTextStyles.headline),
             const SizedBox(height: AppSpacing.xs),
-            Wrap(
-              spacing: AppSpacing.xs,
-              children: DealStage.values.map((stage) {
-                return ChoiceChip(
-                  label: Text(stage.label),
-                  selected: selectedStage.value == stage,
-                  onSelected: (_) => selectedStage.value = stage,
+            stagesAsync.when(
+              loading: () => const LoadingIndicator(size: 20),
+              error: (_, __) => const Text('ステージの読み込みに失敗しました'),
+              data: (stages) {
+                if (stages.isEmpty) {
+                  return const Text('パイプラインが未設定です');
+                }
+                return Wrap(
+                  spacing: AppSpacing.xs,
+                  children: stages.map((stage) {
+                    return ChoiceChip(
+                      label: Text(stage.name),
+                      selected: selectedStageId.value == stage.id,
+                      onSelected: (_) => selectedStageId.value = stage.id,
+                    );
+                  }).toList(),
                 );
-              }).toList(),
+              },
             ),
 
             const SizedBox(height: AppSpacing.md),

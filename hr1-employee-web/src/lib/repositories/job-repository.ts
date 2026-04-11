@@ -71,7 +71,8 @@ export async function insertJobStep(
     step_type: string;
     step_order: number;
     label: string;
-    related_id: string | null;
+    form_id: string | null;
+    interview_id: string | null;
   }
 ) {
   return client.from("job_steps").insert(data);
@@ -81,7 +82,13 @@ export async function insertJobStep(
 export async function updateJobStep(
   client: SupabaseClient,
   stepId: string,
-  data: { step_type: string; label: string; related_id: string | null; step_order?: number }
+  data: {
+    step_type: string;
+    label: string;
+    form_id: string | null;
+    interview_id: string | null;
+    step_order?: number;
+  }
 ) {
   return client.from("job_steps").update(data).eq("id", stepId);
 }

@@ -22,4 +22,5 @@ export const ROLE_LABELS: Record<ProfileRole, string> = {
   approver: "承認者",
   employee: "社員",
   applicant: "候補者",
+  hr1_admin: "HR1運営",
 };

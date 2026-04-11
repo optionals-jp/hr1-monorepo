@@ -1,11 +1,20 @@
-export type ProfileRole = "admin" | "employee" | "applicant" | "manager" | "approver";
+export type ProfileRole =
+  | "admin"
+  | "employee"
+  | "applicant"
+  | "manager"
+  | "approver"
+  | "hr1_admin";
 
 export interface Profile {
   id: string;
   email: string;
   display_name: string | null;
+  last_name: string | null;
+  first_name: string | null;
+  last_name_kana: string | null;
+  first_name_kana: string | null;
   role: ProfileRole;
-  organization_id: string | null;
   avatar_url: string | null;
   position: string | null;
   department: string | null;
@@ -54,7 +63,8 @@ export interface JobStep {
   step_type: string;
   step_order: number;
   label: string;
-  related_id: string | null;
+  form_id: string | null;
+  interview_id: string | null;
 }
 
 export interface SelectionStepTemplate {
@@ -87,7 +97,8 @@ export interface ApplicationStep {
   step_order: number;
   label: string;
   status: "pending" | "in_progress" | "completed" | "skipped";
-  related_id: string | null;
+  form_id: string | null;
+  interview_id: string | null;
   started_at: string | null;
   completed_at: string | null;
   applicant_action_at: string | null;

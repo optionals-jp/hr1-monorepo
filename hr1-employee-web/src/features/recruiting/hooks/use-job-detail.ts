@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useTabParam } from "@/lib/hooks/use-tab-param";
 import {
   reorderSteps as reorderStepsUtil,
-  resolveRelatedId,
+  resolveStepRefs,
 } from "@/features/recruiting/reorder-steps";
 import { getSupabase } from "@/lib/supabase/browser";
 import type { Job, JobStep, Application, Interview } from "@/types/database";
@@ -96,7 +96,7 @@ export function useJobDetail() {
     const client = getSupabase();
     const nextOrder = steps.length + 1;
     const stepId = crypto.randomUUID();
-    const relatedId = resolveRelatedId(
+    const refs = resolveStepRefs(
       newStepType,
       FORM_STEP_TYPES,
       newStepFormId,
@@ -110,7 +110,8 @@ export function useJobDetail() {
       step_type: newStepType,
       step_order: nextOrder,
       label: newStepLabel,
-      related_id: relatedId,
+      form_id: refs.form_id,
+      interview_id: refs.interview_id,
     });
 
     if (error) {
@@ -124,7 +125,8 @@ export function useJobDetail() {
       step_type: newStepType,
       step_order: nextOrder,
       label: newStepLabel,
-      related_id: relatedId,
+      form_id: refs.form_id,
+      interview_id: refs.interview_id,
     };
 
     setSteps((prev) => [...prev, newStep]);
@@ -149,7 +151,12 @@ export function useJobDetail() {
 
   const saveStepsManage = async (
     updatedSteps: JobStep[],
-    newSteps: { step_type: string; label: string; related_id: string | null }[],
+    newSteps: {
+      step_type: string;
+      label: string;
+      form_id: string | null;
+      interview_id: string | null;
+    }[],
     deletedIds: string[]
   ) => {
     setSavingStepManage(true);
@@ -164,7 +171,8 @@ export function useJobDetail() {
         await jobRepository.updateJobStep(client, s.id, {
           step_type: s.step_type,
           label: s.label,
-          related_id: s.related_id,
+          form_id: s.form_id,
+          interview_id: s.interview_id,
           step_order: s.step_order,
         });
       }
@@ -178,7 +186,8 @@ export function useJobDetail() {
           step_type: s.step_type,
           step_order: baseOrder + i + 1,
           label: s.label,
-          related_id: s.related_id,
+          form_id: s.form_id,
+          interview_id: s.interview_id,
         });
       }
 
