@@ -1,0 +1,29 @@
+/* ------------------------------------------------------------------ */
+/*  @hr1/shared-ui — 全アプリ共通のグローバルスタイル                   */
+/*                                                                     */
+/*  hr1-console / hr1-employee-web / hr1-admin / hr1-lp など           */
+/*  各 Next.js アプリの globals.css から以下のようにインポートする:    */
+/*    @import "@hr1/shared-ui/styles.css";                             */
+/* ------------------------------------------------------------------ */
+
+/* Global scrollbar */
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: oklch(0.8 0 0);
+  border-radius: 2px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.7 0 0);
+}
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-color: oklch(0.8 0 0) transparent;
+    scrollbar-width: thin;
+  }
+}
