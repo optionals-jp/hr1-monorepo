@@ -96,13 +96,13 @@ export function ApplicationStepList({
                   {isSkipped && "スキップ"}
                   {step.status === StepStatus.Pending && "未着手"}
                 </p>
-                {step.related_id && <ResourceLink step={step} />}
+                {(step.form_id || step.interview_id) && <ResourceLink step={step} />}
               </div>
 
               <div className="flex gap-2 shrink-0">
                 {step.step_type === StepType.Form &&
                   isCompleted &&
-                  step.related_id &&
+                  step.form_id &&
                   onViewFormResponses && (
                     <Button size="xs" variant="outline" onClick={() => onViewFormResponses(step)}>
                       回答を確認
@@ -158,10 +158,10 @@ export function ApplicationStepList({
 }
 
 function ResourceLink({ step }: { step: ApplicationStep }) {
-  if (step.step_type === StepType.Form && step.related_id) {
+  if (step.form_id) {
     return (
       <Link
-        href={`/forms/${step.related_id}`}
+        href={`/forms/${step.form_id}`}
         className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
         onClick={(e) => e.stopPropagation()}
       >
@@ -172,10 +172,10 @@ function ResourceLink({ step }: { step: ApplicationStep }) {
     );
   }
 
-  if (step.step_type === StepType.Interview && step.related_id) {
+  if (step.interview_id) {
     return (
       <Link
-        href={`/scheduling/${step.related_id}`}
+        href={`/scheduling/${step.interview_id}`}
         className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
         onClick={(e) => e.stopPropagation()}
       >

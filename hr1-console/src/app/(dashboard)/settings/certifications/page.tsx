@@ -1,7 +1,7 @@
 "use client";
 
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { Button } from "@hr1/shared-ui/components/ui/button";

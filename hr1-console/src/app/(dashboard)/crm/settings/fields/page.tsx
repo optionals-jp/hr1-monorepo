@@ -8,7 +8,7 @@ import { Label } from "@hr1/shared-ui/components/ui/label";
 import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
 import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import {
   Select,
@@ -32,7 +32,7 @@ import {
 } from "@hr1/shared-ui/components/ui/table";
 import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import {
   DropdownMenu,
   DropdownMenuTrigger,

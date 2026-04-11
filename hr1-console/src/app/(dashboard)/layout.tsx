@@ -41,12 +41,14 @@ function DashboardShell({ children }: { children: ReactNode }) {
 
   return (
     <OrgProvider>
-      <Header />
-      <div className="flex min-h-0">
+      <div className="flex min-h-dvh">
         {isSettings ? <SettingsSidebar /> : <Sidebar />}
-        <main className="flex-1 min-w-0 overflow-y-auto">
-          {hasAccess ? children : <AccessDenied />}
-        </main>
+        <div className="flex flex-col flex-1 min-w-0">
+          <Header />
+          <main className="flex-1 min-w-0 overflow-y-auto">
+            {hasAccess ? children : <AccessDenied />}
+          </main>
+        </div>
       </div>
     </OrgProvider>
   );

@@ -82,7 +82,7 @@ export function SettingsSidebar() {
     .filter((section) => section.items.length > 0);
 
   return (
-    <aside className="hidden md:flex sticky top-14 h-[calc(100dvh-3.5rem)] w-56 shrink-0 flex-col border-r border-border bg-white z-20">
+    <aside className="hidden md:flex sticky top-0 h-dvh w-56 shrink-0 flex-col border-r border-border bg-white z-30">
       <div className="px-3 py-3 border-b">
         <Link
           href="/"

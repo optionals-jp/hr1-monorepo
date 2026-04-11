@@ -5,7 +5,8 @@ import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_cont
 enum DealStatus {
   open('商談中'),
   won('受注'),
-  lost('失注');
+  lost('失注'),
+  cancelled('キャンセル');
 
   const DealStatus(this.label);
   final String label;
@@ -14,24 +15,6 @@ enum DealStatus {
     return DealStatus.values.firstWhere(
       (e) => e.name == value,
       orElse: () => DealStatus.open,
-    );
-  }
-}
-
-/// 商談ステージ
-enum DealStage {
-  initial('初回接触'),
-  proposal('提案'),
-  negotiation('交渉'),
-  closing('クロージング');
-
-  const DealStage(this.label);
-  final String label;
-
-  static DealStage fromString(String value) {
-    return DealStage.values.firstWhere(
-      (e) => e.name == value,
-      orElse: () => DealStage.initial,
     );
   }
 }
@@ -46,7 +29,7 @@ class BcDeal {
     required this.title,
     this.amount,
     this.status = DealStatus.open,
-    this.stage = DealStage.initial,
+    this.stageId,
     this.expectedCloseDate,
     this.description,
     this.assignedTo,
@@ -64,7 +47,10 @@ class BcDeal {
   final String title;
   final int? amount;
   final DealStatus status;
-  final DealStage stage;
+
+  /// crm_pipeline_stages.id への FK (canonical なステージ参照)
+  final String? stageId;
+
   final DateTime? expectedCloseDate;
   final String? description;
   final String? assignedTo;
@@ -83,7 +69,7 @@ class BcDeal {
       title: json['title'] as String,
       amount: json['amount'] as int?,
       status: DealStatus.fromString(json['status'] as String? ?? 'open'),
-      stage: DealStage.fromString(json['stage'] as String? ?? 'initial'),
+      stageId: json['stage_id'] as String?,
       expectedCloseDate: json['expected_close_date'] != null
           ? DateTime.parse(json['expected_close_date'] as String)
           : null,
@@ -92,11 +78,11 @@ class BcDeal {
       createdBy: json['created_by'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      company: json['bc_companies'] != null
-          ? BcCompany.fromJson(json['bc_companies'] as Map<String, dynamic>)
+      company: json['crm_companies'] != null
+          ? BcCompany.fromJson(json['crm_companies'] as Map<String, dynamic>)
           : null,
-      contact: json['bc_contacts'] != null
-          ? BcContact.fromJson(json['bc_contacts'] as Map<String, dynamic>)
+      contact: json['crm_contacts'] != null
+          ? BcContact.fromJson(json['crm_contacts'] as Map<String, dynamic>)
           : null,
     );
   }
@@ -106,7 +92,7 @@ class BcDeal {
       'title': title,
       'amount': amount,
       'status': status.name,
-      'stage': stage.name,
+      'stage_id': stageId,
       'expected_close_date': expectedCloseDate
           ?.toIso8601String()
           .split('T')
@@ -126,7 +112,7 @@ class BcDeal {
     String? title,
     int? amount,
     DealStatus? status,
-    DealStage? stage,
+    String? stageId,
     DateTime? expectedCloseDate,
     String? description,
     String? assignedTo,
@@ -144,7 +130,7 @@ class BcDeal {
       title: title ?? this.title,
       amount: amount ?? this.amount,
       status: status ?? this.status,
-      stage: stage ?? this.stage,
+      stageId: stageId ?? this.stageId,
       expectedCloseDate: expectedCloseDate ?? this.expectedCloseDate,
       description: description ?? this.description,
       assignedTo: assignedTo ?? this.assignedTo,

@@ -12,6 +12,7 @@ import type { ProductTab } from "@/components/layout/sidebar";
 import { migrateWidgetConfig } from "@/lib/dashboard/migration";
 import { ApplicationStatus, StepStatus } from "@/lib/constants";
 import { format, subMonths } from "date-fns";
+import { startOfDayJstIso } from "@hr1/shared-ui/lib/date-range";
 import type {
   PipelineStage,
   KpiTrendPoint,
@@ -90,10 +91,9 @@ export function useDashboard(activeTab?: ProductTab) {
     async () => {
       const now = new Date();
       const sixMonthsAgo = subMonths(now, 5);
-      const startDate = format(
-        new Date(sixMonthsAgo.getFullYear(), sixMonthsAgo.getMonth(), 1),
-        "yyyy-MM-dd"
-      );
+      const startDate = startOfDayJstIso(
+        format(new Date(sixMonthsAgo.getFullYear(), sixMonthsAgo.getMonth(), 1), "yyyy-MM-dd")
+      )!;
 
       const applications = await dashboardRepository.fetchApplicationsByDateRange(
         client,
@@ -422,9 +422,9 @@ export function useDashboard(activeTab?: ProductTab) {
   const crmDealsMapped = crmDeals?.map((d) => ({
     id: d.id,
     title: d.title,
-    companyName: d.bc_companies?.name ?? "—",
-    stage: d.stage,
+    companyName: d.crm_companies?.name ?? "—",
     stageId: d.stage_id ?? null,
+    stageName: d.crm_pipeline_stages?.name ?? null,
     amount: d.amount,
     status: d.status,
     probability: d.probability ?? null,

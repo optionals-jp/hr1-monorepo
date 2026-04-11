@@ -60,7 +60,8 @@ export async function updateStepStatus(
     status: string;
     started_at?: string | null;
     completed_at?: string | null;
-    related_id?: string;
+    form_id?: string | null;
+    interview_id?: string | null;
   }
 ) {
   return client.from("application_steps").update(data).eq("id", stepId);

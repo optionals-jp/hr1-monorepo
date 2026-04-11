@@ -1,5 +1,40 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { SUPABASE_FUNCTIONS } from "@hr1/shared-ui/lib/supabase-functions";
 import type { Profile, Application, Job } from "@/types/database";
+
+/**
+ * 候補者を作成する（Supabase Edge Function `create-user` 経由）。
+ *
+ * 認証ユーザー作成は GoTrue の内部処理が絡むため必ず Edge Function を通す。
+ * この関数はエラーを握り潰さず throw するので、呼び出し元で try/catch すること。
+ *
+ * 注: `role: "applicant"` は DB 上のロール名で変更していない（UI 表示名のみ「候補者」に変更）。
+ */
+export async function createApplicant(
+  client: SupabaseClient,
+  params: {
+    email: string;
+    display_name: string | null;
+    organization_id: string;
+    hiring_type: string | null;
+    graduation_year?: number;
+    send_invite?: boolean;
+  }
+): Promise<void> {
+  const { data, error } = await client.functions.invoke(SUPABASE_FUNCTIONS.CREATE_USER, {
+    body: {
+      email: params.email,
+      display_name: params.display_name,
+      role: "applicant",
+      organization_id: params.organization_id,
+      hiring_type: params.hiring_type,
+      graduation_year: params.graduation_year,
+      send_invite: params.send_invite,
+    },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+}
 
 export async function findByOrg(client: SupabaseClient, organizationId: string) {
   const { data } = await client
@@ -78,11 +113,32 @@ export async function fetchJobsWithCounts(client: SupabaseClient, organizationId
   return (data ?? []) as Job[];
 }
 
+/**
+ * 組織内で 1 件以上応募した候補者 (applicant_id) の Set を返す。
+ * 候補者一覧の「応募済み／未応募」集計に使用する。
+ */
+export async function fetchApplicantIdsWithApplications(
+  client: SupabaseClient,
+  organizationId: string
+): Promise<Set<string>> {
+  const { data, error } = await client
+    .from("applications")
+    .select("applicant_id")
+    .eq("organization_id", organizationId);
+  if (error) throw error;
+  const ids = new Set<string>();
+  for (const row of (data ?? []) as { applicant_id: string }[]) {
+    if (row.applicant_id) ids.add(row.applicant_id);
+  }
+  return ids;
+}
+
 export async function fetchApplicationCounts(client: SupabaseClient, organizationId: string) {
-  const { data } = await client
+  const { data, error } = await client
     .from("applications")
     .select("job_id, status")
     .eq("organization_id", organizationId);
+  if (error) throw error;
 
   const counts: Record<string, { total: number; offered: number }> = {};
   for (const row of data ?? []) {

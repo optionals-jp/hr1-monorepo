@@ -23,9 +23,9 @@ import {
   TableHeader,
   TableRow,
 } from "@hr1/shared-ui/components/ui/table";
-import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
+import { EditPanel, type EditPanelTab } from "@hr1/shared-ui/components/ui/edit-panel";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { cn } from "@/lib/utils";

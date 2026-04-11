@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@hr1/shared-ui/components/ui/table";
 import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { Avatar, AvatarFallback, AvatarImage } from "@hr1/shared-ui/components/ui/avatar";
 import {
   Select,
@@ -33,7 +33,7 @@ import {
 } from "@hr1/shared-ui/components/ui/dropdown-menu";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import {
   Dialog,

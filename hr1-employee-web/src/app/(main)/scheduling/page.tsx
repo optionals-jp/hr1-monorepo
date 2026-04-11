@@ -6,7 +6,7 @@ import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Input } from "@hr1/shared-ui/components/ui/input";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { DatetimeInput } from "@/components/ui/datetime-input";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { FormInput, FormTextarea } from "@hr1/shared-ui/components/ui/form-field";
 import {
   Table,
@@ -40,7 +40,11 @@ export default function SchedulingPage() {
         title="日程調整"
         description="面接の日程管理"
         sticky={false}
-        action={<Button onClick={() => setDialogOpen(true)}>面接を作成</Button>}
+        action={
+          <Button variant="primary" onClick={() => setDialogOpen(true)}>
+            面接を作成
+          </Button>
+        }
       />
 
       <QueryErrorBanner error={interviewsError} onRetry={() => mutate()} />

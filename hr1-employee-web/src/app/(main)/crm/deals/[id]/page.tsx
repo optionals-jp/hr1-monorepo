@@ -62,7 +62,6 @@ export default function CrmDealDetailPage() {
       try {
         await repository.updateDeal(getSupabase(), id, organization.id, {
           stage_id: stageId,
-          stage: stageName,
           probability,
         });
         mutateDeal();
@@ -136,7 +135,7 @@ export default function CrmDealDetailPage() {
               <StageChevrons
                 stages={stages}
                 currentStageId={deal.stage_id}
-                currentStageName={deal.stage}
+                currentStageName={stages.find((s) => s.id === deal.stage_id)?.name ?? ""}
                 status={deal.status}
                 onStageChange={handleStageChange}
               />
@@ -167,25 +166,25 @@ export default function CrmDealDetailPage() {
                         <span>{deal.probability}%</span>
                       </div>
                     )}
-                    {deal.bc_companies && (
+                    {deal.crm_companies && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">企業</span>
                         <Link
                           href={`/crm/companies/${deal.company_id}`}
                           className="text-primary hover:underline"
                         >
-                          {deal.bc_companies.name}
+                          {deal.crm_companies.name}
                         </Link>
                       </div>
                     )}
-                    {deal.bc_contacts && (
+                    {deal.crm_contacts && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">連絡先</span>
                         <Link
                           href={`/crm/contacts/${deal.contact_id}`}
                           className="text-primary hover:underline"
                         >
-                          {deal.bc_contacts.last_name} {deal.bc_contacts.first_name ?? ""}
+                          {deal.crm_contacts.last_name} {deal.crm_contacts.first_name ?? ""}
                         </Link>
                       </div>
                     )}

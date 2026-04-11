@@ -12,6 +12,8 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "lucide-react": ">=0.400.0",
-    "tailwind-merge": "^3.0.0"
+    "papaparse": "^5.0.0",
+    "tailwind-merge": "^3.0.0",
+    "xlsx": "^0.18.0"
   }
 }

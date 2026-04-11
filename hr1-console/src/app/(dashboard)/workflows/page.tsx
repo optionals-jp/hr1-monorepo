@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@hr1/shared-ui/components/ui/table";
 import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
 import { Input } from "@hr1/shared-ui/components/ui/input";
@@ -45,7 +45,7 @@ import {
   FIELD_TYPE_LABELS,
   type TabValue,
 } from "@/lib/hooks/use-workflows-page";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { cn } from "@/lib/utils";
 import {

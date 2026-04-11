@@ -12,7 +12,7 @@ import {
 } from "@hr1/shared-ui/components/ui/table";
 import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { Label } from "@hr1/shared-ui/components/ui/label";
 import { Input } from "@hr1/shared-ui/components/ui/input";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
@@ -27,7 +27,7 @@ import { format } from "date-fns";
 import { Pencil, Eye, EyeOff, FolderOpen, SlidersHorizontal, X } from "lucide-react";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { cn } from "@/lib/utils";
 import {

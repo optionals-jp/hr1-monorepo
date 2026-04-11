@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { jstDateRangeIso } from "@hr1/shared-ui/lib/date-range";
 import type { WorkflowRequest, WorkflowRule, WorkflowTemplate } from "@/types/database";
 
 export async function countPendingRequests(client: SupabaseClient, organizationId: string) {
@@ -201,11 +202,12 @@ export async function fetchAuditLogs(
   if (params.filterTable !== "all") {
     query = query.eq("table_name", params.filterTable);
   }
-  if (params.filterDateFrom) {
-    query = query.gte("created_at", `${params.filterDateFrom}T00:00:00`);
+  const { startIso, endIso } = jstDateRangeIso(params.filterDateFrom, params.filterDateTo);
+  if (startIso) {
+    query = query.gte("created_at", startIso);
   }
-  if (params.filterDateTo) {
-    query = query.lte("created_at", `${params.filterDateTo}T23:59:59`);
+  if (endIso) {
+    query = query.lte("created_at", endIso);
   }
   if (params.filterUser) {
     query = query.eq("user_id", params.filterUser);

@@ -37,8 +37,8 @@ import { QuoteItemsEditor, emptyItem } from "./quote-items-editor";
 import type { EditableItem } from "./quote-items-editor";
 
 function quoteToItems(quote: BcQuote | undefined): EditableItem[] {
-  if (!quote?.bc_quote_items?.length) return [emptyItem()];
-  return quote.bc_quote_items.map((qi: BcQuoteItem) => ({
+  if (!quote?.crm_quote_items?.length) return [emptyItem()];
+  return quote.crm_quote_items.map((qi: BcQuoteItem) => ({
     id: qi.id,
     description: qi.description,
     quantity: qi.quantity,

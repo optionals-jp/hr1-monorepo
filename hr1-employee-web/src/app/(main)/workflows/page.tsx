@@ -15,6 +15,7 @@ import {
 } from "@hr1/shared-ui/components/ui/select";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { useMyWorkflows, useWorkflowTemplates } from "@/lib/hooks/use-workflows";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useAuth } from "@/lib/auth-context";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
@@ -48,14 +49,15 @@ export default function WorkflowsPage() {
     createRequest,
   } = useMyWorkflows();
   const { data: templates = [] } = useWorkflowTemplates();
-  const [filter, setFilter] = useState<WorkflowRequestStatus | "all">("all");
+  // URL ?tab= でタブ状態、?status= でステータスフィルタを保持。
+  const [activeTab, setActiveTab] = useTabParam<Tab>("my-requests");
+  const [filter, setFilter] = useTabParam<WorkflowRequestStatus | "all">("all", "status");
   const [showForm, setShowForm] = useState(false);
   const [requestType, setRequestType] = useState<string>("paid_leave");
   const [reason, setReason] = useState("");
   const [templateValues, setTemplateValues] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const showApprovalTab = canApproveWorkflows(profile?.role ?? null);
-  const [activeTab, setActiveTab] = useState<Tab>("my-requests");
 
   /** 現在選択中のカスタムテンプレート（組み込み種別の場合は null） */
   const selectedTemplate: WorkflowTemplate | null = useMemo(() => {

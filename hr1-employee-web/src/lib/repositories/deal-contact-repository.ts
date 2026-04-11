@@ -7,9 +7,9 @@ export async function fetchDealContacts(
   organizationId: string
 ) {
   const { data, error } = await client
-    .from("bc_deal_contacts")
+    .from("crm_deal_contacts")
     .select(
-      "*, bc_contacts(id, last_name, first_name, email, phone, department, position, company_id, bc_companies(name))"
+      "*, crm_contacts(id, last_name, first_name, email, phone, department, position, company_id, crm_companies(name))"
     )
     .eq("deal_id", dealId)
     .eq("organization_id", organizationId)
@@ -25,8 +25,8 @@ export async function fetchContactDeals(
   organizationId: string
 ) {
   const { data, error } = await client
-    .from("bc_deal_contacts")
-    .select("*, bc_deals:deal_id(id, title, amount, status, stage)")
+    .from("crm_deal_contacts")
+    .select("*, crm_deals:deal_id(id, title, amount, status, stage_id)")
     .eq("contact_id", contactId)
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
@@ -45,7 +45,7 @@ export async function addDealContact(
     notes?: string | null;
   }
 ) {
-  const { data, error } = await client.from("bc_deal_contacts").insert(params).select().single();
+  const { data, error } = await client.from("crm_deal_contacts").insert(params).select().single();
   if (error) throw error;
   return data as BcDealContact;
 }
@@ -57,7 +57,7 @@ export async function updateDealContact(
   data: Partial<Pick<BcDealContact, "role" | "is_primary" | "notes">>
 ) {
   const { error } = await client
-    .from("bc_deal_contacts")
+    .from("crm_deal_contacts")
     .update({ ...data, updated_at: new Date().toISOString() })
     .eq("id", id)
     .eq("organization_id", organizationId);
@@ -70,7 +70,7 @@ export async function removeDealContact(
   organizationId: string
 ) {
   const { error } = await client
-    .from("bc_deal_contacts")
+    .from("crm_deal_contacts")
     .delete()
     .eq("id", id)
     .eq("organization_id", organizationId);
@@ -88,7 +88,7 @@ export async function setPrimaryContact(
 ) {
   // 既存のプライマリを解除
   const { error: resetError } = await client
-    .from("bc_deal_contacts")
+    .from("crm_deal_contacts")
     .update({ is_primary: false, updated_at: new Date().toISOString() })
     .eq("deal_id", dealId)
     .eq("organization_id", organizationId)
@@ -97,7 +97,7 @@ export async function setPrimaryContact(
 
   // 新しいプライマリを設定
   const { error } = await client
-    .from("bc_deal_contacts")
+    .from("crm_deal_contacts")
     .update({ is_primary: true, updated_at: new Date().toISOString() })
     .eq("id", dealContactId)
     .eq("organization_id", organizationId);

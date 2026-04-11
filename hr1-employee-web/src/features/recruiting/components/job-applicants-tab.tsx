@@ -102,33 +102,26 @@ export function JobApplicantsTab({
           <TableBody>
             {(() => {
               const filtered = applications.filter((app) => {
-                const profile = app.profiles as unknown as {
-                  display_name: string | null;
-                  email: string;
-                } | null;
                 if (applicantStatusFilter !== "all" && app.status !== applicantStatusFilter)
                   return false;
                 if (!applicantSearch) return true;
                 const q = applicantSearch.toLowerCase();
                 return (
-                  (profile?.display_name ?? "").toLowerCase().includes(q) ||
-                  (profile?.email ?? "").toLowerCase().includes(q)
+                  (app.profiles?.display_name ?? "").toLowerCase().includes(q) ||
+                  (app.profiles?.email ?? "").toLowerCase().includes(q)
                 );
               });
               if (filtered.length === 0) {
                 return (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                      {applications.length === 0 ? "応募者がいません" : "該当する応募者がいません"}
+                      {applications.length === 0 ? "応募がありません" : "該当する応募がありません"}
                     </TableCell>
                   </TableRow>
                 );
               }
               return filtered.map((app) => {
-                const profile = app.profiles as unknown as {
-                  display_name: string | null;
-                  email: string;
-                } | null;
+                const profile = app.profiles;
                 return (
                   <TableRow key={app.id}>
                     <TableCell>

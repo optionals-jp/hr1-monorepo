@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { endOfDayJstIso } from "@hr1/shared-ui/lib/date-range";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import { useOrg } from "@/lib/org-context";
@@ -280,7 +281,7 @@ export async function createSurvey(
       title: data.title.trim(),
       description: data.description.trim() || null,
       target: data.target,
-      deadline: data.deadline ? `${data.deadline}T23:59:59+09:00` : null,
+      deadline: endOfDayJstIso(data.deadline),
     });
     if (error) return { success: false, error: "サーベイの作成に失敗しました" };
     return { success: true, id: row?.id };

@@ -31,9 +31,9 @@ import {
   DropdownMenuSeparator,
 } from "@hr1/shared-ui/components/ui/dropdown-menu";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
-import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
+import { EditPanel, type EditPanelTab } from "@hr1/shared-ui/components/ui/edit-panel";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { cn } from "@/lib/utils";
 import { useEvaluationTemplateDetail } from "@/lib/hooks/use-evaluation-template-detail";
 import { Trash2, SlidersHorizontal, X } from "lucide-react";

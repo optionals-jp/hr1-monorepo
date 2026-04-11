@@ -68,14 +68,14 @@ class BcTodo {
       createdBy: json['created_by'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      companyName: json['bc_companies'] != null
-          ? (json['bc_companies'] as Map<String, dynamic>)['name'] as String?
+      companyName: json['crm_companies'] != null
+          ? (json['crm_companies'] as Map<String, dynamic>)['name'] as String?
           : null,
-      contactName: json['bc_contacts'] != null
-          ? _buildContactName(json['bc_contacts'] as Map<String, dynamic>)
+      contactName: json['crm_contacts'] != null
+          ? _buildContactName(json['crm_contacts'] as Map<String, dynamic>)
           : null,
-      dealTitle: json['bc_deals'] != null
-          ? (json['bc_deals'] as Map<String, dynamic>)['title'] as String?
+      dealTitle: json['crm_deals'] != null
+          ? (json['crm_deals'] as Map<String, dynamic>)['title'] as String?
           : null,
     );
   }

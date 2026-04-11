@@ -22,7 +22,7 @@ import { usePipelines } from "@/lib/hooks/use-pipelines";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as pipelineRepo from "@/lib/repositories/pipeline-repository";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { Plus, ChevronDown, ChevronUp, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 

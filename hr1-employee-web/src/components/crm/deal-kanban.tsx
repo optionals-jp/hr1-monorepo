@@ -89,8 +89,8 @@ function DraggableDealCard({ deal, onClick }: { deal: BcDeal; onClick: () => voi
       )}
     >
       <p className="font-medium text-sm truncate">{deal.title}</p>
-      {deal.bc_companies?.name && (
-        <p className="text-xs text-muted-foreground mt-1 truncate">{deal.bc_companies.name}</p>
+      {deal.crm_companies?.name && (
+        <p className="text-xs text-muted-foreground mt-1 truncate">{deal.crm_companies.name}</p>
       )}
       <div className="flex items-center justify-between mt-2">
         <span className="text-xs font-medium">
@@ -111,8 +111,8 @@ function DealCardOverlay({ deal }: { deal: BcDeal }) {
   return (
     <div className="rounded-lg border bg-background p-3 shadow-lg w-64">
       <p className="font-medium text-sm truncate">{deal.title}</p>
-      {deal.bc_companies?.name && (
-        <p className="text-xs text-muted-foreground mt-1 truncate">{deal.bc_companies.name}</p>
+      {deal.crm_companies?.name && (
+        <p className="text-xs text-muted-foreground mt-1 truncate">{deal.crm_companies.name}</p>
       )}
       <div className="flex items-center justify-between mt-2">
         <span className="text-xs font-medium">
@@ -127,13 +127,10 @@ function DealCardOverlay({ deal }: { deal: BcDeal }) {
 }
 
 /**
- * ステージIDまたはレガシーstageキーで商談をグルーピングするヘルパー
+ * ステージIDで商談をグルーピングするヘルパー
  */
 function matchDealToStage(deal: BcDeal, stage: CrmPipelineStage): boolean {
-  // stage_id が設定されていればそれで判定
-  if (deal.stage_id) return deal.stage_id === stage.id;
-  // レガシー: stageキーがステージ名と一致するか、ステージIDと一致するか
-  return deal.stage === stage.id || deal.stage === stage.name;
+  return deal.stage_id === stage.id;
 }
 
 export function DealKanban({ deals, stages, onStageChange, onDealClick }: DealKanbanProps) {
@@ -171,7 +168,7 @@ export function DealKanban({ deals, stages, onStageChange, onDealClick }: DealKa
 
     if (!deal) return;
     // 同じステージへのドロップはスキップ
-    if (deal.stage_id === targetStageId || (!deal.stage_id && deal.stage === targetStageId)) return;
+    if (deal.stage_id === targetStageId) return;
     if (!stageIds.has(targetStageId)) return;
 
     const targetStage = stages.find((s) => s.id === targetStageId);

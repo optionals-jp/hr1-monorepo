@@ -55,10 +55,9 @@ export function useCreateInterview() {
 
     try {
       const client = getSupabase();
-      const interviewId = `interview-${Date.now()}`;
 
-      await repository.createInterview(client, {
-        id: interviewId,
+      // id は interviews.id の DEFAULT gen_random_uuid() に任せ、RETURNING で取得する。
+      const interviewId = await repository.createInterview(client, {
         organization_id: organization.id,
         title: newTitle,
         location: newLocation || null,
@@ -68,10 +67,10 @@ export function useCreateInterview() {
 
       const validSlots = slots.filter((s) => s.startAt && s.endAt);
       if (validSlots.length > 0) {
+        // interview_slots.id も DB 側で採番させる（フロント採番は禁止）。
         await repository.createSlots(
           client,
-          validSlots.map((slot, i) => ({
-            id: `slot-${interviewId}-${i + 1}`,
+          validSlots.map((slot) => ({
             interview_id: interviewId,
             start_at: new Date(slot.startAt).toISOString(),
             end_at: new Date(slot.endAt).toISOString(),
@@ -86,6 +85,8 @@ export function useCreateInterview() {
       setNewNotes("");
       setSlots([]);
       mutate();
+    } catch (err) {
+      console.error("createInterview failed", err);
     } finally {
       setSaving(false);
     }

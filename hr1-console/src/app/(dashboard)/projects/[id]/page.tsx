@@ -21,9 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { Card, CardContent } from "@hr1/shared-ui/components/ui/card";
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { teamMemberRoleLabels } from "@/lib/constants";

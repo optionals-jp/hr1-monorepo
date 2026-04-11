@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { Label } from "@hr1/shared-ui/components/ui/label";
 import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
@@ -147,7 +147,7 @@ export function DealContactsPanel({ dealId }: DealContactsPanelProps) {
             </TableRow>
           ) : (
             (dealContacts ?? []).map((dc) => {
-              const contact = dc.bc_contacts;
+              const contact = dc.crm_contacts;
               if (!contact) return null;
               return (
                 <TableRow
@@ -233,7 +233,7 @@ export function DealContactsPanel({ dealId }: DealContactsPanelProps) {
                   availableContacts.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.last_name} {c.first_name ?? ""}
-                      {c.bc_companies?.name ? ` (${c.bc_companies.name})` : ""}
+                      {c.crm_companies?.name ? ` (${c.crm_companies.name})` : ""}
                     </SelectItem>
                   ))
                 )}

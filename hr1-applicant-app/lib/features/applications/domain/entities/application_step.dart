@@ -44,7 +44,8 @@ class ApplicationStep {
     required this.stepOrder,
     required this.status,
     required this.label,
-    this.relatedId,
+    this.formId,
+    this.interviewId,
     this.startedAt,
     this.completedAt,
     this.applicantActionAt,
@@ -56,18 +57,22 @@ class ApplicationStep {
   final int stepOrder;
   final StepStatus status;
   final String label;
-  final String? relatedId;
+  final String? formId;
+  final String? interviewId;
   final DateTime? startedAt;
   final DateTime? completedAt;
 
   /// 応募者がアクション（フォーム送信・面接予約）を完了した日時
   final DateTime? applicantActionAt;
 
+  /// 後方互換: form_id または interview_id を関連リソース ID として返す
+  String? get relatedId => formId ?? interviewId;
+
   /// 応募者側のアクションが必要か
   ///
   /// - form: フォーム送信が必要（送信後 completeStep でステップ完了）
   /// - interview: 面接日程の選択が必要（選択後 applicantActionAt がセットされる）
-  /// - relatedId が未設定の場合はアクション不可（管理者がリソース未リンク）
+  /// - リソース ID が未設定の場合はアクション不可（管理者がリソース未リンク）
   /// - applicantActionAt がセット済みの場合はアクション済み
   bool get requiresAction =>
       status == StepStatus.inProgress &&
@@ -83,7 +88,8 @@ class ApplicationStep {
       stepOrder: json['step_order'] as int,
       status: StepStatus.fromString(json['status'] as String),
       label: json['label'] as String,
-      relatedId: json['related_id'] as String?,
+      formId: json['form_id'] as String?,
+      interviewId: json['interview_id'] as String?,
       startedAt: json['started_at'] != null
           ? DateTime.parse(json['started_at'] as String)
           : null,

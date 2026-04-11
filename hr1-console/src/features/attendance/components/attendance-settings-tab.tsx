@@ -7,7 +7,7 @@ import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { Input } from "@hr1/shared-ui/components/ui/input";
 import { Label } from "@hr1/shared-ui/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { upsertAttendanceSettings } from "@/features/attendance/hooks/use-attendance-queries";
 import { attendanceStatusLabels, attendanceStatusColors, punchTypeLabels } from "@/lib/constants";
 import { Settings2 } from "lucide-react";

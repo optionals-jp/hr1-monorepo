@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { Button } from "@hr1/shared-ui/components/ui/button";
@@ -29,6 +29,7 @@ import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banne
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { cn } from "@hr1/shared-ui/lib/utils";
 import { useCrmQuotes } from "@/lib/hooks/use-crm";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import { deleteQuote } from "@/lib/repositories/quote-repository";
@@ -44,7 +45,8 @@ export default function QuotesPage() {
   const { organization } = useOrg();
   const { data: quotes, error, mutate } = useCrmQuotes();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  // URL ?tab= でステータスフィルタを保持。
+  const [statusFilter, setStatusFilter] = useTabParam<string>("all");
 
   const filtered = useMemo(() => {
     return (quotes ?? []).filter((q) => {
@@ -54,7 +56,7 @@ export default function QuotesPage() {
       return (
         q.title.toLowerCase().includes(s) ||
         q.quote_number.toLowerCase().includes(s) ||
-        q.bc_companies?.name?.toLowerCase().includes(s)
+        q.crm_companies?.name?.toLowerCase().includes(s)
       );
     });
   }, [quotes, search, statusFilter]);
@@ -82,7 +84,7 @@ export default function QuotesPage() {
         breadcrumb={[{ label: "商談管理", href: "/crm/deals" }]}
         action={
           <Link href="/crm/quotes/new">
-            <Button>
+            <Button variant="primary">
               <Plus className="size-4 mr-1.5" />
               新規作成
             </Button>
@@ -176,10 +178,10 @@ export default function QuotesPage() {
                   <TableCell className="font-medium text-primary">{q.quote_number}</TableCell>
                   <TableCell>{q.title}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {q.bc_companies?.name ?? "—"}
+                    {q.crm_companies?.name ?? "—"}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {q.bc_deals?.title ?? "—"}
+                    {q.crm_deals?.title ?? "—"}
                   </TableCell>
                   <TableCell>
                     <Badge variant={quoteStatusColors[q.status]}>

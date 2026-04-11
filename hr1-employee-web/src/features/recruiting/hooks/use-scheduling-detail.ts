@@ -181,10 +181,12 @@ export function useSchedulingDetailPage() {
 
       const newSlots = editSlots.filter((s) => s.isNew && s.startAt && s.endAt);
       if (newSlots.length > 0) {
+        // interview_slots.id は DB 側の DEFAULT gen_random_uuid() に任せる。
+        // editSlots.id に入っている `new-${Date.now()}` は UI 側の React key 専用で、
+        // DB に書き込まない。
         await schedulingRepo.createSlots(
           client,
-          newSlots.map((s, i) => ({
-            id: `slot-${interview.id}-${Date.now()}-${i}`,
+          newSlots.map((s) => ({
             interview_id: interview.id,
             start_at: new Date(s.startAt).toISOString(),
             end_at: new Date(s.endAt).toISOString(),

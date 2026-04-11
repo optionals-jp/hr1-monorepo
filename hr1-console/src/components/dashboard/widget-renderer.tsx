@@ -12,7 +12,7 @@ import type {
   RecruitingTargets,
 } from "@/types/dashboard";
 import { DATA_SOURCE_REGISTRY } from "@/lib/dashboard/data-sources";
-import { dealStageLabels, dealStatusLabels } from "@/lib/constants";
+import { dealStatusLabels } from "@/lib/constants";
 import type { CrmPipelineStage } from "@/types/database";
 import { Panel, PanelHeader, PanelBody } from "./panel";
 import { GenericBarChart } from "./charts/generic-bar-chart";
@@ -62,8 +62,8 @@ export interface DashboardData {
     id: string;
     title: string;
     companyName: string;
-    stage: string;
     stageId: string | null;
+    stageName: string | null;
     amount: number | null;
     status: string;
     probability: number | null;
@@ -306,7 +306,7 @@ function resolveDataSource(
         id: d.id,
         href: undefined,
         title: d.title,
-        subtitle: `${d.companyName} / ${dealStageLabels[d.stage] ?? d.stage}`,
+        subtitle: `${d.companyName} / ${d.stageName ?? "—"}`,
         values: [
           {
             label: dealStatusLabels[d.status] ?? d.status,
@@ -323,21 +323,10 @@ function resolveDataSource(
       const openDeals = deals.filter((d) => d.status === "open");
       const pipelineStages = data.crmPipelineStages ?? [];
 
-      // 動的パイプラインステージがあればそれを使い、なければレガシー定数にフォールバック
-      let stages: { name: string; count: number }[];
-      if (pipelineStages.length > 0) {
-        stages = pipelineStages.map((s) => ({
-          name: s.name,
-          count: openDeals.filter((d) => d.stageId === s.id || (!d.stageId && d.stage === s.name))
-            .length,
-        }));
-      } else {
-        const stageOrder = ["initial", "proposal", "negotiation", "closing"];
-        stages = stageOrder.map((s) => ({
-          name: dealStageLabels[s] ?? s,
-          count: openDeals.filter((d) => d.stage === s).length,
-        }));
-      }
+      const stages = pipelineStages.map((s) => ({
+        name: s.name,
+        count: openDeals.filter((d) => d.stageId === s.id).length,
+      }));
 
       if (displayType === "pipeline") {
         return { type: "pipeline", data: stages };

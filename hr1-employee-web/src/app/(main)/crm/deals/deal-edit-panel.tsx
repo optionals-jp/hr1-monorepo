@@ -4,7 +4,7 @@ import { Dispatch, SetStateAction } from "react";
 import { Input } from "@hr1/shared-ui/components/ui/input";
 import { Label } from "@hr1/shared-ui/components/ui/label";
 import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import {
   Select,
   SelectContent,
@@ -128,7 +128,6 @@ export function DealEditPanel({
                   ...p,
                   pipeline_id: v,
                   stage_id: firstStage?.id ?? p.stage_id,
-                  stage: firstStage?.name ?? p.stage,
                   probability: firstStage?.probability_default ?? p.probability,
                 }));
               }}
@@ -151,16 +150,14 @@ export function DealEditPanel({
           <div>
             <Label>ステージ</Label>
             <Select
-              value={editData.stage_id ?? editData.stage ?? editStages[0]?.id ?? ""}
+              value={editData.stage_id ?? editStages[0]?.id ?? ""}
               onValueChange={(v) => {
                 const selectedStage = editStages.find((s) => s.id === v);
-                const newStage = selectedStage?.name ?? v;
                 setEditData(
                   (p) =>
                     ({
                       ...p,
                       stage_id: v,
-                      stage: newStage,
                       probability: selectedStage?.probability_default ?? p.probability,
                     }) as Partial<BcDeal>
                 );
@@ -186,7 +183,7 @@ export function DealEditPanel({
               onValueChange={(v) =>
                 setEditData((p) => ({
                   ...p,
-                  status: v as "open" | "won" | "lost",
+                  status: v as "open" | "won" | "lost" | "cancelled",
                 }))
               }
             >

@@ -7,9 +7,11 @@ import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as applicantRepo from "@/lib/repositories/applicant-repository";
 import * as jobRepository from "@/lib/repositories/job-repository";
+import * as templateRepo from "@/lib/repositories/selection-step-template-repository";
 import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
 import { StepType } from "@/lib/constants";
-import type { Job } from "@/types/database";
+import { PG_ERROR_CODES, getPgErrorCode } from "@hr1/shared-ui/lib/postgres-errors";
+import type { Job, SelectionStepTemplate } from "@/types/database";
 
 export const JOB_TAB_STATUSES: Record<string, string[]> = {
   active: ["open", "draft"],
@@ -84,6 +86,63 @@ export interface StepDraft {
   tempId: string;
   step_type: string;
   label: string;
+  /** null の場合はユーザー手動入力。非 null の場合は既存テンプレート由来（再作成スキップ） */
+  templateId: string | null;
+}
+
+export function useSelectionStepTemplates() {
+  return useOrgQuery<SelectionStepTemplate[]>("selection-step-templates", (orgId) =>
+    templateRepo.findByOrg(getSupabase(), orgId)
+  );
+}
+
+/**
+ * 求人作成画面で手動入力された選考ステップのテンプレート化を試みる。
+ *
+ * - `templateId` が既に紐付いている step はスキップ（既存テンプレート由来）
+ * - 手動入力の step は `{求人タイトル}の選考ステップ: {ステップ名}` という名前でテンプレートを作成
+ * - 同一組織に同じ名前のテンプレートが既にある場合はスキップ（重複エラーを握り潰さないよう upsert ではなく fetch-then-insert）
+ *
+ * @returns 作成に成功したテンプレートの数
+ */
+async function persistManualStepsAsTemplates(
+  client: ReturnType<typeof getSupabase>,
+  organizationId: string,
+  jobTitle: string,
+  steps: StepDraft[]
+): Promise<number> {
+  const manualSteps = steps.filter((s) => !s.templateId && s.label.trim() !== "");
+  if (manualSteps.length === 0) return 0;
+
+  const existing = await templateRepo.findByOrg(client, organizationId);
+  const existingNames = new Set(existing.map((t) => t.name));
+  const maxSortOrder = existing.reduce((max, t) => Math.max(max, t.sort_order), -1);
+
+  let created = 0;
+  let nextOrder = maxSortOrder + 1;
+
+  for (const step of manualSteps) {
+    const name = `${jobTitle}の選考ステップ: ${step.label.trim()}`;
+    if (existingNames.has(name)) continue;
+    try {
+      await templateRepo.createTemplate(client, {
+        organization_id: organizationId,
+        name,
+        step_type: step.step_type,
+        description: null,
+        sort_order: nextOrder,
+      });
+      existingNames.add(name);
+      nextOrder++;
+      created++;
+    } catch (e) {
+      // UNIQUE 違反（並行作成によるレース）は想定内なので次のステップへ進む。
+      // それ以外のエラー（RLS 拒否・ネットワーク断等）は握り潰さず呼び出し元に伝播させる。
+      if (getPgErrorCode(e) !== PG_ERROR_CODES.UNIQUE_VIOLATION) throw e;
+      existingNames.add(name);
+    }
+  }
+  return created;
 }
 
 export function useNewJob() {
@@ -97,7 +156,7 @@ export function useNewJob() {
     employmentType: string | null;
     salaryRange: string | null;
     status: string;
-    steps: { step_type: string; label: string }[];
+    steps: StepDraft[];
   }) => {
     if (!organization) throw new Error("Organization not found");
     const client = getSupabase();
@@ -128,14 +187,24 @@ export function useNewJob() {
         }))
       );
       if (stepsError) throw stepsError;
+
+      // 手動入力ステップをテンプレート化（失敗しても求人作成は成功とする）
+      await persistManualStepsAsTemplates(client, organization.id, params.title, params.steps);
     }
   };
 
   return { createJob };
 }
 
+const DEFAULT_STEPS: StepDraft[] = [
+  { tempId: "1", step_type: StepType.Screening, label: "書類選考", templateId: null },
+  { tempId: "2", step_type: StepType.Interview, label: "一次面接", templateId: null },
+  { tempId: "3", step_type: StepType.Offer, label: "内定", templateId: null },
+];
+
 export function useNewJobPage() {
   const { createJob } = useNewJob();
+  const { data: templates = [], mutate: mutateTemplates } = useSelectionStepTemplates();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [department, setDepartment] = useState("");
@@ -143,11 +212,7 @@ export function useNewJobPage() {
   const [employmentType, setEmploymentType] = useState("");
   const [salaryRange, setSalaryRange] = useState("");
   const [status, setStatus] = useState("open");
-  const [steps, setSteps] = useState<StepDraft[]>([
-    { tempId: "1", step_type: StepType.Screening, label: "書類選考" },
-    { tempId: "2", step_type: StepType.Interview, label: "一次面接" },
-    { tempId: "3", step_type: StepType.Offer, label: "内定" },
-  ]);
+  const [steps, setSteps] = useState<StepDraft[]>(DEFAULT_STEPS);
   const [saving, setSaving] = useState(false);
   const [formErrors, setFormErrors] = useState<ValidationErrors>({});
 
@@ -158,6 +223,19 @@ export function useNewJobPage() {
         tempId: `${Date.now()}`,
         step_type: StepType.Interview,
         label: "",
+        templateId: null,
+      },
+    ]);
+  };
+
+  const addStepFromTemplate = (template: SelectionStepTemplate) => {
+    setSteps((prev) => [
+      ...prev,
+      {
+        tempId: `${Date.now()}-${template.id}`,
+        step_type: template.step_type,
+        label: template.name,
+        templateId: template.id,
       },
     ]);
   };
@@ -166,8 +244,11 @@ export function useNewJobPage() {
     setSteps((prev) => prev.filter((s) => s.tempId !== tempId));
   };
 
-  const updateStep = (tempId: string, field: keyof StepDraft, value: string) => {
-    setSteps((prev) => prev.map((s) => (s.tempId === tempId ? { ...s, [field]: value } : s)));
+  const updateStep = (tempId: string, field: "step_type" | "label", value: string) => {
+    // 手動編集されたらテンプレ紐付けを外す（更新後の値が独立ステップとして扱われる）
+    setSteps((prev) =>
+      prev.map((s) => (s.tempId === tempId ? { ...s, [field]: value, templateId: null } : s))
+    );
   };
 
   const setTitleWithClear = (value: string) => {
@@ -198,11 +279,9 @@ export function useNewJobPage() {
         employmentType: employmentType || null,
         salaryRange: salaryRange || null,
         status,
-        steps: steps.map((step) => ({
-          step_type: step.step_type,
-          label: step.label,
-        })),
+        steps,
       });
+      mutateTemplates();
       return { success: true };
     } catch {
       return { success: false, error: "求人の作成に失敗しました" };
@@ -219,11 +298,7 @@ export function useNewJobPage() {
     setEmploymentType("");
     setSalaryRange("");
     setStatus("open");
-    setSteps([
-      { tempId: "1", step_type: StepType.Screening, label: "書類選考" },
-      { tempId: "2", step_type: StepType.Interview, label: "一次面接" },
-      { tempId: "3", step_type: StepType.Offer, label: "内定" },
-    ]);
+    setSteps(DEFAULT_STEPS);
     setFormErrors({});
   };
 
@@ -244,8 +319,10 @@ export function useNewJobPage() {
     setStatus,
     steps,
     addStep,
+    addStepFromTemplate,
     removeStep,
     updateStep,
+    templates,
     saving,
     formErrors,
     handleSubmit,

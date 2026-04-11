@@ -12,10 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
-import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
+import { EditPanel, type EditPanelTab } from "@hr1/shared-ui/components/ui/edit-panel";
 import { DatetimeInput } from "@/components/ui/datetime-input";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import {
   useSchedulingDetailPage,
   type SchedulingDetailTab as SchedulingDetailTabValue,

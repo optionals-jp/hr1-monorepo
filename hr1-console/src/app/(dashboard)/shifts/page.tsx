@@ -3,7 +3,7 @@
 import React from "react";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import {

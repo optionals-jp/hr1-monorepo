@@ -97,12 +97,14 @@ export function useApplicationDetail(id: string) {
     async (resourceId: string) => {
       if (!resourceDialogStep) return;
 
+      const isForm = resourceDialogStep.step_type !== StepType.Interview;
       const { error } = await applicationRepository.updateStepStatus(
         getSupabase(),
         resourceDialogStep.id,
         {
           status: StepStatus.InProgress,
-          related_id: resourceId,
+          form_id: isForm ? resourceId : null,
+          interview_id: isForm ? null : resourceId,
           started_at: new Date().toISOString(),
         }
       );
@@ -198,14 +200,14 @@ export function useApplicationDetail(id: string) {
 
   const openFormResponses = useCallback(
     async (step: ApplicationStep) => {
-      if (!step.related_id || !application) return;
+      if (!step.form_id || !application) return;
       setFormSheetStep(step);
       setFormSheetLoading(true);
       setFormSheetOpen(true);
 
       const { fields, responses } = await applicationRepository.fetchFormResponses(
         getSupabase(),
-        step.related_id,
+        step.form_id,
         application.applicant_id
       );
 

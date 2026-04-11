@@ -51,6 +51,11 @@ class _Body extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activitiesAsync = ref.watch(bcActivitiesByDealProvider(dealId));
+    final stagesAsync = ref.watch(crmPipelineStagesProvider);
+    final stageLabel = stagesAsync.maybeWhen(
+      data: (stages) => resolveStageLabel(deal.stageId, stages),
+      orElse: () => '—',
+    );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -65,7 +70,7 @@ class _Body extends ConsumerWidget {
             children: [
               _StatusChip(label: deal.status.label, status: deal.status.name),
               const SizedBox(width: AppSpacing.sm),
-              _StageChip(label: deal.stage.label),
+              _StageChip(label: stageLabel),
             ],
           ),
 

@@ -7,7 +7,7 @@ import { Label } from "@hr1/shared-ui/components/ui/label";
 import { Card, CardContent } from "@hr1/shared-ui/components/ui/card";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { usePermissionGroupsPage } from "@/lib/hooks/use-permission-groups-page";
 import {
   PERMISSION_RESOURCES,

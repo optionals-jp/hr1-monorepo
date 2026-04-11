@@ -2,6 +2,10 @@
 
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import {
+  SummaryCards,
+  type SummaryCardConfig,
+} from "@hr1/shared-ui/components/layout/summary-cards";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import {
@@ -22,7 +26,7 @@ import {
 import { cn } from "@hr1/shared-ui/lib/utils";
 import { useApplicationsPage } from "@/features/recruiting/hooks/use-applications-page";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import {
@@ -33,6 +37,9 @@ import {
   CircleCheck,
   CircleX,
   LogOut,
+  Users,
+  GraduationCap,
+  Briefcase,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -50,6 +57,16 @@ const statusTabs = [
   { value: ApplicationStatus.Withdrawn, label: "辞退", icon: LogOut },
 ];
 
+type ApplicationsSummaryKey = "total" | "newGrad" | "midCareer" | "active" | "offered";
+
+const summaryCards: readonly SummaryCardConfig<ApplicationsSummaryKey>[] = [
+  { key: "total", label: "総応募数", icon: Users, iconClassName: "text-slate-600" },
+  { key: "newGrad", label: "新卒", icon: GraduationCap, iconClassName: "text-blue-600" },
+  { key: "midCareer", label: "中途", icon: Briefcase, iconClassName: "text-indigo-600" },
+  { key: "active", label: "選考中", icon: Loader2, iconClassName: "text-amber-600" },
+  { key: "offered", label: "内定", icon: CircleCheck, iconClassName: "text-emerald-600" },
+];
+
 export default function ApplicationsPage() {
   const router = useRouter();
   const {
@@ -60,6 +77,7 @@ export default function ApplicationsPage() {
     filterJobId,
     setFilterJobId,
     jobs,
+    summary,
     isLoading,
     applicationsError,
     mutateApplications,
@@ -71,11 +89,16 @@ export default function ApplicationsPage() {
     <div className="flex flex-col">
       <QueryErrorBanner error={applicationsError} onRetry={() => mutateApplications()} />
       <PageHeader
-        title="応募管理"
-        description="応募の確認・選考ステップの管理"
+        title="応募"
+        description="求人ごとの応募イベントと選考ステップの管理。1 人が複数求人に応募した場合は別々にカウント"
         sticky={false}
         border={false}
       />
+
+      {/* サマリ（総応募数・新卒・中途・選考中・内定）。タブ絞り込みとは独立。 */}
+      <div className="px-4 sm:px-6 md:px-8 pt-2 pb-4">
+        <SummaryCards cards={summaryCards} values={summary} />
+      </div>
 
       <StickyFilterBar>
         <TabBar tabs={statusTabs} activeTab={statusFilter} onTabChange={setStatusFilter} />
@@ -124,7 +147,7 @@ export default function ApplicationsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>応募者</TableHead>
+              <TableHead>候補者</TableHead>
               <TableHead>求人</TableHead>
               <TableHead>現在のステップ</TableHead>
               <TableHead>ステータス</TableHead>
@@ -146,10 +169,7 @@ export default function ApplicationsPage() {
               </TableRow>
             ) : (
               filtered.map((app) => {
-                const profile = app.profiles as unknown as {
-                  display_name: string | null;
-                  email: string;
-                };
+                const profile = app.profiles;
                 return (
                   <TableRow
                     key={app.id}

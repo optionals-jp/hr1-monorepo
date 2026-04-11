@@ -15,9 +15,10 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { useApplicantDetailPage } from "@/features/recruiting/hooks/use-applicant-detail";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TimelineTab } from "@/features/recruiting/components/timeline-tab";
-import { FileText, User, ScrollText } from "lucide-react";
+import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
+import { FileText, User, ScrollText, ClipboardCheck } from "lucide-react";
 import { format } from "date-fns";
 import {
   applicationStatusLabels as statusLabels,
@@ -27,6 +28,7 @@ import {
 const tabs = [
   { value: "profile", label: "プロフィール", icon: User },
   { value: "forms", label: "フォーム", icon: FileText },
+  { value: "evaluation", label: "評価", icon: ClipboardCheck },
   { value: "timeline", label: "ログ", icon: ScrollText },
 ];
 
@@ -58,7 +60,7 @@ export default function ApplicantDetailPage() {
   if (!profile) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
-        応募者が見つかりません
+        候補者が見つかりません
       </div>
     );
   }
@@ -67,8 +69,8 @@ export default function ApplicantDetailPage() {
     <div className="flex flex-col">
       <PageHeader
         title={profile.display_name ?? profile.email}
-        description="応募者詳細"
-        breadcrumb={[{ label: "応募者一覧", href: "/applicants" }]}
+        description="候補者詳細"
+        breadcrumb={[{ label: "候補者", href: "/applicants" }]}
         sticky={false}
         border={false}
       />
@@ -94,7 +96,7 @@ export default function ApplicantDetailPage() {
                 <h2 className="text-lg font-semibold">{profile.display_name ?? "-"}</h2>
                 <p className="text-sm text-muted-foreground">{profile.email}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="secondary">応募者</Badge>
+                  <Badge variant="secondary">候補者</Badge>
                   {profile.invited_at ? (
                     <Badge variant="secondary">招待済み</Badge>
                   ) : (
@@ -187,7 +189,7 @@ export default function ApplicantDetailPage() {
               </div>
               <h3 className="text-lg font-semibold mb-2">提出されたフォームはありません</h3>
               <p className="text-sm text-muted-foreground max-w-sm">
-                この応募者がフォームを提出すると、ここに表示されます。
+                この候補者がフォームを提出すると、ここに表示されます。
               </p>
             </div>
           ) : (
@@ -212,6 +214,12 @@ export default function ApplicantDetailPage() {
               ))}
             </div>
           )}
+        </PageContent>
+      )}
+
+      {activeTab === "evaluation" && (
+        <PageContent>
+          <EvaluationTab targetUserId={profile.id} targetType="applicant" />
         </PageContent>
       )}
 

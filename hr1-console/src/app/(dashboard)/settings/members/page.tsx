@@ -1,7 +1,7 @@
 "use client";
 
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { Button } from "@hr1/shared-ui/components/ui/button";
@@ -34,7 +34,7 @@ import {
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
 import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { useMembersPage } from "@/lib/hooks/use-members-page";
 import { AlertCircle, CheckCircle2, Loader2, Mail, UserPlus, Shield } from "lucide-react";
 

@@ -196,12 +196,13 @@ describe.skipIf(!RUN_ISOLATION_TESTS)("Multi-tenant data isolation", () => {
     });
 
     test("employee cannot fetch a profile from org-002 by ID", async () => {
-      const adminRows = await selectFrom(adminClient, "profiles", "id, organization_id", {
+      // profiles の組織メンバーシップは user_organizations 経由で解決
+      const adminRows = await selectFrom(adminClient, "user_organizations", "user_id", {
         column: "organization_id",
         value: ORG_002,
       });
       precondition(adminRows.length > 0, "no profiles in org-002. Seed data is required.");
-      const targetId = adminRows[0].id;
+      const targetId = adminRows[0].user_id;
 
       const { data, error } = await employeeClient.from("profiles").select("id").eq("id", targetId);
       expect(error).toBeNull();

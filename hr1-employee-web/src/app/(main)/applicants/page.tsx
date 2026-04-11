@@ -5,7 +5,12 @@ import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { FormField, FormInput } from "@hr1/shared-ui/components/ui/form-field";
+import { Input } from "@hr1/shared-ui/components/ui/input";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import {
+  SummaryCards,
+  type SummaryCardConfig,
+} from "@hr1/shared-ui/components/layout/summary-cards";
 import {
   Table,
   TableBody,
@@ -22,8 +27,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
-import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
+import { EditPanel, type EditPanelTab } from "@hr1/shared-ui/components/ui/edit-panel";
 import { useApplicantsPage } from "@/features/recruiting/hooks/use-applicants-page";
+import { ApplicantImportDialog } from "@/features/recruiting/components/applicant-import-dialog";
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import {
   DropdownMenu,
@@ -35,14 +41,33 @@ import {
 import { cn } from "@hr1/shared-ui/lib/utils";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
-import { SlidersHorizontal, X } from "lucide-react";
+import {
+  SlidersHorizontal,
+  X,
+  Upload,
+  Users,
+  GraduationCap,
+  Briefcase,
+  ClipboardCheck,
+  UserMinus,
+} from "lucide-react";
 import { format } from "date-fns";
 
 const addTabs: EditPanelTab[] = [
   { value: "basic", label: "基本情報" },
   { value: "hiring", label: "採用区分" },
+];
+
+type ApplicantsSummaryKey = "total" | "newGrad" | "midCareer" | "applied" | "notApplied";
+
+const summaryCards: readonly SummaryCardConfig<ApplicantsSummaryKey>[] = [
+  { key: "total", label: "候補者数", icon: Users, iconClassName: "text-slate-600" },
+  { key: "newGrad", label: "新卒", icon: GraduationCap, iconClassName: "text-blue-600" },
+  { key: "midCareer", label: "中途", icon: Briefcase, iconClassName: "text-indigo-600" },
+  { key: "applied", label: "応募済み", icon: ClipboardCheck, iconClassName: "text-emerald-600" },
+  { key: "notApplied", label: "未応募", icon: UserMinus, iconClassName: "text-slate-500" },
 ];
 
 export default function ApplicantsPage() {
@@ -54,12 +79,27 @@ export default function ApplicantsPage() {
     <div className="flex flex-col">
       <QueryErrorBanner error={h.applicantsError} onRetry={() => h.mutate()} />
       <PageHeader
-        title="応募者一覧"
-        description="応募者の管理・招待"
+        title="候補者"
+        description="マイページを登録した人の一覧（求人への応募有無にかかわらず表示）"
         sticky={false}
         border={false}
-        action={<Button onClick={h.openAddDialog}>応募者を追加</Button>}
+        action={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => h.setImportDialogOpen(true)}>
+              <Upload className="mr-1.5 h-4 w-4" />
+              インポート
+            </Button>
+            <Button variant="primary" onClick={h.openAddDialog}>
+              候補者を追加
+            </Button>
+          </div>
+        }
       />
+
+      {/* サマリ（候補者数・新卒・中途・応募済み・未応募）。フィルタ絞り込みとは独立。 */}
+      <div className="px-4 sm:px-6 md:px-8 pt-2 pb-4">
+        <SummaryCards cards={summaryCards} values={h.summary} />
+      </div>
 
       <StickyFilterBar>
         <SearchBar value={h.search} onChange={h.setSearch} />
@@ -67,34 +107,53 @@ export default function ApplicantsPage() {
           <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
-            {h.filterHiringType !== "all" && (
+            {(h.filterHiringType !== "all" || h.filterCreatedFrom || h.filterCreatedTo) && (
               <div className="flex items-center gap-1.5 overflow-x-auto">
-                <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
-                  採用区分：
-                  {h.filterHiringType === "new_grad"
-                    ? "新卒"
-                    : h.filterHiringType === "mid_career"
-                      ? "中途"
-                      : "未設定"}
-                  <span
-                    role="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      h.setFilterHiringType("all");
-                    }}
-                    className="ml-0.5 hover:text-foreground"
-                  >
-                    <X className="h-3 w-3" />
-                  </span>
-                </Badge>
+                {h.filterHiringType !== "all" && (
+                  <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                    採用区分：
+                    {h.filterHiringType === "new_grad"
+                      ? "新卒"
+                      : h.filterHiringType === "mid_career"
+                        ? "中途"
+                        : "未設定"}
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        h.setFilterHiringType("all");
+                      }}
+                      className="ml-0.5 hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </span>
+                  </Badge>
+                )}
+                {(h.filterCreatedFrom || h.filterCreatedTo) && (
+                  <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                    登録日：
+                    {h.filterCreatedFrom || "指定なし"} 〜 {h.filterCreatedTo || "指定なし"}
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        h.setFilterCreatedFrom("");
+                        h.setFilterCreatedTo("");
+                      }}
+                      className="ml-0.5 hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </span>
+                  </Badge>
+                )}
               </div>
             )}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-auto py-2">
+            <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">採用区分</div>
             <DropdownMenuItem className="py-2" onClick={() => h.setFilterHiringType("all")}>
               <span className={cn(h.filterHiringType === "all" && "font-medium")}>すべて</span>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem className="py-2" onClick={() => h.setFilterHiringType("new_grad")}>
               <span className={cn(h.filterHiringType === "new_grad" && "font-medium")}>新卒</span>
             </DropdownMenuItem>
@@ -104,6 +163,43 @@ export default function ApplicantsPage() {
             <DropdownMenuItem className="py-2" onClick={() => h.setFilterHiringType("none")}>
               <span className={cn(h.filterHiringType === "none" && "font-medium")}>未設定</span>
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">登録日</div>
+            <div
+              className="px-2 py-1 space-y-2"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={h.filterCreatedFrom}
+                  onChange={(e) => h.setFilterCreatedFrom(e.target.value)}
+                  max={h.filterCreatedTo || undefined}
+                  className="h-8 w-36"
+                />
+                <span className="text-xs text-muted-foreground">〜</span>
+                <Input
+                  type="date"
+                  value={h.filterCreatedTo}
+                  onChange={(e) => h.setFilterCreatedTo(e.target.value)}
+                  min={h.filterCreatedFrom || undefined}
+                  className="h-8 w-36"
+                />
+              </div>
+              {(h.filterCreatedFrom || h.filterCreatedTo) && (
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    h.setFilterCreatedFrom("");
+                    h.setFilterCreatedTo("");
+                  }}
+                >
+                  クリア
+                </button>
+              )}
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
       </StickyFilterBar>
@@ -124,7 +220,7 @@ export default function ApplicantsPage() {
               colSpan={5}
               isLoading={h.isLoading}
               isEmpty={h.filtered.length === 0}
-              emptyMessage="応募者がいません"
+              emptyMessage="候補者がいません"
             >
               {h.filtered.map((applicant) => (
                 <TableRow
@@ -172,14 +268,14 @@ export default function ApplicantsPage() {
       <EditPanel
         open={h.dialogOpen}
         onOpenChange={h.setDialogOpen}
-        title="応募者を追加"
+        title="候補者を追加"
         tabs={addTabs}
         activeTab={h.addTab}
         onTabChange={h.setAddTab}
         onSave={async () => {
           const result = await h.handleAdd();
           if (result.success) {
-            showToast("応募者を追加しました");
+            showToast("候補者を追加しました");
           } else if (result.error) {
             showToast(result.error, "error");
           }
@@ -246,6 +342,15 @@ export default function ApplicantsPage() {
           </div>
         )}
       </EditPanel>
+
+      {h.organization && (
+        <ApplicantImportDialog
+          open={h.importDialogOpen}
+          onOpenChange={h.setImportDialogOpen}
+          organizationId={h.organization.id}
+          onComplete={() => h.mutate()}
+        />
+      )}
     </div>
   );
 }

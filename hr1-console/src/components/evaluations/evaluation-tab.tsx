@@ -13,7 +13,12 @@ import {
   loadTemplateCriteria,
   submitEvaluation,
 } from "@/lib/hooks/use-evaluation-detail";
-import { evaluationStatusLabels, evaluationStatusColors, raterTypeLabels } from "@/lib/constants";
+import {
+  evaluationStatusLabels,
+  evaluationStatusColors,
+  raterTypeLabels,
+  scoreTypeLabels,
+} from "@/lib/constants";
 import type {
   EvaluationTemplate,
   EvaluationCriterion,
@@ -23,9 +28,7 @@ import type {
 } from "@/types/database";
 import { Star, Plus, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TemplateSelectDialog } from "@/components/evaluations/template-select-dialog";
-import { EvaluationFormDialog } from "@/components/evaluations/evaluation-form-dialog";
-import type { ScoreDraft } from "@/components/evaluations/evaluation-form-dialog";
+import { TemplateSelectDialog, EvaluationFormDialog, type ScoreDraft } from "@hr1/shared-ui";
 
 interface EvaluationTabProps {
   targetUserId: string;
@@ -199,6 +202,7 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
         onOpenChange={setTemplateDialogOpen}
         templates={templates}
         onSelect={handleSelectTemplate}
+        targetLabels={{ applicant: "応募者向け", employee: "社員向け", both: "共通" }}
       />
 
       <EvaluationFormDialog
@@ -218,6 +222,7 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
         setOverallComment={setOverallComment}
         saving={saving}
         onSubmit={handleSubmit}
+        scoreTypeLabels={scoreTypeLabels}
       />
 
       {evaluations.length === 0 ? (

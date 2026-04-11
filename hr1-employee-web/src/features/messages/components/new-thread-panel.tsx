@@ -103,7 +103,7 @@ export function NewThreadPanel({
           >
             <TabsList className="w-full">
               <TabsTrigger value="applicant" className="flex-1">
-                応募者
+                候補者
               </TabsTrigger>
               <TabsTrigger value="employee" className="flex-1">
                 社員
@@ -115,7 +115,7 @@ export function NewThreadPanel({
         <div className="flex items-center h-11 border-b px-3">
           <Search className="h-4 w-4 text-muted-foreground shrink-0" />
           <Input
-            placeholder={tab === "applicant" ? "応募者名・求人名で検索" : "社員名・部署で検索"}
+            placeholder={tab === "applicant" ? "候補者名・求人名で検索" : "社員名・部署で検索"}
             value={appSearch}
             onChange={(e) => setAppSearch(e.target.value)}
             className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-11"
@@ -130,8 +130,8 @@ export function NewThreadPanel({
             filteredApplicants.length === 0 ? (
               <div className="p-6 text-center text-sm text-muted-foreground">
                 {applicants.length === 0
-                  ? "スレッド未作成の応募者がいません"
-                  : "一致する応募者がいません"}
+                  ? "スレッド未作成の候補者がいません"
+                  : "一致する候補者がいません"}
               </div>
             ) : (
               filteredApplicants.map((applicant) => {

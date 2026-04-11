@@ -14,10 +14,10 @@ import {
   TableRow,
 } from "@hr1/shared-ui/components/ui/table";
 import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { useRouter } from "next/navigation";
@@ -112,7 +112,11 @@ export default function CrmContactsPage() {
         title="連絡先"
         sticky={false}
         border={false}
-        action={<Button onClick={openCreate}>新規登録</Button>}
+        action={
+          <Button variant="primary" onClick={openCreate}>
+            新規登録
+          </Button>
+        }
       />
       {error && <QueryErrorBanner error={error} />}
 
@@ -170,7 +174,7 @@ export default function CrmContactsPage() {
                   <TableCell className="font-medium">
                     {c.last_name} {c.first_name ?? ""}
                   </TableCell>
-                  <TableCell>{c.bc_companies?.name ?? "—"}</TableCell>
+                  <TableCell>{c.crm_companies?.name ?? "—"}</TableCell>
                   <TableCell>
                     {[c.department, c.position].filter(Boolean).join(" / ") || "—"}
                   </TableCell>

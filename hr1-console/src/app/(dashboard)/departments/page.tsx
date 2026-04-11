@@ -21,13 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { useDepartmentsPage, type DeptWithMembers } from "@/lib/hooks/use-departments-page";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { Users, ZoomIn, ZoomOut, Maximize, List, GitBranchPlus, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";

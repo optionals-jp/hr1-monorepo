@@ -3,7 +3,7 @@
 import { Input } from "@hr1/shared-ui/components/ui/input";
 import { Label } from "@hr1/shared-ui/components/ui/label";
 import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
-import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
+import { EditPanel, type EditPanelTab } from "@hr1/shared-ui/components/ui/edit-panel";
 
 const editTabs: EditPanelTab[] = [
   { value: "basic", label: "基本情報" },

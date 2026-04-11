@@ -18,7 +18,7 @@ export function SidebarShell({
   return (
     <aside
       className={cn(
-        "hidden md:flex sticky top-14 h-[calc(100dvh-3.5rem)] flex-col border-r border-border bg-white shrink-0 z-20 transition-[width] duration-200",
+        "hidden md:flex sticky top-0 h-dvh flex-col border-r border-border bg-white shrink-0 z-30 transition-[width] duration-200",
         collapsed ? "w-14" : "w-56",
         className
       )}

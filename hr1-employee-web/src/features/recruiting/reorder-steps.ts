@@ -30,16 +30,21 @@ export function reorderSteps<T extends StepItem>(
 }
 
 /**
- * ステップ追加時の related_id を決定する
+ * ステップ追加時の form_id / interview_id を決定する
+ * step_type に応じて適切な FK 列のみセットされる
  */
-export function resolveRelatedId(
+export function resolveStepRefs(
   stepType: string,
   formStepTypes: readonly string[],
   formId: string,
   interviewStepType: string,
   interviewId: string
-): string | null {
-  if (formStepTypes.includes(stepType) && formId) return formId;
-  if (stepType === interviewStepType && interviewId) return interviewId;
-  return null;
+): { form_id: string | null; interview_id: string | null } {
+  if (formStepTypes.includes(stepType) && formId) {
+    return { form_id: formId, interview_id: null };
+  }
+  if (stepType === interviewStepType && interviewId) {
+    return { form_id: null, interview_id: interviewId };
+  }
+  return { form_id: null, interview_id: null };
 }

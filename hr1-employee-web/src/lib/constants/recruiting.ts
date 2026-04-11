@@ -121,7 +121,7 @@ export const interviewScheduleStatusColors: Record<string, BadgeVariant> = {
 /* -------------------------------------------------------- */
 
 export const formTargetLabels: Record<string, string> = {
-  applicant: "応募者向け",
+  applicant: "候補者向け",
   employee: "社内向け",
   both: "両方",
 };

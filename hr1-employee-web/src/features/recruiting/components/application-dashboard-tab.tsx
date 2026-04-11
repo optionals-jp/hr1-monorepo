@@ -68,7 +68,7 @@ export function ApplicationDashboardTab({
             <Link href={`/applicants/${profile.id}`} className="mt-3">
               <Button variant="outline" size="xs">
                 <ExternalLink className="size-3 mr-1" />
-                応募者詳細
+                候補者詳細
               </Button>
             </Link>
           )}

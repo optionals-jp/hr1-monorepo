@@ -13,7 +13,6 @@ import {
   stepStatusLabels,
   interviewStatusLabels,
   StepStatus,
-  StepType,
 } from "@/lib/constants";
 
 export interface TimelineEvent {
@@ -105,7 +104,7 @@ export function useApplicantDetailPage() {
       setInterviewSlots(slotsData);
 
       const events: TimelineEvent[] = [];
-      const applicantName = profileData?.display_name ?? profileData?.email ?? "応募者";
+      const applicantName = profileData?.display_name ?? profileData?.email ?? "候補者";
 
       if (profileData) {
         events.push({
@@ -157,18 +156,18 @@ export function useApplicantDetailPage() {
             });
           }
 
-          if (step.related_id && step.step_type === StepType.Form) {
+          if (step.form_id) {
             formStepIds.push({
               stepId: step.id,
-              relatedId: step.related_id,
+              relatedId: step.form_id,
               jobTitle,
               date: step.completed_at ?? app.applied_at,
             });
           }
-          if (step.related_id && step.step_type === StepType.Interview) {
+          if (step.interview_id) {
             interviewStepIds.push({
               stepId: step.id,
-              relatedId: step.related_id,
+              relatedId: step.interview_id,
               jobTitle,
               date: step.completed_at ?? app.applied_at,
             });

@@ -18,7 +18,7 @@ import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state"
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { useJobsPage, useNewJobPage } from "@/features/recruiting/hooks/use-jobs-page";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import {
@@ -27,8 +27,8 @@ import {
   stepTypeLabels,
   selectableStepTypes,
 } from "@/lib/constants";
-import { Trash2, GripVertical, Briefcase, XCircle } from "lucide-react";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { Trash2, GripVertical, Briefcase, XCircle, Sparkles, Plus } from "lucide-react";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { FormInput, FormTextarea, FormField } from "@hr1/shared-ui/components/ui/form-field";
 import {
   Select,
@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
 import { Input } from "@hr1/shared-ui/components/ui/input";
+import { Badge as StepBadge } from "@hr1/shared-ui/components/ui/badge";
 
 const pageTabs = [
   { value: "active", label: "公開中・ドラフト", icon: Briefcase },
@@ -228,12 +229,52 @@ export default function JobsPage() {
             </Select>
           </FormField>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">選考ステップ</span>
-              <Button variant="outline" size="xs" onClick={newJob.addStep}>
-                追加
-              </Button>
+          <div className="space-y-3">
+            <span className="text-sm font-medium">選考ステップ</span>
+
+            {/* 追加方法の選択エリア */}
+            <div className="rounded-xl border border-dashed bg-muted/30 p-3 space-y-2">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Sparkles className="h-3 w-3" />
+                テンプレートから追加
+              </div>
+              {newJob.templates.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  選考ステップテンプレートがありません。サイドバー「選考ステップ」から先に作成できます。
+                </p>
+              ) : (
+                <Select
+                  value=""
+                  onValueChange={(v) => {
+                    if (!v) return;
+                    const template = newJob.templates.find((t) => t.id === v);
+                    if (template) newJob.addStepFromTemplate(template);
+                  }}
+                >
+                  <SelectTrigger className="w-full bg-white">
+                    <SelectValue placeholder="テンプレートを選択して追加" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {newJob.templates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        <span className="flex items-center gap-2">
+                          <StepBadge variant="outline" className="shrink-0 text-[10px]">
+                            {stepTypeLabels[template.step_type] ?? template.step_type}
+                          </StepBadge>
+                          <span className="truncate">{template.name}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <div className="border-t pt-2 flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">または</span>
+                <Button variant="outline" size="xs" onClick={newJob.addStep}>
+                  <Plus className="mr-1 h-3 w-3" />
+                  手動で追加
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               {newJob.steps.map((step, index) => (
@@ -276,6 +317,11 @@ export default function JobsPage() {
                   選考ステップを追加してください
                 </p>
               )}
+              <p className="text-xs text-muted-foreground">
+                手動で追加したステップは保存時に「{newJob.title || "求人タイトル"}の選考ステップ:{" "}
+                {"{ステップ名}"}
+                」として選考ステップマスタに自動登録されます
+              </p>
             </div>
           </div>
         </div>

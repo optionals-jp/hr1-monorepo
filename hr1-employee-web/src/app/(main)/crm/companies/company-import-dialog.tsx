@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { CsvImportDialog, type CsvImportField } from "@/components/ui/csv-import-dialog";
+import {
+  CsvImportDialog,
+  type CsvImportField,
+} from "@hr1/shared-ui/components/ui/csv-import-dialog";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repository from "@/lib/repositories/crm-repository";
 

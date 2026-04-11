@@ -71,7 +71,23 @@ Deploy: Console/Admin/Employee-Web/LP → Vercel (main merge), Mobile → TestFl
 
 - **auth スキーマへの直接 SQL 操作は絶対禁止**: `auth.users` / `auth.identities` への INSERT/UPDATE/DELETE を直接実行しない。GoTrue の内部エラーで全ユーザーのログインが壊れる。ユーザー作成は Supabase Dashboard または `supabase.auth.admin` API のみ使用する。
 - **profiles RLS ポリシーで profiles を直接参照しない**: `USING ((SELECT role FROM profiles ...) = 'xxx')` は無限再帰を引き起こす。必ず `USING (public.get_my_role() = 'xxx')` のように SECURITY DEFINER ヘルパー関数を使う。
-- **DB スキーマ変更はマイグレーションファイル経由**: 本番 DB への DDL/DML 変更は `supabase/migrations/` にファイルとして記録し、レビュー後に適用する。
+- **DB スキーマ変更はマイグレーションファイル経由**: 本番 DB への DDL/DML 変更は `supabase/migrations/` にファイルとして記録し、レビュー後に適用する。MCP/Studio から直接 DDL を流すと migration ファイルとの drift が発生する。
+
+## Migration / RLS 設計ガイドライン（必ず守る）
+
+- **auth.uid() は必ず `::text` でキャスト**: `profiles.id` / `user_organizations.user_id` 等の text カラムと比較する場合は `auth.uid()::text` と書く。`auth.uid()` (uuid) と `text` の比較は PostgreSQL で暗黙キャストされず "operator does not exist: text = uuid" エラーになる、あるいはサイレント失敗する。
+- **マルチ組織前提の `LIMIT 1` を禁止**: `(SELECT organization_id FROM user_organizations WHERE user_id = auth.uid()::text LIMIT 1)` は複数組織所属ユーザーで壊れる。必ず `organization_id IN (SELECT public.get_my_organization_ids())` を使う。
+- **RLS ヘルパーは `get_my_organization_ids()` / `get_my_role()` に統一**: 廃止された `user_org_ids()` や、単一組織前提の `get_my_organization_id()` (singular) は新規ポリシーで使わない。
+- **ポリシー命名規則**: `<table>_<action>_<scope>` 形式で統一 (`tasks_select_org`, `bc_deals_all_admin` 等)。日本語名・「Users can X...」英文・`authenticated_*` プレフィックスは新規追加禁止。
+- **`qual=true` のポリシー禁止**: 全公開ポリシーは作らない。必ず `organization_id IN (...)` 等のスコープを設定する。
+- **ステータス系の text カラムは必ず CHECK 制約**: `status text NOT NULL DEFAULT '...'` だけにせず、`CHECK (status IN ('open', 'won', 'lost'))` のように列挙する。
+- **CHECK 制約の DROP & 再追加では既存値を必ず保持**: `CHECK (role IN ('admin', 'employee'))` を `CHECK (role IN ('admin', 'manager'))` のように既存値を消すと、本番データの再書き込みが破綻する。差分追加 (`ADD CHECK ...` の前に既存値リストを取得) を徹底する。
+- **ユーザー参照カラムは必ず `profiles(id)` への FK を付ける**: `user_id`, `created_by`, `assigned_to` 等の text カラムは FK 制約必須。CASCADE 方針はドメイン毎に判断:
+  - 本人所有 (todos, notifications, attendance) → `ON DELETE CASCADE`
+  - 作成者・履歴 (announcements, wiki, bc_*) → `ON DELETE SET NULL` (NOT NULL なら nullable 化)
+  - 監査・法定保存 (audit_logs, payslips, workflow_requests) → `ON DELETE NO ACTION`
+- **テーブル新規作成時は `updated_at timestamptz NOT NULL DEFAULT now()` + `set_<table>_updated_at` トリガーを必ず付ける**: append-only ログ系テーブル以外は全て対象。トリガー関数は `public.update_updated_at_column()` を使用。
+- **DROP POLICY / DROP FUNCTION 系の DDL は冪等にする**: `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN NULL; END $$` または `IF NOT EXISTS` パターンで囲む。マイグレーションが部分適用された場合の再実行に備える。
 
 ## Code Style
 

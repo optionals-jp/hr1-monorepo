@@ -6,7 +6,6 @@ import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repo from "@/lib/repositories/pipeline-repository";
 import type { CrmPipeline, CrmPipelineStage } from "@/types/database";
-import { dealStageLabels, dealStageProbability } from "@/lib/constants";
 
 /**
  * テナントの全パイプライン（ステージ含む）を取得
@@ -39,53 +38,28 @@ export function useDefaultPipeline() {
 
 /**
  * パイプラインのステージ配列を取得するユーティリティ
- * パイプラインが未設定の場合はレガシー定数からフォールバック
  */
 export function getStagesFromPipeline(pipeline: CrmPipeline | null): CrmPipelineStage[] {
-  if (pipeline?.crm_pipeline_stages && pipeline.crm_pipeline_stages.length > 0) {
-    return pipeline.crm_pipeline_stages;
-  }
-  // フォールバック: レガシー定数からステージを生成
-  return Object.entries(dealStageLabels).map(([key, label], i) => ({
-    id: key,
-    pipeline_id: "",
-    name: label,
-    color: ["#3b82f6", "#eab308", "#f97316", "#22c55e"][i] ?? "#3b82f6",
-    probability_default: dealStageProbability[key] ?? 0,
-    sort_order: i,
-    created_at: "",
-  }));
+  return pipeline?.crm_pipeline_stages ?? [];
 }
 
 /**
  * ステージIDからステージ名を解決するヘルパー
- * stage_id が設定されている場合はパイプラインステージから、
- * されていない場合はレガシーstageカラム+定数から取得
  */
-export function resolveStageLabel(
-  stageKey: string,
-  stageId: string | null,
-  stages: CrmPipelineStage[]
-): string {
-  if (stageId) {
-    const found = stages.find((s) => s.id === stageId);
-    if (found) return found.name;
-  }
-  // レガシーフォールバック
-  return dealStageLabels[stageKey] ?? stageKey;
+export function resolveStageLabel(stageId: string | null, stages: CrmPipelineStage[]): string {
+  if (!stageId) return "—";
+  const found = stages.find((s) => s.id === stageId);
+  return found?.name ?? "—";
 }
 
 /**
- * ステージIDまたはstageキーからデフォルト確度を取得
+ * ステージIDからデフォルト確度を取得
  */
 export function resolveStageProbability(
-  stageKey: string,
   stageId: string | null,
   stages: CrmPipelineStage[]
 ): number {
-  if (stageId) {
-    const found = stages.find((s) => s.id === stageId);
-    if (found) return found.probability_default;
-  }
-  return dealStageProbability[stageKey] ?? 0;
+  if (!stageId) return 0;
+  const found = stages.find((s) => s.id === stageId);
+  return found?.probability_default ?? 0;
 }

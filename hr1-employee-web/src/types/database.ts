@@ -1,11 +1,14 @@
-export type ProfileRole = "admin" | "employee" | "applicant" | "manager" | "approver";
+export type ProfileRole = "admin" | "employee" | "applicant" | "manager" | "approver" | "hr1_admin";
 
 export interface Profile {
   id: string;
   email: string;
   display_name: string | null;
+  last_name: string | null;
+  first_name: string | null;
+  last_name_kana: string | null;
+  first_name_kana: string | null;
   role: ProfileRole;
-  organization_id: string | null;
   avatar_url: string | null;
   position: string | null;
   department: string | null;
@@ -54,7 +57,19 @@ export interface JobStep {
   step_type: string;
   step_order: number;
   label: string;
-  related_id: string | null;
+  form_id: string | null;
+  interview_id: string | null;
+}
+
+export interface SelectionStepTemplate {
+  id: string;
+  organization_id: string;
+  name: string;
+  step_type: "screening" | "form" | "interview" | "external_test" | "offer";
+  description: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Application {
@@ -76,7 +91,8 @@ export interface ApplicationStep {
   step_order: number;
   label: string;
   status: "pending" | "in_progress" | "completed" | "skipped";
-  related_id: string | null;
+  form_id: string | null;
+  interview_id: string | null;
   started_at: string | null;
   completed_at: string | null;
   applicant_action_at: string | null;
@@ -256,7 +272,7 @@ export interface BcContact {
   created_by: string | null;
   created_at: string;
   updated_at: string;
-  bc_companies?: BcCompany;
+  crm_companies?: BcCompany;
 }
 
 export interface BcCard {
@@ -277,8 +293,7 @@ export interface BcDeal {
   contact_id: string | null;
   title: string;
   amount: number | null;
-  status: "open" | "won" | "lost";
-  stage: string;
+  status: "open" | "won" | "lost" | "cancelled";
   probability: number | null;
   expected_close_date: string | null;
   description: string | null;
@@ -288,8 +303,8 @@ export interface BcDeal {
   stage_id: string | null;
   created_at: string;
   updated_at: string;
-  bc_companies?: BcCompany;
-  bc_contacts?: BcContact;
+  crm_companies?: BcCompany;
+  crm_contacts?: BcContact;
   profiles?: Profile;
   crm_pipeline_stages?: CrmPipelineStage;
 }
@@ -312,7 +327,7 @@ export interface BcDealContact {
   notes: string | null;
   created_at: string;
   updated_at: string;
-  bc_contacts?: BcContact;
+  crm_contacts?: BcContact;
 }
 
 export type QuoteStatus = "draft" | "sent" | "accepted" | "rejected" | "expired";
@@ -337,10 +352,10 @@ export interface BcQuote {
   created_by: string | null;
   created_at: string;
   updated_at: string;
-  bc_companies?: BcCompany;
-  bc_contacts?: BcContact;
-  bc_deals?: BcDeal;
-  bc_quote_items?: BcQuoteItem[];
+  crm_companies?: BcCompany;
+  crm_contacts?: BcContact;
+  crm_deals?: BcDeal;
+  crm_quote_items?: BcQuoteItem[];
 }
 
 export interface BcQuoteItem {
@@ -978,6 +993,17 @@ export interface WorkflowRequest {
 // 評価
 // ==========================================================
 
+export interface EvaluationTemplate {
+  id: string;
+  organization_id: string;
+  title: string;
+  description: string | null;
+  target: "applicant" | "employee" | "both";
+  evaluation_type: "single" | "multi_rater";
+  anonymity_mode: "none" | "peer_only" | "full";
+  created_at: string;
+}
+
 export interface EvaluationCycle {
   id: string;
   organization_id: string;
@@ -1023,8 +1049,9 @@ export interface Evaluation {
   target_user_id: string;
   evaluator_id: string;
   cycle_id: string | null;
-  rater_type: string;
+  rater_type: string | null;
   assignment_id: string | null;
+  application_id: string | null;
   status: "draft" | "submitted";
   overall_comment: string | null;
   created_at: string;

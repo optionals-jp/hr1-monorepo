@@ -1,5 +1,83 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+// ─── Atomic RPCs (evaluation template + ad-hoc evaluation) ───
+
+/**
+ * `public.create_evaluation_template` RPC を呼び出して評価テンプレートを
+ * 1 トランザクションで作成する。template / criteria / anchors を全てアトミックに
+ * 作成し、id は DB 側の `gen_random_uuid()` で採番される。
+ * 失敗時は Postgres 側でロールバックされるため、JS 側での補償 DELETE は不要。
+ *
+ * 権限: 自組織 admin のみ（RPC 内部でチェック）。
+ */
+export async function rpcCreateEvaluationTemplate(
+  client: SupabaseClient,
+  params: {
+    organizationId: string;
+    title: string;
+    description: string;
+    target: string;
+    evaluationType: string;
+    anonymityMode: string;
+    criteria: unknown[]; // criteriaDraftsToRpcPayload(...) の戻り値
+  }
+): Promise<string> {
+  const { data, error } = await client.rpc("create_evaluation_template", {
+    p_organization_id: params.organizationId,
+    p_title: params.title,
+    p_description: params.description,
+    p_target: params.target,
+    p_evaluation_type: params.evaluationType,
+    p_anonymity_mode: params.anonymityMode,
+    p_criteria: params.criteria,
+  });
+  if (error) throw error;
+  if (!data) throw new Error("create_evaluation_template returned no id");
+  return data as string;
+}
+
+/**
+ * `public.submit_ad_hoc_evaluation` RPC を呼び出してアドホック評価を作成/更新する。
+ * evaluations 本体と evaluation_scores 行を 1 トランザクションで処理する。
+ *
+ * - `evaluationId` が null なら新規作成、非 null なら更新。
+ * - 新規作成時の `evaluator_id` は RPC 内部で `auth.uid()` に強制設定される。
+ *   クライアントからの偽装は不可。
+ * - 更新時は既存スコアを全削除してから再挿入する（RPC 内部で実施）。
+ */
+export async function rpcSubmitAdHocEvaluation(
+  client: SupabaseClient,
+  params: {
+    evaluationId: string | null;
+    organizationId: string;
+    templateId: string;
+    targetUserId: string;
+    applicationId: string | null;
+    status: "draft" | "submitted";
+    overallComment: string;
+    scores: {
+      criterion_id: string;
+      score: number | null;
+      value: string | null;
+      comment: string | null;
+    }[];
+  }
+): Promise<string> {
+  const { data, error } = await client.rpc("submit_ad_hoc_evaluation", {
+    p_evaluation_id: params.evaluationId,
+    p_organization_id: params.organizationId,
+    p_template_id: params.templateId,
+    p_target_user_id: params.targetUserId,
+    p_application_id: params.applicationId,
+    p_status: params.status,
+    p_overall_comment: params.overallComment,
+    p_scores: params.scores,
+  });
+  if (error) throw error;
+  if (!data) throw new Error("submit_ad_hoc_evaluation returned no id");
+  return data as string;
+}
+
 // ─── Templates ───
 
 export async function fetchTemplates(client: SupabaseClient, orgId: string) {
@@ -48,8 +126,19 @@ export async function fetchTemplatesByTarget(
   return data ?? [];
 }
 
+/**
+ * @deprecated `rpcCreateEvaluationTemplate` を使うこと。
+ * 生の insert は uuid 採番・アトミシティの責務が呼び出し元にあり、非推奨。
+ */
 export async function insertTemplate(client: SupabaseClient, row: Record<string, unknown>) {
   return client.from("evaluation_templates").insert(row);
+}
+
+/**
+ * @deprecated RPC 化により補償 DELETE は不要。呼び出し元が残っていなければ削除予定。
+ */
+export async function deleteTemplate(client: SupabaseClient, id: string, orgId: string) {
+  return client.from("evaluation_templates").delete().eq("id", id).eq("organization_id", orgId);
 }
 
 export async function updateTemplate(
@@ -84,6 +173,10 @@ export async function fetchCriteriaByTemplates(client: SupabaseClient, templateI
     .order("sort_order");
 }
 
+/**
+ * @deprecated 新規テンプレート作成は `rpcCreateEvaluationTemplate` を使うこと。
+ * 既存テンプレートへの criterion 追加用途ではまだ使われている（将来は専用 RPC 化予定）。
+ */
 export async function insertCriteria(client: SupabaseClient, rows: Record<string, unknown>[]) {
   return client.from("evaluation_criteria").insert(rows);
 }
@@ -102,6 +195,9 @@ export async function updateCriterion(
 
 // ─── Anchors ───
 
+/**
+ * @deprecated `rpcCreateEvaluationTemplate` を使うこと。
+ */
 export async function insertAnchors(client: SupabaseClient, rows: Record<string, unknown>[]) {
   return client.from("evaluation_anchors").insert(rows);
 }
@@ -144,10 +240,16 @@ export async function fetchEvaluationsByUser(
   return query.order("created_at", { ascending: false });
 }
 
+/**
+ * @deprecated `rpcSubmitAdHocEvaluation` を使うこと。
+ */
 export async function insertEvaluation(client: SupabaseClient, row: Record<string, unknown>) {
   return client.from("evaluations").insert(row);
 }
 
+/**
+ * @deprecated `rpcSubmitAdHocEvaluation` を使うこと。
+ */
 export async function updateEvaluation(
   client: SupabaseClient,
   id: string,
@@ -163,10 +265,18 @@ export async function fetchScores(client: SupabaseClient, evaluationIds: string[
   return client.from("evaluation_scores").select("*").in("evaluation_id", evaluationIds);
 }
 
+/**
+ * @deprecated `rpcSubmitAdHocEvaluation` を使うこと。
+ */
 export async function insertScores(client: SupabaseClient, rows: Record<string, unknown>[]) {
   return client.from("evaluation_scores").insert(rows);
 }
 
+/**
+ * @deprecated `rpcSubmitAdHocEvaluation` を使うこと。
+ * evaluation_scores には DELETE ポリシーが無く、client からの直接 DELETE は
+ * RLS で silent fail する。必ず RPC 経由で削除すること。
+ */
 export async function deleteScoresByEvaluation(client: SupabaseClient, evaluationId: string) {
   return client.from("evaluation_scores").delete().eq("evaluation_id", evaluationId);
 }
