@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { Button } from "@hr1/shared-ui/components/ui/button";
@@ -39,6 +41,17 @@ import {
 export default function EvaluationSheetsPage() {
   const { showToast } = useToast();
   const h = useEvaluationSheetsPage();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // 他画面から ?new=1 で遷移してきた場合は作成ダイアログを自動で開く
+  const openAddDialog = h.openAddDialog;
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      openAddDialog();
+      router.replace("/evaluation-templates");
+    }
+  }, [searchParams, openAddDialog, router]);
 
   return (
     <div className="flex flex-col">

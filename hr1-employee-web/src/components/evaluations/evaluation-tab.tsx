@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
@@ -44,6 +45,7 @@ interface EvalWithDetails extends Evaluation {
 }
 
 export function EvaluationTab({ targetUserId, targetType, applicationId }: EvaluationTabProps) {
+  const router = useRouter();
   const { user } = useAuth();
   const { organization } = useOrg();
   const { showToast } = useToast();
@@ -186,21 +188,17 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
 
   return (
     <div className="max-w-3xl space-y-4">
-      <div className="flex justify-end">
-        {templates.length > 0 && (
-          <Button variant="primary" onClick={() => setTemplateDialogOpen(true)}>
-            <Plus className="size-4 mr-1.5" />
-            評価を追加
-          </Button>
-        )}
-      </div>
-
       <TemplateSelectDialog
         open={templateDialogOpen}
         onOpenChange={setTemplateDialogOpen}
         templates={templates}
         onSelect={handleSelectTemplate}
         targetLabels={{ applicant: "候補者向け", employee: "社員向け", both: "共通" }}
+        onAdd={() => {
+          setTemplateDialogOpen(false);
+          router.push("/evaluation-templates?new=1");
+        }}
+        addLabel="評価シートを作成"
       />
 
       <EvaluationFormDialog

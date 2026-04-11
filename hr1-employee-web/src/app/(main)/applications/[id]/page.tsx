@@ -19,7 +19,8 @@ import { ApplicationDashboardTab } from "@/features/recruiting/components/applic
 import { ApplicationStepList } from "@/features/recruiting/components/application-step-list";
 import { FormResponseSheet } from "@/features/recruiting/components/form-response-sheet";
 import { ResourceSelectDialog } from "@/features/recruiting/components/resource-select-dialog";
-import { LayoutDashboard, ListChecks } from "lucide-react";
+import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
+import { LayoutDashboard, ListChecks, ClipboardCheck } from "lucide-react";
 import type { ApplicationStep } from "@/types/database";
 
 export default function ApplicationDetailPage() {
@@ -73,6 +74,7 @@ export default function ApplicationDetailPage() {
   const tabs = [
     { value: "dashboard" as const, label: "ダッシュボード", icon: LayoutDashboard },
     { value: "steps" as const, label: "選考ステップ", icon: ListChecks },
+    { value: "evaluation" as const, label: "評価", icon: ClipboardCheck },
   ];
 
   return (
@@ -116,6 +118,14 @@ export default function ApplicationDetailPage() {
             skipStep={handleSkipStep}
             unskipStep={handleUnskipStep}
             onViewFormResponses={detail.openFormResponses}
+          />
+        )}
+
+        {detail.activeTab === "evaluation" && (
+          <EvaluationTab
+            targetUserId={profile.id}
+            targetType="applicant"
+            applicationId={detail.application.id}
           />
         )}
 
