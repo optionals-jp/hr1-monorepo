@@ -48,7 +48,7 @@ export function useApplicantEvaluationTemplates() {
 }
 
 /**
- * 応募者向け評価テンプレートを作成する。
+ * 候補者向け評価テンプレートを作成する。
  * `create_evaluation_template` RPC を呼び出し、template / criteria / anchors を
  * 1 トランザクションで作成する。id は DB 側で採番される。
  */
@@ -152,7 +152,7 @@ export async function loadTemplateCriteria(templateId: string) {
 }
 
 /**
- * アドホック評価（応募者/社員詳細ページからの直接評価）を作成または更新する。
+ * アドホック評価（候補者/社員詳細ページからの直接評価）を作成または更新する。
  * `submit_ad_hoc_evaluation` RPC により evaluations 本体とスコア行を
  * 1 トランザクションで処理する。id は全て DB 側で採番される。
  *

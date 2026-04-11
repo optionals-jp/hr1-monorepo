@@ -205,7 +205,7 @@ export default function MessagesPage() {
                                     : "border-blue-300 text-blue-700"
                                 )}
                               >
-                                {isEmployee ? "社員" : "応募者"}
+                                {isEmployee ? "社員" : "候補者"}
                               </Badge>
                             </span>
                             {thread.latest_message && (

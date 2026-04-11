@@ -71,6 +71,6 @@ describe("ROLE_LABELS", () => {
     expect(ROLE_LABELS.manager).toBe("マネージャー");
     expect(ROLE_LABELS.approver).toBe("承認者");
     expect(ROLE_LABELS.employee).toBe("社員");
-    expect(ROLE_LABELS.applicant).toBe("応募者");
+    expect(ROLE_LABELS.applicant).toBe("候補者");
   });
 });

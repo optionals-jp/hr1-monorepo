@@ -28,7 +28,7 @@ import { StepManageDialog } from "@/features/recruiting/components/step-manage-d
 
 const tabs = [
   { value: "detail", label: "概要", icon: FileText },
-  { value: "applicants", label: "応募者", icon: Users },
+  { value: "applicants", label: "応募", icon: Users },
   { value: "timeline", label: "ログ", icon: ScrollText },
 ];
 

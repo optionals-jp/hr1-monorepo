@@ -76,7 +76,7 @@ export default function EvaluationSheetsPage() {
                 <TableRow key={t.id}>
                   <TableCell className="font-medium">{t.title}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">応募者向け</Badge>
+                    <Badge variant="outline">候補者向け</Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground max-w-xs truncate">
                     {t.description ?? "-"}
@@ -126,7 +126,7 @@ export default function EvaluationSheetsPage() {
               />
             </FormField>
             <p className="text-xs text-muted-foreground">
-              このテンプレートは「応募者」を対象にした評価で利用できます。
+              このテンプレートは「候補者」を対象にした評価で利用できます。
             </p>
           </div>
 

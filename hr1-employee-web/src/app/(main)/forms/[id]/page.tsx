@@ -177,7 +177,7 @@ export default function FormDetailPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="sticky left-0 bg-muted/50">応募者</TableHead>
+                      <TableHead className="sticky left-0 bg-muted/50">候補者</TableHead>
                       {h.fields.map((field) => (
                         <TableHead key={field.id}>{field.label}</TableHead>
                       ))}

@@ -56,8 +56,8 @@ const recruitingSections: NavSection[] = [
   {
     label: "採用",
     items: [
-      { href: "/applicants", label: "応募者", icon: UsersRound },
-      { href: "/applications", label: "応募管理", icon: ClipboardList },
+      { href: "/applicants", label: "候補者", icon: UsersRound },
+      { href: "/applications", label: "応募", icon: ClipboardList },
       { href: "/selection-steps", label: "選考ステップ", icon: ListTree },
       { href: "/jobs", label: "求人", icon: Briefcase },
       { href: "/scheduling", label: "日程調整", icon: CalendarClock },

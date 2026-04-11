@@ -409,7 +409,7 @@ export function ThreadChat({
                       : "border-blue-300 text-blue-700"
                   )}
                 >
-                  {isEmployee ? "社員" : "応募者"}
+                  {isEmployee ? "社員" : "候補者"}
                 </Badge>
               </div>
               <p className="text-[11px] text-muted-foreground truncate">

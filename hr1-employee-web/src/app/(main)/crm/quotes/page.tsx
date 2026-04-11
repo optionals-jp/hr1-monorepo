@@ -29,6 +29,7 @@ import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banne
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { cn } from "@hr1/shared-ui/lib/utils";
 import { useCrmQuotes } from "@/lib/hooks/use-crm";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import { deleteQuote } from "@/lib/repositories/quote-repository";
@@ -44,7 +45,8 @@ export default function QuotesPage() {
   const { organization } = useOrg();
   const { data: quotes, error, mutate } = useCrmQuotes();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  // URL ?tab= でステータスフィルタを保持。
+  const [statusFilter, setStatusFilter] = useTabParam<string>("all");
 
   const filtered = useMemo(() => {
     return (quotes ?? []).filter((q) => {

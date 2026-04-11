@@ -105,7 +105,7 @@ export function useApplicantDetailPage() {
       setInterviewSlots(slotsData);
 
       const events: TimelineEvent[] = [];
-      const applicantName = profileData?.display_name ?? profileData?.email ?? "応募者";
+      const applicantName = profileData?.display_name ?? profileData?.email ?? "候補者";
 
       if (profileData) {
         events.push({

@@ -20,7 +20,7 @@ import { ApplicationStepList } from "@/features/recruiting/components/applicatio
 import { FormResponseSheet } from "@/features/recruiting/components/form-response-sheet";
 import { ResourceSelectDialog } from "@/features/recruiting/components/resource-select-dialog";
 import { LayoutDashboard, ListChecks } from "lucide-react";
-import type { ApplicationStep, Profile } from "@/types/database";
+import type { ApplicationStep } from "@/types/database";
 
 export default function ApplicationDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -59,7 +59,16 @@ export default function ApplicationDetailPage() {
     );
   }
 
-  const profile = detail.application.profiles as unknown as Profile;
+  // applications.applicant_id は NOT NULL + FK なので profiles は常に join される。
+  // 取得できていない場合はプロファイル削除などの異常系のため not-found 扱い。
+  const profile = detail.application.profiles;
+  if (!profile) {
+    return (
+      <div className="flex items-center justify-center py-20 text-muted-foreground">
+        応募者の情報が取得できませんでした
+      </div>
+    );
+  }
 
   const tabs = [
     { value: "dashboard" as const, label: "ダッシュボード", icon: LayoutDashboard },
@@ -71,7 +80,7 @@ export default function ApplicationDetailPage() {
       <PageHeader
         title={`${profile?.display_name ?? profile?.email ?? "不明"} の応募`}
         description={detail.application.jobs?.title ?? ""}
-        breadcrumb={[{ label: "応募管理", href: "/applications" }]}
+        breadcrumb={[{ label: "応募", href: "/applications" }]}
         sticky={false}
         action={
           <Select value={detail.application.status} onValueChange={detail.updateApplicationStatus}>

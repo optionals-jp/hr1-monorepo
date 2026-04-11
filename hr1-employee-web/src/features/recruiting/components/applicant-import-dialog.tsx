@@ -92,7 +92,7 @@ export function ApplicantImportDialog({ open, onOpenChange, organizationId, onCo
     <CsvImportDialog
       open={open}
       onOpenChange={handleOpenChange}
-      title="応募者一括インポート"
+      title="候補者一括インポート"
       fields={APPLICANT_FIELDS}
       headerPatterns={APPLICANT_HEADER_PATTERNS}
       previewColumns={["email", "display_name", "hiring_type"]}
@@ -105,7 +105,7 @@ export function ApplicantImportDialog({ open, onOpenChange, organizationId, onCo
           <div className="flex-1">
             <Label className="text-sm font-medium">招待メールを送信</Label>
             <p className="text-xs text-muted-foreground">
-              ONにすると、インポートした応募者に招待メールが送信されます
+              ONにすると、インポートした候補者に招待メールが送信されます
             </p>
           </div>
           <Switch checked={sendInvite} onCheckedChange={setSendInvite} />

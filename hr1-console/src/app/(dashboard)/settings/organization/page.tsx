@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TabBar, type TabItem } from "@hr1/shared-ui/components/layout/tab-bar";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { Info, History } from "lucide-react";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Input } from "@hr1/shared-ui/components/ui/input";
@@ -21,7 +21,7 @@ const tabs: TabItem[] = [
 
 export default function OrganizationSettingsPage() {
   const h = useOrganizationSettings();
-  const [activeTab, setActiveTab] = useState("basic");
+  const [activeTab, setActiveTab] = useTabParam<string>("basic");
 
   if (!h.organization || h.loading) {
     return (

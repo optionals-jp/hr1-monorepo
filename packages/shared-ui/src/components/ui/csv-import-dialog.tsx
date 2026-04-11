@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { Button } from "./button";
+import { DialogPanel } from "./dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./table";
 import { cn } from "../../lib/utils";
@@ -187,17 +187,46 @@ export function CsvImportDialog({
   const hasRequiredMapped = requiredFieldKeys.every((k) => mapping[k] != null);
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={handleOpenChange}>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/50 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
-        <DialogPrimitive.Popup className="fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl rounded-2xl sm:rounded-[2rem] bg-background ring-1 ring-foreground/10 shadow-lg outline-none flex flex-col data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 duration-100 max-h-[80vh]">
-          <div className="px-6 py-4 border-b shrink-0">
-            <DialogPrimitive.Title className="text-base font-semibold">
-              {title}
-            </DialogPrimitive.Title>
+    <DialogPanel
+      open={open}
+      onOpenChange={handleOpenChange}
+      title={title}
+      size="xl"
+      footer={
+        <div className="flex items-center justify-between w-full">
+          <div>
+            {step === "mapping" && (
+              <Button variant="outline" onClick={() => setStep("upload")}>
+                戻る
+              </Button>
+            )}
+            {step === "preview" && (
+              <Button variant="outline" onClick={() => setStep("mapping")}>
+                戻る
+              </Button>
+            )}
           </div>
-
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex gap-2">
+            {step !== "importing" && (
+              <Button variant="outline" onClick={() => handleOpenChange(false)}>
+                {step === "done" ? "閉じる" : "キャンセル"}
+              </Button>
+            )}
+            {step === "mapping" && (
+              <Button onClick={goToPreview} disabled={!hasRequiredMapped}>
+                プレビュー
+              </Button>
+            )}
+            {step === "preview" && (
+              <Button onClick={startImport} disabled={validCount === 0}>
+                インポート開始（{validCount}件）
+              </Button>
+            )}
+          </div>
+        </div>
+      }
+    >
+      <>
             {step === "upload" && (
               <div
                 className={cn(
@@ -384,41 +413,7 @@ export function CsvImportDialog({
                 )}
               </div>
             )}
-          </div>
-
-          <div className="px-6 py-3 border-t flex items-center justify-between shrink-0">
-            <div>
-              {step === "mapping" && (
-                <Button variant="outline" onClick={() => setStep("upload")}>
-                  戻る
-                </Button>
-              )}
-              {step === "preview" && (
-                <Button variant="outline" onClick={() => setStep("mapping")}>
-                  戻る
-                </Button>
-              )}
-            </div>
-            <div className="flex gap-2">
-              {step !== "importing" && (
-                <Button variant="outline" onClick={() => handleOpenChange(false)}>
-                  {step === "done" ? "閉じる" : "キャンセル"}
-                </Button>
-              )}
-              {step === "mapping" && (
-                <Button onClick={goToPreview} disabled={!hasRequiredMapped}>
-                  プレビュー
-                </Button>
-              )}
-              {step === "preview" && (
-                <Button onClick={startImport} disabled={validCount === 0}>
-                  インポート開始（{validCount}件）
-                </Button>
-              )}
-            </div>
-          </div>
-        </DialogPrimitive.Popup>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+      </>
+    </DialogPanel>
   );
 }

@@ -15,9 +15,32 @@ export function useApplicantsList() {
   );
 }
 
+/**
+ * 組織内で 1 件以上応募した候補者 ID の Set を取得するクエリフック。
+ * 候補者一覧のサマリ（応募済み／未応募）で使用する。
+ */
+function useApplicantIdsWithApplications() {
+  return useOrgQuery<Set<string>>("applicants-with-applications", (orgId) =>
+    applicantRepo.fetchApplicantIdsWithApplications(getSupabase(), orgId)
+  );
+}
+
+/**
+ * 候補者一覧画面の上部サマリ（総数・新卒・中途・応募済み・未応募）用の集計結果。
+ * タブ・検索・フィルタには影響されず、常に組織内の全候補者を母集団とする。
+ */
+export interface ApplicantsSummary {
+  total: number;
+  newGrad: number;
+  midCareer: number;
+  applied: number;
+  notApplied: number;
+}
+
 export function useApplicantsPage() {
   const { organization } = useOrg();
   const { data: applicants = [], isLoading, error: applicantsError, mutate } = useApplicantsList();
+  const { data: appliedIds = new Set<string>() } = useApplicantIdsWithApplications();
 
   const [search, setSearch] = useState("");
   const [filterHiringType, setFilterHiringType] = useState<string>("all");
@@ -75,7 +98,7 @@ export function useApplicantsPage() {
       mutate();
       return { success: true };
     } catch {
-      return { success: false, error: "応募者の追加に失敗しました" };
+      return { success: false, error: "候補者の追加に失敗しました" };
     } finally {
       setSaving(false);
     }
@@ -95,6 +118,28 @@ export function useApplicantsPage() {
     setNewHiringType(v ?? "");
     if (v !== "new_grad") setNewGradYear("");
   }, []);
+
+  /**
+   * 画面上部のサマリ（総数・新卒・中途・応募済み・未応募）。
+   * タブ・検索・フィルタには連動しない（常に全候補者を母集団とする）。
+   */
+  const summary = useMemo<ApplicantsSummary>(() => {
+    let newGrad = 0;
+    let midCareer = 0;
+    let applied = 0;
+    for (const a of applicants) {
+      if (a.hiring_type === "new_grad") newGrad++;
+      else if (a.hiring_type === "mid_career") midCareer++;
+      if (appliedIds.has(a.id)) applied++;
+    }
+    return {
+      total: applicants.length,
+      newGrad,
+      midCareer,
+      applied,
+      notApplied: applicants.length - applied,
+    };
+  }, [applicants, appliedIds]);
 
   const filtered = useMemo(
     () =>
@@ -117,6 +162,7 @@ export function useApplicantsPage() {
   return {
     organization,
     applicants,
+    summary,
     isLoading,
     applicantsError,
     mutate,

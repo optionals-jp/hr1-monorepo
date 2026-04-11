@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useOrg } from "@/lib/org-context";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as evalRepo from "@/lib/repositories/evaluation-repository";
 import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
@@ -65,7 +66,8 @@ export function useEvaluationsPage() {
   const { data: templates = [], isLoading: templatesLoading } = useEmployeeTemplates();
 
   const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState("active");
+  // URL ?tab= でタブ状態を保持。直リンク・戻る/進むで復元される。
+  const [activeTab, setActiveTab] = useTabParam<string>("active");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<CycleFormState>(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState<ValidationErrors>({});

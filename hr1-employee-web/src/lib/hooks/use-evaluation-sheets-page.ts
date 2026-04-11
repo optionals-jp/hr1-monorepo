@@ -16,9 +16,9 @@ export { isNumericScoreType } from "@hr1/shared-ui/lib/evaluation-draft";
 export type { EvaluationCriterionDraft } from "@hr1/shared-ui/lib/evaluation-draft";
 
 /**
- * 応募者評価シート一覧ページ用のフック。
+ * 候補者評価シート一覧ページ用のフック。
  *
- * - 評価シート一覧（応募者対象テンプレート）の取得
+ * - 評価シート一覧（候補者対象テンプレート）の取得
  * - 追加ダイアログのフォーム状態管理（タイトル・説明・評価項目）
  * - 作成処理（リポジトリ経由）
  */

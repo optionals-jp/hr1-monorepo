@@ -8,6 +8,10 @@ import { FormField, FormInput } from "@hr1/shared-ui/components/ui/form-field";
 import { Input } from "@hr1/shared-ui/components/ui/input";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import {
+  SummaryCards,
+  type SummaryCardConfig,
+} from "@hr1/shared-ui/components/layout/summary-cards";
+import {
   Table,
   TableBody,
   TableCell,
@@ -39,12 +43,31 @@ import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banne
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
-import { SlidersHorizontal, X, Upload } from "lucide-react";
+import {
+  SlidersHorizontal,
+  X,
+  Upload,
+  Users,
+  GraduationCap,
+  Briefcase,
+  ClipboardCheck,
+  UserMinus,
+} from "lucide-react";
 import { format } from "date-fns";
 
 const addTabs: EditPanelTab[] = [
   { value: "basic", label: "基本情報" },
   { value: "hiring", label: "採用区分" },
+];
+
+type ApplicantsSummaryKey = "total" | "newGrad" | "midCareer" | "applied" | "notApplied";
+
+const summaryCards: readonly SummaryCardConfig<ApplicantsSummaryKey>[] = [
+  { key: "total", label: "候補者数", icon: Users, iconClassName: "text-slate-600" },
+  { key: "newGrad", label: "新卒", icon: GraduationCap, iconClassName: "text-blue-600" },
+  { key: "midCareer", label: "中途", icon: Briefcase, iconClassName: "text-indigo-600" },
+  { key: "applied", label: "応募済み", icon: ClipboardCheck, iconClassName: "text-emerald-600" },
+  { key: "notApplied", label: "未応募", icon: UserMinus, iconClassName: "text-slate-500" },
 ];
 
 export default function ApplicantsPage() {
@@ -56,8 +79,8 @@ export default function ApplicantsPage() {
     <div className="flex flex-col">
       <QueryErrorBanner error={h.applicantsError} onRetry={() => h.mutate()} />
       <PageHeader
-        title="応募者一覧"
-        description="応募者の管理・招待"
+        title="候補者"
+        description="マイページを登録した人の一覧（求人への応募有無にかかわらず表示）"
         sticky={false}
         border={false}
         action={
@@ -67,11 +90,16 @@ export default function ApplicantsPage() {
               インポート
             </Button>
             <Button variant="primary" onClick={h.openAddDialog}>
-              応募者を追加
+              候補者を追加
             </Button>
           </div>
         }
       />
+
+      {/* サマリ（候補者数・新卒・中途・応募済み・未応募）。フィルタ絞り込みとは独立。 */}
+      <div className="px-4 sm:px-6 md:px-8 pt-2 pb-4">
+        <SummaryCards cards={summaryCards} values={h.summary} />
+      </div>
 
       <StickyFilterBar>
         <SearchBar value={h.search} onChange={h.setSearch} />
@@ -192,7 +220,7 @@ export default function ApplicantsPage() {
               colSpan={5}
               isLoading={h.isLoading}
               isEmpty={h.filtered.length === 0}
-              emptyMessage="応募者がいません"
+              emptyMessage="候補者がいません"
             >
               {h.filtered.map((applicant) => (
                 <TableRow
@@ -240,14 +268,14 @@ export default function ApplicantsPage() {
       <EditPanel
         open={h.dialogOpen}
         onOpenChange={h.setDialogOpen}
-        title="応募者を追加"
+        title="候補者を追加"
         tabs={addTabs}
         activeTab={h.addTab}
         onTabChange={h.setAddTab}
         onSave={async () => {
           const result = await h.handleAdd();
           if (result.success) {
-            showToast("応募者を追加しました");
+            showToast("候補者を追加しました");
           } else if (result.error) {
             showToast(result.error, "error");
           }

@@ -32,6 +32,7 @@ export * from "./components/ui/tooltip";
 // Layout Components
 export * from "./components/layout/page-header";
 export * from "./components/layout/sticky-filter-bar";
+export * from "./components/layout/summary-cards";
 export * from "./components/layout/tab-bar";
 export * from "./components/layout/table-section";
 export * from "./components/layout/nav-types";
@@ -42,9 +43,14 @@ export * from "./components/layout/mobile-bottom-nav";
 export * from "./components/layout/header-shell";
 export * from "./components/layout/dashboard-layout";
 
+// Evaluation Components (feature-scoped shared dialogs)
+export * from "./components/evaluations/evaluation-form-dialog";
+export * from "./components/evaluations/template-select-dialog";
+
 // Utils
 export * from "./lib/date-range";
 export * from "./lib/evaluation-draft";
+export * from "./lib/evaluation-types";
 export * from "./lib/import-utils";
 export * from "./lib/postgres-errors";
 export * from "./lib/supabase-functions";

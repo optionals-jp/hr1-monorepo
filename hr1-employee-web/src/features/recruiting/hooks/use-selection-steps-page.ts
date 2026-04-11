@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useOrg } from "@/lib/org-context";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
+import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as templateRepo from "@/lib/repositories/selection-step-template-repository";
 import * as applicationRepo from "@/lib/repositories/application-repository";
@@ -51,7 +52,7 @@ const EMPTY_FORM: FormState = {
  *
  * - テンプレートの CRUD
  * - 種別タブ / 名前検索でのフィルタリング
- * - 各テンプレートに紐づく応募者数（name で application_steps とマッチング）の集計
+ * - 各テンプレートに紐づく応募数（name で application_steps とマッチング）の集計
  */
 export function useSelectionStepsPage() {
   const { organization } = useOrg();
@@ -64,7 +65,8 @@ export function useSelectionStepsPage() {
   const { data: applications = [], isLoading: applicationsLoading } = useApplicationsList();
 
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string>(TEMPLATE_TAB_ALL);
+  // URL ?tab= でタブ状態を保持。直リンク・戻る/進むで復元される。
+  const [typeFilter, setTypeFilter] = useTabParam<string>(TEMPLATE_TAB_ALL);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState<ValidationErrors>({});
