@@ -13,7 +13,7 @@ import {
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { applicationStatusLabels as statusLabels } from "@/lib/constants";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { useApplicationDetail } from "@/features/recruiting/hooks/use-application-detail";
 import { ApplicationDashboardTab } from "@/features/recruiting/components/application-dashboard-tab";
 import { ApplicationStepList } from "@/features/recruiting/components/application-step-list";

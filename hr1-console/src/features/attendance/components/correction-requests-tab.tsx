@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@hr1/shared-ui/components/ui/table";
 import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
 import {
@@ -24,7 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@hr1/shared-ui/components/ui/dropdown-menu";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { cn, formatTime } from "@/lib/utils";
 import { useOrg } from "@/lib/org-context";

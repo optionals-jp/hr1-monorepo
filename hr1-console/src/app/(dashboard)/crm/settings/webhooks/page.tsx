@@ -6,7 +6,7 @@ import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Input } from "@hr1/shared-ui/components/ui/input";
 import { Label } from "@hr1/shared-ui/components/ui/label";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import {
   Table,
   TableBody,

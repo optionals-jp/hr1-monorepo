@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import {
   Select,

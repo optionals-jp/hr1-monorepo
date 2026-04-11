@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { SUPABASE_FUNCTIONS } from "@hr1/shared-ui/lib/supabase-functions";
 import type { Profile } from "@/types/database";
 
 export interface MemberWithRole {
@@ -41,7 +42,7 @@ export async function inviteMember(
     organization_id: string;
   }
 ) {
-  const { data, error } = await client.functions.invoke("create-user", {
+  const { data, error } = await client.functions.invoke(SUPABASE_FUNCTIONS.CREATE_USER, {
     body: {
       email: params.email,
       role: params.role,

@@ -14,7 +14,7 @@ import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state"
 import { useFaqs, useFaqPanel } from "@/lib/hooks/use-faqs";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { faqTargetLabels, faqCategoryLabels } from "@/lib/constants";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { Label } from "@hr1/shared-ui/components/ui/label";
 import { Input } from "@hr1/shared-ui/components/ui/input";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";

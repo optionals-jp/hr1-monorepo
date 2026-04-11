@@ -15,7 +15,7 @@ import type { Announcement } from "@/types/database";
 import { useAnnouncements, useAnnouncementPanel } from "@/lib/hooks/use-announcements";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { announcementTargetLabels } from "@/lib/constants";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { Label } from "@hr1/shared-ui/components/ui/label";
 import { Input } from "@hr1/shared-ui/components/ui/input";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";

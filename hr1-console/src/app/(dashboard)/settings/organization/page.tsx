@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TabBar, type TabItem } from "@hr1/shared-ui/components/layout/tab-bar";
 import { Info, History } from "lucide-react";
 import { Button } from "@hr1/shared-ui/components/ui/button";
@@ -10,7 +10,7 @@ import { Input } from "@hr1/shared-ui/components/ui/input";
 import { Label } from "@hr1/shared-ui/components/ui/label";
 import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
 import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 import { useOrganizationSettings } from "@/lib/hooks/use-organization-settings";
 

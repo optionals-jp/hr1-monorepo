@@ -17,7 +17,7 @@ import {
 } from "@hr1/shared-ui/components/ui/table";
 import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
-import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
+import { EditPanel, type EditPanelTab } from "@hr1/shared-ui/components/ui/edit-panel";
 import { useEmployeesPage, type EmployeeWithDepts } from "@/lib/hooks/use-employees-page";
 
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
@@ -31,7 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { SlidersHorizontal, X, Download, Upload, ChevronDown } from "lucide-react";
 import { exportToCSV } from "@/lib/export-csv";

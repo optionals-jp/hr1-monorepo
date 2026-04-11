@@ -1,8 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { cn } from "@hr1/shared-ui/lib/utils";
-import { useScrolled } from "@/lib/hooks/use-scrolled";
+import { cn } from "../../lib/utils";
+import { useScrolled } from "../../lib/hooks/use-scrolled";
 
 interface StickyFilterBarProps {
   children: ReactNode;

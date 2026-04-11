@@ -23,7 +23,7 @@ import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-h
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Input } from "@hr1/shared-ui/components/ui/input";
 import { Label } from "@hr1/shared-ui/components/ui/label";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { usePipelines } from "@/lib/hooks/use-pipelines";
 import { useOrg } from "@/lib/org-context";

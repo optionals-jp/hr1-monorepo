@@ -18,6 +18,7 @@ import {
   UsersRound,
   Briefcase,
   ClipboardList,
+  ListTree,
   BookOpen,
   Megaphone,
   HeartPulse,
@@ -32,6 +33,7 @@ import {
   BarChart3,
   Bell,
   User,
+  ClipboardCheck,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -56,14 +58,16 @@ const recruitingSections: NavSection[] = [
     items: [
       { href: "/applicants", label: "応募者", icon: UsersRound },
       { href: "/applications", label: "応募管理", icon: ClipboardList },
+      { href: "/selection-steps", label: "選考ステップ", icon: ListTree },
       { href: "/jobs", label: "求人", icon: Briefcase },
       { href: "/scheduling", label: "日程調整", icon: CalendarClock },
       { href: "/forms", label: "フォーム", icon: FileText },
+      { href: "/evaluation-templates", label: "評価テンプレート", icon: ClipboardCheck },
     ],
   },
   {
     label: "コラボレーション",
-    items: [{ href: "/evaluations", label: "評価", icon: Star }, ...commonItems],
+    items: [{ href: "/evaluation-cycles", label: "評価サイクル", icon: Star }, ...commonItems],
   },
 ];
 
@@ -85,7 +89,7 @@ const workingSections: NavSection[] = [
       { href: "/employees", label: "社員名簿", icon: Users },
       { href: "/wiki", label: "Wiki", icon: BookOpen },
       { href: "/surveys", label: "サーベイ", icon: HeartPulse },
-      { href: "/evaluations", label: "評価", icon: Star },
+      { href: "/evaluation-cycles", label: "評価", icon: Star },
       { href: "/compliance", label: "コンプライアンス", icon: ShieldCheck },
       ...commonItems,
     ],

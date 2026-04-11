@@ -20,7 +20,7 @@ import {
   surveyTargetLabels,
   surveyQuestionTypeLabels,
 } from "@/lib/constants";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { Label } from "@hr1/shared-ui/components/ui/label";
 import { Input } from "@hr1/shared-ui/components/ui/input";
 import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
@@ -35,7 +35,7 @@ import { format } from "date-fns";
 import { Pencil, Trash2, Plus, Play, Square, Loader2 } from "lucide-react";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { SurveyAnalyticsTab } from "./survey-analytics-tab";

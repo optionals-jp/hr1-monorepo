@@ -1,5 +1,6 @@
 "use client";
 
+import { startOfDayJstIso, endOfDayJstIso } from "@hr1/shared-ui/lib/date-range";
 import { getSupabase } from "@/lib/supabase/browser";
 import { useOrg } from "@/lib/org-context";
 import { useQuery } from "@/lib/use-query";
@@ -49,15 +50,9 @@ export function useDailyPunches(selectedDate: string) {
   return useQuery<AttendancePunch[]>(
     organization ? `attendance-punches-${organization.id}-${selectedDate}` : null,
     async () => {
-      const dayStart = new Date(`${selectedDate}T00:00:00`);
-      const dayEnd = new Date(`${selectedDate}T00:00:00`);
-      dayEnd.setDate(dayEnd.getDate() + 1);
-      return attendanceRepo.findDailyPunches(
-        getSupabase(),
-        organization!.id,
-        dayStart.toISOString(),
-        dayEnd.toISOString()
-      );
+      const dayStart = startOfDayJstIso(selectedDate)!;
+      const dayEnd = endOfDayJstIso(selectedDate)!;
+      return attendanceRepo.findDailyPunches(getSupabase(), organization!.id, dayStart, dayEnd);
     }
   );
 }

@@ -33,7 +33,7 @@ export default function FormsPage() {
         sticky={false}
         action={
           <Link href="/forms/new">
-            <Button>フォームを作成</Button>
+            <Button variant="primary">フォームを作成</Button>
           </Link>
         }
       />

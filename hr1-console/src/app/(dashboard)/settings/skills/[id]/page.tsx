@@ -3,7 +3,7 @@
 import { use } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { Button } from "@hr1/shared-ui/components/ui/button";

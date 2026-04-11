@@ -1,31 +1,29 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { jstDateRangeIso } from "@hr1/shared-ui/lib/date-range";
 import type { AttendancePunch, AttendanceCorrection, AttendanceRecord } from "@/types/database";
 
-const JST_OFFSET = 9 * 60; // minutes
+const JST_OFFSET_MIN = 9 * 60;
 
 function toJstDateString(utcIso: string): string {
   const d = new Date(utcIso);
-  d.setMinutes(d.getMinutes() + JST_OFFSET);
+  d.setMinutes(d.getMinutes() + JST_OFFSET_MIN);
   return d.toISOString().split("T")[0];
 }
 
 function todayJst(): string {
   const now = new Date();
-  now.setMinutes(now.getMinutes() + JST_OFFSET);
+  now.setMinutes(now.getMinutes() + JST_OFFSET_MIN);
   return now.toISOString().split("T")[0];
 }
 
 function jstDayRangeUtc(dateStr: string): { start: string; end: string } {
-  // JST日付 → UTC範囲: JST 00:00 = UTC 前日15:00, JST 23:59:59 = UTC 14:59:59
-  const start = new Date(`${dateStr}T00:00:00+09:00`).toISOString();
-  const end = new Date(`${dateStr}T23:59:59+09:00`).toISOString();
-  return { start, end };
+  const { startIso, endIso } = jstDateRangeIso(dateStr, dateStr);
+  return { start: startIso!, end: endIso! };
 }
 
 function jstMonthRangeUtc(startDate: string, endDate: string): { start: string; end: string } {
-  const start = new Date(`${startDate}T00:00:00+09:00`).toISOString();
-  const end = new Date(`${endDate}T23:59:59+09:00`).toISOString();
-  return { start, end };
+  const { startIso, endIso } = jstDateRangeIso(startDate, endDate);
+  return { start: startIso!, end: endIso! };
 }
 
 export async function punch(

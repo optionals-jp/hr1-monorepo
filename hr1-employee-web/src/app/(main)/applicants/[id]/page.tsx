@@ -15,9 +15,10 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { useApplicantDetailPage } from "@/features/recruiting/hooks/use-applicant-detail";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TimelineTab } from "@/features/recruiting/components/timeline-tab";
-import { FileText, User, ScrollText } from "lucide-react";
+import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
+import { FileText, User, ScrollText, ClipboardCheck } from "lucide-react";
 import { format } from "date-fns";
 import {
   applicationStatusLabels as statusLabels,
@@ -27,6 +28,7 @@ import {
 const tabs = [
   { value: "profile", label: "プロフィール", icon: User },
   { value: "forms", label: "フォーム", icon: FileText },
+  { value: "evaluation", label: "評価", icon: ClipboardCheck },
   { value: "timeline", label: "ログ", icon: ScrollText },
 ];
 
@@ -212,6 +214,12 @@ export default function ApplicantDetailPage() {
               ))}
             </div>
           )}
+        </PageContent>
+      )}
+
+      {activeTab === "evaluation" && (
+        <PageContent>
+          <EvaluationTab targetUserId={profile.id} targetType="applicant" />
         </PageContent>
       )}
 

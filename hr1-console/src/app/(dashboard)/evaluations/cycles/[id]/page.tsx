@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { cn } from "@/lib/utils";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { useEvaluationCycleDetail } from "@/lib/hooks/use-evaluation-cycle-detail";

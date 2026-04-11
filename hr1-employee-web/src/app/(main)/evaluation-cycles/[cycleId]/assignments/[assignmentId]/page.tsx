@@ -36,6 +36,7 @@ export default function EvaluationFormPage() {
   const { showToast } = useToast();
 
   const assignmentId = params.assignmentId as string;
+  const cycleId = params.cycleId as string;
   const [assignment, setAssignment] = useState<
     (EvaluationAssignment & { evaluation_cycles: EvaluationCycle }) | null
   >(null);
@@ -200,11 +201,21 @@ export default function EvaluationFormPage() {
         }
         sticky={false}
         border={false}
-        breadcrumb={[{ label: "評価", href: "/evaluations" }]}
+        breadcrumb={[
+          { label: "評価サイクル", href: "/evaluation-cycles" },
+          {
+            label: assignment?.evaluation_cycles.title ?? "サイクル",
+            href: `/evaluation-cycles/${cycleId}`,
+          },
+        ]}
         action={
-          <Button variant="ghost" size="sm" onClick={() => router.push("/evaluations")}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push(`/evaluation-cycles/${cycleId}`)}
+          >
             <ArrowLeft className="h-4 w-4 mr-1" />
-            一覧に戻る
+            サイクルに戻る
           </Button>
         }
       />

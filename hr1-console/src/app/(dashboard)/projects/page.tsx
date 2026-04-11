@@ -15,14 +15,14 @@ import {
   TableRow,
 } from "@hr1/shared-ui/components/ui/table";
 import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { cn } from "@/lib/utils";
 import { useProjectsPage } from "@/lib/hooks/use-projects";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { projectStatusLabels, projectStatusColors } from "@/lib/constants";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";

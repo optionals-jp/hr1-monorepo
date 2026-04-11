@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
 import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
-import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
+import { EditPanel, type EditPanelTab } from "@hr1/shared-ui/components/ui/edit-panel";
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { useProfileSettings } from "@/lib/hooks/use-profile-settings";
 import { genderLabels } from "@/lib/constants";

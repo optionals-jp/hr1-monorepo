@@ -25,7 +25,7 @@ import {
 } from "@hr1/shared-ui/components/ui/dropdown-menu";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { cn, formatDateLocal, formatTime, formatMinutesHM } from "@/lib/utils";
 import type { AttendancePunch, AttendanceRecord, AttendanceSettingsRow } from "@/types/database";

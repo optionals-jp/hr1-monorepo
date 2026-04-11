@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { isWithinJstDateRange } from "@hr1/shared-ui/lib/date-range";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as applicantRepo from "@/lib/repositories/applicant-repository";
@@ -14,34 +15,16 @@ export function useApplicantsList() {
   );
 }
 
-export async function addApplicant(params: {
-  email: string;
-  display_name: string | null;
-  organization_id: string;
-  hiring_type: string | null;
-  graduation_year: number | undefined;
-}): Promise<void> {
-  const { data, error } = await getSupabase().functions.invoke("create-user", {
-    body: {
-      email: params.email,
-      display_name: params.display_name,
-      role: "applicant",
-      organization_id: params.organization_id,
-      hiring_type: params.hiring_type,
-      graduation_year: params.graduation_year,
-    },
-  });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-}
-
 export function useApplicantsPage() {
   const { organization } = useOrg();
   const { data: applicants = [], isLoading, error: applicantsError, mutate } = useApplicantsList();
 
   const [search, setSearch] = useState("");
   const [filterHiringType, setFilterHiringType] = useState<string>("all");
+  const [filterCreatedFrom, setFilterCreatedFrom] = useState<string>("");
+  const [filterCreatedTo, setFilterCreatedTo] = useState<string>("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [addTab, setAddTab] = useState("basic");
   const [newEmail, setNewEmail] = useState("");
   const [newName, setNewName] = useState("");
@@ -79,7 +62,7 @@ export function useApplicantsPage() {
     setSaving(true);
 
     try {
-      await addApplicant({
+      await applicantRepo.createApplicant(getSupabase(), {
         email: newEmail,
         display_name: newName || null,
         organization_id: organization.id,
@@ -123,9 +106,12 @@ export function useApplicantsPage() {
         const matchesHiringType =
           filterHiringType === "all" ||
           (filterHiringType === "none" ? !a.hiring_type : a.hiring_type === filterHiringType);
-        return matchesSearch && matchesHiringType;
+        const matchesCreatedRange =
+          (!filterCreatedFrom && !filterCreatedTo) ||
+          isWithinJstDateRange(a.created_at, filterCreatedFrom, filterCreatedTo);
+        return matchesSearch && matchesHiringType && matchesCreatedRange;
       }),
-    [applicants, search, filterHiringType]
+    [applicants, search, filterHiringType, filterCreatedFrom, filterCreatedTo]
   );
 
   return {
@@ -138,8 +124,14 @@ export function useApplicantsPage() {
     setSearch,
     filterHiringType,
     setFilterHiringType,
+    filterCreatedFrom,
+    setFilterCreatedFrom,
+    filterCreatedTo,
+    setFilterCreatedTo,
     dialogOpen,
     setDialogOpen,
+    importDialogOpen,
+    setImportDialogOpen,
     addTab,
     setAddTab,
     newEmail,

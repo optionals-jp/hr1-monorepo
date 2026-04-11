@@ -13,13 +13,13 @@ import {
 } from "@hr1/shared-ui/components/ui/table";
 import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { useDepartmentDetail } from "@/lib/hooks/use-department-detail";
 import { AuditLogPanel } from "@/components/ui/audit-log-panel";
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
-import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
+import { EditPanel, type EditPanelTab } from "@hr1/shared-ui/components/ui/edit-panel";
 import { FormInput } from "@hr1/shared-ui/components/ui/form-field";
 import { DepartmentOverviewTab } from "@/features/departments/components/department-overview-tab";
 import { Info, Users, History } from "lucide-react";

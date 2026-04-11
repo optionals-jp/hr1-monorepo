@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { jobStatusLabels as statusLabels } from "@/lib/constants";
 import { FileText, Users, ScrollText } from "lucide-react";
 import { useJobDetail } from "@/features/recruiting/hooks/use-job-detail";

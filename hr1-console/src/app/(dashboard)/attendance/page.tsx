@@ -2,7 +2,7 @@
 
 import { useTabParam } from "@/lib/hooks/use-tab-param";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { Calendar, Clock, ShieldCheck, FileEdit, Settings2 } from "lucide-react";
 import { useAttendanceData } from "@/features/attendance/hooks/use-attendance-data";

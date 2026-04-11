@@ -3,36 +3,19 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSWRConfig } from "swr";
+import {
+  type EvaluationAnchorDraft as AnchorDraft,
+  type EvaluationCriterionDraft as CriterionDraft,
+  criteriaDraftsToRpcPayload,
+  createCriterionDraft,
+  getDefaultAnchors,
+} from "@hr1/shared-ui/lib/evaluation-draft";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repo from "@/lib/repositories/evaluation-repository";
 import type { EvaluationTemplate, EvaluationCycle } from "@/types/database";
-
-interface AnchorDraft {
-  score_value: number;
-  description: string;
-}
-
-interface CriterionDraft {
-  tempId: string;
-  label: string;
-  description: string;
-  score_type: string;
-  options: string;
-  weight: string;
-  anchors: AnchorDraft[];
-  showAnchors: boolean;
-}
-
-function getDefaultAnchors(scoreType: string): AnchorDraft[] {
-  const max = scoreType === "five_star" ? 5 : scoreType === "ten_point" ? 10 : 0;
-  return Array.from({ length: max }, (_, i) => ({
-    score_value: i + 1,
-    description: "",
-  }));
-}
 
 export type { AnchorDraft, CriterionDraft };
 
@@ -50,19 +33,7 @@ export function useCreateEvaluation() {
   const [saving, setSaving] = useState(false);
 
   const addCriterion = useCallback(() => {
-    setCriteria((prev) => [
-      ...prev,
-      {
-        tempId: `${Date.now()}`,
-        label: "",
-        description: "",
-        score_type: "five_star",
-        options: "",
-        weight: "1.00",
-        anchors: getDefaultAnchors("five_star"),
-        showAnchors: false,
-      },
-    ]);
+    setCriteria((prev) => [...prev, createCriterionDraft()]);
   }, []);
 
   const removeCriterion = useCallback((tempId: string) => {
@@ -112,14 +83,7 @@ export function useCreateEvaluation() {
       evaluationType,
       anonymityMode,
       description,
-      criteria: criteria.map((c) => ({
-        label: c.label,
-        description: c.description,
-        score_type: c.score_type,
-        options: c.options,
-        weight: c.weight,
-        anchors: c.anchors,
-      })),
+      criteria,
     });
 
     if (result.success) {
@@ -284,6 +248,11 @@ export function useNewEvaluationCycle() {
   };
 }
 
+/**
+ * 評価テンプレートを作成する。
+ * `create_evaluation_template` RPC を呼び出し、template / criteria / anchors を
+ * 1 トランザクションで作成する。id は DB 側で採番される。
+ */
 export async function createTemplate(
   orgId: string,
   data: {
@@ -292,67 +261,22 @@ export async function createTemplate(
     evaluationType: string;
     anonymityMode: string;
     description: string;
-    criteria: {
-      label: string;
-      description: string;
-      score_type: string;
-      options: string;
-      weight: string;
-      anchors: { score_value: number; description: string }[];
-    }[];
+    criteria: CriterionDraft[];
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const client = getSupabase();
-    const templateId = `evaltpl-${Date.now()}`;
-
-    const { error: tplError } = await repo.insertTemplate(client, {
-      id: templateId,
-      organization_id: orgId,
+    await repo.rpcCreateEvaluationTemplate(getSupabase(), {
+      organizationId: orgId,
       title: data.title,
+      description: data.description,
       target: data.target,
-      evaluation_type: data.evaluationType,
-      anonymity_mode: data.evaluationType === "multi_rater" ? data.anonymityMode : "none",
-      description: data.description || null,
+      evaluationType: data.evaluationType,
+      anonymityMode: data.anonymityMode,
+      criteria: criteriaDraftsToRpcPayload(data.criteria),
     });
-    if (tplError) throw tplError;
-
-    if (data.criteria.length > 0) {
-      const criteriaRows = data.criteria.map((c, index) => ({
-        id: `evalcr-${templateId}-${index + 1}`,
-        template_id: templateId,
-        label: c.label,
-        description: c.description || null,
-        score_type: c.score_type,
-        options:
-          c.options && c.score_type === "select" ? c.options.split("\n").filter(Boolean) : null,
-        sort_order: index + 1,
-        weight: parseFloat(c.weight) || 1.0,
-      }));
-
-      const { error: crError } = await repo.insertCriteria(client, criteriaRows);
-      if (crError) throw crError;
-
-      const anchorRows = data.criteria.flatMap((c, cIndex) =>
-        c.anchors
-          .filter((a) => a.description.trim())
-          .map((a, aIndex) => ({
-            id: `anchor-${criteriaRows[cIndex].id}-${a.score_value}`,
-            criterion_id: criteriaRows[cIndex].id,
-            score_value: a.score_value,
-            description: a.description,
-            sort_order: aIndex,
-          }))
-      );
-
-      if (anchorRows.length > 0) {
-        const { error: anchorError } = await repo.insertAnchors(client, anchorRows);
-        if (anchorError) throw anchorError;
-      }
-    }
-
     return { success: true };
-  } catch {
+  } catch (err) {
+    console.error("createTemplate failed", err);
     return { success: false, error: "評価シートの作成に失敗しました" };
   }
 }
@@ -370,22 +294,27 @@ export async function createCycle(
 ): Promise<{ success: boolean; error?: string; cycleId?: string }> {
   try {
     const client = getSupabase();
-    const cycleId = `cycle-${Date.now()}`;
 
-    const { error } = await repo.insertCycle(client, {
-      id: cycleId,
-      organization_id: orgId,
-      title: data.title,
-      description: data.description || null,
-      template_id: data.templateId,
-      start_date: data.startDate,
-      end_date: data.endDate,
-      created_by: userId,
-    });
+    // id は evaluation_cycles.id の DEFAULT gen_random_uuid() に任せて
+    // RETURNING で取得する。フロント採番は禁止。
+    const { data: inserted, error } = await client
+      .from("evaluation_cycles")
+      .insert({
+        organization_id: orgId,
+        title: data.title,
+        description: data.description || null,
+        template_id: data.templateId,
+        start_date: data.startDate,
+        end_date: data.endDate,
+        created_by: userId,
+      })
+      .select("id")
+      .single();
     if (error) throw error;
 
-    return { success: true, cycleId };
-  } catch {
+    return { success: true, cycleId: (inserted as { id: string }).id };
+  } catch (err) {
+    console.error("createCycle failed", err);
     return { success: false, error: "サイクルの作成に失敗しました" };
   }
 }

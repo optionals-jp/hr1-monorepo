@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { CsvImportDialog, type CsvImportField } from "@/components/ui/csv-import-dialog";
+import {
+  CsvImportDialog,
+  type CsvImportField,
+} from "@hr1/shared-ui/components/ui/csv-import-dialog";
 import { Switch } from "@hr1/shared-ui/components/ui/switch";
 import { Label } from "@hr1/shared-ui/components/ui/label";
 import { invokeCreateUser } from "@/lib/hooks/use-import";

@@ -142,7 +142,7 @@ export async function findDailyPunches(
     .select("*")
     .eq("organization_id", organizationId)
     .gte("punched_at", dayStart)
-    .lt("punched_at", dayEnd)
+    .lte("punched_at", dayEnd)
     .order("punched_at", { ascending: true });
   return (data ?? []) as AttendancePunch[];
 }

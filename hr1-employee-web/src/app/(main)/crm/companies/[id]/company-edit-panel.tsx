@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Input } from "@hr1/shared-ui/components/ui/input";
 import { Label } from "@hr1/shared-ui/components/ui/label";
-import { EditPanel } from "@/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { useOrg } from "@/lib/org-context";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { getSupabase } from "@/lib/supabase/browser";

@@ -57,6 +57,17 @@ export interface JobStep {
   related_id: string | null;
 }
 
+export interface SelectionStepTemplate {
+  id: string;
+  organization_id: string;
+  name: string;
+  step_type: "screening" | "form" | "interview" | "external_test" | "offer";
+  description: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Application {
   id: string;
   job_id: string;
@@ -978,6 +989,17 @@ export interface WorkflowRequest {
 // 評価
 // ==========================================================
 
+export interface EvaluationTemplate {
+  id: string;
+  organization_id: string;
+  title: string;
+  description: string | null;
+  target: "applicant" | "employee" | "both";
+  evaluation_type: "single" | "multi_rater";
+  anonymity_mode: "none" | "peer_only" | "full";
+  created_at: string;
+}
+
 export interface EvaluationCycle {
   id: string;
   organization_id: string;
@@ -1023,8 +1045,9 @@ export interface Evaluation {
   target_user_id: string;
   evaluator_id: string;
   cycle_id: string | null;
-  rater_type: string;
+  rater_type: string | null;
   assignment_id: string | null;
+  application_id: string | null;
   status: "draft" | "submitted";
   overall_comment: string | null;
   created_at: string;

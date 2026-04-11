@@ -113,10 +113,11 @@ export async function saveTemplateEdit(
 
     const newCriteria = editCriteria.filter((c) => c.isNew);
     if (newCriteria.length > 0) {
+      // id は evaluation_criteria.id の DEFAULT gen_random_uuid() に任せる。
+      // フロント採番は禁止（非 UUID 文字列を uuid カラムに投入するとキャストエラー）。
       await repo.insertCriteria(
         client,
-        newCriteria.map((c, i) => ({
-          id: `evalcr-${template.id}-${Date.now()}-${i}`,
+        newCriteria.map((c) => ({
           template_id: template.id,
           label: c.label,
           description: c.description || null,
@@ -261,8 +262,9 @@ export async function bulkAddAssignments(
 ): Promise<{ success: boolean; error?: string; count: number }> {
   try {
     const client = getSupabase();
-    const rows = pairs.map((p, i) => ({
-      id: `assign-${Date.now()}-${i}`,
+    // id は evaluation_assignments.id の DEFAULT gen_random_uuid() に任せる。
+    // フロント採番は禁止。
+    const rows = pairs.map((p) => ({
       cycle_id: cycleId,
       target_user_id: p.targetId,
       evaluator_id: p.evaluatorId,
@@ -274,7 +276,8 @@ export async function bulkAddAssignments(
     if (error) throw error;
 
     return { success: true, count: pairs.length };
-  } catch {
+  } catch (err) {
+    console.error("bulkAddAssignments failed", err);
     return { success: false, error: "追加に失敗しました", count: 0 };
   }
 }
@@ -378,9 +381,17 @@ export async function loadTemplateCriteria(templateId: string) {
   return { criteria: cr, anchors: anchors ?? [] };
 }
 
+/**
+ * アドホック評価（応募者/社員詳細ページからの直接評価）を作成または更新する。
+ * `submit_ad_hoc_evaluation` RPC により evaluations 本体とスコア行を
+ * 1 トランザクションで処理する。id は全て DB 側で採番される。
+ *
+ * `userId` パラメータは過去互換のため受け取るが、RPC 側で `auth.uid()` を
+ * 強制するため参照しない（なりすまし防止）。
+ */
 export async function submitEvaluation(
   orgId: string,
-  userId: string,
+  _userId: string,
   data: {
     evaluationId?: string;
     templateId: string;
@@ -392,53 +403,24 @@ export async function submitEvaluation(
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const client = getSupabase();
-    const isUpdate = !!data.evaluationId;
-    const evalId = data.evaluationId ?? `eval-${Date.now()}`;
-
-    if (isUpdate) {
-      const { error: evalError } = await repo.updateEvaluation(client, evalId, orgId, {
-        status: data.status,
-        overall_comment: data.overallComment || null,
-        submitted_at: data.status === "submitted" ? new Date().toISOString() : null,
-      });
-      if (evalError) throw evalError;
-
-      const { error: delError } = await repo.deleteScoresByEvaluation(client, evalId);
-      if (delError) throw delError;
-    } else {
-      const { error: evalError } = await repo.insertEvaluation(client, {
-        id: evalId,
-        organization_id: orgId,
-        template_id: data.templateId,
-        target_user_id: data.targetUserId,
-        evaluator_id: userId,
-        application_id: data.applicationId ?? null,
-        status: data.status,
-        overall_comment: data.overallComment || null,
-        submitted_at: data.status === "submitted" ? new Date().toISOString() : null,
-      });
-      if (evalError) throw evalError;
-    }
-
-    const scoreRows = data.scores
-      .filter((s) => s.score !== null || s.value || s.comment)
-      .map((s, i) => ({
-        id: `evalscore-${evalId}-${i}-${Date.now()}`,
-        evaluation_id: evalId,
+    await repo.rpcSubmitAdHocEvaluation(getSupabase(), {
+      evaluationId: data.evaluationId ?? null,
+      organizationId: orgId,
+      templateId: data.templateId,
+      targetUserId: data.targetUserId,
+      applicationId: data.applicationId ?? null,
+      status: data.status,
+      overallComment: data.overallComment,
+      scores: data.scores.map((s) => ({
         criterion_id: s.criterion_id,
         score: s.score,
         value: s.value || null,
         comment: s.comment || null,
-      }));
-
-    if (scoreRows.length > 0) {
-      const { error: scoreError } = await repo.insertScores(client, scoreRows);
-      if (scoreError) throw scoreError;
-    }
-
+      })),
+    });
     return { success: true };
-  } catch {
+  } catch (err) {
+    console.error("submitEvaluation failed", err);
     return { success: false, error: "評価の保存に失敗しました" };
   }
 }

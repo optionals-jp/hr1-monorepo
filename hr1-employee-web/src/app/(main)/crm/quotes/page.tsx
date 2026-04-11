@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { Button } from "@hr1/shared-ui/components/ui/button";
@@ -82,7 +82,7 @@ export default function QuotesPage() {
         breadcrumb={[{ label: "商談管理", href: "/crm/deals" }]}
         action={
           <Link href="/crm/quotes/new">
-            <Button>
+            <Button variant="primary">
               <Plus className="size-4 mr-1.5" />
               新規作成
             </Button>

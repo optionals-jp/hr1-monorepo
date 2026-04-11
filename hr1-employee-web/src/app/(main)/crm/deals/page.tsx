@@ -16,7 +16,7 @@ import {
 import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import {
@@ -218,7 +218,9 @@ export default function CrmDealsPage() {
                 カンバン
               </button>
             </div>
-            <Button onClick={openCreate}>新規登録</Button>
+            <Button variant="primary" onClick={openCreate}>
+              新規登録
+            </Button>
           </div>
         }
       />

@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@hr1/shared-ui/components/ui/table";
 import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
-import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
+import { EditPanel, type EditPanelTab } from "@hr1/shared-ui/components/ui/edit-panel";
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import {
   DropdownMenu,
@@ -36,7 +36,7 @@ import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banne
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { useRouter } from "next/navigation";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { cn } from "@/lib/utils";
 import { useTasksPage } from "@/lib/hooks/use-tasks-page";
 import {

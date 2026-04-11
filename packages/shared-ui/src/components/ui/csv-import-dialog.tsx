@@ -2,24 +2,11 @@
 
 import { useState, useCallback, useRef } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { Button } from "@hr1/shared-ui/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@hr1/shared-ui/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@hr1/shared-ui/components/ui/table";
-import { cn } from "@hr1/shared-ui/lib/utils";
-import { useToast } from "@hr1/shared-ui/components/ui/toast";
+import { Button } from "./button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./table";
+import { cn } from "../../lib/utils";
+import { useToast } from "./toast";
 import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle } from "lucide-react";
 import {
   parseFile,
@@ -27,7 +14,7 @@ import {
   type ColumnMapping,
   type ParsedFile,
   type ValidatedRow,
-} from "@/lib/import-utils";
+} from "../../lib/import-utils";
 
 type Step = "upload" | "mapping" | "preview" | "importing" | "done";
 

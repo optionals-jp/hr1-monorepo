@@ -26,9 +26,9 @@ import {
 } from "@hr1/shared-ui/components/ui/table";
 import { ConfirmDialog } from "@hr1/shared-ui/components/ui/confirm-dialog";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
-import { EditPanel, type EditPanelTab } from "@/components/ui/edit-panel";
+import { EditPanel, type EditPanelTab } from "@hr1/shared-ui/components/ui/edit-panel";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { useOrg } from "@/lib/org-context";
 import { useFormDetailPage, type FormDetailTab } from "@/features/recruiting/hooks/use-form-detail";
 import { deleteForm } from "@/features/recruiting/hooks/use-forms";

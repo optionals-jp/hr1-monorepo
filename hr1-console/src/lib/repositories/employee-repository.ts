@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { SUPABASE_FUNCTIONS } from "@hr1/shared-ui/lib/supabase-functions";
 import type { Profile } from "@/types/database";
 
 export async function findEmployeesWithDepartments(client: SupabaseClient, organizationId: string) {
@@ -79,7 +80,7 @@ export async function createEmployee(
     department_ids?: string[];
   }
 ) {
-  const { data, error } = await client.functions.invoke("create-user", {
+  const { data, error } = await client.functions.invoke(SUPABASE_FUNCTIONS.CREATE_USER, {
     body: {
       email: params.email,
       display_name: params.display_name,

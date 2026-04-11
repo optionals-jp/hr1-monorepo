@@ -16,7 +16,7 @@ const RESOURCE_ROUTES: Record<string, { path: string; hasDetail: boolean }> = {
   attendance: { path: "/my-attendance", hasDetail: false },
   task: { path: "/tasks", hasDetail: false },
   message: { path: "/messages", hasDetail: false },
-  evaluation: { path: "/evaluations", hasDetail: false },
+  evaluation: { path: "/evaluation-cycles", hasDetail: false },
   survey: { path: "/surveys", hasDetail: true },
   workflow: { path: "/workflows", hasDetail: false },
   project: { path: "/projects", hasDetail: false },

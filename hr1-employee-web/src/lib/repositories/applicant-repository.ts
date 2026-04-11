@@ -1,5 +1,38 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { SUPABASE_FUNCTIONS } from "@hr1/shared-ui/lib/supabase-functions";
 import type { Profile, Application, Job } from "@/types/database";
+
+/**
+ * 応募者を作成する（Supabase Edge Function `create-user` 経由）。
+ *
+ * 認証ユーザー作成は GoTrue の内部処理が絡むため必ず Edge Function を通す。
+ * この関数はエラーを握り潰さず throw するので、呼び出し元で try/catch すること。
+ */
+export async function createApplicant(
+  client: SupabaseClient,
+  params: {
+    email: string;
+    display_name: string | null;
+    organization_id: string;
+    hiring_type: string | null;
+    graduation_year?: number;
+    send_invite?: boolean;
+  }
+): Promise<void> {
+  const { data, error } = await client.functions.invoke(SUPABASE_FUNCTIONS.CREATE_USER, {
+    body: {
+      email: params.email,
+      display_name: params.display_name,
+      role: "applicant",
+      organization_id: params.organization_id,
+      hiring_type: params.hiring_type,
+      graduation_year: params.graduation_year,
+      send_invite: params.send_invite,
+    },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+}
 
 export async function findByOrg(client: SupabaseClient, organizationId: string) {
   const { data } = await client

@@ -25,7 +25,7 @@ import { convertLead, deleteLead } from "@/lib/repositories/lead-repository";
 import { fireTrigger } from "@/lib/automation/engine";
 import { useDefaultPipeline, getStagesFromPipeline } from "@/lib/hooks/use-pipelines";
 import type { BcLead } from "@/types/database";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -177,7 +177,9 @@ export default function CrmLeadsPage() {
               <Upload className="mr-1.5 h-4 w-4" />
               インポート
             </Button>
-            <Button onClick={openCreate}>新規登録</Button>
+            <Button variant="primary" onClick={openCreate}>
+              新規登録
+            </Button>
           </div>
         }
       />

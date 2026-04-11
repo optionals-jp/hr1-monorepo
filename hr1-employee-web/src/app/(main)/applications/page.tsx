@@ -22,7 +22,7 @@ import {
 import { cn } from "@hr1/shared-ui/lib/utils";
 import { useApplicationsPage } from "@/features/recruiting/hooks/use-applications-page";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
-import { StickyFilterBar } from "@/components/layout/sticky-filter-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import {
