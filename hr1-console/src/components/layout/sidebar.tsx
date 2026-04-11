@@ -5,11 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
-  UserPlus,
-  Briefcase,
-  FileText,
-  ClipboardList,
-  Calendar,
   CalendarDays,
   CalendarRange,
   Building2,
@@ -64,21 +59,6 @@ interface NavSection {
 /* ------------------------------------------------------------------ */
 
 const unifiedSections: NavSection[] = [
-  {
-    labelKey: "nav.section.recruitment",
-    items: [
-      { href: "/applicants", labelKey: "nav.applicants", icon: UserPlus, resource: "applicants" },
-      { href: "/jobs", labelKey: "nav.jobs", icon: Briefcase, resource: "jobs" },
-      {
-        href: "/applications",
-        labelKey: "nav.applications",
-        icon: ClipboardList,
-        resource: "applications",
-      },
-      { href: "/scheduling", labelKey: "nav.scheduling", icon: Calendar, resource: "scheduling" },
-      { href: "/forms", labelKey: "nav.forms", icon: FileText, resource: "forms" },
-    ],
-  },
   {
     labelKey: "nav.section.internal",
     items: [

@@ -178,7 +178,6 @@ function resolveDataSource(
       const jobs = data.openJobs ?? [];
       const items: ListItem[] = jobs.map((j) => ({
         id: j.id,
-        href: `/jobs/${j.id}`,
         title: j.title,
         subtitle: j.department ?? undefined,
         values: [
@@ -186,7 +185,7 @@ function resolveDataSource(
           { label: "内定", value: j.offeredCount, color: "#16a34a" },
         ],
       }));
-      return { type: "list", items, maxItems: 8, viewAllHref: "/jobs" };
+      return { type: "list", items, maxItems: 8 };
     }
 
     /* ---- workspace_summary ---- */

@@ -52,83 +52,6 @@ export interface UserOrganization {
   organizations?: Organization;
 }
 
-export interface Job {
-  id: string;
-  organization_id: string;
-  title: string;
-  description: string;
-  department: string | null;
-  location: string | null;
-  employment_type: string | null;
-  salary_range: string | null;
-  status: "open" | "closed" | "draft" | "archived";
-  created_at: string;
-}
-
-export interface JobStep {
-  id: string;
-  job_id: string;
-  step_type: string;
-  step_order: number;
-  label: string;
-  related_id: string | null;
-}
-
-export interface Application {
-  id: string;
-  job_id: string;
-  applicant_id: string;
-  organization_id: string;
-  status: "active" | "offered" | "rejected" | "withdrawn";
-  applied_at: string;
-  jobs?: Job;
-  profiles?: Profile;
-  application_steps?: ApplicationStep[];
-}
-
-export interface ApplicationStep {
-  id: string;
-  application_id: string;
-  step_type: string;
-  step_order: number;
-  label: string;
-  status: "pending" | "in_progress" | "completed" | "skipped";
-  related_id: string | null;
-  started_at: string | null;
-  completed_at: string | null;
-  applicant_action_at: string | null;
-}
-
-export interface CustomForm {
-  id: string;
-  organization_id: string;
-  title: string;
-  description: string | null;
-  target: "applicant" | "employee" | "both";
-  created_at: string;
-}
-
-export interface FormField {
-  id: string;
-  form_id: string;
-  type: string;
-  label: string;
-  description: string | null;
-  placeholder: string | null;
-  is_required: boolean;
-  options: string[] | null;
-  sort_order: number;
-}
-
-export interface FormResponse {
-  id: string;
-  form_id: string;
-  applicant_id: string;
-  field_id: string;
-  value: string;
-  submitted_at: string;
-}
-
 export interface ActivityLog {
   id: string;
   organization_id: string;
@@ -159,31 +82,6 @@ export interface AuditLog {
   user_agent: string | null;
   source: string;
   created_at: string;
-}
-
-export interface Interview {
-  id: string;
-  organization_id: string;
-  title: string;
-  location: string | null;
-  notes: string | null;
-  status: "scheduling" | "confirmed" | "completed" | "cancelled";
-  confirmed_slot_id: string | null;
-  created_at: string;
-}
-
-export interface InterviewSlot {
-  id: string;
-  interview_id: string;
-  start_at: string;
-  end_at: string;
-  is_selected: boolean;
-  max_applicants: number;
-  application_id: string | null;
-  applications?: {
-    id: string;
-    profiles?: { display_name: string | null; email: string };
-  };
 }
 
 export interface Department {

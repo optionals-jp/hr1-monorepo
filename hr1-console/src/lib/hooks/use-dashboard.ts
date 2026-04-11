@@ -10,7 +10,7 @@ import * as crmRepository from "@/lib/repositories/crm-repository";
 import * as pipelineRepository from "@/lib/repositories/pipeline-repository";
 import type { ProductTab } from "@/components/layout/sidebar";
 import { migrateWidgetConfig } from "@/lib/dashboard/migration";
-import { StepStatus, ApplicationStatus } from "@/lib/constants";
+import { ApplicationStatus, StepStatus } from "@/lib/constants";
 import { format, subMonths } from "date-fns";
 import type {
   PipelineStage,

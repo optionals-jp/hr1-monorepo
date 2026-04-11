@@ -13,6 +13,23 @@ hr1-employee-app（Flutter社員アプリ）のコードレビューを実施し
 - **セキュリティ**: 認証/認可の漏れ、機密情報のハードコード、個人情報（社員名簿・給与明細・連絡先等）の取り扱い、Supabase RLSとの整合性
 - **データ整合性**: Supabaseクエリの正確性、`.single()` vs `.maybeSingle()` の適切な使い分け
 
+### 暫定的な対応・ワークアラウンドの禁止（🔴 要修正）
+
+**基本方針**: 暫定対応・ワークアラウンド・応急処置は一切禁止。根本原因を特定して正しく修正する。大規模改修になっても構わないので、**安全で可読性の高いコード**を常に優先する。
+
+- **インライン再定義**: 定数・enum を画面内やウィジェット内に直接ハードコードしていないか → `lib/core/constants/` or `hr1_shared` に配置する
+- **TODO/FIXME/HACK コメント**: `// TODO: 後で` / `// 暫定` / `// 一時的` 等の先送りコメントを新規追加していないか
+- **`dynamic` / `as` キャストの濫用**: 型安全性を握り潰していないか。`// ignore: xxx` の新規追加も禁止
+- **try/catch の握り潰し**: `catch (e) {}` / `catch (_) { return null }` でエラーを黙殺していないか。`AsyncValue.error` や例外伝播を使う
+- **`Future.value(null)` や空配列での逃げ**: エラー時に空状態を返して「なかったことにする」ていないか
+- **ハードコード分岐での応急処置**: 特定IDや特定ロールで `if` 分岐し本来のバグを回避していないか
+- **コピペでウィジェット量産**: 既存 `hr1_shared` のウィジェットを修正するのを避けて、類似ウィジェットをアプリ側に新規作成していないか → 既存を拡張する
+- **`XxxV2` / `XxxNew` / `XxxOld` 命名での新旧並存**: 置き換え完了まで責任を持って完遂する
+- **`setState` での状態リークを Controller に押し付けない**: Screen 側で直すべきことを Controller の余計な state で誤魔化していないか
+- **`mounted` チェック漏れを `try/catch` で握り潰さない**: ライフサイクル問題は `if (!mounted) return;` で正しく対処する
+
+**指摘フォーマット**: `[ファイル:行] の記述は暫定対応。根本原因: [原因]。正しい修正: [大規模でも構わないので正しい方針]`
+
 ### コード品質
 - **命名**: 変数・関数・クラス名が処理内容を適切に表しているか
 - **重複**: 同じロジックがコピペされていないか
@@ -34,7 +51,7 @@ hr1-employee-app（Flutter社員アプリ）のコードレビューを実施し
 ### デザイントークン・共通コンポーネント
 - **テキストスタイル**: `TextStyle()` を直接使わず `AppTextStyles` トークンを使用しているか。`copyWith(fontSize:)` でサイズを上書きしていないか
 - **カラー**: セカンダリテキストに `AppColors.textSecondary(context)` を使用しているか。薄いアイコン色に `AppColors.textTertiary(context)` を使用しているか。`theme.colorScheme` や `theme.brightness` を直接使っていないか
-- **ボタン**: 画面下部のアクションに `CommonButton` を使用しているか。`FilledButton` / `ElevatedButton` を直接使っていないか
+- **ボタン**: 画面下部の主要アクション・フォーム送信に `CommonButton` を使用しているか。セカンダリアクション（再試行等）に `CommonButton.outline` を使用しているか。`FilledButton` / `ElevatedButton` / `OutlinedButton` を直接使っていないか
 - **ローディング**: `LoadingIndicator` を使用しているか。`CircularProgressIndicator` を直接使っていないか
 - **エラー表示**: `ErrorState` を使用しているか。`Center(child: Text('エラー'))` を直接書いていないか
 - **スケルトン**: ローディング時に `SkeletonContainer` + `SkeletonBone` を使用しているか
@@ -54,7 +71,7 @@ hr1-employee-app（Flutter社員アプリ）のコードレビューを実施し
 - **開発モード**: `kDevMode` 分岐が適切か
 
 ### ビルドチェック
-- レビュー完了後、`cd hr1-employee-app && flutter analyze` を実行し、警告・エラーがないか確認する
+- レビュー完了後、`cd hr1-employee-app && dart format --set-exit-if-changed . && flutter analyze && flutter test` を実行し、警告・エラー（info/warning も含む）がないか確認する
 
 ## 出力フォーマット
 
