@@ -3,9 +3,6 @@
 import { useRouter } from "next/navigation";
 import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { Button } from "@hr1/shared-ui/components/ui/button";
-import { Badge } from "@hr1/shared-ui/components/ui/badge";
-import { Input } from "@hr1/shared-ui/components/ui/input";
-import { Label } from "@hr1/shared-ui/components/ui/label";
 import {
   Table,
   TableBody,
@@ -19,58 +16,12 @@ import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { ConfirmDialog } from "@hr1/shared-ui/components/ui/confirm-dialog";
 import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
-import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
 import { useCrmCompanyDetailPage } from "@/features/crm/hooks/use-crm-company-detail-page";
-import { dealStatusLabels, dealStatusColors, activityTypeLabels } from "@/lib/constants/crm";
-import { formatJpy } from "@/features/crm/rules";
+import { CompanyEditFields } from "@/features/crm/components/company-edit-fields";
+import { InfoRow } from "@/features/crm/components/detail-helpers";
+import { DealTable } from "@/features/crm/components/deal-table";
+import { ActivityList } from "@/features/crm/components/activity-list";
 import { Edit, Trash2, Building2, Phone, Mail, Globe, MapPin, ArrowLeft, User } from "lucide-react";
-
-function fmtDate(dateStr: string | null): string {
-  if (!dateStr) return "---";
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function InfoRow({
-  icon,
-  label,
-  children,
-}: {
-  icon?: React.ReactNode;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-3 py-2">
-      {icon && <div className="mt-0.5 text-muted-foreground shrink-0">{icon}</div>}
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-sm mt-0.5 break-words">{children}</p>
-      </div>
-    </div>
-  );
-}
-
-function Field({
-  id,
-  label,
-  required,
-  children,
-}: {
-  id: string;
-  label: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id}>
-        {label} {required && <span className="text-destructive">*</span>}
-      </Label>
-      {children}
-    </div>
-  );
-}
 
 export default function CrmCompanyDetailPage() {
   const router = useRouter();
@@ -90,12 +41,13 @@ export default function CrmCompanyDetailPage() {
     } else if (r.error) showToast(r.error, "error");
   };
 
-  if (h.companyLoading)
+  if (h.companyLoading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
         読み込み中...
       </div>
     );
+  }
 
   if (!h.company) {
     return (
@@ -125,6 +77,7 @@ export default function CrmCompanyDetailPage() {
   }
 
   const { company } = h;
+
   return (
     <div className="flex flex-col">
       <PageHeader
@@ -148,6 +101,7 @@ export default function CrmCompanyDetailPage() {
           </div>
         }
       />
+
       <PageContent>
         <div className="space-y-6">
           <SectionCard>
@@ -222,32 +176,26 @@ export default function CrmCompanyDetailPage() {
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => router.push(`/crm/contacts/${c.id}`)}
                     >
-                      <TableCell>
-                        <span className="font-medium">
-                          {c.last_name}
-                          {c.first_name ? ` ${c.first_name}` : ""}
-                        </span>
+                      <TableCell className="font-medium">
+                        {c.last_name}
+                        {c.first_name ? ` ${c.first_name}` : ""}
                       </TableCell>
-                      <TableCell>
-                        <span className="text-muted-foreground">{c.department ?? "---"}</span>
+                      <TableCell className="text-muted-foreground">
+                        {c.department ?? "---"}
                       </TableCell>
-                      <TableCell>
-                        <span className="text-muted-foreground">{c.position ?? "---"}</span>
-                      </TableCell>
-                      <TableCell>
+                      <TableCell className="text-muted-foreground">{c.position ?? "---"}</TableCell>
+                      <TableCell className="text-muted-foreground">
                         {c.email ? (
-                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                          <span className="flex items-center gap-1.5">
                             <Mail className="h-3 w-3 shrink-0" />
                             {c.email}
                           </span>
                         ) : (
-                          <span className="text-muted-foreground">---</span>
+                          "---"
                         )}
                       </TableCell>
-                      <TableCell>
-                        <span className="text-muted-foreground">
-                          {c.phone ?? c.mobile_phone ?? "---"}
-                        </span>
+                      <TableCell className="text-muted-foreground">
+                        {c.phone ?? c.mobile_phone ?? "---"}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -256,99 +204,8 @@ export default function CrmCompanyDetailPage() {
             </Table>
           </SectionCard>
 
-          <SectionCard>
-            <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-              関連する商談
-            </h2>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>商談名</TableHead>
-                  <TableHead className="text-right">金額</TableHead>
-                  <TableHead>ステータス</TableHead>
-                  <TableHead>予定日</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableEmptyState
-                  colSpan={4}
-                  isLoading={!h.deals}
-                  isEmpty={(h.deals ?? []).length === 0}
-                  emptyMessage="関連する商談がありません"
-                >
-                  {(h.deals ?? []).map((deal) => (
-                    <TableRow
-                      key={deal.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => router.push(`/crm/deals/${deal.id}`)}
-                    >
-                      <TableCell>
-                        <span className="font-medium">{deal.title}</span>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {deal.amount != null ? formatJpy(deal.amount) : "---"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={dealStatusColors[deal.status] ?? "default"}>
-                          {dealStatusLabels[deal.status] ?? deal.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-muted-foreground tabular-nums">
-                          {fmtDate(deal.expected_close_date)}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableEmptyState>
-              </TableBody>
-            </Table>
-          </SectionCard>
-
-          <SectionCard>
-            <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              活動履歴
-            </h2>
-            {!h.activities ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">読み込み中...</p>
-            ) : h.activities.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">活動履歴がありません</p>
-            ) : (
-              <div className="space-y-3">
-                {h.activities.map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex items-start gap-3 rounded-lg border bg-background p-3"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline" className="text-xs">
-                          {activityTypeLabels[a.activity_type] ?? a.activity_type}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground tabular-nums">
-                          {fmtDate(a.activity_date)}
-                        </span>
-                      </div>
-                      <p className="text-sm font-medium">{a.title}</p>
-                      {a.description && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                          {a.description}
-                        </p>
-                      )}
-                      {a.profiles?.display_name && (
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                          <User className="h-3 w-3" />
-                          {a.profiles.display_name}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </SectionCard>
+          <DealTable deals={h.deals} onDealClick={(id) => router.push(`/crm/deals/${id}`)} />
+          <ActivityList activities={h.activities} showAssignee />
         </div>
       </PageContent>
 
@@ -360,81 +217,7 @@ export default function CrmCompanyDetailPage() {
         saving={h.saving}
         saveLabel="保存"
       >
-        <div className="space-y-4">
-          <Field id="edit-company-name" label="企業名" required>
-            <Input
-              id="edit-company-name"
-              value={h.form.name}
-              onChange={(e) => h.updateField("name", e.target.value)}
-              placeholder="例: 株式会社サンプル"
-            />
-          </Field>
-          <Field id="edit-company-name-kana" label="フリガナ">
-            <Input
-              id="edit-company-name-kana"
-              value={h.form.name_kana}
-              onChange={(e) => h.updateField("name_kana", e.target.value)}
-              placeholder="例: カブシキガイシャサンプル"
-            />
-          </Field>
-          <Field id="edit-company-industry" label="業種">
-            <Input
-              id="edit-company-industry"
-              value={h.form.industry}
-              onChange={(e) => h.updateField("industry", e.target.value)}
-              placeholder="例: IT・通信"
-            />
-          </Field>
-          <Field id="edit-company-phone" label="電話番号">
-            <Input
-              id="edit-company-phone"
-              value={h.form.phone}
-              onChange={(e) => h.updateField("phone", e.target.value)}
-              placeholder="例: 03-1234-5678"
-            />
-          </Field>
-          <Field id="edit-company-postal-code" label="郵便番号">
-            <Input
-              id="edit-company-postal-code"
-              value={h.form.postal_code}
-              onChange={(e) => h.updateField("postal_code", e.target.value)}
-              placeholder="例: 100-0001"
-            />
-          </Field>
-          <Field id="edit-company-address" label="住所">
-            <Input
-              id="edit-company-address"
-              value={h.form.address}
-              onChange={(e) => h.updateField("address", e.target.value)}
-              placeholder="例: 東京都千代田区丸の内1-1-1"
-            />
-          </Field>
-          <Field id="edit-company-website" label="Webサイト">
-            <Input
-              id="edit-company-website"
-              value={h.form.website}
-              onChange={(e) => h.updateField("website", e.target.value)}
-              placeholder="例: https://example.com"
-            />
-          </Field>
-          <Field id="edit-company-corporate-number" label="法人番号">
-            <Input
-              id="edit-company-corporate-number"
-              value={h.form.corporate_number}
-              onChange={(e) => h.updateField("corporate_number", e.target.value)}
-              placeholder="例: 1234567890123"
-            />
-          </Field>
-          <Field id="edit-company-notes" label="備考">
-            <Textarea
-              id="edit-company-notes"
-              value={h.form.notes}
-              onChange={(e) => h.updateField("notes", e.target.value)}
-              placeholder="メモや備考を入力"
-              rows={3}
-            />
-          </Field>
-        </div>
+        <CompanyEditFields form={h.form} updateField={h.updateField} />
       </EditPanel>
 
       <ConfirmDialog

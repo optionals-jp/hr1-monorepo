@@ -8,12 +8,26 @@ import {
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
 import { Field } from "@/features/crm/components/detail-helpers";
-import type { ContactFormData } from "@/features/crm/hooks/use-crm-contact-detail-page";
 import type { BcCompany } from "@/types/database";
 
+/** 連絡先と連絡先詳細の両方のフォーム型を受け入れる共通型 */
+export interface ContactEditForm {
+  last_name: string;
+  first_name: string;
+  last_name_kana: string;
+  first_name_kana: string;
+  company_id: string;
+  department: string;
+  position: string;
+  email: string;
+  phone: string;
+  mobile_phone: string;
+  notes: string;
+}
+
 interface Props {
-  form: ContactFormData;
-  updateField: <K extends keyof ContactFormData>(field: K, value: ContactFormData[K]) => void;
+  form: ContactEditForm;
+  updateField: (field: keyof ContactEditForm, value: string) => void;
   companies: BcCompany[];
   prefix?: string;
   /** リスト画面ではカナフィールドを非表示にする */
@@ -50,30 +64,23 @@ export function ContactEditFields({
           <Field id={`${prefix}-last-name-kana`} label="姓カナ">
             <Input
               id={`${prefix}-last-name-kana`}
-              value={form.last_name_kana ?? ""}
-              onChange={(e) =>
-                updateField("last_name_kana" as keyof ContactFormData, e.target.value)
-              }
+              value={form.last_name_kana}
+              onChange={(e) => updateField("last_name_kana", e.target.value)}
               placeholder="例: タナカ"
             />
           </Field>
           <Field id={`${prefix}-first-name-kana`} label="名カナ">
             <Input
               id={`${prefix}-first-name-kana`}
-              value={form.first_name_kana ?? ""}
-              onChange={(e) =>
-                updateField("first_name_kana" as keyof ContactFormData, e.target.value)
-              }
+              value={form.first_name_kana}
+              onChange={(e) => updateField("first_name_kana", e.target.value)}
               placeholder="例: タロウ"
             />
           </Field>
         </>
       )}
       <Field id={`${prefix}-company`} label="企業">
-        <Select
-          value={form.company_id}
-          onValueChange={(v) => updateField("company_id", v ?? "")}
-        >
+        <Select value={form.company_id} onValueChange={(v) => updateField("company_id", v ?? "")}>
           <SelectTrigger id={`${prefix}-company`}>
             <SelectValue placeholder="企業を選択" />
           </SelectTrigger>

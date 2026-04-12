@@ -26,17 +26,11 @@ import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state"
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { useCrmDealsPage } from "@/features/crm/hooks/use-crm-deals-page";
 import { DealFormPanel } from "@/features/crm/components/deal-form-panel";
-import { formatJpy } from "@/features/crm/rules";
+import { formatJpy, formatDate } from "@/features/crm/rules";
 import { dealStatusLabels, dealStatusColors } from "@/lib/constants/crm";
 import { cn } from "@/lib/utils";
 import { Plus, Kanban, List, Building2, User, Calendar, DollarSign } from "lucide-react";
 import type { StatusFilter } from "@/features/crm/hooks/use-crm-deals-page";
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "---";
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
-}
 
 export default function CrmDealsPage() {
   const router = useRouter();

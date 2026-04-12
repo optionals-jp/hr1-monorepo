@@ -5,15 +5,6 @@ import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { Button } from "@hr1/shared-ui/components/ui/button";
-import { Input } from "@hr1/shared-ui/components/ui/input";
-import { Label } from "@hr1/shared-ui/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@hr1/shared-ui/components/ui/select";
 import {
   Table,
   TableBody,
@@ -26,36 +17,20 @@ import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state"
 import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
-import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { useCrmContactsPage } from "@/features/crm/hooks/use-crm-contacts-page";
+import { ContactEditFields } from "@/features/crm/components/contact-edit-fields";
 import { Plus } from "lucide-react";
 
 export default function CrmContactsPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const {
-    companies,
-    loading,
-    search,
-    setSearch,
-    editOpen,
-    setEditOpen,
-    form,
-    saving,
-    filteredContacts,
-    openAdd,
-    updateField,
-    handleSave,
-  } = useCrmContactsPage();
+  const h = useCrmContactsPage();
 
   const onSave = async () => {
-    const result = await handleSave();
-    if (result.success) {
-      showToast("連絡先を作成しました");
-    } else if (result.error) {
-      showToast(result.error, "error");
-    }
+    const r = await h.handleSave();
+    if (r.success) showToast("連絡先を作成しました");
+    else if (r.error) showToast(r.error, "error");
   };
 
   return (
@@ -69,7 +44,7 @@ export default function CrmContactsPage() {
           { label: "連絡先", href: "/crm/contacts" },
         ]}
         action={
-          <Button onClick={openAdd}>
+          <Button onClick={h.openAdd}>
             <Plus className="h-4 w-4 mr-1.5" />
             連絡先を追加
           </Button>
@@ -78,8 +53,8 @@ export default function CrmContactsPage() {
 
       <StickyFilterBar>
         <SearchBar
-          value={search}
-          onChange={setSearch}
+          value={h.search}
+          onChange={h.setSearch}
           placeholder="氏名・メール・企業名・部署で検索"
         />
       </StickyFilterBar>
@@ -99,11 +74,11 @@ export default function CrmContactsPage() {
           <TableBody>
             <TableEmptyState
               colSpan={6}
-              isLoading={loading}
-              isEmpty={filteredContacts.length === 0}
+              isLoading={h.loading}
+              isEmpty={h.filteredContacts.length === 0}
               emptyMessage="連絡先がありません"
             >
-              {filteredContacts.map((contact) => (
+              {h.filteredContacts.map((contact) => (
                 <TableRow
                   key={contact.id}
                   className="cursor-pointer hover:bg-muted/50"
@@ -122,24 +97,18 @@ export default function CrmContactsPage() {
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <span className="text-muted-foreground">
-                      {contact.crm_companies?.name ?? "---"}
-                    </span>
+                  <TableCell className="text-muted-foreground">
+                    {contact.crm_companies?.name ?? "---"}
                   </TableCell>
-                  <TableCell>
-                    <span className="text-muted-foreground">{contact.department ?? "---"}</span>
+                  <TableCell className="text-muted-foreground">
+                    {contact.department ?? "---"}
                   </TableCell>
-                  <TableCell>
-                    <span className="text-muted-foreground">{contact.position ?? "---"}</span>
+                  <TableCell className="text-muted-foreground">
+                    {contact.position ?? "---"}
                   </TableCell>
-                  <TableCell>
-                    <span className="text-muted-foreground">{contact.email ?? "---"}</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-muted-foreground">
-                      {contact.phone ?? contact.mobile_phone ?? "---"}
-                    </span>
+                  <TableCell className="text-muted-foreground">{contact.email ?? "---"}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {contact.phone ?? contact.mobile_phone ?? "---"}
                   </TableCell>
                 </TableRow>
               ))}
@@ -148,119 +117,21 @@ export default function CrmContactsPage() {
         </Table>
       </TableSection>
 
-      {/* Add Contact Panel */}
       <EditPanel
-        open={editOpen}
-        onOpenChange={setEditOpen}
+        open={h.editOpen}
+        onOpenChange={h.setEditOpen}
         title="連絡先を追加"
         onSave={onSave}
-        saving={saving}
+        saving={h.saving}
         saveLabel="作成"
       >
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="contact-last-name">
-              姓 <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="contact-last-name"
-              value={form.last_name}
-              onChange={(e) => updateField("last_name", e.target.value)}
-              placeholder="例: 田中"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="contact-first-name">名</Label>
-            <Input
-              id="contact-first-name"
-              value={form.first_name}
-              onChange={(e) => updateField("first_name", e.target.value)}
-              placeholder="例: 太郎"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="contact-company">企業</Label>
-            <Select
-              value={form.company_id}
-              onValueChange={(v) => updateField("company_id", v ?? "")}
-            >
-              <SelectTrigger id="contact-company">
-                <SelectValue placeholder="企業を選択" />
-              </SelectTrigger>
-              <SelectContent>
-                {(companies ?? []).map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="contact-department">部署</Label>
-            <Input
-              id="contact-department"
-              value={form.department}
-              onChange={(e) => updateField("department", e.target.value)}
-              placeholder="例: 営業部"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="contact-position">役職</Label>
-            <Input
-              id="contact-position"
-              value={form.position}
-              onChange={(e) => updateField("position", e.target.value)}
-              placeholder="例: 部長"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="contact-email">メール</Label>
-            <Input
-              id="contact-email"
-              type="email"
-              value={form.email}
-              onChange={(e) => updateField("email", e.target.value)}
-              placeholder="例: tanaka@example.com"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="contact-phone">電話番号</Label>
-            <Input
-              id="contact-phone"
-              value={form.phone}
-              onChange={(e) => updateField("phone", e.target.value)}
-              placeholder="例: 03-1234-5678"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="contact-mobile-phone">携帯</Label>
-            <Input
-              id="contact-mobile-phone"
-              value={form.mobile_phone}
-              onChange={(e) => updateField("mobile_phone", e.target.value)}
-              placeholder="例: 090-1234-5678"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="contact-notes">メモ</Label>
-            <Textarea
-              id="contact-notes"
-              value={form.notes}
-              onChange={(e) => updateField("notes", e.target.value)}
-              placeholder="メモや備考を入力"
-              rows={3}
-            />
-          </div>
-        </div>
+        <ContactEditFields
+          form={h.form}
+          updateField={h.updateField}
+          companies={h.companies ?? []}
+          prefix="contact"
+          showKana={false}
+        />
       </EditPanel>
     </div>
   );

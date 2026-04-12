@@ -11,6 +11,8 @@ import { filterBySearch } from "@/features/crm/rules";
 export interface ContactFormData {
   last_name: string;
   first_name: string;
+  last_name_kana: string;
+  first_name_kana: string;
   company_id: string;
   department: string;
   position: string;
@@ -23,6 +25,8 @@ export interface ContactFormData {
 const emptyForm: ContactFormData = {
   last_name: "",
   first_name: "",
+  last_name_kana: "",
+  first_name_kana: "",
   company_id: "",
   department: "",
   position: "",
@@ -71,7 +75,7 @@ export function useCrmContactsPage() {
 
   // Handle form field change
   const updateField = useCallback(
-    <K extends keyof ContactFormData>(field: K, value: ContactFormData[K]) => {
+    (field: keyof ContactFormData, value: string) => {
       setForm((prev) => ({ ...prev, [field]: value }));
     },
     []
