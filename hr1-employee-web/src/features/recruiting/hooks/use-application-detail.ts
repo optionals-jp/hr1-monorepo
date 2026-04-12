@@ -17,7 +17,7 @@ import {
 } from "@/features/recruiting/application-rules";
 import type { Application, ApplicationStep, CustomForm, Interview } from "@/types/database";
 
-export type ApplicationDetailTab = "dashboard" | "steps" | "history";
+export type ApplicationDetailTab = "dashboard" | "steps" | "evaluation" | "history";
 
 export function useApplicationDetail(id: string) {
   const { organization } = useOrg();

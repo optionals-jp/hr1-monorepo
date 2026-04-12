@@ -97,8 +97,9 @@ export function useApplicantsPage() {
       setDialogOpen(false);
       mutate();
       return { success: true };
-    } catch {
-      return { success: false, error: "候補者の追加に失敗しました" };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "候補者の追加に失敗しました";
+      return { success: false, error: message };
     } finally {
       setSaving(false);
     }

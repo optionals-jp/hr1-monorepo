@@ -22,6 +22,12 @@ export interface TemplateSelectDialogProps {
   templates: EvaluationTemplateRef[];
   onSelect: (templateId: string) => void;
   targetLabels: EvaluationTargetLabels;
+  /**
+   * 指定された場合、ダイアログ内に「新規作成」ボタンを表示する。
+   * 評価シートを新しく作りたいときに、評価テンプレート一覧画面の追加フローへ誘導する用途。
+   */
+  onAdd?: () => void;
+  addLabel?: string;
 }
 
 /**
@@ -36,6 +42,8 @@ export function TemplateSelectDialog({
   templates,
   onSelect,
   targetLabels,
+  onAdd,
+  addLabel = "新規作成",
 }: TemplateSelectDialogProps) {
   return (
     <DialogPanel
@@ -46,9 +54,16 @@ export function TemplateSelectDialog({
       size="md"
       bodyClassName="p-4"
       footer={
-        <Button variant="outline" className="w-full" onClick={() => onOpenChange(false)}>
-          キャンセル
-        </Button>
+        <div className="flex w-full gap-2">
+          <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+            キャンセル
+          </Button>
+          {onAdd && (
+            <Button variant="primary" className="flex-1" onClick={onAdd}>
+              {addLabel}
+            </Button>
+          )}
+        </div>
       }
     >
       <div className="space-y-2">

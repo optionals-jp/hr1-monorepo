@@ -1,13 +1,13 @@
 {
   "hooks": {
-    "postToolUse": [
+    "PostToolUse": [
       {
         "matcher": "Write|Edit|NotebookEdit",
         "hooks": []
       }
     ],
-    "preCompact": [],
-    "stop": [
+    "PreCompact": [],
+    "Stop": [
       {
         "matcher": "",
         "hooks": [

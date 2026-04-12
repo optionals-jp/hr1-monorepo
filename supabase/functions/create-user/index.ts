@@ -38,8 +38,11 @@ function localizeAuthError(message: string): string {
   if (/already been registered|already exists/i.test(message)) {
     return "このメールアドレスは既に登録されています";
   }
-  if (/invalid.*email/i.test(message)) {
-    return "メールアドレスの形式が不正です";
+  if (/invalid.*email|email.*invalid/i.test(message)) {
+    return "有効なメールアドレスを指定してください";
+  }
+  if (/rate limit/i.test(message)) {
+    return "リクエスト回数の上限に達しました。しばらく待ってから再試行してください";
   }
   return message;
 }
@@ -220,9 +223,11 @@ Deno.serve(async (req: Request) => {
 
     if (rpcError) {
       // RPC 失敗時は Auth ユーザーも削除（ロールバック）
+      // Postgres の制約名・カラム名がユーザーに漏れないよう、詳細はログのみに残す
+      console.error("create_user_with_org failed:", rpcError);
       await adminClient.auth.admin.deleteUser(userId);
       return new Response(
-        JSON.stringify({ error: `ユーザー作成失敗: ${rpcError.message}` }),
+        JSON.stringify({ error: "ユーザー情報の登録に失敗しました" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
