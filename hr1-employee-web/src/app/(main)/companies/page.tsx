@@ -171,7 +171,7 @@ export default function CrmCompaniesPage() {
                 <TableRow
                   key={company.id}
                   className="cursor-pointer"
-                  onClick={() => router.push(`/crm/companies/${company.id}`)}
+                  onClick={() => router.push(`/companies/${company.id}`)}
                 >
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox

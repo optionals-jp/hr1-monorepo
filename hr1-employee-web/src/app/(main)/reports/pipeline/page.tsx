@@ -53,8 +53,8 @@ export default function PipelineReportPage() {
         sticky={false}
         border={false}
         breadcrumb={[
-          { label: "商談管理", href: "/crm/deals" },
-          { label: "レポート", href: "/crm/reports/forecast" },
+          { label: "商談管理", href: "/deals" },
+          { label: "レポート", href: "/reports/forecast" },
         ]}
       />
       {error && <QueryErrorBanner error={error} />}

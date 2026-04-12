@@ -44,7 +44,7 @@ export default function CrmCompanyDetailPage() {
         title={company?.name ?? "企業詳細"}
         sticky={false}
         border={false}
-        breadcrumb={[{ label: "取引先企業", href: "/crm/companies" }]}
+        breadcrumb={[{ label: "取引先企業", href: "/companies" }]}
         action={
           company ? (
             <Button variant="outline" onClick={() => setEditOpen(true)}>
@@ -146,7 +146,7 @@ export default function CrmCompanyDetailPage() {
                           <TableRow
                             key={c.id}
                             className="cursor-pointer"
-                            onClick={() => router.push(`/crm/contacts/${c.id}`)}
+                            onClick={() => router.push(`/contacts/${c.id}`)}
                           >
                             <TableCell className="font-medium">
                               {c.last_name} {c.first_name ?? ""}
@@ -187,7 +187,7 @@ export default function CrmCompanyDetailPage() {
                           <TableRow
                             key={deal.id}
                             className="cursor-pointer"
-                            onClick={() => router.push(`/crm/deals/${deal.id}`)}
+                            onClick={() => router.push(`/deals/${deal.id}`)}
                           >
                             <TableCell className="font-medium">{deal.title}</TableCell>
                             <TableCell>

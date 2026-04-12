@@ -304,7 +304,7 @@ export default function CrmDealsPage() {
                     <TableRow
                       key={deal.id}
                       className="cursor-pointer"
-                      onClick={() => router.push(`/crm/deals/${deal.id}`)}
+                      onClick={() => router.push(`/deals/${deal.id}`)}
                     >
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <Checkbox
@@ -394,7 +394,7 @@ export default function CrmDealsPage() {
             )}
             stages={kanbanStages}
             onStageChange={handleStageChange}
-            onDealClick={(id) => router.push(`/crm/deals/${id}`)}
+            onDealClick={(id) => router.push(`/deals/${id}`)}
           />
         </>
       )}

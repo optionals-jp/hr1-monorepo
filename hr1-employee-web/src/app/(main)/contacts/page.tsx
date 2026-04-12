@@ -163,7 +163,7 @@ export default function CrmContactsPage() {
                 <TableRow
                   key={c.id}
                   className="cursor-pointer"
-                  onClick={() => router.push(`/crm/contacts/${c.id}`)}
+                  onClick={() => router.push(`/contacts/${c.id}`)}
                 >
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox

@@ -47,7 +47,7 @@ export default function CrmContactDetailPage() {
         title={fullName}
         sticky={false}
         border={false}
-        breadcrumb={[{ label: "連絡先", href: "/crm/contacts" }]}
+        breadcrumb={[{ label: "連絡先", href: "/contacts" }]}
         action={
           contact ? (
             <Button variant="outline" onClick={() => setEditOpen(true)}>
@@ -86,7 +86,7 @@ export default function CrmContactDetailPage() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">企業</span>
                       <Link
-                        href={`/crm/companies/${contact.company_id}`}
+                        href={`/companies/${contact.company_id}`}
                         className="text-primary hover:underline"
                       >
                         {contact.crm_companies.name}
@@ -174,7 +174,7 @@ export default function CrmContactDetailPage() {
                         <TableRow
                           key={deal.id}
                           className="cursor-pointer"
-                          onClick={() => router.push(`/crm/deals/${deal.id}`)}
+                          onClick={() => router.push(`/deals/${deal.id}`)}
                         >
                           <TableCell className="font-medium">{deal.title}</TableCell>
                           <TableCell>

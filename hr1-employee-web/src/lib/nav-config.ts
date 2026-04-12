@@ -100,12 +100,12 @@ const clientSections: NavSection[] = [
   {
     label: "CRM",
     items: [
-      { href: "/crm/leads", label: "リード", icon: UserPlus },
-      { href: "/crm/companies", label: "企業", icon: Building2 },
-      { href: "/crm/contacts", label: "連絡先", icon: Contact },
-      { href: "/crm/deals", label: "商談", icon: Handshake },
-      { href: "/crm/quotes", label: "見積", icon: FileText },
-      { href: "/crm/reports/forecast", label: "レポート", icon: BarChart3 },
+      { href: "/leads", label: "リード", icon: UserPlus },
+      { href: "/companies", label: "企業", icon: Building2 },
+      { href: "/contacts", label: "連絡先", icon: Contact },
+      { href: "/deals", label: "商談", icon: Handshake },
+      { href: "/quotes", label: "見積", icon: FileText },
+      { href: "/reports/forecast", label: "レポート", icon: BarChart3 },
     ],
   },
   {

@@ -38,10 +38,10 @@ export default function CrmLeadDetailPage() {
         title={lead?.name ?? "リード詳細"}
         sticky={false}
         border={false}
-        breadcrumb={[{ label: "リード管理", href: "/crm/leads" }]}
+        breadcrumb={[{ label: "リード管理", href: "/leads" }]}
         action={
           lead?.status !== "converted" ? (
-            <Button variant="outline" onClick={() => router.push(`/crm/leads?convert=${lead?.id}`)}>
+            <Button variant="outline" onClick={() => router.push(`/leads?convert=${lead?.id}`)}>
               <ArrowRightLeft className="size-4 mr-1.5" />
               コンバート
             </Button>
@@ -170,7 +170,7 @@ export default function CrmLeadDetailPage() {
                     </p>
                     {lead.converted_company_id && (
                       <Link
-                        href={`/crm/companies/${lead.converted_company_id}`}
+                        href={`/companies/${lead.converted_company_id}`}
                         className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted/50 transition-colors"
                       >
                         <Building2 className="size-4 text-muted-foreground shrink-0" />
@@ -179,7 +179,7 @@ export default function CrmLeadDetailPage() {
                     )}
                     {lead.converted_contact_id && (
                       <Link
-                        href={`/crm/contacts/${lead.converted_contact_id}`}
+                        href={`/contacts/${lead.converted_contact_id}`}
                         className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted/50 transition-colors"
                       >
                         <Contact className="size-4 text-muted-foreground shrink-0" />
@@ -188,7 +188,7 @@ export default function CrmLeadDetailPage() {
                     )}
                     {lead.converted_deal_id && (
                       <Link
-                        href={`/crm/deals/${lead.converted_deal_id}`}
+                        href={`/deals/${lead.converted_deal_id}`}
                         className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted/50 transition-colors"
                       >
                         <Handshake className="size-4 text-muted-foreground shrink-0" />
@@ -208,7 +208,7 @@ export default function CrmLeadDetailPage() {
                   <CardContent>
                     <Button
                       className="w-full"
-                      onClick={() => router.push(`/crm/leads?convert=${lead.id}`)}
+                      onClick={() => router.push(`/leads?convert=${lead.id}`)}
                     >
                       <ArrowRightLeft className="size-4 mr-1.5" />
                       コンバート

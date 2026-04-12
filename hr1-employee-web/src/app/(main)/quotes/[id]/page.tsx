@@ -65,8 +65,8 @@ export default function QuoteDetailPage() {
           sticky={false}
           border={false}
           breadcrumb={[
-            { label: "商談管理", href: "/crm/deals" },
-            { label: "見積書一覧", href: "/crm/quotes" },
+            { label: "商談管理", href: "/deals" },
+            { label: "見積書一覧", href: "/quotes" },
           ]}
         />
         <p className="text-sm text-muted-foreground text-center py-8">読み込み中...</p>
@@ -201,7 +201,7 @@ function QuoteForm({
           await quoteRepo.syncQuoteItems(getSupabase(), created.id, organization.id, validItems);
         }
         showToast("見積書を作成しました");
-        router.push(`/crm/quotes/${created.id}`);
+        router.push(`/quotes/${created.id}`);
       } else {
         await quoteRepo.updateQuote(getSupabase(), id, organization.id, quoteData);
         await quoteRepo.syncQuoteItems(getSupabase(), id, organization.id, validItems);
@@ -244,7 +244,7 @@ function QuoteForm({
     try {
       await quoteRepo.deleteQuote(getSupabase(), id, organization.id);
       showToast("見積書を削除しました");
-      router.push("/crm/quotes");
+      router.push("/quotes");
     } catch {
       showToast("見積書の削除に失敗しました", "error");
     } finally {
@@ -259,8 +259,8 @@ function QuoteForm({
         sticky={false}
         border={false}
         breadcrumb={[
-          { label: "商談管理", href: "/crm/deals" },
-          { label: "見積書一覧", href: "/crm/quotes" },
+          { label: "商談管理", href: "/deals" },
+          { label: "見積書一覧", href: "/quotes" },
         ]}
         action={
           <div className="flex gap-2">

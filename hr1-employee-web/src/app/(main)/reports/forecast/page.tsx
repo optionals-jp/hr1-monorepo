@@ -127,7 +127,7 @@ export default function ForecastReportPage() {
         title="売上予測レポート"
         sticky={false}
         border={false}
-        breadcrumb={[{ label: "商談管理", href: "/crm/deals" }]}
+        breadcrumb={[{ label: "商談管理", href: "/deals" }]}
         action={
           <Button variant="outline" onClick={handleExportCSV} disabled={!deals}>
             <Download className="size-4 mr-1.5" />

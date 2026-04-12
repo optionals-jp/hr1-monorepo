@@ -153,7 +153,7 @@ export function DealContactsPanel({ dealId }: DealContactsPanelProps) {
                 <TableRow
                   key={dc.id}
                   className="cursor-pointer"
-                  onClick={() => router.push(`/crm/contacts/${dc.contact_id}`)}
+                  onClick={() => router.push(`/contacts/${dc.contact_id}`)}
                 >
                   <TableCell>
                     <div className="flex items-center gap-2">

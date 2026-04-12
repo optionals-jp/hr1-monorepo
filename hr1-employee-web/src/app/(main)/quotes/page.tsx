@@ -81,9 +81,9 @@ export default function QuotesPage() {
         title="見積書一覧"
         sticky={false}
         border={false}
-        breadcrumb={[{ label: "商談管理", href: "/crm/deals" }]}
+        breadcrumb={[{ label: "商談管理", href: "/deals" }]}
         action={
-          <Link href="/crm/quotes/new">
+          <Link href="/quotes/new">
             <Button variant="primary">
               <Plus className="size-4 mr-1.5" />
               新規作成
@@ -167,7 +167,7 @@ export default function QuotesPage() {
                 <TableRow
                   key={q.id}
                   className="cursor-pointer"
-                  onClick={() => router.push(`/crm/quotes/${q.id}`)}
+                  onClick={() => router.push(`/quotes/${q.id}`)}
                 >
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox

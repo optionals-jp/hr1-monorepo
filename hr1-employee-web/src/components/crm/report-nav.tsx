@@ -6,10 +6,10 @@ import { cn } from "@hr1/shared-ui/lib/utils";
 import { TrendingUp, Workflow, Trophy, Activity } from "lucide-react";
 
 const REPORT_TABS = [
-  { href: "/crm/reports/forecast", label: "売上予測", icon: TrendingUp },
-  { href: "/crm/reports/pipeline", label: "パイプライン分析", icon: Workflow },
-  { href: "/crm/reports/win-loss", label: "勝敗分析", icon: Trophy },
-  { href: "/crm/reports/performance", label: "担当者パフォーマンス", icon: Activity },
+  { href: "/reports/forecast", label: "売上予測", icon: TrendingUp },
+  { href: "/reports/pipeline", label: "パイプライン分析", icon: Workflow },
+  { href: "/reports/win-loss", label: "勝敗分析", icon: Trophy },
+  { href: "/reports/performance", label: "担当者パフォーマンス", icon: Activity },
 ] as const;
 
 export function ReportNav() {

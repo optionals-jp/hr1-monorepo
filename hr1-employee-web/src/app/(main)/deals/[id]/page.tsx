@@ -123,7 +123,7 @@ export default function CrmDealDetailPage() {
         title={deal?.title ?? "商談詳細"}
         sticky={false}
         border={false}
-        breadcrumb={[{ label: "商談管理", href: "/crm/deals" }]}
+        breadcrumb={[{ label: "商談管理", href: "/deals" }]}
       />
       {error && <QueryErrorBanner error={error} />}
 
@@ -170,7 +170,7 @@ export default function CrmDealDetailPage() {
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">企業</span>
                         <Link
-                          href={`/crm/companies/${deal.company_id}`}
+                          href={`/companies/${deal.company_id}`}
                           className="text-primary hover:underline"
                         >
                           {deal.crm_companies.name}
@@ -181,7 +181,7 @@ export default function CrmDealDetailPage() {
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">連絡先</span>
                         <Link
-                          href={`/crm/contacts/${deal.contact_id}`}
+                          href={`/contacts/${deal.contact_id}`}
                           className="text-primary hover:underline"
                         >
                           {deal.crm_contacts.last_name} {deal.crm_contacts.first_name ?? ""}
@@ -216,7 +216,7 @@ export default function CrmDealDetailPage() {
                       <FileText className="size-4" />
                       見積書（{quotes?.length ?? 0}件）
                     </h2>
-                    <Link href={`/crm/quotes/new?dealId=${deal.id}`}>
+                    <Link href={`/quotes/new?dealId=${deal.id}`}>
                       <Button variant="outline" size="sm">
                         <Plus className="size-4 mr-1" />
                         作成
@@ -244,7 +244,7 @@ export default function CrmDealDetailPage() {
                           <TableRow
                             key={q.id}
                             className="cursor-pointer"
-                            onClick={() => router.push(`/crm/quotes/${q.id}`)}
+                            onClick={() => router.push(`/quotes/${q.id}`)}
                           >
                             <TableCell className="font-medium">{q.quote_number}</TableCell>
                             <TableCell className="text-muted-foreground">{q.title}</TableCell>

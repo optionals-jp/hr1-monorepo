@@ -95,8 +95,8 @@ export default function WinLossReportPage() {
         sticky={false}
         border={false}
         breadcrumb={[
-          { label: "商談管理", href: "/crm/deals" },
-          { label: "レポート", href: "/crm/reports/forecast" },
+          { label: "商談管理", href: "/deals" },
+          { label: "レポート", href: "/reports/forecast" },
         ]}
         action={
           <div className="flex items-center gap-2">
