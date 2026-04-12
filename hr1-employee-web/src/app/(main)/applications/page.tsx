@@ -49,6 +49,7 @@ import {
   applicationStatusLabels as statusLabels,
   applicationStatusColors as statusColors,
   ApplicationStatus,
+  applicationSourceLabels,
 } from "@/lib/constants";
 
 const statusTabs = [
@@ -87,6 +88,8 @@ export default function ApplicationsPage() {
     setStatusFilter,
     filterJobId,
     setFilterJobId,
+    filterSource,
+    setFilterSource,
     jobs,
     summary,
     isLoading,
@@ -118,29 +121,46 @@ export default function ApplicationsPage() {
           <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
-            {filterJobId !== "all" && (
+            {(filterJobId !== "all" || filterSource !== "all") && (
               <div className="flex items-center gap-1.5 overflow-x-auto">
-                <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
-                  求人：{jobs.find((j) => j.id === filterJobId)?.title}
-                  <span
-                    role="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFilterJobId("all");
-                    }}
-                    className="ml-0.5 hover:text-foreground"
-                  >
-                    <X className="h-3 w-3" />
-                  </span>
-                </Badge>
+                {filterJobId !== "all" && (
+                  <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                    求人：{jobs.find((j) => j.id === filterJobId)?.title}
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFilterJobId("all");
+                      }}
+                      className="ml-0.5 hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </span>
+                  </Badge>
+                )}
+                {filterSource !== "all" && (
+                  <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                    経路：{applicationSourceLabels[filterSource] ?? filterSource}
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFilterSource("all");
+                      }}
+                      className="ml-0.5 hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </span>
+                  </Badge>
+                )}
               </div>
             )}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-auto py-2">
+            <p className="px-2 py-1 text-xs font-semibold text-muted-foreground">求人</p>
             <DropdownMenuItem className="py-2" onClick={() => setFilterJobId("all")}>
               <span className={cn(filterJobId === "all" && "font-medium")}>すべて</span>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
             {jobs.map((job) => (
               <DropdownMenuItem
                 key={job.id}
@@ -148,6 +168,16 @@ export default function ApplicationsPage() {
                 onClick={() => setFilterJobId(job.id)}
               >
                 <span className={cn(filterJobId === job.id && "font-medium")}>{job.title}</span>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <p className="px-2 py-1 text-xs font-semibold text-muted-foreground">応募経路</p>
+            <DropdownMenuItem className="py-2" onClick={() => setFilterSource("all")}>
+              <span className={cn(filterSource === "all" && "font-medium")}>すべて</span>
+            </DropdownMenuItem>
+            {Object.entries(applicationSourceLabels).map(([key, label]) => (
+              <DropdownMenuItem key={key} className="py-2" onClick={() => setFilterSource(key)}>
+                <span className={cn(filterSource === key && "font-medium")}>{label}</span>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -161,6 +191,7 @@ export default function ApplicationsPage() {
               <TableHead>候補者</TableHead>
               <TableHead>求人</TableHead>
               <TableHead>現在のステップ</TableHead>
+              <TableHead>応募経路</TableHead>
               <TableHead>ステータス</TableHead>
               <TableHead>応募日</TableHead>
             </TableRow>
@@ -168,13 +199,13 @@ export default function ApplicationsPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   読み込み中...
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   応募がありません
                 </TableCell>
               </TableRow>
@@ -202,6 +233,9 @@ export default function ApplicationsPage() {
                     <TableCell>{app.jobs?.title ?? "-"}</TableCell>
                     <TableCell>
                       <span className="text-sm">{getCurrentStepLabel(app)}</span>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {app.source ? (applicationSourceLabels[app.source] ?? app.source) : "-"}
                     </TableCell>
                     <TableCell>
                       <Badge variant={statusColors[app.status]}>{statusLabels[app.status]}</Badge>

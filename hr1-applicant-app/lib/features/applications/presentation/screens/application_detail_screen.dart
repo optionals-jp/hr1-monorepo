@@ -907,6 +907,17 @@ class _HistoryTab extends StatelessWidget {
       }
     }
 
+    if (application.status == ApplicationStatus.rejected) {
+      events.add(
+        _HistoryEvent(
+          title: '選考結果のお知らせ',
+          subtitle: application.job?.title ?? '求人',
+          dateTime: application.updatedAt ?? application.appliedAt,
+          color: AppColors.error,
+        ),
+      );
+    }
+
     if (application.status == ApplicationStatus.withdrawn) {
       events.add(
         _HistoryEvent(

@@ -18,6 +18,8 @@ import {
 } from "@hr1/shared-ui/components/ui/table";
 import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import { useSchedulingList, useCreateInterview } from "@/features/recruiting/hooks/use-scheduling";
+import { useEmployees } from "@/lib/hooks/use-employees";
+import { InterviewerSelect } from "@/features/recruiting/components/interviewer-select";
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -33,6 +35,7 @@ export default function SchedulingPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const create = useCreateInterview();
+  const { data: employees = [] } = useEmployees();
 
   return (
     <div className="flex flex-col">
@@ -134,6 +137,15 @@ export default function SchedulingPage() {
             placeholder="面接に関する備考"
             rows={3}
           />
+
+          <div className="space-y-1.5">
+            <span className="text-sm font-medium">面接官</span>
+            <InterviewerSelect
+              employees={employees}
+              selectedIds={create.selectedInterviewerIds}
+              onSelectionChange={create.setSelectedInterviewerIds}
+            />
+          </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">

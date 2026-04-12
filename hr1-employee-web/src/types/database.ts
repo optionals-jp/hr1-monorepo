@@ -72,6 +72,14 @@ export interface SelectionStepTemplate {
   updated_at: string;
 }
 
+export type ApplicationSource = "app" | "referral" | "agency" | "job_board" | "direct" | "other";
+export type RejectionCategory =
+  | "skill_mismatch"
+  | "culture_mismatch"
+  | "experience_lack"
+  | "salary_mismatch"
+  | "other";
+
 export interface Application {
   id: string;
   job_id: string;
@@ -79,6 +87,9 @@ export interface Application {
   organization_id: string;
   status: "active" | "offered" | "offer_accepted" | "offer_declined" | "rejected" | "withdrawn";
   applied_at: string;
+  source?: ApplicationSource | null;
+  rejection_reason?: string | null;
+  rejection_category?: RejectionCategory | null;
   jobs?: Job;
   profiles?: Profile;
   application_steps?: ApplicationStep[];
@@ -120,6 +131,7 @@ export interface Interview {
   notes: string | null;
   status: "scheduling" | "confirmed" | "completed" | "cancelled";
   confirmed_slot_id: string | null;
+  interviewer_ids?: string[];
   created_at: string;
 }
 

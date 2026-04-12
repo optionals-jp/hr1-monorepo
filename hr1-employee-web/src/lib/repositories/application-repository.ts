@@ -45,6 +45,32 @@ export async function updateApplicationStatus(
     .eq("organization_id", organizationId);
 }
 
+export async function rejectApplication(
+  client: SupabaseClient,
+  applicationId: string,
+  organizationId: string,
+  data: { rejection_category?: string; rejection_reason?: string }
+) {
+  return client
+    .from("applications")
+    .update({ status: "rejected", ...data })
+    .eq("id", applicationId)
+    .eq("organization_id", organizationId);
+}
+
+export async function updateApplicationSource(
+  client: SupabaseClient,
+  applicationId: string,
+  organizationId: string,
+  source: string | null
+) {
+  return client
+    .from("applications")
+    .update({ source })
+    .eq("id", applicationId)
+    .eq("organization_id", organizationId);
+}
+
 /**
  * 選考ステップのステータスを更新する。
  *

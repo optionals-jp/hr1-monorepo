@@ -20,6 +20,15 @@ export const applicationStatusLabels: Record<string, string> = {
   [ApplicationStatus.Withdrawn]: "辞退",
 };
 
+export const applicationSourceLabels: Record<string, string> = {
+  app: "自社アプリ",
+  referral: "リファラル",
+  agency: "人材紹介",
+  job_board: "求人媒体",
+  direct: "直接応募",
+  other: "その他",
+};
+
 export const applicationStatusColors: Record<string, BadgeVariant> = {
   [ApplicationStatus.Active]: "default",
   [ApplicationStatus.Offered]: "secondary",

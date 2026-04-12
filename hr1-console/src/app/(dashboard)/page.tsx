@@ -62,6 +62,7 @@ export default function DashboardPage() {
     crmWonAmount,
     crmDeals,
     crmPipelineStages,
+    sourceStats,
   } = useDashboard(activeTab);
 
   const pipelineRate =
@@ -74,6 +75,7 @@ export default function DashboardPage() {
     pipeline,
     kpiTrend,
     departmentStats,
+    sourceStats,
     openJobs,
     empDeptStats,
     pendingWorkflows,

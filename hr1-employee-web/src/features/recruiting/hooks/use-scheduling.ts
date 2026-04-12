@@ -18,6 +18,7 @@ export function useCreateInterview() {
   const [newTitle, setNewTitle] = useState("");
   const [newLocation, setNewLocation] = useState("");
   const [newNotes, setNewNotes] = useState("");
+  const [selectedInterviewerIds, setSelectedInterviewerIds] = useState<string[]>([]);
   const [slots, setSlots] = useState<{ startAt: string; endAt: string; maxApplicants: number }[]>(
     []
   );
@@ -63,6 +64,7 @@ export function useCreateInterview() {
         location: newLocation || null,
         notes: newNotes || null,
         status: "scheduling",
+        interviewer_ids: selectedInterviewerIds.length > 0 ? selectedInterviewerIds : undefined,
       });
 
       const validSlots = slots.filter((s) => s.startAt && s.endAt);
@@ -83,6 +85,7 @@ export function useCreateInterview() {
       setNewTitle("");
       setNewLocation("");
       setNewNotes("");
+      setSelectedInterviewerIds([]);
       setSlots([]);
       mutate();
     } catch (err) {
@@ -90,7 +93,7 @@ export function useCreateInterview() {
     } finally {
       setSaving(false);
     }
-  }, [organization, newTitle, newLocation, newNotes, slots, mutate]);
+  }, [organization, newTitle, newLocation, newNotes, selectedInterviewerIds, slots, mutate]);
 
   return {
     newTitle,
@@ -99,6 +102,8 @@ export function useCreateInterview() {
     setNewLocation,
     newNotes,
     setNewNotes,
+    selectedInterviewerIds,
+    setSelectedInterviewerIds,
     slots,
     addSlot,
     updateSlot,

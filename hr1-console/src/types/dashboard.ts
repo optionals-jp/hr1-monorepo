@@ -82,7 +82,8 @@ export type DataSourceId =
   | "crm_pipeline"
   | "crm_monthly_revenue"
   | "crm_deal_status"
-  | "crm_rep_performance";
+  | "crm_rep_performance"
+  | "application_source";
 
 export interface DashboardWidgetConfigV1 {
   id: string;

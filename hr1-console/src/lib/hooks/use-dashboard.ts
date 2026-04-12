@@ -155,6 +155,27 @@ export function useDashboard(activeTab?: ProductTab) {
     }
   );
 
+  const { data: sourceStats } = useQuery<{ source: string; count: number; offered: number }[]>(
+    orgId ? `dashboard-source-stats-${orgId}` : null,
+    async () => {
+      const applications = await dashboardRepository.fetchApplicationsBySource(client, orgId!);
+      if (!applications) return [];
+
+      const sourceMap = new Map<string, { count: number; offered: number }>();
+      for (const app of applications) {
+        const src = (app.source as string) ?? "未設定";
+        if (!sourceMap.has(src)) sourceMap.set(src, { count: 0, offered: 0 });
+        const entry = sourceMap.get(src)!;
+        entry.count++;
+        if (isOfferedOrAccepted(app.status as string)) entry.offered++;
+      }
+
+      return Array.from(sourceMap.entries())
+        .map(([source, d]) => ({ source, ...d }))
+        .sort((a, b) => b.count - a.count);
+    }
+  );
+
   const { data: openJobs } = useQuery<OpenJobStat[]>(
     orgId ? `dashboard-open-jobs-${orgId}` : null,
     async () => {
@@ -445,6 +466,7 @@ export function useDashboard(activeTab?: ProductTab) {
     pipeline,
     kpiTrend,
     departmentStats,
+    sourceStats,
     openJobs,
     empDeptStats,
     pendingWorkflows,

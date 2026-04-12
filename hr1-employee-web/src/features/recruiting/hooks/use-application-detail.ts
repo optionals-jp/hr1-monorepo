@@ -33,6 +33,8 @@ export function useApplicationDetail(id: string) {
   const [offer, setOffer] = useState<Offer | null>(null);
   const [offerDialogOpen, setOfferDialogOpen] = useState(false);
 
+  const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false);
+
   const [activeTab, setActiveTab] = useTabParam<ApplicationDetailTab>("dashboard");
 
   const [resourceDialogOpen, setResourceDialogOpen] = useState(false);
@@ -223,6 +225,21 @@ export function useApplicationDetail(id: string) {
     [application]
   );
 
+  const updateApplicationSource = useCallback(
+    async (source: string) => {
+      if (!organization) return;
+      const value = source === "" ? null : source;
+      await applicationRepository.updateApplicationSource(
+        getSupabase(),
+        id,
+        organization.id,
+        value
+      );
+      setApplication((prev) => (prev ? { ...prev, source: value as Application["source"] } : prev));
+    },
+    [id, organization]
+  );
+
   const updateApplicationStatus = useCallback(
     async (status: string | null) => {
       if (!status) return;
@@ -231,6 +248,12 @@ export function useApplicationDetail(id: string) {
       // 内定ステータスへの変更はオファー条件ダイアログを表示
       if (status === "offered" && !offer) {
         setOfferDialogOpen(true);
+        return;
+      }
+
+      // 不採用ステータスへの変更は不採用理由ダイアログを表示
+      if (status === "rejected") {
+        setRejectionDialogOpen(true);
         return;
       }
 
@@ -245,6 +268,33 @@ export function useApplicationDetail(id: string) {
       );
     },
     [id, organization, offer]
+  );
+
+  const rejectApplicationWithReason = useCallback(
+    async (data: { rejection_category?: string; rejection_reason?: string }) => {
+      if (!organization) return;
+      const { error } = await applicationRepository.rejectApplication(
+        getSupabase(),
+        id,
+        organization.id,
+        data
+      );
+      if (error) throw error;
+
+      setApplication((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: "rejected" as Application["status"],
+              rejection_category:
+                (data.rejection_category as Application["rejection_category"]) ?? null,
+              rejection_reason: data.rejection_reason ?? null,
+            }
+          : prev
+      );
+      setRejectionDialogOpen(false);
+    },
+    [id, organization]
   );
 
   const createOfferAndUpdateStatus = useCallback(
@@ -305,11 +355,16 @@ export function useApplicationDetail(id: string) {
     currentStepOrder,
 
     updateApplicationStatus,
+    updateApplicationSource,
     createOfferAndUpdateStatus,
 
     offer,
     offerDialogOpen,
     setOfferDialogOpen,
+
+    rejectionDialogOpen,
+    setRejectionDialogOpen,
+    rejectApplicationWithReason,
 
     load,
   };

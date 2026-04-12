@@ -22,6 +22,7 @@ export async function createInterview(
     location: string | null;
     notes: string | null;
     status: string;
+    interviewer_ids?: string[];
   }
 ): Promise<string> {
   const { data: inserted, error } = await client
@@ -74,11 +75,20 @@ export async function updateInterviewStatus(
     .eq("organization_id", organizationId);
 }
 
+export async function fetchInterviewerProfiles(client: SupabaseClient, interviewerIds: string[]) {
+  if (interviewerIds.length === 0) return [];
+  const { data } = await client
+    .from("profiles")
+    .select("id, display_name, email, avatar_url")
+    .in("id", interviewerIds);
+  return data ?? [];
+}
+
 export async function updateInterview(
   client: SupabaseClient,
   id: string,
   organizationId: string,
-  data: { title: string; location: string | null; notes: string | null }
+  data: { title: string; location: string | null; notes: string | null; interviewer_ids?: string[] }
 ) {
   return client.from("interviews").update(data).eq("id", id).eq("organization_id", organizationId);
 }

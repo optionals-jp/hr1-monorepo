@@ -51,6 +51,31 @@ export const applicationStatusColors: Record<string, BadgeVariant> = {
 };
 
 /* -------------------------------------------------------- */
+/*  応募経路                                                 */
+/* -------------------------------------------------------- */
+
+export const applicationSourceLabels: Record<string, string> = {
+  app: "自社アプリ",
+  referral: "リファラル",
+  agency: "人材紹介",
+  job_board: "求人媒体",
+  direct: "直接応募",
+  other: "その他",
+};
+
+/* -------------------------------------------------------- */
+/*  不採用理由                                               */
+/* -------------------------------------------------------- */
+
+export const rejectionCategoryLabels: Record<string, string> = {
+  skill_mismatch: "スキル不足",
+  culture_mismatch: "カルチャー不適合",
+  experience_lack: "経験不足",
+  salary_mismatch: "条件不一致",
+  other: "その他",
+};
+
+/* -------------------------------------------------------- */
 /*  選考ステップ                                             */
 /* -------------------------------------------------------- */
 

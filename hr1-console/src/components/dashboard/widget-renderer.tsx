@@ -12,7 +12,7 @@ import type {
   RecruitingTargets,
 } from "@/types/dashboard";
 import { DATA_SOURCE_REGISTRY } from "@/lib/dashboard/data-sources";
-import { dealStatusLabels } from "@/lib/constants";
+import { dealStatusLabels, applicationSourceLabels } from "@/lib/constants";
 import type { CrmPipelineStage } from "@/types/database";
 import { Panel, PanelHeader, PanelBody } from "./panel";
 import { GenericBarChart } from "./charts/generic-bar-chart";
@@ -43,6 +43,7 @@ export interface DashboardData {
   pipeline: PipelineStage[] | undefined;
   kpiTrend: KpiTrendPoint[] | undefined;
   departmentStats: DepartmentStat[] | undefined;
+  sourceStats: { source: string; count: number; offered: number }[] | undefined;
   openJobs: OpenJobStat[] | undefined;
   empDeptStats: EmployeeDepartmentStat[] | undefined;
   pendingWorkflows: number | undefined;
@@ -435,6 +436,40 @@ function resolveDataSource(
           series: [
             { key: "deals", label: "商談数", color: "#3b82f6" },
             { key: "wonAmount", label: "受注（万円）", color: "#22c55e" },
+          ],
+        },
+      };
+    }
+
+    /* ---- application_source ---- */
+    case "application_source": {
+      const src = data.sourceStats ?? [];
+      if (displayType === "pie_chart") {
+        return {
+          type: "pie_chart",
+          props: {
+            data: src.map((s: { source: string; count: number }) => ({
+              name:
+                s.source === "未設定" ? "未設定" : (applicationSourceLabels[s.source] ?? s.source),
+              value: s.count,
+            })),
+            colors: PIE_COLORS,
+          },
+        };
+      }
+      return {
+        type: "bar_chart",
+        props: {
+          data: src.map((s: { source: string; count: number; offered: number }) => ({
+            source:
+              s.source === "未設定" ? "未設定" : (applicationSourceLabels[s.source] ?? s.source),
+            applications: s.count,
+            offered: s.offered,
+          })) as unknown as Record<string, unknown>[],
+          categoryKey: "source",
+          series: [
+            { key: "applications", label: "応募数", color: "#3b82f6" },
+            { key: "offered", label: "内定数", color: "#22c55e" },
           ],
         },
       };

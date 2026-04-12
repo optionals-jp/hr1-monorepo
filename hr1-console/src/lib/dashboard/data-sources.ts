@@ -57,6 +57,15 @@ export const DATA_SOURCE_REGISTRY: Record<DataSourceId, DataSourceDefinition> = 
     defaultLayout: "left",
     availableTabs: ["recruiting"],
   },
+  application_source: {
+    id: "application_source",
+    label: "応募経路",
+    description: "応募経路ごとの応募数・内定数",
+    compatibleDisplayTypes: ["pie_chart", "bar_chart"],
+    defaultDisplayType: "pie_chart",
+    defaultLayout: "right",
+    availableTabs: ["recruiting"],
+  },
   open_jobs: {
     id: "open_jobs",
     label: "公開中の求人",

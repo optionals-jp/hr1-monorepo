@@ -21,6 +21,8 @@ import { FormResponseSheet } from "@/features/recruiting/components/form-respons
 import { ResourceSelectDialog } from "@/features/recruiting/components/resource-select-dialog";
 import { OfferConditionsDialog } from "@/features/recruiting/components/offer-conditions-dialog";
 import { OfferConditionsCard } from "@/features/recruiting/components/offer-conditions-card";
+import { RejectionReasonDialog } from "@/features/recruiting/components/rejection-reason-dialog";
+import { RejectionReasonCard } from "@/features/recruiting/components/rejection-reason-card";
 import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { applicationStatusColors as statusColors } from "@/lib/constants";
@@ -132,6 +134,15 @@ export default function ApplicationDetailPage() {
                 />
               </div>
             )}
+            {detail.application.status === "rejected" &&
+              (detail.application.rejection_category || detail.application.rejection_reason) && (
+                <div className="max-w-3xl">
+                  <RejectionReasonCard
+                    rejectionCategory={detail.application.rejection_category}
+                    rejectionReason={detail.application.rejection_reason}
+                  />
+                </div>
+              )}
             <ApplicationDashboardTab
               application={detail.application}
               profile={profile}
@@ -141,6 +152,8 @@ export default function ApplicationDetailPage() {
               skipStep={handleSkipStep}
               unskipStep={handleUnskipStep}
               onViewFormResponses={detail.openFormResponses}
+              source={detail.application.source}
+              onSourceChange={detail.updateApplicationSource}
             />
           </div>
         )}
@@ -199,6 +212,12 @@ export default function ApplicationDetailPage() {
         open={detail.offerDialogOpen}
         onOpenChange={detail.setOfferDialogOpen}
         onSubmit={detail.createOfferAndUpdateStatus}
+      />
+
+      <RejectionReasonDialog
+        open={detail.rejectionDialogOpen}
+        onOpenChange={detail.setRejectionDialogOpen}
+        onSubmit={detail.rejectApplicationWithReason}
       />
     </>
   );

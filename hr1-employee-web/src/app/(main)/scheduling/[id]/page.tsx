@@ -21,6 +21,8 @@ import {
   type SchedulingDetailTab as SchedulingDetailTabValue,
 } from "@/features/recruiting/hooks/use-scheduling-detail";
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
+import { useEmployees } from "@/lib/hooks/use-employees";
+import { InterviewerSelect } from "@/features/recruiting/components/interviewer-select";
 import { Trash2, CalendarCheck, ScrollText } from "lucide-react";
 import { format } from "date-fns";
 import { interviewScheduleStatusLabels as statusLabels } from "@/lib/constants";
@@ -38,6 +40,7 @@ const editTabs: EditPanelTab[] = [
 
 export default function SchedulingDetailPage() {
   const h = useSchedulingDetailPage();
+  const { data: employees = [] } = useEmployees();
 
   if (h.loading) {
     return (
@@ -89,7 +92,12 @@ export default function SchedulingDetailPage() {
 
       {h.activeTab === "detail" && (
         <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
-          <SchedulingDetailTab interview={interview} slots={h.slots} onEdit={h.startEditing} />
+          <SchedulingDetailTab
+            interview={interview}
+            slots={h.slots}
+            interviewers={h.interviewers}
+            onEdit={h.startEditing}
+          />
         </div>
       )}
 
@@ -165,6 +173,15 @@ export default function SchedulingDetailPage() {
               placeholder="面接に関する備考"
               rows={3}
             />
+
+            <div className="space-y-1.5">
+              <span className="text-sm font-medium">面接官</span>
+              <InterviewerSelect
+                employees={employees}
+                selectedIds={h.editInterviewerIds}
+                onSelectionChange={h.setEditInterviewerIds}
+              />
+            </div>
           </div>
         )}
         {h.editTab === "slots" && (

@@ -8,7 +8,15 @@ import {
   applicationStatusLabels as statusLabels,
   stepStatusLabels,
   StepStatus,
+  applicationSourceLabels,
 } from "@/lib/constants";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@hr1/shared-ui/components/ui/select";
 import type { Application, ApplicationStep, Profile } from "@/types/database";
 import { ApplicationStepList } from "@/features/recruiting/components/application-step-list";
 import { ProfileInfoList } from "@/features/recruiting/components/profile-info-list";
@@ -24,6 +32,8 @@ interface ApplicationDashboardTabProps {
   skipStep: (step: ApplicationStep) => void;
   unskipStep: (step: ApplicationStep) => void;
   onViewFormResponses: (step: ApplicationStep) => void;
+  source?: string | null;
+  onSourceChange?: (source: string) => void;
 }
 
 export function ApplicationDashboardTab({
@@ -35,6 +45,8 @@ export function ApplicationDashboardTab({
   skipStep,
   unskipStep,
   onViewFormResponses,
+  source,
+  onSourceChange,
 }: ApplicationDashboardTabProps) {
   const completedSteps = steps.filter((s) => s.status === StepStatus.Completed).length;
   const currentStep = steps.find(
@@ -75,6 +87,31 @@ export function ApplicationDashboardTab({
         </div>
 
         <ProfileInfoList profile={profile} />
+
+        <div className="mt-4 pt-4 border-t">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            応募経路
+          </p>
+          {onSourceChange ? (
+            <Select value={source ?? ""} onValueChange={onSourceChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="未設定" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">未設定</SelectItem>
+                {Object.entries(applicationSourceLabels).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <p className="text-sm">
+              {source ? (applicationSourceLabels[source] ?? source) : "未設定"}
+            </p>
+          )}
+        </div>
       </SectionCard>
 
       <div className="lg:col-span-2 space-y-6">

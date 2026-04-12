@@ -55,6 +55,14 @@ export async function fetchApplicationsByDateRange(
   return data;
 }
 
+export async function fetchApplicationsBySource(client: SupabaseClient, orgId: string) {
+  const { data } = await client
+    .from("applications")
+    .select("id, status, source")
+    .eq("organization_id", orgId);
+  return data;
+}
+
 export async function fetchApplicationsWithDepartment(client: SupabaseClient, orgId: string) {
   const { data } = await client
     .from("applications")

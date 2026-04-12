@@ -18,7 +18,9 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
   ) async {
     final response = await _client
         .from('applications')
-        .select('*, jobs(*), application_steps(*)')
+        .select(
+          'id, job_id, applicant_id, organization_id, status, source, applied_at, updated_at, jobs(*), application_steps(*)',
+        )
         .eq('organization_id', organizationId)
         .eq('applicant_id', applicantId)
         .order('applied_at', ascending: false);
@@ -35,7 +37,9 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
 
     final response = await _client
         .from('applications')
-        .select('*, jobs(*), application_steps(*)')
+        .select(
+          'id, job_id, applicant_id, organization_id, status, source, applied_at, updated_at, jobs(*), application_steps(*)',
+        )
         .eq('id', applicationId)
         .eq('applicant_id', userId)
         .maybeSingle();
@@ -58,6 +62,7 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
           'applicant_id': applicantId,
           'organization_id': organizationId,
           'status': ApplicationStatus.active.value,
+          'source': 'app',
         })
         .select('id')
         .single();

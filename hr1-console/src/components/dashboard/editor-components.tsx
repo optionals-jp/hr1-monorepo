@@ -59,6 +59,7 @@ const SOURCE_ICONS: Record<DataSourceId, React.ElementType> = {
   pipeline: ClipboardList,
   kpi_trend: TrendingUp,
   department_recruiting: Building2,
+  application_source: ClipboardList,
   open_jobs: Briefcase,
   workspace_summary: Users,
   pending_actions: AlertTriangle,
