@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Input } from "@hr1/shared-ui/components/ui/input";
@@ -83,6 +83,23 @@ export default function CrmCompaniesPage() {
       setDuplicates([]);
     }
   };
+
+  // 企業名変更時にデバウンス付き重複チェック
+  useEffect(() => {
+    const shouldCheck = !editData.id && editData.name && editOpen;
+    const timer = setTimeout(
+      () => {
+        if (shouldCheck) {
+          checkDuplicates(editData.name as string);
+        } else {
+          setDuplicates([]);
+        }
+      },
+      shouldCheck ? 500 : 0
+    );
+    return () => clearTimeout(timer);
+  }, [editData.name, editData.id, editOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [importOpen, setImportOpen] = useState(false);
 
   const existingNames = useMemo(
@@ -270,13 +287,7 @@ export default function CrmCompaniesPage() {
             <Label>企業名 *</Label>
             <Input
               value={editData.name ?? ""}
-              onChange={(e) => {
-                setEditData((p) => ({ ...p, name: e.target.value }));
-                // 500ms debounce
-                const name = e.target.value;
-                const timer = setTimeout(() => checkDuplicates(name), 500);
-                return () => clearTimeout(timer);
-              }}
+              onChange={(e) => setEditData((p) => ({ ...p, name: e.target.value }))}
               className={errors?.name ? "border-destructive" : ""}
             />
             {errors?.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}

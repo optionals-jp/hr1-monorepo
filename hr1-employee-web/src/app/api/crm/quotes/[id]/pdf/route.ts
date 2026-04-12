@@ -33,6 +33,17 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Quote not found" }, { status: 404 });
   }
 
+  // テナント分離: ユーザーの所属組織と見積書の組織が一致するか検証
+  const { data: userOrg } = await client
+    .from("user_organizations")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .eq("organization_id", quote.organization_id)
+    .single();
+  if (!userOrg) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   // 発行元組織情報を取得
   const { data: org } = await client
     .from("organizations")
@@ -52,6 +63,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   } | null;
   const contact = quote.crm_contacts as { last_name: string; first_name: string | null } | null;
   const contactName = contact ? `${contact.last_name}${contact.first_name ?? ""} 様` : "";
+
+  // HTMLエスケープ（XSS防止）
+  const esc = (s: string | null | undefined): string => {
+    if (!s) return "";
+    return s.replace(
+      /[&<>"']/g,
+      (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c
+    );
+  };
 
   // 日付フォーマット（和暦対応）
   const formatDate = (dateStr: string | null) => {
@@ -109,14 +129,14 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   <div class="meta">
     <div class="meta-left">
-      <div class="customer-name">${company?.name ?? ""}${contactName ? `<br><span style="font-size:10pt;font-weight:normal">${contactName}</span>` : ""}</div>
-      ${company?.address ? `<div style="font-size:9pt;color:#666">${company.address}</div>` : ""}
+      <div class="customer-name">${esc(company?.name)}${contactName ? `<br><span style="font-size:10pt;font-weight:normal">${esc(contactName)}</span>` : ""}</div>
+      ${company?.address ? `<div style="font-size:9pt;color:#666">${esc(company.address)}</div>` : ""}
     </div>
     <div class="meta-right">
       <div class="company-info">
-        <div class="company-name">${org?.name ?? ""}</div>
-        ${org?.location ? `<div>${org.location}</div>` : ""}
-        ${org?.website_url ? `<div>${org.website_url}</div>` : ""}
+        <div class="company-name">${esc(org?.name)}</div>
+        ${org?.location ? `<div>${esc(org.location)}</div>` : ""}
+        ${org?.website_url ? `<div>${esc(org.website_url)}</div>` : ""}
         <div class="stamp-area">印</div>
       </div>
     </div>
@@ -150,9 +170,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
           (item, i) => `
       <tr>
         <td>${i + 1}</td>
-        <td>${(item.description as string) ?? ""}</td>
+        <td>${esc(item.description as string)}</td>
         <td class="right">${item.quantity ?? 1}</td>
-        <td>${(item.unit as string) ?? "式"}</td>
+        <td>${esc((item.unit as string) ?? "式")}</td>
         <td class="right">${formatYen((item.unit_price as number) ?? 0)}</td>
         <td class="right">${formatYen((item.amount as number) ?? 0)}</td>
       </tr>`
@@ -176,10 +196,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     </div>
   </div>
 
-  ${quote.notes ? `<div class="notes"><div class="notes-title">備考</div>${quote.notes}</div>` : ""}
-  ${quote.terms ? `<div class="terms"><div class="terms-title">取引条件</div>${quote.terms}</div>` : ""}
+  ${quote.notes ? `<div class="notes"><div class="notes-title">備考</div>${esc(quote.notes)}</div>` : ""}
+  ${quote.terms ? `<div class="terms"><div class="terms-title">取引条件</div>${esc(quote.terms)}</div>` : ""}
 
-  <div class="footer">本見積書は ${org?.name ?? ""} が発行しました</div>
+  <div class="footer">本見積書は ${esc(org?.name)} が発行しました</div>
 </body>
 </html>`;
 
