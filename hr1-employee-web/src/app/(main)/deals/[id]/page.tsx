@@ -32,6 +32,7 @@ import { StageChevrons } from "@/components/crm/stage-chevrons";
 import { DealContactsPanel } from "@/components/crm/deal-contacts-panel";
 import { ActivityInputBar } from "@/components/crm/activity-input-bar";
 import { ActivityTimeline } from "@/components/crm/activity-timeline";
+import { CommentFeed } from "@/components/crm/comment-feed";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase/browser";
@@ -271,6 +272,9 @@ export default function CrmDealDetailPage() {
                   <ActivityTimeline activities={activities ?? []} emptyMessage="活動なし" />
                   <ActivityInputBar dealId={id} onAdded={() => mutateActivities()} />
                 </div>
+
+                {/* コメント */}
+                <CommentFeed entityType="deal" entityId={id} />
               </div>
 
               {/* ===== 右カラム (1/3): TODO ===== */}

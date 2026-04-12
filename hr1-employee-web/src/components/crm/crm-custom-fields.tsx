@@ -69,6 +69,19 @@ export function CrmCustomFields({ entityId, entityType }: CrmCustomFieldsProps) 
 
   const handleSave = useCallback(async () => {
     if (!organization || !fieldDefs) return;
+
+    // 必須フィールドのバリデーション
+    const missingFields = fieldDefs.filter((fd) => {
+      if (!fd.is_required) return false;
+      const val = localValues[fd.id] ?? "";
+      return val.trim() === "";
+    });
+    if (missingFields.length > 0) {
+      const names = missingFields.map((fd) => fd.label).join("、");
+      showToast(`必須項目が未入力です: ${names}`, "error");
+      return;
+    }
+
     setSaving(true);
     const values = fieldDefs.map((fd) => ({
       organization_id: organization.id,

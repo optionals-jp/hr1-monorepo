@@ -130,9 +130,14 @@ export async function fetchCompany(client: SupabaseClient, id: string, organizat
 export async function createCompany(
   client: SupabaseClient,
   data: Partial<BcCompany> & { organization_id: string; name: string }
-) {
-  const { error } = await client.from("crm_companies").insert(data);
+): Promise<BcCompany> {
+  const { data: created, error } = await client
+    .from("crm_companies")
+    .insert(data)
+    .select()
+    .single();
   if (error) throw error;
+  return created as BcCompany;
 }
 
 export async function updateCompany(
@@ -199,9 +204,10 @@ export async function fetchContactsByCompany(
 export async function createContact(
   client: SupabaseClient,
   data: Partial<BcContact> & { organization_id: string; last_name: string }
-) {
-  const { error } = await client.from("crm_contacts").insert(data);
+): Promise<BcContact> {
+  const { data: created, error } = await client.from("crm_contacts").insert(data).select().single();
   if (error) throw error;
+  return created as BcContact;
 }
 
 export async function updateContact(
