@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hr1_employee_app/core/constants/constants.dart';
-import 'package:hr1_employee_app/shared/widgets/widgets.dart';
-import 'package:hr1_employee_app/features/announcements/domain/entities/announcement.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_employee_app/features/announcements/presentation/providers/announcement_providers.dart';
 import 'package:intl/intl.dart';
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { useOrg } from "@/lib/org-context";
 import { StepStatus, StepType } from "@/lib/constants";
 import { getSupabase } from "@/lib/supabase/browser";

@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:hr1_employee_app/core/constants/constants.dart';
-import 'package:hr1_employee_app/shared/widgets/widgets.dart';
-import 'package:hr1_employee_app/features/faq/domain/entities/faq_item.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_employee_app/features/faq/presentation/providers/faq_providers.dart';
 
 /// FAQ一覧画面

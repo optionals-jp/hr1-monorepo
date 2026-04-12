@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hr1_employee_app/core/constants/constants.dart';
 import 'package:hr1_employee_app/core/router/app_router.dart';
-import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hr1_employee_app/features/notifications/domain/entities/notification_item.dart';
 import 'package:hr1_employee_app/features/notifications/presentation/controllers/notification_controller.dart';
 import 'package:hr1_employee_app/features/notifications/presentation/providers/notification_providers.dart';
-import 'package:hr1_employee_app/features/announcements/domain/entities/announcement.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_employee_app/features/announcements/presentation/providers/announcement_providers.dart';
 import 'package:hr1_employee_app/features/portal/presentation/screens/widgets/action_chip.dart';
 import 'package:hr1_employee_app/features/compliance/domain/entities/compliance_alert.dart';
@@ -20,7 +18,6 @@ import 'package:hr1_employee_app/features/tasks/domain/entities/task.dart';
 import 'package:hr1_employee_app/features/tasks/presentation/providers/task_providers.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_todo.dart';
 import 'package:hr1_employee_app/features/business_cards/presentation/providers/business_card_providers.dart';
-import 'package:hr1_employee_app/features/surveys/domain/entities/pulse_survey.dart';
 import 'package:hr1_employee_app/features/surveys/presentation/providers/survey_providers.dart';
 import 'package:intl/intl.dart';
 

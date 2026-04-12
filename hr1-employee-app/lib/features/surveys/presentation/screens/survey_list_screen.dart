@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hr1_employee_app/core/constants/constants.dart';
 import 'package:hr1_employee_app/core/router/app_router.dart';
-import 'package:hr1_employee_app/features/surveys/domain/entities/pulse_survey.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_employee_app/features/surveys/presentation/providers/survey_providers.dart';
-import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
 class SurveyListScreen extends HookConsumerWidget {

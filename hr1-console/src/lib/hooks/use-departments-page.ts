@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { useOrg } from "@/lib/org-context";
 import { useQuery } from "@/lib/use-query";

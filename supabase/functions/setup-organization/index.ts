@@ -1,11 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders } from "../_shared/cors.ts";
+import { jsonResponse, errorResponse } from "../_shared/responses.ts";
 
 interface SetupOrganizationRequest {
   // 企業情報
@@ -34,10 +30,7 @@ Deno.serve(async (req: Request) => {
     // JWT から hr1_admin ロールを検証
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "認証が必要です" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return errorResponse("認証が必要です", 401);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -50,10 +43,7 @@ Deno.serve(async (req: Request) => {
     });
     const { data: { user: caller }, error: callerError } = await callerClient.auth.getUser();
     if (callerError || !caller) {
-      return new Response(
-        JSON.stringify({ error: "認証に失敗しました" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return errorResponse("認証に失敗しました", 401);
     }
 
     // hr1_admin ロールチェック
@@ -65,26 +55,17 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (callerProfile?.role !== "hr1_admin") {
-      return new Response(
-        JSON.stringify({ error: "HR1管理者権限が必要です" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return errorResponse("HR1管理者権限が必要です", 403);
     }
 
     const body: SetupOrganizationRequest = await req.json();
 
     // バリデーション
     if (!body.organization_name || !body.plan_id || !body.admin_email) {
-      return new Response(
-        JSON.stringify({ error: "organization_name, plan_id, admin_email は必須です" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return errorResponse("organization_name, plan_id, admin_email は必須です", 400);
     }
     if (!body.contracted_employees || body.contracted_employees <= 0) {
-      return new Response(
-        JSON.stringify({ error: "契約社員数は1以上を指定してください" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return errorResponse("契約社員数は1以上を指定してください", 400);
     }
 
     // 1. 企業を作成
@@ -98,10 +79,7 @@ Deno.serve(async (req: Request) => {
     });
 
     if (orgError) {
-      return new Response(
-        JSON.stringify({ error: `企業作成に失敗しました: ${orgError.message}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return errorResponse(`企業作成に失敗しました: ${orgError.message}`, 500);
     }
 
     // 2. 契約を作成
@@ -119,10 +97,7 @@ Deno.serve(async (req: Request) => {
     if (contractError) {
       // ロールバック: 企業を削除
       await adminClient.from("organizations").delete().eq("id", orgId);
-      return new Response(
-        JSON.stringify({ error: `契約作成に失敗しました: ${contractError.message}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return errorResponse(`契約作成に失敗しました: ${contractError.message}`, 500);
     }
 
     // 3. 管理者ユーザーを招待メール付きで作成
@@ -142,10 +117,7 @@ Deno.serve(async (req: Request) => {
       const msg = /already been registered|already exists/i.test(inviteError.message)
         ? "このメールアドレスは既に登録されています"
         : inviteError.message;
-      return new Response(
-        JSON.stringify({ error: `管理者招待に失敗しました: ${msg}` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return errorResponse(`管理者招待に失敗しました: ${msg}`, 400);
     }
 
     const userId = inviteData.user.id;
@@ -163,10 +135,7 @@ Deno.serve(async (req: Request) => {
       await adminClient.auth.admin.deleteUser(userId);
       await adminClient.from("contracts").delete().eq("organization_id", orgId);
       await adminClient.from("organizations").delete().eq("id", orgId);
-      return new Response(
-        JSON.stringify({ error: `プロフィール作成に失敗しました: ${profileError.message}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return errorResponse(`プロフィール作成に失敗しました: ${profileError.message}`, 500);
     }
 
     const { error: uoError } = await adminClient.from("user_organizations").insert({
@@ -180,10 +149,7 @@ Deno.serve(async (req: Request) => {
       await adminClient.auth.admin.deleteUser(userId);
       await adminClient.from("contracts").delete().eq("organization_id", orgId);
       await adminClient.from("organizations").delete().eq("id", orgId);
-      return new Response(
-        JSON.stringify({ error: `組織紐付けに失敗しました: ${uoError.message}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return errorResponse(`組織紐付けに失敗しました: ${uoError.message}`, 500);
     }
 
     // 5. 契約変更履歴を記録
@@ -195,20 +161,14 @@ Deno.serve(async (req: Request) => {
       notes: "新規企業セットアップ",
     });
 
-    return new Response(
-      JSON.stringify({
-        organization_id: orgId,
-        admin_user_id: userId,
-        admin_email: body.admin_email,
-        invite_sent: true,
-      }),
-      { status: 201, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return jsonResponse({
+      organization_id: orgId,
+      admin_user_id: userId,
+      admin_email: body.admin_email,
+      invite_sent: true,
+    }, 201);
   } catch (err) {
     console.error("setup-organization error:", err);
-    return new Response(
-      JSON.stringify({ error: "内部エラーが発生しました" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return errorResponse("内部エラーが発生しました", 500);
   }
 });

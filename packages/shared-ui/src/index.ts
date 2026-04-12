@@ -11,7 +11,6 @@ export * from "./components/ui/dialog";
 export * from "./components/ui/dropdown-menu";
 export * from "./components/ui/edit-panel";
 export * from "./components/ui/form-field";
-export * from "./components/ui/info-item";
 export * from "./components/ui/input";
 export * from "./components/ui/label";
 export * from "./components/ui/popover";
@@ -39,15 +38,25 @@ export * from "./components/layout/nav-types";
 export * from "./components/layout/nav-link";
 export * from "./components/layout/collapsible-section";
 export * from "./components/layout/sidebar-shell";
-export * from "./components/layout/mobile-bottom-nav";
-export * from "./components/layout/header-shell";
 export * from "./components/layout/dashboard-layout";
 
 // Evaluation Components (feature-scoped shared dialogs)
 export * from "./components/evaluations/evaluation-form-dialog";
 export * from "./components/evaluations/template-select-dialog";
 
+// Hooks
+export * from "./lib/hooks/use-pagination";
+export * from "./lib/hooks/use-bulk-selection";
+export * from "./lib/hooks/use-tab-param";
+
+// Constants
+export * from "./lib/constants/types";
+export * from "./lib/constants/crm";
+
 // Utils
+export * from "./lib/export-csv";
+export * from "./lib/validation";
+export * from "./lib/datetime-utils";
 export * from "./lib/date-range";
 export * from "./lib/evaluation-draft";
 export * from "./lib/evaluation-types";

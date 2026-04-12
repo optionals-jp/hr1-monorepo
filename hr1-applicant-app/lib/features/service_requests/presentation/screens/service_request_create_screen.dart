@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:hr1_applicant_app/core/constants/constants.dart';
-import 'package:hr1_applicant_app/features/service_requests/domain/entities/service_request.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_applicant_app/features/service_requests/presentation/controllers/service_request_controller.dart';
-import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 
 class ServiceRequestCreateScreen extends HookConsumerWidget {
   const ServiceRequestCreateScreen({super.key, required this.type});

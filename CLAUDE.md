@@ -5,28 +5,64 @@
 Monorepo with the following apps and packages:
 
 ### Apps
-- `hr1-console/` — Next.js (App Router) tenant admin console (TypeScript) — 各テナント企業の管理画面
-- `hr1-admin/` — Next.js (App Router) platform admin (TypeScript) — HR1運営側の管理画面（契約・プラン・MRR管理）
-- `hr1-employee-web/` — Next.js (App Router) employee web app (TypeScript) — 社員向けWebアプリ（ポート3003）
-- `hr1-lp/` — Next.js (App Router) landing page (TypeScript) — HR1サービスサイト
-- `hr1-applicant-app/` — Flutter applicant app (Dart)
-- `hr1-employee-app/` — Flutter employee app (Dart)
+- `hr1-console/` — Next.js (App Router) テナント管理コンソール (TypeScript, port 3000)
+  - **対象**: テナント企業の管理者（人事部長・マネージャー等）
+  - **役割**: 社員管理・勤怠管理・評価・給与・CRM・採用など、組織全体の管理業務を行う画面
+  - **主要ルート**: employees, attendance, evaluations, payslips, crm, shifts, surveys, workflows, announcements, wiki, tasks, projects, calendar, faqs, compliance, audit-logs, leave, departments, settings, dashboard-edit
+- `hr1-employee-web/` — Next.js (App Router) 社員向けWebアプリ (TypeScript, port 3003)
+  - **対象**: テナント企業の一般社員
+  - **役割**: 社員が自分の情報を確認・申請するセルフサービス画面
+  - **主要ルート**: my-attendance, my-leave, payslips, profile, messages, notifications, crm, tasks, wiki, announcements, surveys, workflows, calendar, faqs, jobs, applicants, applications, scheduling, service-requests, evaluation-cycles, evaluation-templates, forms, selection-steps, shifts, compliance, employees, projects, dashboard
+- `hr1-admin/` — Next.js (App Router) HR1運営管理画面 (TypeScript, port 3001)
+  - **対象**: HR1プラットフォーム運営者（SaaS提供側）
+  - **役割**: テナント企業の契約・プラン・MRR等を管理するプラットフォーム運営画面
+  - **主要ルート**: contracts, plans, organizations
+- `hr1-lp/` — Next.js (App Router) ランディングページ (TypeScript, port 3002)
+  - **対象**: 一般公開（見込み顧客向け）
+  - **役割**: HR1サービスの紹介・問い合わせページ（テスト・Vitest なし）
+- `hr1-employee-app/` — Flutter 社員向けモバイルアプリ (Dart)
+  - **対象**: テナント企業の一般社員（hr1-employee-web のモバイル版）
+  - **役割**: 勤怠打刻・給与明細確認・各種申請などをモバイルから行う
+- `hr1-applicant-app/` — Flutter 応募者向けモバイルアプリ (Dart)
+  - **対象**: 求職者・応募者
+  - **役割**: 求人検索・応募・選考状況確認・メッセージ等を行うアプリ
 
-### Shared
+### Shared / Other
 - `packages/shared-ui/` — Next.js 共有UIパッケージ (@hr1/shared-ui) — Button, Card, Dialog 等の基本コンポーネント
 - `hr1_shared/` — Flutter shared package (Dart) — 両Flutterアプリ共通のウィジェット・定数・サービス
 - `supabase/` — Supabase migrations / Edge Functions
 - `scripts/` — ビルド・デプロイ用スクリプト
+- `docs/` — 設計ドキュメント・調査資料
+- `samples/` — サンプルデータ（CSV等）
 
 npm workspaces でモノレポ管理（ルートに package.json）。Next.js アプリは `@hr1/shared-ui` から共通コンポーネントを import する。
 
 Backend: Supabase (Auth, Database, Edge Functions)
 Deploy: Console/Admin/Employee-Web/LP → Vercel (main merge), Mobile → TestFlight (manual via `./scripts/build-all-ipa.sh`)
 
+## App Selection Guide（対象アプリ判定ルール）
+
+ユーザーの指示で対象アプリが不明な場合は、**必ず確認してから作業を開始する**。推測で作業を始めない。
+
+| キーワード・文脈 | 対象アプリ |
+|----------------|-----------|
+| 「管理画面」「社員管理」「テナント管理」「管理者が〇〇する」 | hr1-console |
+| 「社員向け」「マイページ」「自分の勤怠」「セルフサービス」「社員が〇〇する」 | hr1-employee-web |
+| 「運営」「契約管理」「プラン管理」「MRR」「テナント一覧」 | hr1-admin |
+| 「LP」「ランディングページ」「サービスサイト」「問い合わせ」 | hr1-lp |
+| 「モバイル」「Flutter」「アプリ」+ 社員向け | hr1-employee-app |
+| 「応募者」「求人」「応募」「選考」+ モバイル | hr1-applicant-app |
+
+**重要**: CRM、タスク、Wiki、勤怠、給与、カレンダーなどの機能は複数アプリに存在する。
+- **console 側** = 管理者が組織全体のデータを管理する（他者の勤怠を承認、社員の評価を管理等）
+- **employee-web 側** = 社員が自分のデータを確認・申請する（自分の勤怠を打刻、自分の給与を確認等）
+
+ポート番号も判断材料になる: 3000=console, 3001=admin, 3002=lp, 3003=employee-web
+
 ## Commands
 
 ### hr1-console (run from `hr1-console/`)
-- `npm run dev` — Start dev server
+- `npm run dev` — Start dev server (port 3000)
 - `npm run build` — Production build
 - `npm run lint` — ESLint
 - `npm run format` — Prettier format (write)
@@ -51,13 +87,15 @@ Deploy: Console/Admin/Employee-Web/LP → Vercel (main merge), Mobile → TestFl
 - `npm run format` — Prettier format (write)
 - `npm run format:check` — Prettier format check
 - `npm run test` — Vitest run
+- `npm run test:watch` — Vitest watch
 
 ### hr1-lp (run from `hr1-lp/`)
 - `npm run dev` — Start dev server (port 3002)
 - `npm run build` — Production build
-- `npm run lint` — ESLint
+- `npm run lint` — Lint (next lint)
 - `npm run format` — Prettier format (write)
 - `npm run format:check` — Prettier format check
+- ※ test / test:watch は未設定
 
 ### Flutter apps (run from each app directory)
 - `flutter pub get` — Install dependencies
@@ -91,7 +129,7 @@ Deploy: Console/Admin/Employee-Web/LP → Vercel (main merge), Mobile → TestFl
 
 ## Code Style
 
-- **Prettier** is enforced via CI. Always run `npm run format` in `hr1-console/` before finishing.
+- **Prettier** is enforced via CI. 作業完了前に対象アプリのディレクトリで `npm run format` を実行する（hr1-console, hr1-admin, hr1-employee-web, hr1-lp のいずれか）。
 - **UI text and comments** are in Japanese where appropriate.
 - Use `@supabase/ssr` (`createBrowserClient` / `createServerClient`) for Supabase clients — not `@supabase/supabase-js` directly.
 
@@ -220,6 +258,12 @@ PR to `main` で以下の5ジョブが並列実行される。npm workspaces で
 2. `npm run lint` — Check for ESLint errors
 3. `npm run build` — Verify production build succeeds
 4. `npm run test` — Verify tests pass
+
+### hr1-lp
+1. `npm run format` — Apply Prettier formatting
+2. `npm run lint` — Lint check (next lint)
+3. `npm run build` — Verify production build succeeds
+- ※ hr1-lp にはテストがないため test は不要
 
 ### Flutter apps (hr1-applicant-app / hr1-employee-app)
 1. `dart format --set-exit-if-changed .` — Format check

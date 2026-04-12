@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { useOrg } from "@/lib/org-context";
 import { useLeave } from "@/lib/hooks/use-leave";
 import type { LeaveBalance } from "@/types/database";

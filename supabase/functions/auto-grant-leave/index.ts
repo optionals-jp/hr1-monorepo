@@ -1,11 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders } from "../_shared/cors.ts";
+import { jsonResponse, errorResponse } from "../_shared/responses.ts";
 
 /**
  * 労基法に基づく有給付与日数を計算
@@ -142,18 +138,9 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    return new Response(
-      JSON.stringify({ granted, skipped, carryOverUpdated, errors }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
+    return jsonResponse({ granted, skipped, carryOverUpdated, errors }, 200);
   } catch (error) {
     console.error("auto-grant-leave error:", error);
-    return new Response(JSON.stringify({ error: String(error) }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return errorResponse(String(error), 500);
   }
 });

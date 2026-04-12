@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { useOrg } from "@/lib/org-context";
 import {
   loadCycleDetail,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/screens/splash_screen.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/screens/login_screen.dart';
@@ -16,6 +15,7 @@ import 'package:hr1_applicant_app/features/forms/presentation/screens/form_fill_
 import 'package:hr1_applicant_app/features/interviews/presentation/screens/interview_schedule_screen.dart';
 import 'package:hr1_applicant_app/features/messages/presentation/screens/messages_screen.dart';
 import 'package:hr1_applicant_app/features/messages/presentation/screens/thread_chat_screen.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_applicant_app/features/messages/domain/entities/message_thread.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/screens/profile_screen.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/screens/profile_edit_screen.dart';
@@ -25,13 +25,11 @@ import 'package:hr1_applicant_app/features/todos/domain/entities/todo.dart';
 import 'package:hr1_applicant_app/features/faq/presentation/screens/faq_screen.dart';
 import 'package:hr1_applicant_app/features/surveys/presentation/screens/survey_list_screen.dart';
 import 'package:hr1_applicant_app/features/surveys/presentation/screens/survey_answer_screen.dart';
-import 'package:hr1_applicant_app/features/service_requests/domain/entities/service_request.dart';
 import 'package:hr1_applicant_app/features/service_requests/presentation/screens/service_request_list_screen.dart';
 import 'package:hr1_applicant_app/features/service_requests/presentation/screens/service_request_create_screen.dart';
 import 'package:hr1_applicant_app/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:hr1_applicant_app/features/announcements/presentation/screens/announcements_screen.dart';
 import 'package:hr1_applicant_app/features/surveys/presentation/providers/survey_providers.dart';
-import 'package:hr1_applicant_app/features/surveys/domain/entities/pulse_survey.dart';
 
 /// ルートパス定数
 class AppRoutes {

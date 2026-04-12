@@ -9,7 +9,7 @@ import * as repository from "@/lib/repositories/crm-repository";
 import * as leadRepository from "@/lib/repositories/lead-repository";
 import * as dealContactRepository from "@/lib/repositories/deal-contact-repository";
 import * as quoteRepository from "@/lib/repositories/quote-repository";
-import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
+import { validators, validateForm, type ValidationErrors } from "@hr1/shared-ui";
 import { fireTrigger } from "@/lib/automation/engine";
 import type { BcCompany, BcContact, BcDeal, BcLead } from "@/types/database";
 

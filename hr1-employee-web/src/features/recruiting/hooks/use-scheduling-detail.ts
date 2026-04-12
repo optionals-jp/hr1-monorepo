@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as schedulingRepo from "@/lib/repositories/scheduling-repository";
 import { autoFillEndAt, toLocalDatetime } from "@/lib/datetime-utils";

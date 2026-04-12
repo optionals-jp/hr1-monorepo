@@ -1,11 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders } from "../_shared/cors.ts";
+import { jsonResponse, errorResponse } from "../_shared/responses.ts";
 
 interface CreateUserRequest {
   email: string;
@@ -57,13 +53,7 @@ Deno.serve(async (req: Request) => {
     // リクエストのJWTからユーザーを検証（adminロールのみ許可）
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "認証が必要です" }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return errorResponse("認証が必要です", 401);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -79,13 +69,7 @@ Deno.serve(async (req: Request) => {
       error: callerError,
     } = await callerClient.auth.getUser();
     if (callerError || !caller) {
-      return new Response(
-        JSON.stringify({ error: "認証に失敗しました" }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return errorResponse("認証に失敗しました", 401);
     }
 
     // 呼び出し元がadminロールか確認
@@ -97,25 +81,13 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (callerProfile?.role !== "admin") {
-      return new Response(
-        JSON.stringify({ error: "管理者権限が必要です" }),
-        {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return errorResponse("管理者権限が必要です", 403);
     }
 
     const body: CreateUserRequest = await req.json();
 
     if (!body.email || !body.role || !body.organization_id) {
-      return new Response(
-        JSON.stringify({ error: "email, role, organization_id は必須です" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return errorResponse("email, role, organization_id は必須です", 400);
     }
 
     // 呼び出し元が指定組織に所属しているか確認
@@ -127,13 +99,7 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     if (!callerOrg) {
-      return new Response(
-        JSON.stringify({ error: "指定された組織に所属していません" }),
-        {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return errorResponse("指定された組織に所属していません", 403);
     }
 
     // 1. Supabase Auth でユーザーを作成
@@ -157,13 +123,7 @@ Deno.serve(async (req: Request) => {
         });
 
       if (inviteError) {
-        return new Response(
-          JSON.stringify({ error: localizeAuthError(inviteError.message) }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
+        return errorResponse(localizeAuthError(inviteError.message), 400);
       }
 
       userId = inviteData.user.id;
@@ -181,13 +141,7 @@ Deno.serve(async (req: Request) => {
         });
 
       if (authError) {
-        return new Response(
-          JSON.stringify({ error: localizeAuthError(authError.message) }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
+        return errorResponse(localizeAuthError(authError.message), 400);
       }
 
       userId = authData.user.id;
@@ -226,29 +180,12 @@ Deno.serve(async (req: Request) => {
       // Postgres の制約名・カラム名がユーザーに漏れないよう、詳細はログのみに残す
       console.error("create_user_with_org failed:", rpcError);
       await adminClient.auth.admin.deleteUser(userId);
-      return new Response(
-        JSON.stringify({ error: "ユーザー情報の登録に失敗しました" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return errorResponse("ユーザー情報の登録に失敗しました", 500);
     }
 
-    return new Response(
-      JSON.stringify({ id: userId, email: body.email, invite_sent: inviteSent }),
-      {
-      status: 201,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ id: userId, email: body.email, invite_sent: inviteSent }, 201);
   } catch (err) {
     console.error("create-user error:", err);
-    return new Response(
-      JSON.stringify({ error: "内部エラーが発生しました" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return errorResponse("内部エラーが発生しました", 500);
   }
 });

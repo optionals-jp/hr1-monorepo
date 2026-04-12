@@ -13,12 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@hr1/shared-ui/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@hr1/shared-ui/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@hr1/shared-ui/components/ui/sheet";
 import { SidebarNav } from "./sidebar";
 
 export function Header() {
@@ -81,10 +76,7 @@ export function Header() {
               </span>
             </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleSignOut}
-              className="text-red-600 focus:text-red-600"
-            >
+            <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600">
               <LogOut className="mr-2 h-4 w-4" />
               ログアウト
             </DropdownMenuItem>

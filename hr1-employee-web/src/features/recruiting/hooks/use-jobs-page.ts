@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as applicantRepo from "@/lib/repositories/applicant-repository";
 import * as jobRepository from "@/lib/repositories/job-repository";
 import * as templateRepo from "@/lib/repositories/selection-step-template-repository";
-import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
+import { validators, validateForm, type ValidationErrors } from "@hr1/shared-ui";
 import { StepType } from "@/lib/constants";
 import { PG_ERROR_CODES, getPgErrorCode } from "@hr1/shared-ui/lib/postgres-errors";
 import type { Job, SelectionStepTemplate } from "@/types/database";

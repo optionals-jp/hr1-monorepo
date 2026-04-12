@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useOrg } from "@/lib/org-context";
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as departmentRepository from "@/lib/repositories/department-repository";
 import type { Department } from "@/types/database";

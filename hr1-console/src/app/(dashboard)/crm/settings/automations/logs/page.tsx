@@ -14,7 +14,7 @@ import {
 import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import { useAutomationLogs } from "@/lib/hooks/use-automation";
 import { automationTriggerLabels, automationActionLabels } from "@/lib/constants";
-import type { BadgeVariant } from "@/lib/constants/types";
+import type { BadgeVariant } from "@hr1/shared-ui";
 import Link from "next/link";
 
 const statusLabels: Record<string, string> = {

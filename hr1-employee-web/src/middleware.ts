@@ -51,7 +51,12 @@ const ALLOWED_ROUTES: Record<Product, string[]> = {
   client: [
     "/",
     "/dashboard",
-    "/crm",
+    "/leads",
+    "/companies",
+    "/contacts",
+    "/deals",
+    "/quotes",
+    "/reports",
     "/messages",
     "/calendar",
     "/tasks",

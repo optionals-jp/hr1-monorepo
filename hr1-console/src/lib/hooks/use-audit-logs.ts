@@ -6,7 +6,7 @@ import {
   fetchAuditLogs as fetchAuditLogsAction,
   fetchProfileNames as fetchProfileNamesAction,
 } from "@/lib/hooks/use-audit-logs-page";
-import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
+import { exportToCSV, csvFilenameWithDate } from "@hr1/shared-ui";
 import type { AuditLog } from "@/types/database";
 
 const PAGE_SIZE = 50;

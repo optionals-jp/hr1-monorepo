@@ -7,7 +7,7 @@ import { getSupabase } from "@/lib/supabase/browser";
 import * as applicantRepo from "@/lib/repositories/applicant-repository";
 import type { Profile } from "@/types/database";
 import { useOrg } from "@/lib/org-context";
-import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
+import { validators, validateForm, type ValidationErrors } from "@hr1/shared-ui";
 
 export function useApplicantsList() {
   return useOrgQuery<Profile[]>("applicants", (orgId) =>

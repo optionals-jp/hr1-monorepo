@@ -1,4 +1,4 @@
-import type { BadgeVariant } from "./types";
+import type { BadgeVariant } from "@hr1/shared-ui";
 
 export const evaluationStatusLabels: Record<string, string> = {
   draft: "下書き",

@@ -6,7 +6,7 @@ import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as employeeRepository from "@/lib/repositories/employee-repository";
 import * as departmentRepository from "@/lib/repositories/department-repository";
-import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
+import { validators, validateForm, type ValidationErrors } from "@hr1/shared-ui";
 import type { Profile } from "@/types/database";
 
 export interface EmployeeWithDepts {

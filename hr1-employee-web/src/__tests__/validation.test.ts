@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validators, validateForm } from "@/lib/validation";
+import { validators, validateForm } from "@hr1/shared-ui";
 
 describe("validators.required", () => {
   it("空文字列でエラーを返す", () => {

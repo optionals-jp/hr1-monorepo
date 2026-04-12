@@ -55,7 +55,7 @@ import {
   CalendarDays,
   Gift,
 } from "lucide-react";
-import { exportToCSV } from "@/lib/export-csv";
+import { exportToCSV } from "@hr1/shared-ui";
 
 type TabValue = "balances" | "grant";
 

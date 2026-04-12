@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { useRouter } from "next/navigation";
 import { useOrg } from "@/lib/org-context";
 import { useQuery } from "@/lib/use-query";

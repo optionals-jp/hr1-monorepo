@@ -8,7 +8,7 @@ import useSWR, { SWRConfiguration } from "swr";
 export function useQuery<T>(
   key: string | null,
   fetcher: () => Promise<T>,
-  config?: SWRConfiguration<T>,
+  config?: SWRConfiguration<T>
 ) {
   return useSWR<T>(key, fetcher, {
     dedupingInterval: 10_000,

@@ -2,16 +2,8 @@
 
 import { use } from "react";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@hr1/shared-ui/components/ui/card";
-import {
-  PageHeader,
-  PageContent,
-} from "@hr1/shared-ui/components/layout/page-header";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
@@ -35,36 +27,26 @@ export default function OrganizationDetailPage({ params }: PageProps) {
     error: orgError,
     mutate: mutateOrg,
   } = useQuery<Organization | null>(`admin-org-${id}`, async () => {
-    const { data } = await getSupabase()
-      .from("organizations")
-      .select("*")
-      .eq("id", id)
-      .single();
+    const { data } = await getSupabase().from("organizations").select("*").eq("id", id).single();
     return data as Organization | null;
   });
 
-  const { data: contracts } = useQuery<Contract[]>(
-    `admin-org-contracts-${id}`,
-    async () => {
-      const { data } = await getSupabase()
-        .from("contracts")
-        .select("*, plans(*)")
-        .eq("organization_id", id)
-        .order("start_date", { ascending: false });
-      return (data as Contract[]) ?? [];
-    },
-  );
+  const { data: contracts } = useQuery<Contract[]>(`admin-org-contracts-${id}`, async () => {
+    const { data } = await getSupabase()
+      .from("contracts")
+      .select("*, plans(*)")
+      .eq("organization_id", id)
+      .order("start_date", { ascending: false });
+    return (data as Contract[]) ?? [];
+  });
 
-  const { data: employeeCount } = useQuery<number>(
-    `admin-org-employees-${id}`,
-    async () => {
-      const { count } = await getSupabase()
-        .from("user_organizations")
-        .select("*", { count: "exact", head: true })
-        .eq("organization_id", id);
-      return count ?? 0;
-    },
-  );
+  const { data: employeeCount } = useQuery<number>(`admin-org-employees-${id}`, async () => {
+    const { count } = await getSupabase()
+      .from("user_organizations")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", id);
+    return count ?? 0;
+  });
 
   // 契約変更履歴
   const contractIds = (contracts ?? []).map((c) => c.id);
@@ -78,12 +60,10 @@ export default function OrganizationDetailPage({ params }: PageProps) {
         .order("created_at", { ascending: false })
         .limit(20);
       return (data as ContractChange[]) ?? [];
-    },
+    }
   );
 
-  const activeContract = contracts?.find(
-    (c) => c.status === "active" || c.status === "trial",
-  );
+  const activeContract = contracts?.find((c) => c.status === "active" || c.status === "trial");
 
   return (
     <>
@@ -113,9 +93,7 @@ export default function OrganizationDetailPage({ params }: PageProps) {
                   <dt className="text-muted-foreground">Webサイト</dt>
                   <dd className="truncate">{org?.website_url ?? "-"}</dd>
                   <dt className="text-muted-foreground">実際の社員数</dt>
-                  <dd className="font-medium">
-                    {employeeCount?.toLocaleString() ?? "-"}名
-                  </dd>
+                  <dd className="font-medium">{employeeCount?.toLocaleString() ?? "-"}名</dd>
                 </dl>
               </CardContent>
             </Card>
@@ -123,52 +101,30 @@ export default function OrganizationDetailPage({ params }: PageProps) {
             {/* 現在の契約 */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  現在の契約
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">現在の契約</CardTitle>
               </CardHeader>
               <CardContent>
                 {activeContract ? (
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                     <dt className="text-muted-foreground">プラン</dt>
-                    <dd className="font-medium">
-                      {activeContract.plans?.name ?? "-"}
-                    </dd>
+                    <dd className="font-medium">{activeContract.plans?.name ?? "-"}</dd>
                     <dt className="text-muted-foreground">ステータス</dt>
                     <dd>
-                      <Badge
-                        variant={
-                          contractStatusColors[activeContract.status] ??
-                          "outline"
-                        }
-                      >
-                        {contractStatusLabels[activeContract.status] ??
-                          activeContract.status}
+                      <Badge variant={contractStatusColors[activeContract.status] ?? "outline"}>
+                        {contractStatusLabels[activeContract.status] ?? activeContract.status}
                       </Badge>
                     </dd>
                     <dt className="text-muted-foreground">契約社員数</dt>
-                    <dd>
-                      {activeContract.contracted_employees.toLocaleString()}名
-                    </dd>
+                    <dd>{activeContract.contracted_employees.toLocaleString()}名</dd>
                     <dt className="text-muted-foreground">月額</dt>
-                    <dd className="font-medium">
-                      ¥{formatCurrency(activeContract.monthly_price)}
-                    </dd>
+                    <dd className="font-medium">¥{formatCurrency(activeContract.monthly_price)}</dd>
                     <dt className="text-muted-foreground">契約開始日</dt>
-                    <dd>
-                      {new Date(activeContract.start_date).toLocaleDateString(
-                        "ja-JP",
-                      )}
-                    </dd>
+                    <dd>{new Date(activeContract.start_date).toLocaleDateString("ja-JP")}</dd>
                     {activeContract.trial_end_date && (
                       <>
-                        <dt className="text-muted-foreground">
-                          トライアル終了
-                        </dt>
+                        <dt className="text-muted-foreground">トライアル終了</dt>
                         <dd>
-                          {new Date(
-                            activeContract.trial_end_date,
-                          ).toLocaleDateString("ja-JP")}
+                          {new Date(activeContract.trial_end_date).toLocaleDateString("ja-JP")}
                         </dd>
                       </>
                     )}
@@ -191,9 +147,7 @@ export default function OrganizationDetailPage({ params }: PageProps) {
           {/* 契約変更履歴 */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">
-                契約変更履歴
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">契約変更履歴</CardTitle>
             </CardHeader>
             <CardContent>
               {changes && changes.length > 0 ? (
@@ -206,8 +160,7 @@ export default function OrganizationDetailPage({ params }: PageProps) {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <Badge variant="secondary" className="text-xs">
-                            {contractChangeTypeLabels[change.change_type] ??
-                              change.change_type}
+                            {contractChangeTypeLabels[change.change_type] ?? change.change_type}
                           </Badge>
                           {change.notes && (
                             <span className="text-sm text-muted-foreground truncate">
@@ -216,15 +169,11 @@ export default function OrganizationDetailPage({ params }: PageProps) {
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {change.profiles?.display_name ??
-                            change.profiles?.email ??
-                            "システム"}
+                          {change.profiles?.display_name ?? change.profiles?.email ?? "システム"}
                         </p>
                       </div>
                       <span className="text-xs text-muted-foreground shrink-0 ml-4">
-                        {new Date(change.created_at).toLocaleDateString(
-                          "ja-JP",
-                        )}
+                        {new Date(change.created_at).toLocaleDateString("ja-JP")}
                       </span>
                     </div>
                   ))}

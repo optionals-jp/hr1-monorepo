@@ -4,18 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hr1_employee_app/core/constants/constants.dart';
 import 'package:hr1_employee_app/core/router/app_router.dart';
 import 'package:hr1_employee_app/features/employees/domain/entities/employee_contact.dart';
 import 'package:hr1_employee_app/features/employees/presentation/providers/employee_list_providers.dart';
 import 'package:hr1_employee_app/features/wiki/domain/entities/wiki_page.dart';
-import 'package:hr1_employee_app/features/announcements/domain/entities/announcement.dart';
-import 'package:hr1_employee_app/features/faq/domain/entities/faq_item.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_employee_app/features/search/domain/entities/portal_search_results.dart';
 import 'package:hr1_employee_app/features/search/presentation/providers/search_providers.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_contact.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_company.dart';
-import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
 class SearchScreen extends HookConsumerWidget {

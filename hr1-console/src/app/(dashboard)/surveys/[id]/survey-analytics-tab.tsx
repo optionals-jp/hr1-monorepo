@@ -16,7 +16,7 @@ import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Download } from "lucide-react";
 import { format } from "date-fns";
-import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
+import { exportToCSV, csvFilenameWithDate } from "@hr1/shared-ui";
 import { surveyQuestionTypeLabels } from "@/lib/constants";
 import type { PulseSurveyQuestion, PulseSurveyResponse } from "@/types/database";
 

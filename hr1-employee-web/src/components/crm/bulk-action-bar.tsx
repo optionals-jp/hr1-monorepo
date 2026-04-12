@@ -105,4 +105,4 @@ export function BulkActionBar({
 }
 
 // Re-export hook from lib/hooks for backwards compatibility
-export { useBulkSelection } from "@/lib/hooks/use-bulk-selection";
+export { useBulkSelection } from "@hr1/shared-ui";
