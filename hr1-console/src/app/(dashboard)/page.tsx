@@ -63,6 +63,8 @@ export default function DashboardPage() {
     crmDeals,
     crmPipelineStages,
     sourceStats,
+    timeToHire,
+    selectionFunnel,
   } = useDashboard(activeTab);
 
   const pipelineRate =
@@ -84,6 +86,8 @@ export default function DashboardPage() {
     hiringTypeStats,
     hiringTypeAppStats,
     targets,
+    timeToHire,
+    selectionFunnel,
     pipelineRate,
     crmCompanyCount,
     crmContactCount,

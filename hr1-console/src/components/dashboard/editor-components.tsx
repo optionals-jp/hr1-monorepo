@@ -37,6 +37,8 @@ import {
   AlertTriangle,
   Handshake,
   DollarSign,
+  Clock,
+  Filter,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -71,6 +73,8 @@ const SOURCE_ICONS: Record<DataSourceId, React.ElementType> = {
   crm_monthly_revenue: DollarSign,
   crm_deal_status: PieChart,
   crm_rep_performance: BarChart3,
+  time_to_hire: Clock,
+  selection_funnel: Filter,
 };
 
 const DISPLAY_TYPE_ICONS: Record<WidgetDisplayType, React.ElementType> = {

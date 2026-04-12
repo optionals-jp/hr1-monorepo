@@ -71,6 +71,32 @@ export async function updateApplicationSource(
     .eq("organization_id", organizationId);
 }
 
+export async function bulkUpdateApplicationStatus(
+  client: SupabaseClient,
+  applicationIds: string[],
+  organizationId: string,
+  status: string
+) {
+  return client
+    .from("applications")
+    .update({ status })
+    .in("id", applicationIds)
+    .eq("organization_id", organizationId);
+}
+
+export async function bulkRejectApplications(
+  client: SupabaseClient,
+  applicationIds: string[],
+  organizationId: string,
+  data: { rejection_category?: string; rejection_reason?: string }
+) {
+  return client
+    .from("applications")
+    .update({ status: "rejected", ...data })
+    .in("id", applicationIds)
+    .eq("organization_id", organizationId);
+}
+
 /**
  * 選考ステップのステータスを更新する。
  *

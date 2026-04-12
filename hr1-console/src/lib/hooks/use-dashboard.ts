@@ -23,6 +23,8 @@ import type {
   HiringTypeApplicationStats,
   RecruitingTargets,
   DashboardWidgetConfigV2,
+  TimeToHireStat,
+  FunnelStage,
 } from "@/types/dashboard";
 
 export interface DashboardStats {
@@ -173,6 +175,105 @@ export function useDashboard(activeTab?: ProductTab) {
       return Array.from(sourceMap.entries())
         .map(([source, d]) => ({ source, ...d }))
         .sort((a, b) => b.count - a.count);
+    }
+  );
+
+  const { data: timeToHire } = useQuery<TimeToHireStat[]>(
+    orgId ? `dashboard-time-to-hire-${orgId}` : null,
+    async () => {
+      const offers = await dashboardRepository.fetchTimeToHireData(client, orgId!);
+      if (!offers || offers.length === 0) return [];
+
+      const entries: { dept: string; days: number }[] = [];
+      for (const offer of offers) {
+        const app = (offer as any).applications;
+        if (!app?.applied_at) continue;
+        const days = Math.round(
+          (new Date(offer.created_at).getTime() - new Date(app.applied_at).getTime()) / 86400000
+        );
+        if (days >= 0) {
+          entries.push({ dept: app.jobs?.department ?? "未設定", days });
+        }
+      }
+      if (entries.length === 0) return [];
+
+      const allDays = entries.map((e) => e.days);
+      const avg = Math.round(allDays.reduce((s, d) => s + d, 0) / allDays.length);
+      const sorted = [...allDays].sort((a, b) => a - b);
+      const median = sorted[Math.floor(sorted.length / 2)];
+
+      const result: TimeToHireStat[] = [
+        { label: "全体", avgDays: avg, medianDays: median, count: allDays.length },
+      ];
+
+      const deptMap = new Map<string, number[]>();
+      for (const e of entries) {
+        if (!deptMap.has(e.dept)) deptMap.set(e.dept, []);
+        deptMap.get(e.dept)!.push(e.days);
+      }
+      for (const [dept, days] of deptMap.entries()) {
+        const dAvg = Math.round(days.reduce((s, d) => s + d, 0) / days.length);
+        const dSorted = [...days].sort((a, b) => a - b);
+        result.push({
+          label: dept,
+          avgDays: dAvg,
+          medianDays: dSorted[Math.floor(dSorted.length / 2)],
+          count: days.length,
+        });
+      }
+      return result;
+    }
+  );
+
+  const { data: selectionFunnel } = useQuery<FunnelStage[]>(
+    orgId ? `dashboard-selection-funnel-${orgId}` : null,
+    async () => {
+      const applications = await dashboardRepository.fetchFunnelData(client, orgId!);
+      if (!applications || applications.length === 0) return [];
+
+      const totalApplied = applications.length;
+      const stepMap = new Map<string, { order: number; label: string; passed: number }>();
+
+      for (const app of applications) {
+        for (const step of (app as any).application_steps ?? []) {
+          const key = `${step.step_order}-${step.step_type}`;
+          if (!stepMap.has(key))
+            stepMap.set(key, { order: step.step_order, label: step.label, passed: 0 });
+          if (step.status === "completed" || step.status === "in_progress") {
+            stepMap.get(key)!.passed++;
+          }
+        }
+      }
+
+      const sortedSteps = Array.from(stepMap.values()).sort((a, b) => a.order - b.order);
+      const offeredCount = applications.filter((a) =>
+        isOfferedOrAccepted((a as any).status)
+      ).length;
+
+      const stages: FunnelStage[] = [{ name: "応募", count: totalApplied, conversionRate: null }];
+      let prevCount = totalApplied;
+
+      for (const step of sortedSteps) {
+        const isOfferStep = step.label === "内定" || step.label === "オファー";
+        const count = isOfferStep ? offeredCount : step.passed;
+        stages.push({
+          name: step.label,
+          count,
+          conversionRate: prevCount > 0 ? Math.round((count / prevCount) * 100) : 0,
+        });
+        prevCount = count;
+      }
+
+      const hasOfferStep = sortedSteps.some((s) => s.label === "内定" || s.label === "オファー");
+      if (!hasOfferStep && (offeredCount > 0 || sortedSteps.length > 0)) {
+        stages.push({
+          name: "内定",
+          count: offeredCount,
+          conversionRate: prevCount > 0 ? Math.round((offeredCount / prevCount) * 100) : 0,
+        });
+      }
+
+      return stages;
     }
   );
 
@@ -467,6 +568,8 @@ export function useDashboard(activeTab?: ProductTab) {
     kpiTrend,
     departmentStats,
     sourceStats,
+    timeToHire,
+    selectionFunnel,
     openJobs,
     empDeptStats,
     pendingWorkflows,

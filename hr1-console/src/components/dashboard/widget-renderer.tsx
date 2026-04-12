@@ -10,6 +10,8 @@ import type {
   OpenJobStat,
   HiringTypeApplicationStats,
   RecruitingTargets,
+  TimeToHireStat,
+  FunnelStage,
 } from "@/types/dashboard";
 import { DATA_SOURCE_REGISTRY } from "@/lib/dashboard/data-sources";
 import { dealStatusLabels, applicationSourceLabels } from "@/lib/constants";
@@ -52,6 +54,8 @@ export interface DashboardData {
   hiringTypeStats: HiringTypeStat[] | undefined;
   hiringTypeAppStats: HiringTypeApplicationStats | undefined;
   targets: RecruitingTargets | undefined;
+  timeToHire: TimeToHireStat[] | undefined;
+  selectionFunnel: FunnelStage[] | undefined;
   pipelineRate: number;
   crmCompanyCount?: number;
   crmContactCount?: number;
@@ -471,6 +475,56 @@ function resolveDataSource(
             { key: "applications", label: "応募数", color: "#3b82f6" },
             { key: "offered", label: "内定数", color: "#22c55e" },
           ],
+        },
+      };
+    }
+
+    /* ---- time_to_hire ---- */
+    case "time_to_hire": {
+      const tth = data.timeToHire ?? [];
+      if (tth.length === 0) return null;
+      if (displayType === "metric") {
+        const overall = tth[0];
+        return {
+          type: "metric",
+          props: {
+            metrics: [
+              { value: overall?.avgDays ?? 0, label: "平均日数", suffix: "日" },
+              { value: overall?.medianDays ?? 0, label: "中央値", suffix: "日" },
+              { value: overall?.count ?? 0, label: "対象件数" },
+            ],
+          },
+        };
+      }
+      return {
+        type: "bar_chart",
+        props: {
+          data: tth.filter((d) => d.label !== "全体") as unknown as Record<string, unknown>[],
+          categoryKey: "label",
+          series: [
+            { key: "avgDays", label: "平均日数", color: "#3b82f6" },
+            { key: "medianDays", label: "中央値", color: "#22c55e" },
+          ],
+        },
+      };
+    }
+
+    /* ---- selection_funnel ---- */
+    case "selection_funnel": {
+      const funnel = data.selectionFunnel ?? [];
+      if (funnel.length === 0) return null;
+      return {
+        type: "bar_chart",
+        props: {
+          data: funnel.map((stage) => ({
+            name:
+              stage.conversionRate != null
+                ? `${stage.name} (${stage.conversionRate}%)`
+                : stage.name,
+            count: stage.count,
+          })) as unknown as Record<string, unknown>[],
+          categoryKey: "name",
+          series: [{ key: "count", label: "件数", color: "#8b5cf6" }],
         },
       };
     }

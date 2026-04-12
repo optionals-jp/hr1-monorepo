@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import {
   SummaryCards,
   type SummaryCardConfig,
@@ -23,8 +25,10 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@hr1/shared-ui/components/ui/dropdown-menu";
+import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
 import { cn } from "@hr1/shared-ui/lib/utils";
 import { useApplicationsPage } from "@/features/recruiting/hooks/use-applications-page";
+import { useBulkSelection } from "@/lib/hooks/use-bulk-selection";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
@@ -51,6 +55,11 @@ import {
   ApplicationStatus,
   applicationSourceLabels,
 } from "@/lib/constants";
+import { useOrg } from "@/lib/org-context";
+import { getSupabase } from "@/lib/supabase/browser";
+import * as applicationRepo from "@/lib/repositories/application-repository";
+import { RejectionReasonDialog } from "@/features/recruiting/components/rejection-reason-dialog";
+import { BulkStatusChangeDialog } from "@/features/recruiting/components/bulk-status-change-dialog";
 
 const statusTabs = [
   { value: "all", label: "すべて", icon: LayoutList },
@@ -81,6 +90,7 @@ const summaryCards: readonly SummaryCardConfig<ApplicationsSummaryKey>[] = [
 
 export default function ApplicationsPage() {
   const router = useRouter();
+  const { organization } = useOrg();
   const {
     search,
     setSearch,
@@ -98,6 +108,37 @@ export default function ApplicationsPage() {
     filtered,
     getCurrentStepLabel,
   } = useApplicationsPage();
+  const bulk = useBulkSelection(filtered);
+  const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
+  const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
+
+  const handleBulkReject = async (data: {
+    rejection_category?: string;
+    rejection_reason?: string;
+  }) => {
+    if (!organization) return;
+    await applicationRepo.bulkRejectApplications(
+      getSupabase(),
+      bulk.selectedIds,
+      organization.id,
+      data
+    );
+    bulk.clear();
+    mutateApplications();
+    setBulkRejectOpen(false);
+  };
+
+  const handleBulkStatusChange = async (status: string) => {
+    if (!organization) return;
+    await applicationRepo.bulkUpdateApplicationStatus(
+      getSupabase(),
+      bulk.selectedIds,
+      organization.id,
+      status
+    );
+    bulk.clear();
+    mutateApplications();
+  };
 
   return (
     <div className="flex flex-col">
@@ -188,6 +229,13 @@ export default function ApplicationsPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={bulk.isAllSelected}
+                  indeterminate={bulk.isIndeterminate}
+                  onCheckedChange={() => bulk.toggleAll()}
+                />
+              </TableHead>
               <TableHead>候補者</TableHead>
               <TableHead>求人</TableHead>
               <TableHead>現在のステップ</TableHead>
@@ -199,13 +247,13 @@ export default function ApplicationsPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   読み込み中...
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   応募がありません
                 </TableCell>
               </TableRow>
@@ -216,8 +264,15 @@ export default function ApplicationsPage() {
                   <TableRow
                     key={app.id}
                     className="cursor-pointer"
+                    data-state={bulk.isSelected(app.id) ? "selected" : undefined}
                     onClick={() => router.push(`/applications/${app.id}`)}
                   >
+                    <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={bulk.isSelected(app.id)}
+                        onCheckedChange={() => bulk.toggle(app.id)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
@@ -250,6 +305,33 @@ export default function ApplicationsPage() {
           </TableBody>
         </Table>
       </TableSection>
+
+      {bulk.selectedIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-lg border bg-background px-4 py-3 shadow-lg">
+          <span className="text-sm font-medium">{bulk.selectedIds.length}件選択中</span>
+          <Button variant="outline" size="sm" onClick={() => setBulkStatusOpen(true)}>
+            一括ステータス変更
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => setBulkRejectOpen(true)}>
+            一括不採用
+          </Button>
+          <Button variant="ghost" size="sm" onClick={bulk.clear}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      <RejectionReasonDialog
+        open={bulkRejectOpen}
+        onOpenChange={setBulkRejectOpen}
+        onSubmit={handleBulkReject}
+      />
+      <BulkStatusChangeDialog
+        open={bulkStatusOpen}
+        onOpenChange={setBulkStatusOpen}
+        onSubmit={handleBulkStatusChange}
+        count={bulk.selectedIds.length}
+      />
     </div>
   );
 }

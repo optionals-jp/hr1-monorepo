@@ -166,3 +166,15 @@ export const fieldTypeLabels: Record<string, string> = {
   date: "日付",
   fileUpload: "ファイルアップロード",
 };
+
+/* -------------------------------------------------------- */
+/*  通知テンプレート                                         */
+/* -------------------------------------------------------- */
+
+export const notificationTriggerEventLabels: Record<string, string> = {
+  application_offered: "内定通知",
+  application_rejected: "不採用通知",
+  application_offer_accepted: "内定承諾",
+  application_offer_declined: "内定辞退",
+  application_withdrawn: "辞退",
+};
