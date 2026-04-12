@@ -1,3 +1,4 @@
+import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_applicant_app/features/messages/domain/entities/message_thread.dart';
 
 /// メッセージリポジトリインターフェース

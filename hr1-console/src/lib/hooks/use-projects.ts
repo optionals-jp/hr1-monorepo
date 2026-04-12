@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repo from "@/lib/repositories/project-repository";

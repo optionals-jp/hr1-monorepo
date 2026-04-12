@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { csvFilenameWithDate } from "@/lib/export-csv";
+import { csvFilenameWithDate } from "@hr1/shared-ui";
 
 describe("csvFilenameWithDate", () => {
   it("プレフィックス_YYYYMMDD形式を返す", () => {
@@ -14,7 +14,7 @@ describe("escapeCsvValue (formula injection)", () => {
   it("危険な先頭文字にシングルクォートを付与する", async () => {
     // escapeCsvValueは非公開なのでexportToCSV経由で間接テスト
     // exportToCSVはDOM依存のため、モジュールから直接インポートしてテスト
-    const mod = await import("@/lib/export-csv");
+    const mod = await import("@hr1/shared-ui");
     // @ts-expect-error escapeCsvValue is not exported, access via module internals
     // 代わりにexportToCSVの出力を検証する
     const createObjectURL = vi.fn().mockReturnValue("blob:test");

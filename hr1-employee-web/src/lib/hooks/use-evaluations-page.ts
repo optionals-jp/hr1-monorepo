@@ -3,10 +3,10 @@
 import { useCallback, useMemo, useState } from "react";
 import { useOrg } from "@/lib/org-context";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as evalRepo from "@/lib/repositories/evaluation-repository";
-import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
+import { validators, validateForm, type ValidationErrors } from "@hr1/shared-ui";
 import type { EvaluationCycle, EvaluationTemplate } from "@/types/database";
 
 export const EVALUATION_TAB_STATUSES: Record<string, string[]> = {

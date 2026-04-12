@@ -27,10 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
-import {
-  PageHeader,
-  PageContent,
-} from "@hr1/shared-ui/components/layout/page-header";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
@@ -56,22 +53,18 @@ export default function OrganizationsPage() {
     return (data as Contract[]) ?? [];
   });
 
-  const { data: plans } = useQuery<Plan[]>(
-    "admin-plans-for-setup",
-    async () => {
-      const { data } = await getSupabase()
-        .from("plans")
-        .select("*")
-        .eq("is_active", true)
-        .order("price_monthly", { ascending: true });
-      return (data as Plan[]) ?? [];
-    },
-  );
+  const { data: plans } = useQuery<Plan[]>("admin-plans-for-setup", async () => {
+    const { data } = await getSupabase()
+      .from("plans")
+      .select("*")
+      .eq("is_active", true)
+      .order("price_monthly", { ascending: true });
+    return (data as Plan[]) ?? [];
+  });
 
   const filtered = (contracts ?? []).filter((c) => {
     const matchSearch =
-      !search ||
-      c.organizations?.name?.toLowerCase().includes(search.toLowerCase());
+      !search || c.organizations?.name?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || c.status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -169,7 +162,7 @@ export default function OrganizationsPage() {
             admin_email: form.admin_email,
             admin_display_name: form.admin_display_name || undefined,
           }),
-        },
+        }
       );
 
       const result = await res.json();
@@ -180,7 +173,7 @@ export default function OrganizationsPage() {
       }
 
       setSuccess(
-        `${form.organization_name} のセットアップが完了しました。${form.admin_email} に招待メールを送信しました。`,
+        `${form.organization_name} のセットアップが完了しました。${form.admin_email} に招待メールを送信しました。`
       );
       mutate();
     } catch {
@@ -224,10 +217,7 @@ export default function OrganizationsPage() {
               className="pl-9"
             />
           </div>
-          <Select
-            value={statusFilter}
-            onValueChange={(v) => v && setStatusFilter(v)}
-          >
+          <Select value={statusFilter} onValueChange={(v) => v && setStatusFilter(v)}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="ステータス" />
             </SelectTrigger>
@@ -259,9 +249,7 @@ export default function OrganizationsPage() {
                 <TableRow
                   key={contract.id}
                   className="cursor-pointer hover:bg-accent/50"
-                  onClick={() =>
-                    router.push(`/organizations/${contract.organization_id}`)
-                  }
+                  onClick={() => router.push(`/organizations/${contract.organization_id}`)}
                 >
                   <TableCell className="font-medium">
                     {contract.organizations?.name ?? "-"}
@@ -274,25 +262,16 @@ export default function OrganizationsPage() {
                     ¥{formatCurrency(contract.monthly_price)}
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={
-                        contractStatusColors[contract.status] ?? "outline"
-                      }
-                    >
+                    <Badge variant={contractStatusColors[contract.status] ?? "outline"}>
                       {contractStatusLabels[contract.status] ?? contract.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    {new Date(contract.start_date).toLocaleDateString("ja-JP")}
-                  </TableCell>
+                  <TableCell>{new Date(contract.start_date).toLocaleDateString("ja-JP")}</TableCell>
                 </TableRow>
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center py-8 text-muted-foreground"
-                  >
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     {contracts && contracts.length > 0
                       ? "条件に一致する企業がありません"
                       : "契約企業がありません"}
@@ -345,9 +324,7 @@ export default function OrganizationsPage() {
                 </Label>
                 <Input
                   value={form.organization_name}
-                  onChange={(e) =>
-                    setForm({ ...form, organization_name: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, organization_name: e.target.value })}
                   placeholder="株式会社サンプル"
                 />
               </div>
@@ -356,9 +333,7 @@ export default function OrganizationsPage() {
                   <Label>業種</Label>
                   <Input
                     value={form.industry}
-                    onChange={(e) =>
-                      setForm({ ...form, industry: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, industry: e.target.value })}
                     placeholder="IT・通信"
                   />
                 </div>
@@ -366,9 +341,7 @@ export default function OrganizationsPage() {
                   <Label>所在地</Label>
                   <Input
                     value={form.location}
-                    onChange={(e) =>
-                      setForm({ ...form, location: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, location: e.target.value })}
                     placeholder="東京都渋谷区"
                   />
                 </div>
@@ -382,10 +355,7 @@ export default function OrganizationsPage() {
                 <Label>
                   プラン <span className="text-red-500">*</span>
                 </Label>
-                <Select
-                  value={form.plan_id}
-                  onValueChange={(v) => v && handlePlanChange(v)}
-                >
+                <Select value={form.plan_id} onValueChange={(v) => v && handlePlanChange(v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="プランを選択" />
                   </SelectTrigger>
@@ -422,9 +392,7 @@ export default function OrganizationsPage() {
                   <Input
                     type="number"
                     value={form.monthly_price}
-                    onChange={(e) =>
-                      setForm({ ...form, monthly_price: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, monthly_price: e.target.value })}
                   />
                 </div>
               </div>
@@ -450,9 +418,7 @@ export default function OrganizationsPage() {
                     <Input
                       type="date"
                       value={form.trial_end_date}
-                      onChange={(e) =>
-                        setForm({ ...form, trial_end_date: e.target.value })
-                      }
+                      onChange={(e) => setForm({ ...form, trial_end_date: e.target.value })}
                     />
                   </div>
                 )}
@@ -470,9 +436,7 @@ export default function OrganizationsPage() {
                   <Input
                     type="email"
                     value={form.admin_email}
-                    onChange={(e) =>
-                      setForm({ ...form, admin_email: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, admin_email: e.target.value })}
                     placeholder="admin@example.com"
                   />
                 </div>
@@ -480,20 +444,14 @@ export default function OrganizationsPage() {
                   <Label>表示名</Label>
                   <Input
                     value={form.admin_display_name}
-                    onChange={(e) =>
-                      setForm({ ...form, admin_display_name: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, admin_display_name: e.target.value })}
                     placeholder="管理 太郎"
                   />
                 </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setDialogOpen(false)}
-                  disabled={saving}
-                >
+                <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
                   キャンセル
                 </Button>
                 <Button onClick={handleSetup} disabled={!canSubmit}>

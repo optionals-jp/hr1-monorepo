@@ -14,7 +14,7 @@ import {
 } from "@hr1/shared-ui/components/ui/select";
 import { dealStatusLabels } from "@/lib/constants";
 import { getStagesFromPipeline } from "@/lib/hooks/use-pipelines";
-import type { ValidationErrors } from "@/lib/validation";
+import type { ValidationErrors } from "@hr1/shared-ui";
 import type { BcDeal, BcCompany, BcContact, CrmPipeline } from "@/types/database";
 
 interface DealEditPanelProps {

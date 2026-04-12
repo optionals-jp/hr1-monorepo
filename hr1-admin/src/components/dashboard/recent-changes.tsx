@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@hr1/shared-ui/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
@@ -13,18 +8,15 @@ import { contractChangeTypeLabels } from "@/lib/constants";
 import type { ContractChange } from "@/types/database";
 
 export function RecentChanges() {
-  const { data: changes } = useQuery<ContractChange[]>(
-    "admin-recent-changes",
-    async () => {
-      const { data } = await getSupabase()
-        .from("contract_changes")
-        .select("*, profiles:changed_by(display_name, email)")
-        .order("created_at", { ascending: false })
-        .limit(10);
+  const { data: changes } = useQuery<ContractChange[]>("admin-recent-changes", async () => {
+    const { data } = await getSupabase()
+      .from("contract_changes")
+      .select("*, profiles:changed_by(display_name, email)")
+      .order("created_at", { ascending: false })
+      .limit(10);
 
-      return (data as ContractChange[]) ?? [];
-    },
-  );
+    return (data as ContractChange[]) ?? [];
+  });
 
   return (
     <Card>
@@ -42,19 +34,14 @@ export function RecentChanges() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="text-xs">
-                      {contractChangeTypeLabels[change.change_type] ??
-                        change.change_type}
+                      {contractChangeTypeLabels[change.change_type] ?? change.change_type}
                     </Badge>
                     {change.notes && (
-                      <span className="text-sm text-muted-foreground truncate">
-                        {change.notes}
-                      </span>
+                      <span className="text-sm text-muted-foreground truncate">{change.notes}</span>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {change.profiles?.display_name ??
-                      change.profiles?.email ??
-                      "システム"}
+                    {change.profiles?.display_name ?? change.profiles?.email ?? "システム"}
                   </p>
                 </div>
                 <span className="text-xs text-muted-foreground shrink-0 ml-4">
@@ -64,9 +51,7 @@ export function RecentChanges() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            変更履歴がありません
-          </p>
+          <p className="text-sm text-muted-foreground text-center py-8">変更履歴がありません</p>
         )}
       </CardContent>
     </Card>

@@ -1,7 +1,6 @@
 import 'package:hr1_employee_app/features/employees/domain/entities/employee_contact.dart';
 import 'package:hr1_employee_app/features/wiki/domain/entities/wiki_page.dart';
-import 'package:hr1_employee_app/features/announcements/domain/entities/announcement.dart';
-import 'package:hr1_employee_app/features/faq/domain/entities/faq_item.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_contact.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_company.dart';
 

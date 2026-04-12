@@ -27,7 +27,7 @@ import {
   Calendar,
   Download,
 } from "lucide-react";
-import { exportToCSV } from "@/lib/export-csv";
+import { exportToCSV } from "@hr1/shared-ui";
 import { useAttendanceRealtime } from "@/features/attendance/hooks/use-attendance-realtime";
 import { useMonthlySummary } from "@/features/attendance/hooks/use-attendance-queries";
 import { OvertimeWarningBadge } from "@/features/attendance/components/overtime-warning-badge";

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
-import 'package:hr1_applicant_app/features/service_requests/domain/entities/service_request.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_applicant_app/features/service_requests/presentation/providers/service_request_providers.dart';
 
 /// サービスリクエスト作成コントローラー

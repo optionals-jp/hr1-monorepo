@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { useOrg } from "@/lib/org-context";
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as applicationRepo from "@/lib/repositories/application-repository";
 import {

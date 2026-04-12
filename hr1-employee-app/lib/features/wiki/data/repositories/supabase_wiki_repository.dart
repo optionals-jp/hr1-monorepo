@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:hr1_employee_app/core/utils/query_utils.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_employee_app/features/wiki/domain/entities/wiki_page.dart';
 
 class SupabaseWikiRepository {

@@ -15,7 +15,7 @@ import {
 } from "@hr1/shared-ui/components/ui/select";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { useMyWorkflows, useWorkflowTemplates } from "@/lib/hooks/use-workflows";
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { useAuth } from "@/lib/auth-context";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";

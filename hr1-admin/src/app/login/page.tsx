@@ -64,12 +64,8 @@ export default function LoginPage() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/20">
             <span className="text-base font-bold text-white">H</span>
           </div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">
-            HR1 Admin
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            HR1管理者アカウントでログイン
-          </p>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">HR1 Admin</h1>
+          <p className="mt-1 text-sm text-muted-foreground">HR1管理者アカウントでログイン</p>
         </div>
 
         {/* ログインカード */}

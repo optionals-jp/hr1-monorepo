@@ -22,7 +22,7 @@ export function createSupabaseMiddlewareClient(request: NextRequest) {
           }
         },
       },
-    },
+    }
   );
 
   return { supabase, response };

@@ -41,7 +41,7 @@ function NavLink({
         "relative flex items-center gap-3 rounded-lg px-3 py-2 text-[15px] transition-colors",
         isActive
           ? "bg-accent font-medium text-foreground"
-          : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+          : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
       )}
     >
       {isActive && (

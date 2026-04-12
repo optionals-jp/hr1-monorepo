@@ -1,12 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@hr1/shared-ui/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Input } from "@hr1/shared-ui/components/ui/input";
@@ -18,10 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@hr1/shared-ui/components/ui/dialog";
-import {
-  PageHeader,
-  PageContent,
-} from "@hr1/shared-ui/components/layout/page-header";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
@@ -85,9 +77,7 @@ export default function PlansPage() {
       const payload = {
         name: form.name,
         price_monthly: parseInt(form.price_monthly, 10),
-        max_employees: form.max_employees
-          ? parseInt(form.max_employees, 10)
-          : null,
+        max_employees: form.max_employees ? parseInt(form.max_employees, 10) : null,
         description: form.description || null,
         updated_at: new Date().toISOString(),
       };
@@ -102,9 +92,7 @@ export default function PlansPage() {
           return;
         }
       } else {
-        const { error: insertError } = await getSupabase()
-          .from("plans")
-          .insert(payload);
+        const { error: insertError } = await getSupabase().from("plans").insert(payload);
         if (insertError) {
           setFormError("プランの作成に失敗しました。");
           return;
@@ -156,10 +144,7 @@ export default function PlansPage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {(plans ?? []).map((plan) => (
-            <Card
-              key={plan.id}
-              className={!plan.is_active ? "opacity-60" : undefined}
-            >
+            <Card key={plan.id} className={!plan.is_active ? "opacity-60" : undefined}>
               <CardHeader className="flex flex-row items-start justify-between pb-2">
                 <div>
                   <CardTitle className="text-base">{plan.name}</CardTitle>
@@ -181,20 +166,14 @@ export default function PlansPage() {
               <CardContent className="space-y-2">
                 <div className="text-2xl font-bold">
                   ¥{formatCurrency(plan.price_monthly)}
-                  <span className="text-sm font-normal text-muted-foreground">
-                    /月
-                  </span>
+                  <span className="text-sm font-normal text-muted-foreground">/月</span>
                 </div>
                 <div className="text-sm text-muted-foreground">
                   最大社員数:{" "}
-                  {plan.max_employees
-                    ? `${plan.max_employees.toLocaleString()}名`
-                    : "無制限"}
+                  {plan.max_employees ? `${plan.max_employees.toLocaleString()}名` : "無制限"}
                 </div>
                 {plan.description && (
-                  <p className="text-sm text-muted-foreground">
-                    {plan.description}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{plan.description}</p>
                 )}
                 <Button
                   variant="outline"
@@ -220,9 +199,7 @@ export default function PlansPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editing ? "プラン編集" : "新規プラン作成"}
-            </DialogTitle>
+            <DialogTitle>{editing ? "プラン編集" : "新規プラン作成"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {formError && (
@@ -245,9 +222,7 @@ export default function PlansPage() {
                 <Input
                   type="number"
                   value={form.price_monthly}
-                  onChange={(e) =>
-                    setForm({ ...form, price_monthly: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, price_monthly: e.target.value })}
                   placeholder="50000"
                 />
               </div>
@@ -256,9 +231,7 @@ export default function PlansPage() {
                 <Input
                   type="number"
                   value={form.max_employees}
-                  onChange={(e) =>
-                    setForm({ ...form, max_employees: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, max_employees: e.target.value })}
                   placeholder="空欄で無制限"
                 />
               </div>
@@ -267,9 +240,7 @@ export default function PlansPage() {
               <Label>説明</Label>
               <Textarea
                 value={form.description}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="プランの説明..."
                 rows={3}
               />
@@ -278,10 +249,7 @@ export default function PlansPage() {
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
                 キャンセル
               </Button>
-              <Button
-                onClick={handleSave}
-                disabled={saving || !form.name || !form.price_monthly}
-              >
+              <Button onClick={handleSave} disabled={saving || !form.name || !form.price_monthly}>
                 {saving ? "保存中..." : "保存"}
               </Button>
             </div>

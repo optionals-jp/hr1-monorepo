@@ -1,22 +1,9 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@hr1/shared-ui/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { format, subMonths } from "date-fns";
 
 interface MonthlyData {
@@ -63,12 +50,7 @@ export function ContractChart() {
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 12 }}
-                tickLine={false}
-                axisLine={false}
-              />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
               <YAxis
                 tick={{ fontSize: 12 }}
                 tickLine={false}

@@ -17,7 +17,7 @@ import { useCrmDealsAll } from "@/lib/hooks/use-crm";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import { fetchRecentActivities } from "@/lib/repositories/crm-repository";
-import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
+import { exportToCSV, csvFilenameWithDate } from "@hr1/shared-ui";
 import { cn } from "@hr1/shared-ui/lib/utils";
 import { getDateFilter, computeRepPerformance } from "@/features/crm/rules";
 import { ReportNav } from "@/components/crm/report-nav";

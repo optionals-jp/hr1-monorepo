@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hr1_applicant_app/features/announcements/data/repositories/supabase_announcements_repository.dart';
-import 'package:hr1_applicant_app/features/announcements/domain/entities/announcement.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 
 final announcementsRepositoryProvider =
     Provider<SupabaseAnnouncementsRepository>((ref) {

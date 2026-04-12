@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { useOrg } from "@/lib/org-context";
 import { usePayslips } from "@/lib/hooks/use-payslips";
 import type { Payslip } from "@/types/database";

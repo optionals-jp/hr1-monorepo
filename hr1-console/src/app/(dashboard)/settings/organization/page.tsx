@@ -3,7 +3,7 @@
 import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TabBar, type TabItem } from "@hr1/shared-ui/components/layout/tab-bar";
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { Info, History } from "lucide-react";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Input } from "@hr1/shared-ui/components/ui/input";

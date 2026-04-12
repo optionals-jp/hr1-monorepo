@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 import {
   create,
   getNumericDate,
@@ -75,7 +75,7 @@ async function getAccessToken(): Promise<string> {
   return result.access_token;
 }
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   try {
     const payload: PushPayload = await req.json();
     const { user_id, title, body, action_url, data } = payload;

@@ -13,7 +13,7 @@ import {
 } from "@hr1/shared-ui/components/ui/select";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { useCrmDealsAll } from "@/lib/hooks/use-crm";
-import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
+import { exportToCSV, csvFilenameWithDate } from "@hr1/shared-ui";
 import { cn } from "@hr1/shared-ui/lib/utils";
 import { ReportNav } from "@/components/crm/report-nav";
 import {

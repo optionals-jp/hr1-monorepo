@@ -10,6 +10,7 @@ import 'package:hr1_employee_app/features/portal/presentation/screens/portal_scr
 import 'package:hr1_employee_app/features/calendar/presentation/screens/calendar_screen.dart';
 import 'package:hr1_employee_app/features/messages/presentation/screens/messages_screen.dart';
 import 'package:hr1_employee_app/features/messages/presentation/screens/thread_chat_screen.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_employee_app/features/messages/domain/entities/message_thread.dart';
 import 'package:hr1_employee_app/features/tasks/presentation/screens/tasks_screen.dart';
 import 'package:hr1_employee_app/features/auth/presentation/screens/profile_screen.dart';
@@ -28,13 +29,11 @@ import 'package:hr1_employee_app/features/wiki/presentation/screens/wiki_list_sc
 import 'package:hr1_employee_app/features/wiki/presentation/screens/wiki_detail_screen.dart';
 import 'package:hr1_employee_app/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:hr1_employee_app/features/announcements/presentation/screens/announcements_screen.dart';
-import 'package:hr1_employee_app/features/service_requests/domain/entities/service_request.dart';
 import 'package:hr1_employee_app/features/service_requests/presentation/screens/service_request_list_screen.dart';
 import 'package:hr1_employee_app/features/service_requests/presentation/screens/service_request_create_screen.dart';
 import 'package:hr1_employee_app/features/surveys/presentation/screens/survey_list_screen.dart';
 import 'package:hr1_employee_app/features/surveys/presentation/screens/survey_answer_screen.dart';
 import 'package:hr1_employee_app/features/surveys/presentation/providers/survey_providers.dart';
-import 'package:hr1_employee_app/features/surveys/domain/entities/pulse_survey.dart';
 import 'package:hr1_employee_app/features/workflow/domain/entities/workflow_request.dart';
 import 'package:hr1_employee_app/features/workflow/presentation/screens/workflow_list_screen.dart';
 import 'package:hr1_employee_app/features/workflow/presentation/screens/workflow_create_screen.dart';
@@ -56,7 +55,6 @@ import 'package:hr1_employee_app/features/business_cards/presentation/screens/de
 import 'package:hr1_employee_app/features/business_cards/presentation/screens/activity_form_screen.dart';
 import 'package:hr1_employee_app/features/business_cards/presentation/screens/bc_todo_form_screen.dart';
 import 'package:hr1_employee_app/shared/screens/search_screen.dart';
-import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 
 /// 開発モードフラグ（trueの場合、認証ガードをスキップ）
 const bool kDevMode = false;

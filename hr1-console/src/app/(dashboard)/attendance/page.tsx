@@ -1,6 +1,6 @@
 "use client";
 
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";

@@ -97,4 +97,4 @@ export function Pagination({
 }
 
 // Re-export hook from lib/hooks for backwards compatibility
-export { usePagination } from "@/lib/hooks/use-pagination";
+export { usePagination } from "@hr1/shared-ui";

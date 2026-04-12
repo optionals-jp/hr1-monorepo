@@ -29,7 +29,7 @@ import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banne
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { cn } from "@hr1/shared-ui/lib/utils";
 import { useCrmQuotes } from "@/lib/hooks/use-crm";
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import { deleteQuote } from "@/lib/repositories/quote-repository";

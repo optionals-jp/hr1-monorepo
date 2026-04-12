@@ -1,10 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createSupabaseMiddlewareClient } from "@/lib/supabase-server";
-import {
-  getCachedRole,
-  setCachedRole,
-  clearCachedRole,
-} from "@hr1/shared-ui/lib/role-cache";
+import { getCachedRole, setCachedRole, clearCachedRole } from "@hr1/shared-ui/lib/role-cache";
 
 const PUBLIC_PATHS = new Set(["/login"]);
 

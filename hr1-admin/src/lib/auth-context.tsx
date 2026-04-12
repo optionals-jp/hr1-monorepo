@@ -17,10 +17,7 @@ interface AuthContextValue {
   user: { id: string; email: string } | null;
   profile: Profile | null;
   loading: boolean;
-  signIn: (
-    email: string,
-    password: string,
-  ) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -80,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser((prev) =>
           prev?.id === sessionUser.id
             ? prev
-            : { id: sessionUser.id, email: sessionUser.email ?? "" },
+            : { id: sessionUser.id, email: sessionUser.email ?? "" }
         );
         setLoading(false);
         return;
@@ -111,11 +108,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     signingIn.current = true;
     try {
-      const { data: authData, error: authError } =
-        await getSupabase().auth.signInWithPassword({
-          email,
-          password,
-        });
+      const { data: authData, error: authError } = await getSupabase().auth.signInWithPassword({
+        email,
+        password,
+      });
 
       if (authError) {
         return { error: authError.message };

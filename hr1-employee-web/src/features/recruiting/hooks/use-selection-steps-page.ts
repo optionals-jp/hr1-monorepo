@@ -3,11 +3,11 @@
 import { useCallback, useMemo, useState } from "react";
 import { useOrg } from "@/lib/org-context";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
-import { useTabParam } from "@/lib/hooks/use-tab-param";
+import { useTabParam } from "@hr1/shared-ui";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as templateRepo from "@/lib/repositories/selection-step-template-repository";
 import * as applicationRepo from "@/lib/repositories/application-repository";
-import { validators, validateForm, type ValidationErrors } from "@/lib/validation";
+import { validators, validateForm, type ValidationErrors } from "@hr1/shared-ui";
 import { StepStatus } from "@/lib/constants";
 import type { Application, SelectionStepTemplate } from "@/types/database";
 

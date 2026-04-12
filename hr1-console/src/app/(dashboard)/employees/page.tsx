@@ -34,7 +34,7 @@ import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { SlidersHorizontal, X, Download, Upload, ChevronDown } from "lucide-react";
-import { exportToCSV } from "@/lib/export-csv";
+import { exportToCSV } from "@hr1/shared-ui";
 import { genderLabels } from "@/lib/constants";
 import { useRouter } from "next/navigation";
 import { EmployeeImportDialog } from "./employee-import-dialog";

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:hr1_applicant_app/core/utils/date_formatter.dart';
-import 'package:hr1_applicant_app/core/constants/constants.dart';
-import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_applicant_app/features/messages/domain/entities/message_thread.dart';
 import 'package:hr1_applicant_app/features/messages/presentation/controllers/thread_chat_controller.dart';
 

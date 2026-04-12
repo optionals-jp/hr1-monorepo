@@ -5,6 +5,7 @@ class FaqItem {
     required this.question,
     required this.answer,
     required this.category,
+    this.target,
     required this.sortOrder,
   });
 
@@ -12,6 +13,7 @@ class FaqItem {
   final String question;
   final String answer; // Markdown
   final String category;
+  final String? target; // employee | applicant | both
   final int sortOrder;
 
   factory FaqItem.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class FaqItem {
       question: json['question'] as String,
       answer: json['answer'] as String,
       category: json['category'] as String? ?? 'general',
+      target: json['target'] as String?,
       sortOrder: json['sort_order'] as int? ?? 0,
     );
   }

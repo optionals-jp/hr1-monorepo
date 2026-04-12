@@ -29,7 +29,7 @@ class PulseSurvey {
       organizationId: json['organization_id'] as String,
       title: json['title'] as String,
       description: json['description'] as String?,
-      target: json['target'] as String? ?? 'applicant',
+      target: json['target'] as String? ?? 'all',
       status: json['status'] as String? ?? 'draft',
       deadline: json['deadline'] != null
           ? DateTime.parse(json['deadline'] as String)

@@ -1,6 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:hr1_employee_app/core/utils/query_utils.dart';
-import 'package:hr1_employee_app/features/announcements/domain/entities/announcement.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 
 class SupabaseAnnouncementsRepository {
   SupabaseAnnouncementsRepository(this._client, {this.overrideUserId});

@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@hr1/shared-ui/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import {
@@ -25,35 +20,32 @@ interface MonthlyRevenue {
 }
 
 export function RevenueChart() {
-  const { data } = useQuery<MonthlyRevenue[]>(
-    "admin-revenue-trend",
-    async () => {
-      const { data: contracts } = await getSupabase()
-        .from("contracts")
-        .select("start_date, monthly_price, status")
-        .in("status", ["active", "trial"]);
+  const { data } = useQuery<MonthlyRevenue[]>("admin-revenue-trend", async () => {
+    const { data: contracts } = await getSupabase()
+      .from("contracts")
+      .select("start_date, monthly_price, status")
+      .in("status", ["active", "trial"]);
 
-      if (!contracts) return [];
+    if (!contracts) return [];
 
-      const now = new Date();
-      const months: MonthlyRevenue[] = [];
+    const now = new Date();
+    const months: MonthlyRevenue[] = [];
 
-      for (let i = 5; i >= 0; i--) {
-        const d = subMonths(now, i);
-        const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-        const monthStr = format(d, "yyyy/MM");
+    for (let i = 5; i >= 0; i--) {
+      const d = subMonths(now, i);
+      const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      const monthStr = format(d, "yyyy/MM");
 
-        // この月末時点でアクティブだった契約のMRRを合計
-        const mrr = contracts
-          .filter((c) => new Date(c.start_date) <= monthEnd)
-          .reduce((sum, c) => sum + (c.monthly_price ?? 0), 0);
+      // この月末時点でアクティブだった契約のMRRを合計
+      const mrr = contracts
+        .filter((c) => new Date(c.start_date) <= monthEnd)
+        .reduce((sum, c) => sum + (c.monthly_price ?? 0), 0);
 
-        months.push({ month: monthStr, mrr });
-      }
+      months.push({ month: monthStr, mrr });
+    }
 
-      return months;
-    },
-  );
+    return months;
+  });
 
   return (
     <Card>
@@ -65,24 +57,14 @@ export function RevenueChart() {
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 12 }}
-                tickLine={false}
-                axisLine={false}
-              />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
               <YAxis
                 tick={{ fontSize: 12 }}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(v) => `¥${(v / 10000).toFixed(0)}万`}
               />
-              <Tooltip
-                formatter={(value) => [
-                  `¥${Number(value).toLocaleString()}`,
-                  "MRR",
-                ]}
-              />
+              <Tooltip formatter={(value) => [`¥${Number(value).toLocaleString()}`, "MRR"]} />
               <Line
                 type="monotone"
                 dataKey="mrr"

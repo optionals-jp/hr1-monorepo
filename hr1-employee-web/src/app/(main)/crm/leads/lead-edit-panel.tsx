@@ -14,7 +14,7 @@ import {
 } from "@hr1/shared-ui/components/ui/select";
 import { leadSourceLabels, leadStatusLabels } from "@/lib/constants";
 import type { BcLead, BcCompany } from "@/types/database";
-import type { ValidationErrors } from "@/lib/validation";
+import type { ValidationErrors } from "@hr1/shared-ui";
 
 interface LeadEditPanelProps {
   editOpen: boolean;

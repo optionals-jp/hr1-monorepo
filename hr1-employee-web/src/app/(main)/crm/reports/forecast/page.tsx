@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@hr1/shared-ui/components/ui/table";
 import { useCrmDealsAll } from "@/lib/hooks/use-crm";
-import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
+import { exportToCSV, csvFilenameWithDate } from "@hr1/shared-ui";
 import { ReportNav } from "@/components/crm/report-nav";
 import {
   categorizeDeal,

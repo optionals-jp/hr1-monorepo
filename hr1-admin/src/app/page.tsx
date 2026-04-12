@@ -1,15 +1,7 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@hr1/shared-ui/components/ui/card";
-import {
-  PageHeader,
-  PageContent,
-} from "@hr1/shared-ui/components/layout/page-header";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
@@ -17,13 +9,7 @@ import { formatCurrency } from "@/lib/utils";
 import { ContractChart } from "@/components/dashboard/contract-chart";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { RecentChanges } from "@/components/dashboard/recent-changes";
-import {
-  Building2,
-  Users,
-  CreditCard,
-  TrendingUp,
-  type LucideIcon,
-} from "lucide-react";
+import { Building2, Users, CreditCard, TrendingUp, type LucideIcon } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -57,16 +43,12 @@ function KpiCard({ card }: { card: KpiCardDef }) {
         <CardTitle className="text-[13px] font-medium text-muted-foreground">
           {card.title}
         </CardTitle>
-        <div
-          className={`flex h-8 w-8 items-center justify-center rounded-lg ${card.bg}`}
-        >
+        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${card.bg}`}>
           <card.icon className={`h-4 w-4 ${card.color}`} />
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold tabular-nums tracking-tight">
-          {card.value}
-        </div>
+        <div className="text-2xl font-bold tabular-nums tracking-tight">{card.value}</div>
       </CardContent>
     </Card>
   );
@@ -100,10 +82,7 @@ export default function DashboardPage() {
     const activeContracts = activeRes.count ?? 0;
     const trialContracts = trialRes.count ?? 0;
     const contracts = allActiveRes.data ?? [];
-    const totalEmployees = contracts.reduce(
-      (sum, c) => sum + (c.contracted_employees ?? 0),
-      0,
-    );
+    const totalEmployees = contracts.reduce((sum, c) => sum + (c.contracted_employees ?? 0), 0);
     const mrr = contracts.reduce((sum, c) => sum + (c.monthly_price ?? 0), 0);
 
     return { activeContracts, trialContracts, totalEmployees, mrr };

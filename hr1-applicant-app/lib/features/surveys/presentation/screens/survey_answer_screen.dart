@@ -4,9 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:hr1_applicant_app/core/constants/constants.dart';
-import 'package:hr1_applicant_app/shared/widgets/widgets.dart';
-import 'package:hr1_applicant_app/features/surveys/domain/entities/pulse_survey.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_applicant_app/features/surveys/presentation/controllers/survey_answer_controller.dart';
 import 'package:hr1_applicant_app/features/surveys/presentation/providers/survey_providers.dart';
 

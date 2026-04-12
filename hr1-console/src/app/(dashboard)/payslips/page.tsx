@@ -40,7 +40,7 @@ import { usePayslipsPage } from "@/lib/hooks/use-payslips-page";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { cn } from "@/lib/utils";
 import { Plus, Trash2, FileDown, Download, SlidersHorizontal, X, List, Upload } from "lucide-react";
-import { exportToCSV } from "@/lib/export-csv";
+import { exportToCSV } from "@hr1/shared-ui";
 
 type TabValue = "list" | "upload";
 

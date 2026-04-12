@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hr1_employee_app/features/messages/domain/entities/message_thread.dart';
+import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_employee_app/features/messages/presentation/providers/messages_providers.dart';
 
 /// スレッドチャット操作コントローラー

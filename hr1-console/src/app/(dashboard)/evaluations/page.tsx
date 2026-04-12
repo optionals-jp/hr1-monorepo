@@ -32,7 +32,7 @@ import {
 } from "@/lib/hooks/use-evaluations";
 import { FileText, RefreshCw, HelpCircle, Download } from "lucide-react";
 import { GuideView } from "@/features/evaluations/components/guide-view";
-import { exportToCSV, csvFilenameWithDate } from "@/lib/export-csv";
+import { exportToCSV, csvFilenameWithDate } from "@hr1/shared-ui";
 
 const subTabs = [
   { value: "sheets", label: "評価シート" },

@@ -27,10 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@hr1/shared-ui/components/ui/table";
-import {
-  PageHeader,
-  PageContent,
-} from "@hr1/shared-ui/components/layout/page-header";
+import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { getSupabase } from "@/lib/supabase";
 import { useQuery } from "@/lib/use-query";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
@@ -64,16 +61,13 @@ export default function ContractsPage() {
     return (data as Plan[]) ?? [];
   });
 
-  const { data: organizations } = useQuery<Organization[]>(
-    "admin-orgs-list",
-    async () => {
-      const { data } = await getSupabase()
-        .from("organizations")
-        .select("*")
-        .order("name", { ascending: true });
-      return (data as Organization[]) ?? [];
-    },
-  );
+  const { data: organizations } = useQuery<Organization[]>("admin-orgs-list", async () => {
+    const { data } = await getSupabase()
+      .from("organizations")
+      .select("*")
+      .order("name", { ascending: true });
+    return (data as Organization[]) ?? [];
+  });
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({
@@ -268,23 +262,15 @@ export default function ContractsPage() {
                     ¥{formatCurrency(contract.monthly_price)}
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={
-                        contractStatusColors[contract.status] ?? "outline"
-                      }
-                    >
+                    <Badge variant={contractStatusColors[contract.status] ?? "outline"}>
                       {contractStatusLabels[contract.status] ?? contract.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    {new Date(contract.start_date).toLocaleDateString("ja-JP")}
-                  </TableCell>
+                  <TableCell>{new Date(contract.start_date).toLocaleDateString("ja-JP")}</TableCell>
                   <TableCell>
                     <Select
                       value={contract.status}
-                      onValueChange={(v) =>
-                        v && handleStatusChange(contract, v)
-                      }
+                      onValueChange={(v) => v && handleStatusChange(contract, v)}
                       disabled={changingStatusId === contract.id}
                     >
                       <SelectTrigger className="h-8 w-28 text-xs">
@@ -302,10 +288,7 @@ export default function ContractsPage() {
               ))}
               {contracts && contracts.length === 0 && (
                 <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="text-center py-8 text-muted-foreground"
-                  >
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     契約がありません
                   </TableCell>
                 </TableRow>
@@ -332,9 +315,7 @@ export default function ContractsPage() {
               <Label>企業</Label>
               <Select
                 value={form.organization_id}
-                onValueChange={(v) =>
-                  v && setForm({ ...form, organization_id: v })
-                }
+                onValueChange={(v) => v && setForm({ ...form, organization_id: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="企業を選択" />
@@ -351,10 +332,7 @@ export default function ContractsPage() {
 
             <div className="space-y-1.5">
               <Label>プラン</Label>
-              <Select
-                value={form.plan_id}
-                onValueChange={(v) => v && handlePlanChange(v)}
-              >
+              <Select value={form.plan_id} onValueChange={(v) => v && handlePlanChange(v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="プランを選択" />
                 </SelectTrigger>
@@ -389,9 +367,7 @@ export default function ContractsPage() {
                 <Input
                   type="number"
                   value={form.monthly_price}
-                  onChange={(e) =>
-                    setForm({ ...form, monthly_price: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, monthly_price: e.target.value })}
                 />
               </div>
             </div>
@@ -402,9 +378,7 @@ export default function ContractsPage() {
                 <Input
                   type="date"
                   value={form.start_date}
-                  onChange={(e) =>
-                    setForm({ ...form, start_date: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, start_date: e.target.value })}
                 />
               </div>
               <div className="space-y-1.5">
@@ -430,9 +404,7 @@ export default function ContractsPage() {
                 <Input
                   type="date"
                   value={form.trial_end_date}
-                  onChange={(e) =>
-                    setForm({ ...form, trial_end_date: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, trial_end_date: e.target.value })}
                 />
               </div>
             )}
