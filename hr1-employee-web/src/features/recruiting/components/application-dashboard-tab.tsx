@@ -93,7 +93,7 @@ export function ApplicationDashboardTab({
             応募経路
           </p>
           {onSourceChange ? (
-            <Select value={source ?? ""} onValueChange={onSourceChange}>
+            <Select value={source ?? ""} onValueChange={(v) => onSourceChange(v ?? "")}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="未設定" />
               </SelectTrigger>

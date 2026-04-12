@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@hr1/shared-ui/components/ui/popover";
 import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
@@ -39,18 +38,17 @@ export function InterviewerSelect({
   return (
     <div className="space-y-2">
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between font-normal"
-          >
-            <span className="text-muted-foreground">
-              {selectedIds.length > 0 ? `${selectedIds.length}名 選択中` : "面接官を選択"}
-            </span>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
+        <PopoverTrigger
+          className={cn(
+            "flex w-full items-center justify-between rounded-xl border border-input bg-transparent px-3 py-2 text-sm font-normal transition-colors outline-none",
+            "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+            "hover:bg-accent/50 cursor-pointer"
+          )}
+        >
+          <span className="text-muted-foreground">
+            {selectedIds.length > 0 ? `${selectedIds.length}名 選択中` : "面接官を選択"}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </PopoverTrigger>
         <PopoverContent className="w-[300px] p-0" align="start">
           <div className="max-h-60 overflow-y-auto p-2 space-y-1">

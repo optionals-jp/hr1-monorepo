@@ -57,7 +57,7 @@ export function RejectionReasonDialog({
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
             <Label htmlFor="rejection-category">カテゴリ</Label>
-            <Select value={category} onValueChange={setCategory}>
+            <Select value={category} onValueChange={(v) => setCategory(v ?? "")}>
               <SelectTrigger>
                 <SelectValue placeholder="選択してください" />
               </SelectTrigger>
