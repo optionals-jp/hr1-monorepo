@@ -13,6 +13,7 @@ import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as evalRepo from "@/lib/repositories/evaluation-repository";
 import { CriterionField } from "./criterion-field";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { RATER_TYPE_LABELS } from "@/lib/evaluation-utils";
 import { ArrowLeft, Save, Send } from "lucide-react";
 import type {
@@ -284,32 +285,15 @@ export default function EvaluationFormPage() {
             </div>
           )}
 
-          {/* Submit confirmation dialog */}
-          {showSubmitConfirm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-              <div className="bg-background rounded-lg p-6 max-w-sm mx-4 shadow-lg">
-                <h3 className="text-sm font-semibold mb-2">評価を提出しますか？</h3>
-                <p className="text-xs text-muted-foreground mb-4">
-                  提出後は変更できません。内容をご確認ください。
-                </p>
-                <div className="flex gap-2 justify-end">
-                  <Button variant="ghost" size="sm" onClick={() => setShowSubmitConfirm(false)}>
-                    キャンセル
-                  </Button>
-                  <Button
-                    size="sm"
-                    disabled={submitting}
-                    onClick={async () => {
-                      setShowSubmitConfirm(false);
-                      await handleSubmit();
-                    }}
-                  >
-                    {submitting ? "提出中..." : "提出する"}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
+          <ConfirmDialog
+            open={showSubmitConfirm}
+            onOpenChange={setShowSubmitConfirm}
+            title="評価を提出しますか？"
+            description="提出後は変更できません。内容をご確認ください。"
+            confirmText={submitting ? "提出中..." : "提出する"}
+            disabled={submitting}
+            onConfirm={handleSubmit}
+          />
         </div>
       </PageContent>
     </div>

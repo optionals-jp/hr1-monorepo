@@ -26,6 +26,16 @@ export async function markAsRead(client: SupabaseClient, id: string, userId: str
   if (error) throw error;
 }
 
+export type NotificationType =
+  | "survey_request"
+  | "task_assigned"
+  | "recruitment_update"
+  | "attendance_reminder"
+  | "message_received"
+  | "announcement"
+  | "general"
+  | "workflow";
+
 export async function createNotification(
   client: SupabaseClient,
   data: {
@@ -33,7 +43,7 @@ export async function createNotification(
     organization_id: string;
     title: string;
     body: string;
-    type: string;
+    type: NotificationType;
     resource_type?: string;
     resource_id?: string;
   }

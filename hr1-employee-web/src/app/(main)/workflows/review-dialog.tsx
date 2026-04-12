@@ -47,8 +47,10 @@ export function ReviewDialog({ open, onOpenChange, action, onSubmit }: ReviewDia
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder={action === "approved" ? "コメント（任意）" : "却下理由"}
+            placeholder={action === "approved" ? "コメント（任意）" : "却下理由（必須）"}
+            required={action === "rejected"}
             rows={3}
+            aria-label={action === "approved" ? "承認コメント" : "却下理由"}
             className="w-full rounded-md border px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <div className="flex gap-2 justify-end">

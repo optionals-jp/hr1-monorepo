@@ -9,6 +9,7 @@ import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as profileRepo from "@/lib/repositories/profile-repository";
 import { AvatarUpload } from "./avatar-upload";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export function ProfileEditForm({ onClose }: { onClose: () => void }) {
   const { user, profile, refreshProfile } = useAuth();
@@ -163,29 +164,16 @@ export function ProfileEditForm({ onClose }: { onClose: () => void }) {
         </CardContent>
       </Card>
 
-      {showCancelConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-background rounded-lg p-6 max-w-sm mx-4 shadow-lg">
-            <h3 className="text-sm font-semibold mb-2">編集を破棄しますか？</h3>
-            <p className="text-xs text-muted-foreground mb-4">保存されていない変更が失われます。</p>
-            <div className="flex gap-2 justify-end">
-              <Button variant="ghost" size="sm" onClick={() => setShowCancelConfirm(false)}>
-                編集を続ける
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => {
-                  setShowCancelConfirm(false);
-                  onClose();
-                }}
-              >
-                破棄する
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={showCancelConfirm}
+        onOpenChange={setShowCancelConfirm}
+        title="編集を破棄しますか？"
+        description="保存されていない変更が失われます。"
+        confirmText="破棄する"
+        cancelText="編集を続ける"
+        variant="destructive"
+        onConfirm={onClose}
+      />
     </div>
   );
 }
