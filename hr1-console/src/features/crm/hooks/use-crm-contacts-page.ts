@@ -74,12 +74,9 @@ export function useCrmContactsPage() {
   }, []);
 
   // Handle form field change
-  const updateField = useCallback(
-    (field: keyof ContactFormData, value: string) => {
-      setForm((prev) => ({ ...prev, [field]: value }));
-    },
-    []
-  );
+  const updateField = useCallback((field: keyof ContactFormData, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }, []);
 
   // Save contact
   const handleSave = useCallback(async (): Promise<{

@@ -27,7 +27,8 @@ export interface ContactEditForm {
 
 interface Props {
   form: ContactEditForm;
-  updateField: (field: keyof ContactEditForm, value: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  updateField: (field: string, value: any) => void;
   companies: BcCompany[];
   prefix?: string;
   /** リスト画面ではカナフィールドを非表示にする */
