@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
 import {
@@ -18,17 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@hr1/shared-ui/components/ui/table";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useOrgQuery } from "@/lib/hooks/use-org-query";
-import { fetchDeals } from "@/lib/repositories/crm-repository";
-import {
-  computeCategorySummary,
-  computeChartData,
-  computeRepForecast,
-  formatJpy,
-  getDateFilter,
-} from "@/features/crm/rules";
-import type { BcDeal } from "@/types/database";
+import { formatJpy } from "@/features/crm/rules";
+import { useCrmForecastPage } from "@/features/crm/hooks/use-crm-forecast-page";
 
 const categoryLabels: Record<string, string> = {
   pipeline: "パイプライン",
@@ -45,28 +35,18 @@ const categoryColors: Record<string, string> = {
 };
 
 export default function ForecastPage() {
-  const [periodMode, setPeriodMode] = useState<"monthly" | "quarterly">("monthly");
-  const [period, setPeriod] = useState("6m");
-
-  const { data: allDeals } = useOrgQuery<BcDeal[]>("crm-deals-forecast", (orgId) =>
-    fetchDeals(getSupabase(), orgId)
-  );
-
-  const dateFilter = getDateFilter(period);
-  const deals = (allDeals ?? []).filter((d) => {
-    if (!dateFilter) return true;
-    return new Date(d.created_at) >= dateFilter;
-  });
-
-  const categorySummary = computeCategorySummary(deals);
-  const chartData = computeChartData(deals, periodMode);
-  const repForecast = computeRepForecast(deals);
-
-  const totalWeighted = Object.values(categorySummary).reduce((s, c) => s + c.weighted, 0);
-  const totalAmount = Object.values(categorySummary).reduce((s, c) => s + c.amount, 0);
-
-  // Find max period amount for bar sizing
-  const maxPeriodTotal = Math.max(...chartData.map((d) => d.total), 1);
+  const {
+    periodMode,
+    setPeriodMode,
+    period,
+    setPeriod,
+    categorySummary,
+    chartData,
+    repForecast,
+    totalWeighted,
+    totalAmount,
+    maxPeriodTotal,
+  } = useCrmForecastPage();
 
   return (
     <div className="flex flex-col">

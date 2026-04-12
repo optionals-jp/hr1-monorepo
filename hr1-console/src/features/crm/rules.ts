@@ -506,3 +506,56 @@ export function getDateFilter(period: string): Date | null {
   else d.setDate(d.getDate() - value);
   return d;
 }
+
+// --- UI Helpers ---
+
+export function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  return dateStr.slice(0, 10);
+}
+
+export function formatDateTime(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  return dateStr.replace("T", " ").slice(0, 16);
+}
+
+export function isOverdue(dueDate: string | null, isCompleted?: boolean): boolean {
+  if (!dueDate || isCompleted) return false;
+  return new Date(dueDate) < new Date(new Date().toISOString().slice(0, 10));
+}
+
+export function generateQuoteNumber(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  const r = String(Math.floor(Math.random() * 1000)).padStart(3, "0");
+  return `Q-${y}${m}${d}-${r}`;
+}
+
+export type ActivityIconType = "call" | "email" | "appointment" | "visit" | "memo";
+
+export function getActivityIconType(type: string): ActivityIconType {
+  switch (type) {
+    case "call":
+      return "call";
+    case "email":
+      return "email";
+    case "appointment":
+      return "appointment";
+    case "visit":
+      return "visit";
+    default:
+      return "memo";
+  }
+}
+
+export function filterBySearch<T>(
+  items: T[],
+  search: string,
+  getFields: (item: T) => (string | null | undefined)[]
+): T[] {
+  if (!search) return items;
+  const s = search.toLowerCase();
+  return items.filter((item) => getFields(item).some((f) => f?.toLowerCase().includes(s)));
+}

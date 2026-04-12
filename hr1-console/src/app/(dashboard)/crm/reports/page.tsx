@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
@@ -19,82 +18,33 @@ import {
   TableHeader,
   TableRow,
 } from "@hr1/shared-ui/components/ui/table";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useOrgQuery } from "@/lib/hooks/use-org-query";
-import { useDefaultPipeline, getStagesFromPipeline } from "@/lib/hooks/use-pipelines";
-import {
-  fetchDeals,
-  fetchRecentActivities,
-  fetchStageHistory,
-} from "@/lib/repositories/crm-repository";
-import {
-  computeWinLossSummary,
-  computeMonthlyTrend,
-  computeAmountBrackets,
-  computeRepWinRates,
-  computeRepPerformance,
-  computeStageMetrics,
-  computeConversionRates,
-  computePipelineVelocity,
-  formatJpy,
-  getDateFilter,
-} from "@/features/crm/rules";
-import type { BcDeal, BcActivity, CrmDealStageHistory } from "@/types/database";
-import { cn } from "@/lib/utils";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
+import { formatJpy } from "@/features/crm/rules";
+import { useCrmReportsPage, type ReportTab } from "@/features/crm/hooks/use-crm-reports-page";
 
-type ReportTab = "winloss" | "performance" | "pipeline";
+const EmptyRow = ({ cols }: { cols: number }) => (
+  <TableRow>
+    <TableCell colSpan={cols} className="text-center text-muted-foreground py-8">
+      データがありません
+    </TableCell>
+  </TableRow>
+);
 
 export default function ReportsPage() {
-  const { data: pipeline } = useDefaultPipeline();
-  const stages = getStagesFromPipeline(pipeline);
-
-  const [activeTab, setActiveTab] = useState<ReportTab>("winloss");
-  const [period, setPeriod] = useState("6m");
-
-  const { data: allDeals } = useOrgQuery<BcDeal[]>("crm-deals-reports", (orgId) =>
-    fetchDeals(getSupabase(), orgId)
-  );
-
-  const { data: allActivities } = useOrgQuery<BcActivity[]>("crm-activities-reports", (orgId) =>
-    fetchRecentActivities(getSupabase(), orgId, 500)
-  );
-
-  const { data: stageHistory } = useOrgQuery<CrmDealStageHistory[]>(
-    "crm-stage-history-reports",
-    (orgId) => fetchStageHistory(getSupabase(), orgId)
-  );
-
-  const dateFilter = getDateFilter(period);
-  const deals = (allDeals ?? []).filter((d) => {
-    if (!dateFilter) return true;
-    return new Date(d.created_at) >= dateFilter;
-  });
-  const activities = (allActivities ?? []).filter((a) => {
-    if (!dateFilter) return true;
-    return new Date(a.created_at) >= dateFilter;
-  });
-
-  // Win/Loss Analysis
-  const wlSummary = computeWinLossSummary(deals);
-  const monthlyTrend = computeMonthlyTrend(wlSummary.wonDeals, wlSummary.lostDeals);
-  const brackets = computeAmountBrackets(wlSummary.wonDeals, wlSummary.lostDeals);
-  const repWinRates = computeRepWinRates(wlSummary.wonDeals, wlSummary.lostDeals);
-
-  // Performance
-  const repPerformance = computeRepPerformance(deals, activities);
-
-  // Pipeline Analysis
-  const openDeals = deals.filter((d) => d.status === "open");
-  const wonDeals = deals.filter((d) => d.status === "won");
-  const stageMetrics = computeStageMetrics(stages, openDeals, stageHistory ?? []);
-  const conversionRates = computeConversionRates(stages, stageMetrics);
-  const velocity = computePipelineVelocity(deals, openDeals, wonDeals, stageMetrics);
-
-  const tabs: { key: ReportTab; label: string }[] = [
-    { key: "winloss", label: "受注・失注分析" },
-    { key: "performance", label: "担当者パフォーマンス" },
-    { key: "pipeline", label: "パイプライン分析" },
-  ];
+  const {
+    activeTab,
+    setActiveTab,
+    period,
+    setPeriod,
+    wlSummary,
+    monthlyTrend,
+    brackets,
+    repWinRates,
+    repPerformance,
+    stageMetrics,
+    conversionRates,
+    velocity,
+  } = useCrmReportsPage();
 
   return (
     <div className="flex flex-col">
@@ -119,28 +69,18 @@ export default function ReportsPage() {
       />
 
       <div className="px-4 sm:px-6 md:px-8 pb-6 space-y-6">
-        {/* Tab Navigation */}
-        <div className="flex gap-1 border-b">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={cn(
-                "px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
-                activeTab === tab.key
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <TabBar
+          tabs={[
+            { value: "winloss", label: "受注・失注分析" },
+            { value: "performance", label: "担当者パフォーマンス" },
+            { value: "pipeline", label: "パイプライン分析" },
+          ]}
+          activeTab={activeTab}
+          onTabChange={(v) => setActiveTab(v as ReportTab)}
+        />
 
-        {/* Win/Loss Analysis */}
         {activeTab === "winloss" && (
           <div className="space-y-6">
-            {/* Summary Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="pt-4 pb-4">
@@ -184,7 +124,6 @@ export default function ReportsPage() {
               </Card>
             </div>
 
-            {/* Monthly Trend */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">月次トレンド</CardTitle>
@@ -237,7 +176,6 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
 
-            {/* Amount Brackets */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">金額帯別受注率</CardTitle>
@@ -272,7 +210,6 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
 
-            {/* Rep Win Rates */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">担当者別受注率</CardTitle>
@@ -290,11 +227,7 @@ export default function ReportsPage() {
                   </TableHeader>
                   <TableBody>
                     {repWinRates.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                          データがありません
-                        </TableCell>
-                      </TableRow>
+                      <EmptyRow cols={5} />
                     ) : (
                       repWinRates.map((r) => (
                         <TableRow key={r.name}>
@@ -317,7 +250,6 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {/* Performance Tab */}
         {activeTab === "performance" && (
           <div className="space-y-6">
             <Card>
@@ -339,11 +271,7 @@ export default function ReportsPage() {
                   </TableHeader>
                   <TableBody>
                     {repPerformance.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                          データがありません
-                        </TableCell>
-                      </TableRow>
+                      <EmptyRow cols={7} />
                     ) : (
                       repPerformance.map((r) => (
                         <TableRow key={r.name}>
@@ -368,7 +296,6 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
 
-            {/* Activity per rep - visual bars */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">担当者別活動量</CardTitle>
@@ -406,10 +333,8 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {/* Pipeline Analysis Tab */}
         {activeTab === "pipeline" && (
           <div className="space-y-6">
-            {/* Velocity Card */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
               <Card>
                 <CardContent className="pt-4 pb-4">
@@ -444,7 +369,6 @@ export default function ReportsPage() {
               </Card>
             </div>
 
-            {/* Stage Metrics */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">ステージ別メトリクス</CardTitle>
@@ -483,7 +407,6 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
 
-            {/* Conversion Rates */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">ステージ間コンバージョン率</CardTitle>
@@ -505,7 +428,7 @@ export default function ReportsPage() {
                         </div>
                         <div className="flex flex-col items-center">
                           <span className="text-xs font-bold">{cr.rate}%</span>
-                          <span className="text-muted-foreground">→</span>
+                          <span className="text-muted-foreground">{"\u2192"}</span>
                         </div>
                         {i === conversionRates.length - 1 && (
                           <div

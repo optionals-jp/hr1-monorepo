@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
@@ -28,98 +27,46 @@ import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
-import { useOrg } from "@/lib/org-context";
-import { useAuth } from "@/lib/auth-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useOrgQuery } from "@/lib/hooks/use-org-query";
-import { fetchCompanies, fetchDealsAll, fetchQuotes } from "@/lib/repositories/crm-repository";
 import { quoteStatusLabels, quoteStatusColors } from "@/lib/constants/crm";
 import { formatJpy } from "@/features/crm/rules";
-import type { BcQuote, BcCompany, BcDeal } from "@/types/database";
+import { useCrmQuotesPage } from "@/features/crm/hooks/use-crm-quotes-page";
 import { Plus, FileText } from "lucide-react";
 
 export default function QuotesPage() {
   const { showToast } = useToast();
-  const { organization } = useOrg();
-  const { user } = useAuth();
 
-  const { data: quotes, mutate } = useOrgQuery<BcQuote[]>("crm-quotes", (orgId) =>
-    fetchQuotes(getSupabase(), orgId)
-  );
+  const {
+    quotes,
+    companies,
+    deals,
+    search,
+    setSearch,
+    statusFilter,
+    setStatusFilter,
+    addOpen,
+    setAddOpen,
+    formTitle,
+    setFormTitle,
+    formCompanyId,
+    setFormCompanyId,
+    formDealId,
+    setFormDealId,
+    formIssueDate,
+    setFormIssueDate,
+    formExpiryDate,
+    setFormExpiryDate,
+    formNotes,
+    setFormNotes,
+    filtered,
+    handleCreate,
+  } = useCrmQuotesPage();
 
-  const { data: companies } = useOrgQuery<BcCompany[]>("crm-companies", (orgId) =>
-    fetchCompanies(getSupabase(), orgId)
-  );
-
-  const { data: deals } = useOrgQuery<BcDeal[]>("crm-deals-all", (orgId) =>
-    fetchDealsAll(getSupabase(), orgId)
-  );
-
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [addOpen, setAddOpen] = useState(false);
-
-  // Add form state
-  const [formTitle, setFormTitle] = useState("");
-  const [formCompanyId, setFormCompanyId] = useState("");
-  const [formDealId, setFormDealId] = useState("");
-  const [formIssueDate, setFormIssueDate] = useState(new Date().toISOString().slice(0, 10));
-  const [formExpiryDate, setFormExpiryDate] = useState("");
-  const [formNotes, setFormNotes] = useState("");
-
-  const filtered = (quotes ?? []).filter((q) => {
-    if (statusFilter !== "all" && q.status !== statusFilter) return false;
-    if (search) {
-      const s = search.toLowerCase();
-      const companyName = (q.crm_companies as { name: string } | undefined)?.name ?? "";
-      return (
-        q.title.toLowerCase().includes(s) ||
-        q.quote_number.toLowerCase().includes(s) ||
-        companyName.toLowerCase().includes(s)
-      );
-    }
-    return true;
-  });
-
-  const generateQuoteNumber = () => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, "0");
-    const d = String(now.getDate()).padStart(2, "0");
-    const r = String(Math.floor(Math.random() * 1000)).padStart(3, "0");
-    return `Q-${y}${m}${d}-${r}`;
-  };
-
-  const handleCreate = async () => {
-    if (!organization || !formTitle.trim()) {
-      showToast("タイトルを入力してください", "error");
-      return;
-    }
-    try {
-      const { error } = await getSupabase()
-        .from("crm_quotes")
-        .insert({
-          organization_id: organization.id,
-          quote_number: generateQuoteNumber(),
-          title: formTitle,
-          company_id: formCompanyId || null,
-          deal_id: formDealId || null,
-          issue_date: formIssueDate,
-          expiry_date: formExpiryDate || null,
-          notes: formNotes || null,
-          status: "draft",
-          created_by: user?.id ?? null,
-        });
-      if (error) throw error;
-      setAddOpen(false);
-      setFormTitle("");
-      setFormCompanyId("");
-      setFormDealId("");
-      setFormNotes("");
-      mutate();
+  const onCreate = async () => {
+    const result = await handleCreate();
+    if (result.success) {
       showToast("見積書を作成しました");
-    } catch {
-      showToast("見積書の作成に失敗しました", "error");
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
   };
 
@@ -189,9 +136,9 @@ export default function QuotesPage() {
                       </div>
                     </TableCell>
                     <TableCell className="font-medium">{q.title}</TableCell>
-                    <TableCell>{companyName ?? "—"}</TableCell>
-                    <TableCell>{dealTitle ?? "—"}</TableCell>
-                    <TableCell>{q.total > 0 ? formatJpy(q.total) : "—"}</TableCell>
+                    <TableCell>{companyName ?? "\u2014"}</TableCell>
+                    <TableCell>{dealTitle ?? "\u2014"}</TableCell>
+                    <TableCell>{q.total > 0 ? formatJpy(q.total) : "\u2014"}</TableCell>
                     <TableCell>
                       <Badge variant={quoteStatusColors[q.status] ?? "default"}>
                         {quoteStatusLabels[q.status] ?? q.status}
@@ -210,7 +157,7 @@ export default function QuotesPage() {
         open={addOpen}
         onOpenChange={setAddOpen}
         title="見積書を作成"
-        onSave={handleCreate}
+        onSave={onCreate}
         saveLabel="作成"
         saveDisabled={!formTitle.trim()}
       >

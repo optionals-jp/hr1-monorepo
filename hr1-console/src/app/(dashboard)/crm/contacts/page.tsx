@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
@@ -29,120 +28,35 @@ import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
-import { useOrg } from "@/lib/org-context";
-import { useAuth } from "@/lib/auth-context";
-import { useOrgQuery } from "@/lib/hooks/use-org-query";
-import { getSupabase } from "@/lib/supabase/browser";
-import { fetchContacts, fetchCompanies, createContact } from "@/lib/repositories/crm-repository";
+import { useCrmContactsPage } from "@/features/crm/hooks/use-crm-contacts-page";
 import { Plus } from "lucide-react";
-
-interface ContactFormData {
-  last_name: string;
-  first_name: string;
-  company_id: string;
-  department: string;
-  position: string;
-  email: string;
-  phone: string;
-  mobile_phone: string;
-  notes: string;
-}
-
-const emptyForm: ContactFormData = {
-  last_name: "",
-  first_name: "",
-  company_id: "",
-  department: "",
-  position: "",
-  email: "",
-  phone: "",
-  mobile_phone: "",
-  notes: "",
-};
 
 export default function CrmContactsPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const { organization } = useOrg();
-  const { user } = useAuth();
+  const {
+    companies,
+    loading,
+    search,
+    setSearch,
+    editOpen,
+    setEditOpen,
+    form,
+    saving,
+    filteredContacts,
+    openAdd,
+    updateField,
+    handleSave,
+  } = useCrmContactsPage();
 
-  const { data: contacts, mutate: mutateContacts } = useOrgQuery("crm-contacts-list", (orgId) =>
-    fetchContacts(getSupabase(), orgId)
-  );
-
-  const { data: companies } = useOrgQuery("crm-contacts-companies", (orgId) =>
-    fetchCompanies(getSupabase(), orgId)
-  );
-
-  // UI state
-  const [search, setSearch] = useState("");
-  const [editOpen, setEditOpen] = useState(false);
-  const [form, setForm] = useState<ContactFormData>(emptyForm);
-  const [saving, setSaving] = useState(false);
-
-  // Filter contacts
-  const filteredContacts = useMemo(() => {
-    if (!contacts) return [];
-    if (!search.trim()) return contacts;
-    const q = search.toLowerCase();
-    return contacts.filter(
-      (c) =>
-        c.last_name.toLowerCase().includes(q) ||
-        (c.first_name ?? "").toLowerCase().includes(q) ||
-        (c.email ?? "").toLowerCase().includes(q) ||
-        (c.crm_companies?.name ?? "").toLowerCase().includes(q) ||
-        (c.department ?? "").toLowerCase().includes(q)
-    );
-  }, [contacts, search]);
-
-  // Open add panel
-  const openAdd = useCallback(() => {
-    setForm(emptyForm);
-    setEditOpen(true);
-  }, []);
-
-  // Handle form field change
-  const updateField = useCallback(
-    <K extends keyof ContactFormData>(field: K, value: ContactFormData[K]) => {
-      setForm((prev) => ({ ...prev, [field]: value }));
-    },
-    []
-  );
-
-  // Save contact
-  const handleSave = useCallback(async () => {
-    if (!organization || saving) return;
-    if (!form.last_name.trim()) {
-      showToast("姓は必須です", "error");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await createContact(getSupabase(), {
-        organization_id: organization.id,
-        last_name: form.last_name.trim(),
-        first_name: form.first_name.trim() || null,
-        company_id: form.company_id || null,
-        department: form.department.trim() || null,
-        position: form.position.trim() || null,
-        email: form.email.trim() || null,
-        phone: form.phone.trim() || null,
-        mobile_phone: form.mobile_phone.trim() || null,
-        notes: form.notes.trim() || null,
-        created_by: user?.id ?? null,
-      });
+  const onSave = async () => {
+    const result = await handleSave();
+    if (result.success) {
       showToast("連絡先を作成しました");
-      setEditOpen(false);
-      mutateContacts();
-    } catch {
-      showToast("連絡先の作成に失敗しました", "error");
-    } finally {
-      setSaving(false);
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
-  }, [organization, saving, form, user, showToast, mutateContacts]);
-
-  const loading = !contacts;
+  };
 
   return (
     <div className="flex flex-col">
@@ -239,7 +153,7 @@ export default function CrmContactsPage() {
         open={editOpen}
         onOpenChange={setEditOpen}
         title="連絡先を追加"
-        onSave={handleSave}
+        onSave={onSave}
         saving={saving}
         saveLabel="作成"
       >

@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
@@ -26,28 +25,13 @@ import {
 import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { ConfirmDialog } from "@hr1/shared-ui/components/ui/confirm-dialog";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
-import { useOrg } from "@/lib/org-context";
-import { useAuth } from "@/lib/auth-context";
-import { getSupabase } from "@/lib/supabase/browser";
-import { useOrgQuery } from "@/lib/hooks/use-org-query";
-import { useEmployees } from "@/lib/hooks/use-org-query";
-import {
-  fetchActivitiesByLead,
-  fetchLead,
-  createActivity,
-  createDeal,
-  createContact,
-  createCompany,
-  updateLead,
-  deleteLead,
-} from "@/lib/repositories/crm-repository";
 import {
   leadSourceLabels,
   leadStatusLabels,
   leadStatusColors,
   activityTypeLabels,
 } from "@/lib/constants/crm";
-import type { BcLead, BcActivity } from "@/types/database";
+import { useCrmLeadDetailPage } from "@/features/crm/hooks/use-crm-lead-detail-page";
 import {
   Edit,
   Trash2,
@@ -64,224 +48,65 @@ import {
   RefreshCw,
 } from "lucide-react";
 
+const activityIcon = (type: string) => {
+  switch (type) {
+    case "call":
+      return <Phone className="size-4" />;
+    case "email":
+      return <Mail className="size-4" />;
+    case "appointment":
+      return <Calendar className="size-4" />;
+    case "visit":
+      return <MapPin className="size-4" />;
+    default:
+      return <FileText className="size-4" />;
+  }
+};
+
 export default function LeadDetailPage() {
-  const params = useParams();
   const router = useRouter();
-  const id = params.id as string;
   const { showToast } = useToast();
-  const { organization } = useOrg();
-  const { user } = useAuth();
-  const { data: employees } = useEmployees();
+  const h = useCrmLeadDetailPage();
 
-  const { data: lead, mutate: mutateLead } = useOrgQuery<BcLead | null>(`crm-lead-${id}`, (orgId) =>
-    fetchLead(getSupabase(), id, orgId)
-  );
-
-  const { data: activities, mutate: mutateActivities } = useOrgQuery<BcActivity[]>(
-    `crm-lead-activities-${id}`,
-    (orgId) => fetchActivitiesByLead(getSupabase(), id, orgId)
-  );
-
-  // Edit state
-  const [editOpen, setEditOpen] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [editContactName, setEditContactName] = useState("");
-  const [editContactEmail, setEditContactEmail] = useState("");
-  const [editContactPhone, setEditContactPhone] = useState("");
-  const [editSource, setEditSource] = useState("");
-  const [editAssignedTo, setEditAssignedTo] = useState("");
-  const [editNotes, setEditNotes] = useState("");
-
-  // Activity state
-  const [actOpen, setActOpen] = useState(false);
-  const [actType, setActType] = useState("call");
-  const [actTitle, setActTitle] = useState("");
-  const [actDesc, setActDesc] = useState("");
-  const [actDate, setActDate] = useState(new Date().toISOString().slice(0, 10));
-
-  // Convert state
-  const [convertOpen, setConvertOpen] = useState(false);
-  const [convCompanyName, setConvCompanyName] = useState("");
-  const [convLastName, setConvLastName] = useState("");
-  const [convEmail, setConvEmail] = useState("");
-  const [convPhone, setConvPhone] = useState("");
-  const [convDealTitle, setConvDealTitle] = useState("");
-  const [converting, setConverting] = useState(false);
-
-  const [deleteOpen, setDeleteOpen] = useState(false);
-
-  const openEdit = () => {
-    if (!lead) return;
-    setEditName(lead.name);
-    setEditContactName(lead.contact_name ?? "");
-    setEditContactEmail(lead.contact_email ?? "");
-    setEditContactPhone(lead.contact_phone ?? "");
-    setEditSource(lead.source);
-    setEditAssignedTo(lead.assigned_to ?? "");
-    setEditNotes(lead.notes ?? "");
-    setEditOpen(true);
+  const onUpdate = async () => {
+    const r = await h.handleUpdate();
+    if (r.success) showToast("リードを更新しました");
+    else if (r.error) showToast(r.error, "error");
   };
-
-  const openConvert = () => {
-    if (!lead) return;
-    setConvCompanyName(lead.name);
-    setConvLastName(lead.contact_name ?? "");
-    setConvEmail(lead.contact_email ?? "");
-    setConvPhone(lead.contact_phone ?? "");
-    setConvDealTitle("");
-    setConvertOpen(true);
+  const onStatusChange = async (s: string) => {
+    const r = await h.handleStatusChange(s);
+    if (r.success) showToast(`ステータスを「${leadStatusLabels[r.statusLabel!]}」に変更しました`);
+    else if (r.error) showToast(r.error, "error");
   };
-
-  const handleUpdate = async () => {
-    if (!organization || !id) return;
-    try {
-      await updateLead(getSupabase(), id, organization.id, {
-        name: editName,
-        contact_name: editContactName || null,
-        contact_email: editContactEmail || null,
-        contact_phone: editContactPhone || null,
-        source: editSource as BcLead["source"],
-        assigned_to: editAssignedTo || null,
-        notes: editNotes || null,
-      });
-      setEditOpen(false);
-      mutateLead();
-      showToast("リードを更新しました");
-    } catch {
-      showToast("更新に失敗しました", "error");
-    }
-  };
-
-  const handleStatusChange = async (newStatus: string) => {
-    if (!organization || !id) return;
-    try {
-      await updateLead(getSupabase(), id, organization.id, {
-        status: newStatus as BcLead["status"],
-      });
-      mutateLead();
-      showToast(`ステータスを「${leadStatusLabels[newStatus]}」に変更しました`);
-    } catch {
-      showToast("ステータス変更に失敗しました", "error");
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!organization) return;
-    try {
-      await deleteLead(getSupabase(), id, organization.id);
+  const onDelete = async () => {
+    const r = await h.handleDelete();
+    if (r.success) {
       showToast("リードを削除しました");
       router.push("/crm/leads");
-    } catch {
-      showToast("削除に失敗しました", "error");
-    }
+    } else if (r.error) showToast(r.error, "error");
   };
-
-  const handleAddActivity = async () => {
-    if (!organization || !actTitle.trim()) return;
-    try {
-      await createActivity(getSupabase(), {
-        organization_id: organization.id,
-        lead_id: id,
-        activity_type: actType,
-        title: actTitle,
-        description: actDesc || null,
-        activity_date: actDate,
-        created_by: user?.id ?? null,
-      });
-      setActOpen(false);
-      setActTitle("");
-      setActDesc("");
-      setActType("call");
-      mutateActivities();
-      showToast("活動を記録しました");
-    } catch {
-      showToast("記録に失敗しました", "error");
-    }
+  const onAddActivity = async () => {
+    const r = await h.handleAddActivity();
+    if (r.success) showToast("活動を記録しました");
+    else if (r.error) showToast(r.error, "error");
   };
-
-  const handleConvert = async () => {
-    if (!organization || !convCompanyName.trim() || !convLastName.trim()) {
-      showToast("企業名と担当者姓は必須です", "error");
-      return;
-    }
-    setConverting(true);
-    try {
-      // 1. Create company
-      const newCompany = await createCompany(getSupabase(), {
-        organization_id: organization.id,
-        name: convCompanyName,
-        phone: convPhone || null,
-        created_by: user?.id ?? null,
-      });
-
-      // 2. Create contact
-      const newContact = await createContact(getSupabase(), {
-        organization_id: organization.id,
-        company_id: newCompany.id,
-        last_name: convLastName,
-        email: convEmail || null,
-        phone: convPhone || null,
-        created_by: user?.id ?? null,
-      });
-
-      // 3. Optionally create deal
-      let newDealId: string | null = null;
-      if (convDealTitle.trim()) {
-        const newDeal = await createDeal(getSupabase(), {
-          organization_id: organization.id,
-          title: convDealTitle,
-          company_id: newCompany.id,
-          contact_id: newContact.id,
-          assigned_to: lead?.assigned_to ?? user?.id ?? null,
-          created_by: user?.id ?? null,
-        });
-        newDealId = newDeal.id;
-      }
-
-      // 4. Update lead as converted
-      await updateLead(getSupabase(), id, organization.id, {
-        status: "converted",
-        converted_company_id: newCompany.id,
-        converted_contact_id: newContact.id,
-        converted_deal_id: newDealId,
-        converted_at: new Date().toISOString(),
-      });
-
-      setConvertOpen(false);
+  const onConvert = async () => {
+    const r = await h.handleConvert();
+    if (r.success) {
       showToast("リードをコンバートしました");
-      router.push(`/crm/companies/${newCompany.id}`);
-    } catch {
-      showToast("コンバートに失敗しました", "error");
-    } finally {
-      setConverting(false);
-    }
+      router.push(`/crm/companies/${r.companyId}`);
+    } else if (r.error) showToast(r.error, "error");
   };
 
-  const activityIcon = (type: string) => {
-    switch (type) {
-      case "call":
-        return <Phone className="size-4" />;
-      case "email":
-        return <Mail className="size-4" />;
-      case "appointment":
-        return <Calendar className="size-4" />;
-      case "visit":
-        return <MapPin className="size-4" />;
-      default:
-        return <FileText className="size-4" />;
-    }
-  };
-
-  if (!lead) {
+  if (!h.lead)
     return (
       <div className="flex flex-col">
         <PageHeader title="読み込み中..." sticky={false} border={false} />
       </div>
     );
-  }
 
+  const { lead, id, activities, employees } = h;
   const isConverted = lead.status === "converted";
-  const statusFlow = ["new", "contacted", "qualified", "unqualified"];
 
   return (
     <div className="flex flex-col">
@@ -297,16 +122,16 @@ export default function LeadDetailPage() {
         action={
           <div className="flex items-center gap-2">
             {!isConverted && (
-              <Button onClick={openConvert}>
+              <Button onClick={h.openConvert}>
                 <RefreshCw className="size-4 mr-1.5" />
                 コンバート
               </Button>
             )}
-            <Button variant="outline" onClick={openEdit}>
+            <Button variant="outline" onClick={h.openEdit}>
               <Edit className="size-4 mr-1.5" />
               編集
             </Button>
-            <Button variant="outline" onClick={() => setDeleteOpen(true)}>
+            <Button variant="outline" onClick={() => h.setDeleteOpen(true)}>
               <Trash2 className="size-4 mr-1.5" />
               削除
             </Button>
@@ -315,7 +140,6 @@ export default function LeadDetailPage() {
       />
 
       <div className="px-4 sm:px-6 md:px-8 pb-6 space-y-6">
-        {/* Lead Info */}
         <Card>
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -342,7 +166,7 @@ export default function LeadDetailPage() {
                 <p className="text-sm text-muted-foreground">担当者名</p>
                 <p className="text-sm mt-1 flex items-center gap-1.5">
                   <User className="size-3.5 text-muted-foreground" />
-                  {lead.contact_name ?? "—"}
+                  {lead.contact_name ?? "\u2014"}
                 </p>
               </div>
               <div>
@@ -356,14 +180,14 @@ export default function LeadDetailPage() {
                     {lead.contact_email}
                   </a>
                 ) : (
-                  <p className="text-sm mt-1">—</p>
+                  <p className="text-sm mt-1">{"\u2014"}</p>
                 )}
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">電話</p>
                 <p className="text-sm mt-1 flex items-center gap-1.5">
                   <Phone className="size-3.5 text-muted-foreground" />
-                  {lead.contact_phone ?? "—"}
+                  {lead.contact_phone ?? "\u2014"}
                 </p>
               </div>
               <div>
@@ -386,7 +210,6 @@ export default function LeadDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Status Quick Actions */}
         {!isConverted && (
           <Card>
             <CardHeader className="pb-3">
@@ -394,13 +217,13 @@ export default function LeadDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2 flex-wrap">
-                {statusFlow.map((status, i) => (
+                {["new", "contacted", "qualified", "unqualified"].map((status, i) => (
                   <div key={status} className="flex items-center gap-2">
                     {i > 0 && <ArrowRight className="size-4 text-muted-foreground" />}
                     <Button
                       size="sm"
                       variant={lead.status === status ? "default" : "outline"}
-                      onClick={() => handleStatusChange(status)}
+                      onClick={() => onStatusChange(status)}
                       disabled={lead.status === status}
                     >
                       {leadStatusLabels[status]}
@@ -412,7 +235,6 @@ export default function LeadDetailPage() {
           </Card>
         )}
 
-        {/* Converted Info */}
         {isConverted && (
           <Card className="border-green-200 bg-green-50">
             <CardContent className="pt-6">
@@ -447,11 +269,10 @@ export default function LeadDetailPage() {
           </Card>
         )}
 
-        {/* Activities */}
         <div className="space-y-3">
           <div className="flex justify-between items-center">
             <h3 className="font-medium">活動履歴</h3>
-            <Button size="sm" onClick={() => setActOpen(true)}>
+            <Button size="sm" onClick={() => h.setActOpen(true)}>
               <Plus className="size-4 mr-1" />
               活動を記録
             </Button>
@@ -488,39 +309,44 @@ export default function LeadDetailPage() {
         </div>
       </div>
 
-      {/* Edit Panel */}
       <EditPanel
-        open={editOpen}
-        onOpenChange={setEditOpen}
+        open={h.editOpen}
+        onOpenChange={h.setEditOpen}
         title="リードを編集"
-        onSave={handleUpdate}
+        onSave={onUpdate}
         saveLabel="更新"
-        saveDisabled={!editName.trim()}
+        saveDisabled={!h.editName.trim()}
       >
         <div className="space-y-4">
           <div>
             <Label>企業名 *</Label>
-            <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+            <Input value={h.editName} onChange={(e) => h.setEditName(e.target.value)} />
           </div>
           <div>
             <Label>担当者名</Label>
-            <Input value={editContactName} onChange={(e) => setEditContactName(e.target.value)} />
+            <Input
+              value={h.editContactName}
+              onChange={(e) => h.setEditContactName(e.target.value)}
+            />
           </div>
           <div>
             <Label>メール</Label>
             <Input
               type="email"
-              value={editContactEmail}
-              onChange={(e) => setEditContactEmail(e.target.value)}
+              value={h.editContactEmail}
+              onChange={(e) => h.setEditContactEmail(e.target.value)}
             />
           </div>
           <div>
             <Label>電話</Label>
-            <Input value={editContactPhone} onChange={(e) => setEditContactPhone(e.target.value)} />
+            <Input
+              value={h.editContactPhone}
+              onChange={(e) => h.setEditContactPhone(e.target.value)}
+            />
           </div>
           <div>
             <Label>ソース</Label>
-            <Select value={editSource} onValueChange={(v) => setEditSource(v ?? "other")}>
+            <Select value={h.editSource} onValueChange={(v) => h.setEditSource(v ?? "other")}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -535,7 +361,7 @@ export default function LeadDetailPage() {
           </div>
           <div>
             <Label>営業担当</Label>
-            <Select value={editAssignedTo} onValueChange={(v) => setEditAssignedTo(v ?? "")}>
+            <Select value={h.editAssignedTo} onValueChange={(v) => h.setEditAssignedTo(v ?? "")}>
               <SelectTrigger>
                 <SelectValue placeholder="担当を選択" />
               </SelectTrigger>
@@ -550,24 +376,27 @@ export default function LeadDetailPage() {
           </div>
           <div>
             <Label>メモ</Label>
-            <Textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={3} />
+            <Textarea
+              value={h.editNotes}
+              onChange={(e) => h.setEditNotes(e.target.value)}
+              rows={3}
+            />
           </div>
         </div>
       </EditPanel>
 
-      {/* Add Activity Panel */}
       <EditPanel
-        open={actOpen}
-        onOpenChange={setActOpen}
+        open={h.actOpen}
+        onOpenChange={h.setActOpen}
         title="活動を記録"
-        onSave={handleAddActivity}
+        onSave={onAddActivity}
         saveLabel="記録"
-        saveDisabled={!actTitle.trim()}
+        saveDisabled={!h.actTitle.trim()}
       >
         <div className="space-y-4">
           <div>
             <Label>種別</Label>
-            <Select value={actType} onValueChange={(v) => setActType(v ?? "call")}>
+            <Select value={h.actType} onValueChange={(v) => h.setActType(v ?? "call")}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -582,21 +411,20 @@ export default function LeadDetailPage() {
           </div>
           <div>
             <Label>タイトル *</Label>
-            <Input value={actTitle} onChange={(e) => setActTitle(e.target.value)} />
+            <Input value={h.actTitle} onChange={(e) => h.setActTitle(e.target.value)} />
           </div>
           <div>
             <Label>日付</Label>
-            <Input type="date" value={actDate} onChange={(e) => setActDate(e.target.value)} />
+            <Input type="date" value={h.actDate} onChange={(e) => h.setActDate(e.target.value)} />
           </div>
           <div>
             <Label>説明</Label>
-            <Textarea value={actDesc} onChange={(e) => setActDesc(e.target.value)} rows={3} />
+            <Textarea value={h.actDesc} onChange={(e) => h.setActDesc(e.target.value)} rows={3} />
           </div>
         </div>
       </EditPanel>
 
-      {/* Convert Dialog */}
-      <Dialog open={convertOpen} onOpenChange={setConvertOpen}>
+      <Dialog open={h.convertOpen} onOpenChange={h.setConvertOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>リードをコンバート</DialogTitle>
@@ -607,53 +435,56 @@ export default function LeadDetailPage() {
             </p>
             <div>
               <Label>企業名 *</Label>
-              <Input value={convCompanyName} onChange={(e) => setConvCompanyName(e.target.value)} />
+              <Input
+                value={h.convCompanyName}
+                onChange={(e) => h.setConvCompanyName(e.target.value)}
+              />
             </div>
             <div>
               <Label>連絡先 姓 *</Label>
-              <Input value={convLastName} onChange={(e) => setConvLastName(e.target.value)} />
+              <Input value={h.convLastName} onChange={(e) => h.setConvLastName(e.target.value)} />
             </div>
             <div>
               <Label>メール</Label>
               <Input
                 type="email"
-                value={convEmail}
-                onChange={(e) => setConvEmail(e.target.value)}
+                value={h.convEmail}
+                onChange={(e) => h.setConvEmail(e.target.value)}
               />
             </div>
             <div>
               <Label>電話</Label>
-              <Input value={convPhone} onChange={(e) => setConvPhone(e.target.value)} />
+              <Input value={h.convPhone} onChange={(e) => h.setConvPhone(e.target.value)} />
             </div>
             <div className="pt-2 border-t">
               <Label>商談タイトル（空欄で商談作成をスキップ）</Label>
               <Input
-                value={convDealTitle}
-                onChange={(e) => setConvDealTitle(e.target.value)}
+                value={h.convDealTitle}
+                onChange={(e) => h.setConvDealTitle(e.target.value)}
                 placeholder="例: 初回提案"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConvertOpen(false)}>
+            <Button variant="outline" onClick={() => h.setConvertOpen(false)}>
               キャンセル
             </Button>
             <Button
-              onClick={handleConvert}
-              disabled={converting || !convCompanyName.trim() || !convLastName.trim()}
+              onClick={onConvert}
+              disabled={h.converting || !h.convCompanyName.trim() || !h.convLastName.trim()}
             >
-              {converting ? "処理中..." : "コンバート"}
+              {h.converting ? "処理中..." : "コンバート"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <ConfirmDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
+        open={h.deleteOpen}
+        onOpenChange={h.setDeleteOpen}
         title="リードを削除"
         description={`「${lead.name}」を削除しますか？この操作は元に戻せません。`}
-        onConfirm={handleDelete}
+        onConfirm={onDelete}
         confirmLabel="削除"
         variant="destructive"
       />

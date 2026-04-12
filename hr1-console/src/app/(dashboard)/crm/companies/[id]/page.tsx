@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
@@ -21,50 +20,12 @@ import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { ConfirmDialog } from "@hr1/shared-ui/components/ui/confirm-dialog";
 import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
 import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
-import { useOrg } from "@/lib/org-context";
-import { useAuth } from "@/lib/auth-context";
-import { useOrgQuery } from "@/lib/hooks/use-org-query";
-import { getSupabase } from "@/lib/supabase/browser";
-import {
-  fetchCompany,
-  updateCompany,
-  deleteCompany,
-  fetchContactsByCompany,
-  fetchDealsByCompany,
-  fetchActivitiesByCompany,
-} from "@/lib/repositories/crm-repository";
+import { useCrmCompanyDetailPage } from "@/features/crm/hooks/use-crm-company-detail-page";
 import { dealStatusLabels, dealStatusColors, activityTypeLabels } from "@/lib/constants/crm";
 import { formatJpy } from "@/features/crm/rules";
 import { Edit, Trash2, Building2, Phone, Mail, Globe, MapPin, ArrowLeft, User } from "lucide-react";
-import type { BcCompany } from "@/types/database";
 
-interface CompanyFormData {
-  name: string;
-  name_kana: string;
-  industry: string;
-  phone: string;
-  address: string;
-  postal_code: string;
-  website: string;
-  corporate_number: string;
-  notes: string;
-}
-
-function companyToForm(company: BcCompany): CompanyFormData {
-  return {
-    name: company.name,
-    name_kana: company.name_kana ?? "",
-    industry: company.industry ?? "",
-    phone: company.phone ?? "",
-    address: company.address ?? "",
-    postal_code: company.postal_code ?? "",
-    website: company.website ?? "",
-    corporate_number: company.corporate_number ?? "",
-    notes: company.notes ?? "",
-  };
-}
-
-function formatDate(dateStr: string | null): string {
+function fmtDate(dateStr: string | null): string {
   if (!dateStr) return "---";
   const d = new Date(dateStr);
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
@@ -90,128 +51,53 @@ function InfoRow({
   );
 }
 
+function Field({
+  id,
+  label,
+  required,
+  children,
+}: {
+  id: string;
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>
+        {label} {required && <span className="text-destructive">*</span>}
+      </Label>
+      {children}
+    </div>
+  );
+}
+
 export default function CrmCompanyDetailPage() {
-  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { showToast } = useToast();
-  const { organization } = useOrg();
-  useAuth();
+  const h = useCrmCompanyDetailPage();
 
-  // Fetch company
-  const {
-    data: company,
-    mutate: mutateCompany,
-    isLoading: companyLoading,
-  } = useOrgQuery(`crm-company-${id}`, (orgId) => fetchCompany(getSupabase(), id, orgId));
-
-  // Fetch related contacts
-  const { data: contacts } = useOrgQuery(`crm-company-contacts-${id}`, (orgId) =>
-    fetchContactsByCompany(getSupabase(), id, orgId)
-  );
-
-  // Fetch related deals
-  const { data: deals } = useOrgQuery(`crm-company-deals-${id}`, (orgId) =>
-    fetchDealsByCompany(getSupabase(), id, orgId)
-  );
-
-  // Fetch related activities
-  const { data: activities } = useOrgQuery(`crm-company-activities-${id}`, (orgId) =>
-    fetchActivitiesByCompany(getSupabase(), id, orgId)
-  );
-
-  // Edit state
-  const [editOpen, setEditOpen] = useState(false);
-  const [form, setForm] = useState<CompanyFormData>({
-    name: "",
-    name_kana: "",
-    industry: "",
-    phone: "",
-    address: "",
-    postal_code: "",
-    website: "",
-    corporate_number: "",
-    notes: "",
-  });
-  const [saving, setSaving] = useState(false);
-
-  // Delete state
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  // Open edit panel
-  const openEdit = useCallback(() => {
-    if (!company) return;
-    setForm(companyToForm(company));
-    setEditOpen(true);
-  }, [company]);
-
-  // Handle form field change
-  const updateField = useCallback(
-    <K extends keyof CompanyFormData>(field: K, value: CompanyFormData[K]) => {
-      setForm((prev) => ({ ...prev, [field]: value }));
-    },
-    []
-  );
-
-  // Save company update
-  const handleSave = useCallback(async () => {
-    if (!organization || !company || saving) return;
-    if (!form.name.trim()) {
-      showToast("企業名は必須です", "error");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await updateCompany(getSupabase(), company.id, organization.id, {
-        name: form.name.trim(),
-        name_kana: form.name_kana.trim() || null,
-        industry: form.industry.trim() || null,
-        phone: form.phone.trim() || null,
-        address: form.address.trim() || null,
-        postal_code: form.postal_code.trim() || null,
-        website: form.website.trim() || null,
-        corporate_number: form.corporate_number.trim() || null,
-        notes: form.notes.trim() || null,
-      });
-      showToast("企業情報を更新しました");
-      setEditOpen(false);
-      mutateCompany();
-    } catch {
-      showToast("企業情報の更新に失敗しました", "error");
-    } finally {
-      setSaving(false);
-    }
-  }, [organization, company, saving, form, showToast, mutateCompany]);
-
-  // Delete company
-  const handleDelete = useCallback(async () => {
-    if (!organization || !company || deleting) return;
-
-    setDeleting(true);
-    try {
-      await deleteCompany(getSupabase(), company.id, organization.id);
+  const onSave = async () => {
+    const r = await h.handleUpdate();
+    if (r.success) showToast("企業情報を更新しました");
+    else if (r.error) showToast(r.error, "error");
+  };
+  const onDelete = async () => {
+    const r = await h.handleDelete();
+    if (r.success) {
       showToast("企業を削除しました");
       router.push("/crm/companies");
-    } catch {
-      showToast("企業の削除に失敗しました", "error");
-    } finally {
-      setDeleting(false);
-      setDeleteOpen(false);
-    }
-  }, [organization, company, deleting, showToast, router]);
+    } else if (r.error) showToast(r.error, "error");
+  };
 
-  // Loading state
-  if (companyLoading) {
+  if (h.companyLoading)
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
         読み込み中...
       </div>
     );
-  }
 
-  // Not found
-  if (!company) {
+  if (!h.company) {
     return (
       <div className="flex flex-col">
         <PageHeader
@@ -238,6 +124,7 @@ export default function CrmCompanyDetailPage() {
     );
   }
 
+  const { company } = h;
   return (
     <div className="flex flex-col">
       <PageHeader
@@ -250,21 +137,19 @@ export default function CrmCompanyDetailPage() {
         ]}
         action={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={openEdit}>
+            <Button variant="outline" onClick={h.openEdit}>
               <Edit className="h-4 w-4 mr-1.5" />
               編集
             </Button>
-            <Button variant="outline" onClick={() => setDeleteOpen(true)}>
+            <Button variant="outline" onClick={() => h.setDeleteOpen(true)}>
               <Trash2 className="h-4 w-4 mr-1.5" />
               削除
             </Button>
           </div>
         }
       />
-
       <PageContent>
         <div className="space-y-6">
-          {/* Company Info */}
           <SectionCard>
             <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
               <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -309,7 +194,6 @@ export default function CrmCompanyDetailPage() {
             )}
           </SectionCard>
 
-          {/* Related Contacts */}
           <SectionCard>
             <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
               <User className="h-4 w-4 text-muted-foreground" />
@@ -328,33 +212,33 @@ export default function CrmCompanyDetailPage() {
               <TableBody>
                 <TableEmptyState
                   colSpan={5}
-                  isLoading={!contacts}
-                  isEmpty={(contacts ?? []).length === 0}
+                  isLoading={!h.contacts}
+                  isEmpty={(h.contacts ?? []).length === 0}
                   emptyMessage="関連する連絡先がありません"
                 >
-                  {(contacts ?? []).map((contact) => (
+                  {(h.contacts ?? []).map((c) => (
                     <TableRow
-                      key={contact.id}
+                      key={c.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => router.push(`/crm/contacts/${contact.id}`)}
+                      onClick={() => router.push(`/crm/contacts/${c.id}`)}
                     >
                       <TableCell>
                         <span className="font-medium">
-                          {contact.last_name}
-                          {contact.first_name ? ` ${contact.first_name}` : ""}
+                          {c.last_name}
+                          {c.first_name ? ` ${c.first_name}` : ""}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-muted-foreground">{contact.department ?? "---"}</span>
+                        <span className="text-muted-foreground">{c.department ?? "---"}</span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-muted-foreground">{contact.position ?? "---"}</span>
+                        <span className="text-muted-foreground">{c.position ?? "---"}</span>
                       </TableCell>
                       <TableCell>
-                        {contact.email ? (
+                        {c.email ? (
                           <span className="flex items-center gap-1.5 text-muted-foreground">
                             <Mail className="h-3 w-3 shrink-0" />
-                            {contact.email}
+                            {c.email}
                           </span>
                         ) : (
                           <span className="text-muted-foreground">---</span>
@@ -362,7 +246,7 @@ export default function CrmCompanyDetailPage() {
                       </TableCell>
                       <TableCell>
                         <span className="text-muted-foreground">
-                          {contact.phone ?? contact.mobile_phone ?? "---"}
+                          {c.phone ?? c.mobile_phone ?? "---"}
                         </span>
                       </TableCell>
                     </TableRow>
@@ -372,7 +256,6 @@ export default function CrmCompanyDetailPage() {
             </Table>
           </SectionCard>
 
-          {/* Related Deals */}
           <SectionCard>
             <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
               <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -390,11 +273,11 @@ export default function CrmCompanyDetailPage() {
               <TableBody>
                 <TableEmptyState
                   colSpan={4}
-                  isLoading={!deals}
-                  isEmpty={(deals ?? []).length === 0}
+                  isLoading={!h.deals}
+                  isEmpty={(h.deals ?? []).length === 0}
                   emptyMessage="関連する商談がありません"
                 >
-                  {(deals ?? []).map((deal) => (
+                  {(h.deals ?? []).map((deal) => (
                     <TableRow
                       key={deal.id}
                       className="cursor-pointer hover:bg-muted/50"
@@ -413,7 +296,7 @@ export default function CrmCompanyDetailPage() {
                       </TableCell>
                       <TableCell>
                         <span className="text-muted-foreground tabular-nums">
-                          {formatDate(deal.expected_close_date)}
+                          {fmtDate(deal.expected_close_date)}
                         </span>
                       </TableCell>
                     </TableRow>
@@ -423,42 +306,41 @@ export default function CrmCompanyDetailPage() {
             </Table>
           </SectionCard>
 
-          {/* Related Activities */}
           <SectionCard>
             <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
               <Mail className="h-4 w-4 text-muted-foreground" />
               活動履歴
             </h2>
-            {!activities ? (
+            {!h.activities ? (
               <p className="text-sm text-muted-foreground py-4 text-center">読み込み中...</p>
-            ) : activities.length === 0 ? (
+            ) : h.activities.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">活動履歴がありません</p>
             ) : (
               <div className="space-y-3">
-                {activities.map((activity) => (
+                {h.activities.map((a) => (
                   <div
-                    key={activity.id}
+                    key={a.id}
                     className="flex items-start gap-3 rounded-lg border bg-background p-3"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <Badge variant="outline" className="text-xs">
-                          {activityTypeLabels[activity.activity_type] ?? activity.activity_type}
+                          {activityTypeLabels[a.activity_type] ?? a.activity_type}
                         </Badge>
                         <span className="text-xs text-muted-foreground tabular-nums">
-                          {formatDate(activity.activity_date)}
+                          {fmtDate(a.activity_date)}
                         </span>
                       </div>
-                      <p className="text-sm font-medium">{activity.title}</p>
-                      {activity.description && (
+                      <p className="text-sm font-medium">{a.title}</p>
+                      {a.description && (
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                          {activity.description}
+                          {a.description}
                         </p>
                       )}
-                      {activity.profiles?.display_name && (
+                      {a.profiles?.display_name && (
                         <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                           <User className="h-3 w-3" />
-                          {activity.profiles.display_name}
+                          {a.profiles.display_name}
                         </p>
                       )}
                     </div>
@@ -470,121 +352,100 @@ export default function CrmCompanyDetailPage() {
         </div>
       </PageContent>
 
-      {/* Edit Company Panel */}
       <EditPanel
-        open={editOpen}
-        onOpenChange={setEditOpen}
+        open={h.editOpen}
+        onOpenChange={h.setEditOpen}
         title="企業情報を編集"
-        onSave={handleSave}
-        saving={saving}
+        onSave={onSave}
+        saving={h.saving}
         saveLabel="保存"
       >
         <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-company-name">
-              企業名 <span className="text-destructive">*</span>
-            </Label>
+          <Field id="edit-company-name" label="企業名" required>
             <Input
               id="edit-company-name"
-              value={form.name}
-              onChange={(e) => updateField("name", e.target.value)}
+              value={h.form.name}
+              onChange={(e) => h.updateField("name", e.target.value)}
               placeholder="例: 株式会社サンプル"
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-company-name-kana">フリガナ</Label>
+          </Field>
+          <Field id="edit-company-name-kana" label="フリガナ">
             <Input
               id="edit-company-name-kana"
-              value={form.name_kana}
-              onChange={(e) => updateField("name_kana", e.target.value)}
+              value={h.form.name_kana}
+              onChange={(e) => h.updateField("name_kana", e.target.value)}
               placeholder="例: カブシキガイシャサンプル"
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-company-industry">業種</Label>
+          </Field>
+          <Field id="edit-company-industry" label="業種">
             <Input
               id="edit-company-industry"
-              value={form.industry}
-              onChange={(e) => updateField("industry", e.target.value)}
+              value={h.form.industry}
+              onChange={(e) => h.updateField("industry", e.target.value)}
               placeholder="例: IT・通信"
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-company-phone">電話番号</Label>
+          </Field>
+          <Field id="edit-company-phone" label="電話番号">
             <Input
               id="edit-company-phone"
-              value={form.phone}
-              onChange={(e) => updateField("phone", e.target.value)}
+              value={h.form.phone}
+              onChange={(e) => h.updateField("phone", e.target.value)}
               placeholder="例: 03-1234-5678"
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-company-postal-code">郵便番号</Label>
+          </Field>
+          <Field id="edit-company-postal-code" label="郵便番号">
             <Input
               id="edit-company-postal-code"
-              value={form.postal_code}
-              onChange={(e) => updateField("postal_code", e.target.value)}
+              value={h.form.postal_code}
+              onChange={(e) => h.updateField("postal_code", e.target.value)}
               placeholder="例: 100-0001"
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-company-address">住所</Label>
+          </Field>
+          <Field id="edit-company-address" label="住所">
             <Input
               id="edit-company-address"
-              value={form.address}
-              onChange={(e) => updateField("address", e.target.value)}
+              value={h.form.address}
+              onChange={(e) => h.updateField("address", e.target.value)}
               placeholder="例: 東京都千代田区丸の内1-1-1"
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-company-website">Webサイト</Label>
+          </Field>
+          <Field id="edit-company-website" label="Webサイト">
             <Input
               id="edit-company-website"
-              value={form.website}
-              onChange={(e) => updateField("website", e.target.value)}
+              value={h.form.website}
+              onChange={(e) => h.updateField("website", e.target.value)}
               placeholder="例: https://example.com"
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-company-corporate-number">法人番号</Label>
+          </Field>
+          <Field id="edit-company-corporate-number" label="法人番号">
             <Input
               id="edit-company-corporate-number"
-              value={form.corporate_number}
-              onChange={(e) => updateField("corporate_number", e.target.value)}
+              value={h.form.corporate_number}
+              onChange={(e) => h.updateField("corporate_number", e.target.value)}
               placeholder="例: 1234567890123"
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-company-notes">備考</Label>
+          </Field>
+          <Field id="edit-company-notes" label="備考">
             <Textarea
               id="edit-company-notes"
-              value={form.notes}
-              onChange={(e) => updateField("notes", e.target.value)}
+              value={h.form.notes}
+              onChange={(e) => h.updateField("notes", e.target.value)}
               placeholder="メモや備考を入力"
               rows={3}
             />
-          </div>
+          </Field>
         </div>
       </EditPanel>
 
-      {/* Delete Confirm Dialog */}
       <ConfirmDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
+        open={h.deleteOpen}
+        onOpenChange={h.setDeleteOpen}
         title="企業の削除"
         description={`「${company.name}」を削除しますか？関連する連絡先や商談との紐付けも解除されます。この操作は元に戻せません。`}
         variant="destructive"
         confirmLabel="削除"
-        onConfirm={handleDelete}
-        loading={deleting}
+        onConfirm={onDelete}
+        loading={h.deleting}
       />
     </div>
   );

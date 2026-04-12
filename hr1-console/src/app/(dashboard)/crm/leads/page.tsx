@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
@@ -29,137 +28,41 @@ import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { Textarea } from "@hr1/shared-ui/components/ui/textarea";
-import { useOrg } from "@/lib/org-context";
-import { useAuth } from "@/lib/auth-context";
-import { useOrgQuery, useEmployees } from "@/lib/hooks/use-org-query";
-import { getSupabase } from "@/lib/supabase/browser";
-import { fetchLeads, createLead } from "@/lib/repositories/crm-repository";
 import { leadSourceLabels, leadStatusLabels, leadStatusColors } from "@/lib/constants/crm";
+import { formatDate } from "@/features/crm/rules";
+import { useCrmLeadsPage } from "@/features/crm/hooks/use-crm-leads-page";
 import { Plus } from "lucide-react";
-import type { BcLead, BcLeadStatus } from "@/types/database";
-
-type StatusFilter = "all" | BcLeadStatus;
-
-interface LeadFormData {
-  name: string;
-  contact_name: string;
-  contact_email: string;
-  contact_phone: string;
-  source: string;
-  assigned_to: string;
-  notes: string;
-}
-
-const emptyForm: LeadFormData = {
-  name: "",
-  contact_name: "",
-  contact_email: "",
-  contact_phone: "",
-  source: "web",
-  assigned_to: "",
-  notes: "",
-};
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "---";
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
-}
 
 export default function CrmLeadsPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const { organization } = useOrg();
-  const { user } = useAuth();
-  const { data: employees } = useEmployees();
 
-  const { data: leads, mutate } = useOrgQuery("crm-leads", (orgId) =>
-    fetchLeads(getSupabase(), orgId)
-  );
+  const {
+    employees,
+    loading,
+    search,
+    setSearch,
+    statusFilter,
+    setStatusFilter,
+    editOpen,
+    setEditOpen,
+    form,
+    saving,
+    filteredLeads,
+    getEmployeeName,
+    openAdd,
+    updateField,
+    handleSave,
+  } = useCrmLeadsPage();
 
-  // UI state
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [editOpen, setEditOpen] = useState(false);
-  const [form, setForm] = useState<LeadFormData>(emptyForm);
-  const [saving, setSaving] = useState(false);
-
-  // Filter leads
-  const filteredLeads = useMemo(() => {
-    if (!leads) return [];
-    let result = leads;
-    if (statusFilter !== "all") {
-      result = result.filter((l) => l.status === statusFilter);
-    }
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (l) =>
-          l.name.toLowerCase().includes(q) ||
-          (l.contact_name ?? "").toLowerCase().includes(q) ||
-          (l.contact_email ?? "").toLowerCase().includes(q)
-      );
-    }
-    return result;
-  }, [leads, statusFilter, search]);
-
-  // Resolve employee name
-  const getEmployeeName = useCallback(
-    (userId: string | null) => {
-      if (!userId || !employees) return "---";
-      const emp = employees.find((e) => e.id === userId);
-      return emp?.display_name ?? emp?.email ?? "---";
-    },
-    [employees]
-  );
-
-  // Open add panel
-  const openAdd = useCallback(() => {
-    setForm(emptyForm);
-    setEditOpen(true);
-  }, []);
-
-  // Handle form field change
-  const updateField = useCallback(
-    <K extends keyof LeadFormData>(field: K, value: LeadFormData[K]) => {
-      setForm((prev) => ({ ...prev, [field]: value }));
-    },
-    []
-  );
-
-  // Save lead
-  const handleSave = useCallback(async () => {
-    if (!organization || saving) return;
-    if (!form.name.trim()) {
-      showToast("企業名は必須です", "error");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await createLead(getSupabase(), {
-        organization_id: organization.id,
-        name: form.name.trim(),
-        contact_name: form.contact_name.trim() || null,
-        contact_email: form.contact_email.trim() || null,
-        contact_phone: form.contact_phone.trim() || null,
-        source: (form.source || "web") as BcLead["source"],
-        status: "new" as const,
-        assigned_to: form.assigned_to || null,
-        notes: form.notes.trim() || null,
-        created_by: user?.id ?? null,
-      });
+  const onSave = async () => {
+    const result = await handleSave();
+    if (result.success) {
       showToast("リードを作成しました");
-      setEditOpen(false);
-      mutate();
-    } catch {
-      showToast("リードの作成に失敗しました", "error");
-    } finally {
-      setSaving(false);
+    } else if (result.error) {
+      showToast(result.error, "error");
     }
-  }, [organization, saving, form, user, showToast, mutate]);
-
-  const loading = !leads;
+  };
 
   return (
     <div className="flex flex-col">
@@ -187,7 +90,7 @@ export default function CrmLeadsPage() {
         />
         <Select
           value={statusFilter}
-          onValueChange={(v) => setStatusFilter((v ?? "all") as StatusFilter)}
+          onValueChange={(v) => setStatusFilter((v ?? "all") as typeof statusFilter)}
         >
           <SelectTrigger className="w-[160px]">
             <SelectValue />
@@ -264,7 +167,7 @@ export default function CrmLeadsPage() {
         open={editOpen}
         onOpenChange={setEditOpen}
         title="リードを追加"
-        onSave={handleSave}
+        onSave={onSave}
         saving={saving}
         saveLabel="作成"
       >

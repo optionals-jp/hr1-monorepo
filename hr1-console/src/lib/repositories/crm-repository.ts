@@ -542,3 +542,24 @@ export async function fetchQuotes(client: SupabaseClient, organizationId: string
   if (error) throw error;
   return (data ?? []) as BcQuote[];
 }
+
+export async function createQuote(
+  client: SupabaseClient,
+  data: {
+    organization_id: string;
+    quote_number: string;
+    title: string;
+    company_id?: string | null;
+    deal_id?: string | null;
+    contact_id?: string | null;
+    issue_date: string;
+    expiry_date?: string | null;
+    notes?: string | null;
+    terms?: string | null;
+    status?: string;
+    created_by?: string | null;
+  }
+) {
+  const { error } = await client.from("crm_quotes").insert(data);
+  if (error) throw error;
+}
