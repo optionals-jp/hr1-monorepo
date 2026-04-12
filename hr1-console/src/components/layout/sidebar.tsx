@@ -25,13 +25,6 @@ import {
   Zap,
   Mail,
   Webhook,
-  BarChart3,
-  Handshake,
-  Contact,
-  Target,
-  FileText,
-  TrendingUp,
-  PieChart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { t } from "@/lib/i18n";
@@ -86,54 +79,6 @@ const unifiedSections: NavSection[] = [
   {
     labelKey: "nav.section.crm",
     items: [
-      {
-        href: "/crm/dashboard",
-        labelKey: "nav.crm.dashboard",
-        icon: BarChart3,
-        resource: "crm",
-      },
-      {
-        href: "/crm/deals",
-        labelKey: "nav.crm.deals",
-        icon: Handshake,
-        resource: "crm",
-      },
-      {
-        href: "/crm/companies",
-        labelKey: "nav.crm.companies",
-        icon: Building2,
-        resource: "crm",
-      },
-      {
-        href: "/crm/contacts",
-        labelKey: "nav.crm.contacts",
-        icon: Contact,
-        resource: "crm",
-      },
-      {
-        href: "/crm/leads",
-        labelKey: "nav.crm.leads",
-        icon: Target,
-        resource: "crm",
-      },
-      {
-        href: "/crm/quotes",
-        labelKey: "nav.crm.quotes",
-        icon: FileText,
-        resource: "crm",
-      },
-      {
-        href: "/crm/forecast",
-        labelKey: "nav.crm.forecast",
-        icon: TrendingUp,
-        resource: "crm",
-      },
-      {
-        href: "/crm/reports",
-        labelKey: "nav.crm.reports",
-        icon: PieChart,
-        resource: "crm",
-      },
       {
         href: "/crm/settings/pipelines",
         labelKey: "nav.crm.pipelines",
