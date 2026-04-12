@@ -57,7 +57,7 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
           'job_id': jobId,
           'applicant_id': applicantId,
           'organization_id': organizationId,
-          'status': ApplicationStatus.active.name,
+          'status': ApplicationStatus.active.value,
         })
         .select('id')
         .single();
@@ -112,6 +112,20 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
         .from('applications')
         .update({'status': 'withdrawn'})
         .eq('id', applicationId);
+  }
+
+  @override
+  Future<void> respondToOffer(
+    String applicationId, {
+    required bool accept,
+  }) async {
+    await _client.rpc(
+      'applicant_respond_to_offer',
+      params: {
+        'p_application_id': applicationId,
+        'p_accept': accept,
+      },
+    );
   }
 
   Application _mapApplication(Map<String, dynamic> map) {

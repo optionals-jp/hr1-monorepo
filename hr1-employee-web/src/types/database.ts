@@ -77,11 +77,25 @@ export interface Application {
   job_id: string;
   applicant_id: string;
   organization_id: string;
-  status: "active" | "offered" | "rejected" | "withdrawn";
+  status: "active" | "offered" | "offer_accepted" | "offer_declined" | "rejected" | "withdrawn";
   applied_at: string;
   jobs?: Job;
   profiles?: Profile;
   application_steps?: ApplicationStep[];
+}
+
+export interface Offer {
+  id: string;
+  application_id: string;
+  organization_id: string;
+  salary: string | null;
+  start_date: string | null;
+  department: string | null;
+  notes: string | null;
+  expires_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ApplicationStep {

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Application, CustomForm, Interview, Job } from "@/types/database";
+import type { Application, CustomForm, Interview, Job, Offer } from "@/types/database";
 
 export async function fetchApplications(client: SupabaseClient, organizationId: string) {
   const { data } = await client
@@ -95,6 +95,45 @@ export async function fetchFormResponses(
     client.from("form_responses").select("*").eq("form_id", formId).eq("applicant_id", applicantId),
   ]);
   return { fields: fieldsData ?? [], responses: responsesData ?? [] };
+}
+
+export async function createOffer(
+  client: SupabaseClient,
+  offer: {
+    application_id: string;
+    organization_id: string;
+    salary?: string;
+    start_date?: string;
+    department?: string;
+    notes?: string;
+    expires_at?: string;
+    created_by?: string;
+  }
+) {
+  return client.from("offers").insert(offer).select().single();
+}
+
+export async function fetchOffer(client: SupabaseClient, applicationId: string) {
+  const { data } = await client
+    .from("offers")
+    .select("*")
+    .eq("application_id", applicationId)
+    .maybeSingle();
+  return data as Offer | null;
+}
+
+export async function updateOffer(
+  client: SupabaseClient,
+  offerId: string,
+  data: {
+    salary?: string;
+    start_date?: string;
+    department?: string;
+    notes?: string;
+    expires_at?: string;
+  }
+) {
+  return client.from("offers").update(data).eq("id", offerId);
 }
 
 export function subscribeToStepChanges(

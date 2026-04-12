@@ -74,7 +74,11 @@ class _Body extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasApplications = inProgress.isNotEmpty || completed.isNotEmpty;
     final offeredApps = completed
-        .where((a) => a.status == ApplicationStatus.offered)
+        .where(
+          (a) =>
+              a.status == ApplicationStatus.offered ||
+              a.status == ApplicationStatus.offerAccepted,
+        )
         .toList();
 
     return ListView(
@@ -525,6 +529,8 @@ class _OfferedBanner extends StatelessWidget {
 Color _statusColor(Application application, BuildContext context) {
   return switch (application.status) {
     ApplicationStatus.offered => AppColors.success,
+    ApplicationStatus.offerAccepted => AppColors.success,
+    ApplicationStatus.offerDeclined => AppColors.textSecondary(context),
     ApplicationStatus.rejected => AppColors.error,
     ApplicationStatus.withdrawn => AppColors.textSecondary(context),
     ApplicationStatus.active =>

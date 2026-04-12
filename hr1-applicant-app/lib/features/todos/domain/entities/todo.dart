@@ -4,7 +4,8 @@ enum TodoSource {
   survey('survey', 'サーベイ'),
   form('form', 'フォーム'),
   interview('interview', '面接'),
-  system('system', 'システム');
+  system('system', 'システム'),
+  offer('offer', '内定');
 
   const TodoSource(this.value, this.label);
   final String value;

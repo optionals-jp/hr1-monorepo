@@ -30,4 +30,7 @@ abstract class ApplicationsRepository {
 
   /// 応募を辞退する
   Future<void> withdraw(String applicationId);
+
+  /// 内定に承諾または辞退で応答する
+  Future<void> respondToOffer(String applicationId, {required bool accept});
 }

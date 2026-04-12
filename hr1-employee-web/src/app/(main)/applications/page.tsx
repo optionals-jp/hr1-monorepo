@@ -40,6 +40,8 @@ import {
   Users,
   GraduationCap,
   Briefcase,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -53,11 +55,19 @@ const statusTabs = [
   { value: "all", label: "すべて", icon: LayoutList },
   { value: ApplicationStatus.Active, label: "選考中", icon: Loader2 },
   { value: ApplicationStatus.Offered, label: "内定", icon: CircleCheck },
+  { value: ApplicationStatus.OfferAccepted, label: "内定承諾", icon: ThumbsUp },
+  { value: ApplicationStatus.OfferDeclined, label: "内定辞退", icon: ThumbsDown },
   { value: ApplicationStatus.Rejected, label: "不採用", icon: CircleX },
   { value: ApplicationStatus.Withdrawn, label: "辞退", icon: LogOut },
 ];
 
-type ApplicationsSummaryKey = "total" | "newGrad" | "midCareer" | "active" | "offered";
+type ApplicationsSummaryKey =
+  | "total"
+  | "newGrad"
+  | "midCareer"
+  | "active"
+  | "offered"
+  | "offerAccepted";
 
 const summaryCards: readonly SummaryCardConfig<ApplicationsSummaryKey>[] = [
   { key: "total", label: "総応募数", icon: Users, iconClassName: "text-slate-600" },
@@ -65,6 +75,7 @@ const summaryCards: readonly SummaryCardConfig<ApplicationsSummaryKey>[] = [
   { key: "midCareer", label: "中途", icon: Briefcase, iconClassName: "text-indigo-600" },
   { key: "active", label: "選考中", icon: Loader2, iconClassName: "text-amber-600" },
   { key: "offered", label: "内定", icon: CircleCheck, iconClassName: "text-emerald-600" },
+  { key: "offerAccepted", label: "内定承諾", icon: ThumbsUp, iconClassName: "text-green-600" },
 ];
 
 export default function ApplicationsPage() {

@@ -24,6 +24,7 @@ export interface ApplicationsSummary {
   midCareer: number;
   active: number;
   offered: number;
+  offerAccepted: number;
 }
 
 export function useApplicationsList() {
@@ -63,6 +64,7 @@ export function useApplicationsPage() {
     let midCareer = 0;
     let active = 0;
     let offered = 0;
+    let offerAccepted = 0;
 
     for (const app of applications) {
       const hiringType = app.profiles?.hiring_type;
@@ -71,6 +73,7 @@ export function useApplicationsPage() {
 
       if (app.status === ApplicationStatus.Active) active++;
       else if (app.status === ApplicationStatus.Offered) offered++;
+      else if (app.status === ApplicationStatus.OfferAccepted) offerAccepted++;
     }
 
     return {
@@ -79,6 +82,7 @@ export function useApplicationsPage() {
       midCareer,
       active,
       offered,
+      offerAccepted,
     };
   }, [applications]);
 

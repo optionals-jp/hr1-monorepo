@@ -32,6 +32,10 @@ export interface DashboardStats {
   activeApplications: number;
 }
 
+function isOfferedOrAccepted(status: string): boolean {
+  return status === ApplicationStatus.Offered || status === ApplicationStatus.OfferAccepted;
+}
+
 export function useDashboard(activeTab?: ProductTab) {
   const { organization } = useOrg();
   const orgId = organization?.id;
@@ -68,9 +72,7 @@ export function useDashboard(activeTab?: ProductTab) {
 
       const stages: PipelineStage[] = [{ name: "応募", count: totalApplied }];
       const sortedSteps = Array.from(stepMap.values()).sort((a, b) => a.order - b.order);
-      const offeredCount = applications.filter(
-        (a) => a.status === ApplicationStatus.Offered
-      ).length;
+      const offeredCount = applications.filter((a) => isOfferedOrAccepted(a.status)).length;
 
       for (const step of sortedSteps) {
         const isOfferStep = step.label === "内定" || step.label === "オファー";
@@ -117,8 +119,12 @@ export function useDashboard(activeTab?: ProductTab) {
         if (!monthMap.has(key)) continue;
         const entry = monthMap.get(key)!;
         entry.applications++;
-        if (app.status === ApplicationStatus.Offered) entry.offered++;
-        if (app.status === ApplicationStatus.Withdrawn) entry.withdrawn++;
+        if (isOfferedOrAccepted(app.status)) entry.offered++;
+        if (
+          app.status === ApplicationStatus.Withdrawn ||
+          app.status === ApplicationStatus.OfferDeclined
+        )
+          entry.withdrawn++;
       }
 
       return Array.from(monthMap.entries()).map(([month, d]) => ({ month, ...d }));
@@ -140,7 +146,7 @@ export function useDashboard(activeTab?: ProductTab) {
         if (!deptMap.has(dept)) deptMap.set(dept, { applications: 0, offered: 0 });
         const entry = deptMap.get(dept)!;
         entry.applications++;
-        if (app.status === ApplicationStatus.Offered) entry.offered++;
+        if (isOfferedOrAccepted(app.status)) entry.offered++;
       }
 
       return Array.from(deptMap.entries())
@@ -160,7 +166,7 @@ export function useDashboard(activeTab?: ProductTab) {
         if (!countMap.has(app.job_id)) countMap.set(app.job_id, { total: 0, offered: 0 });
         const c = countMap.get(app.job_id)!;
         c.total++;
-        if (app.status === ApplicationStatus.Offered) c.offered++;
+        if (isOfferedOrAccepted(app.status)) c.offered++;
       }
 
       return jobs.map((job) => ({
@@ -258,7 +264,7 @@ export function useDashboard(activeTab?: ProductTab) {
         const bucket = ht === "new_grad" ? "newGrad" : ht === "mid_career" ? "midCareer" : null;
         if (!bucket) continue;
         result[bucket].applications++;
-        if (row.status === ApplicationStatus.Offered) result[bucket].offered++;
+        if (isOfferedOrAccepted(row.status)) result[bucket].offered++;
       }
 
       return result;
