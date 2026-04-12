@@ -363,6 +363,18 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# ユーザー (ES256 JWT) から呼ばれる関数はゲートウェイの JWT 検証を無効化し、
+# 関数内で auth.getUser() + ロール/組織チェックにより認証する
+# (Supabase JWT Signing Keys 移行後の公式推奨パターン)
+[functions.create-user]
+verify_jwt = false
+
+[functions.setup-organization]
+verify_jwt = false
+
+[functions.parse-business-card]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
