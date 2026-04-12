@@ -32,7 +32,7 @@ import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
-import { fetchCompanies, fetchDealsAll } from "@/lib/repositories/crm-repository";
+import { fetchCompanies, fetchDealsAll, fetchQuotes } from "@/lib/repositories/crm-repository";
 import { quoteStatusLabels, quoteStatusColors } from "@/lib/constants/crm";
 import { formatJpy } from "@/features/crm/rules";
 import type { BcQuote, BcCompany, BcDeal } from "@/types/database";
@@ -43,15 +43,9 @@ export default function QuotesPage() {
   const { organization } = useOrg();
   const { user } = useAuth();
 
-  const { data: quotes, mutate } = useOrgQuery<BcQuote[]>("crm-quotes", async (orgId) => {
-    const { data, error } = await getSupabase()
-      .from("crm_quotes")
-      .select("*, crm_companies(name), crm_deals(title)")
-      .eq("organization_id", orgId)
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    return (data ?? []) as BcQuote[];
-  });
+  const { data: quotes, mutate } = useOrgQuery<BcQuote[]>("crm-quotes", (orgId) =>
+    fetchQuotes(getSupabase(), orgId)
+  );
 
   const { data: companies } = useOrgQuery<BcCompany[]>("crm-companies", (orgId) =>
     fetchCompanies(getSupabase(), orgId)
@@ -77,7 +71,7 @@ export default function QuotesPage() {
     if (statusFilter !== "all" && q.status !== statusFilter) return false;
     if (search) {
       const s = search.toLowerCase();
-      const companyName = (q.crm_companies as unknown as { name: string } | undefined)?.name ?? "";
+      const companyName = (q.crm_companies as { name: string } | undefined)?.name ?? "";
       return (
         q.title.toLowerCase().includes(s) ||
         q.quote_number.toLowerCase().includes(s) ||
@@ -184,9 +178,8 @@ export default function QuotesPage() {
               emptyMessage="見積書がありません"
             >
               {filtered.map((q) => {
-                const companyName = (q.crm_companies as unknown as { name: string } | undefined)
-                  ?.name;
-                const dealTitle = (q.crm_deals as unknown as { title: string } | undefined)?.title;
+                const companyName = (q.crm_companies as { name: string } | undefined)?.name;
+                const dealTitle = (q.crm_deals as { title: string } | undefined)?.title;
                 return (
                   <TableRow key={q.id} className="cursor-pointer">
                     <TableCell>

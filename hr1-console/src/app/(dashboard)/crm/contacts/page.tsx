@@ -33,7 +33,7 @@ import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
-import { fetchContacts, fetchCompanies } from "@/lib/repositories/crm-repository";
+import { fetchContacts, fetchCompanies, createContact } from "@/lib/repositories/crm-repository";
 import { Plus } from "lucide-react";
 
 interface ContactFormData {
@@ -119,22 +119,19 @@ export default function CrmContactsPage() {
 
     setSaving(true);
     try {
-      const { error } = await getSupabase()
-        .from("crm_contacts")
-        .insert({
-          organization_id: organization.id,
-          last_name: form.last_name.trim(),
-          first_name: form.first_name.trim() || null,
-          company_id: form.company_id || null,
-          department: form.department.trim() || null,
-          position: form.position.trim() || null,
-          email: form.email.trim() || null,
-          phone: form.phone.trim() || null,
-          mobile_phone: form.mobile_phone.trim() || null,
-          notes: form.notes.trim() || null,
-          created_by: user?.id ?? null,
-        });
-      if (error) throw error;
+      await createContact(getSupabase(), {
+        organization_id: organization.id,
+        last_name: form.last_name.trim(),
+        first_name: form.first_name.trim() || null,
+        company_id: form.company_id || null,
+        department: form.department.trim() || null,
+        position: form.position.trim() || null,
+        email: form.email.trim() || null,
+        phone: form.phone.trim() || null,
+        mobile_phone: form.mobile_phone.trim() || null,
+        notes: form.notes.trim() || null,
+        created_by: user?.id ?? null,
+      });
       showToast("連絡先を作成しました");
       setEditOpen(false);
       mutateContacts();

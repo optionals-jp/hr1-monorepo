@@ -37,6 +37,7 @@ import {
   fetchActivitiesByContact,
   fetchDealsByContact,
   fetchCardsByContact,
+  updateContact,
   deleteContact,
 } from "@/lib/repositories/crm-repository";
 import { dealStatusLabels } from "@/lib/constants/crm";
@@ -156,24 +157,19 @@ export default function CrmContactDetailPage() {
 
     setSaving(true);
     try {
-      const { error } = await getSupabase()
-        .from("crm_contacts")
-        .update({
-          last_name: form.last_name.trim(),
-          first_name: form.first_name.trim() || null,
-          last_name_kana: form.last_name_kana.trim() || null,
-          first_name_kana: form.first_name_kana.trim() || null,
-          company_id: form.company_id || null,
-          department: form.department.trim() || null,
-          position: form.position.trim() || null,
-          email: form.email.trim() || null,
-          phone: form.phone.trim() || null,
-          mobile_phone: form.mobile_phone.trim() || null,
-          notes: form.notes.trim() || null,
-        })
-        .eq("id", id)
-        .eq("organization_id", organization.id);
-      if (error) throw error;
+      await updateContact(getSupabase(), id, organization.id, {
+        last_name: form.last_name.trim(),
+        first_name: form.first_name.trim() || null,
+        last_name_kana: form.last_name_kana.trim() || null,
+        first_name_kana: form.first_name_kana.trim() || null,
+        company_id: form.company_id || null,
+        department: form.department.trim() || null,
+        position: form.position.trim() || null,
+        email: form.email.trim() || null,
+        phone: form.phone.trim() || null,
+        mobile_phone: form.mobile_phone.trim() || null,
+        notes: form.notes.trim() || null,
+      });
       showToast("連絡先を更新しました");
       setEditOpen(false);
       mutateContact();

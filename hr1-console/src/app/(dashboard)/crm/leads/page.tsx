@@ -33,6 +33,7 @@ import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
 import { useOrgQuery, useEmployees } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
+import { fetchLeads, createLead } from "@/lib/repositories/crm-repository";
 import { leadSourceLabels, leadStatusLabels, leadStatusColors } from "@/lib/constants/crm";
 import { Plus } from "lucide-react";
 import type { BcLead, BcLeadStatus } from "@/types/database";
@@ -72,15 +73,9 @@ export default function CrmLeadsPage() {
   const { user } = useAuth();
   const { data: employees } = useEmployees();
 
-  const { data: leads, mutate } = useOrgQuery("crm-leads", async (orgId) => {
-    const { data, error } = await getSupabase()
-      .from("crm_leads")
-      .select("*, profiles:assigned_to(display_name, email)")
-      .eq("organization_id", orgId)
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    return (data ?? []) as BcLead[];
-  });
+  const { data: leads, mutate } = useOrgQuery("crm-leads", (orgId) =>
+    fetchLeads(getSupabase(), orgId)
+  );
 
   // UI state
   const [search, setSearch] = useState("");
@@ -142,21 +137,18 @@ export default function CrmLeadsPage() {
 
     setSaving(true);
     try {
-      const { error } = await getSupabase()
-        .from("crm_leads")
-        .insert({
-          organization_id: organization.id,
-          name: form.name.trim(),
-          contact_name: form.contact_name.trim() || null,
-          contact_email: form.contact_email.trim() || null,
-          contact_phone: form.contact_phone.trim() || null,
-          source: form.source || "web",
-          status: "new" as const,
-          assigned_to: form.assigned_to || null,
-          notes: form.notes.trim() || null,
-          created_by: user?.id ?? null,
-        });
-      if (error) throw error;
+      await createLead(getSupabase(), {
+        organization_id: organization.id,
+        name: form.name.trim(),
+        contact_name: form.contact_name.trim() || null,
+        contact_email: form.contact_email.trim() || null,
+        contact_phone: form.contact_phone.trim() || null,
+        source: (form.source || "web") as BcLead["source"],
+        status: "new" as const,
+        assigned_to: form.assigned_to || null,
+        notes: form.notes.trim() || null,
+        created_by: user?.id ?? null,
+      });
       showToast("リードを作成しました");
       setEditOpen(false);
       mutate();

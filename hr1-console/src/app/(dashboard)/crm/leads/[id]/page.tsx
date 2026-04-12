@@ -33,8 +33,13 @@ import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { useEmployees } from "@/lib/hooks/use-org-query";
 import {
   fetchActivitiesByLead,
+  fetchLead,
   createActivity,
   createDeal,
+  createContact,
+  createCompany,
+  updateLead,
+  deleteLead,
 } from "@/lib/repositories/crm-repository";
 import {
   leadSourceLabels,
@@ -68,18 +73,8 @@ export default function LeadDetailPage() {
   const { user } = useAuth();
   const { data: employees } = useEmployees();
 
-  const { data: lead, mutate: mutateLead } = useOrgQuery<BcLead | null>(
-    `crm-lead-${id}`,
-    async (orgId) => {
-      const { data, error } = await getSupabase()
-        .from("crm_leads")
-        .select("*, profiles:assigned_to(display_name, email)")
-        .eq("id", id)
-        .eq("organization_id", orgId)
-        .single();
-      if (error) throw error;
-      return data as BcLead;
-    }
+  const { data: lead, mutate: mutateLead } = useOrgQuery<BcLead | null>(`crm-lead-${id}`, (orgId) =>
+    fetchLead(getSupabase(), id, orgId)
   );
 
   const { data: activities, mutate: mutateActivities } = useOrgQuery<BcActivity[]>(
@@ -140,20 +135,15 @@ export default function LeadDetailPage() {
   const handleUpdate = async () => {
     if (!organization || !id) return;
     try {
-      const { error } = await getSupabase()
-        .from("crm_leads")
-        .update({
-          name: editName,
-          contact_name: editContactName || null,
-          contact_email: editContactEmail || null,
-          contact_phone: editContactPhone || null,
-          source: editSource,
-          assigned_to: editAssignedTo || null,
-          notes: editNotes || null,
-        })
-        .eq("id", id)
-        .eq("organization_id", organization.id);
-      if (error) throw error;
+      await updateLead(getSupabase(), id, organization.id, {
+        name: editName,
+        contact_name: editContactName || null,
+        contact_email: editContactEmail || null,
+        contact_phone: editContactPhone || null,
+        source: editSource as BcLead["source"],
+        assigned_to: editAssignedTo || null,
+        notes: editNotes || null,
+      });
       setEditOpen(false);
       mutateLead();
       showToast("リードを更新しました");
@@ -165,12 +155,9 @@ export default function LeadDetailPage() {
   const handleStatusChange = async (newStatus: string) => {
     if (!organization || !id) return;
     try {
-      const { error } = await getSupabase()
-        .from("crm_leads")
-        .update({ status: newStatus })
-        .eq("id", id)
-        .eq("organization_id", organization.id);
-      if (error) throw error;
+      await updateLead(getSupabase(), id, organization.id, {
+        status: newStatus as BcLead["status"],
+      });
       mutateLead();
       showToast(`ステータスを「${leadStatusLabels[newStatus]}」に変更しました`);
     } catch {
@@ -181,12 +168,7 @@ export default function LeadDetailPage() {
   const handleDelete = async () => {
     if (!organization) return;
     try {
-      const { error } = await getSupabase()
-        .from("crm_leads")
-        .delete()
-        .eq("id", id)
-        .eq("organization_id", organization.id);
-      if (error) throw error;
+      await deleteLead(getSupabase(), id, organization.id);
       showToast("リードを削除しました");
       router.push("/crm/leads");
     } catch {
@@ -225,32 +207,22 @@ export default function LeadDetailPage() {
     setConverting(true);
     try {
       // 1. Create company
-      const { data: newCompany, error: compError } = await getSupabase()
-        .from("crm_companies")
-        .insert({
-          organization_id: organization.id,
-          name: convCompanyName,
-          phone: convPhone || null,
-          created_by: user?.id ?? null,
-        })
-        .select()
-        .single();
-      if (compError) throw compError;
+      const newCompany = await createCompany(getSupabase(), {
+        organization_id: organization.id,
+        name: convCompanyName,
+        phone: convPhone || null,
+        created_by: user?.id ?? null,
+      });
 
       // 2. Create contact
-      const { data: newContact, error: contError } = await getSupabase()
-        .from("crm_contacts")
-        .insert({
-          organization_id: organization.id,
-          company_id: newCompany.id,
-          last_name: convLastName,
-          email: convEmail || null,
-          phone: convPhone || null,
-          created_by: user?.id ?? null,
-        })
-        .select()
-        .single();
-      if (contError) throw contError;
+      const newContact = await createContact(getSupabase(), {
+        organization_id: organization.id,
+        company_id: newCompany.id,
+        last_name: convLastName,
+        email: convEmail || null,
+        phone: convPhone || null,
+        created_by: user?.id ?? null,
+      });
 
       // 3. Optionally create deal
       let newDealId: string | null = null;
@@ -267,18 +239,13 @@ export default function LeadDetailPage() {
       }
 
       // 4. Update lead as converted
-      const { error: updateError } = await getSupabase()
-        .from("crm_leads")
-        .update({
-          status: "converted",
-          converted_company_id: newCompany.id,
-          converted_contact_id: newContact.id,
-          converted_deal_id: newDealId,
-          converted_at: new Date().toISOString(),
-        })
-        .eq("id", id)
-        .eq("organization_id", organization.id);
-      if (updateError) throw updateError;
+      await updateLead(getSupabase(), id, organization.id, {
+        status: "converted",
+        converted_company_id: newCompany.id,
+        converted_contact_id: newContact.id,
+        converted_deal_id: newDealId,
+        converted_at: new Date().toISOString(),
+      });
 
       setConvertOpen(false);
       showToast("リードをコンバートしました");

@@ -5,12 +5,14 @@ export const dealStatusLabels: Record<string, string> = {
   open: "商談中",
   won: "受注",
   lost: "失注",
+  cancelled: "キャンセル",
 };
 
 export const dealStatusColors: Record<string, BadgeVariant> = {
   open: "default",
   won: "secondary",
   lost: "destructive",
+  cancelled: "default",
 };
 
 // --- 商談ステージ ---

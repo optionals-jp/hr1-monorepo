@@ -6,6 +6,8 @@ import type {
   BcActivity,
   BcCard,
   BcTodo,
+  BcLead,
+  BcQuote,
   CrmDealStageHistory,
 } from "@/types/database";
 
@@ -130,9 +132,14 @@ export async function fetchCompany(client: SupabaseClient, id: string, organizat
 export async function createCompany(
   client: SupabaseClient,
   data: Partial<BcCompany> & { organization_id: string; name: string }
-) {
-  const { error } = await client.from("crm_companies").insert(data);
+): Promise<BcCompany> {
+  const { data: created, error } = await client
+    .from("crm_companies")
+    .insert(data)
+    .select()
+    .single();
   if (error) throw error;
+  return created as BcCompany;
 }
 
 export async function updateCompany(
@@ -194,6 +201,29 @@ export async function fetchContactsByCompany(
     .order("last_name");
   if (error) throw error;
   return (data ?? []) as BcContact[];
+}
+
+export async function createContact(
+  client: SupabaseClient,
+  data: Partial<BcContact> & { organization_id: string; last_name: string }
+) {
+  const { data: created, error } = await client.from("crm_contacts").insert(data).select().single();
+  if (error) throw error;
+  return created as BcContact;
+}
+
+export async function updateContact(
+  client: SupabaseClient,
+  id: string,
+  organizationId: string,
+  data: Partial<BcContact>
+) {
+  const { error } = await client
+    .from("crm_contacts")
+    .update(data)
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+  if (error) throw error;
 }
 
 export async function deleteContact(client: SupabaseClient, id: string, organizationId: string) {
@@ -445,4 +475,70 @@ export async function fetchTodosByDeal(
     .order("due_date");
   if (error) throw error;
   return (data ?? []) as BcTodo[];
+}
+
+// --- Leads ---
+
+export async function fetchLeads(client: SupabaseClient, organizationId: string) {
+  const { data, error } = await client
+    .from("crm_leads")
+    .select("*, profiles:assigned_to(display_name, email)")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as BcLead[];
+}
+
+export async function fetchLead(client: SupabaseClient, id: string, organizationId: string) {
+  const { data, error } = await client
+    .from("crm_leads")
+    .select("*, profiles:assigned_to(display_name, email)")
+    .eq("id", id)
+    .eq("organization_id", organizationId)
+    .single();
+  if (error) throw error;
+  return data as BcLead | null;
+}
+
+export async function createLead(
+  client: SupabaseClient,
+  data: Partial<BcLead> & { organization_id: string; name: string }
+) {
+  const { error } = await client.from("crm_leads").insert(data);
+  if (error) throw error;
+}
+
+export async function updateLead(
+  client: SupabaseClient,
+  id: string,
+  organizationId: string,
+  data: Partial<BcLead>
+) {
+  const { error } = await client
+    .from("crm_leads")
+    .update(data)
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+  if (error) throw error;
+}
+
+export async function deleteLead(client: SupabaseClient, id: string, organizationId: string) {
+  const { error } = await client
+    .from("crm_leads")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+  if (error) throw error;
+}
+
+// --- Quotes ---
+
+export async function fetchQuotes(client: SupabaseClient, organizationId: string) {
+  const { data, error } = await client
+    .from("crm_quotes")
+    .select("*, crm_companies(name), crm_deals(title)")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as BcQuote[];
 }

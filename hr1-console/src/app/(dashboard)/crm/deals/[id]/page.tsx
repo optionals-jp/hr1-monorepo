@@ -131,6 +131,10 @@ export default function DealDetailPage() {
 
   const handleUpdate = async () => {
     if (!organization || !deal) return;
+    if (!editTitle.trim()) {
+      showToast("商談名は必須です", "error");
+      return;
+    }
     try {
       await updateDeal(getSupabase(), id, organization.id, {
         title: editTitle,
