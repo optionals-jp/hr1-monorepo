@@ -61,9 +61,19 @@ export interface JobStep {
   interview_id: string | null;
 }
 
+export interface SelectionFlow {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SelectionStepTemplate {
   id: string;
   organization_id: string;
+  flow_id: string | null;
   name: string;
   step_type: "screening" | "form" | "interview" | "external_test" | "offer";
   description: string | null;

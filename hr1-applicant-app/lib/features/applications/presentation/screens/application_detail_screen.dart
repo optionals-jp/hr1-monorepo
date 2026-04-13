@@ -328,9 +328,7 @@ class _OfferResponseCard extends ConsumerWidget {
               const SizedBox(width: AppSpacing.md),
               Text(
                 '内定を獲得しました',
-                style: AppTextStyles.callout.copyWith(
-                  color: AppColors.success,
-                ),
+                style: AppTextStyles.callout.copyWith(color: AppColors.success),
               ),
             ],
           ),

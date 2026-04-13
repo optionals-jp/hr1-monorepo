@@ -126,10 +126,7 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
   }) async {
     await _client.rpc(
       'applicant_respond_to_offer',
-      params: {
-        'p_application_id': applicationId,
-        'p_accept': accept,
-      },
+      params: {'p_application_id': applicationId, 'p_accept': accept},
     );
   }
 

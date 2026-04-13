@@ -127,6 +127,7 @@ async function persistManualStepsAsTemplates(
     try {
       await templateRepo.createTemplate(client, {
         organization_id: organizationId,
+        flow_id: null,
         name,
         step_type: step.step_type,
         description: null,

@@ -1,18 +1,28 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
+import { Fragment, useState, useMemo } from "react";
+import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@hr1/shared-ui/components/ui/table";
+import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { useFaqs } from "@/lib/hooks/use-faqs";
 import { cn } from "@hr1/shared-ui/lib/utils";
-import { Search, ChevronDown, CircleHelp } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 
 export default function FaqsPage() {
   const { data: faqs = [], isLoading, error, mutate } = useFaqs();
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [openIds, setOpenIds] = useState<Set<string>>(new Set());
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const categories = useMemo(() => [...new Set(faqs.map((f) => f.category))].sort(), [faqs]);
 
@@ -27,99 +37,102 @@ export default function FaqsPage() {
     });
   }, [faqs, search, selectedCategory]);
 
-  const toggle = (id: string) => {
-    setOpenIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
   return (
     <div className="flex flex-col">
+      <QueryErrorBanner error={error} onRetry={() => mutate()} />
       <PageHeader title="よくある質問" description="社内FAQ" sticky={false} border={false} />
-      {error && <QueryErrorBanner error={error} onRetry={() => mutate()} />}
 
-      <PageContent>
-        <div className="space-y-4">
-          <div className="flex items-center rounded-full bg-gray-100 px-4 py-2.5 max-w-md">
-            <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-            <input
-              placeholder="質問を検索..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground ml-2"
-            />
-          </div>
+      <div className="px-6 pb-4 space-y-3">
+        <div className="flex items-center rounded-full bg-gray-100 px-4 py-2.5 max-w-md">
+          <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+          <input
+            placeholder="質問を検索..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground ml-2"
+          />
+        </div>
 
-          {categories.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+        {categories.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <Badge
+              variant={selectedCategory === null ? "default" : "outline"}
+              className="cursor-pointer"
+              onClick={() => setSelectedCategory(null)}
+            >
+              すべて
+            </Badge>
+            {categories.map((cat) => (
               <Badge
-                variant={selectedCategory === null ? "default" : "outline"}
+                key={cat}
+                variant={selectedCategory === cat ? "default" : "outline"}
                 className="cursor-pointer"
-                onClick={() => setSelectedCategory(null)}
+                onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
               >
-                すべて
+                {cat}
               </Badge>
-              {categories.map((cat) => (
-                <Badge
-                  key={cat}
-                  variant={selectedCategory === cat ? "default" : "outline"}
-                  className="cursor-pointer"
-                  onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
-                >
-                  {cat}
-                </Badge>
-              ))}
-            </div>
-          )}
+            ))}
+          </div>
+        )}
+      </div>
 
-          {isLoading ? (
-            <div className="py-12 text-center text-sm text-muted-foreground">読み込み中...</div>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-12 text-muted-foreground">
-              <CircleHelp className="h-10 w-10 opacity-40" />
-              <p className="text-sm">
-                {search || selectedCategory ? "該当するFAQがありません" : "FAQがありません"}
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y rounded-lg border">
+      <TableSection>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>質問</TableHead>
+              <TableHead>カテゴリ</TableHead>
+              <TableHead className="w-10" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableEmptyState
+              colSpan={3}
+              isLoading={isLoading}
+              isEmpty={filtered.length === 0}
+              emptyMessage={
+                search || selectedCategory ? "該当するFAQがありません" : "FAQがありません"
+              }
+            >
               {filtered.map((faq) => {
-                const isOpen = openIds.has(faq.id);
+                const isExpanded = expandedId === faq.id;
                 return (
-                  <div key={faq.id}>
-                    <button
-                      type="button"
-                      onClick={() => toggle(faq.id)}
-                      className="flex w-full items-center gap-3 px-4 py-3.5 text-left hover:bg-accent/50 transition-colors"
+                  <Fragment key={faq.id}>
+                    <TableRow
+                      className="cursor-pointer"
+                      onClick={() => setExpandedId(isExpanded ? null : faq.id)}
                     >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{faq.question}</p>
-                        <Badge variant="outline" className="mt-1 text-[10px]">
-                          {faq.category}
-                        </Badge>
-                      </div>
-                      <ChevronDown
-                        className={cn(
-                          "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
-                          isOpen && "rotate-180"
-                        )}
-                      />
-                    </button>
-                    {isOpen && (
-                      <div className="px-4 pb-4 text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                        {faq.answer}
-                      </div>
+                      <TableCell>
+                        <span className="font-medium">{faq.question}</span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{faq.category}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <ChevronDown
+                          className={cn(
+                            "h-4 w-4 text-muted-foreground transition-transform",
+                            isExpanded && "rotate-180"
+                          )}
+                        />
+                      </TableCell>
+                    </TableRow>
+                    {isExpanded && (
+                      <TableRow className="bg-muted/30 hover:bg-muted/30">
+                        <TableCell colSpan={3}>
+                          <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                            {faq.answer}
+                          </p>
+                        </TableCell>
+                      </TableRow>
                     )}
-                  </div>
+                  </Fragment>
                 );
               })}
-            </div>
-          )}
-        </div>
-      </PageContent>
+            </TableEmptyState>
+          </TableBody>
+        </Table>
+      </TableSection>
     </div>
   );
 }
