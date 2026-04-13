@@ -18,9 +18,7 @@ export function ActivityTimeline({ activities, emptyMessage = "活動なし" }: 
 
   return (
     <div className="relative">
-      {activities.length > 1 && (
-        <div className="absolute left-4 top-7 bottom-7 w-px bg-border" />
-      )}
+      {activities.length > 1 && <div className="absolute left-4 top-7 bottom-7 w-px bg-border" />}
       <div className="space-y-0">
         {activities.map((a) => {
           const Icon = ACTIVITY_ICONS[a.activity_type] ?? ACTIVITY_ICON_FALLBACK;
