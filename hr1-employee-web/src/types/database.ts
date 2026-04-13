@@ -483,6 +483,7 @@ export interface CrmFieldDefinition {
   id: string;
   organization_id: string;
   entity_type: CrmEntityType;
+  entity_id: string | null;
   field_type: CrmFieldType;
   label: string;
   description: string | null;

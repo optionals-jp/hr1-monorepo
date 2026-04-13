@@ -6,7 +6,8 @@ import type { CrmEntityType, CrmFieldDefinition, CrmFieldValue } from "@/types/d
 export async function fetchFieldDefinitions(
   client: SupabaseClient,
   organizationId: string,
-  entityType?: CrmEntityType
+  entityType?: CrmEntityType,
+  entityId?: string
 ) {
   let query = client
     .from("crm_field_definitions")
@@ -15,6 +16,10 @@ export async function fetchFieldDefinitions(
     .order("sort_order");
   if (entityType) {
     query = query.eq("entity_type", entityType);
+  }
+  if (entityId) {
+    // グローバル(entity_id IS NULL) + エンティティ固有の両方を取得
+    query = query.or(`entity_id.is.null,entity_id.eq.${entityId}`);
   }
   const { data, error } = await query;
   if (error) throw error;
@@ -26,6 +31,7 @@ export async function createFieldDefinition(
   data: {
     organization_id: string;
     entity_type: CrmEntityType;
+    entity_id?: string | null;
     field_type: string;
     label: string;
     description?: string | null;

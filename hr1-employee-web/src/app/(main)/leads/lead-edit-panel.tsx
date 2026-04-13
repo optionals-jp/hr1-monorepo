@@ -173,13 +173,13 @@ export function LeadConvertPanel({
     <EditPanel
       open={convertOpen}
       onOpenChange={setConvertOpen}
-      title="リードをコンバート"
+      title="商談に変換する"
       onSave={handleConvert}
-      saveLabel={converting ? "変換中..." : "コンバート実行"}
+      saveLabel={converting ? "変換中..." : "変換する"}
     >
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          このリードから企業・商談を作成します。担当者名がある場合は連絡先も作成されます。
+          このリードを商談に変換します。企業・商談が作成され、担当者名がある場合は連絡先も作成されます。
         </p>
 
         <div>
@@ -200,7 +200,12 @@ export function LeadConvertPanel({
             }}
           >
             <SelectTrigger className="w-full">
-              <SelectValue />
+              <span>
+                {convertData.existingCompanyId
+                  ? ((existingCompanies ?? []).find((c) => c.id === convertData.existingCompanyId)
+                      ?.name ?? "—")
+                  : "＋ 新規企業を作成"}
+              </span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__new__">＋ 新規企業を作成</SelectItem>

@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
+import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import {
@@ -15,8 +18,8 @@ import {
 import { TableEmptyState } from "@hr1/shared-ui/components/ui/table-empty-state";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
-import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
+import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
 import { leadSourceLabels, leadStatusLabels, leadStatusColors } from "@/lib/constants";
 import { useCrmLeadsPage, useCrmCompanies } from "@/lib/hooks/use-crm";
 import { useOrg } from "@/lib/org-context";
@@ -25,22 +28,21 @@ import { convertLead, deleteLead } from "@/lib/repositories/lead-repository";
 import { fireTrigger } from "@/lib/automation/engine";
 import { useDefaultPipeline, getStagesFromPipeline } from "@/lib/hooks/use-pipelines";
 import type { BcLead } from "@/types/database";
-import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@hr1/shared-ui/components/ui/dropdown-menu";
-import { cn } from "@hr1/shared-ui/lib/utils";
 import { useRouter } from "next/navigation";
-import { ArrowRightLeft, SlidersHorizontal, X, Upload, Trash2 } from "lucide-react";
+import { ArrowRightLeft, Upload, Trash2 } from "lucide-react";
 import { LeadEditPanel, LeadConvertPanel } from "./lead-edit-panel";
 import { LeadImportDialog } from "./lead-import-dialog";
 import { Pagination, usePagination } from "@/components/crm/pagination";
 import { BulkActionBar, useBulkSelection } from "@/components/crm/bulk-action-bar";
-import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
+
+const statusTabs = [
+  { value: "all", label: "すべて" },
+  { value: "new", label: "新規" },
+  { value: "contacted", label: "連絡済" },
+  { value: "qualified", label: "有望" },
+  { value: "unqualified", label: "見込み薄" },
+  { value: "converted", label: "変換済" },
+];
 
 export default function CrmLeadsPage() {
   const { showToast } = useToast();
@@ -87,7 +89,6 @@ export default function CrmLeadsPage() {
     showToast(`${ids.length}件のリードを削除しました`);
   };
 
-  // コンバージョンダイアログ
   const [convertOpen, setConvertOpen] = useState(false);
   const [convertTarget, setConvertTarget] = useState<BcLead | null>(null);
   const [convertData, setConvertData] = useState({
@@ -100,7 +101,6 @@ export default function CrmLeadsPage() {
   });
   const [converting, setConverting] = useState(false);
 
-  // リード企業名に一致する既存企業を探す
   const findMatchingCompany = (companyName: string) =>
     (existingCompanies ?? []).find(
       (c) => c.name.trim().toLowerCase() === companyName.trim().toLowerCase()
@@ -144,10 +144,9 @@ export default function CrmLeadsPage() {
       const hasContact = !!convertData.contactName;
       showToast(
         useExisting
-          ? `リードをコンバートしました（既存企業に${hasContact ? "連絡先・" : ""}商談を作成）`
-          : `リードをコンバートしました（企業${hasContact ? "・連絡先" : ""}・商談を作成）`
+          ? `商談に変換しました（既存企業に${hasContact ? "連絡先・" : ""}商談を作成）`
+          : `商談に変換しました（企業${hasContact ? "・連絡先" : ""}・商談を作成）`
       );
-      // コンバートトリガー（非同期）
       fireTrigger(getSupabase(), {
         organizationId: organization.id,
         triggerType: "lead_converted",
@@ -158,11 +157,28 @@ export default function CrmLeadsPage() {
       setConvertOpen(false);
       mutate();
     } catch {
-      showToast("コンバートに失敗しました", "error");
+      showToast("変換に失敗しました", "error");
     } finally {
       setConverting(false);
     }
   };
+
+  const tabCountsMap = useMemo(() => {
+    const all = leads ?? [];
+    return {
+      all: all.length,
+      new: all.filter((l) => l.status === "new").length,
+      contacted: all.filter((l) => l.status === "contacted").length,
+      qualified: all.filter((l) => l.status === "qualified").length,
+      unqualified: all.filter((l) => l.status === "unqualified").length,
+      converted: all.filter((l) => l.status === "converted").length,
+    } as Record<string, number>;
+  }, [leads]);
+
+  const tabsWithCount = statusTabs.map((t) => ({
+    ...t,
+    label: `${t.label}（${tabCountsMap[t.value] ?? 0}）`,
+  }));
 
   return (
     <div className="flex flex-col">
@@ -185,46 +201,10 @@ export default function CrmLeadsPage() {
       {error && <QueryErrorBanner error={error} />}
 
       <StickyFilterBar>
-        <SearchBar
-          value={search}
-          onChange={setSearch}
-          placeholder="企業名・担当者名・メールで検索"
-        />
-        <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
-            <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
-            {statusFilter !== "all" && (
-              <div className="flex items-center gap-1.5 overflow-x-auto">
-                <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
-                  ステータス：{leadStatusLabels[statusFilter] ?? statusFilter}
-                  <span
-                    role="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setStatusFilter("all");
-                    }}
-                    className="ml-0.5 hover:text-foreground"
-                  >
-                    <X className="h-3 w-3" />
-                  </span>
-                </Badge>
-              </div>
-            )}
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-auto py-2">
-            <DropdownMenuItem className="py-2" onClick={() => setStatusFilter("all")}>
-              <span className={cn(statusFilter === "all" && "font-medium")}>すべて</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {Object.entries(leadStatusLabels).map(([value, label]) => (
-              <DropdownMenuItem key={value} className="py-2" onClick={() => setStatusFilter(value)}>
-                <span className={cn(statusFilter === value && "font-medium")}>{label}</span>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <TabBar tabs={tabsWithCount} activeTab={statusFilter} onTabChange={setStatusFilter} />
       </StickyFilterBar>
+
+      <SearchBar value={search} onChange={setSearch} placeholder="企業名・担当者名・メールで検索" />
 
       <TableSection>
         <Table>

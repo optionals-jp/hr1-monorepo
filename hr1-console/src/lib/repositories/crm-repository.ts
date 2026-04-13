@@ -81,7 +81,9 @@ export async function fetchUpcomingTodos(client: SupabaseClient, organizationId:
 export async function fetchDeals(client: SupabaseClient, organizationId: string) {
   const { data, error } = await client
     .from("crm_deals")
-    .select("*, crm_companies(*), crm_contacts(*), profiles(display_name)")
+    .select(
+      "*, crm_companies(*), crm_contacts(*), profiles!crm_deals_assigned_to_fkey(display_name)"
+    )
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
   if (error) throw error;

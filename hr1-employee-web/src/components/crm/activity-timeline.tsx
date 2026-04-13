@@ -3,16 +3,8 @@
 import { Avatar, AvatarFallback } from "@hr1/shared-ui/components/ui/avatar";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { activityTypeLabels } from "@/lib/constants";
-import { Phone, Mail, MapPin, FileText, MessageSquare, Calendar } from "lucide-react";
+import { ACTIVITY_ICONS, ACTIVITY_ICON_FALLBACK } from "@/components/crm/activity-icons";
 import type { BcActivity } from "@/types/database";
-
-const ACTIVITY_ICONS: Record<string, typeof Phone> = {
-  call: Phone,
-  email: Mail,
-  visit: MapPin,
-  memo: FileText,
-  appointment: Calendar,
-};
 
 interface ActivityTimelineProps {
   activities: BcActivity[];
@@ -26,10 +18,12 @@ export function ActivityTimeline({ activities, emptyMessage = "活動なし" }: 
 
   return (
     <div className="relative">
-      <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
+      {activities.length > 1 && (
+        <div className="absolute left-4 top-7 bottom-7 w-px bg-border" />
+      )}
       <div className="space-y-0">
         {activities.map((a) => {
-          const Icon = ACTIVITY_ICONS[a.activity_type] ?? MessageSquare;
+          const Icon = ACTIVITY_ICONS[a.activity_type] ?? ACTIVITY_ICON_FALLBACK;
           const label = activityTypeLabels[a.activity_type] ?? a.activity_type;
           const date = new Date(a.activity_date ?? a.created_at);
           const authorName = a.profiles?.display_name ?? a.profiles?.email ?? null;

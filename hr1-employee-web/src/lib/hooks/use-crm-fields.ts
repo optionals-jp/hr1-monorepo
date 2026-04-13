@@ -8,11 +8,18 @@ import * as repo from "@/lib/repositories/crm-field-repository";
 import type { CrmEntityType } from "@/types/database";
 
 /**
- * テナントの全カスタムフィールド定義を取得
+ * テナントのカスタムフィールド定義を取得
+ * entityId を渡すとグローバル + エンティティ固有の両方を取得
  */
-export function useCrmFieldDefinitions(entityType?: CrmEntityType) {
-  const key = entityType ? `crm-field-defs-${entityType}` : "crm-field-defs-all";
-  return useOrgQuery(key, (orgId) => repo.fetchFieldDefinitions(getSupabase(), orgId, entityType));
+export function useCrmFieldDefinitions(entityType?: CrmEntityType, entityId?: string) {
+  const key = entityId
+    ? `crm-field-defs-${entityType}-${entityId}`
+    : entityType
+      ? `crm-field-defs-${entityType}`
+      : "crm-field-defs-all";
+  return useOrgQuery(key, (orgId) =>
+    repo.fetchFieldDefinitions(getSupabase(), orgId, entityType, entityId)
+  );
 }
 
 /**
