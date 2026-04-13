@@ -8,10 +8,11 @@ import { getSupabase } from "@/lib/supabase/browser";
 import * as applicantRepo from "@/lib/repositories/applicant-repository";
 import * as jobRepository from "@/lib/repositories/job-repository";
 import * as templateRepo from "@/lib/repositories/selection-step-template-repository";
+import * as flowRepo from "@/lib/repositories/selection-flow-repository";
 import { validators, validateForm, type ValidationErrors } from "@hr1/shared-ui";
 import { StepType } from "@/lib/constants";
 import { PG_ERROR_CODES, getPgErrorCode } from "@hr1/shared-ui/lib/postgres-errors";
-import type { Job, SelectionStepTemplate } from "@/types/database";
+import type { Job, SelectionFlow, SelectionStepTemplate } from "@/types/database";
 
 export const JOB_TAB_STATUSES: Record<string, string[]> = {
   active: ["open", "draft"],
@@ -94,6 +95,16 @@ export function useSelectionStepTemplates() {
   return useOrgQuery<SelectionStepTemplate[]>("selection-step-templates", (orgId) =>
     templateRepo.findByOrg(getSupabase(), orgId)
   );
+}
+
+export function useSelectionFlows() {
+  return useOrgQuery<SelectionFlow[]>("selection-flows", (orgId) =>
+    flowRepo.findByOrg(getSupabase(), orgId)
+  );
+}
+
+export interface FlowWithTemplates extends SelectionFlow {
+  templates: SelectionStepTemplate[];
 }
 
 /**
@@ -206,6 +217,8 @@ const DEFAULT_STEPS: StepDraft[] = [
 export function useNewJobPage() {
   const { createJob } = useNewJob();
   const { data: templates = [], mutate: mutateTemplates } = useSelectionStepTemplates();
+  const { data: flows = [] } = useSelectionFlows();
+  const [dialogTab, setDialogTab] = useState("basic");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [department, setDepartment] = useState("");
@@ -241,6 +254,27 @@ export function useNewJobPage() {
     ]);
   };
 
+  const addStepsFromFlow = (flowId: string) => {
+    const flowTemplates = templates
+      .filter((t) => t.flow_id === flowId)
+      .sort((a, b) => a.sort_order - b.sort_order);
+    setSteps(
+      flowTemplates.map((t) => ({
+        tempId: `${Date.now()}-${t.id}`,
+        step_type: t.step_type,
+        label: t.name,
+        templateId: t.id,
+      }))
+    );
+  };
+
+  const flowsWithTemplates: FlowWithTemplates[] = flows.map((f) => ({
+    ...f,
+    templates: templates
+      .filter((t) => t.flow_id === f.id)
+      .sort((a, b) => a.sort_order - b.sort_order),
+  }));
+
   const removeStep = (tempId: string) => {
     setSteps((prev) => prev.filter((s) => s.tempId !== tempId));
   };
@@ -250,6 +284,15 @@ export function useNewJobPage() {
     setSteps((prev) =>
       prev.map((s) => (s.tempId === tempId ? { ...s, [field]: value, templateId: null } : s))
     );
+  };
+
+  const reorderSteps = (oldIndex: number, newIndex: number) => {
+    setSteps((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(oldIndex, 1);
+      next.splice(newIndex, 0, moved);
+      return next;
+    });
   };
 
   const setTitleWithClear = (value: string) => {
@@ -292,6 +335,7 @@ export function useNewJobPage() {
   };
 
   const reset = () => {
+    setDialogTab("basic");
     setTitle("");
     setDescription("");
     setDepartment("");
@@ -304,6 +348,8 @@ export function useNewJobPage() {
   };
 
   return {
+    dialogTab,
+    setDialogTab,
     title,
     setTitle: setTitleWithClear,
     description,
@@ -321,9 +367,12 @@ export function useNewJobPage() {
     steps,
     addStep,
     addStepFromTemplate,
+    addStepsFromFlow,
     removeStep,
     updateStep,
+    reorderSteps,
     templates,
+    flowsWithTemplates,
     saving,
     formErrors,
     handleSubmit,
