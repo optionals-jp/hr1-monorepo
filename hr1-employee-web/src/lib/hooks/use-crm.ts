@@ -272,10 +272,18 @@ export async function saveContact(params: {
         commonFields
       );
     } else {
-      await repository.createContact(client, {
+      const created = await repository.createContact(client, {
         organization_id: params.organizationId,
         ...commonFields,
       });
+      // 自動化トリガー（非同期、エラーは無視）
+      fireTrigger(client, {
+        organizationId: params.organizationId,
+        triggerType: "contact_created",
+        entityType: "contact",
+        entityId: created.id,
+        entityData: { ...commonFields, id: created.id } as Record<string, unknown>,
+      }).catch(() => {});
     }
     return { success: true };
   } catch (err) {
@@ -409,8 +417,7 @@ export async function saveCompany(params: {
         notes: (data.notes as string) || null,
       });
     } else {
-      await repository.createCompany(client, {
-        organization_id: params.organizationId,
+      const companyFields = {
         name: data.name as string,
         name_kana: (data.name_kana as string) || null,
         corporate_number: (data.corporate_number as string) || null,
@@ -419,7 +426,19 @@ export async function saveCompany(params: {
         website: (data.website as string) || null,
         industry: (data.industry as string) || null,
         notes: (data.notes as string) || null,
+      };
+      const created = await repository.createCompany(client, {
+        organization_id: params.organizationId,
+        ...companyFields,
       });
+      // 自動化トリガー（非同期、エラーは無視）
+      fireTrigger(client, {
+        organizationId: params.organizationId,
+        triggerType: "company_created",
+        entityType: "company",
+        entityId: created.id,
+        entityData: { ...companyFields, id: created.id } as Record<string, unknown>,
+      }).catch(() => {});
     }
     return { success: true };
   } catch {

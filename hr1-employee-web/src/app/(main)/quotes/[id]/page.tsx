@@ -266,9 +266,14 @@ function QuoteForm({
           <div className="flex gap-2">
             {!isNew && (
               <>
-                <Button variant="outline" onClick={() => window.print()}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    window.open(`/api/crm/quotes/${id}/pdf`, "_blank");
+                  }}
+                >
                   <Printer className="size-4 mr-1.5" />
-                  印刷
+                  PDF見積書
                 </Button>
                 <Button
                   variant="outline"

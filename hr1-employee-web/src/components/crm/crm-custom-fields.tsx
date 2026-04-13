@@ -10,38 +10,44 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
 import { Button } from "@hr1/shared-ui/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@hr1/shared-ui/components/ui/dialog";
+import { DialogPanel } from "@hr1/shared-ui/components/ui/dialog";
 import { useOrg } from "@/lib/org-context";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { useCrmFieldDefinitions, useCrmFieldValues } from "@/lib/hooks/use-crm-fields";
-import { upsertFieldValues } from "@/lib/repositories/crm-field-repository";
+import {
+  createFieldDefinition,
+  upsertFieldValues,
+  deleteFieldDefinition,
+} from "@/lib/repositories/crm-field-repository";
 import { getSupabase } from "@/lib/supabase/browser";
-import { Pencil } from "lucide-react";
-import type { CrmEntityType, CrmFieldDefinition } from "@/types/database";
+import { crmFieldTypeLabels } from "@/lib/constants";
+import { Pencil, Plus, Trash2 } from "lucide-react";
+import type { CrmEntityType, CrmFieldDefinition, CrmFieldType } from "@/types/database";
 
 interface CrmCustomFieldsProps {
   entityId: string;
   entityType: CrmEntityType;
 }
 
+/**
+ * 基本情報 SectionCard 内に埋め込むカスタムフィールド表示。
+ * - グローバル定義（全エンティティ共通）+ エンティティ固有定義を表示
+ * - 値編集ダイアログ
+ * - エンティティ固有フィールド追加ダイアログ
+ */
 export function CrmCustomFields({ entityId, entityType }: CrmCustomFieldsProps) {
   const { organization } = useOrg();
   const { showToast } = useToast();
-  const { data: fieldDefs } = useCrmFieldDefinitions(entityType);
+  const { data: fieldDefs, mutate: mutateDefs } = useCrmFieldDefinitions(entityType, entityId);
   const { data: fieldValues, mutate: mutateValues } = useCrmFieldValues(entityId, entityType);
 
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // --- 値の管理 ---
   const initialValues = useMemo(() => {
     const map: Record<string, string> = {};
     if (fieldValues) {
@@ -62,55 +68,168 @@ export function CrmCustomFields({ entityId, entityType }: CrmCustomFieldsProps) 
     setOverrides((prev) => ({ ...prev, [fieldId]: value }));
   }, []);
 
-  const handleOpen = useCallback(() => {
+  const handleOpenEdit = useCallback(() => {
     setOverrides({});
-    setDialogOpen(true);
+    setEditOpen(true);
   }, []);
 
-  const handleSave = useCallback(async () => {
+  const handleSaveValues = useCallback(async () => {
     if (!organization || !fieldDefs) return;
+    const missingFields = fieldDefs.filter((fd) => {
+      if (!fd.is_required) return false;
+      return (localValues[fd.id] ?? "").trim() === "";
+    });
+    if (missingFields.length > 0) {
+      showToast(`必須項目が未入力です: ${missingFields.map((fd) => fd.label).join("、")}`, "error");
+      return;
+    }
     setSaving(true);
-    const values = fieldDefs.map((fd) => ({
-      organization_id: organization.id,
-      field_id: fd.id,
-      entity_id: entityId,
-      entity_type: entityType,
-      value: localValues[fd.id] ?? null,
-    }));
     try {
-      await upsertFieldValues(getSupabase(), values);
+      await upsertFieldValues(
+        getSupabase(),
+        fieldDefs.map((fd) => ({
+          organization_id: organization.id,
+          field_id: fd.id,
+          entity_id: entityId,
+          entity_type: entityType,
+          value: localValues[fd.id] ?? null,
+        }))
+      );
       mutateValues();
-      setDialogOpen(false);
+      setEditOpen(false);
       setOverrides({});
-      showToast("カスタムフィールドを保存しました");
+      showToast("保存しました");
     } catch {
-      showToast("カスタムフィールドの保存に失敗しました", "error");
+      showToast("保存に失敗しました", "error");
     } finally {
       setSaving(false);
     }
   }, [organization, fieldDefs, entityId, entityType, localValues, mutateValues, showToast]);
 
-  if (!fieldDefs || fieldDefs.length === 0) return null;
+  // --- フィールド追加 ---
+  const [newLabel, setNewLabel] = useState("");
+  const [newFieldType, setNewFieldType] = useState<CrmFieldType>("text");
+  const [newValue, setNewValue] = useState("");
+
+  const handleOpenAdd = () => {
+    setNewLabel("");
+    setNewFieldType("text");
+    setNewValue("");
+    setAddOpen(true);
+  };
+
+  const handleAddField = async () => {
+    if (!organization || !newLabel.trim()) return;
+    setSaving(true);
+    try {
+      const created = await createFieldDefinition(getSupabase(), {
+        organization_id: organization.id,
+        entity_type: entityType,
+        entity_id: entityId,
+        field_type: newFieldType,
+        label: newLabel.trim(),
+        sort_order: (fieldDefs?.length ?? 0) + 1,
+      });
+      if (newValue.trim()) {
+        await upsertFieldValues(getSupabase(), [
+          {
+            organization_id: organization.id,
+            field_id: created.id,
+            entity_id: entityId,
+            entity_type: entityType,
+            value: newValue.trim(),
+          },
+        ]);
+      }
+      mutateDefs();
+      mutateValues();
+      setAddOpen(false);
+      showToast("フィールドを追加しました");
+    } catch {
+      showToast("フィールドの追加に失敗しました", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // --- フィールド削除（エンティティ固有のみ） ---
+  const handleDeleteField = async (fieldId: string) => {
+    if (!organization) return;
+    try {
+      await deleteFieldDefinition(getSupabase(), fieldId, organization.id);
+      mutateDefs();
+      mutateValues();
+      showToast("フィールドを削除しました");
+    } catch {
+      showToast("削除に失敗しました", "error");
+    }
+  };
+
+  if (!fieldDefs || fieldDefs.length === 0) {
+    return (
+      <div className="mt-4 pt-4 border-t">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            カスタムフィールド
+          </p>
+          <button
+            type="button"
+            onClick={handleOpenAdd}
+            className="inline-flex items-center gap-1 text-xs text-primary hover:underline cursor-pointer"
+          >
+            <Plus className="size-3" />
+            追加
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">フィールドなし</p>
+        <AddFieldDialog
+          open={addOpen}
+          onOpenChange={setAddOpen}
+          entityType={entityType}
+          newLabel={newLabel}
+          setNewLabel={setNewLabel}
+          newFieldType={newFieldType}
+          setNewFieldType={setNewFieldType}
+          newValue={newValue}
+          setNewValue={setNewValue}
+          onAdd={handleAddField}
+          saving={saving}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-muted-foreground">カスタムフィールド</h3>
-        <button
-          onClick={handleOpen}
-          className="text-muted-foreground hover:text-foreground"
-          title="編集"
-        >
-          <Pencil className="size-4" />
-        </button>
+    <div className="mt-4 pt-4 border-t">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          カスタムフィールド
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleOpenAdd}
+            className="inline-flex items-center gap-1 text-xs text-primary hover:underline cursor-pointer"
+          >
+            <Plus className="size-3" />
+            追加
+          </button>
+          <button
+            onClick={handleOpenEdit}
+            className="text-muted-foreground hover:text-foreground cursor-pointer"
+            title="編集"
+          >
+            <Pencil className="size-3.5" />
+          </button>
+        </div>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-4 text-sm">
         {fieldDefs.map((fd) => {
           const val = initialValues[fd.id] ?? "";
           return (
-            <div key={fd.id} className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{fd.label}</span>
-              <span className="font-medium text-right max-w-[60%]">
+            <div key={fd.id} className="flex gap-8">
+              <span className="text-muted-foreground w-20 shrink-0">{fd.label}</span>
+              <span className="font-medium text-right flex-1">
                 {formatDisplayValue(fd, val) || "—"}
               </span>
             </div>
@@ -118,34 +237,160 @@ export function CrmCustomFields({ entityId, entityType }: CrmCustomFieldsProps) 
         })}
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>カスタムフィールド編集</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto">
-            {fieldDefs.map((fd) => (
-              <CustomFieldEditor
-                key={fd.id}
-                field={fd}
-                value={localValues[fd.id] ?? ""}
-                onChange={(v) => handleChange(fd.id, v)}
-              />
-            ))}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
+      {/* 値編集ダイアログ */}
+      <DialogPanel
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        title="カスタムフィールド編集"
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>
               キャンセル
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button variant="primary" onClick={handleSaveValues} disabled={saving}>
               {saving ? "保存中..." : "保存"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          {fieldDefs.map((fd) => (
+            <div key={fd.id} className="flex items-start gap-2">
+              <div className="flex-1">
+                <CustomFieldEditor
+                  field={fd}
+                  value={localValues[fd.id] ?? ""}
+                  onChange={(v) => handleChange(fd.id, v)}
+                />
+              </div>
+              {fd.entity_id && (
+                <button
+                  type="button"
+                  onClick={() => handleDeleteField(fd.id)}
+                  className="mt-6 p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive cursor-pointer shrink-0"
+                  title="このフィールドを削除"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </DialogPanel>
+
+      {/* フィールド追加ダイアログ */}
+      <AddFieldDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        entityType={entityType}
+        newLabel={newLabel}
+        setNewLabel={setNewLabel}
+        newFieldType={newFieldType}
+        setNewFieldType={setNewFieldType}
+        newValue={newValue}
+        setNewValue={setNewValue}
+        onAdd={handleAddField}
+        saving={saving}
+      />
     </div>
   );
 }
+
+// --- フィールド追加ダイアログ ---
+
+const ENTITY_TYPE_LABELS: Record<CrmEntityType, string> = {
+  company: "企業",
+  contact: "連絡先",
+  deal: "商談",
+};
+
+function AddFieldDialog({
+  open,
+  onOpenChange,
+  entityType,
+  newLabel,
+  setNewLabel,
+  newFieldType,
+  setNewFieldType,
+  newValue,
+  setNewValue,
+  onAdd,
+  saving,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  entityType: CrmEntityType;
+  newLabel: string;
+  setNewLabel: (v: string) => void;
+  newFieldType: CrmFieldType;
+  setNewFieldType: (v: CrmFieldType) => void;
+  newValue: string;
+  setNewValue: (v: string) => void;
+  onAdd: () => void;
+  saving: boolean;
+}) {
+  return (
+    <DialogPanel
+      open={open}
+      onOpenChange={onOpenChange}
+      title="カスタムフィールドを追加"
+      description={`この${ENTITY_TYPE_LABELS[entityType]}だけのカスタムフィールドを追加します。`}
+      size="sm"
+      footer={
+        <>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            キャンセル
+          </Button>
+          <Button variant="primary" onClick={onAdd} disabled={!newLabel.trim() || saving}>
+            {saving ? "追加中..." : "追加"}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <Label>フィールド名 *</Label>
+          <Input
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value)}
+            placeholder="例: 決算月、従業員数"
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label>フィールド型</Label>
+          <Select
+            value={newFieldType}
+            onValueChange={(v) => v && setNewFieldType(v as CrmFieldType)}
+          >
+            <SelectTrigger className="w-full mt-1">
+              <span>{crmFieldTypeLabels[newFieldType] ?? newFieldType}</span>
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(crmFieldTypeLabels).map(([val, lbl]) => (
+                <SelectItem key={val} value={val}>
+                  {lbl}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>初期値</Label>
+          <Input
+            value={newValue}
+            onChange={(e) => setNewValue(e.target.value)}
+            placeholder="任意"
+            className="mt-1"
+          />
+        </div>
+      </div>
+    </DialogPanel>
+  );
+}
+
+// --- フィールドエディタ ---
 
 function CustomFieldEditor({
   field,
@@ -156,14 +401,18 @@ function CustomFieldEditor({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const label = (
+    <Label>
+      {field.label}
+      {field.is_required && " *"}
+    </Label>
+  );
+
   switch (field.field_type) {
     case "text":
       return (
         <div>
-          <Label>
-            {field.label}
-            {field.is_required && " *"}
-          </Label>
+          {label}
           {field.description && (
             <p className="text-xs text-muted-foreground mb-1">{field.description}</p>
           )}
@@ -174,15 +423,11 @@ function CustomFieldEditor({
           />
         </div>
       );
-
     case "number":
     case "currency":
       return (
         <div>
-          <Label>
-            {field.label}
-            {field.is_required && " *"}
-          </Label>
+          {label}
           <Input
             type="number"
             value={value}
@@ -191,27 +436,19 @@ function CustomFieldEditor({
           />
         </div>
       );
-
     case "date":
       return (
         <div>
-          <Label>
-            {field.label}
-            {field.is_required && " *"}
-          </Label>
+          {label}
           <Input type="date" value={value} onChange={(e) => onChange(e.target.value)} />
         </div>
       );
-
     case "url":
     case "email":
     case "phone":
       return (
         <div>
-          <Label>
-            {field.label}
-            {field.is_required && " *"}
-          </Label>
+          {label}
           <Input
             type={
               field.field_type === "email" ? "email" : field.field_type === "phone" ? "tel" : "url"
@@ -222,17 +459,13 @@ function CustomFieldEditor({
           />
         </div>
       );
-
     case "dropdown":
       return (
         <div>
-          <Label>
-            {field.label}
-            {field.is_required && " *"}
-          </Label>
+          {label}
           <Select value={value} onValueChange={(v) => onChange(v ?? "")}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="選択してください" />
+              <span>{value || "選択してください"}</span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">未選択</SelectItem>
@@ -245,15 +478,11 @@ function CustomFieldEditor({
           </Select>
         </div>
       );
-
     case "multi_select": {
       const selected = value ? value.split(",") : [];
       return (
         <div>
-          <Label>
-            {field.label}
-            {field.is_required && " *"}
-          </Label>
+          {label}
           <div className="space-y-1 mt-1">
             {(field.options ?? []).map((opt) => (
               <label key={opt} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -271,7 +500,6 @@ function CustomFieldEditor({
         </div>
       );
     }
-
     case "checkbox":
       return (
         <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -285,11 +513,10 @@ function CustomFieldEditor({
           </span>
         </label>
       );
-
     default:
       return (
         <div>
-          <Label>{field.label}</Label>
+          {label}
           <Textarea
             value={value}
             onChange={(e) => onChange(e.target.value)}

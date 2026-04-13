@@ -84,7 +84,7 @@ export function ChevronBar({
       <svg width="0" height="0" className="absolute">
         <defs>
           <filter id="chevron-round">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur" />
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
             <feColorMatrix
               in="blur"
               type="matrix"

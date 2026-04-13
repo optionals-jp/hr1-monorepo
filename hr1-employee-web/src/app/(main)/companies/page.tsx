@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Input } from "@hr1/shared-ui/components/ui/input";
@@ -27,6 +27,12 @@ import { applyFilters, applySort } from "@/lib/hooks/use-saved-views";
 import type { CrmSavedViewConfig } from "@/types/database";
 import { SlidersHorizontal, Upload, Trash2 } from "lucide-react";
 import { useOrg } from "@/lib/org-context";
+import { DuplicateWarning } from "@/components/crm/duplicate-warning";
+import {
+  findSimilarCompanies,
+  type CompanyDuplicate,
+} from "@/lib/repositories/crm-duplicate-repository";
+import { getSupabase } from "@/lib/supabase/browser";
 import { CompanyImportDialog } from "./company-import-dialog";
 import { Pagination, usePagination } from "@/components/crm/pagination";
 import { BulkActionBar, useBulkSelection } from "@/components/crm/bulk-action-bar";
@@ -57,6 +63,43 @@ export default function CrmCompaniesPage() {
 
   const { organization } = useOrg();
   const [viewConfig, setViewConfig] = useState<CrmSavedViewConfig>({});
+  const [duplicates, setDuplicates] = useState<CompanyDuplicate[]>([]);
+
+  // 企業名変更時に重複チェック（新規作成時のみ）
+  const checkDuplicates = async (name: string) => {
+    if (!organization || !name.trim() || editData.id) {
+      setDuplicates([]);
+      return;
+    }
+    try {
+      const results = await findSimilarCompanies(
+        getSupabase(),
+        organization.id,
+        name.trim(),
+        (editData.corporate_number as string) || null
+      );
+      setDuplicates(results);
+    } catch {
+      setDuplicates([]);
+    }
+  };
+
+  // 企業名変更時にデバウンス付き重複チェック
+  useEffect(() => {
+    const shouldCheck = !editData.id && editData.name && editOpen;
+    const timer = setTimeout(
+      () => {
+        if (shouldCheck) {
+          checkDuplicates(editData.name as string);
+        } else {
+          setDuplicates([]);
+        }
+      },
+      shouldCheck ? 500 : 0
+    );
+    return () => clearTimeout(timer);
+  }, [editData.name, editData.id, editOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [importOpen, setImportOpen] = useState(false);
 
   const existingNames = useMemo(
@@ -224,6 +267,22 @@ export default function CrmCompaniesPage() {
         confirmDeleteMessage="この企業を削除しますか？関連する商談・連絡先との紐付けも解除されます。"
       >
         <div className="space-y-4">
+          {duplicates.length > 0 && !editData.id && (
+            <DuplicateWarning
+              type="company"
+              duplicates={duplicates.map((d) => ({
+                id: d.id,
+                label: d.name + (d.name_kana ? ` (${d.name_kana})` : ""),
+                matchType: d.match_type === "corporate_number" ? "法人番号一致" : "名称類似",
+                score: d.similarity_score,
+              }))}
+              onUseExisting={(id) => {
+                setEditOpen(false);
+                router.push(`/crm/companies/${id}`);
+              }}
+              onDismiss={() => setDuplicates([])}
+            />
+          )}
           <div>
             <Label>企業名 *</Label>
             <Input

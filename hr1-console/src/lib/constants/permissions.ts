@@ -24,15 +24,8 @@ export const ROUTE_RESOURCE_MAP: { prefix: string; resource: string }[] = [
   { prefix: "/projects", resource: "projects" },
   { prefix: "/surveys", resource: "surveys" },
   { prefix: "/wiki", resource: "wiki" },
-  // CRM（長いプレフィックスを先に）
-  { prefix: "/crm/settings", resource: "crm.settings" },
-  { prefix: "/crm/reports", resource: "crm.reports" },
-  { prefix: "/crm/leads", resource: "crm.leads" },
-  { prefix: "/crm/companies", resource: "crm.companies" },
-  { prefix: "/crm/contacts", resource: "crm.contacts" },
-  { prefix: "/crm/deals", resource: "crm.deals" },
-  { prefix: "/crm/quotes", resource: "crm.quotes" },
-  { prefix: "/crm", resource: "crm.leads" },
+  // CRM設定
+  { prefix: "/crm", resource: "crm.settings" },
   // 設定（個人設定は除外 — 常にアクセス可能）
   { prefix: "/settings/organization", resource: "settings.organization" },
   { prefix: "/settings/members", resource: "settings.members" },
@@ -97,13 +90,7 @@ export const PERMISSION_RESOURCES: PermissionResourceDef[] = [
   { key: "surveys", label: "アンケート", category: "共通" },
   { key: "wiki", label: "Wiki", category: "共通" },
 
-  // CRM
-  { key: "crm.leads", label: "リード", category: "CRM" },
-  { key: "crm.companies", label: "企業", category: "CRM" },
-  { key: "crm.contacts", label: "連絡先", category: "CRM" },
-  { key: "crm.deals", label: "案件", category: "CRM" },
-  { key: "crm.quotes", label: "見積", category: "CRM" },
-  { key: "crm.reports", label: "レポート", category: "CRM" },
+  // CRM設定
   { key: "crm.settings", label: "CRM設定", category: "CRM" },
 
   // 設定
