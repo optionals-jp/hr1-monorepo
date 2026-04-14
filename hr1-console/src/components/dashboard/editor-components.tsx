@@ -37,6 +37,8 @@ import {
   AlertTriangle,
   Handshake,
   DollarSign,
+  Clock,
+  Filter,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -59,6 +61,7 @@ const SOURCE_ICONS: Record<DataSourceId, React.ElementType> = {
   pipeline: ClipboardList,
   kpi_trend: TrendingUp,
   department_recruiting: Building2,
+  application_source: ClipboardList,
   open_jobs: Briefcase,
   workspace_summary: Users,
   pending_actions: AlertTriangle,
@@ -70,6 +73,8 @@ const SOURCE_ICONS: Record<DataSourceId, React.ElementType> = {
   crm_monthly_revenue: DollarSign,
   crm_deal_status: PieChart,
   crm_rep_performance: BarChart3,
+  time_to_hire: Clock,
+  selection_funnel: Filter,
 };
 
 const DISPLAY_TYPE_ICONS: Record<WidgetDisplayType, React.ElementType> = {

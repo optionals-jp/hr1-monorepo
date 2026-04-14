@@ -61,9 +61,19 @@ export interface JobStep {
   interview_id: string | null;
 }
 
+export interface SelectionFlow {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SelectionStepTemplate {
   id: string;
   organization_id: string;
+  flow_id: string | null;
   name: string;
   step_type: "screening" | "form" | "interview" | "external_test" | "offer";
   description: string | null;
@@ -72,16 +82,41 @@ export interface SelectionStepTemplate {
   updated_at: string;
 }
 
+export type ApplicationSource = "app" | "referral" | "agency" | "job_board" | "direct" | "other";
+export type RejectionCategory =
+  | "skill_mismatch"
+  | "culture_mismatch"
+  | "experience_lack"
+  | "salary_mismatch"
+  | "other";
+
 export interface Application {
   id: string;
   job_id: string;
   applicant_id: string;
   organization_id: string;
-  status: "active" | "offered" | "rejected" | "withdrawn";
+  status: "active" | "offered" | "offer_accepted" | "offer_declined" | "rejected" | "withdrawn";
   applied_at: string;
+  source?: ApplicationSource | null;
+  rejection_reason?: string | null;
+  rejection_category?: RejectionCategory | null;
   jobs?: Job;
   profiles?: Profile;
   application_steps?: ApplicationStep[];
+}
+
+export interface Offer {
+  id: string;
+  application_id: string;
+  organization_id: string;
+  salary: string | null;
+  start_date: string | null;
+  department: string | null;
+  notes: string | null;
+  expires_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ApplicationStep {
@@ -106,6 +141,7 @@ export interface Interview {
   notes: string | null;
   status: "scheduling" | "confirmed" | "completed" | "cancelled";
   confirmed_slot_id: string | null;
+  interviewer_ids?: string[];
   created_at: string;
 }
 
@@ -840,6 +876,17 @@ export interface Notification {
   resource_type: string | null;
   resource_id: string | null;
   created_at: string;
+}
+
+export interface NotificationTemplate {
+  id: string;
+  organization_id: string;
+  trigger_event: string;
+  title_template: string;
+  body_template: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 // ==========================================================

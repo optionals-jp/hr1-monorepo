@@ -53,7 +53,11 @@ final inProgressApplicationsProvider =
       final applications = await ref.watch(applicationsProvider.future);
       final inProgress =
           applications
-              .where((a) => a.status == ApplicationStatus.active)
+              .where(
+                (a) =>
+                    a.status == ApplicationStatus.active ||
+                    a.status == ApplicationStatus.offered,
+              )
               .toList()
             ..sort((a, b) {
               if (a.requiresAction && !b.requiresAction) return -1;
@@ -69,7 +73,11 @@ final completedApplicationsProvider =
       final applications = await ref.watch(applicationsProvider.future);
       final completed =
           applications
-              .where((a) => a.status != ApplicationStatus.active)
+              .where(
+                (a) =>
+                    a.status != ApplicationStatus.active &&
+                    a.status != ApplicationStatus.offered,
+              )
               .toList()
             ..sort((a, b) => b.appliedAt.compareTo(a.appliedAt));
       return completed;

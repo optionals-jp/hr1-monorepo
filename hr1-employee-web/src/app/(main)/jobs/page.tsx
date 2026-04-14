@@ -28,7 +28,7 @@ import {
   selectableStepTypes,
 } from "@/lib/constants";
 import { Trash2, GripVertical, Briefcase, XCircle, Sparkles, Plus } from "lucide-react";
-import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
+import { EditPanel, type EditPanelTab } from "@hr1/shared-ui/components/ui/edit-panel";
 import { FormInput, FormTextarea, FormField } from "@hr1/shared-ui/components/ui/form-field";
 import {
   Select,
@@ -38,7 +38,23 @@ import {
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
 import { Input } from "@hr1/shared-ui/components/ui/input";
-import { Badge as StepBadge } from "@hr1/shared-ui/components/ui/badge";
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import type { StepDraft } from "@/features/recruiting/hooks/use-jobs-page";
+
+const createJobTabs: EditPanelTab[] = [
+  { value: "basic", label: "基本情報" },
+  { value: "steps", label: "選考ステップ" },
+];
 
 const pageTabs = [
   { value: "active", label: "公開中・ドラフト", icon: Briefcase },
@@ -163,169 +179,242 @@ export default function JobsPage() {
           if (!open) newJob.reset();
         }}
         title="求人を作成"
+        tabs={createJobTabs}
+        activeTab={newJob.dialogTab}
+        onTabChange={newJob.setDialogTab}
         onSave={onCreateSubmit}
         saving={newJob.saving}
         saveDisabled={!newJob.title.trim()}
         saveLabel="求人を作成"
       >
-        <div className="space-y-4">
-          <FormInput
-            label="タイトル"
-            required
-            value={newJob.title}
-            onChange={(e) => newJob.setTitle(e.target.value)}
-            placeholder="バックエンドエンジニア"
-            error={newJob.formErrors.title}
-          />
-
-          <FormTextarea
-            label="説明"
-            value={newJob.description}
-            onChange={(e) => newJob.setDescription(e.target.value)}
-            placeholder="求人の説明を入力してください"
-            rows={3}
-          />
-
-          <div className="grid grid-cols-2 gap-4">
+        {newJob.dialogTab === "basic" && (
+          <div className="space-y-4">
             <FormInput
-              label="部署"
-              value={newJob.department}
-              onChange={(e) => newJob.setDepartment(e.target.value)}
-              placeholder="エンジニアリング"
+              label="タイトル"
+              required
+              value={newJob.title}
+              onChange={(e) => newJob.setTitle(e.target.value)}
+              placeholder="バックエンドエンジニア"
+              error={newJob.formErrors.title}
             />
-            <FormInput
-              label="勤務地"
-              value={newJob.location}
-              onChange={(e) => newJob.setLocation(e.target.value)}
-              placeholder="東京"
+
+            <FormTextarea
+              label="説明"
+              value={newJob.description}
+              onChange={(e) => newJob.setDescription(e.target.value)}
+              placeholder="求人の説明を入力してください"
+              rows={3}
             />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormInput
+                label="部署"
+                value={newJob.department}
+                onChange={(e) => newJob.setDepartment(e.target.value)}
+                placeholder="エンジニアリング"
+              />
+              <FormInput
+                label="勤務地"
+                value={newJob.location}
+                onChange={(e) => newJob.setLocation(e.target.value)}
+                placeholder="東京"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormInput
+                label="雇用形態"
+                value={newJob.employmentType}
+                onChange={(e) => newJob.setEmploymentType(e.target.value)}
+                placeholder="正社員"
+              />
+              <FormInput
+                label="年収レンジ"
+                value={newJob.salaryRange}
+                onChange={(e) => newJob.setSalaryRange(e.target.value)}
+                placeholder="500万〜800万"
+              />
+            </div>
+
+            <FormField label="ステータス">
+              <Select value={newJob.status} onValueChange={(v) => v && newJob.setStatus(v)}>
+                <SelectTrigger>
+                  <SelectValue>{(v: string) => statusLabels[v] ?? v}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">公開中</SelectItem>
+                  <SelectItem value="draft">下書き</SelectItem>
+                  <SelectItem value="closed">終了</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormField>
           </div>
+        )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <FormInput
-              label="雇用形態"
-              value={newJob.employmentType}
-              onChange={(e) => newJob.setEmploymentType(e.target.value)}
-              placeholder="正社員"
-            />
-            <FormInput
-              label="年収レンジ"
-              value={newJob.salaryRange}
-              onChange={(e) => newJob.setSalaryRange(e.target.value)}
-              placeholder="500万〜800万"
-            />
-          </div>
-
-          <FormField label="ステータス">
-            <Select value={newJob.status} onValueChange={(v) => v && newJob.setStatus(v)}>
-              <SelectTrigger>
-                <SelectValue>{(v: string) => statusLabels[v] ?? v}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="open">公開中</SelectItem>
-                <SelectItem value="draft">下書き</SelectItem>
-                <SelectItem value="closed">終了</SelectItem>
-              </SelectContent>
-            </Select>
-          </FormField>
-
-          <div className="space-y-3">
-            <span className="text-sm font-medium">選考ステップ</span>
-
-            {/* 追加方法の選択エリア */}
+        {newJob.dialogTab === "steps" && (
+          <div className="space-y-4">
+            {/* フローから一括追加 */}
             <div className="rounded-xl border border-dashed bg-muted/30 p-3 space-y-2">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Sparkles className="h-3 w-3" />
-                テンプレートから追加
+                選考フローから一括追加
               </div>
-              {newJob.templates.length === 0 ? (
+              {newJob.flowsWithTemplates.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  選考ステップテンプレートがありません。サイドバー「選考ステップ」から先に作成できます。
+                  選考フローがありません。サイドバー「選考ステップ」から先に作成できます。
                 </p>
               ) : (
                 <Select
                   value=""
                   onValueChange={(v) => {
-                    if (!v) return;
-                    const template = newJob.templates.find((t) => t.id === v);
-                    if (template) newJob.addStepFromTemplate(template);
+                    if (v) newJob.addStepsFromFlow(v);
                   }}
                 >
                   <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder="テンプレートを選択して追加" />
+                    <SelectValue placeholder="フローを選択して一括追加" />
                   </SelectTrigger>
                   <SelectContent>
-                    {newJob.templates.map((template) => (
-                      <SelectItem key={template.id} value={template.id}>
-                        <span className="flex items-center gap-2">
-                          <StepBadge variant="outline" className="shrink-0 text-[10px]">
-                            {stepTypeLabels[template.step_type] ?? template.step_type}
-                          </StepBadge>
-                          <span className="truncate">{template.name}</span>
-                        </span>
+                    {newJob.flowsWithTemplates.map((flow) => (
+                      <SelectItem key={flow.id} value={flow.id}>
+                        {flow.name}（{flow.templates.length}ステップ）
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               )}
-              <div className="border-t pt-2 flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">または</span>
-                <Button variant="outline" size="xs" onClick={newJob.addStep}>
-                  <Plus className="mr-1 h-3 w-3" />
-                  手動で追加
-                </Button>
-              </div>
             </div>
-            <div className="space-y-2">
-              {newJob.steps.map((step, index) => (
-                <div key={step.tempId} className="flex items-center gap-2 rounded-xl border p-2">
-                  <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}</span>
-                  <Select
-                    value={step.step_type}
-                    onValueChange={(v) => v && newJob.updateStep(step.tempId, "step_type", v)}
-                  >
-                    <SelectTrigger className="w-36">
-                      <SelectValue>{(v: string) => stepTypeLabels[v] ?? v}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(selectableStepTypes).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    value={step.label}
-                    onChange={(e) => newJob.updateStep(step.tempId, "label", e.target.value)}
-                    placeholder="ステップ名"
-                    className="flex-1"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => newJob.removeStep(step.tempId)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              {newJob.steps.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-3">
-                  選考ステップを追加してください
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                手動で追加したステップは保存時に「{newJob.title || "求人タイトル"}の選考ステップ:{" "}
-                {"{ステップ名}"}
-                」として選考ステップマスタに自動登録されます
-              </p>
-            </div>
+
+            {/* ステップ一覧 */}
+            <SortableStepList
+              steps={newJob.steps}
+              onReorder={newJob.reorderSteps}
+              onUpdate={newJob.updateStep}
+              onRemove={newJob.removeStep}
+            />
+
+            <Button variant="outline" size="sm" onClick={newJob.addStep}>
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              手動で追加
+            </Button>
           </div>
-        </div>
+        )}
       </EditPanel>
+    </div>
+  );
+}
+
+// ---------- Sortable step list ----------
+
+function SortableStepList({
+  steps,
+  onReorder,
+  onUpdate,
+  onRemove,
+}: {
+  steps: StepDraft[];
+  onReorder: (oldIndex: number, newIndex: number) => void;
+  onUpdate: (tempId: string, field: "step_type" | "label", value: string) => void;
+  onRemove: (tempId: string) => void;
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = steps.findIndex((s) => s.tempId === active.id);
+    const newIndex = steps.findIndex((s) => s.tempId === over.id);
+    if (oldIndex !== -1 && newIndex !== -1) onReorder(oldIndex, newIndex);
+  };
+
+  if (steps.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground text-center py-3">
+        選考ステップを追加してください
+      </p>
+    );
+  }
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={steps.map((s) => s.tempId)} strategy={verticalListSortingStrategy}>
+        <div className="space-y-2">
+          {steps.map((step, index) => (
+            <SortableStepRow
+              key={step.tempId}
+              step={step}
+              index={index}
+              onUpdate={onUpdate}
+              onRemove={onRemove}
+            />
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
+  );
+}
+
+function SortableStepRow({
+  step,
+  index,
+  onUpdate,
+  onRemove,
+}: {
+  step: StepDraft;
+  index: number;
+  onUpdate: (tempId: string, field: "step_type" | "label", value: string) => void;
+  onRemove: (tempId: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: step.tempId,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 rounded-xl border bg-background p-2"
+    >
+      <button type="button" className="cursor-grab touch-none" {...attributes} {...listeners}>
+        <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+      </button>
+      <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}</span>
+      <Select
+        value={step.step_type}
+        onValueChange={(v) => v && onUpdate(step.tempId, "step_type", v)}
+      >
+        <SelectTrigger className="w-36">
+          <SelectValue>{(v: string) => stepTypeLabels[v] ?? v}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {Object.entries(selectableStepTypes).map(([key, label]) => (
+            <SelectItem key={key} value={key}>
+              {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Input
+        value={step.label}
+        onChange={(e) => onUpdate(step.tempId, "label", e.target.value)}
+        placeholder="ステップ名"
+        className="flex-1"
+      />
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        onClick={() => onRemove(step.tempId)}
+        className="text-destructive hover:text-destructive"
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
     </div>
   );
 }

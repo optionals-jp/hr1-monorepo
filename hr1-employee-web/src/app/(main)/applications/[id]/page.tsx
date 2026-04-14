@@ -19,7 +19,13 @@ import { ApplicationDashboardTab } from "@/features/recruiting/components/applic
 import { ApplicationStepList } from "@/features/recruiting/components/application-step-list";
 import { FormResponseSheet } from "@/features/recruiting/components/form-response-sheet";
 import { ResourceSelectDialog } from "@/features/recruiting/components/resource-select-dialog";
+import { OfferConditionsDialog } from "@/features/recruiting/components/offer-conditions-dialog";
+import { OfferConditionsCard } from "@/features/recruiting/components/offer-conditions-card";
+import { RejectionReasonDialog } from "@/features/recruiting/components/rejection-reason-dialog";
+import { RejectionReasonCard } from "@/features/recruiting/components/rejection-reason-card";
 import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
+import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { applicationStatusColors as statusColors } from "@/lib/constants";
 import { LayoutDashboard, ListChecks, ClipboardCheck } from "lucide-react";
 import type { ApplicationStep } from "@/types/database";
 
@@ -85,17 +91,27 @@ export default function ApplicationDetailPage() {
         breadcrumb={[{ label: "応募", href: "/applications" }]}
         sticky={false}
         action={
-          <Select value={detail.application.status} onValueChange={detail.updateApplicationStatus}>
-            <SelectTrigger className="w-32">
-              <SelectValue>{(v: string) => statusLabels[v] ?? v}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">選考中</SelectItem>
-              <SelectItem value="offered">内定</SelectItem>
-              <SelectItem value="rejected">不採用</SelectItem>
-              <SelectItem value="withdrawn">辞退</SelectItem>
-            </SelectContent>
-          </Select>
+          detail.application.status === "offer_accepted" ||
+          detail.application.status === "offer_declined" ? (
+            <Badge variant={statusColors[detail.application.status]} className="text-sm px-3 py-1">
+              {statusLabels[detail.application.status]}
+            </Badge>
+          ) : (
+            <Select
+              value={detail.application.status}
+              onValueChange={detail.updateApplicationStatus}
+            >
+              <SelectTrigger className="w-32">
+                <SelectValue>{(v: string) => statusLabels[v] ?? v}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">選考中</SelectItem>
+                <SelectItem value="offered">内定</SelectItem>
+                <SelectItem value="rejected">不採用</SelectItem>
+                <SelectItem value="withdrawn">辞退</SelectItem>
+              </SelectContent>
+            </Select>
+          )
         }
       />
 
@@ -109,16 +125,37 @@ export default function ApplicationDetailPage() {
 
       <div className="px-4 py-4 sm:px-6 md:px-8 md:py-6">
         {detail.activeTab === "dashboard" && (
-          <ApplicationDashboardTab
-            application={detail.application}
-            profile={profile}
-            steps={detail.steps}
-            canActOnStep={detail.canActOnStep}
-            advanceStep={detail.advanceStep}
-            skipStep={handleSkipStep}
-            unskipStep={handleUnskipStep}
-            onViewFormResponses={detail.openFormResponses}
-          />
+          <div className="space-y-6">
+            {detail.offer && (
+              <div className="max-w-3xl">
+                <OfferConditionsCard
+                  offer={detail.offer}
+                  applicationStatus={detail.application.status}
+                />
+              </div>
+            )}
+            {detail.application.status === "rejected" &&
+              (detail.application.rejection_category || detail.application.rejection_reason) && (
+                <div className="max-w-3xl">
+                  <RejectionReasonCard
+                    rejectionCategory={detail.application.rejection_category}
+                    rejectionReason={detail.application.rejection_reason}
+                  />
+                </div>
+              )}
+            <ApplicationDashboardTab
+              application={detail.application}
+              profile={profile}
+              steps={detail.steps}
+              canActOnStep={detail.canActOnStep}
+              advanceStep={detail.advanceStep}
+              skipStep={handleSkipStep}
+              unskipStep={handleUnskipStep}
+              onViewFormResponses={detail.openFormResponses}
+              source={detail.application.source}
+              onSourceChange={detail.updateApplicationSource}
+            />
+          </div>
         )}
 
         {detail.activeTab === "evaluation" && (
@@ -169,6 +206,18 @@ export default function ApplicationDetailPage() {
         interviews={detail.interviews}
         loading={detail.resourcesLoading}
         onSelect={detail.startStepWithResource}
+      />
+
+      <OfferConditionsDialog
+        open={detail.offerDialogOpen}
+        onOpenChange={detail.setOfferDialogOpen}
+        onSubmit={detail.createOfferAndUpdateStatus}
+      />
+
+      <RejectionReasonDialog
+        open={detail.rejectionDialogOpen}
+        onOpenChange={detail.setRejectionDialogOpen}
+        onSubmit={detail.rejectApplicationWithReason}
       />
     </>
   );

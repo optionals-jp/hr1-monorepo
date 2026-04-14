@@ -41,9 +41,7 @@ class Application {
   String get currentStepLabel {
     final current = currentStep;
     if (current != null) return current.label;
-    if (status == ApplicationStatus.offered) return status.label;
-    if (status == ApplicationStatus.rejected) return status.label;
-    if (status == ApplicationStatus.withdrawn) return status.label;
+    if (!status.isActive) return status.label;
     return '選考中';
   }
 
@@ -53,10 +51,7 @@ class Application {
       jobId: json['job_id'] as String,
       applicantId: json['applicant_id'] as String,
       organizationId: json['organization_id'] as String,
-      status: ApplicationStatus.values.firstWhere(
-        (s) => s.name == json['status'],
-        orElse: () => ApplicationStatus.active,
-      ),
+      status: ApplicationStatus.fromString(json['status'] as String),
       appliedAt: DateTime.parse(json['applied_at'] as String),
       job: json['job'] != null
           ? Job.fromJson(json['job'] as Map<String, dynamic>)

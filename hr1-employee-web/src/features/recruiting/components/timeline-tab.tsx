@@ -139,9 +139,12 @@ export function TimelineTab({
               {filteredTimeline.map((ev) => {
                 const Icon = CATEGORY_ICONS[ev.category] ?? ClipboardList;
                 const badgeVariant =
-                  ev.status === StepStatus.Completed || ev.status === ApplicationStatus.Offered
+                  ev.status === StepStatus.Completed ||
+                  ev.status === ApplicationStatus.Offered ||
+                  ev.status === ApplicationStatus.OfferAccepted
                     ? "secondary"
-                    : ev.status === ApplicationStatus.Rejected
+                    : ev.status === ApplicationStatus.Rejected ||
+                        ev.status === ApplicationStatus.OfferDeclined
                       ? "destructive"
                       : ev.status === ApplicationStatus.Withdrawn ||
                           ev.status === StepStatus.Skipped

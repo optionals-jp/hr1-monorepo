@@ -15,7 +15,7 @@ import {
   buildFormSheetFields,
   type FormSheetField,
 } from "@/features/recruiting/application-rules";
-import type { Application, ApplicationStep, CustomForm, Interview } from "@/types/database";
+import type { Application, ApplicationStep, CustomForm, Interview, Offer } from "@/types/database";
 
 export type ApplicationDetailTab = "dashboard" | "steps" | "evaluation" | "history";
 
@@ -29,6 +29,11 @@ export function useApplicationDetail(id: string) {
   const [formSheetStep, setFormSheetStep] = useState<ApplicationStep | null>(null);
   const [formSheetFields, setFormSheetFields] = useState<FormSheetField[]>([]);
   const [formSheetLoading, setFormSheetLoading] = useState(false);
+
+  const [offer, setOffer] = useState<Offer | null>(null);
+  const [offerDialogOpen, setOfferDialogOpen] = useState(false);
+
+  const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useTabParam<ApplicationDetailTab>("dashboard");
 
@@ -54,6 +59,9 @@ export function useApplicationDetail(id: string) {
         (a, b) => a.step_order - b.step_order
       );
       setSteps(sortedSteps);
+
+      const offerData = await applicationRepository.fetchOffer(client, id);
+      setOffer(offerData);
     }
     setLoading(false);
   }, [id, organization]);
@@ -217,10 +225,38 @@ export function useApplicationDetail(id: string) {
     [application]
   );
 
+  const updateApplicationSource = useCallback(
+    async (source: string) => {
+      if (!organization) return;
+      const value = source === "" ? null : source;
+      await applicationRepository.updateApplicationSource(
+        getSupabase(),
+        id,
+        organization.id,
+        value
+      );
+      setApplication((prev) => (prev ? { ...prev, source: value as Application["source"] } : prev));
+    },
+    [id, organization]
+  );
+
   const updateApplicationStatus = useCallback(
     async (status: string | null) => {
       if (!status) return;
       if (!organization) return;
+
+      // 内定ステータスへの変更はオファー条件ダイアログを表示
+      if (status === "offered" && !offer) {
+        setOfferDialogOpen(true);
+        return;
+      }
+
+      // 不採用ステータスへの変更は不採用理由ダイアログを表示
+      if (status === "rejected") {
+        setRejectionDialogOpen(true);
+        return;
+      }
+
       await applicationRepository.updateApplicationStatus(
         getSupabase(),
         id,
@@ -230,6 +266,62 @@ export function useApplicationDetail(id: string) {
       setApplication((prev) =>
         prev ? { ...prev, status: status as Application["status"] } : prev
       );
+    },
+    [id, organization, offer]
+  );
+
+  const rejectApplicationWithReason = useCallback(
+    async (data: { rejection_category?: string; rejection_reason?: string }) => {
+      if (!organization) return;
+      const { error } = await applicationRepository.rejectApplication(
+        getSupabase(),
+        id,
+        organization.id,
+        data
+      );
+      if (error) throw error;
+
+      setApplication((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: "rejected" as Application["status"],
+              rejection_category:
+                (data.rejection_category as Application["rejection_category"]) ?? null,
+              rejection_reason: data.rejection_reason ?? null,
+            }
+          : prev
+      );
+      setRejectionDialogOpen(false);
+    },
+    [id, organization]
+  );
+
+  const createOfferAndUpdateStatus = useCallback(
+    async (offerData: {
+      salary?: string;
+      start_date?: string;
+      department?: string;
+      notes?: string;
+      expires_at?: string;
+    }) => {
+      if (!organization) return;
+      const client = getSupabase();
+
+      const { data: newOffer, error } = await applicationRepository.createOffer(client, {
+        application_id: id,
+        organization_id: organization.id,
+        ...offerData,
+      });
+      if (error) throw error;
+
+      await applicationRepository.updateApplicationStatus(client, id, organization.id, "offered");
+
+      setOffer(newOffer);
+      setApplication((prev) =>
+        prev ? { ...prev, status: "offered" as Application["status"] } : prev
+      );
+      setOfferDialogOpen(false);
     },
     [id, organization]
   );
@@ -263,6 +355,16 @@ export function useApplicationDetail(id: string) {
     currentStepOrder,
 
     updateApplicationStatus,
+    updateApplicationSource,
+    createOfferAndUpdateStatus,
+
+    offer,
+    offerDialogOpen,
+    setOfferDialogOpen,
+
+    rejectionDialogOpen,
+    setRejectionDialogOpen,
+    rejectApplicationWithReason,
 
     load,
   };

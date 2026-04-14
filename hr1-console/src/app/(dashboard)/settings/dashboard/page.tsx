@@ -60,6 +60,7 @@ export default function DashboardSettingsPage() {
     pipeline,
     kpiTrend,
     departmentStats,
+    sourceStats,
     openJobs,
     empDeptStats,
     pendingWorkflows,
@@ -75,6 +76,8 @@ export default function DashboardSettingsPage() {
     crmTotalAmount,
     crmWonAmount,
     crmDeals,
+    timeToHire,
+    selectionFunnel,
   } = useDashboard(tab);
 
   const loadingMap: Record<string, boolean> = {
@@ -105,6 +108,7 @@ export default function DashboardSettingsPage() {
     pipeline,
     kpiTrend,
     departmentStats,
+    sourceStats,
     openJobs,
     empDeptStats,
     pendingWorkflows,
@@ -113,6 +117,8 @@ export default function DashboardSettingsPage() {
     hiringTypeStats,
     hiringTypeAppStats,
     targets,
+    timeToHire,
+    selectionFunnel,
     pipelineRate,
     crmCompanyCount,
     crmContactCount,

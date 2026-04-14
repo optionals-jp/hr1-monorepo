@@ -55,6 +55,30 @@ export async function fetchApplicationsByDateRange(
   return data;
 }
 
+export async function fetchApplicationsBySource(client: SupabaseClient, orgId: string) {
+  const { data } = await client
+    .from("applications")
+    .select("id, status, source")
+    .eq("organization_id", orgId);
+  return data;
+}
+
+export async function fetchTimeToHireData(client: SupabaseClient, orgId: string) {
+  const { data } = await client
+    .from("offers")
+    .select("id, created_at, application_id, applications!inner(applied_at, jobs(department))")
+    .eq("organization_id", orgId);
+  return data;
+}
+
+export async function fetchFunnelData(client: SupabaseClient, orgId: string) {
+  const { data } = await client
+    .from("applications")
+    .select("id, status, application_steps(step_type, step_order, status, label)")
+    .eq("organization_id", orgId);
+  return data;
+}
+
 export async function fetchApplicationsWithDepartment(client: SupabaseClient, orgId: string) {
   const { data } = await client
     .from("applications")

@@ -7,7 +7,7 @@ import { getSupabase } from "@/lib/supabase/browser";
 import * as schedulingRepo from "@/lib/repositories/scheduling-repository";
 import { autoFillEndAt, toLocalDatetime } from "@/lib/datetime-utils";
 import { useOrg } from "@/lib/org-context";
-import type { Interview, InterviewSlot } from "@/types/database";
+import type { Interview, InterviewSlot, Profile } from "@/types/database";
 
 export interface BookedApplication {
   slotId: string;
@@ -38,11 +38,13 @@ export function useSchedulingDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useTabParam<SchedulingDetailTab>("detail");
 
+  const [interviewers, setInterviewers] = useState<Profile[]>([]);
   const [editing, setEditing] = useState(false);
   const [editTab, setEditTab] = useState("info");
   const [editTitle, setEditTitle] = useState("");
   const [editLocation, setEditLocation] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [editInterviewerIds, setEditInterviewerIds] = useState<string[]>([]);
   const [editSlots, setEditSlots] = useState<EditSlot[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -80,6 +82,15 @@ export function useSchedulingDetailPage() {
         }
       }
       setBookedApps(apps);
+
+      // 面接官プロフィールを取得
+      const interviewerIds = (rest as Interview).interviewer_ids ?? [];
+      if (interviewerIds.length > 0) {
+        const profiles = await schedulingRepo.fetchInterviewerProfiles(client, interviewerIds);
+        setInterviewers(profiles as Profile[]);
+      } else {
+        setInterviewers([]);
+      }
     }
     setLoading(false);
   }, [id, organization]);
@@ -106,6 +117,7 @@ export function useSchedulingDetailPage() {
     setEditTitle(interview.title);
     setEditLocation(interview.location ?? "");
     setEditNotes(interview.notes ?? "");
+    setEditInterviewerIds(interview.interviewer_ids ?? []);
     setEditSlots(
       slots.map((s) => ({
         id: s.id,
@@ -165,6 +177,7 @@ export function useSchedulingDetailPage() {
         title: editTitle,
         location: editLocation || null,
         notes: editNotes || null,
+        interviewer_ids: editInterviewerIds.length > 0 ? editInterviewerIds : undefined,
       });
 
       const existingIds = slots.map((s) => s.id);
@@ -228,6 +241,7 @@ export function useSchedulingDetailPage() {
     interview,
     slots,
     bookedApps,
+    interviewers,
     loading,
     activeTab,
     setActiveTab,
@@ -241,6 +255,8 @@ export function useSchedulingDetailPage() {
     setEditLocation,
     editNotes,
     setEditNotes,
+    editInterviewerIds,
+    setEditInterviewerIds,
     editSlots,
     saving,
     updateStatus,

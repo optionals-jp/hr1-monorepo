@@ -23,6 +23,8 @@ import type {
   HiringTypeApplicationStats,
   RecruitingTargets,
   DashboardWidgetConfigV2,
+  TimeToHireStat,
+  FunnelStage,
 } from "@/types/dashboard";
 
 export interface DashboardStats {
@@ -30,6 +32,10 @@ export interface DashboardStats {
   employees: number;
   openJobs: number;
   activeApplications: number;
+}
+
+function isOfferedOrAccepted(status: string): boolean {
+  return status === ApplicationStatus.Offered || status === ApplicationStatus.OfferAccepted;
 }
 
 export function useDashboard(activeTab?: ProductTab) {
@@ -68,9 +74,7 @@ export function useDashboard(activeTab?: ProductTab) {
 
       const stages: PipelineStage[] = [{ name: "応募", count: totalApplied }];
       const sortedSteps = Array.from(stepMap.values()).sort((a, b) => a.order - b.order);
-      const offeredCount = applications.filter(
-        (a) => a.status === ApplicationStatus.Offered
-      ).length;
+      const offeredCount = applications.filter((a) => isOfferedOrAccepted(a.status)).length;
 
       for (const step of sortedSteps) {
         const isOfferStep = step.label === "内定" || step.label === "オファー";
@@ -117,8 +121,12 @@ export function useDashboard(activeTab?: ProductTab) {
         if (!monthMap.has(key)) continue;
         const entry = monthMap.get(key)!;
         entry.applications++;
-        if (app.status === ApplicationStatus.Offered) entry.offered++;
-        if (app.status === ApplicationStatus.Withdrawn) entry.withdrawn++;
+        if (isOfferedOrAccepted(app.status)) entry.offered++;
+        if (
+          app.status === ApplicationStatus.Withdrawn ||
+          app.status === ApplicationStatus.OfferDeclined
+        )
+          entry.withdrawn++;
       }
 
       return Array.from(monthMap.entries()).map(([month, d]) => ({ month, ...d }));
@@ -140,12 +148,133 @@ export function useDashboard(activeTab?: ProductTab) {
         if (!deptMap.has(dept)) deptMap.set(dept, { applications: 0, offered: 0 });
         const entry = deptMap.get(dept)!;
         entry.applications++;
-        if (app.status === ApplicationStatus.Offered) entry.offered++;
+        if (isOfferedOrAccepted(app.status)) entry.offered++;
       }
 
       return Array.from(deptMap.entries())
         .map(([department, d]) => ({ department, ...d }))
         .sort((a, b) => b.applications - a.applications);
+    }
+  );
+
+  const { data: sourceStats } = useQuery<{ source: string; count: number; offered: number }[]>(
+    orgId ? `dashboard-source-stats-${orgId}` : null,
+    async () => {
+      const applications = await dashboardRepository.fetchApplicationsBySource(client, orgId!);
+      if (!applications) return [];
+
+      const sourceMap = new Map<string, { count: number; offered: number }>();
+      for (const app of applications) {
+        const src = (app.source as string) ?? "未設定";
+        if (!sourceMap.has(src)) sourceMap.set(src, { count: 0, offered: 0 });
+        const entry = sourceMap.get(src)!;
+        entry.count++;
+        if (isOfferedOrAccepted(app.status as string)) entry.offered++;
+      }
+
+      return Array.from(sourceMap.entries())
+        .map(([source, d]) => ({ source, ...d }))
+        .sort((a, b) => b.count - a.count);
+    }
+  );
+
+  const { data: timeToHire } = useQuery<TimeToHireStat[]>(
+    orgId ? `dashboard-time-to-hire-${orgId}` : null,
+    async () => {
+      const offers = await dashboardRepository.fetchTimeToHireData(client, orgId!);
+      if (!offers || offers.length === 0) return [];
+
+      const entries: { dept: string; days: number }[] = [];
+      for (const offer of offers) {
+        const app = (offer as Record<string, Record<string, unknown>>).applications;
+        if (!app?.applied_at) continue;
+        const days = Math.round(
+          (new Date(offer.created_at).getTime() - new Date(app.applied_at).getTime()) / 86400000
+        );
+        if (days >= 0) {
+          entries.push({ dept: app.jobs?.department ?? "未設定", days });
+        }
+      }
+      if (entries.length === 0) return [];
+
+      const allDays = entries.map((e) => e.days);
+      const avg = Math.round(allDays.reduce((s, d) => s + d, 0) / allDays.length);
+      const sorted = [...allDays].sort((a, b) => a - b);
+      const median = sorted[Math.floor(sorted.length / 2)];
+
+      const result: TimeToHireStat[] = [
+        { label: "全体", avgDays: avg, medianDays: median, count: allDays.length },
+      ];
+
+      const deptMap = new Map<string, number[]>();
+      for (const e of entries) {
+        if (!deptMap.has(e.dept)) deptMap.set(e.dept, []);
+        deptMap.get(e.dept)!.push(e.days);
+      }
+      for (const [dept, days] of deptMap.entries()) {
+        const dAvg = Math.round(days.reduce((s, d) => s + d, 0) / days.length);
+        const dSorted = [...days].sort((a, b) => a - b);
+        result.push({
+          label: dept,
+          avgDays: dAvg,
+          medianDays: dSorted[Math.floor(dSorted.length / 2)],
+          count: days.length,
+        });
+      }
+      return result;
+    }
+  );
+
+  const { data: selectionFunnel } = useQuery<FunnelStage[]>(
+    orgId ? `dashboard-selection-funnel-${orgId}` : null,
+    async () => {
+      const applications = await dashboardRepository.fetchFunnelData(client, orgId!);
+      if (!applications || applications.length === 0) return [];
+
+      const totalApplied = applications.length;
+      const stepMap = new Map<string, { order: number; label: string; passed: number }>();
+
+      for (const app of applications) {
+        const appRecord = app as Record<string, unknown>;
+        for (const step of (appRecord.application_steps as Record<string, unknown>[]) ?? []) {
+          const key = `${step.step_order}-${step.step_type}`;
+          if (!stepMap.has(key))
+            stepMap.set(key, { order: step.step_order, label: step.label, passed: 0 });
+          if (step.status === "completed" || step.status === "in_progress") {
+            stepMap.get(key)!.passed++;
+          }
+        }
+      }
+
+      const sortedSteps = Array.from(stepMap.values()).sort((a, b) => a.order - b.order);
+      const offeredCount = applications.filter((a) =>
+        isOfferedOrAccepted((a as Record<string, unknown>).status as string)
+      ).length;
+
+      const stages: FunnelStage[] = [{ name: "応募", count: totalApplied, conversionRate: null }];
+      let prevCount = totalApplied;
+
+      for (const step of sortedSteps) {
+        const isOfferStep = step.label === "内定" || step.label === "オファー";
+        const count = isOfferStep ? offeredCount : step.passed;
+        stages.push({
+          name: step.label,
+          count,
+          conversionRate: prevCount > 0 ? Math.round((count / prevCount) * 100) : 0,
+        });
+        prevCount = count;
+      }
+
+      const hasOfferStep = sortedSteps.some((s) => s.label === "内定" || s.label === "オファー");
+      if (!hasOfferStep && (offeredCount > 0 || sortedSteps.length > 0)) {
+        stages.push({
+          name: "内定",
+          count: offeredCount,
+          conversionRate: prevCount > 0 ? Math.round((offeredCount / prevCount) * 100) : 0,
+        });
+      }
+
+      return stages;
     }
   );
 
@@ -160,7 +289,7 @@ export function useDashboard(activeTab?: ProductTab) {
         if (!countMap.has(app.job_id)) countMap.set(app.job_id, { total: 0, offered: 0 });
         const c = countMap.get(app.job_id)!;
         c.total++;
-        if (app.status === ApplicationStatus.Offered) c.offered++;
+        if (isOfferedOrAccepted(app.status)) c.offered++;
       }
 
       return jobs.map((job) => ({
@@ -258,7 +387,7 @@ export function useDashboard(activeTab?: ProductTab) {
         const bucket = ht === "new_grad" ? "newGrad" : ht === "mid_career" ? "midCareer" : null;
         if (!bucket) continue;
         result[bucket].applications++;
-        if (row.status === ApplicationStatus.Offered) result[bucket].offered++;
+        if (isOfferedOrAccepted(row.status)) result[bucket].offered++;
       }
 
       return result;
@@ -439,6 +568,9 @@ export function useDashboard(activeTab?: ProductTab) {
     pipeline,
     kpiTrend,
     departmentStats,
+    sourceStats,
+    timeToHire,
+    selectionFunnel,
     openJobs,
     empDeptStats,
     pendingWorkflows,

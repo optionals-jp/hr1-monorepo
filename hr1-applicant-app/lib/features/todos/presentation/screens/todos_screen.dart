@@ -436,6 +436,7 @@ class _MetadataRow extends StatelessWidget {
       TodoSource.survey => AppColors.brandLight,
       TodoSource.form => AppColors.success,
       TodoSource.interview => AppColors.warning,
+      TodoSource.offer => AppColors.success,
       TodoSource.system => AppColors.brand,
       TodoSource.manual => AppColors.textSecondary(context),
     };

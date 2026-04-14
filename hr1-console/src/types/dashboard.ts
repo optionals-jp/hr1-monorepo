@@ -82,7 +82,23 @@ export type DataSourceId =
   | "crm_pipeline"
   | "crm_monthly_revenue"
   | "crm_deal_status"
-  | "crm_rep_performance";
+  | "crm_rep_performance"
+  | "application_source"
+  | "time_to_hire"
+  | "selection_funnel";
+
+export interface TimeToHireStat {
+  label: string;
+  avgDays: number;
+  medianDays: number;
+  count: number;
+}
+
+export interface FunnelStage {
+  name: string;
+  count: number;
+  conversionRate: number | null;
+}
 
 export interface DashboardWidgetConfigV1 {
   id: string;

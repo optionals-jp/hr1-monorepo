@@ -11,7 +11,7 @@ import {
   interviewScheduleStatusLabels as statusLabels,
   interviewScheduleStatusColors as statusColors,
 } from "@/lib/constants";
-import type { Interview } from "@/types/database";
+import type { Interview, Profile } from "@/types/database";
 
 interface Slot {
   id: string;
@@ -26,10 +26,16 @@ interface Slot {
 interface SchedulingDetailTabProps {
   interview: Interview;
   slots: Slot[];
+  interviewers?: Profile[];
   onEdit: () => void;
 }
 
-export function SchedulingDetailTab({ interview, slots, onEdit }: SchedulingDetailTabProps) {
+export function SchedulingDetailTab({
+  interview,
+  slots,
+  interviewers = [],
+  onEdit,
+}: SchedulingDetailTabProps) {
   const bookedCount = slots.filter((s) => s.application_id).length;
 
   return (
@@ -49,6 +55,19 @@ export function SchedulingDetailTab({ interview, slots, onEdit }: SchedulingDeta
           </DetailField>
           <DetailField label="予約状況">
             {bookedCount} / {slots.length} 予約済み
+          </DetailField>
+          <DetailField label="面接官">
+            {interviewers.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {interviewers.map((interviewer) => (
+                  <Badge key={interviewer.id} variant="secondary">
+                    {interviewer.display_name ?? interviewer.email}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <span className="text-muted-foreground">未設定</span>
+            )}
           </DetailField>
           <DetailField label="作成日">
             {format(new Date(interview.created_at), "yyyy/MM/dd")}

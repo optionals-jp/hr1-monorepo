@@ -24,6 +24,7 @@ export interface ApplicationsSummary {
   midCareer: number;
   active: number;
   offered: number;
+  offerAccepted: number;
 }
 
 export function useApplicationsList() {
@@ -44,6 +45,7 @@ export function useApplicationsPage() {
   // URL 検索クエリの `?tab=` でタブ状態を保持。直リンク・戻る/進むで状態が復元される。
   const [statusFilter, setStatusFilter] = useTabParam<string>("all");
   const [filterJobId, setFilterJobId] = useState<string>("all");
+  const [filterSource, setFilterSource] = useState<string>("all");
 
   const { data: jobs = [] } = useJobsForFilter();
 
@@ -63,6 +65,7 @@ export function useApplicationsPage() {
     let midCareer = 0;
     let active = 0;
     let offered = 0;
+    let offerAccepted = 0;
 
     for (const app of applications) {
       const hiringType = app.profiles?.hiring_type;
@@ -71,6 +74,7 @@ export function useApplicationsPage() {
 
       if (app.status === ApplicationStatus.Active) active++;
       else if (app.status === ApplicationStatus.Offered) offered++;
+      else if (app.status === ApplicationStatus.OfferAccepted) offerAccepted++;
     }
 
     return {
@@ -79,12 +83,14 @@ export function useApplicationsPage() {
       midCareer,
       active,
       offered,
+      offerAccepted,
     };
   }, [applications]);
 
   const filtered = applications.filter((app) => {
     if (statusFilter !== "all" && app.status !== statusFilter) return false;
     if (filterJobId !== "all" && app.job_id !== filterJobId) return false;
+    if (filterSource !== "all" && app.source !== filterSource) return false;
     if (search) {
       const s = search.toLowerCase();
       const name = app.profiles?.display_name ?? "";
@@ -118,6 +124,8 @@ export function useApplicationsPage() {
     setStatusFilter,
     filterJobId,
     setFilterJobId,
+    filterSource,
+    setFilterSource,
     jobs,
     applications,
     summary,

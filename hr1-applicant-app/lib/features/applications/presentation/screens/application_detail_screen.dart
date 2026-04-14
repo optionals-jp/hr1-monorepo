@@ -9,6 +9,7 @@ import 'package:hr1_applicant_app/features/applications/domain/entities/applicat
 import 'package:hr1_applicant_app/features/applications/domain/entities/application_step.dart';
 import 'package:hr1_applicant_app/features/applications/presentation/controllers/application_detail_controller.dart';
 import 'package:hr1_applicant_app/features/applications/presentation/controllers/withdraw_controller.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/controllers/offer_response_controller.dart';
 import 'package:hr1_applicant_app/features/applications/presentation/providers/applications_providers.dart';
 import 'package:hr1_applicant_app/features/forms/presentation/screens/form_fill_screen.dart';
 import 'package:hr1_applicant_app/features/interviews/presentation/screens/interview_schedule_screen.dart';
@@ -117,8 +118,14 @@ class _OverviewTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
       children: [
-        // 終了ステータスバナー（辞退・不採用・内定）
-        if (!isActive) ...[
+        // 内定応答カード（offered の場合）
+        if (application.status.canRespondToOffer) ...[
+          _OfferResponseCard(application: application),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+
+        // 終了ステータスバナー（辞退・不採用・内定承諾・内定辞退）
+        if (!isActive && !application.status.canRespondToOffer) ...[
           _TerminalStatusBanner(application: application),
           const SizedBox(height: AppSpacing.lg),
         ],
@@ -194,9 +201,9 @@ class _OverviewTab extends ConsumerWidget {
           ),
         ),
 
-        // 辞退ボタン（選考中・内定の場合のみ表示）
+        // 辞退ボタン（選考中・内定承諾済みの場合のみ表示）
         if (application.status == ApplicationStatus.active ||
-            application.status == ApplicationStatus.offered) ...[
+            application.status == ApplicationStatus.offerAccepted) ...[
           const SizedBox(height: AppSpacing.xxxl),
           Center(
             child: TextButton(
@@ -264,6 +271,16 @@ class _TerminalStatusBanner extends StatelessWidget {
         AppColors.success,
         Icons.celebration_rounded,
       ),
+      ApplicationStatus.offerAccepted => (
+        '内定を承諾しました',
+        AppColors.success,
+        Icons.check_circle_rounded,
+      ),
+      ApplicationStatus.offerDeclined => (
+        '内定を辞退しました',
+        AppColors.textSecondary(context),
+        Icons.cancel_outlined,
+      ),
       _ => ('', AppColors.textSecondary(context), Icons.info_outline),
     };
 
@@ -282,6 +299,103 @@ class _TerminalStatusBanner extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _OfferResponseCard extends ConsumerWidget {
+  const _OfferResponseCard({required this.application});
+  final Application application;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: AppColors.success.withValues(alpha: 0.08),
+        borderRadius: AppRadius.radius120,
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.celebration_rounded,
+                size: 22,
+                color: AppColors.success,
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Text(
+                '内定を獲得しました',
+                style: AppTextStyles.callout.copyWith(color: AppColors.success),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text('内定への回答をお願いします。', style: AppTextStyles.body2),
+          const SizedBox(height: AppSpacing.lg),
+          SizedBox(
+            width: double.infinity,
+            child: CommonButton(
+              onPressed: () => _confirmAccept(context, ref),
+              child: const Text('内定を承諾する'),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          SizedBox(
+            width: double.infinity,
+            child: CommonButton.outline(
+              onPressed: () => _confirmDecline(context, ref),
+              child: const Text('内定を辞退する'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmAccept(BuildContext context, WidgetRef ref) async {
+    final confirmed = await CommonDialog.confirm(
+      context: context,
+      title: '内定承諾',
+      message: '内定を承諾しますか？',
+      confirmLabel: '承諾する',
+    );
+    if (!confirmed || !context.mounted) return;
+
+    try {
+      await ref
+          .read(offerResponseControllerProvider.notifier)
+          .accept(applicationId: application.id);
+      if (!context.mounted) return;
+      CommonSnackBar.show(context, '内定を承諾しました');
+    } catch (e) {
+      if (!context.mounted) return;
+      CommonSnackBar.error(context, '処理に失敗しました');
+    }
+  }
+
+  Future<void> _confirmDecline(BuildContext context, WidgetRef ref) async {
+    final confirmed = await CommonDialog.confirm(
+      context: context,
+      title: '内定辞退',
+      message: '内定を辞退しますか？\nこの操作は取り消せません。',
+      confirmLabel: '辞退する',
+      isDestructive: true,
+    );
+    if (!confirmed || !context.mounted) return;
+
+    try {
+      await ref
+          .read(offerResponseControllerProvider.notifier)
+          .decline(applicationId: application.id);
+      if (!context.mounted) return;
+      CommonSnackBar.show(context, '内定を辞退しました');
+    } catch (e) {
+      if (!context.mounted) return;
+      CommonSnackBar.error(context, '処理に失敗しました');
+    }
   }
 }
 
@@ -791,10 +905,43 @@ class _HistoryTab extends StatelessWidget {
       }
     }
 
+    if (application.status == ApplicationStatus.rejected) {
+      events.add(
+        _HistoryEvent(
+          title: '選考結果のお知らせ',
+          subtitle: application.job?.title ?? '求人',
+          dateTime: application.updatedAt ?? application.appliedAt,
+          color: AppColors.error,
+        ),
+      );
+    }
+
     if (application.status == ApplicationStatus.withdrawn) {
       events.add(
         _HistoryEvent(
           title: '応募を辞退しました',
+          subtitle: application.job?.title ?? '求人',
+          dateTime: application.updatedAt ?? application.appliedAt,
+          color: AppColors.textSecondary(context),
+        ),
+      );
+    }
+
+    if (application.status == ApplicationStatus.offerAccepted) {
+      events.add(
+        _HistoryEvent(
+          title: '内定を承諾しました',
+          subtitle: application.job?.title ?? '求人',
+          dateTime: application.updatedAt ?? application.appliedAt,
+          color: AppColors.success,
+        ),
+      );
+    }
+
+    if (application.status == ApplicationStatus.offerDeclined) {
+      events.add(
+        _HistoryEvent(
+          title: '内定を辞退しました',
           subtitle: application.job?.title ?? '求人',
           dateTime: application.updatedAt ?? application.appliedAt,
           color: AppColors.textSecondary(context),
@@ -1093,6 +1240,8 @@ class _HistoryEvent {
 Color _applicationColor(Application application, BuildContext context) {
   return switch (application.status) {
     ApplicationStatus.offered => AppColors.success,
+    ApplicationStatus.offerAccepted => AppColors.success,
+    ApplicationStatus.offerDeclined => AppColors.textSecondary(context),
     ApplicationStatus.rejected => AppColors.error,
     ApplicationStatus.withdrawn => AppColors.textSecondary(context),
     ApplicationStatus.active => () {
