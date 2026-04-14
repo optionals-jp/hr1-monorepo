@@ -186,7 +186,7 @@ export function useDashboard(activeTab?: ProductTab) {
 
       const entries: { dept: string; days: number }[] = [];
       for (const offer of offers) {
-        const app = (offer as any).applications;
+        const app = (offer as Record<string, Record<string, unknown>>).applications;
         if (!app?.applied_at) continue;
         const days = Math.round(
           (new Date(offer.created_at).getTime() - new Date(app.applied_at).getTime()) / 86400000
@@ -235,7 +235,8 @@ export function useDashboard(activeTab?: ProductTab) {
       const stepMap = new Map<string, { order: number; label: string; passed: number }>();
 
       for (const app of applications) {
-        for (const step of (app as any).application_steps ?? []) {
+        const appRecord = app as Record<string, unknown>;
+        for (const step of (appRecord.application_steps as Record<string, unknown>[]) ?? []) {
           const key = `${step.step_order}-${step.step_type}`;
           if (!stepMap.has(key))
             stepMap.set(key, { order: step.step_order, label: step.label, passed: 0 });
@@ -247,7 +248,7 @@ export function useDashboard(activeTab?: ProductTab) {
 
       const sortedSteps = Array.from(stepMap.values()).sort((a, b) => a.order - b.order);
       const offeredCount = applications.filter((a) =>
-        isOfferedOrAccepted((a as any).status)
+        isOfferedOrAccepted((a as Record<string, unknown>).status as string)
       ).length;
 
       const stages: FunnelStage[] = [{ name: "応募", count: totalApplied, conversionRate: null }];
