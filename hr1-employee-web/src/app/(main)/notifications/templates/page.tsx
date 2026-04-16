@@ -120,7 +120,9 @@ export default function NotificationTemplatesPage() {
                       rows={4}
                     />
                     <p className="text-xs text-muted-foreground">
-                      {"{job_title}"} などのプレースホルダーが利用できます
+                      {event.startsWith("step_")
+                        ? `{step_label}, {job_title} などのプレースホルダーが利用できます`
+                        : `{job_title} などのプレースホルダーが利用できます`}
                     </p>
                   </div>
 

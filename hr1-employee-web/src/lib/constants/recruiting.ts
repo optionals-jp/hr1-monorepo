@@ -120,6 +120,14 @@ export const selectableStepTypes: Record<string, string> = {
 
 export const FORM_STEP_TYPES: StepType[] = [StepType.Screening, StepType.Form];
 
+export const screeningTypeLabels: Record<string, string> = {
+  resume: "履歴書",
+  cv: "職務経歴書",
+  portfolio: "ポートフォリオ",
+  entry_sheet: "エントリーシート",
+  other: "その他",
+};
+
 export const RESOURCE_STEP_TYPES = [StepType.Form, StepType.Interview] as const;
 
 /* -------------------------------------------------------- */
@@ -177,4 +185,7 @@ export const notificationTriggerEventLabels: Record<string, string> = {
   application_offer_accepted: "内定承諾",
   application_offer_declined: "内定辞退",
   application_withdrawn: "辞退",
+  step_in_progress: "選考ステップ開始",
+  step_completed: "選考ステップ完了",
+  step_skipped: "選考ステップスキップ",
 };

@@ -30,7 +30,7 @@ class FormFillController
 
   /// フォーム回答を送信し、ステップを完了にする
   Future<void> submit() async {
-    if (state.isSubmitting) return;
+    if (state.isSubmitting || state.submitted) return;
     state = const FormFillState(isSubmitting: true);
 
     try {

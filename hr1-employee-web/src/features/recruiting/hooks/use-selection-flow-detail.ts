@@ -8,6 +8,7 @@ import { getSupabase } from "@/lib/supabase/browser";
 import * as flowRepo from "@/lib/repositories/selection-flow-repository";
 import * as templateRepo from "@/lib/repositories/selection-step-template-repository";
 import * as applicationRepo from "@/lib/repositories/application-repository";
+import * as jobRepo from "@/lib/repositories/job-repository";
 import { validators, validateForm, type ValidationErrors } from "@hr1/shared-ui";
 import { StepStatus } from "@/lib/constants";
 import type { Application, Job, SelectionFlow, SelectionStepTemplate } from "@/types/database";
@@ -30,6 +31,9 @@ interface StepFormState {
   flow_id: string | null;
   name: string;
   step_type: string;
+  screening_type: string | null;
+  form_id: string | null;
+  requires_review: boolean;
   description: string;
   sort_order: string;
 }
@@ -39,6 +43,9 @@ const EMPTY_STEP_FORM: StepFormState = {
   flow_id: null,
   name: "",
   step_type: "screening",
+  screening_type: "resume",
+  form_id: null,
+  requires_review: true,
   description: "",
   sort_order: "0",
 };
@@ -76,6 +83,11 @@ export function useSelectionFlowDetail(flowId: string) {
     applicationRepo.fetchJobsForFilter(getSupabase(), orgId)
   );
 
+  const { data: forms = [] } = useOrgQuery<{ id: string; title: string }[]>(
+    "custom-forms",
+    (orgId) => jobRepo.fetchForms(getSupabase(), orgId)
+  );
+
   // --- tab state ---
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -86,11 +98,25 @@ export function useSelectionFlowDetail(flowId: string) {
   const [stepSaving, setStepSaving] = useState(false);
   const [stepDeletingId, setStepDeletingId] = useState<string | null>(null);
 
-  // ---------- computed: steps with counts ----------
+  // ---------- computed: this flow's job IDs ----------
 
-  const stepNames = useMemo(() => {
-    return new Set(templates.filter((t) => t.flow_id === flowId).map((t) => t.name));
-  }, [templates, flowId]);
+  const flowJobIds = useMemo(
+    () => new Set(jobs.filter((j) => j.flow_id === flowId).map((j) => j.id)),
+    [jobs, flowId]
+  );
+
+  // ---------- computed: applications for this flow ----------
+
+  const flowApplications = useMemo(
+    () =>
+      applications.filter(
+        (app) =>
+          flowJobIds.has(app.job_id) && app.status !== "rejected" && app.status !== "withdrawn"
+      ),
+    [applications, flowJobIds]
+  );
+
+  // ---------- computed: steps with counts ----------
 
   const steps = useMemo<TemplateWithCounts[]>(() => {
     const flowTemplates = templates.filter((t) => t.flow_id === flowId);
@@ -99,25 +125,25 @@ export function useSelectionFlowDetail(flowId: string) {
     const completed = new Map<string, number>();
     const pending = new Map<string, number>();
 
-    for (const app of applications) {
-      if (app.status === "rejected" || app.status === "withdrawn") continue;
+    for (const app of flowApplications) {
       for (const step of app.application_steps ?? []) {
-        if (!stepNames.has(step.label)) continue;
+        const tid = step.template_id;
+        if (!tid) continue;
         if (step.status === StepStatus.InProgress) {
-          inProgress.set(step.label, (inProgress.get(step.label) ?? 0) + 1);
+          inProgress.set(tid, (inProgress.get(tid) ?? 0) + 1);
         } else if (step.status === StepStatus.Completed) {
-          completed.set(step.label, (completed.get(step.label) ?? 0) + 1);
+          completed.set(tid, (completed.get(tid) ?? 0) + 1);
         } else if (step.status === StepStatus.Pending) {
-          pending.set(step.label, (pending.get(step.label) ?? 0) + 1);
+          pending.set(tid, (pending.get(tid) ?? 0) + 1);
         }
       }
     }
 
     return flowTemplates
       .map((t) => {
-        const ip = inProgress.get(t.name) ?? 0;
-        const cp = completed.get(t.name) ?? 0;
-        const pd = pending.get(t.name) ?? 0;
+        const ip = inProgress.get(t.id) ?? 0;
+        const cp = completed.get(t.id) ?? 0;
+        const pd = pending.get(t.id) ?? 0;
         return {
           ...t,
           inProgressCount: ip,
@@ -127,45 +153,31 @@ export function useSelectionFlowDetail(flowId: string) {
         };
       })
       .sort((a, b) => a.sort_order - b.sort_order);
-  }, [templates, applications, flowId, stepNames]);
+  }, [templates, flowApplications, flowId]);
 
   // ---------- computed: related jobs ----------
 
   const relatedJobs = useMemo<RelatedJob[]>(() => {
-    // application の job_id ごとに、application_steps の label がこのフローのステップ名に合致するかチェック
     const jobAppCounts = new Map<string, number>();
-    const jobIds = new Set<string>();
-
-    for (const app of applications) {
-      if (app.status === "rejected" || app.status === "withdrawn") continue;
-      const appStepLabels = (app.application_steps ?? []).map((s) => s.label);
-      const hasMatch = appStepLabels.some((label) => stepNames.has(label));
-      if (hasMatch) {
-        jobIds.add(app.job_id);
-        jobAppCounts.set(app.job_id, (jobAppCounts.get(app.job_id) ?? 0) + 1);
-      }
+    for (const app of flowApplications) {
+      jobAppCounts.set(app.job_id, (jobAppCounts.get(app.job_id) ?? 0) + 1);
     }
 
     return jobs
-      .filter((j) => jobIds.has(j.id))
+      .filter((j) => j.flow_id === flowId)
       .map((j) => ({ ...j, applicationCount: jobAppCounts.get(j.id) ?? 0 }));
-  }, [applications, jobs, stepNames]);
+  }, [jobs, flowApplications, flowId]);
 
   // ---------- overview summary ----------
 
   const summary = useMemo(() => {
-    const totalApplicants = new Set<string>();
-    for (const app of applications) {
-      if (app.status === "rejected" || app.status === "withdrawn") continue;
-      const hasMatch = (app.application_steps ?? []).some((s) => stepNames.has(s.label));
-      if (hasMatch) totalApplicants.add(app.applicant_id);
-    }
+    const applicantIds = new Set(flowApplications.map((app) => app.applicant_id));
     return {
       stepCount: steps.length,
       jobCount: relatedJobs.length,
-      applicantCount: totalApplicants.size,
+      applicantCount: applicantIds.size,
     };
-  }, [applications, stepNames, steps, relatedJobs]);
+  }, [flowApplications, steps, relatedJobs]);
 
   // ---------- step CRUD ----------
 
@@ -182,6 +194,9 @@ export function useSelectionFlowDetail(flowId: string) {
       flow_id: template.flow_id,
       name: template.name,
       step_type: template.step_type,
+      screening_type: template.screening_type,
+      form_id: template.form_id,
+      requires_review: template.requires_review,
       description: template.description ?? "",
       sort_order: String(template.sort_order),
     });
@@ -213,10 +228,17 @@ export function useSelectionFlowDetail(flowId: string) {
 
     setStepSaving(true);
     try {
+      const isScreening = stepForm.step_type === "screening";
+      const screeningType = isScreening ? stepForm.screening_type : null;
+      const formId = isScreening ? stepForm.form_id : null;
+
       if (stepForm.id) {
         await templateRepo.updateTemplate(getSupabase(), stepForm.id, organization.id, {
           name: stepForm.name.trim(),
           step_type: stepForm.step_type,
+          screening_type: formId ? null : screeningType,
+          form_id: formId,
+          requires_review: stepForm.requires_review,
           description: stepForm.description.trim() || null,
           sort_order: sortOrder,
           flow_id: stepForm.flow_id,
@@ -227,6 +249,9 @@ export function useSelectionFlowDetail(flowId: string) {
           flow_id: stepForm.flow_id,
           name: stepForm.name.trim(),
           step_type: stepForm.step_type,
+          screening_type: formId ? null : screeningType,
+          form_id: formId,
+          requires_review: stepForm.requires_review,
           description: stepForm.description.trim() || null,
           sort_order: sortOrder,
         });
@@ -283,6 +308,7 @@ export function useSelectionFlowDetail(flowId: string) {
     steps,
     relatedJobs,
     summary,
+    forms,
 
     // step form
     stepDialogOpen,

@@ -16,6 +16,8 @@ interface ApplicationStepListProps {
   skipStep: (step: ApplicationStep) => void;
   unskipStep: (step: ApplicationStep) => void;
   onViewFormResponses?: (step: ApplicationStep) => void;
+  onOffer?: () => void;
+  onReject?: () => void;
 }
 
 export function ApplicationStepList({
@@ -25,6 +27,8 @@ export function ApplicationStepList({
   skipStep,
   unskipStep,
   onViewFormResponses,
+  onOffer,
+  onReject,
 }: ApplicationStepListProps) {
   if (steps.length === 0) {
     return (
@@ -100,13 +104,24 @@ export function ApplicationStepList({
               </div>
 
               <div className="flex gap-2 shrink-0">
-                {step.step_type === StepType.Form &&
-                  isCompleted &&
-                  step.form_id &&
+                {step.form_id &&
+                  (isCompleted || (isInProgress && step.applicant_action_at)) &&
                   onViewFormResponses && (
                     <Button size="xs" variant="outline" onClick={() => onViewFormResponses(step)}>
                       回答を確認
                     </Button>
+                  )}
+                {step.document_url &&
+                  (isCompleted || (isInProgress && step.applicant_action_at)) && (
+                    <a
+                      href={step.document_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center rounded-md border border-input bg-background px-2 py-1 text-xs font-medium hover:bg-accent"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      書類を確認
+                    </a>
                   )}
                 {isSkipped && (
                   <Button
@@ -118,25 +133,36 @@ export function ApplicationStepList({
                     元に戻す
                   </Button>
                 )}
-                {canActOnStep(step) && !isSkipped && (
-                  <>
-                    <Button
-                      size="xs"
-                      variant={isInProgress ? "default" : "outline"}
-                      onClick={() => advanceStep(step)}
-                    >
-                      {step.status === StepStatus.Pending ? "開始" : "完了"}
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      onClick={() => skipStep(step)}
-                      className="text-muted-foreground"
-                    >
-                      スキップ
-                    </Button>
-                  </>
-                )}
+                {canActOnStep(step) &&
+                  !isSkipped &&
+                  (step.step_type === StepType.Offer && isInProgress ? (
+                    <>
+                      <Button size="xs" variant="default" onClick={onOffer}>
+                        内定
+                      </Button>
+                      <Button size="xs" variant="destructive" onClick={onReject}>
+                        不合格
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        size="xs"
+                        variant={isInProgress ? "default" : "outline"}
+                        onClick={() => advanceStep(step)}
+                      >
+                        {step.status === StepStatus.Pending ? "開始" : "完了"}
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        onClick={() => skipStep(step)}
+                        className="text-muted-foreground"
+                      >
+                        スキップ
+                      </Button>
+                    </>
+                  ))}
               </div>
             </div>
 

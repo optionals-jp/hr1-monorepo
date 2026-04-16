@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
-import { EditPanel, type EditPanelTab } from "@hr1/shared-ui/components/ui/edit-panel";
+import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { DatetimeInput } from "@/components/ui/datetime-input";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
@@ -31,11 +31,6 @@ import { SchedulingDetailTab } from "@/features/recruiting/components/scheduling
 const tabs = [
   { value: "detail", label: "面接詳細", icon: CalendarCheck },
   { value: "timeline", label: "ログ", icon: ScrollText },
-];
-
-const editTabs: EditPanelTab[] = [
-  { value: "info", label: "面接情報" },
-  { value: "slots", label: "候補日時" },
 ];
 
 export default function SchedulingDetailPage() {
@@ -96,7 +91,8 @@ export default function SchedulingDetailPage() {
             interview={interview}
             slots={h.slots}
             interviewers={h.interviewers}
-            onEdit={h.startEditing}
+            onEditInfo={h.startEditingInfo}
+            onEditSlots={h.startEditingSlots}
           />
         </div>
       )}
@@ -140,113 +136,118 @@ export default function SchedulingDetailPage() {
         </div>
       )}
 
+      {/* 面接情報の編集ダイアログ */}
       <EditPanel
-        open={h.editing}
-        onOpenChange={h.setEditing}
+        open={h.editingInfo}
+        onOpenChange={h.setEditingInfo}
         title="面接情報を編集"
-        tabs={editTabs}
-        activeTab={h.editTab}
-        onTabChange={h.setEditTab}
-        onSave={h.handleSave}
+        onSave={h.handleSaveInfo}
         saving={h.saving}
         saveDisabled={!h.editTitle}
       >
-        {h.editTab === "info" && (
-          <div className="space-y-4">
-            <FormInput
-              label="タイトル"
-              required
-              value={h.editTitle}
-              onChange={(e) => h.setEditTitle(e.target.value)}
-              placeholder="一次面接"
-            />
-            <FormInput
-              label="場所"
-              value={h.editLocation}
-              onChange={(e) => h.setEditLocation(e.target.value)}
-              placeholder="オンライン (Google Meet)"
-            />
-            <FormTextarea
-              label="備考"
-              value={h.editNotes}
-              onChange={(e) => h.setEditNotes(e.target.value)}
-              placeholder="面接に関する備考"
-              rows={3}
-            />
+        <div className="space-y-4">
+          <FormInput
+            label="タイトル"
+            required
+            value={h.editTitle}
+            onChange={(e) => h.setEditTitle(e.target.value)}
+            placeholder="一次面接"
+          />
+          <FormInput
+            label="場所"
+            value={h.editLocation}
+            onChange={(e) => h.setEditLocation(e.target.value)}
+            placeholder="オンライン (Google Meet)"
+          />
+          <FormTextarea
+            label="備考"
+            value={h.editNotes}
+            onChange={(e) => h.setEditNotes(e.target.value)}
+            placeholder="面接に関する備考"
+            rows={3}
+          />
 
-            <div className="space-y-1.5">
-              <span className="text-sm font-medium">面接官</span>
-              <InterviewerSelect
-                employees={employees}
-                selectedIds={h.editInterviewerIds}
-                onSelectionChange={h.setEditInterviewerIds}
-              />
-            </div>
+          <div className="space-y-1.5">
+            <span className="text-sm font-medium">面接官</span>
+            <InterviewerSelect
+              employees={employees}
+              selectedIds={h.editInterviewerIds}
+              onSelectionChange={h.setEditInterviewerIds}
+            />
           </div>
-        )}
-        {h.editTab === "slots" && (
-          <div className="space-y-3">
-            {h.editSlots.map((slot) => (
-              <div key={slot.id} className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <DatetimeInput
-                    value={slot.startAt}
-                    onChange={(v) => h.updateSlot(slot.id, "startAt", v)}
-                    className="flex-1"
-                    disabled={!!slot.applicationId}
-                  />
-                  <span className="text-muted-foreground shrink-0">〜</span>
-                  <DatetimeInput
-                    value={slot.endAt}
-                    onChange={(v) => h.updateSlot(slot.id, "endAt", v)}
-                    className="flex-1"
-                    disabled={!!slot.applicationId}
-                    minDateTime={slot.startAt}
-                  />
-                  {slot.applicationId ? (
-                    <Badge variant="secondary" className="text-xs shrink-0">
-                      予約済
-                    </Badge>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => h.removeSlot(slot.id)}
-                      className="text-destructive hover:text-destructive shrink-0"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {slot.isNew && (
-                    <Badge variant="outline" className="text-xs shrink-0">
-                      新規
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 pl-1">
-                  <span className="text-xs text-muted-foreground shrink-0">応募上限</span>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={slot.maxApplicants}
-                    onChange={(e) =>
-                      h.updateSlot(
-                        slot.id,
-                        "maxApplicants",
-                        Math.max(1, parseInt(e.target.value) || 1)
-                      )
-                    }
-                    className="w-20 h-7 text-xs"
-                  />
-                  <span className="text-xs text-muted-foreground">名</span>
-                </div>
+        </div>
+      </EditPanel>
+
+      {/* 候補日時の編集ダイアログ */}
+      <EditPanel
+        open={h.editingSlots}
+        onOpenChange={h.setEditingSlots}
+        title="候補日時を編集"
+        size="xl"
+        onSave={h.handleSaveSlots}
+        saving={h.saving}
+      >
+        <div className="space-y-3">
+          {h.editSlots.map((slot) => (
+            <div key={slot.id} className="space-y-1">
+              <div className="flex items-center gap-2">
+                <DatetimeInput
+                  value={slot.startAt}
+                  onChange={(v) => h.updateSlot(slot.id, "startAt", v)}
+                  className="flex-1"
+                  disabled={!!slot.applicationId}
+                />
+                <span className="text-muted-foreground shrink-0">〜</span>
+                <DatetimeInput
+                  value={slot.endAt}
+                  onChange={(v) => h.updateSlot(slot.id, "endAt", v)}
+                  className="flex-1"
+                  disabled={!!slot.applicationId}
+                  minDateTime={slot.startAt}
+                />
+                {slot.applicationId ? (
+                  <Badge variant="secondary" className="text-xs shrink-0">
+                    予約済
+                  </Badge>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => h.removeSlot(slot.id)}
+                    className="text-destructive hover:text-destructive shrink-0"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+                {slot.isNew && (
+                  <Badge variant="outline" className="text-xs shrink-0">
+                    新規
+                  </Badge>
+                )}
               </div>
-            ))}
-            <Button variant="outline" onClick={h.addSlot} className="w-full">
-              候補日時を追加
-            </Button>
-          </div>
-        )}
+              <div className="flex items-center gap-2 pl-1">
+                <span className="text-xs text-muted-foreground shrink-0">応募上限</span>
+                <Input
+                  type="number"
+                  min={1}
+                  value={slot.maxApplicants}
+                  onChange={(e) =>
+                    h.updateSlot(
+                      slot.id,
+                      "maxApplicants",
+                      Math.max(1, parseInt(e.target.value) || 1)
+                    )
+                  }
+                  className="w-20 h-7 text-xs"
+                />
+                <span className="text-xs text-muted-foreground">名</span>
+              </div>
+            </div>
+          ))}
+          <Button variant="outline" onClick={h.addSlot} className="w-full">
+            候補日時を追加
+          </Button>
+        </div>
       </EditPanel>
     </>
   );

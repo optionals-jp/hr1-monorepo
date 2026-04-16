@@ -112,6 +112,8 @@ export function useJobDetail() {
       label: newStepLabel,
       form_id: refs.form_id,
       interview_id: refs.interview_id,
+      template_id: null,
+      screening_type: null,
     });
 
     if (error) {
@@ -127,6 +129,9 @@ export function useJobDetail() {
       label: newStepLabel,
       form_id: refs.form_id,
       interview_id: refs.interview_id,
+      template_id: null,
+      screening_type: null,
+      requires_review: false,
     };
 
     setSteps((prev) => [...prev, newStep]);
@@ -156,6 +161,8 @@ export function useJobDetail() {
       label: string;
       form_id: string | null;
       interview_id: string | null;
+      screening_type: string | null;
+      requires_review: boolean;
     }[],
     deletedIds: string[]
   ) => {
@@ -173,6 +180,8 @@ export function useJobDetail() {
           label: s.label,
           form_id: s.form_id,
           interview_id: s.interview_id,
+          screening_type: s.screening_type,
+          requires_review: s.requires_review,
           step_order: s.step_order,
         });
       }
@@ -188,6 +197,9 @@ export function useJobDetail() {
           label: s.label,
           form_id: s.form_id,
           interview_id: s.interview_id,
+          template_id: null,
+          screening_type: s.screening_type,
+          requires_review: s.requires_review,
         });
       }
 

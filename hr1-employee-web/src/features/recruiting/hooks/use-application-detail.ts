@@ -43,6 +43,10 @@ export function useApplicationDetail(id: string) {
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [resourcesLoading, setResourcesLoading] = useState(false);
 
+  const [interviewDialogOpen, setInterviewDialogOpen] = useState(false);
+  const [interviewDialogStep, setInterviewDialogStep] = useState<ApplicationStep | null>(null);
+  const [interviewStarting, setInterviewStarting] = useState(false);
+
   const load = useCallback(async () => {
     if (!organization) return;
     setLoading(true);
@@ -125,12 +129,44 @@ export function useApplicationDetail(id: string) {
     [resourceDialogStep, load]
   );
 
+  const openInterviewDialog = useCallback((step: ApplicationStep) => {
+    setInterviewDialogStep(step);
+    setInterviewDialogOpen(true);
+  }, []);
+
+  const startInterviewStep = useCallback(async () => {
+    if (!interviewDialogStep) return;
+    setInterviewStarting(true);
+    try {
+      const { error } = await applicationRepository.updateStepStatus(
+        getSupabase(),
+        interviewDialogStep.id,
+        {
+          status: StepStatus.InProgress,
+          started_at: new Date().toISOString(),
+        }
+      );
+      if (error) throw error;
+      setInterviewDialogOpen(false);
+      setInterviewDialogStep(null);
+      load();
+    } catch (err) {
+      console.error("面接ステップ開始エラー:", err);
+    } finally {
+      setInterviewStarting(false);
+    }
+  }, [interviewDialogStep, load]);
+
   const advanceStep = useCallback(
     async (step: ApplicationStep) => {
       try {
         const client = getSupabase();
 
         if (step.status === StepStatus.Pending) {
+          if (step.step_type === StepType.Interview) {
+            openInterviewDialog(step);
+            return;
+          }
           if (isResourceStepType(step.step_type)) {
             openResourceDialog(step);
             return;
@@ -270,6 +306,17 @@ export function useApplicationDetail(id: string) {
     [id, organization, offer]
   );
 
+  const completeOfferStep = useCallback(async () => {
+    const offerStep = steps.find(
+      (s) => s.step_type === StepType.Offer && s.status === StepStatus.InProgress
+    );
+    if (!offerStep) return;
+    await applicationRepository.updateStepStatus(getSupabase(), offerStep.id, {
+      status: StepStatus.Completed,
+      completed_at: new Date().toISOString(),
+    });
+  }, [steps]);
+
   const rejectApplicationWithReason = useCallback(
     async (data: { rejection_category?: string; rejection_reason?: string }) => {
       if (!organization) return;
@@ -280,6 +327,8 @@ export function useApplicationDetail(id: string) {
         data
       );
       if (error) throw error;
+
+      await completeOfferStep();
 
       setApplication((prev) =>
         prev
@@ -293,8 +342,9 @@ export function useApplicationDetail(id: string) {
           : prev
       );
       setRejectionDialogOpen(false);
+      load();
     },
-    [id, organization]
+    [id, organization, completeOfferStep, load]
   );
 
   const createOfferAndUpdateStatus = useCallback(
@@ -316,14 +366,16 @@ export function useApplicationDetail(id: string) {
       if (error) throw error;
 
       await applicationRepository.updateApplicationStatus(client, id, organization.id, "offered");
+      await completeOfferStep();
 
       setOffer(newOffer);
       setApplication((prev) =>
         prev ? { ...prev, status: "offered" as Application["status"] } : prev
       );
       setOfferDialogOpen(false);
+      load();
     },
-    [id, organization]
+    [id, organization, completeOfferStep, load]
   );
 
   return {
@@ -351,6 +403,12 @@ export function useApplicationDetail(id: string) {
     advanceStep,
     skipStep,
     unskipStep,
+
+    interviewDialogOpen,
+    setInterviewDialogOpen,
+    interviewDialogStep,
+    interviewStarting,
+    startInterviewStep,
     canActOnStep: canActOnStepFn,
     currentStepOrder,
 

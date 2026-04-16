@@ -39,8 +39,8 @@ export function useSchedulingDetailPage() {
   const [activeTab, setActiveTab] = useTabParam<SchedulingDetailTab>("detail");
 
   const [interviewers, setInterviewers] = useState<Profile[]>([]);
-  const [editing, setEditing] = useState(false);
-  const [editTab, setEditTab] = useState("info");
+  const [editingInfo, setEditingInfo] = useState(false);
+  const [editingSlots, setEditingSlots] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editLocation, setEditLocation] = useState("");
   const [editNotes, setEditNotes] = useState("");
@@ -112,12 +112,17 @@ export function useSchedulingDetailPage() {
     }
   };
 
-  const startEditing = () => {
+  const startEditingInfo = () => {
     if (!interview) return;
     setEditTitle(interview.title);
     setEditLocation(interview.location ?? "");
     setEditNotes(interview.notes ?? "");
     setEditInterviewerIds(interview.interviewer_ids ?? []);
+    setEditingInfo(true);
+  };
+
+  const startEditingSlots = () => {
+    if (!interview) return;
     setEditSlots(
       slots.map((s) => ({
         id: s.id,
@@ -127,8 +132,7 @@ export function useSchedulingDetailPage() {
         applicationId: s.application_id,
       }))
     );
-    setEditTab("info");
-    setEditing(true);
+    setEditingSlots(true);
   };
 
   const addSlot = () => {
@@ -165,20 +169,35 @@ export function useSchedulingDetailPage() {
     );
   };
 
-  const handleSave = async (): Promise<{ success: boolean; error?: string }> => {
+  const handleSaveInfo = async (): Promise<{ success: boolean; error?: string }> => {
+    if (!interview || !organization) {
+      return { success: false, error: "No interview or organization" };
+    }
+    try {
+      setSaving(true);
+      await schedulingRepo.updateInterview(getSupabase(), interview.id, organization.id, {
+        title: editTitle,
+        location: editLocation || null,
+        notes: editNotes || null,
+        interviewer_ids: editInterviewerIds.length > 0 ? editInterviewerIds : undefined,
+      });
+      setSaving(false);
+      setEditingInfo(false);
+      await load();
+      return { success: true };
+    } catch (e) {
+      setSaving(false);
+      return { success: false, error: (e as Error).message };
+    }
+  };
+
+  const handleSaveSlots = async (): Promise<{ success: boolean; error?: string }> => {
     if (!interview || !organization) {
       return { success: false, error: "No interview or organization" };
     }
     try {
       setSaving(true);
       const client = getSupabase();
-
-      await schedulingRepo.updateInterview(client, interview.id, organization.id, {
-        title: editTitle,
-        location: editLocation || null,
-        notes: editNotes || null,
-        interviewer_ids: editInterviewerIds.length > 0 ? editInterviewerIds : undefined,
-      });
 
       const existingIds = slots.map((s) => s.id);
       const editIds = editSlots.filter((s) => !s.isNew).map((s) => s.id);
@@ -194,9 +213,6 @@ export function useSchedulingDetailPage() {
 
       const newSlots = editSlots.filter((s) => s.isNew && s.startAt && s.endAt);
       if (newSlots.length > 0) {
-        // interview_slots.id は DB 側の DEFAULT gen_random_uuid() に任せる。
-        // editSlots.id に入っている `new-${Date.now()}` は UI 側の React key 専用で、
-        // DB に書き込まない。
         await schedulingRepo.createSlots(
           client,
           newSlots.map((s) => ({
@@ -228,7 +244,7 @@ export function useSchedulingDetailPage() {
       }
 
       setSaving(false);
-      setEditing(false);
+      setEditingSlots(false);
       await load();
       return { success: true };
     } catch (e) {
@@ -245,10 +261,10 @@ export function useSchedulingDetailPage() {
     loading,
     activeTab,
     setActiveTab,
-    editing,
-    setEditing,
-    editTab,
-    setEditTab,
+    editingInfo,
+    setEditingInfo,
+    editingSlots,
+    setEditingSlots,
     editTitle,
     setEditTitle,
     editLocation,
@@ -260,10 +276,12 @@ export function useSchedulingDetailPage() {
     editSlots,
     saving,
     updateStatus,
-    startEditing,
+    startEditingInfo,
+    startEditingSlots,
     addSlot,
     removeSlot,
     updateSlot,
-    handleSave,
+    handleSaveInfo,
+    handleSaveSlots,
   };
 }

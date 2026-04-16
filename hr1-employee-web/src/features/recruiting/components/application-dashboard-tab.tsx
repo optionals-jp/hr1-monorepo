@@ -32,6 +32,8 @@ interface ApplicationDashboardTabProps {
   skipStep: (step: ApplicationStep) => void;
   unskipStep: (step: ApplicationStep) => void;
   onViewFormResponses: (step: ApplicationStep) => void;
+  onOffer?: () => void;
+  onReject?: () => void;
   source?: string | null;
   onSourceChange?: (source: string) => void;
 }
@@ -45,6 +47,8 @@ export function ApplicationDashboardTab({
   skipStep,
   unskipStep,
   onViewFormResponses,
+  onOffer,
+  onReject,
   source,
   onSourceChange,
 }: ApplicationDashboardTabProps) {
@@ -153,6 +157,8 @@ export function ApplicationDashboardTab({
             skipStep={skipStep}
             unskipStep={unskipStep}
             onViewFormResponses={onViewFormResponses}
+            onOffer={onOffer}
+            onReject={onReject}
           />
         </SectionCard>
       </div>

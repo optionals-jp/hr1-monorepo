@@ -14,7 +14,13 @@ import {
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
 import type { JobStep, Interview } from "@/types/database";
-import { StepType, FORM_STEP_TYPES, stepTypeLabels, selectableStepTypes } from "@/lib/constants";
+import {
+  StepType,
+  FORM_STEP_TYPES,
+  stepTypeLabels,
+  selectableStepTypes,
+  screeningTypeLabels,
+} from "@/lib/constants";
 import { GripVertical, Trash2, Plus } from "lucide-react";
 
 interface StepManageDialogProps {
@@ -30,6 +36,8 @@ interface StepManageDialogProps {
       label: string;
       form_id: string | null;
       interview_id: string | null;
+      screening_type: string | null;
+      requires_review: boolean;
     }[],
     deletedIds: string[]
   ) => Promise<void>;
@@ -42,6 +50,8 @@ interface EditableStep {
   label: string;
   form_id: string | null;
   interview_id: string | null;
+  screening_type: string | null;
+  requires_review: boolean;
   step_order: number;
   isNew?: boolean;
 }
@@ -64,6 +74,8 @@ export function StepManageDialog({
         label: s.label,
         form_id: s.form_id,
         interview_id: s.interview_id,
+        screening_type: s.screening_type,
+        requires_review: s.requires_review,
         step_order: s.step_order,
       }))
   );
@@ -80,6 +92,8 @@ export function StepManageDialog({
         label: "",
         form_id: null,
         interview_id: null,
+        screening_type: null,
+        requires_review: false,
         step_order: prev.length + 1,
         isNew: true,
       },
@@ -101,6 +115,7 @@ export function StepManageDialog({
       if (field === "step_type") {
         next[index].form_id = null;
         next[index].interview_id = null;
+        next[index].screening_type = null;
       }
       return next;
     });
@@ -130,6 +145,8 @@ export function StepManageDialog({
       label: string;
       form_id: string | null;
       interview_id: string | null;
+      screening_type: string | null;
+      requires_review: boolean;
     }[] = [];
 
     for (const s of editSteps) {
@@ -141,6 +158,8 @@ export function StepManageDialog({
             label: s.label.trim(),
             form_id: s.form_id,
             interview_id: s.interview_id,
+            screening_type: s.screening_type,
+            requires_review: s.requires_review,
           });
         }
       } else {
@@ -153,6 +172,8 @@ export function StepManageDialog({
             step_type: s.step_type,
             form_id: s.form_id,
             interview_id: s.interview_id,
+            screening_type: s.screening_type,
+            requires_review: s.requires_review,
           });
         }
       }
@@ -174,7 +195,13 @@ export function StepManageDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             キャンセル
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
+          <Button
+            onClick={handleSave}
+            disabled={
+              saving ||
+              editSteps.some((s) => s.step_type === StepType.Screening && !s.screening_type)
+            }
+          >
             {saving ? "保存中..." : "保存"}
           </Button>
         </div>
@@ -232,6 +259,30 @@ export function StepManageDialog({
                   </Badge>
                 )}
               </div>
+              {step.step_type === StepType.Screening && (
+                <Select
+                  value={step.screening_type ?? ""}
+                  onValueChange={(v) => updateStep(index, "screening_type", v || null)}
+                >
+                  <SelectTrigger
+                    className={cn(
+                      "w-full",
+                      !step.screening_type && "text-destructive border-destructive"
+                    )}
+                  >
+                    <SelectValue placeholder="書類の種類を選択（必須）">
+                      {(v: string) => screeningTypeLabels[v] ?? "書類の種類を選択（必須）"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(screeningTypeLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               {FORM_STEP_TYPES.includes(step.step_type as StepType) && (
                 <Select
                   value={step.form_id ?? ""}

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_applicant_app/features/applications/domain/entities/application.dart';
 import 'package:hr1_applicant_app/features/applications/domain/entities/application_status.dart';
@@ -89,6 +91,9 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
           'label': s['label'],
           'form_id': s['form_id'],
           'interview_id': s['interview_id'],
+          'template_id': s['template_id'],
+          'screening_type': s['screening_type'],
+          'requires_review': s['requires_review'] ?? false,
           'status': isFirst
               ? StepStatus.inProgress.value
               : StepStatus.pending.value,
@@ -109,6 +114,38 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
       'applicant_complete_step',
       params: {'p_step_id': stepId, 'p_application_id': applicationId},
     );
+  }
+
+  @override
+  Future<String> uploadScreeningDocument({
+    required String stepId,
+    required String applicationId,
+    required String userId,
+    required String filePath,
+    required String fileName,
+  }) async {
+    final fileExt = fileName.split('.').last.toLowerCase();
+    final storagePath =
+        '$userId/$applicationId/${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+
+    await _client.storage
+        .from('screening-documents')
+        .upload(storagePath, File(filePath));
+
+    // 署名付きURL: 管理者が確認するため長期間有効（1年）
+    const signedUrlExpirySeconds = 365 * 24 * 60 * 60;
+    final url = await _client.storage
+        .from('screening-documents')
+        .createSignedUrl(storagePath, signedUrlExpirySeconds);
+
+    await _client
+        .from('application_steps')
+        .update({'document_url': url})
+        .eq('id', stepId);
+
+    await completeStep(stepId, applicationId);
+
+    return url;
   }
 
   @override

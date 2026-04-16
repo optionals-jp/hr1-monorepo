@@ -161,6 +161,7 @@ export async function createJob(
     employment_type: string | null;
     salary_range: string | null;
     status: string;
+    flow_id: string | null;
   }
 ) {
   return client.from("jobs").insert(data);
@@ -174,6 +175,10 @@ export async function createJobSteps(
     step_type: string;
     step_order: number;
     label: string;
+    template_id: string | null;
+    screening_type: string | null;
+    form_id: string | null;
+    requires_review: boolean;
   }[]
 ) {
   return client.from("job_steps").insert(steps);

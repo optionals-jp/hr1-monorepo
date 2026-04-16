@@ -12,6 +12,7 @@ import 'package:hr1_applicant_app/features/applications/presentation/controllers
 import 'package:hr1_applicant_app/features/applications/presentation/controllers/offer_response_controller.dart';
 import 'package:hr1_applicant_app/features/applications/presentation/providers/applications_providers.dart';
 import 'package:hr1_applicant_app/features/forms/presentation/screens/form_fill_screen.dart';
+import 'package:hr1_applicant_app/features/applications/presentation/widgets/screening_submit_sheet.dart';
 import 'package:hr1_applicant_app/features/interviews/presentation/screens/interview_schedule_screen.dart';
 import 'package:hr1_applicant_app/features/interviews/presentation/providers/interviews_providers.dart';
 import 'package:hr1_applicant_app/features/todos/presentation/providers/todo_providers.dart';
@@ -133,6 +134,12 @@ class _OverviewTab extends ConsumerWidget {
         // 次のアクション（選考中のみ）
         if (isActive && currentStep != null && currentStep.requiresAction) ...[
           _NextActionCard(application: application, step: currentStep),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+
+        // 担当者確認待ち
+        if (isActive && currentStep != null && currentStep.isUnderReview) ...[
+          _UnderReviewCard(step: currentStep),
           const SizedBox(height: AppSpacing.lg),
         ],
 
@@ -399,13 +406,13 @@ class _OfferResponseCard extends ConsumerWidget {
   }
 }
 
-class _NextActionCard extends StatelessWidget {
+class _NextActionCard extends ConsumerWidget {
   const _NextActionCard({required this.application, required this.step});
   final Application application;
   final ApplicationStep step;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
@@ -436,7 +443,8 @@ class _NextActionCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: CommonButton(
-              onPressed: () => _navigateToStep(context, application, step),
+              onPressed: () =>
+                  _handleStepAction(context, ref, application, step),
               child: Text(_actionLabel(step)),
             ),
           ),
@@ -446,6 +454,9 @@ class _NextActionCard extends StatelessWidget {
   }
 
   String _actionLabel(ApplicationStep step) {
+    if (step.stepType == StepType.screening) {
+      return step.formId != null ? 'アンケートに回答する' : '書類を提出する';
+    }
     return switch (step.stepType) {
       StepType.form => 'アンケートに回答する',
       StepType.interview => '面接日程を選択する',
@@ -454,6 +465,12 @@ class _NextActionCard extends StatelessWidget {
   }
 
   String _actionDescription(ApplicationStep step) {
+    final screeningLabel = _screeningTypeLabel(step.screeningType);
+    if (step.stepType == StepType.screening) {
+      return step.formId != null
+          ? '「${step.label}」への回答が必要です。'
+          : '$screeningLabelの提出が必要です。';
+    }
     return switch (step.stepType) {
       StepType.form => '「${step.label}」への回答が必要です。',
       StepType.interview => '面接の日程を選択してください。',
@@ -461,39 +478,54 @@ class _NextActionCard extends StatelessWidget {
     };
   }
 
-  void _navigateToStep(
+  static String _screeningTypeLabel(String? type) {
+    return switch (type) {
+      'resume' => '履歴書',
+      'cv' => '職務経歴書',
+      'portfolio' => 'ポートフォリオ',
+      'entry_sheet' => 'エントリーシート',
+      'other' => '書類',
+      _ => '書類',
+    };
+  }
+
+  Future<void> _handleStepAction(
     BuildContext context,
+    WidgetRef ref,
     Application application,
     ApplicationStep step,
-  ) {
-    if (step.relatedId == null) return;
+  ) async {
+    // screening + form_id → フォーム画面を開く
+    if (step.stepType == StepType.screening && step.formId != null) {
+      await _openFormScreen(context, step.formId!, application.id, step.id);
+      return;
+    }
 
+    // screening + ファイルアップロード
+    if (step.stepType == StepType.screening) {
+      final docLabel = _screeningTypeLabel(step.screeningType);
+      final submitted = await ScreeningSubmitSheet.show(
+        context,
+        stepId: step.id,
+        applicationId: application.id,
+        docLabel: docLabel,
+      );
+      if (submitted != true || !context.mounted) return;
+      ref.invalidate(applicationDetailProvider(application.id));
+      ref.invalidate(applicationsProvider);
+      CommonSnackBar.show(context, '$docLabelを提出しました');
+      return;
+    }
+
+    // form / interview
+    if (step.relatedId == null) return;
     switch (step.stepType) {
       case StepType.form:
-        Navigator.of(context).push(
-          PageRouteBuilder<void>(
-            fullscreenDialog: true,
-            pageBuilder: (_, __, ___) => FormFillScreen(
-              formId: step.relatedId!,
-              applicationId: application.id,
-              stepId: step.id,
-            ),
-            transitionsBuilder: (_, animation, __, child) {
-              return SlideTransition(
-                position:
-                    Tween<Offset>(
-                      begin: const Offset(0, 1),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeOutCubic,
-                      ),
-                    ),
-                child: child,
-              );
-            },
-          ),
+        await _openFormScreen(
+          context,
+          step.relatedId!,
+          application.id,
+          step.id,
         );
       case StepType.interview:
         Navigator.of(context).push(
@@ -524,6 +556,79 @@ class _NextActionCard extends StatelessWidget {
       default:
         break;
     }
+  }
+
+  Future<void> _openFormScreen(
+    BuildContext context,
+    String formId,
+    String applicationId,
+    String stepId,
+  ) {
+    return Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        fullscreenDialog: true,
+        pageBuilder: (_, __, ___) => FormFillScreen(
+          formId: formId,
+          applicationId: applicationId,
+          stepId: stepId,
+        ),
+        transitionsBuilder: (_, animation, __, child) {
+          return SlideTransition(
+            position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+                .animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                ),
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _UnderReviewCard extends StatelessWidget {
+  const _UnderReviewCard({required this.step});
+  final ApplicationStep step;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: AppColors.brand.withValues(alpha: 0.06),
+        borderRadius: AppRadius.radius120,
+        border: Border.all(color: AppColors.brand.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.hourglass_top_rounded,
+                size: 18,
+                color: AppColors.brand,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                '確認中',
+                style: AppTextStyles.callout.copyWith(color: AppColors.brand),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            '提出された内容を確認しています。\n担当者の確認が完了するまでお待ちください。',
+            style: AppTextStyles.body2.copyWith(
+              color: AppColors.textSecondary(context),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -689,6 +794,26 @@ class _StepCard extends StatelessWidget {
                           '対応が必要です',
                           style: AppTextStyles.caption2.copyWith(
                             color: AppColors.warning,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (step.isUnderReview) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.hourglass_top_rounded,
+                          size: 12,
+                          color: AppColors.brand,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '確認中',
+                          style: AppTextStyles.caption2.copyWith(
+                            color: AppColors.brand,
                             fontWeight: FontWeight.w600,
                           ),
                         ),

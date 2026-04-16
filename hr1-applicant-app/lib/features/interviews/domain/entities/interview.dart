@@ -22,7 +22,7 @@ enum InterviewStatus {
 class Interview {
   const Interview({
     required this.id,
-    required this.applicationId,
+    this.applicationId,
     required this.status,
     required this.slots,
     this.confirmedSlotId,
@@ -32,7 +32,7 @@ class Interview {
   });
 
   final String id;
-  final String applicationId;
+  final String? applicationId;
   final InterviewStatus status;
 
   /// 候補日時のリスト
@@ -58,7 +58,7 @@ class Interview {
   factory Interview.fromJson(Map<String, dynamic> json) {
     return Interview(
       id: json['id'] as String,
-      applicationId: json['application_id'] as String,
+      applicationId: json['application_id'] as String?,
       status: InterviewStatus.values.firstWhere(
         (s) => s.name == json['status'],
         orElse: () => InterviewStatus.scheduling,
