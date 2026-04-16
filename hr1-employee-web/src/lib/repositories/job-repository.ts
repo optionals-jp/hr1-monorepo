@@ -73,6 +73,9 @@ export async function insertJobStep(
     label: string;
     form_id: string | null;
     interview_id: string | null;
+    template_id: string | null;
+    screening_type?: string | null;
+    requires_review?: boolean;
   }
 ) {
   return client.from("job_steps").insert(data);
@@ -88,9 +91,14 @@ export async function updateJobStep(
     form_id: string | null;
     interview_id: string | null;
     step_order?: number;
+    screening_type?: string | null;
+    requires_review?: boolean;
   }
 ) {
-  return client.from("job_steps").update(data).eq("id", stepId);
+  return client
+    .from("job_steps")
+    .update({ ...data, template_id: null })
+    .eq("id", stepId);
 }
 
 // job_steps はorganization_idカラムを持たない（親テーブル jobs 経由でテナント分離）

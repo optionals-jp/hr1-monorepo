@@ -5,6 +5,7 @@ import { cn } from "../../lib/utils";
 import { Button } from "./button";
 import { ConfirmDialog } from "./confirm-dialog";
 import { DialogPanel } from "./dialog";
+import type { DialogPanelSize } from "./dialog";
 
 export interface EditPanelTab {
   value: string;
@@ -15,6 +16,8 @@ interface EditPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
+  /** ダイアログ幅のプリセット（タブなし時のデフォルト: "md"） */
+  size?: DialogPanelSize;
   tabs?: EditPanelTab[];
   activeTab?: string;
   onTabChange?: (tab: string) => void;
@@ -38,6 +41,7 @@ export function EditPanel({
   open,
   onOpenChange,
   title,
+  size,
   tabs,
   activeTab,
   onTabChange,
@@ -52,6 +56,7 @@ export function EditPanel({
   confirmDeleteMessage,
 }: EditPanelProps) {
   const showSidebar = tabs && tabs.length > 1;
+  const resolvedSize = size ?? (showSidebar ? "xl" : "md");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const handleDeleteClick = () => {
@@ -68,7 +73,7 @@ export function EditPanel({
         open={open}
         onOpenChange={onOpenChange}
         title={title}
-        size={showSidebar ? "xl" : "md"}
+        size={resolvedSize}
         className={showSidebar ? "sm:h-126" : undefined}
         // サイドバーがある場合は本文側のパディングを無効化して、nav とコンテンツを flex で並べる。
         bodyClassName={showSidebar ? "!p-0 flex overflow-hidden" : undefined}

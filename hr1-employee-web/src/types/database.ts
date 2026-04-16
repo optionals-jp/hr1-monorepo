@@ -48,6 +48,7 @@ export interface Job {
   employment_type: string | null;
   salary_range: string | null;
   status: "open" | "closed" | "draft" | "archived";
+  flow_id: string | null;
   created_at: string;
 }
 
@@ -59,6 +60,9 @@ export interface JobStep {
   label: string;
   form_id: string | null;
   interview_id: string | null;
+  template_id: string | null;
+  screening_type: string | null;
+  requires_review: boolean;
 }
 
 export interface SelectionFlow {
@@ -76,6 +80,9 @@ export interface SelectionStepTemplate {
   flow_id: string | null;
   name: string;
   step_type: "screening" | "form" | "interview" | "external_test" | "offer";
+  screening_type: string | null;
+  form_id: string | null;
+  requires_review: boolean;
   description: string | null;
   sort_order: number;
   created_at: string;
@@ -128,6 +135,10 @@ export interface ApplicationStep {
   status: "pending" | "in_progress" | "completed" | "skipped";
   form_id: string | null;
   interview_id: string | null;
+  template_id: string | null;
+  screening_type: string | null;
+  requires_review: boolean;
+  document_url: string | null;
   started_at: string | null;
   completed_at: string | null;
   applicant_action_at: string | null;

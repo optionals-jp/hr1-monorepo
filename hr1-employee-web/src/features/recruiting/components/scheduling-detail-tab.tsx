@@ -27,14 +27,16 @@ interface SchedulingDetailTabProps {
   interview: Interview;
   slots: Slot[];
   interviewers?: Profile[];
-  onEdit: () => void;
+  onEditInfo: () => void;
+  onEditSlots: () => void;
 }
 
 export function SchedulingDetailTab({
   interview,
   slots,
   interviewers = [],
-  onEdit,
+  onEditInfo,
+  onEditSlots,
 }: SchedulingDetailTabProps) {
   const bookedCount = slots.filter((s) => s.application_id).length;
 
@@ -43,7 +45,7 @@ export function SchedulingDetailTab({
       <SectionCard>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold">面接情報</h2>
-          <Button variant="outline" size="xs" onClick={onEdit}>
+          <Button variant="outline" size="xs" onClick={onEditInfo}>
             編集
           </Button>
         </div>
@@ -85,10 +87,17 @@ export function SchedulingDetailTab({
 
       <div className="lg:col-span-2">
         <SectionCard>
-          <h2 className="text-sm font-semibold mb-3">
-            候補日時
-            <span className="ml-1.5 text-xs font-normal text-muted-foreground">{slots.length}</span>
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold">
+              候補日時
+              <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                {slots.length}
+              </span>
+            </h2>
+            <Button variant="outline" size="xs" onClick={onEditSlots}>
+              編集
+            </Button>
+          </div>
           {slots.length === 0 ? (
             <p className="text-center py-8 text-sm text-muted-foreground">候補日時がありません</p>
           ) : (

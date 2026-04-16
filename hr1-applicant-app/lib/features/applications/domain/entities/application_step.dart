@@ -46,6 +46,8 @@ class ApplicationStep {
     required this.label,
     this.formId,
     this.interviewId,
+    this.screeningType,
+    this.requiresReview = false,
     this.startedAt,
     this.completedAt,
     this.applicantActionAt,
@@ -59,6 +61,8 @@ class ApplicationStep {
   final String label;
   final String? formId;
   final String? interviewId;
+  final String? screeningType;
+  final bool requiresReview;
   final DateTime? startedAt;
   final DateTime? completedAt;
 
@@ -70,15 +74,24 @@ class ApplicationStep {
 
   /// 応募者側のアクションが必要か
   ///
+  /// - screening: フォーム紐付きの場合はフォーム回答、書類種類が設定されていればファイル提出
   /// - form: フォーム送信が必要（送信後 completeStep でステップ完了）
   /// - interview: 面接日程の選択が必要（選択後 applicantActionAt がセットされる）
-  /// - リソース ID が未設定の場合はアクション不可（管理者がリソース未リンク）
   /// - applicantActionAt がセット済みの場合はアクション済み
+  /// 応募者側のアクションが必要か
   bool get requiresAction =>
       status == StepStatus.inProgress &&
-      relatedId != null &&
       applicantActionAt == null &&
-      (stepType == StepType.form || stepType == StepType.interview);
+      ((stepType == StepType.screening &&
+              (formId != null || screeningType != null)) ||
+          ((stepType == StepType.form || stepType == StepType.interview) &&
+              relatedId != null));
+
+  /// 担当者の確認待ち（応募者は提出済み、担当者がまだ完了操作していない）
+  bool get isUnderReview =>
+      status == StepStatus.inProgress &&
+      applicantActionAt != null &&
+      requiresReview;
 
   factory ApplicationStep.fromJson(Map<String, dynamic> json) {
     return ApplicationStep(
@@ -90,6 +103,8 @@ class ApplicationStep {
       label: json['label'] as String,
       formId: json['form_id'] as String?,
       interviewId: json['interview_id'] as String?,
+      screeningType: json['screening_type'] as String?,
+      requiresReview: json['requires_review'] as bool? ?? false,
       startedAt: json['started_at'] != null
           ? DateTime.parse(json['started_at'] as String)
           : null,

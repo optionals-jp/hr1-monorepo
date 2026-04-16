@@ -6,10 +6,8 @@ import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as flowRepo from "@/lib/repositories/selection-flow-repository";
 import * as templateRepo from "@/lib/repositories/selection-step-template-repository";
-import * as applicationRepo from "@/lib/repositories/application-repository";
 import { validators, validateForm, type ValidationErrors } from "@hr1/shared-ui";
-import { StepStatus } from "@/lib/constants";
-import type { Application, SelectionFlow, SelectionStepTemplate } from "@/types/database";
+import type { SelectionFlow, SelectionStepTemplate } from "@/types/database";
 
 // ---------- data hooks ----------
 
@@ -25,21 +23,10 @@ function useTemplatesList() {
   );
 }
 
-function useApplicationsList() {
-  return useOrgQuery<Application[]>("applications", (orgId) =>
-    applicationRepo.fetchApplications(getSupabase(), orgId)
-  );
-}
-
 // ---------- types ----------
 
-export interface TemplateWithCounts extends SelectionStepTemplate {
-  inProgressCount: number;
-  completedCount: number;
-}
-
 export interface FlowWithSteps extends SelectionFlow {
-  steps: TemplateWithCounts[];
+  steps: SelectionStepTemplate[];
 }
 
 interface FlowFormState {
@@ -59,6 +46,9 @@ interface StepFormState {
   flow_id: string | null;
   name: string;
   step_type: string;
+  screening_type: string | null;
+  form_id: string | null;
+  requires_review: boolean;
   description: string;
   sort_order: string;
 }
@@ -68,6 +58,9 @@ const EMPTY_STEP_FORM: StepFormState = {
   flow_id: null,
   name: "",
   step_type: "screening",
+  screening_type: "resume",
+  form_id: null,
+  requires_review: true,
   description: "",
   sort_order: "0",
 };
@@ -88,7 +81,6 @@ export function useSelectionStepsPage() {
     error: templatesError,
     mutate: mutateTemplates,
   } = useTemplatesList();
-  const { data: applications = [], isLoading: applicationsLoading } = useApplicationsList();
 
   // --- flow form ---
   const [flowDialogOpen, setFlowDialogOpen] = useState(false);
@@ -104,55 +96,16 @@ export function useSelectionStepsPage() {
   const [stepSaving, setStepSaving] = useState(false);
   const [stepDeletingId, setStepDeletingId] = useState<string | null>(null);
 
-  // --- expanded flows ---
-  const [expandedFlowIds, setExpandedFlowIds] = useState<Set<string>>(new Set());
-
-  const toggleFlowExpand = useCallback((flowId: string) => {
-    setExpandedFlowIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(flowId)) next.delete(flowId);
-      else next.add(flowId);
-      return next;
-    });
-  }, []);
-
   // ---------- computed data ----------
-
-  const templatesWithCounts = useMemo<TemplateWithCounts[]>(() => {
-    const inProgress = new Map<string, number>();
-    const completed = new Map<string, number>();
-
-    for (const app of applications) {
-      if (app.status === "rejected" || app.status === "withdrawn") continue;
-      for (const step of app.application_steps ?? []) {
-        if (step.status === StepStatus.InProgress) {
-          inProgress.set(step.label, (inProgress.get(step.label) ?? 0) + 1);
-        } else if (step.status === StepStatus.Completed) {
-          completed.set(step.label, (completed.get(step.label) ?? 0) + 1);
-        }
-      }
-    }
-
-    return templates.map((t) => ({
-      ...t,
-      inProgressCount: inProgress.get(t.name) ?? 0,
-      completedCount: completed.get(t.name) ?? 0,
-    }));
-  }, [templates, applications]);
 
   const flowsWithSteps = useMemo<FlowWithSteps[]>(() => {
     return flows.map((flow) => ({
       ...flow,
-      steps: templatesWithCounts
+      steps: templates
         .filter((t) => t.flow_id === flow.id)
         .sort((a, b) => a.sort_order - b.sort_order),
     }));
-  }, [flows, templatesWithCounts]);
-
-  const unassignedSteps = useMemo(
-    () => templatesWithCounts.filter((t) => !t.flow_id),
-    [templatesWithCounts]
-  );
+  }, [flows, templates]);
 
   // ---------- flow CRUD ----------
 
@@ -251,6 +204,9 @@ export function useSelectionStepsPage() {
       flow_id: template.flow_id,
       name: template.name,
       step_type: template.step_type,
+      screening_type: template.screening_type,
+      form_id: template.form_id,
+      requires_review: template.requires_review,
       description: template.description ?? "",
       sort_order: String(template.sort_order),
     });
@@ -282,10 +238,17 @@ export function useSelectionStepsPage() {
 
     setStepSaving(true);
     try {
+      const isScreening = stepForm.step_type === "screening";
+      const formId = isScreening ? stepForm.form_id : null;
+      const screeningType = isScreening && !formId ? stepForm.screening_type : null;
+
       if (stepForm.id) {
         await templateRepo.updateTemplate(getSupabase(), stepForm.id, organization.id, {
           name: stepForm.name.trim(),
           step_type: stepForm.step_type,
+          screening_type: screeningType,
+          form_id: formId,
+          requires_review: stepForm.requires_review,
           description: stepForm.description.trim() || null,
           sort_order: sortOrder,
           flow_id: stepForm.flow_id,
@@ -296,6 +259,9 @@ export function useSelectionStepsPage() {
           flow_id: stepForm.flow_id,
           name: stepForm.name.trim(),
           step_type: stepForm.step_type,
+          screening_type: screeningType,
+          form_id: formId,
+          requires_review: stepForm.requires_review,
           description: stepForm.description.trim() || null,
           sort_order: sortOrder,
         });
@@ -347,16 +313,13 @@ export function useSelectionStepsPage() {
 
   return {
     organization,
-    isLoading: flowsLoading || templatesLoading || applicationsLoading,
+    isLoading: flowsLoading || templatesLoading,
     error: flowsError || templatesError,
     mutateFlows,
     mutateTemplates,
 
     // flows
     flowsWithSteps,
-    unassignedSteps,
-    expandedFlowIds,
-    toggleFlowExpand,
 
     // flow form
     flowDialogOpen,

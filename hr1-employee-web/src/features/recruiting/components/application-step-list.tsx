@@ -100,13 +100,24 @@ export function ApplicationStepList({
               </div>
 
               <div className="flex gap-2 shrink-0">
-                {step.step_type === StepType.Form &&
-                  isCompleted &&
-                  step.form_id &&
+                {step.form_id &&
+                  (isCompleted || (isInProgress && step.applicant_action_at)) &&
                   onViewFormResponses && (
                     <Button size="xs" variant="outline" onClick={() => onViewFormResponses(step)}>
                       回答を確認
                     </Button>
+                  )}
+                {step.document_url &&
+                  (isCompleted || (isInProgress && step.applicant_action_at)) && (
+                    <a
+                      href={step.document_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center rounded-md border border-input bg-background px-2 py-1 text-xs font-medium hover:bg-accent"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      書類を確認
+                    </a>
                   )}
                 {isSkipped && (
                   <Button

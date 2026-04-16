@@ -19,6 +19,7 @@ import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-
 import { TimelineTab } from "@/features/recruiting/components/timeline-tab";
 import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
 import { FileText, User, ScrollText, ClipboardCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import {
   applicationStatusLabels as statusLabels,
@@ -33,6 +34,7 @@ const tabs = [
 ];
 
 export default function ApplicantDetailPage() {
+  const router = useRouter();
   const {
     profile,
     applications,
@@ -127,7 +129,11 @@ export default function ApplicantDetailPage() {
                       </TableRow>
                     ) : (
                       applications.map((app) => (
-                        <TableRow key={app.id}>
+                        <TableRow
+                          key={app.id}
+                          className="cursor-pointer"
+                          onClick={() => router.push(`/applications/${app.id}`)}
+                        >
                           <TableCell className="font-medium">{app.jobs?.title ?? "-"}</TableCell>
                           <TableCell>
                             <Badge variant={statusColors[app.status]}>

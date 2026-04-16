@@ -48,7 +48,9 @@ class SupabaseFormsRepository implements FormsRepository {
       };
     }).toList();
     if (rows.isNotEmpty) {
-      await _client.from('form_responses').insert(rows);
+      await _client
+          .from('form_responses')
+          .upsert(rows, onConflict: 'form_id,applicant_id,field_id');
     }
   }
 

@@ -6,7 +6,12 @@ import type { Job, JobStep, Interview, Application } from "@/types/database";
 import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
 import { Users, CheckCircle2, Clock, XCircle, Pencil } from "lucide-react";
 import { format } from "date-fns";
-import { StepType, stepTypeLabels, jobStatusLabels as statusLabels } from "@/lib/constants";
+import {
+  StepType,
+  stepTypeLabels,
+  screeningTypeLabels,
+  jobStatusLabels as statusLabels,
+} from "@/lib/constants";
 
 interface JobDetailTabProps {
   job: Job;
@@ -150,6 +155,14 @@ export function JobDetailTab({
                       <p className="text-sm font-medium">{step.label}</p>
                       <p className="text-xs text-muted-foreground">
                         {stepTypeLabels[step.step_type] ?? step.step_type}
+                        {step.screening_type && (
+                          <>
+                            {" — "}
+                            <span>
+                              {screeningTypeLabels[step.screening_type] ?? step.screening_type}
+                            </span>
+                          </>
+                        )}
                         {step.form_id && forms.find((f) => f.id === step.form_id) && (
                           <>
                             {" — "}

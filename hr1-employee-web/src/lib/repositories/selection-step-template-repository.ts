@@ -22,6 +22,9 @@ export async function createTemplate(
     flow_id: string | null;
     name: string;
     step_type: string;
+    screening_type: string | null;
+    form_id: string | null;
+    requires_review: boolean;
     description: string | null;
     sort_order: number;
   }
@@ -42,6 +45,9 @@ export async function updateTemplate(
   patch: {
     name?: string;
     step_type?: string;
+    screening_type?: string | null;
+    form_id?: string | null;
+    requires_review?: boolean;
     description?: string | null;
     sort_order?: number;
     flow_id?: string | null;

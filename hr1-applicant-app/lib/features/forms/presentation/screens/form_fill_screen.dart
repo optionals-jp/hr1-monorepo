@@ -314,7 +314,7 @@ class _FileUploadField extends HookConsumerWidget {
     }, []);
 
     Future<void> pickAndUpload() async {
-      final result = await FilePicker.platform.pickFiles();
+      final result = await FilePicker.pickFiles();
       if (result == null || result.files.isEmpty) return;
 
       final platformFile = result.files.first;

@@ -99,6 +99,7 @@ export default function SchedulingPage() {
 
       <EditPanel
         open={dialogOpen}
+        size="xl"
         onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) {

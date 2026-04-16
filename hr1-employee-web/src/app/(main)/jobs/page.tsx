@@ -26,8 +26,10 @@ import {
   jobStatusColors as statusColors,
   stepTypeLabels,
   selectableStepTypes,
+  screeningTypeLabels,
+  StepType,
 } from "@/lib/constants";
-import { Trash2, GripVertical, Briefcase, XCircle, Sparkles, Plus } from "lucide-react";
+import { Trash2, GripVertical, Briefcase, XCircle, Plus } from "lucide-react";
 import { EditPanel, type EditPanelTab } from "@hr1/shared-ui/components/ui/edit-panel";
 import { FormInput, FormTextarea, FormField } from "@hr1/shared-ui/components/ui/form-field";
 import {
@@ -38,6 +40,9 @@ import {
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
 import { Input } from "@hr1/shared-ui/components/ui/input";
+import { ActionBar } from "@hr1/shared-ui/components/ui/action-bar";
+import { SegmentControl } from "@hr1/shared-ui/components/ui/segment-control";
+import { Switch } from "@hr1/shared-ui/components/ui/switch";
 import {
   DndContext,
   PointerSensor,
@@ -253,49 +258,93 @@ export default function JobsPage() {
 
         {newJob.dialogTab === "steps" && (
           <div className="space-y-4">
-            {/* フローから一括追加 */}
-            <div className="rounded-xl border border-dashed bg-muted/30 p-3 space-y-2">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Sparkles className="h-3 w-3" />
-                選考フローから一括追加
-              </div>
-              {newJob.flowsWithTemplates.length === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  選考フローがありません。サイドバー「選考ステップ」から先に作成できます。
-                </p>
-              ) : (
-                <Select
-                  value=""
-                  onValueChange={(v) => {
-                    if (v) newJob.addStepsFromFlow(v);
-                  }}
-                >
-                  <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder="フローを選択して一括追加" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {newJob.flowsWithTemplates.map((flow) => (
-                      <SelectItem key={flow.id} value={flow.id}>
-                        {flow.name}（{flow.templates.length}ステップ）
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            {/* ステップ一覧 */}
-            <SortableStepList
-              steps={newJob.steps}
-              onReorder={newJob.reorderSteps}
-              onUpdate={newJob.updateStep}
-              onRemove={newJob.removeStep}
+            {!newJob.title.trim() && (
+              <ActionBar variant="error" title="基本情報タブでタイトルを入力してください" />
+            )}
+            {/* フローモード選択 */}
+            <SegmentControl
+              value={newJob.flowMode}
+              onChange={newJob.setFlowMode}
+              options={[
+                { value: "select", label: "既存フローから選択" },
+                { value: "create", label: "フローを新規作成" },
+              ]}
             />
 
-            <Button variant="outline" size="sm" onClick={newJob.addStep}>
-              <Plus className="mr-1 h-3.5 w-3.5" />
-              手動で追加
-            </Button>
+            {newJob.flowMode === "select" ? (
+              <>
+                {newJob.flowsWithTemplates.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    選考フローがありません。「フローを新規作成」から作成してください。
+                  </p>
+                ) : (
+                  <div className="space-y-1.5">
+                    <p className="text-sm font-medium">選考フロー</p>
+                    <p className="text-xs text-muted-foreground">
+                      求人に使用する選考フローを選択してください
+                    </p>
+                    <Select
+                      value={newJob.selectedFlowId ?? ""}
+                      onValueChange={(v) => {
+                        if (v) newJob.addStepsFromFlow(v);
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="フローを選択">
+                          {(v: string) =>
+                            newJob.flowsWithTemplates.find((f) => f.id === v)?.name ?? v
+                          }
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {newJob.flowsWithTemplates.map((flow) => (
+                          <SelectItem key={flow.id} value={flow.id}>
+                            {flow.name}（{flow.templates.length}ステップ）
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {newJob.selectedFlowId && newJob.steps.length > 0 && (
+                  <div className="space-y-1.5">
+                    {newJob.steps.map((step, index) => (
+                      <div
+                        key={step.tempId}
+                        className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2"
+                      >
+                        <span className="text-xs font-medium text-muted-foreground w-5">
+                          {index + 1}
+                        </span>
+                        <span className="text-sm">{step.label}</span>
+                        <Badge variant="outline" className="text-[10px] ml-auto">
+                          {stepTypeLabels[step.step_type] ?? step.step_type}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <FormInput
+                  label="フロー名"
+                  value={newJob.newFlowName}
+                  onChange={(e) => newJob.setNewFlowName(e.target.value)}
+                  placeholder="例: FY27 新卒採用フロー（任意）"
+                />
+                <SortableStepList
+                  steps={newJob.steps}
+                  onReorder={newJob.reorderSteps}
+                  onUpdate={newJob.updateStep}
+                  onRemove={newJob.removeStep}
+                />
+                <Button variant="outline" size="sm" onClick={newJob.addStep}>
+                  <Plus className="mr-1 h-3.5 w-3.5" />
+                  ステップを追加
+                </Button>
+              </>
+            )}
           </div>
         )}
       </EditPanel>
@@ -313,7 +362,11 @@ function SortableStepList({
 }: {
   steps: StepDraft[];
   onReorder: (oldIndex: number, newIndex: number) => void;
-  onUpdate: (tempId: string, field: "step_type" | "label", value: string) => void;
+  onUpdate: (
+    tempId: string,
+    field: "step_type" | "label" | "screeningType" | "requiresReview",
+    value: string | boolean | null
+  ) => void;
   onRemove: (tempId: string) => void;
 }) {
   const sensors = useSensors(
@@ -364,7 +417,11 @@ function SortableStepRow({
 }: {
   step: StepDraft;
   index: number;
-  onUpdate: (tempId: string, field: "step_type" | "label", value: string) => void;
+  onUpdate: (
+    tempId: string,
+    field: "step_type" | "label" | "screeningType" | "requiresReview",
+    value: string | boolean | null
+  ) => void;
   onRemove: (tempId: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -380,41 +437,73 @@ function SortableStepRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 rounded-xl border bg-background p-2"
+      className="flex flex-col gap-2 rounded-xl border bg-background p-2"
     >
-      <button type="button" className="cursor-grab touch-none" {...attributes} {...listeners}>
-        <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
-      </button>
-      <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}</span>
-      <Select
-        value={step.step_type}
-        onValueChange={(v) => v && onUpdate(step.tempId, "step_type", v)}
-      >
-        <SelectTrigger className="w-36">
-          <SelectValue>{(v: string) => stepTypeLabels[v] ?? v}</SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {Object.entries(selectableStepTypes).map(([key, label]) => (
-            <SelectItem key={key} value={key}>
-              {label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Input
-        value={step.label}
-        onChange={(e) => onUpdate(step.tempId, "label", e.target.value)}
-        placeholder="ステップ名"
-        className="flex-1"
-      />
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        onClick={() => onRemove(step.tempId)}
-        className="text-destructive hover:text-destructive"
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
+      <div className="flex items-center gap-2">
+        <button type="button" className="cursor-grab touch-none" {...attributes} {...listeners}>
+          <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+        </button>
+        <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}</span>
+        <Select
+          value={step.step_type}
+          onValueChange={(v) => v && onUpdate(step.tempId, "step_type", v)}
+        >
+          <SelectTrigger className="w-36">
+            <SelectValue>{(v: string) => stepTypeLabels[v] ?? v}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(selectableStepTypes).map(([key, label]) => (
+              <SelectItem key={key} value={key}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          value={step.label}
+          onChange={(e) => onUpdate(step.tempId, "label", e.target.value)}
+          placeholder="ステップ名"
+          className="flex-1"
+        />
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          onClick={() => onRemove(step.tempId)}
+          className="text-destructive hover:text-destructive"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+      {step.step_type === StepType.Screening && (
+        <div className="pl-12">
+          <Select
+            value={step.screeningType ?? ""}
+            onValueChange={(v) => onUpdate(step.tempId, "screeningType", v || null)}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="書類種別を選択">
+                {(v: string) => screeningTypeLabels[v] ?? v}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(screeningTypeLabels).map(([key, label]) => (
+                <SelectItem key={key} value={key}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      {step.step_type !== StepType.Offer && (
+        <div className="flex items-center gap-2 pl-12">
+          <Switch
+            checked={step.requiresReview}
+            onCheckedChange={(v) => onUpdate(step.tempId, "requiresReview", v)}
+          />
+          <span className="text-xs text-muted-foreground">担当者確認</span>
+        </div>
+      )}
     </div>
   );
 }

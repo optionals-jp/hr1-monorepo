@@ -10,6 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
+import { ActionBar } from "@hr1/shared-ui/components/ui/action-bar";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { applicationStatusLabels as statusLabels } from "@/lib/constants";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
@@ -26,7 +28,8 @@ import { RejectionReasonCard } from "@/features/recruiting/components/rejection-
 import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { applicationStatusColors as statusColors } from "@/lib/constants";
-import { LayoutDashboard, ListChecks, ClipboardCheck } from "lucide-react";
+import { LayoutDashboard, ListChecks, ClipboardCheck, AlertCircle } from "lucide-react";
+import { StepStatus, stepTypeLabels } from "@/lib/constants";
 import type { ApplicationStep } from "@/types/database";
 
 export default function ApplicationDetailPage() {
@@ -113,6 +116,13 @@ export default function ApplicationDetailPage() {
             </Select>
           )
         }
+      />
+
+      <ManagerActionBar
+        steps={detail.steps}
+        applicationStatus={detail.application.status}
+        onAdvance={detail.advanceStep}
+        onViewFormResponses={detail.openFormResponses}
       />
 
       <StickyFilterBar>
@@ -221,4 +231,105 @@ export default function ApplicationDetailPage() {
       />
     </>
   );
+}
+
+function ManagerActionBar({
+  steps,
+  applicationStatus,
+  onAdvance,
+  onViewFormResponses,
+}: {
+  steps: ApplicationStep[];
+  applicationStatus: string;
+  onAdvance: (step: ApplicationStep) => void;
+  onViewFormResponses: (step: ApplicationStep) => void;
+}) {
+  if (applicationStatus === "rejected" || applicationStatus === "withdrawn") return null;
+  if (applicationStatus === "offer_accepted" || applicationStatus === "offer_declined") return null;
+
+  const inProgressStep = steps.find((s) => s.status === StepStatus.InProgress);
+  const sortedPending = steps
+    .filter((s) => s.status === StepStatus.Pending)
+    .sort((a, b) => a.step_order - b.step_order);
+  const allCompleted =
+    steps.length > 0 &&
+    steps.every((s) => s.status === StepStatus.Completed || s.status === StepStatus.Skipped);
+
+  if (allCompleted) return null;
+
+  // ケース1: in_progress のステップがあり、応募者のアクション待ち
+  if (inProgressStep) {
+    const isWaitingForApplicant =
+      inProgressStep.applicant_action_at === null &&
+      (inProgressStep.form_id != null ||
+        inProgressStep.interview_id != null ||
+        (inProgressStep.step_type === "screening" && inProgressStep.screening_type != null));
+
+    if (isWaitingForApplicant) {
+      return (
+        <ActionBar
+          variant="info"
+          icon={<AlertCircle className="h-5 w-5" />}
+          title="応募者の対応を待っています"
+          description={`「${inProgressStep.label}」（${stepTypeLabels[inProgressStep.step_type] ?? inProgressStep.step_type}）で応募者のアクションが必要です`}
+          className="mx-4 sm:mx-6 md:mx-8 mb-2"
+        />
+      );
+    }
+
+    // ケース2: レビュー待ち（応募者提出済み + requires_review）
+    const isReviewPending =
+      inProgressStep.applicant_action_at !== null && inProgressStep.requires_review;
+
+    return (
+      <ActionBar
+        icon={<AlertCircle className="h-5 w-5" />}
+        title={
+          isReviewPending
+            ? "応募者が提出済みです。内容を確認してください"
+            : "採用担当者のアクションが必要です"
+        }
+        description={`「${inProgressStep.label}」（${stepTypeLabels[inProgressStep.step_type] ?? inProgressStep.step_type}）${isReviewPending ? "の提出内容を確認して完了にしてください" : "を確認して次に進めてください"}`}
+        className="mx-4 sm:mx-6 md:mx-8 mb-2"
+      >
+        {isReviewPending && inProgressStep.form_id && (
+          <Button variant="outline" size="sm" onClick={() => onViewFormResponses(inProgressStep)}>
+            回答を確認
+          </Button>
+        )}
+        {isReviewPending && inProgressStep.document_url && (
+          <a
+            href={inProgressStep.document_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent"
+          >
+            書類を確認
+          </a>
+        )}
+        <Button variant="default" size="sm" onClick={() => onAdvance(inProgressStep)}>
+          完了にする
+        </Button>
+      </ActionBar>
+    );
+  }
+
+  // ケース3: in_progress がなく次の pending がある → 担当者が次のステップを開始
+  const nextPending = sortedPending[0];
+  if (nextPending) {
+    return (
+      <ActionBar
+        icon={<AlertCircle className="h-5 w-5" />}
+        title="採用担当者のアクションが必要です"
+        description={`「${nextPending.label}」（${stepTypeLabels[nextPending.step_type] ?? nextPending.step_type}）を開始してください`}
+        className="mx-4 sm:mx-6 md:mx-8 mb-2"
+      >
+        <Button variant="default" size="sm" onClick={() => onAdvance(nextPending)}>
+          開始する
+        </Button>
+      </ActionBar>
+    );
+  }
+
+  return null;
 }

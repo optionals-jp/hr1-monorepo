@@ -34,11 +34,27 @@ import {
 import { FormField, FormInput, FormTextarea } from "@hr1/shared-ui/components/ui/form-field";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
+import { Switch } from "@hr1/shared-ui/components/ui/switch";
+import { ActionBar } from "@hr1/shared-ui/components/ui/action-bar";
 import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
-import { MoreVertical, Pencil, Trash2, FileText, ListOrdered, Briefcase } from "lucide-react";
-import { stepTypeLabels, StepType, jobStatusLabels, jobStatusColors } from "@/lib/constants";
+import {
+  MoreVertical,
+  Pencil,
+  Trash2,
+  FileText,
+  ListOrdered,
+  Briefcase,
+  AlertCircle,
+} from "lucide-react";
+import {
+  stepTypeLabels,
+  StepType,
+  jobStatusLabels,
+  jobStatusColors,
+  screeningTypeLabels,
+} from "@/lib/constants";
 import {
   useSelectionFlowDetail,
   type TemplateWithCounts,
@@ -120,6 +136,18 @@ export default function SelectionFlowDetailPage({ params }: { params: Promise<{ 
         }
       />
 
+      {h.steps.length === 0 && (
+        <ActionBar
+          icon={<AlertCircle className="h-5 w-5" />}
+          title="選考ステップがありません。ステップを追加してください。"
+          className="mx-4 sm:mx-6 md:mx-8 mb-2"
+        >
+          <Button variant="default" size="sm" onClick={h.openAddStepDialog}>
+            ステップを追加
+          </Button>
+        </ActionBar>
+      )}
+
       <StickyFilterBar>
         <TabBar tabs={tabs} activeTab={h.activeTab} onTabChange={h.setActiveTab} />
       </StickyFilterBar>
@@ -182,6 +210,90 @@ export default function SelectionFlowDetailPage({ params }: { params: Promise<{ 
               </SelectContent>
             </Select>
           </FormField>
+          {h.stepForm.step_type === StepType.Screening && (
+            <>
+              <FormField label="選考方法" required>
+                <Select
+                  value={h.stepForm.screening_type ? "file" : "form"}
+                  onValueChange={(v) => {
+                    if (v === "form") {
+                      h.setStepFormField("screening_type", null);
+                    } else {
+                      h.setStepFormField("form_id", null);
+                      if (!h.stepForm.screening_type) {
+                        h.setStepFormField("screening_type", "resume");
+                      }
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue>
+                      {(v: string) => (v === "form" ? "フォームから選考" : "ファイルアップロード")}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="form">フォームから選考</SelectItem>
+                    <SelectItem value="file">ファイルアップロード</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormField>
+              {!h.stepForm.screening_type ? (
+                <FormField label="フォーム" required>
+                  <Select
+                    value={h.stepForm.form_id ?? ""}
+                    onValueChange={(v) => h.setStepFormField("form_id", v || null)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="フォームを選択">
+                        {(v: string) => h.forms.find((f) => f.id === v)?.title ?? v}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {h.forms.map((form) => (
+                        <SelectItem key={form.id} value={form.id}>
+                          {form.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              ) : (
+                <FormField label="書類種別" required>
+                  <Select
+                    value={h.stepForm.screening_type ?? ""}
+                    onValueChange={(v) => h.setStepFormField("screening_type", v || null)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="選択してください">
+                        {(v: string) => screeningTypeLabels[v] ?? v}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(screeningTypeLabels).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              )}
+            </>
+          )}
+          {h.stepForm.step_type !== StepType.Offer && (
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium">担当者の確認が必要</p>
+                <p className="text-xs text-muted-foreground">
+                  ONの場合、応募者が提出後に担当者が確認して完了にします
+                </p>
+              </div>
+              <Switch
+                checked={h.stepForm.requires_review}
+                onCheckedChange={(v) => h.setStepFormField("requires_review", v)}
+              />
+            </div>
+          )}
           <FormTextarea
             label="説明"
             value={h.stepForm.description}
