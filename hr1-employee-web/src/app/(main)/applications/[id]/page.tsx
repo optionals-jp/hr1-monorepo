@@ -25,11 +25,12 @@ import { OfferConditionsDialog } from "@/features/recruiting/components/offer-co
 import { OfferConditionsCard } from "@/features/recruiting/components/offer-conditions-card";
 import { RejectionReasonDialog } from "@/features/recruiting/components/rejection-reason-dialog";
 import { RejectionReasonCard } from "@/features/recruiting/components/rejection-reason-card";
+import { InterviewStartDialog } from "@/features/recruiting/components/interview-start-dialog";
 import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { applicationStatusColors as statusColors } from "@/lib/constants";
 import { LayoutDashboard, ListChecks, ClipboardCheck, AlertCircle } from "lucide-react";
-import { StepStatus, stepTypeLabels } from "@/lib/constants";
+import { StepStatus, StepType, stepTypeLabels } from "@/lib/constants";
 import type { ApplicationStep } from "@/types/database";
 
 export default function ApplicationDetailPage() {
@@ -123,6 +124,8 @@ export default function ApplicationDetailPage() {
         applicationStatus={detail.application.status}
         onAdvance={detail.advanceStep}
         onViewFormResponses={detail.openFormResponses}
+        onOffer={() => detail.updateApplicationStatus("offered")}
+        onReject={() => detail.updateApplicationStatus("rejected")}
       />
 
       <StickyFilterBar>
@@ -162,6 +165,8 @@ export default function ApplicationDetailPage() {
               skipStep={handleSkipStep}
               unskipStep={handleUnskipStep}
               onViewFormResponses={detail.openFormResponses}
+              onOffer={() => detail.updateApplicationStatus("offered")}
+              onReject={() => detail.updateApplicationStatus("rejected")}
               source={detail.application.source}
               onSourceChange={detail.updateApplicationSource}
             />
@@ -193,6 +198,8 @@ export default function ApplicationDetailPage() {
                   skipStep={handleSkipStep}
                   unskipStep={handleUnskipStep}
                   onViewFormResponses={detail.openFormResponses}
+                  onOffer={() => detail.updateApplicationStatus("offered")}
+                  onReject={() => detail.updateApplicationStatus("rejected")}
                 />
               </div>
             </div>
@@ -206,6 +213,18 @@ export default function ApplicationDetailPage() {
         step={detail.formSheetStep}
         fields={detail.formSheetFields}
         loading={detail.formSheetLoading}
+      />
+
+      <InterviewStartDialog
+        open={detail.interviewDialogOpen}
+        onOpenChange={detail.setInterviewDialogOpen}
+        step={detail.interviewDialogStep}
+        onStart={detail.startInterviewStep}
+        onGoToEvaluation={() => {
+          detail.setInterviewDialogOpen(false);
+          detail.setActiveTab("evaluation");
+        }}
+        saving={detail.interviewStarting}
       />
 
       <ResourceSelectDialog
@@ -238,11 +257,15 @@ function ManagerActionBar({
   applicationStatus,
   onAdvance,
   onViewFormResponses,
+  onOffer,
+  onReject,
 }: {
   steps: ApplicationStep[];
   applicationStatus: string;
   onAdvance: (step: ApplicationStep) => void;
   onViewFormResponses: (step: ApplicationStep) => void;
+  onOffer: () => void;
+  onReject: () => void;
 }) {
   if (applicationStatus === "rejected" || applicationStatus === "withdrawn") return null;
   if (applicationStatus === "offer_accepted" || applicationStatus === "offer_declined") return null;
@@ -277,7 +300,26 @@ function ManagerActionBar({
       );
     }
 
-    // ケース2: レビュー待ち（応募者提出済み + requires_review）
+    // ケース2: 内定ステップ → 内定 / 不合格 ボタン
+    if (inProgressStep.step_type === StepType.Offer) {
+      return (
+        <ActionBar
+          icon={<AlertCircle className="h-5 w-5" />}
+          title="採用判断が必要です"
+          description={`「${inProgressStep.label}」— 内定または不合格を決定してください`}
+          className="mx-4 sm:mx-6 md:mx-8 mb-2"
+        >
+          <Button variant="destructive" size="sm" onClick={onReject}>
+            不合格
+          </Button>
+          <Button variant="default" size="sm" onClick={onOffer}>
+            内定
+          </Button>
+        </ActionBar>
+      );
+    }
+
+    // ケース3: レビュー待ち（応募者提出済み + requires_review）
     const isReviewPending =
       inProgressStep.applicant_action_at !== null && inProgressStep.requires_review;
 

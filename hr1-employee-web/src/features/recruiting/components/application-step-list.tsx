@@ -16,6 +16,8 @@ interface ApplicationStepListProps {
   skipStep: (step: ApplicationStep) => void;
   unskipStep: (step: ApplicationStep) => void;
   onViewFormResponses?: (step: ApplicationStep) => void;
+  onOffer?: () => void;
+  onReject?: () => void;
 }
 
 export function ApplicationStepList({
@@ -25,6 +27,8 @@ export function ApplicationStepList({
   skipStep,
   unskipStep,
   onViewFormResponses,
+  onOffer,
+  onReject,
 }: ApplicationStepListProps) {
   if (steps.length === 0) {
     return (
@@ -129,25 +133,36 @@ export function ApplicationStepList({
                     元に戻す
                   </Button>
                 )}
-                {canActOnStep(step) && !isSkipped && (
-                  <>
-                    <Button
-                      size="xs"
-                      variant={isInProgress ? "default" : "outline"}
-                      onClick={() => advanceStep(step)}
-                    >
-                      {step.status === StepStatus.Pending ? "開始" : "完了"}
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      onClick={() => skipStep(step)}
-                      className="text-muted-foreground"
-                    >
-                      スキップ
-                    </Button>
-                  </>
-                )}
+                {canActOnStep(step) &&
+                  !isSkipped &&
+                  (step.step_type === StepType.Offer && isInProgress ? (
+                    <>
+                      <Button size="xs" variant="default" onClick={onOffer}>
+                        内定
+                      </Button>
+                      <Button size="xs" variant="destructive" onClick={onReject}>
+                        不合格
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        size="xs"
+                        variant={isInProgress ? "default" : "outline"}
+                        onClick={() => advanceStep(step)}
+                      >
+                        {step.status === StepStatus.Pending ? "開始" : "完了"}
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        onClick={() => skipStep(step)}
+                        className="text-muted-foreground"
+                      >
+                        スキップ
+                      </Button>
+                    </>
+                  ))}
               </div>
             </div>
 
