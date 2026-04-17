@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { Button } from "@hr1/shared-ui/components/ui/button";
+import { IconButton } from "@hr1/shared-ui/components/ui/icon-button";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
@@ -25,28 +26,43 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@hr1/shared-ui/components/ui/dropdown-menu";
 import { FormField, FormInput, FormTextarea } from "@hr1/shared-ui/components/ui/form-field";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
+import { MetaChip, MetaChipGroup } from "@hr1/shared-ui/components/ui/meta-chip";
 import { Switch } from "@hr1/shared-ui/components/ui/switch";
 import { ActionBar } from "@hr1/shared-ui/components/ui/action-bar";
 import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import {
-  MoreVertical,
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   Pencil,
+  Plus,
   Trash2,
   FileText,
   ListOrdered,
   Briefcase,
   AlertCircle,
+  GripVertical,
+  FileSearch,
+  ClipboardList,
+  Users,
+  Activity,
+  Award,
+  UserCheck,
+  UserX,
+  type LucideIcon,
 } from "lucide-react";
 import {
   stepTypeLabels,
@@ -73,7 +89,6 @@ const tabs = [
 export default function SelectionFlowDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { showToast } = useToast();
-  const router = useRouter();
   const h = useSelectionFlowDetail(id);
   const [deleteStepTarget, setDeleteStepTarget] = useState<SelectionStepTemplate | null>(null);
 
@@ -127,13 +142,6 @@ export default function SelectionFlowDetailPage({ params }: { params: Promise<{ 
         sticky={false}
         border={false}
         breadcrumb={BREADCRUMB}
-        action={
-          h.activeTab === "steps" ? (
-            <Button variant="primary" onClick={h.openAddStepDialog}>
-              ステップを追加
-            </Button>
-          ) : undefined
-        }
       />
 
       {h.steps.length === 0 && (
@@ -160,7 +168,9 @@ export default function SelectionFlowDetailPage({ params }: { params: Promise<{ 
         <StepsTab
           steps={h.steps}
           onEdit={h.openEditStepDialog}
+          onAdd={h.openAddStepDialog}
           onDelete={setDeleteStepTarget}
+          onReorder={h.handleReorder}
           deletingId={h.stepDeletingId}
         />
       )}
@@ -401,36 +411,54 @@ function OverviewTab({
       </SectionCard>
 
       {/* 関連求人 */}
-      <SectionCard>
+      <div>
         <h3 className="text-sm font-semibold mb-3">関連する求人</h3>
-        {relatedJobs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">関連する求人はありません</p>
-        ) : (
-          <div className="divide-y divide-foreground/5">
-            {relatedJobs.map((job) => (
-              <Link
-                key={job.id}
-                href={`/jobs/${job.id}`}
-                className="flex items-center gap-3 py-3 hover:opacity-70 transition-opacity"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{job.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {[job.department, job.location].filter(Boolean).join(" / ") || "-"}
-                  </p>
-                </div>
+        <RelatedJobsTable jobs={relatedJobs} />
+      </div>
+    </div>
+  );
+}
+
+function RelatedJobsTable({ jobs }: { jobs: RelatedJob[] }) {
+  const router = useRouter();
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>求人名</TableHead>
+          <TableHead>部署 / 勤務地</TableHead>
+          <TableHead>ステータス</TableHead>
+          <TableHead className="text-right">応募数</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableEmptyState
+          colSpan={4}
+          isLoading={false}
+          isEmpty={jobs.length === 0}
+          emptyMessage="関連する求人はありません"
+        >
+          {jobs.map((job) => (
+            <TableRow
+              key={job.id}
+              className="cursor-pointer"
+              onClick={() => router.push(`/jobs/${job.id}`)}
+            >
+              <TableCell className="font-medium">{job.title}</TableCell>
+              <TableCell className="text-muted-foreground text-sm">
+                {[job.department, job.location].filter(Boolean).join(" / ") || "-"}
+              </TableCell>
+              <TableCell>
                 <Badge variant={jobStatusColors[job.status] ?? "outline"}>
                   {jobStatusLabels[job.status] ?? job.status}
                 </Badge>
-                <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                  {job.applicationCount}件応募
-                </span>
-              </Link>
-            ))}
-          </div>
-        )}
-      </SectionCard>
-    </div>
+              </TableCell>
+              <TableCell className="text-right tabular-nums">{job.applicationCount}</TableCell>
+            </TableRow>
+          ))}
+        </TableEmptyState>
+      </TableBody>
+    </Table>
   );
 }
 
@@ -439,83 +467,354 @@ function OverviewTab({
 function StepsTab({
   steps,
   onEdit,
+  onAdd,
   onDelete,
+  onReorder,
   deletingId,
 }: {
   steps: TemplateWithCounts[];
   onEdit: (t: SelectionStepTemplate) => void;
+  onAdd: () => void;
+  onDelete: (t: SelectionStepTemplate) => void;
+  onReorder: (oldIndex: number, newIndex: number) => void;
+  deletingId: string | null;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  if (steps.length === 0) {
+    return (
+      <div className="px-4 py-12 sm:px-6 md:px-8 text-center text-sm text-muted-foreground">
+        ステップがまだありません。
+        <Button variant="link" className="px-1" onClick={onAdd}>
+          ステップを追加
+        </Button>
+      </div>
+    );
+  }
+
+  if (isEditing) {
+    return (
+      <StepsEditMode
+        steps={steps}
+        onEdit={onEdit}
+        onAdd={onAdd}
+        onDelete={onDelete}
+        onReorder={onReorder}
+        onDone={() => setIsEditing(false)}
+        deletingId={deletingId}
+      />
+    );
+  }
+
+  return (
+    <div className="px-4 py-4 sm:px-6 md:px-8">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <p className="text-sm text-muted-foreground">
+          応募者がこのフローで通過する選考ステップの一覧です
+        </p>
+        <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+          <Pencil className="mr-1.5 h-3.5 w-3.5" />
+          ステップを編集
+        </Button>
+      </div>
+      <div>
+        {steps.map((step, index) => (
+          <StepCard
+            key={step.id}
+            step={step}
+            index={index}
+            isLast={index === steps.length - 1}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const stepTypeIcons: Record<string, LucideIcon> = {
+  screening: FileSearch,
+  form: ClipboardList,
+  interview: Users,
+  external_test: Activity,
+  offer: Award,
+};
+
+function StepTypeIcon({ step, className }: { step: TemplateWithCounts; className?: string }) {
+  const Icon = stepTypeIcons[step.step_type] ?? FileText;
+  return <Icon className={className} />;
+}
+
+type MetaItem = { icon: LucideIcon; label: string };
+
+function getStepMetaItems(step: TemplateWithCounts): MetaItem[] {
+  const items: MetaItem[] = [];
+  if (step.step_type === StepType.Screening) {
+    if (step.form_id) {
+      items.push({ icon: ClipboardList, label: step.formTitle ?? "フォーム未設定" });
+    } else if (step.screening_type) {
+      items.push({
+        icon: FileText,
+        label: screeningTypeLabels[step.screening_type] ?? step.screening_type,
+      });
+    }
+  } else if (step.step_type === StepType.Form && step.form_id) {
+    items.push({ icon: ClipboardList, label: step.formTitle ?? "フォーム未設定" });
+  }
+  if (step.step_type !== StepType.Offer) {
+    items.push(
+      step.requires_review
+        ? { icon: UserCheck, label: "担当者確認あり" }
+        : { icon: UserX, label: "担当者確認なし" }
+    );
+  }
+  return items;
+}
+
+function StepMetaRow({ step }: { step: TemplateWithCounts }) {
+  const items = getStepMetaItems(step);
+  if (items.length === 0) return null;
+  return (
+    <MetaChipGroup className="mt-2.5">
+      {items.map(({ icon, label }, i) => (
+        <MetaChip key={i} icon={icon}>
+          {label}
+        </MetaChip>
+      ))}
+    </MetaChipGroup>
+  );
+}
+
+function StepTypeBadge({ step }: { step: TemplateWithCounts }) {
+  return (
+    <Badge
+      variant="outline"
+      className="h-7 shrink-0 gap-1.5 px-3 text-sm font-medium [&>svg]:size-3.5!"
+    >
+      <StepTypeIcon step={step} className="text-muted-foreground" />
+      {stepTypeLabels[step.step_type] ?? step.step_type}
+    </Badge>
+  );
+}
+
+function TimelineColumn({
+  index,
+  isLast,
+  alignTop = true,
+}: {
+  index: number;
+  isLast: boolean;
+  alignTop?: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center shrink-0 self-stretch">
+      <div
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-background text-xs font-semibold tabular-nums text-foreground ${
+          alignTop ? "mt-3" : ""
+        }`}
+      >
+        {index + 1}
+      </div>
+      {!isLast && <div className="w-px flex-1 bg-border mt-1.5" />}
+    </div>
+  );
+}
+
+function StepCard({
+  step,
+  index,
+  isLast,
+}: {
+  step: TemplateWithCounts;
+  index: number;
+  isLast: boolean;
+}) {
+  return (
+    <div className="flex gap-4">
+      <TimelineColumn index={index} isLast={isLast} />
+      <div className={`flex-1 min-w-0 ${isLast ? "" : "pb-5"}`}>
+        <div className="rounded-2xl sm:rounded-3xl bg-muted/40 p-4 sm:p-5 ring-1 ring-foreground/5">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="text-sm font-semibold truncate flex-1 leading-snug">{step.name}</h3>
+            <StepTypeBadge step={step} />
+          </div>
+          <StepMetaRow step={step} />
+          {step.description && (
+            <p className="text-sm text-muted-foreground mt-2.5 line-clamp-2">{step.description}</p>
+          )}
+          <div className="mt-3 flex items-center gap-5 text-xs text-muted-foreground tabular-nums">
+            <span>
+              進行中 <span className="font-semibold text-foreground">{step.inProgressCount}</span>
+            </span>
+            <span>
+              完了 <span className="font-semibold text-foreground">{step.completedCount}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Steps Edit Mode ----------
+
+function StepsEditMode({
+  steps,
+  onEdit,
+  onAdd,
+  onDelete,
+  onReorder,
+  onDone,
+  deletingId,
+}: {
+  steps: TemplateWithCounts[];
+  onEdit: (t: SelectionStepTemplate) => void;
+  onAdd: () => void;
+  onDelete: (t: SelectionStepTemplate) => void;
+  onReorder: (oldIndex: number, newIndex: number) => void;
+  onDone: () => void;
+  deletingId: string | null;
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = steps.findIndex((s) => s.id === active.id);
+    const newIndex = steps.findIndex((s) => s.id === over.id);
+    if (oldIndex !== -1 && newIndex !== -1) onReorder(oldIndex, newIndex);
+  };
+
+  return (
+    <div className="px-4 py-4 sm:px-6 md:px-8">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm text-muted-foreground">
+          ドラッグで並び替え、各ステップの編集・削除ができます
+        </p>
+        <Button variant="primary" size="sm" onClick={onDone}>
+          完了
+        </Button>
+      </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={steps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+          <div>
+            {steps.map((step, index) => (
+              <SortableStepCard
+                key={step.id}
+                step={step}
+                index={index}
+                isLast={false}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                deletingId={deletingId}
+              />
+            ))}
+            <AddStepRow index={steps.length} onAdd={onAdd} />
+          </div>
+        </SortableContext>
+      </DndContext>
+    </div>
+  );
+}
+
+function AddStepRow({ index, onAdd }: { index: number; onAdd: () => void }) {
+  return (
+    <div className="flex gap-3">
+      {/* spacer for drag handle column */}
+      <div className="w-4 shrink-0" />
+      <div className="flex flex-col items-center shrink-0 self-stretch">
+        <button
+          type="button"
+          onClick={onAdd}
+          aria-label="ステップを追加"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed border-border bg-background text-muted-foreground mt-3 transition-colors hover:border-foreground/30 hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Plus className="h-4 w-4" />
+          <span className="sr-only">{index + 1}</span>
+        </button>
+      </div>
+      <div className="flex-1 min-w-0">
+        <button
+          type="button"
+          onClick={onAdd}
+          className="flex w-full items-center gap-2 rounded-2xl sm:rounded-3xl border border-dashed border-border bg-background/40 p-4 sm:p-5 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:bg-muted/40 hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Plus className="h-4 w-4" />
+          ステップを追加
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SortableStepCard({
+  step,
+  index,
+  isLast,
+  onEdit,
+  onDelete,
+  deletingId,
+}: {
+  step: TemplateWithCounts;
+  index: number;
+  isLast: boolean;
+  onEdit: (t: SelectionStepTemplate) => void;
   onDelete: (t: SelectionStepTemplate) => void;
   deletingId: string | null;
 }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: step.id,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
   return (
-    <TableSection>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-16">順序</TableHead>
-            <TableHead>ステップ名</TableHead>
-            <TableHead>種別</TableHead>
-            <TableHead>説明</TableHead>
-            <TableHead className="text-right">進行中</TableHead>
-            <TableHead className="text-right">完了</TableHead>
-            <TableHead className="w-10" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableEmptyState
-            colSpan={7}
-            isLoading={false}
-            isEmpty={steps.length === 0}
-            emptyMessage="ステップがまだありません。「ステップを追加」から作成してください"
-          >
-            {steps.map((step) => (
-              <TableRow key={step.id} className="cursor-pointer" onClick={() => onEdit(step)}>
-                <TableCell className="tabular-nums text-muted-foreground">
-                  {step.sort_order}
-                </TableCell>
-                <TableCell className="font-medium">{step.name}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">
-                    {stepTypeLabels[step.step_type] ?? step.step_type}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground text-sm max-w-md truncate">
-                  {step.description ?? "-"}
-                </TableCell>
-                <TableCell className="text-right tabular-nums font-semibold">
-                  {step.inProgressCount}
-                </TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">
-                  {step.completedCount}
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={<Button variant="ghost" size="icon-sm" aria-label="操作メニュー" />}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEdit(step)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        編集
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => onDelete(step)}
-                        disabled={deletingId === step.id}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        削除
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableEmptyState>
-        </TableBody>
-      </Table>
-    </TableSection>
+    <div ref={setNodeRef} style={style} className="flex gap-3">
+      <button
+        type="button"
+        className="flex h-8 shrink-0 items-center cursor-grab touch-none mt-3"
+        {...attributes}
+        {...listeners}
+        aria-label="ドラッグして並び替え"
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </button>
+      <TimelineColumn index={index} isLast={isLast} />
+      <div className={`flex-1 min-w-0 ${isLast ? "" : "pb-5"}`}>
+        <div className="flex items-start gap-2 rounded-2xl sm:rounded-3xl bg-muted/40 p-4 sm:p-5 ring-1 ring-foreground/5">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-sm font-semibold truncate flex-1 leading-snug">{step.name}</h3>
+              <StepTypeBadge step={step} />
+            </div>
+            <StepMetaRow step={step} />
+            {step.description && (
+              <p className="text-sm text-muted-foreground mt-2.5 line-clamp-2">
+                {step.description}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <IconButton onClick={() => onEdit(step)} aria-label="編集">
+              <Pencil />
+            </IconButton>
+            <IconButton
+              variant="destructive"
+              onClick={() => onDelete(step)}
+              disabled={deletingId === step.id}
+              aria-label="削除"
+            >
+              <Trash2 />
+            </IconButton>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

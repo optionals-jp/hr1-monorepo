@@ -61,6 +61,21 @@ export async function updateTemplate(
   if (error) throw error;
 }
 
+export async function reorderTemplates(
+  client: SupabaseClient,
+  organizationId: string,
+  updates: { id: string; sort_order: number }[]
+): Promise<void> {
+  for (const { id, sort_order } of updates) {
+    const { error } = await client
+      .from("selection_step_templates")
+      .update({ sort_order })
+      .eq("id", id)
+      .eq("organization_id", organizationId);
+    if (error) throw error;
+  }
+}
+
 export async function deleteTemplate(
   client: SupabaseClient,
   id: string,
