@@ -1,11 +1,13 @@
+import 'package:hr1_employee_app/features/auth/domain/entities/organization_ref.dart';
+
 /// 社員アプリユーザーモデル
 /// 認証ユーザーに紐づくHR1固有のプロフィール情報
 class AppUser {
   const AppUser({
     required this.id,
     required this.email,
-    required this.organizationId,
-    required this.organizationName,
+    required this.organizations,
+    required this.activeOrganizationId,
     this.role = 'employee',
     this.displayName,
     this.avatarUrl,
@@ -19,11 +21,11 @@ class AppUser {
   /// メールアドレス
   final String email;
 
-  /// 所属企業ID
-  final String organizationId;
+  /// ユーザーが所属する全組織
+  final List<OrganizationRef> organizations;
 
-  /// 所属企業名
-  final String organizationName;
+  /// 現在アクティブな組織ID（organizations に必ず含まれる）
+  final String activeOrganizationId;
 
   /// ロール（admin / employee / applicant）
   final String role;
@@ -40,18 +42,31 @@ class AppUser {
   /// 役職（任意）
   final String? position;
 
-  /// JSONからの生成
-  factory AppUser.fromJson(Map<String, dynamic> json) {
+  /// 現在アクティブな組織の参照
+  OrganizationRef get activeOrganization {
+    return organizations.firstWhere(
+      (o) => o.id == activeOrganizationId,
+      orElse: () => throw StateError(
+        'activeOrganizationId "$activeOrganizationId" は organizations に存在しません',
+      ),
+    );
+  }
+
+  /// 現在アクティブな組織名
+  String get activeOrganizationName => activeOrganization.name;
+
+  /// 新しい activeOrganizationId で置き換えた AppUser を返す
+  AppUser copyWithActiveOrganization(String newActiveOrganizationId) {
     return AppUser(
-      id: json['id'] as String,
-      email: json['email'] as String,
-      organizationId: json['organization_id'] as String,
-      organizationName: json['organization_name'] as String,
-      role: json['role'] as String? ?? 'employee',
-      displayName: json['display_name'] as String?,
-      avatarUrl: json['avatar_url'] as String?,
-      department: json['department'] as String?,
-      position: json['position'] as String?,
+      id: id,
+      email: email,
+      organizations: organizations,
+      activeOrganizationId: newActiveOrganizationId,
+      role: role,
+      displayName: displayName,
+      avatarUrl: avatarUrl,
+      department: department,
+      position: position,
     );
   }
 }

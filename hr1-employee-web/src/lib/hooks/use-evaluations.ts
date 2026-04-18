@@ -41,9 +41,13 @@ export function useMyAssignments(cycleId: string | null) {
 
 // ─── Applicant evaluation templates (recruiting context) ───
 
-export function useApplicantEvaluationTemplates() {
-  return useOrgQuery<EvaluationTemplate[]>("applicant-eval-templates", async (orgId) => {
-    const data = await evalRepo.fetchTemplatesByTarget(getSupabase(), orgId, ["applicant"]);
+export function useApplicantEvaluationTemplates(options?: { includeArchived?: boolean }) {
+  const includeArchived = options?.includeArchived ?? false;
+  const key = includeArchived ? "applicant-eval-templates-all" : "applicant-eval-templates";
+  return useOrgQuery<EvaluationTemplate[]>(key, async (orgId) => {
+    const data = await evalRepo.fetchTemplatesByTarget(getSupabase(), orgId, ["applicant"], {
+      includeArchived,
+    });
     return data as EvaluationTemplate[];
   });
 }

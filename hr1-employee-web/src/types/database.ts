@@ -1086,6 +1086,8 @@ export interface WorkflowRequest {
 // 評価
 // ==========================================================
 
+export type EvaluationTemplateStatus = "draft" | "published" | "archived";
+
 export interface EvaluationTemplate {
   id: string;
   organization_id: string;
@@ -1094,6 +1096,7 @@ export interface EvaluationTemplate {
   target: "applicant" | "employee" | "both";
   evaluation_type: "single" | "multi_rater";
   anonymity_mode: "none" | "peer_only" | "full";
+  status: EvaluationTemplateStatus;
   created_at: string;
 }
 
@@ -1133,6 +1136,7 @@ export interface EvaluationCriterion {
   options: string[] | null;
   sort_order: number;
   weight: number;
+  deleted_at: string | null;
 }
 
 export interface Evaluation {

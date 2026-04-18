@@ -57,6 +57,12 @@ class MockAuthRemoteDatasource implements AuthRemoteDatasource {
 
   @override
   String? get currentUserId => null;
+
+  @override
+  Future<void> persistActiveOrganization({
+    required String userId,
+    required String organizationId,
+  }) async {}
 }
 
 void main() {

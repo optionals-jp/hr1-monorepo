@@ -5,9 +5,17 @@ import 'package:hr1_employee_app/features/employees/domain/entities/employee_con
 
 /// 社員データのSupabaseリポジトリ
 class SupabaseEmployeeRepository {
-  SupabaseEmployeeRepository(this._client, {this.overrideUserId});
+  SupabaseEmployeeRepository(
+    this._client, {
+    required this.activeOrganizationId,
+    this.overrideUserId,
+  });
 
   final SupabaseClient _client;
+
+  /// 現在アクティブな組織ID
+  final String activeOrganizationId;
+
   final String? overrideUserId;
 
   static const _avatarColors = [
@@ -18,25 +26,9 @@ class SupabaseEmployeeRepository {
     Color(0xFFB10E1C),
   ];
 
-  String get _userId {
-    final id = overrideUserId ?? _client.auth.currentUser?.id;
-    if (id == null) throw StateError('ユーザーが認証されていません');
-    return id;
-  }
-
-  Future<String> _getOrganizationId() async {
-    final row = await _client
-        .from('user_organizations')
-        .select('organization_id')
-        .eq('user_id', _userId)
-        .limit(1)
-        .single();
-    return row['organization_id'] as String;
-  }
-
   /// 社員を検索
   Future<List<EmployeeContact>> searchEmployees(String query) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
 
     // 組織に所属するユーザーIDを取得
     final orgUsers = await _client
@@ -80,7 +72,7 @@ class SupabaseEmployeeRepository {
 
   /// 組織内の全社員を取得
   Future<List<EmployeeContact>> getEmployees() async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
 
     final results = await _client
         .from('user_organizations')
@@ -108,7 +100,7 @@ class SupabaseEmployeeRepository {
 
   /// 組織内の部署一覧を取得
   Future<List<String>> getDepartments() async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
 
     final results = await _client
         .from('departments')
@@ -121,7 +113,7 @@ class SupabaseEmployeeRepository {
 
   /// 組織内の役職一覧を取得
   Future<List<String>> getPositions() async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
 
     final results = await _client
         .from('positions')

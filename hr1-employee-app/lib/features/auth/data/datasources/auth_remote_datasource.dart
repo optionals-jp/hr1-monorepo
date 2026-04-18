@@ -1,13 +1,18 @@
 import 'dart:io';
 
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_employee_app/features/auth/domain/entities/app_user.dart';
+import 'package:hr1_employee_app/features/auth/domain/entities/organization_ref.dart';
 
 /// Supabase を使った認証データソース
 class AuthRemoteDatasource {
   AuthRemoteDatasource(this._client);
 
   final SupabaseClient _client;
+
+  /// HR-28 follow-up: active 組織を永続化する SharedPreferences キー
+  static String activeOrgKey(String userId) => 'hr1_active_org_$userId';
 
   /// メールアドレスにOTPを送信
   Future<void> signInWithOtp({required String email}) async {
@@ -32,6 +37,10 @@ class AuthRemoteDatasource {
   }
 
   /// 現在のユーザープロフィールを取得（profiles + user_organizations 経由）
+  ///
+  /// HR-28 follow-up: ユーザーが所属する全組織を返す。
+  /// activeOrganizationId は SharedPreferences から復元し、未設定なら
+  /// リスト先頭を選択して保存する。
   Future<AppUser> fetchCurrentUserProfile() async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) {
@@ -51,29 +60,57 @@ class AuthRemoteDatasource {
       throw Exception('プロフィールが見つかりません');
     }
 
-    // user_organizations 経由で組織情報を取得
-    final userOrg = await _client
+    // user_organizations 経由で全所属組織を取得
+    final userOrgRows = await _client
         .from('user_organizations')
-        .select('organization_id, organizations(name)')
-        .eq('user_id', userId)
-        .limit(1)
-        .maybeSingle();
+        .select('organization_id, organizations!inner(id, name)')
+        .eq('user_id', userId);
 
-    final orgId = userOrg?['organization_id'] as String? ?? '';
-    final orgName =
-        (userOrg?['organizations'] as Map?)?['name'] as String? ?? '';
+    final organizations = <OrganizationRef>[];
+    for (final row in userOrgRows as List) {
+      final org =
+          (row as Map<String, dynamic>)['organizations']
+              as Map<String, dynamic>?;
+      if (org == null) continue;
+      organizations.add(OrganizationRef.fromJson(org));
+    }
+
+    if (organizations.isEmpty) {
+      throw Exception('ユーザーが所属する組織が見つかりません。管理者にお問い合わせください。');
+    }
+
+    // SharedPreferences から active を復元
+    final prefs = await SharedPreferences.getInstance();
+    final storedActive = prefs.getString(activeOrgKey(userId));
+    String activeOrgId;
+    if (storedActive != null &&
+        organizations.any((o) => o.id == storedActive)) {
+      activeOrgId = storedActive;
+    } else {
+      activeOrgId = organizations.first.id;
+      await prefs.setString(activeOrgKey(userId), activeOrgId);
+    }
 
     return AppUser(
       id: userId,
       email: email,
-      organizationId: orgId,
-      organizationName: orgName,
+      organizations: organizations,
+      activeOrganizationId: activeOrgId,
       role: profile['role'] as String? ?? 'employee',
       displayName: profile['display_name'] as String?,
       avatarUrl: profile['avatar_url'] as String?,
       department: profile['department'] as String?,
       position: profile['position'] as String?,
     );
+  }
+
+  /// HR-28 follow-up: active 組織を切り替えて永続化
+  Future<void> persistActiveOrganization({
+    required String userId,
+    required String organizationId,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(activeOrgKey(userId), organizationId);
   }
 
   /// プロフィールのフィールドを更新

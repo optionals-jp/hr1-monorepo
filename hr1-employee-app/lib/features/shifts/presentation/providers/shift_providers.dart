@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hr1_employee_app/core/organization/organization_context.dart';
 import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hr1_employee_app/features/shifts/data/repositories/supabase_shift_repository.dart';
 import 'package:hr1_employee_app/features/shifts/domain/entities/shift_request.dart';
@@ -8,6 +9,7 @@ final shiftRepositoryProvider = Provider<SupabaseShiftRepository>((ref) {
   final user = ref.watch(appUserProvider);
   return SupabaseShiftRepository(
     ref.watch(supabaseClientProvider),
+    activeOrganizationId: ref.watch(activeOrganizationIdProvider),
     overrideUserId: user?.id,
   );
 });

@@ -46,6 +46,9 @@ export function useApplicationsPage() {
   const [statusFilter, setStatusFilter] = useTabParam<string>("all");
   const [filterJobId, setFilterJobId] = useState<string>("all");
   const [filterSource, setFilterSource] = useState<string>("all");
+  const [filterHiringType, setFilterHiringType] = useState<"all" | "new_grad" | "mid_career">(
+    "all"
+  );
 
   const { data: jobs = [] } = useJobsForFilter();
 
@@ -91,6 +94,7 @@ export function useApplicationsPage() {
     if (statusFilter !== "all" && app.status !== statusFilter) return false;
     if (filterJobId !== "all" && app.job_id !== filterJobId) return false;
     if (filterSource !== "all" && app.source !== filterSource) return false;
+    if (filterHiringType !== "all" && app.profiles?.hiring_type !== filterHiringType) return false;
     if (search) {
       const s = search.toLowerCase();
       const name = app.profiles?.display_name ?? "";
@@ -126,6 +130,8 @@ export function useApplicationsPage() {
     setFilterJobId,
     filterSource,
     setFilterSource,
+    filterHiringType,
+    setFilterHiringType,
     jobs,
     applications,
     summary,

@@ -3,9 +3,17 @@ import 'package:hr1_shared/hr1_shared.dart';
 
 /// パルスサーベイのSupabaseリポジトリ
 class SupabaseSurveyRepository {
-  SupabaseSurveyRepository(this._client, {this.overrideUserId});
+  SupabaseSurveyRepository(
+    this._client, {
+    required this.activeOrganizationId,
+    this.overrideUserId,
+  });
 
   final SupabaseClient _client;
+
+  /// 現在アクティブな組織ID
+  final String activeOrganizationId;
+
   final String? overrideUserId;
 
   String get _userId {
@@ -14,20 +22,9 @@ class SupabaseSurveyRepository {
     return id;
   }
 
-  Future<String> _getOrganizationId() async {
-    final row = await _client
-        .from('user_organizations')
-        .select('organization_id')
-        .eq('user_id', _userId)
-        .limit(1)
-        .maybeSingle();
-    if (row == null) throw StateError('所属する組織が見つかりません');
-    return row['organization_id'] as String;
-  }
-
   /// アクティブなサーベイ一覧を取得（社員向け、期限内のみ）
   Future<List<PulseSurvey>> getActiveSurveys() async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final now = DateTime.now().toUtc().toIso8601String();
     final response = await _client
         .from('pulse_surveys')

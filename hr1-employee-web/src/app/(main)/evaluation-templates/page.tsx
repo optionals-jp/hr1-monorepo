@@ -69,6 +69,18 @@ const anonymityModeLabels: Record<string, string> = {
   full: "完全匿名",
 };
 
+const templateStatusLabels: Record<string, string> = {
+  draft: "下書き",
+  published: "公開中",
+  archived: "アーカイブ",
+};
+
+const templateStatusVariant: Record<string, "default" | "outline" | "secondary"> = {
+  draft: "outline",
+  published: "default",
+  archived: "secondary",
+};
+
 export default function EvaluationSheetsPage() {
   const { showToast } = useToast();
   const h = useEvaluationSheetsPage();
@@ -78,6 +90,7 @@ export default function EvaluationSheetsPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [anonymityFilter, setAnonymityFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // 他画面から ?new=1 で遷移してきた場合は作成ダイアログを自動で開く
   const openAddDialog = h.openAddDialog;
@@ -93,13 +106,14 @@ export default function EvaluationSheetsPage() {
     return h.templates.filter((t) => {
       if (typeFilter !== "all" && t.evaluation_type !== typeFilter) return false;
       if (anonymityFilter !== "all" && t.anonymity_mode !== anonymityFilter) return false;
+      if (statusFilter !== "all" && t.status !== statusFilter) return false;
       if (keyword) {
         const haystack = [t.title, t.description ?? ""].join(" ").toLowerCase();
         if (!haystack.includes(keyword)) return false;
       }
       return true;
     });
-  }, [h.templates, search, typeFilter, anonymityFilter]);
+  }, [h.templates, search, typeFilter, anonymityFilter, statusFilter]);
 
   return (
     <div className="flex flex-col">
@@ -124,8 +138,23 @@ export default function EvaluationSheetsPage() {
           <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
-            {anonymityFilter !== "all" && (
-              <div className="flex items-center gap-1.5 overflow-x-auto">
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              {statusFilter !== "all" && (
+                <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                  ステータス：{templateStatusLabels[statusFilter] ?? statusFilter}
+                  <span
+                    role="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setStatusFilter("all");
+                    }}
+                    className="ml-0.5 hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </span>
+                </Badge>
+              )}
+              {anonymityFilter !== "all" && (
                 <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
                   匿名モード：{anonymityModeLabels[anonymityFilter] ?? anonymityFilter}
                   <span
@@ -139,11 +168,20 @@ export default function EvaluationSheetsPage() {
                     <X className="h-3 w-3" />
                   </span>
                 </Badge>
-              </div>
-            )}
+              )}
+            </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-auto py-2">
-            <p className="px-2 py-1 text-xs font-semibold text-muted-foreground">匿名モード</p>
+            <p className="px-2 py-1 text-xs font-semibold text-muted-foreground">ステータス</p>
+            <DropdownMenuItem className="py-2" onClick={() => setStatusFilter("all")}>
+              <span className={cn(statusFilter === "all" && "font-medium")}>すべて</span>
+            </DropdownMenuItem>
+            {Object.entries(templateStatusLabels).map(([key, label]) => (
+              <DropdownMenuItem key={key} className="py-2" onClick={() => setStatusFilter(key)}>
+                <span className={cn(statusFilter === key && "font-medium")}>{label}</span>
+              </DropdownMenuItem>
+            ))}
+            <p className="px-2 pt-2 pb-1 text-xs font-semibold text-muted-foreground">匿名モード</p>
             {Object.entries(anonymityModeLabels).map(([key, label]) => (
               <DropdownMenuItem key={key} className="py-2" onClick={() => setAnonymityFilter(key)}>
                 <span className={cn(anonymityFilter === key && "font-medium")}>{label}</span>
@@ -158,6 +196,7 @@ export default function EvaluationSheetsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>タイトル</TableHead>
+              <TableHead>ステータス</TableHead>
               <TableHead>対象</TableHead>
               <TableHead>説明</TableHead>
               <TableHead>作成日</TableHead>
@@ -165,7 +204,7 @@ export default function EvaluationSheetsPage() {
           </TableHeader>
           <TableBody>
             <TableEmptyState
-              colSpan={4}
+              colSpan={5}
               isLoading={h.isLoading}
               isEmpty={filtered.length === 0}
               emptyMessage="評価テンプレートがありません。右上の「テンプレートを作成」から追加してください"
@@ -177,6 +216,11 @@ export default function EvaluationSheetsPage() {
                   onClick={() => router.push(`/evaluation-templates/${t.id}`)}
                 >
                   <TableCell className="font-medium">{t.title}</TableCell>
+                  <TableCell>
+                    <Badge variant={templateStatusVariant[t.status] ?? "outline"}>
+                      {templateStatusLabels[t.status] ?? t.status}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     <Badge variant="outline">候補者向け</Badge>
                   </TableCell>

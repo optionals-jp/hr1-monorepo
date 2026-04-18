@@ -11,20 +11,17 @@ import 'package:hr1_employee_app/features/business_cards/domain/entities/crm_pip
 import 'package:hr1_employee_app/features/business_cards/domain/repositories/business_card_repository.dart';
 
 class SupabaseBusinessCardRepository implements BusinessCardRepository {
-  SupabaseBusinessCardRepository(this._client);
+  SupabaseBusinessCardRepository(
+    this._client, {
+    required this.activeOrganizationId,
+  });
 
   final SupabaseClient _client;
 
-  String get _userId => _client.auth.currentUser!.id;
+  /// 現在アクティブな組織ID
+  final String activeOrganizationId;
 
-  Future<String> _getOrganizationId() async {
-    final result = await _client
-        .from('user_organizations')
-        .select('organization_id')
-        .eq('user_id', _userId)
-        .single();
-    return result['organization_id'] as String;
-  }
+  String get _userId => _client.auth.currentUser!.id;
 
   // ==========================================================
   // 名刺スキャン
@@ -32,7 +29,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<String> uploadCardImage(String filePath) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final fileExt = filePath.split('.').last;
     final fileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
     final storagePath = '$orgId/$fileName';
@@ -67,7 +64,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
     String? rawText,
     String? contactId,
   }) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final result = await _client
         .from('crm_cards')
         .insert({
@@ -88,7 +85,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<List<BcCompany>> getCompanies({String? query}) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     var q = _client.from('crm_companies').select().eq('organization_id', orgId);
 
     if (query != null && query.isNotEmpty) {
@@ -102,7 +99,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<BcCompany?> getCompany(String id) async {
     // HR-28: RLS に加えて organization_id を明示フィルタ（defense-in-depth）
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final result = await _client
         .from('crm_companies')
         .select()
@@ -116,7 +113,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   Future<BcCompany?> findCompanyByCorporateNumber(
     String corporateNumber,
   ) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final result = await _client
         .from('crm_companies')
         .select()
@@ -128,7 +125,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<BcCompany?> findCompanyByName(String name) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final result = await _client
         .from('crm_companies')
         .select()
@@ -140,7 +137,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<BcCompany> createCompany(Map<String, dynamic> data) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final result = await _client
         .from('crm_companies')
         .insert({...data, 'organization_id': orgId, 'created_by': _userId})
@@ -152,7 +149,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<void> updateCompany(String id, Map<String, dynamic> data) async {
     // HR-28: defense-in-depth
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     await _client
         .from('crm_companies')
         .update(data)
@@ -163,7 +160,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<void> deleteCompany(String id) async {
     // HR-28: defense-in-depth
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     await _client
         .from('crm_companies')
         .delete()
@@ -180,7 +177,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
     String? query,
     String? companyId,
   }) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     var q = _client
         .from('crm_contacts')
         .select('*, crm_companies(*)')
@@ -203,7 +200,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<BcContact?> getContact(String id) async {
     // HR-28: defense-in-depth
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final result = await _client
         .from('crm_contacts')
         .select('*, crm_companies(*)')
@@ -215,7 +212,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<BcContact?> findContactByEmail(String email) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final result = await _client
         .from('crm_contacts')
         .select('*, crm_companies(*)')
@@ -227,7 +224,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<BcContact> createContact(Map<String, dynamic> data) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final result = await _client
         .from('crm_contacts')
         .insert({...data, 'organization_id': orgId, 'created_by': _userId})
@@ -239,7 +236,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<void> updateContact(String id, Map<String, dynamic> data) async {
     // HR-28: defense-in-depth
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     await _client
         .from('crm_contacts')
         .update(data)
@@ -250,7 +247,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<void> deleteContact(String id) async {
     // HR-28: defense-in-depth
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     await _client
         .from('crm_contacts')
         .delete()
@@ -264,7 +261,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<List<BcDeal>> getDeals({String? companyId, String? contactId}) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     var q = _client
         .from('crm_deals')
         .select('*, crm_companies(*), crm_contacts(*)')
@@ -280,7 +277,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<BcDeal?> getDeal(String id) async {
     // HR-28: defense-in-depth
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final result = await _client
         .from('crm_deals')
         .select('*, crm_companies(*), crm_contacts(*)')
@@ -292,7 +289,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<BcDeal> createDeal(Map<String, dynamic> data) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final result = await _client
         .from('crm_deals')
         .insert({...data, 'organization_id': orgId, 'created_by': _userId})
@@ -304,7 +301,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<void> updateDeal(String id, Map<String, dynamic> data) async {
     // HR-28: defense-in-depth
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     await _client
         .from('crm_deals')
         .update(data)
@@ -315,7 +312,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<void> deleteDeal(String id) async {
     // HR-28: defense-in-depth
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     await _client
         .from('crm_deals')
         .delete()
@@ -329,7 +326,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<List<CrmPipelineStage>> getPipelineStages() async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     // デフォルトパイプライン（最初に見つかった is_default=true）から
     // ステージ一覧を取得
     final pipelines = await _client
@@ -362,7 +359,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
     String? contactId,
     String? dealId,
   }) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     var q = _client
         .from('crm_activities')
         .select()
@@ -378,7 +375,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<BcActivity> createActivity(Map<String, dynamic> data) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final result = await _client
         .from('crm_activities')
         .insert({...data, 'organization_id': orgId, 'created_by': _userId})
@@ -390,7 +387,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<void> updateActivity(String id, Map<String, dynamic> data) async {
     // HR-28: defense-in-depth
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     await _client
         .from('crm_activities')
         .update(data)
@@ -401,7 +398,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<void> deleteActivity(String id) async {
     // HR-28: defense-in-depth
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     await _client
         .from('crm_activities')
         .delete()
@@ -415,7 +412,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<List<BcTodo>> getTodos({bool includeCompleted = false}) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     var q = _client
         .from('crm_todos')
         .select(
@@ -450,7 +447,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<BcTodo> createTodo(Map<String, dynamic> data) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final result = await _client
         .from('crm_todos')
         .insert({...data, 'organization_id': orgId, 'created_by': _userId})
@@ -464,7 +461,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<void> updateTodo(String id, Map<String, dynamic> data) async {
     // HR-28: defense-in-depth
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     await _client
         .from('crm_todos')
         .update(data)
@@ -475,7 +472,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<void> toggleTodoComplete(String id, bool isCompleted) async {
     // HR-28: defense-in-depth
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     await _client
         .from('crm_todos')
         .update({
@@ -489,7 +486,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
   @override
   Future<void> deleteTodo(String id) async {
     // HR-28: defense-in-depth
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     await _client
         .from('crm_todos')
         .delete()
@@ -503,7 +500,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<List<BcCard>> getCards({String? contactId}) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     var q = _client.from('crm_cards').select().eq('organization_id', orgId);
 
     if (contactId != null) q = q.eq('contact_id', contactId);
@@ -518,7 +515,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<List<BcContact>> searchContacts(String query) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final data = await _client
         .from('crm_contacts')
         .select('*, crm_companies(*)')
@@ -535,7 +532,7 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<List<BcCompany>> searchCompanies(String query) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final data = await _client
         .from('crm_companies')
         .select()

@@ -7,21 +7,14 @@ import 'package:hr1_employee_app/features/skills/domain/repositories/skills_repo
 
 /// Supabase スキル・資格リポジトリ実装
 class SupabaseSkillsRepository implements SkillsRepository {
-  SupabaseSkillsRepository(this._client);
+  SupabaseSkillsRepository(this._client, {required this.activeOrganizationId});
 
   final SupabaseClient _client;
 
-  String get _userId => _client.auth.currentUser!.id;
+  /// 現在アクティブな組織ID
+  final String activeOrganizationId;
 
-  Future<String> _getOrganizationId() async {
-    final userOrg = await _client
-        .from('user_organizations')
-        .select('organization_id')
-        .eq('user_id', _userId)
-        .limit(1)
-        .single();
-    return userOrg['organization_id'] as String;
-  }
+  String get _userId => _client.auth.currentUser!.id;
 
   // ─── スキルマスタ ───
 
@@ -61,7 +54,7 @@ class SupabaseSkillsRepository implements SkillsRepository {
 
   @override
   Future<EmployeeSkill> addSkill(String name) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final maxOrder = await _client
         .from('employee_skills')
         .select('sort_order')
@@ -120,7 +113,7 @@ class SupabaseSkillsRepository implements SkillsRepository {
     DateTime? acquiredDate, {
     int? score,
   }) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final maxOrder = await _client
         .from('employee_certifications')
         .select('sort_order')

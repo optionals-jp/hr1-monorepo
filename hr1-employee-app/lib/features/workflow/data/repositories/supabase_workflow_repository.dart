@@ -2,25 +2,23 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_employee_app/features/workflow/domain/entities/workflow_request.dart';
 
 class SupabaseWorkflowRepository {
-  SupabaseWorkflowRepository(this._client, {this.overrideUserId});
+  SupabaseWorkflowRepository(
+    this._client, {
+    required this.activeOrganizationId,
+    this.overrideUserId,
+  });
 
   final SupabaseClient _client;
+
+  /// 現在アクティブな組織ID
+  final String activeOrganizationId;
+
   final String? overrideUserId;
 
   String get _userId {
     final id = overrideUserId ?? _client.auth.currentUser?.id;
     if (id == null) throw StateError('ユーザーが認証されていません');
     return id;
-  }
-
-  Future<String> _getOrganizationId() async {
-    final userOrg = await _client
-        .from('user_organizations')
-        .select('organization_id')
-        .eq('user_id', _userId)
-        .limit(1)
-        .single();
-    return userOrg['organization_id'] as String;
   }
 
   /// 自分の申請一覧を取得
@@ -63,7 +61,7 @@ class SupabaseWorkflowRepository {
     required Map<String, dynamic> requestData,
     required String reason,
   }) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final response = await _client
         .from('workflow_requests')
         .insert({

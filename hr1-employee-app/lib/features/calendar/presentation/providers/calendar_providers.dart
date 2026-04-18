@@ -1,12 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hr1_employee_app/core/organization/organization_context.dart';
 import 'package:hr1_employee_app/features/calendar/data/repositories/supabase_calendar_repository.dart';
 import 'package:hr1_employee_app/features/calendar/domain/entities/calendar_event.dart';
 import 'package:hr1_employee_app/features/calendar/domain/repositories/calendar_repository.dart';
 
 /// カレンダーリポジトリプロバイダー
 final calendarRepositoryProvider = Provider<CalendarRepository>((ref) {
-  return SupabaseCalendarRepository(Supabase.instance.client);
+  return SupabaseCalendarRepository(
+    Supabase.instance.client,
+    activeOrganizationId: ref.watch(activeOrganizationIdProvider),
+  );
 });
 
 /// 選択中の日付

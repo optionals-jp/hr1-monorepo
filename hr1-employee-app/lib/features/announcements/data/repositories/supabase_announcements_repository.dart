@@ -2,32 +2,21 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_shared/hr1_shared.dart';
 
 class SupabaseAnnouncementsRepository {
-  SupabaseAnnouncementsRepository(this._client, {this.overrideUserId});
+  SupabaseAnnouncementsRepository(
+    this._client, {
+    required this.activeOrganizationId,
+    this.overrideUserId,
+  });
 
   final SupabaseClient _client;
+
+  /// 現在アクティブな組織ID
+  final String activeOrganizationId;
+
   final String? overrideUserId;
-  String? _cachedOrgId;
-
-  String get _userId {
-    final id = overrideUserId ?? _client.auth.currentUser?.id;
-    if (id == null) throw StateError('ユーザーが認証されていません');
-    return id;
-  }
-
-  Future<String> _getOrganizationId() async {
-    if (_cachedOrgId != null) return _cachedOrgId!;
-    final row = await _client
-        .from('user_organizations')
-        .select('organization_id')
-        .eq('user_id', _userId)
-        .limit(1)
-        .single();
-    _cachedOrgId = row['organization_id'] as String;
-    return _cachedOrgId!;
-  }
 
   Future<List<Announcement>> getPublishedAnnouncements() async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final response = await _client
         .from('announcements')
         .select()
@@ -44,7 +33,7 @@ class SupabaseAnnouncementsRepository {
   }
 
   Future<List<Announcement>> getPinnedAnnouncements() async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final response = await _client
         .from('announcements')
         .select()
@@ -62,7 +51,7 @@ class SupabaseAnnouncementsRepository {
 
   /// タイトル・本文でお知らせを検索
   Future<List<Announcement>> searchAnnouncements(String query) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
     final sanitized = sanitizeForLike(query);
     final pattern = '%$sanitized%';
     final response = await _client

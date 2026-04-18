@@ -106,6 +106,23 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Result<void>> persistActiveOrganization({
+    required String userId,
+    required String organizationId,
+  }) async {
+    try {
+      await _datasource.persistActiveOrganization(
+        userId: userId,
+        organizationId: organizationId,
+      );
+      return Result.success(null);
+    } on Exception catch (e, stackTrace) {
+      FirebaseCrashlytics.instance.recordError(e, stackTrace);
+      return Result.failure(e.toString());
+    }
+  }
+
+  @override
   bool get hasSession => _datasource.hasSession;
 
   @override

@@ -26,7 +26,7 @@ class MessagesScreen extends ConsumerWidget {
         title: Row(
           children: [
             OrgIcon(
-              initial: (user?.organizationName ?? 'H').substring(0, 1),
+              initial: (user?.activeOrganizationName ?? 'H').substring(0, 1),
               size: 32,
             ),
             const SizedBox(width: 10),

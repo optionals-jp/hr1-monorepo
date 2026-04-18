@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hr1_employee_app/core/organization/organization_context.dart';
 import 'package:hr1_employee_app/features/skills/data/repositories/supabase_skills_repository.dart';
 import 'package:hr1_employee_app/features/skills/domain/entities/certification_master.dart';
 import 'package:hr1_employee_app/features/skills/domain/entities/employee_certification.dart';
@@ -9,7 +10,10 @@ import 'package:hr1_employee_app/features/skills/domain/repositories/skills_repo
 
 /// スキルリポジトリプロバイダー
 final skillsRepositoryProvider = Provider<SkillsRepository>((ref) {
-  return SupabaseSkillsRepository(Supabase.instance.client);
+  return SupabaseSkillsRepository(
+    Supabase.instance.client,
+    activeOrganizationId: ref.watch(activeOrganizationIdProvider),
+  );
 });
 
 /// 自分のスキル一覧

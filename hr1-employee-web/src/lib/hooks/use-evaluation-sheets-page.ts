@@ -24,7 +24,12 @@ export type { EvaluationCriterionDraft } from "@hr1/shared-ui/lib/evaluation-dra
  */
 export function useEvaluationSheetsPage() {
   const { organization } = useOrg();
-  const { data: templates = [], isLoading, error, mutate } = useApplicantEvaluationTemplates();
+  const {
+    data: templates = [],
+    isLoading,
+    error,
+    mutate,
+  } = useApplicantEvaluationTemplates({ includeArchived: true });
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [title, setTitle] = useState("");

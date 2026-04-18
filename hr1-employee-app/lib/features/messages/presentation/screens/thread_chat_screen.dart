@@ -24,7 +24,7 @@ class ThreadChatScreen extends HookConsumerWidget {
 
     final currentUser = ref.read(appUserProvider);
     final currentUserId = currentUser?.id ?? '';
-    final organizationId = currentUser?.organizationId ?? '';
+    final organizationId = currentUser?.activeOrganizationId ?? '';
     final realtimeArg = (threadId: thread.id, currentUserId: currentUserId);
 
     useEffect(() {

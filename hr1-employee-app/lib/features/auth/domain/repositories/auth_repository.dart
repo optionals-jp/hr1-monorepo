@@ -25,6 +25,12 @@ abstract class AuthRepository {
   /// アバター画像をアップロードしてプロフィールに反映
   Future<Result<String>> uploadAvatar(String filePath);
 
+  /// HR-28 follow-up: active 組織を切り替えて永続化する
+  Future<Result<void>> persistActiveOrganization({
+    required String userId,
+    required String organizationId,
+  });
+
   /// 現在のセッションが存在するかを返す
   bool get hasSession;
 
