@@ -14,6 +14,7 @@ class Job {
     this.salaryRange,
     this.postedAt,
     this.closingAt,
+    this.applicantLimit,
     this.sections = const [],
     this.selectionSteps = const [],
   });
@@ -28,6 +29,9 @@ class Job {
   final String? salaryRange;
   final DateTime? postedAt;
   final DateTime? closingAt;
+
+  /// 募集定員。null は無制限。
+  final int? applicantLimit;
 
   /// 求人詳細のカスタマイズ可能なセクション
   final List<PageSection> sections;
@@ -54,6 +58,7 @@ class Job {
       closingAt: json['closing_at'] != null
           ? DateTime.parse(json['closing_at'] as String)
           : null,
+      applicantLimit: json['applicant_limit'] as int?,
       sections:
           (json['sections'] as List<dynamic>?)
               ?.map((e) => PageSection.fromJson(e as Map<String, dynamic>))

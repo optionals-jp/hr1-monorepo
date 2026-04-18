@@ -29,7 +29,6 @@ import {
 import { FormField, FormInput, FormTextarea } from "@hr1/shared-ui/components/ui/form-field";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
-import { MetaChip, MetaChipGroup } from "@hr1/shared-ui/components/ui/meta-chip";
 import { Switch } from "@hr1/shared-ui/components/ui/switch";
 import { ActionBar } from "@hr1/shared-ui/components/ui/action-bar";
 import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
@@ -55,14 +54,9 @@ import {
   Briefcase,
   AlertCircle,
   GripVertical,
-  FileSearch,
   ClipboardList,
-  Users,
-  Activity,
-  Award,
   UserCheck,
   UserX,
-  type LucideIcon,
 } from "lucide-react";
 import {
   stepTypeLabels,
@@ -71,6 +65,13 @@ import {
   jobStatusColors,
   screeningTypeLabels,
 } from "@/lib/constants";
+import {
+  StepCardShell,
+  StepMetaChips,
+  StepRow,
+  StepTypeBadge,
+  type StepMetaItem,
+} from "@/features/recruiting/components/selection-step-card";
 import {
   useSelectionFlowDetail,
   type TemplateWithCounts,
@@ -212,7 +213,7 @@ export default function SelectionFlowDetailPage({ params }: { params: Promise<{ 
                 <SelectValue>{(v: string) => stepTypeLabels[v] ?? v}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={StepType.Screening}>書類選考</SelectItem>
+                <SelectItem value={StepType.Screening}>書類アップロード</SelectItem>
                 <SelectItem value={StepType.Form}>フォーム</SelectItem>
                 <SelectItem value={StepType.Interview}>面接</SelectItem>
                 <SelectItem value={StepType.ExternalTest}>外部テスト</SelectItem>
@@ -221,74 +222,25 @@ export default function SelectionFlowDetailPage({ params }: { params: Promise<{ 
             </Select>
           </FormField>
           {h.stepForm.step_type === StepType.Screening && (
-            <>
-              <FormField label="選考方法" required>
-                <Select
-                  value={h.stepForm.screening_type ? "file" : "form"}
-                  onValueChange={(v) => {
-                    if (v === "form") {
-                      h.setStepFormField("screening_type", null);
-                    } else {
-                      h.setStepFormField("form_id", null);
-                      if (!h.stepForm.screening_type) {
-                        h.setStepFormField("screening_type", "resume");
-                      }
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue>
-                      {(v: string) => (v === "form" ? "フォームから選考" : "ファイルアップロード")}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="form">フォームから選考</SelectItem>
-                    <SelectItem value="file">ファイルアップロード</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormField>
-              {!h.stepForm.screening_type ? (
-                <FormField label="フォーム" required>
-                  <Select
-                    value={h.stepForm.form_id ?? ""}
-                    onValueChange={(v) => h.setStepFormField("form_id", v || null)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="フォームを選択">
-                        {(v: string) => h.forms.find((f) => f.id === v)?.title ?? v}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {h.forms.map((form) => (
-                        <SelectItem key={form.id} value={form.id}>
-                          {form.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormField>
-              ) : (
-                <FormField label="書類種別" required>
-                  <Select
-                    value={h.stepForm.screening_type ?? ""}
-                    onValueChange={(v) => h.setStepFormField("screening_type", v || null)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="選択してください">
-                        {(v: string) => screeningTypeLabels[v] ?? v}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(screeningTypeLabels).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormField>
-              )}
-            </>
+            <FormField label="書類種別" required>
+              <Select
+                value={h.stepForm.screening_type ?? ""}
+                onValueChange={(v) => h.setStepFormField("screening_type", v || null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="選択してください">
+                    {(v: string) => screeningTypeLabels[v] ?? v}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(screeningTypeLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
           )}
           {h.stepForm.step_type !== StepType.Offer && (
             <div className="flex items-center justify-between rounded-lg border p-3">
@@ -519,35 +471,15 @@ function StepsTab({
       </div>
       <div>
         {steps.map((step, index) => (
-          <StepCard
-            key={step.id}
-            step={step}
-            index={index}
-            isLast={index === steps.length - 1}
-          />
+          <StepCard key={step.id} step={step} index={index} isLast={index === steps.length - 1} />
         ))}
       </div>
     </div>
   );
 }
 
-const stepTypeIcons: Record<string, LucideIcon> = {
-  screening: FileSearch,
-  form: ClipboardList,
-  interview: Users,
-  external_test: Activity,
-  offer: Award,
-};
-
-function StepTypeIcon({ step, className }: { step: TemplateWithCounts; className?: string }) {
-  const Icon = stepTypeIcons[step.step_type] ?? FileText;
-  return <Icon className={className} />;
-}
-
-type MetaItem = { icon: LucideIcon; label: string };
-
-function getStepMetaItems(step: TemplateWithCounts): MetaItem[] {
-  const items: MetaItem[] = [];
+function getStepMetaItems(step: TemplateWithCounts): StepMetaItem[] {
+  const items: StepMetaItem[] = [];
   if (step.step_type === StepType.Screening) {
     if (step.form_id) {
       items.push({ icon: ClipboardList, label: step.formTitle ?? "フォーム未設定" });
@@ -570,55 +502,6 @@ function getStepMetaItems(step: TemplateWithCounts): MetaItem[] {
   return items;
 }
 
-function StepMetaRow({ step }: { step: TemplateWithCounts }) {
-  const items = getStepMetaItems(step);
-  if (items.length === 0) return null;
-  return (
-    <MetaChipGroup className="mt-2.5">
-      {items.map(({ icon, label }, i) => (
-        <MetaChip key={i} icon={icon}>
-          {label}
-        </MetaChip>
-      ))}
-    </MetaChipGroup>
-  );
-}
-
-function StepTypeBadge({ step }: { step: TemplateWithCounts }) {
-  return (
-    <Badge
-      variant="outline"
-      className="h-7 shrink-0 gap-1.5 px-3 text-sm font-medium [&>svg]:size-3.5!"
-    >
-      <StepTypeIcon step={step} className="text-muted-foreground" />
-      {stepTypeLabels[step.step_type] ?? step.step_type}
-    </Badge>
-  );
-}
-
-function TimelineColumn({
-  index,
-  isLast,
-  alignTop = true,
-}: {
-  index: number;
-  isLast: boolean;
-  alignTop?: boolean;
-}) {
-  return (
-    <div className="flex flex-col items-center shrink-0 self-stretch">
-      <div
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-background text-xs font-semibold tabular-nums text-foreground ${
-          alignTop ? "mt-3" : ""
-        }`}
-      >
-        {index + 1}
-      </div>
-      {!isLast && <div className="w-px flex-1 bg-border mt-1.5" />}
-    </div>
-  );
-}
-
 function StepCard({
   step,
   index,
@@ -629,29 +512,26 @@ function StepCard({
   isLast: boolean;
 }) {
   return (
-    <div className="flex gap-4">
-      <TimelineColumn index={index} isLast={isLast} />
-      <div className={`flex-1 min-w-0 ${isLast ? "" : "pb-5"}`}>
-        <div className="rounded-2xl sm:rounded-3xl bg-muted/40 p-4 sm:p-5 ring-1 ring-foreground/5">
-          <div className="flex items-start justify-between gap-3">
-            <h3 className="text-sm font-semibold truncate flex-1 leading-snug">{step.name}</h3>
-            <StepTypeBadge step={step} />
-          </div>
-          <StepMetaRow step={step} />
-          {step.description && (
-            <p className="text-sm text-muted-foreground mt-2.5 line-clamp-2">{step.description}</p>
-          )}
-          <div className="mt-3 flex items-center gap-5 text-xs text-muted-foreground tabular-nums">
-            <span>
-              進行中 <span className="font-semibold text-foreground">{step.inProgressCount}</span>
-            </span>
-            <span>
-              完了 <span className="font-semibold text-foreground">{step.completedCount}</span>
-            </span>
-          </div>
+    <StepRow index={index} isLast={isLast}>
+      <StepCardShell>
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-sm font-semibold truncate flex-1 leading-snug">{step.name}</h3>
+          <StepTypeBadge stepType={step.step_type} />
         </div>
-      </div>
-    </div>
+        <StepMetaChips items={getStepMetaItems(step)} />
+        {step.description && (
+          <p className="text-sm text-muted-foreground mt-2.5 line-clamp-2">{step.description}</p>
+        )}
+        <div className="mt-3 flex items-center gap-5 text-xs text-muted-foreground tabular-nums">
+          <span>
+            進行中 <span className="font-semibold text-foreground">{step.inProgressCount}</span>
+          </span>
+          <span>
+            完了 <span className="font-semibold text-foreground">{step.completedCount}</span>
+          </span>
+        </div>
+      </StepCardShell>
+    </StepRow>
   );
 }
 
@@ -784,15 +664,14 @@ function SortableStepCard({
       >
         <GripVertical className="h-4 w-4 text-muted-foreground" />
       </button>
-      <TimelineColumn index={index} isLast={isLast} />
-      <div className={`flex-1 min-w-0 ${isLast ? "" : "pb-5"}`}>
-        <div className="flex items-start gap-2 rounded-2xl sm:rounded-3xl bg-muted/40 p-4 sm:p-5 ring-1 ring-foreground/5">
+      <StepRow index={index} isLast={isLast}>
+        <StepCardShell className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-3">
               <h3 className="text-sm font-semibold truncate flex-1 leading-snug">{step.name}</h3>
-              <StepTypeBadge step={step} />
+              <StepTypeBadge stepType={step.step_type} />
             </div>
-            <StepMetaRow step={step} />
+            <StepMetaChips items={getStepMetaItems(step)} />
             {step.description && (
               <p className="text-sm text-muted-foreground mt-2.5 line-clamp-2">
                 {step.description}
@@ -812,8 +691,8 @@ function SortableStepCard({
               <Trash2 />
             </IconButton>
           </div>
-        </div>
-      </div>
+        </StepCardShell>
+      </StepRow>
     </div>
   );
 }

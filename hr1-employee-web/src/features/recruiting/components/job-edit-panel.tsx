@@ -7,6 +7,7 @@ import { EditPanel, type EditPanelTab } from "@hr1/shared-ui/components/ui/edit-
 
 const editTabs: EditPanelTab[] = [
   { value: "basic", label: "基本情報" },
+  { value: "recruiting", label: "募集要項" },
   { value: "description", label: "説明" },
 ];
 
@@ -27,6 +28,10 @@ interface JobEditPanelProps {
   setEditEmploymentType: (v: string) => void;
   editSalaryRange: string;
   setEditSalaryRange: (v: string) => void;
+  editClosingAt: string;
+  setEditClosingAt: (v: string) => void;
+  editApplicantLimit: string;
+  setEditApplicantLimit: (v: string) => void;
   savingInfo: boolean;
   saveInfo: () => void;
 }
@@ -48,6 +53,10 @@ export function JobEditPanel({
   setEditEmploymentType,
   editSalaryRange,
   setEditSalaryRange,
+  editClosingAt,
+  setEditClosingAt,
+  editApplicantLimit,
+  setEditApplicantLimit,
   savingInfo,
   saveInfo,
 }: JobEditPanelProps) {
@@ -104,6 +113,32 @@ export function JobEditPanel({
               onChange={(e) => setEditSalaryRange(e.target.value)}
               placeholder="500万〜800万"
             />
+          </div>
+        </div>
+      )}
+      {editTab === "recruiting" && (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>応募期限</Label>
+            <Input
+              type="date"
+              value={editClosingAt}
+              onChange={(e) => setEditClosingAt(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">未指定の場合は締切なしとして扱います。</p>
+          </div>
+          <div className="space-y-2">
+            <Label>募集人数</Label>
+            <Input
+              type="number"
+              min={1}
+              value={editApplicantLimit}
+              onChange={(e) => setEditApplicantLimit(e.target.value)}
+              placeholder="10"
+            />
+            <p className="text-xs text-muted-foreground">
+              未指定または 0 以下の場合は上限なしとして扱います。
+            </p>
           </div>
         </div>
       )}

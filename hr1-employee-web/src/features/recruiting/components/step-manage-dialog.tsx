@@ -21,6 +21,7 @@ import {
   selectableStepTypes,
   screeningTypeLabels,
 } from "@/lib/constants";
+import { ResourceSelectField } from "@/features/recruiting/components/resource-select-field";
 import { GripVertical, Trash2, Plus } from "lucide-react";
 
 interface StepManageDialogProps {
@@ -284,46 +285,20 @@ export function StepManageDialog({
                 </Select>
               )}
               {FORM_STEP_TYPES.includes(step.step_type as StepType) && (
-                <Select
-                  value={step.form_id ?? ""}
-                  onValueChange={(v) => updateStep(index, "form_id", v || null)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="フォームを選択（任意）">
-                      {(v: string) =>
-                        forms.find((f) => f.id === v)?.title ?? "フォームを選択（任意）"
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {forms.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>
-                        {f.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ResourceSelectField
+                  value={step.form_id}
+                  onChange={(v) => updateStep(index, "form_id", v)}
+                  items={forms}
+                  placeholder="フォームを選択（任意）"
+                />
               )}
               {step.step_type === StepType.Interview && (
-                <Select
-                  value={step.interview_id ?? ""}
-                  onValueChange={(v) => updateStep(index, "interview_id", v || null)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="日程調整を選択（任意）">
-                      {(v: string) =>
-                        interviews.find((iv) => iv.id === v)?.title ?? "日程調整を選択（任意）"
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {interviews.map((iv) => (
-                      <SelectItem key={iv.id} value={iv.id}>
-                        {iv.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ResourceSelectField
+                  value={step.interview_id}
+                  onChange={(v) => updateStep(index, "interview_id", v)}
+                  items={interviews}
+                  placeholder="日程調整を選択（任意）"
+                />
               )}
             </div>
             <Button

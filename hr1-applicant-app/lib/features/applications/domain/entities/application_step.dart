@@ -51,12 +51,18 @@ class ApplicationStep {
     this.startedAt,
     this.completedAt,
     this.applicantActionAt,
+    this.source = 'flow',
+    this.isOptional = false,
+    this.description,
   });
 
   final String id;
   final String applicationId;
   final StepType stepType;
-  final int stepOrder;
+
+  /// 並び順。アドホックステップ挿入のため DB 側は numeric 型。
+  /// 表示・並び替え用途のため double で保持する。
+  final double stepOrder;
   final StepStatus status;
   final String label;
   final String? formId;
@@ -65,6 +71,18 @@ class ApplicationStep {
   final bool requiresReview;
   final DateTime? startedAt;
   final DateTime? completedAt;
+
+  /// 'flow' = 求人テンプレートから生成、'ad_hoc' = 個別応募に追加されたステップ
+  final String source;
+
+  /// 任意ステップ（応募者が任意で対応するもの）
+  final bool isOptional;
+
+  /// 候補者向けの依頼内容・追加指示（ad_hoc ステップで特に使用）
+  final String? description;
+
+  /// このステップが応募者向けに後から追加されたものか
+  bool get isAdHoc => source == 'ad_hoc';
 
   /// 応募者がアクション（フォーム送信・面接予約）を完了した日時
   final DateTime? applicantActionAt;
@@ -98,7 +116,7 @@ class ApplicationStep {
       id: json['id'] as String,
       applicationId: json['application_id'] as String,
       stepType: StepType.fromString(json['step_type'] as String),
-      stepOrder: json['step_order'] as int,
+      stepOrder: (json['step_order'] as num).toDouble(),
       status: StepStatus.fromString(json['status'] as String),
       label: json['label'] as String,
       formId: json['form_id'] as String?,
@@ -114,6 +132,9 @@ class ApplicationStep {
       applicantActionAt: json['applicant_action_at'] != null
           ? DateTime.parse(json['applicant_action_at'] as String)
           : null,
+      source: json['source'] as String? ?? 'flow',
+      isOptional: json['is_optional'] as bool? ?? false,
+      description: json['description'] as String?,
     );
   }
 }

@@ -52,6 +52,8 @@ export function useJobDetail() {
   const [editLocation, setEditLocation] = useState("");
   const [editEmploymentType, setEditEmploymentType] = useState("");
   const [editSalaryRange, setEditSalaryRange] = useState("");
+  const [editClosingAt, setEditClosingAt] = useState("");
+  const [editApplicantLimit, setEditApplicantLimit] = useState("");
   const [savingInfo, setSavingInfo] = useState(false);
 
   const [stepManageOpen, setStepManageOpen] = useState(false);
@@ -220,6 +222,8 @@ export function useJobDetail() {
     setEditLocation(job.location ?? "");
     setEditEmploymentType(job.employment_type ?? "");
     setEditSalaryRange(job.salary_range ?? "");
+    setEditClosingAt(job.closing_at ? job.closing_at.slice(0, 10) : "");
+    setEditApplicantLimit(job.applicant_limit != null ? String(job.applicant_limit) : "");
     setEditTab("basic");
     setEditingInfo(true);
   }
@@ -228,6 +232,8 @@ export function useJobDetail() {
     if (!job || !organization) return;
     setSavingInfo(true);
 
+    const applicantLimitNum = editApplicantLimit.trim() ? parseInt(editApplicantLimit, 10) : NaN;
+
     await jobRepository.updateJob(getSupabase(), job.id, organization.id, {
       title: editTitle,
       description: editDescription || null,
@@ -235,6 +241,10 @@ export function useJobDetail() {
       location: editLocation || null,
       employment_type: editEmploymentType || null,
       salary_range: editSalaryRange || null,
+      // `YYYY-MM-DD` 入力を UTC の一日終わり（23:59:59）に揃えて保存する。
+      closing_at: editClosingAt ? new Date(`${editClosingAt}T23:59:59`).toISOString() : null,
+      applicant_limit:
+        Number.isFinite(applicantLimitNum) && applicantLimitNum > 0 ? applicantLimitNum : null,
     });
 
     setSavingInfo(false);
@@ -307,6 +317,10 @@ export function useJobDetail() {
     setEditEmploymentType,
     editSalaryRange,
     setEditSalaryRange,
+    editClosingAt,
+    setEditClosingAt,
+    editApplicantLimit,
+    setEditApplicantLimit,
     savingInfo,
     saveInfo,
     startEditingInfo,

@@ -1,6 +1,6 @@
 "use client";
 
-import { format } from "date-fns";
+import { formatYmdSlash } from "@/lib/datetime-utils";
 import type { Profile } from "@/types/database";
 
 const GENDER_LABELS: Record<string, string> = {
@@ -39,7 +39,7 @@ export function ProfileInfoList({ profile }: { profile: Profile }) {
         },
         { label: "電話番号", value: profile.phone },
         { label: "居住地", value: currentAddress || null },
-        { label: "登録日", value: format(new Date(profile.created_at), "yyyy/MM/dd") },
+        { label: "登録日", value: formatYmdSlash(profile.created_at) },
       ],
     },
     {

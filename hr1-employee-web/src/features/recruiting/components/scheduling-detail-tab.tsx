@@ -6,6 +6,7 @@ import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
 import { DetailField } from "@hr1/shared-ui/components/ui/detail-field";
 import { Calendar } from "lucide-react";
 import { format } from "date-fns";
+import { formatYmdSlash } from "@/lib/datetime-utils";
 import { cn } from "@hr1/shared-ui/lib/utils";
 import {
   interviewScheduleStatusLabels as statusLabels,
@@ -71,9 +72,7 @@ export function SchedulingDetailTab({
               <span className="text-muted-foreground">未設定</span>
             )}
           </DetailField>
-          <DetailField label="作成日">
-            {format(new Date(interview.created_at), "yyyy/MM/dd")}
-          </DetailField>
+          <DetailField label="作成日">{formatYmdSlash(interview.created_at)}</DetailField>
         </div>
         {interview.notes && (
           <div className="mt-4 pt-4 border-t">

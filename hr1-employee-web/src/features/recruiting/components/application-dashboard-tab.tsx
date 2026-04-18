@@ -145,7 +145,7 @@ export function ApplicationDashboardTab({
           )}
         </SectionCard>
 
-        <SectionCard>
+        <div>
           <h2 className="text-sm font-semibold mb-3">
             選考ステップ
             <span className="ml-1.5 text-xs font-normal text-muted-foreground">{steps.length}</span>
@@ -160,7 +160,7 @@ export function ApplicationDashboardTab({
             onOffer={onOffer}
             onReject={onReject}
           />
-        </SectionCard>
+        </div>
       </div>
     </div>
   );

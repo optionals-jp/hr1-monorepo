@@ -49,6 +49,9 @@ export interface Job {
   salary_range: string | null;
   status: "open" | "closed" | "draft" | "archived";
   flow_id: string | null;
+  posted_at: string | null;
+  closing_at: string | null;
+  applicant_limit: number | null;
   created_at: string;
 }
 
@@ -142,6 +145,10 @@ export interface ApplicationStep {
   started_at: string | null;
   completed_at: string | null;
   applicant_action_at: string | null;
+  source: "flow" | "ad_hoc";
+  created_by_user_id: string | null;
+  is_optional: boolean;
+  description: string | null;
 }
 
 export interface Interview {

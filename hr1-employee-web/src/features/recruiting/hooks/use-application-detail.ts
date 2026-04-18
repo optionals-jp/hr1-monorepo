@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useTabParam } from "@hr1/shared-ui";
 import { useOrg } from "@/lib/org-context";
+import { useAuth } from "@/lib/auth-context";
 import { StepStatus, StepType } from "@/lib/constants";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as applicationRepository from "@/lib/repositories/application-repository";
@@ -21,6 +22,7 @@ export type ApplicationDetailTab = "dashboard" | "steps" | "evaluation" | "histo
 
 export function useApplicationDetail(id: string) {
   const { organization } = useOrg();
+  const { user } = useAuth();
   const [application, setApplication] = useState<Application | null>(null);
   const [steps, setSteps] = useState<ApplicationStep[]>([]);
   const [loading, setLoading] = useState(true);
@@ -347,6 +349,155 @@ export function useApplicationDetail(id: string) {
     [id, organization, completeOfferStep, load]
   );
 
+  // ---------- アドホックステップ ----------
+
+  const [adHocDialogOpen, setAdHocDialogOpen] = useState(false);
+  const [editingAdHocStep, setEditingAdHocStep] = useState<ApplicationStep | null>(null);
+  const [adHocInsertBeforeStepId, setAdHocInsertBeforeStepId] = useState<string | null>(null);
+
+  const openAddAdHocStep = useCallback((insertBeforeStepId?: string | null) => {
+    setEditingAdHocStep(null);
+    setAdHocInsertBeforeStepId(insertBeforeStepId ?? null);
+    setAdHocDialogOpen(true);
+  }, []);
+
+  const openEditAdHocStep = useCallback((step: ApplicationStep) => {
+    setEditingAdHocStep(step);
+    setAdHocDialogOpen(true);
+  }, []);
+
+  /**
+   * 挿入位置の step_order を求める。
+   * - insertBeforeStepId 指定あり: そのステップの直前 (= 前ステップとの中間値)。先頭の場合は target - 1。
+   * - insertAfterStepId 指定あり: そのステップの直後 (= 後続との中間値)。末尾なら after + 1。
+   * - 両方 null: 「末尾」だが、オファーステップが存在する場合はオファーの直前へ。
+   * step_order は numeric なので小数値を持てる。
+   */
+  const computeInsertStepOrder = useCallback(
+    (params: { insertBeforeStepId?: string | null; insertAfterStepId?: string | null }): number => {
+      if (steps.length === 0) return 1;
+      const sorted = [...steps].sort((a, b) => a.step_order - b.step_order);
+
+      if (params.insertBeforeStepId) {
+        const idx = sorted.findIndex((s) => s.id === params.insertBeforeStepId);
+        if (idx === -1) {
+          return sorted[sorted.length - 1].step_order + 1;
+        }
+        const target = sorted[idx];
+        const prev = sorted[idx - 1];
+        if (!prev) {
+          return target.step_order - 1;
+        }
+        return (prev.step_order + target.step_order) / 2;
+      }
+
+      const insertAfterStepId = params.insertAfterStepId ?? null;
+      if (!insertAfterStepId) {
+        const offerIdx = sorted.findIndex((s) => s.step_type === StepType.Offer);
+        if (offerIdx === -1) {
+          return sorted[sorted.length - 1].step_order + 1;
+        }
+        const offerStep = sorted[offerIdx];
+        const beforeStep = sorted[offerIdx - 1];
+        if (!beforeStep) {
+          return offerStep.step_order - 1;
+        }
+        return (beforeStep.step_order + offerStep.step_order) / 2;
+      }
+
+      const afterIdx = sorted.findIndex((s) => s.id === insertAfterStepId);
+      if (afterIdx === -1) {
+        return sorted[sorted.length - 1].step_order + 1;
+      }
+      const afterStep = sorted[afterIdx];
+      const nextStep = sorted[afterIdx + 1];
+      if (!nextStep) {
+        return afterStep.step_order + 1;
+      }
+      return (afterStep.step_order + nextStep.step_order) / 2;
+    },
+    [steps]
+  );
+
+  const saveAdHocStep = useCallback(
+    async (input: {
+      step_type: string;
+      label: string;
+      form_id?: string | null;
+      interview_id?: string | null;
+      screening_type?: string | null;
+      requires_review?: boolean;
+      is_optional?: boolean;
+      description?: string | null;
+      insert_after_step_id?: string | null;
+      insert_before_step_id?: string | null;
+    }): Promise<{ success: boolean; error?: string }> => {
+      const client = getSupabase();
+      const { insert_after_step_id, insert_before_step_id, ...rest } = input;
+      try {
+        if (editingAdHocStep) {
+          const { error } = await applicationRepository.updateAdHocStep(
+            client,
+            editingAdHocStep.id,
+            rest
+          );
+          if (error) throw error;
+        } else {
+          const { error } = await applicationRepository.insertAdHocStep(client, {
+            application_id: id,
+            step_order: computeInsertStepOrder({
+              insertAfterStepId: insert_after_step_id ?? null,
+              insertBeforeStepId: insert_before_step_id ?? null,
+            }),
+            created_by_user_id: user?.id ?? null,
+            ...rest,
+          });
+          if (error) throw error;
+        }
+        setAdHocDialogOpen(false);
+        setEditingAdHocStep(null);
+        setAdHocInsertBeforeStepId(null);
+        load();
+        return { success: true };
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "ステップの保存に失敗しました";
+        return { success: false, error: message };
+      }
+    },
+    [id, editingAdHocStep, computeInsertStepOrder, user, load]
+  );
+
+  const deleteAdHocStep = useCallback(
+    async (step: ApplicationStep): Promise<{ success: boolean; error?: string }> => {
+      if (step.source !== "ad_hoc" || step.status !== StepStatus.Pending) {
+        return { success: false, error: "このステップは削除できません" };
+      }
+      const { error } = await applicationRepository.deleteAdHocStep(getSupabase(), step.id);
+      if (error) {
+        return { success: false, error: "ステップの削除に失敗しました" };
+      }
+      load();
+      return { success: true };
+    },
+    [load]
+  );
+
+  const loadResourcesForAdHoc = useCallback(async () => {
+    if (!organization) return;
+    const client = getSupabase();
+    setResourcesLoading(true);
+    try {
+      const [formData, interviewData] = await Promise.all([
+        applicationRepository.fetchForms(client, organization.id),
+        applicationRepository.fetchInterviews(client, organization.id),
+      ]);
+      setForms(formData);
+      setInterviews(interviewData);
+    } finally {
+      setResourcesLoading(false);
+    }
+  }, [organization]);
+
   const createOfferAndUpdateStatus = useCallback(
     async (offerData: {
       salary?: string;
@@ -423,6 +574,17 @@ export function useApplicationDetail(id: string) {
     rejectionDialogOpen,
     setRejectionDialogOpen,
     rejectApplicationWithReason,
+
+    // アドホックステップ
+    adHocDialogOpen,
+    setAdHocDialogOpen,
+    editingAdHocStep,
+    adHocInsertBeforeStepId,
+    openAddAdHocStep,
+    openEditAdHocStep,
+    saveAdHocStep,
+    deleteAdHocStep,
+    loadResourcesForAdHoc,
 
     load,
   };

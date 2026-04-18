@@ -58,6 +58,8 @@ export async function updateJob(
     location: string | null;
     employment_type: string | null;
     salary_range: string | null;
+    closing_at?: string | null;
+    applicant_limit?: number | null;
   }
 ) {
   return client.from("jobs").update(data).eq("id", jobId).eq("organization_id", organizationId);
