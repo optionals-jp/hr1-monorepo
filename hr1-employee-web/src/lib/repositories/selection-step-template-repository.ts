@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { SelectionStepTemplate } from "@/types/database";
+import type { DeadlineSettings, SelectionStepTemplate } from "@/types/database";
 
 export async function findByOrg(
   client: SupabaseClient,
@@ -27,7 +27,7 @@ export async function createTemplate(
     requires_review: boolean;
     description: string | null;
     sort_order: number;
-  }
+  } & Partial<DeadlineSettings>
 ): Promise<SelectionStepTemplate> {
   const { data, error } = await client
     .from("selection_step_templates")
@@ -51,7 +51,7 @@ export async function updateTemplate(
     description?: string | null;
     sort_order?: number;
     flow_id?: string | null;
-  }
+  } & Partial<DeadlineSettings>
 ): Promise<void> {
   const { error } = await client
     .from("selection_step_templates")

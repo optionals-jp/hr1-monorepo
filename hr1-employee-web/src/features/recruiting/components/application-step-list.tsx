@@ -28,6 +28,35 @@ interface ApplicationStepListProps {
   onAddBefore?: (step: ApplicationStep) => void;
 }
 
+/** 期限の状態判定。now はテスト安定化のため引数で受け取る。 */
+type DeadlineState = "none" | "overdue" | "soon" | "normal";
+
+function computeDeadlineState(
+  step: ApplicationStep,
+  now: Date
+): { state: DeadlineState; deadline: Date | null } {
+  if (!step.deadline_at) return { state: "none", deadline: null };
+  const deadline = new Date(step.deadline_at);
+  // 完了・スキップ済みは判定対象外 (表示のみ)
+  if (step.status === StepStatus.Completed || step.status === StepStatus.Skipped) {
+    return { state: "normal", deadline };
+  }
+  // 進行中のみ overdue 判定。pending は期限超過でも「未着手」のままとする
+  if (step.status === StepStatus.InProgress && deadline.getTime() < now.getTime()) {
+    return { state: "overdue", deadline };
+  }
+  const diffMs = deadline.getTime() - now.getTime();
+  const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+  if (diffMs >= 0 && diffMs <= threeDaysMs) {
+    return { state: "soon", deadline };
+  }
+  return { state: "normal", deadline };
+}
+
+// テスト用エクスポート
+export { computeDeadlineState };
+export type { DeadlineState };
+
 export function ApplicationStepList({
   steps,
   canActOnStep,
@@ -47,6 +76,10 @@ export function ApplicationStepList({
     );
   }
 
+  // レンダー毎に単一の now を使うことで、各ステップの期限判定の基準を揃え、
+  // テストでの挙動を安定化させる。
+  const now = new Date();
+
   return (
     <div className="space-y-0">
       {steps.map((step, index) => {
@@ -57,6 +90,7 @@ export function ApplicationStepList({
         const canInsertBefore =
           !!onAddBefore &&
           (step.status === StepStatus.Pending || step.status === StepStatus.InProgress);
+        const { state: deadlineState, deadline } = computeDeadlineState(step, now);
 
         return (
           <div key={step.id} className="group/insert relative pt-3 first:pt-0">
@@ -72,7 +106,7 @@ export function ApplicationStepList({
               </button>
             )}
             <StepRow index={index} isLast={isLast} status={step.status}>
-              <StepCardShell highlight={isInProgress} dimmed={isSkipped}>
+              <StepCardShell highlight={isInProgress} dimmed={isSkipped} className="bg-white">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -97,6 +131,16 @@ export function ApplicationStepList({
                           進行中
                         </Badge>
                       )}
+                      {deadlineState === "overdue" && (
+                        <Badge className="text-xs bg-red-100 text-red-700 border-red-200">
+                          期限超過
+                        </Badge>
+                      )}
+                      {deadlineState === "soon" && (
+                        <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200">
+                          期限間近
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <StepTypeBadge stepType={step.step_type} />
@@ -107,6 +151,9 @@ export function ApplicationStepList({
                   {step.completed_at && isCompleted && `完了: ${formatYmdSlash(step.completed_at)}`}
                   {isSkipped && "スキップ"}
                   {step.status === StepStatus.Pending && "未着手"}
+                  {deadline && !isSkipped && (
+                    <span className="ml-2">期限: {formatYmdSlash(deadline.toISOString())}</span>
+                  )}
                 </p>
 
                 {step.description && (
@@ -134,6 +181,7 @@ export function ApplicationStepList({
                       <Button
                         size="xs"
                         variant="outline"
+                        nativeButton={false}
                         render={
                           <a
                             href={step.document_url}

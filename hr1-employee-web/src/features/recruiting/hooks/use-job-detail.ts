@@ -8,7 +8,7 @@ import {
   resolveStepRefs,
 } from "@/features/recruiting/reorder-steps";
 import { getSupabase } from "@/lib/supabase/browser";
-import type { Job, JobStep, Application, Interview } from "@/types/database";
+import type { Job, JobStep, Application, Interview, DeadlineSettings } from "@/types/database";
 import { useOrg } from "@/lib/org-context";
 import { StepType, FORM_STEP_TYPES } from "@/lib/constants";
 import * as jobRepository from "@/lib/repositories/job-repository";
@@ -134,6 +134,9 @@ export function useJobDetail() {
       template_id: null,
       screening_type: null,
       requires_review: false,
+      deadline_mode: "none",
+      deadline_offset_days: null,
+      fixed_deadline_date: null,
     };
 
     setSteps((prev) => [...prev, newStep]);
@@ -158,14 +161,14 @@ export function useJobDetail() {
 
   const saveStepsManage = async (
     updatedSteps: JobStep[],
-    newSteps: {
+    newSteps: ({
       step_type: string;
       label: string;
       form_id: string | null;
       interview_id: string | null;
       screening_type: string | null;
       requires_review: boolean;
-    }[],
+    } & DeadlineSettings)[],
     deletedIds: string[]
   ) => {
     setSavingStepManage(true);
@@ -185,6 +188,9 @@ export function useJobDetail() {
           screening_type: s.screening_type,
           requires_review: s.requires_review,
           step_order: s.step_order,
+          deadline_mode: s.deadline_mode,
+          deadline_offset_days: s.deadline_offset_days,
+          fixed_deadline_date: s.fixed_deadline_date,
         });
       }
 
@@ -202,6 +208,9 @@ export function useJobDetail() {
           template_id: null,
           screening_type: s.screening_type,
           requires_review: s.requires_review,
+          deadline_mode: s.deadline_mode,
+          deadline_offset_days: s.deadline_offset_days,
+          fixed_deadline_date: s.fixed_deadline_date,
         });
       }
 

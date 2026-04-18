@@ -73,13 +73,17 @@ class SupabaseMessagesRepository implements MessagesRepository {
 
   @override
   Future<List<Message>> getMessages(String threadId) async {
-    final response = await _client
-        .from('messages')
-        .select('*, sender:sender_id(id, display_name, role)')
-        .eq('thread_id', threadId)
-        .order('created_at', ascending: true);
-
-    return (response as List)
+    // HR-28: thread 参加者チェックを RPC (SECURITY DEFINER) に委譲。
+    // `.eq('thread_id', threadId)` だけでは RLS のバイパスが疑わしい場合に
+    // 他テナントのメッセージを誤取得するリスクがあるため、
+    // get_my_accessible_thread_ids() で検証する get_thread_messages を使う。
+    // p_limit は NULL（PostgreSQL の LIMIT NULL = 無制限）。
+    final response = await _client.rpc(
+      'get_thread_messages',
+      params: {'p_thread_id': threadId, 'p_before': null, 'p_limit': null},
+    );
+    final rows = response as List? ?? [];
+    return rows
         .map((row) => Message.fromJson(Map<String, dynamic>.from(row)))
         .toList();
   }
@@ -90,25 +94,19 @@ class SupabaseMessagesRepository implements MessagesRepository {
     DateTime? before,
     int limit = 30,
   }) async {
-    var query = _client
-        .from('messages')
-        .select('*, sender:sender_id(id, display_name, role)')
-        .eq('thread_id', threadId);
-
-    if (before != null) {
-      query = query.lt('created_at', before.toUtc().toIso8601String());
-    }
-
-    final response = await query
-        .order('created_at', ascending: false)
-        .limit(limit);
-
-    final messages = (response as List)
+    // HR-28: RPC 経由で thread 参加者チェックを強制する。
+    final response = await _client.rpc(
+      'get_thread_messages',
+      params: {
+        'p_thread_id': threadId,
+        'p_before': before?.toUtc().toIso8601String(),
+        'p_limit': limit,
+      },
+    );
+    final rows = response as List? ?? [];
+    return rows
         .map((row) => Message.fromJson(Map<String, dynamic>.from(row)))
         .toList();
-
-    // 古い順に並べ替えて返す
-    return messages.reversed.toList();
   }
 
   @override

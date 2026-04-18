@@ -3,9 +3,16 @@ import 'package:hr1_employee_app/features/attendance/domain/entities/attendance_
 
 /// 勤怠データのSupabaseリポジトリ
 class SupabaseAttendanceRepository {
-  SupabaseAttendanceRepository(this._client, {this.overrideUserId});
+  SupabaseAttendanceRepository(
+    this._client, {
+    required this.activeOrganizationId,
+    this.overrideUserId,
+  });
 
   final SupabaseClient _client;
+
+  /// 現在アクティブな組織ID
+  final String activeOrganizationId;
 
   /// 開発モード等でAuth未使用時にユーザーIDを外部から注入
   final String? overrideUserId;
@@ -16,17 +23,6 @@ class SupabaseAttendanceRepository {
       throw StateError('ユーザーが認証されていません');
     }
     return id;
-  }
-
-  /// user_organizations 経由で組織IDを取得
-  Future<String> _getOrganizationId() async {
-    final userOrg = await _client
-        .from('user_organizations')
-        .select('organization_id')
-        .eq('user_id', _userId)
-        .limit(1)
-        .single();
-    return userOrg['organization_id'] as String;
   }
 
   /// サーバ側の現在時刻を取得
@@ -117,7 +113,7 @@ class SupabaseAttendanceRepository {
     final now = await _serverNow();
     final today = await _serverToday();
     final nowUtc = now.toUtc().toIso8601String();
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
 
     // 勤怠レコードを作成または更新
     final record = await _client
@@ -151,7 +147,7 @@ class SupabaseAttendanceRepository {
     final now = await _serverNow();
     final today = await _serverToday();
     final nowUtc = now.toUtc().toIso8601String();
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
 
     // 勤怠設定を取得して残業・深夜時間を計算
     final settings = await getSettings();
@@ -296,7 +292,7 @@ class SupabaseAttendanceRepository {
     final now = await _serverNow();
     final today = await _serverToday();
     final nowUtc = now.toUtc().toIso8601String();
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
 
     // 今日のレコードIDを取得
     final record = await _client
@@ -320,7 +316,7 @@ class SupabaseAttendanceRepository {
     final now = await _serverNow();
     final today = await _serverToday();
     final nowUtc = now.toUtc().toIso8601String();
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
 
     final record = await _client
         .from('attendance_records')
@@ -376,12 +372,10 @@ class SupabaseAttendanceRepository {
 
   /// 勤怠設定を取得
   Future<AttendanceSettings> getSettings() async {
-    final orgId = await _getOrganizationId();
-
     final response = await _client
         .from('attendance_settings')
         .select()
-        .eq('organization_id', orgId)
+        .eq('organization_id', activeOrganizationId)
         .maybeSingle();
 
     if (response == null) return const AttendanceSettings();
@@ -402,7 +396,7 @@ class SupabaseAttendanceRepository {
     List<Map<String, dynamic>>? punchCorrections,
     required String reason,
   }) async {
-    final orgId = await _getOrganizationId();
+    final orgId = activeOrganizationId;
 
     await _client.from('attendance_corrections').insert({
       'organization_id': orgId,

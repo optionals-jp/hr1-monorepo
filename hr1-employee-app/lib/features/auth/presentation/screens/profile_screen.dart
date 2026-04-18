@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/core/organization/organization_switcher_tile.dart';
 import 'package:hr1_employee_app/core/router/app_router.dart';
 import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 import 'package:hr1_employee_app/features/auth/presentation/controllers/auth_controller.dart';
@@ -81,6 +82,7 @@ class ProfileScreen extends ConsumerWidget {
                   context.push(AppRoutes.profileEdit);
                 },
               ),
+              const OrganizationSwitcherTile(),
               MenuRow(
                 icon: AppIcons.notification(),
                 title: '通知設定',

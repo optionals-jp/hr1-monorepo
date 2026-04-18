@@ -79,15 +79,6 @@ type ApplicationsSummaryKey =
   | "offered"
   | "offerAccepted";
 
-const summaryCards: readonly SummaryCardConfig<ApplicationsSummaryKey>[] = [
-  { key: "total", label: "総応募数", icon: Users, iconClassName: "text-slate-600" },
-  { key: "newGrad", label: "新卒", icon: GraduationCap, iconClassName: "text-blue-600" },
-  { key: "midCareer", label: "中途", icon: Briefcase, iconClassName: "text-indigo-600" },
-  { key: "active", label: "選考中", icon: Loader2, iconClassName: "text-amber-600" },
-  { key: "offered", label: "内定", icon: CircleCheck, iconClassName: "text-emerald-600" },
-  { key: "offerAccepted", label: "内定承諾", icon: ThumbsUp, iconClassName: "text-green-600" },
-];
-
 export default function ApplicationsPage() {
   const router = useRouter();
   const { organization } = useOrg();
@@ -100,6 +91,8 @@ export default function ApplicationsPage() {
     setFilterJobId,
     filterSource,
     setFilterSource,
+    filterHiringType,
+    setFilterHiringType,
     jobs,
     summary,
     isLoading,
@@ -108,6 +101,82 @@ export default function ApplicationsPage() {
     filtered,
     getCurrentStepLabel,
   } = useApplicationsPage();
+
+  // サマリカード：タップで単一メトリクスをフィルタ条件に設定する。
+  // active 判定は status_filter / hiring_type のみで決まり、
+  // 検索語・求人・応募経路フィルタの有無には影響されない（別軸のフィルタのため）。
+  // 複数フィルタが組み合わさっている場合（例: 新卒 × 選考中）はどのカードも非 active。
+  // total カードは status / hiring_type のみクリアし、
+  // 検索語・求人・応募経路はユーザが明示設定した条件のため温存する。
+  // NOTE: React Compiler が自動メモ化するため手動 useMemo は不要。
+  const summaryCards: readonly SummaryCardConfig<ApplicationsSummaryKey>[] = [
+    {
+      key: "total",
+      label: "総応募数",
+      icon: Users,
+      iconClassName: "text-slate-600",
+      onClick: () => {
+        setStatusFilter("all");
+        setFilterHiringType("all");
+      },
+      active: statusFilter === "all" && filterHiringType === "all",
+    },
+    {
+      key: "newGrad",
+      label: "新卒",
+      icon: GraduationCap,
+      iconClassName: "text-blue-600",
+      onClick: () => {
+        setStatusFilter("all");
+        setFilterHiringType("new_grad");
+      },
+      active: statusFilter === "all" && filterHiringType === "new_grad",
+    },
+    {
+      key: "midCareer",
+      label: "中途",
+      icon: Briefcase,
+      iconClassName: "text-indigo-600",
+      onClick: () => {
+        setStatusFilter("all");
+        setFilterHiringType("mid_career");
+      },
+      active: statusFilter === "all" && filterHiringType === "mid_career",
+    },
+    {
+      key: "active",
+      label: "選考中",
+      icon: Loader2,
+      iconClassName: "text-amber-600",
+      onClick: () => {
+        setStatusFilter(ApplicationStatus.Active);
+        setFilterHiringType("all");
+      },
+      active: statusFilter === ApplicationStatus.Active && filterHiringType === "all",
+    },
+    {
+      key: "offered",
+      label: "内定",
+      icon: CircleCheck,
+      iconClassName: "text-emerald-600",
+      onClick: () => {
+        setStatusFilter(ApplicationStatus.Offered);
+        setFilterHiringType("all");
+      },
+      active: statusFilter === ApplicationStatus.Offered && filterHiringType === "all",
+    },
+    {
+      key: "offerAccepted",
+      label: "内定承諾",
+      icon: ThumbsUp,
+      iconClassName: "text-green-600",
+      onClick: () => {
+        setStatusFilter(ApplicationStatus.OfferAccepted);
+        setFilterHiringType("all");
+      },
+      active: statusFilter === ApplicationStatus.OfferAccepted && filterHiringType === "all",
+    },
+  ];
   const bulk = useBulkSelection(filtered);
   const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
   const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
@@ -162,8 +231,23 @@ export default function ApplicationsPage() {
           <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
-            {(filterJobId !== "all" || filterSource !== "all") && (
+            {(filterJobId !== "all" || filterSource !== "all" || filterHiringType !== "all") && (
               <div className="flex items-center gap-1.5 overflow-x-auto">
+                {filterHiringType !== "all" && (
+                  <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                    採用区分：{filterHiringType === "new_grad" ? "新卒" : "中途"}
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFilterHiringType("all");
+                      }}
+                      className="ml-0.5 hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </span>
+                  </Badge>
+                )}
                 {filterJobId !== "all" && (
                   <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
                     求人：{jobs.find((j) => j.id === filterJobId)?.title}

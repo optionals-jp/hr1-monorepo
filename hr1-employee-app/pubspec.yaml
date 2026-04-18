@@ -67,6 +67,9 @@ dependencies:
   # URL起動
   url_launcher: ^6.3.1
 
+  # ローカル永続化（HR-28 follow-up: activeOrganizationId 保存）
+  shared_preferences: ^2.5.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

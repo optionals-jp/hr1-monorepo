@@ -173,7 +173,7 @@ export function JobDetailTab({
 
                     return (
                       <StepRow key={step.id} index={index} isLast={false}>
-                        <StepCardShell>
+                        <StepCardShell className="bg-white">
                           <div className="flex items-start justify-between gap-3">
                             <h3 className="text-sm font-semibold truncate flex-1 leading-snug">
                               {step.label}
@@ -188,7 +188,7 @@ export function JobDetailTab({
                     );
                   })}
                   <StepRow index={totalRows - 1} isLast status="completed">
-                    <StepCardShell>
+                    <StepCardShell className="bg-white">
                       <div className="flex items-start justify-between gap-3">
                         <h3 className="text-sm font-semibold truncate flex-1 leading-snug">内定</h3>
                         <StepTypeBadge stepType={StepType.Offer} />

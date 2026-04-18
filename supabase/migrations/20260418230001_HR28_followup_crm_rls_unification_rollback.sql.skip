@@ -1,0 +1,522 @@
+-- HR-28 follow-up ROLLBACK: CRM 20 tables 65 policies from public.get_my_organization_ids() back to public.get_my_organization_id()
+--
+-- このファイルは `.skip` 拡張子のため Supabase CLI/MCP の自動マイグレーション対象外。
+-- 緊急ロールバックが必要な場合のみ `.skip` を外して apply_migration で適用する。
+--
+-- 方針: 20260418230000_HR28_followup_crm_rls_unification.sql と同じ in-place REPLACE を
+-- 行うが、qual/with_check を旧 helper `public.get_my_organization_id()` (単数・LIMIT 1) に戻す。
+-- マルチ組織所属ユーザーにバグが再発するが、緊急の一時退避用途に限り許容する。
+--
+-- 注意:
+--   - 旧 helper `public.get_my_organization_id()` がまだ存在していること (未 DROP) が前提。
+--   - rollback 後は必ず follow-up チケットで再修正し、`.skip` に戻すこと。
+
+BEGIN;
+SET LOCAL statement_timeout = '5min';
+
+-- ====================================================================
+-- (0) 旧 helper 関数の存在 assert (rollback 先として必要)
+-- ====================================================================
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'get_my_organization_id'
+  ) THEN
+    RAISE EXCEPTION 'HR-28 rollback: public.get_my_organization_id() (singular) is missing. Aborting — rollback target helper not available.';
+  END IF;
+END $$;
+
+-- ====================================================================
+-- (1) crm_activities (per-cmd S/I/U/D, authenticated)
+-- ====================================================================
+DROP POLICY IF EXISTS crm_activities_select ON public.crm_activities;
+CREATE POLICY crm_activities_select ON public.crm_activities
+  FOR SELECT TO authenticated
+  USING (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_activities_insert ON public.crm_activities;
+CREATE POLICY crm_activities_insert ON public.crm_activities
+  FOR INSERT TO authenticated
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_activities_update ON public.crm_activities;
+CREATE POLICY crm_activities_update ON public.crm_activities
+  FOR UPDATE TO authenticated
+  USING (organization_id = public.get_my_organization_id())
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_activities_delete ON public.crm_activities;
+CREATE POLICY crm_activities_delete ON public.crm_activities
+  FOR DELETE TO authenticated
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- (2) crm_automation_logs (ALL, public) - ALL-only SELECT テーブル
+-- ====================================================================
+DROP POLICY IF EXISTS crm_automation_logs_org_isolation ON public.crm_automation_logs;
+CREATE POLICY crm_automation_logs_org_isolation ON public.crm_automation_logs
+  FOR ALL TO public
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- (3) crm_automation_rules (ALL, public) - ALL-only SELECT テーブル
+-- ====================================================================
+DROP POLICY IF EXISTS crm_automation_rules_org_isolation ON public.crm_automation_rules;
+CREATE POLICY crm_automation_rules_org_isolation ON public.crm_automation_rules
+  FOR ALL TO public
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- (4) crm_cards (per-cmd S/I/D authenticated, U public - 現行維持)
+-- ====================================================================
+DROP POLICY IF EXISTS crm_cards_select ON public.crm_cards;
+CREATE POLICY crm_cards_select ON public.crm_cards
+  FOR SELECT TO authenticated
+  USING (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_cards_insert ON public.crm_cards;
+CREATE POLICY crm_cards_insert ON public.crm_cards
+  FOR INSERT TO authenticated
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_cards_update ON public.crm_cards;
+CREATE POLICY crm_cards_update ON public.crm_cards
+  FOR UPDATE TO public
+  USING (organization_id = public.get_my_organization_id())
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_cards_delete ON public.crm_cards;
+CREATE POLICY crm_cards_delete ON public.crm_cards
+  FOR DELETE TO authenticated
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- (5) crm_companies (per-cmd S/I/U/D, authenticated)
+-- ====================================================================
+DROP POLICY IF EXISTS crm_companies_select ON public.crm_companies;
+CREATE POLICY crm_companies_select ON public.crm_companies
+  FOR SELECT TO authenticated
+  USING (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_companies_insert ON public.crm_companies;
+CREATE POLICY crm_companies_insert ON public.crm_companies
+  FOR INSERT TO authenticated
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_companies_update ON public.crm_companies;
+CREATE POLICY crm_companies_update ON public.crm_companies
+  FOR UPDATE TO authenticated
+  USING (organization_id = public.get_my_organization_id())
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_companies_delete ON public.crm_companies;
+CREATE POLICY crm_companies_delete ON public.crm_companies
+  FOR DELETE TO authenticated
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- (6) crm_contacts (per-cmd S/I/U/D, authenticated)
+-- ====================================================================
+DROP POLICY IF EXISTS crm_contacts_select ON public.crm_contacts;
+CREATE POLICY crm_contacts_select ON public.crm_contacts
+  FOR SELECT TO authenticated
+  USING (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_contacts_insert ON public.crm_contacts;
+CREATE POLICY crm_contacts_insert ON public.crm_contacts
+  FOR INSERT TO authenticated
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_contacts_update ON public.crm_contacts;
+CREATE POLICY crm_contacts_update ON public.crm_contacts
+  FOR UPDATE TO authenticated
+  USING (organization_id = public.get_my_organization_id())
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_contacts_delete ON public.crm_contacts;
+CREATE POLICY crm_contacts_delete ON public.crm_contacts
+  FOR DELETE TO authenticated
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- (7) crm_deal_contacts (per-cmd S/I/U/D, public - 現行維持)
+-- ====================================================================
+DROP POLICY IF EXISTS crm_deal_contacts_select ON public.crm_deal_contacts;
+CREATE POLICY crm_deal_contacts_select ON public.crm_deal_contacts
+  FOR SELECT TO public
+  USING (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_deal_contacts_insert ON public.crm_deal_contacts;
+CREATE POLICY crm_deal_contacts_insert ON public.crm_deal_contacts
+  FOR INSERT TO public
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_deal_contacts_update ON public.crm_deal_contacts;
+CREATE POLICY crm_deal_contacts_update ON public.crm_deal_contacts
+  FOR UPDATE TO public
+  USING (organization_id = public.get_my_organization_id())
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_deal_contacts_delete ON public.crm_deal_contacts;
+CREATE POLICY crm_deal_contacts_delete ON public.crm_deal_contacts
+  FOR DELETE TO public
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- (8) crm_deals (per-cmd S/I/U/D, authenticated)
+-- ====================================================================
+DROP POLICY IF EXISTS crm_deals_select ON public.crm_deals;
+CREATE POLICY crm_deals_select ON public.crm_deals
+  FOR SELECT TO authenticated
+  USING (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_deals_insert ON public.crm_deals;
+CREATE POLICY crm_deals_insert ON public.crm_deals
+  FOR INSERT TO authenticated
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_deals_update ON public.crm_deals;
+CREATE POLICY crm_deals_update ON public.crm_deals
+  FOR UPDATE TO authenticated
+  USING (organization_id = public.get_my_organization_id())
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_deals_delete ON public.crm_deals;
+CREATE POLICY crm_deals_delete ON public.crm_deals
+  FOR DELETE TO authenticated
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- (9) crm_email_templates (ALL, public) - ALL-only SELECT テーブル
+-- ====================================================================
+DROP POLICY IF EXISTS crm_email_templates_org_isolation ON public.crm_email_templates;
+CREATE POLICY crm_email_templates_org_isolation ON public.crm_email_templates
+  FOR ALL TO public
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- (10) crm_field_definitions (per-cmd I/U/D + ALL, public)
+--      ALL policy が SELECT の唯一の供給源なので保持する
+-- ====================================================================
+DROP POLICY IF EXISTS crm_field_definitions_insert ON public.crm_field_definitions;
+CREATE POLICY crm_field_definitions_insert ON public.crm_field_definitions
+  FOR INSERT TO public
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_field_definitions_update ON public.crm_field_definitions;
+CREATE POLICY crm_field_definitions_update ON public.crm_field_definitions
+  FOR UPDATE TO public
+  USING (organization_id = public.get_my_organization_id())
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_field_definitions_delete ON public.crm_field_definitions;
+CREATE POLICY crm_field_definitions_delete ON public.crm_field_definitions
+  FOR DELETE TO public
+  USING (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_field_definitions_org_isolation ON public.crm_field_definitions;
+CREATE POLICY crm_field_definitions_org_isolation ON public.crm_field_definitions
+  FOR ALL TO public
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- (11) crm_field_values (per-cmd I/U/D + ALL, public)
+-- ====================================================================
+DROP POLICY IF EXISTS crm_field_values_insert ON public.crm_field_values;
+CREATE POLICY crm_field_values_insert ON public.crm_field_values
+  FOR INSERT TO public
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_field_values_update ON public.crm_field_values;
+CREATE POLICY crm_field_values_update ON public.crm_field_values
+  FOR UPDATE TO public
+  USING (organization_id = public.get_my_organization_id())
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_field_values_delete ON public.crm_field_values;
+CREATE POLICY crm_field_values_delete ON public.crm_field_values
+  FOR DELETE TO public
+  USING (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_field_values_org_isolation ON public.crm_field_values;
+CREATE POLICY crm_field_values_org_isolation ON public.crm_field_values
+  FOR ALL TO public
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- (12) crm_leads (per-cmd S/I/U/D, public - 現行維持)
+-- ====================================================================
+DROP POLICY IF EXISTS crm_leads_select ON public.crm_leads;
+CREATE POLICY crm_leads_select ON public.crm_leads
+  FOR SELECT TO public
+  USING (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_leads_insert ON public.crm_leads;
+CREATE POLICY crm_leads_insert ON public.crm_leads
+  FOR INSERT TO public
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_leads_update ON public.crm_leads;
+CREATE POLICY crm_leads_update ON public.crm_leads
+  FOR UPDATE TO public
+  USING (organization_id = public.get_my_organization_id())
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_leads_delete ON public.crm_leads;
+CREATE POLICY crm_leads_delete ON public.crm_leads
+  FOR DELETE TO public
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- (13) crm_pipeline_stages (per-cmd I/U/D + ALL, public)
+--      pipeline_id 経由の IN scope
+-- ====================================================================
+DROP POLICY IF EXISTS crm_pipeline_stages_insert ON public.crm_pipeline_stages;
+CREATE POLICY crm_pipeline_stages_insert ON public.crm_pipeline_stages
+  FOR INSERT TO public
+  WITH CHECK (
+    pipeline_id IN (
+      SELECT id FROM public.crm_pipelines
+      WHERE organization_id = public.get_my_organization_id()
+    )
+  );
+
+DROP POLICY IF EXISTS crm_pipeline_stages_update ON public.crm_pipeline_stages;
+CREATE POLICY crm_pipeline_stages_update ON public.crm_pipeline_stages
+  FOR UPDATE TO public
+  USING (
+    pipeline_id IN (
+      SELECT id FROM public.crm_pipelines
+      WHERE organization_id = public.get_my_organization_id()
+    )
+  )
+  WITH CHECK (
+    pipeline_id IN (
+      SELECT id FROM public.crm_pipelines
+      WHERE organization_id = public.get_my_organization_id()
+    )
+  );
+
+DROP POLICY IF EXISTS crm_pipeline_stages_delete ON public.crm_pipeline_stages;
+CREATE POLICY crm_pipeline_stages_delete ON public.crm_pipeline_stages
+  FOR DELETE TO public
+  USING (
+    pipeline_id IN (
+      SELECT id FROM public.crm_pipelines
+      WHERE organization_id = public.get_my_organization_id()
+    )
+  );
+
+DROP POLICY IF EXISTS crm_pipeline_stages_org_isolation ON public.crm_pipeline_stages;
+CREATE POLICY crm_pipeline_stages_org_isolation ON public.crm_pipeline_stages
+  FOR ALL TO public
+  USING (
+    pipeline_id IN (
+      SELECT id FROM public.crm_pipelines
+      WHERE organization_id = public.get_my_organization_id()
+    )
+  );
+
+-- ====================================================================
+-- (14) crm_pipelines (per-cmd I/U/D + ALL, public)
+-- ====================================================================
+DROP POLICY IF EXISTS crm_pipelines_insert ON public.crm_pipelines;
+CREATE POLICY crm_pipelines_insert ON public.crm_pipelines
+  FOR INSERT TO public
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_pipelines_update ON public.crm_pipelines;
+CREATE POLICY crm_pipelines_update ON public.crm_pipelines
+  FOR UPDATE TO public
+  USING (organization_id = public.get_my_organization_id())
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_pipelines_delete ON public.crm_pipelines;
+CREATE POLICY crm_pipelines_delete ON public.crm_pipelines
+  FOR DELETE TO public
+  USING (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_pipelines_org_isolation ON public.crm_pipelines;
+CREATE POLICY crm_pipelines_org_isolation ON public.crm_pipelines
+  FOR ALL TO public
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- (15) crm_quote_items (per-cmd S/I/U/D, public)
+--      quote_id 経由の IN scope
+-- ====================================================================
+DROP POLICY IF EXISTS crm_quote_items_select ON public.crm_quote_items;
+CREATE POLICY crm_quote_items_select ON public.crm_quote_items
+  FOR SELECT TO public
+  USING (
+    quote_id IN (
+      SELECT id FROM public.crm_quotes
+      WHERE organization_id = public.get_my_organization_id()
+    )
+  );
+
+DROP POLICY IF EXISTS crm_quote_items_insert ON public.crm_quote_items;
+CREATE POLICY crm_quote_items_insert ON public.crm_quote_items
+  FOR INSERT TO public
+  WITH CHECK (
+    quote_id IN (
+      SELECT id FROM public.crm_quotes
+      WHERE organization_id = public.get_my_organization_id()
+    )
+  );
+
+DROP POLICY IF EXISTS crm_quote_items_update ON public.crm_quote_items;
+CREATE POLICY crm_quote_items_update ON public.crm_quote_items
+  FOR UPDATE TO public
+  USING (
+    quote_id IN (
+      SELECT id FROM public.crm_quotes
+      WHERE organization_id = public.get_my_organization_id()
+    )
+  )
+  WITH CHECK (
+    quote_id IN (
+      SELECT id FROM public.crm_quotes
+      WHERE organization_id = public.get_my_organization_id()
+    )
+  );
+
+DROP POLICY IF EXISTS crm_quote_items_delete ON public.crm_quote_items;
+CREATE POLICY crm_quote_items_delete ON public.crm_quote_items
+  FOR DELETE TO public
+  USING (
+    quote_id IN (
+      SELECT id FROM public.crm_quotes
+      WHERE organization_id = public.get_my_organization_id()
+    )
+  );
+
+-- ====================================================================
+-- (16) crm_quotes (per-cmd S/I/U/D, public)
+-- ====================================================================
+DROP POLICY IF EXISTS crm_quotes_select ON public.crm_quotes;
+CREATE POLICY crm_quotes_select ON public.crm_quotes
+  FOR SELECT TO public
+  USING (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_quotes_insert ON public.crm_quotes;
+CREATE POLICY crm_quotes_insert ON public.crm_quotes
+  FOR INSERT TO public
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_quotes_update ON public.crm_quotes;
+CREATE POLICY crm_quotes_update ON public.crm_quotes
+  FOR UPDATE TO public
+  USING (organization_id = public.get_my_organization_id())
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_quotes_delete ON public.crm_quotes;
+CREATE POLICY crm_quotes_delete ON public.crm_quotes
+  FOR DELETE TO public
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- (17) crm_saved_views (per-cmd S/I/U/D, public)
+--      user_id = auth.uid()::text の追加条件を温存
+-- ====================================================================
+DROP POLICY IF EXISTS crm_saved_views_select ON public.crm_saved_views;
+CREATE POLICY crm_saved_views_select ON public.crm_saved_views
+  FOR SELECT TO public
+  USING (
+    organization_id = public.get_my_organization_id()
+    AND (user_id = (auth.uid())::text OR is_shared = true)
+  );
+
+DROP POLICY IF EXISTS crm_saved_views_insert ON public.crm_saved_views;
+CREATE POLICY crm_saved_views_insert ON public.crm_saved_views
+  FOR INSERT TO public
+  WITH CHECK (
+    organization_id = public.get_my_organization_id()
+    AND user_id = (auth.uid())::text
+  );
+
+DROP POLICY IF EXISTS crm_saved_views_update ON public.crm_saved_views;
+CREATE POLICY crm_saved_views_update ON public.crm_saved_views
+  FOR UPDATE TO public
+  USING (
+    user_id = (auth.uid())::text
+    AND organization_id = public.get_my_organization_id()
+  )
+  WITH CHECK (
+    user_id = (auth.uid())::text
+    AND organization_id = public.get_my_organization_id()
+  );
+
+DROP POLICY IF EXISTS crm_saved_views_delete ON public.crm_saved_views;
+CREATE POLICY crm_saved_views_delete ON public.crm_saved_views
+  FOR DELETE TO public
+  USING (
+    user_id = (auth.uid())::text
+    AND organization_id = public.get_my_organization_id()
+  );
+
+-- ====================================================================
+-- (18) crm_todos (per-cmd S/I/U/D, authenticated)
+-- ====================================================================
+DROP POLICY IF EXISTS crm_todos_select ON public.crm_todos;
+CREATE POLICY crm_todos_select ON public.crm_todos
+  FOR SELECT TO authenticated
+  USING (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_todos_insert ON public.crm_todos;
+CREATE POLICY crm_todos_insert ON public.crm_todos
+  FOR INSERT TO authenticated
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_todos_update ON public.crm_todos;
+CREATE POLICY crm_todos_update ON public.crm_todos
+  FOR UPDATE TO authenticated
+  USING (organization_id = public.get_my_organization_id())
+  WITH CHECK (organization_id = public.get_my_organization_id());
+
+DROP POLICY IF EXISTS crm_todos_delete ON public.crm_todos;
+CREATE POLICY crm_todos_delete ON public.crm_todos
+  FOR DELETE TO authenticated
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- (19) crm_webhook_logs (ALL, public)
+-- ====================================================================
+DROP POLICY IF EXISTS crm_webhook_logs_org_isolation ON public.crm_webhook_logs;
+CREATE POLICY crm_webhook_logs_org_isolation ON public.crm_webhook_logs
+  FOR ALL TO public
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- (20) crm_webhooks (ALL, public)
+-- ====================================================================
+DROP POLICY IF EXISTS crm_webhooks_org_isolation ON public.crm_webhooks;
+CREATE POLICY crm_webhooks_org_isolation ON public.crm_webhooks
+  FOR ALL TO public
+  USING (organization_id = public.get_my_organization_id());
+
+-- ====================================================================
+-- ASSERTS
+-- ====================================================================
+
+-- ====================================================================
+-- ROLLBACK asserts: 全 crm_* policy が旧 helper を参照していること
+-- ====================================================================
+DO $$
+DECLARE v_bad int;
+BEGIN
+  SELECT COUNT(*) INTO v_bad FROM pg_policies
+  WHERE schemaname='public' AND tablename LIKE 'crm_%'
+    AND (
+      (qual IS NOT NULL AND qual::text ~ 'get_my_organization_ids\(\)')
+      OR
+      (with_check IS NOT NULL AND with_check::text ~ 'get_my_organization_ids\(\)')
+    );
+  IF v_bad <> 0 THEN
+    RAISE EXCEPTION 'HR-28 rollback: % crm_* policies still reference SETOF helper', v_bad;
+  END IF;
+END $$;
+
+COMMIT;

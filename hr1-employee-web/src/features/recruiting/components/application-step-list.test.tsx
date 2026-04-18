@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { ApplicationStepList } from "./application-step-list";
+import { ApplicationStepList, computeDeadlineState } from "./application-step-list";
 import type { ApplicationStep } from "@/types/database";
 
 function makeStep(overrides: Partial<ApplicationStep> = {}): ApplicationStep {
@@ -24,6 +24,10 @@ function makeStep(overrides: Partial<ApplicationStep> = {}): ApplicationStep {
     created_by_user_id: null,
     is_optional: false,
     description: null,
+    deadline_mode: "none",
+    deadline_offset_days: null,
+    fixed_deadline_date: null,
+    deadline_at: null,
     ...overrides,
   };
 }
@@ -163,5 +167,122 @@ describe("ApplicationStepList", () => {
     );
     expect(screen.getByRole("button", { name: "内定" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "不合格" })).toBeInTheDocument();
+  });
+});
+
+describe("computeDeadlineState", () => {
+  const now = new Date("2026-04-18T12:00:00+09:00");
+
+  it("deadline_at が null の場合は none を返す", () => {
+    const result = computeDeadlineState(makeStep({ deadline_at: null }), now);
+    expect(result.state).toBe("none");
+    expect(result.deadline).toBeNull();
+  });
+
+  it("InProgress で期限が過去なら overdue を返す", () => {
+    const result = computeDeadlineState(
+      makeStep({ status: "in_progress", deadline_at: "2026-04-17T14:59:59Z" }),
+      now
+    );
+    expect(result.state).toBe("overdue");
+  });
+
+  it("期限が 3 日以内なら soon を返す", () => {
+    const result = computeDeadlineState(
+      makeStep({ status: "in_progress", deadline_at: "2026-04-20T14:59:59Z" }),
+      now
+    );
+    expect(result.state).toBe("soon");
+  });
+
+  it("期限が 3 日超なら normal を返す", () => {
+    const result = computeDeadlineState(
+      makeStep({ status: "in_progress", deadline_at: "2026-04-30T14:59:59Z" }),
+      now
+    );
+    expect(result.state).toBe("normal");
+  });
+
+  it("Completed のときは overdue にならない (normal)", () => {
+    const result = computeDeadlineState(
+      makeStep({ status: "completed", deadline_at: "2026-04-17T14:59:59Z" }),
+      now
+    );
+    expect(result.state).toBe("normal");
+  });
+
+  it("Skipped のときは normal を返す", () => {
+    const result = computeDeadlineState(
+      makeStep({ status: "skipped", deadline_at: "2026-04-17T14:59:59Z" }),
+      now
+    );
+    expect(result.state).toBe("normal");
+  });
+});
+
+describe("ApplicationStepList deadline rendering", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-18T12:00:00+09:00"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("期限超過の InProgress ステップには「期限超過」バッジを表示する", () => {
+    render(
+      <ApplicationStepList
+        steps={[
+          makeStep({
+            status: "in_progress",
+            started_at: "2026-04-10T00:00:00Z",
+            deadline_at: "2026-04-17T14:59:59Z",
+          }),
+        ]}
+        canActOnStep={allow}
+        advanceStep={noop}
+        skipStep={noop}
+        unskipStep={noop}
+      />
+    );
+    expect(screen.getByText("期限超過")).toBeInTheDocument();
+  });
+
+  it("期限間近 (3日以内) のステップには「期限間近」バッジを表示する", () => {
+    render(
+      <ApplicationStepList
+        steps={[
+          makeStep({
+            status: "in_progress",
+            started_at: "2026-04-18T00:00:00Z",
+            deadline_at: "2026-04-20T14:59:59Z",
+          }),
+        ]}
+        canActOnStep={allow}
+        advanceStep={noop}
+        skipStep={noop}
+        unskipStep={noop}
+      />
+    );
+    expect(screen.getByText("期限間近")).toBeInTheDocument();
+  });
+
+  it("deadline_at があれば「期限: YYYY/MM/DD」を表示する", () => {
+    render(
+      <ApplicationStepList
+        steps={[
+          makeStep({
+            status: "in_progress",
+            started_at: "2026-04-18T00:00:00Z",
+            deadline_at: "2026-04-25T14:59:59Z",
+          }),
+        ]}
+        canActOnStep={allow}
+        advanceStep={noop}
+        skipStep={noop}
+        unskipStep={noop}
+      />
+    );
+    expect(screen.getByText(/期限: 2026\/04\/25/)).toBeInTheDocument();
   });
 });

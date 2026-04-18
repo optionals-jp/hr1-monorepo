@@ -11,7 +11,8 @@ import * as templateRepo from "@/lib/repositories/selection-step-template-reposi
 import * as applicationRepo from "@/lib/repositories/application-repository";
 import * as jobRepo from "@/lib/repositories/job-repository";
 import { validators, validateForm, type ValidationErrors } from "@hr1/shared-ui";
-import { StepStatus } from "@/lib/constants";
+import { DeadlineMode, StepStatus } from "@/lib/constants";
+import { toDeadlineSettings } from "@/features/recruiting/components/deadline-field-group";
 import type { Application, Job, SelectionFlow, SelectionStepTemplate } from "@/types/database";
 
 // ---------- types ----------
@@ -38,6 +39,12 @@ interface StepFormState {
   requires_review: boolean;
   description: string;
   sort_order: string;
+  /** 期限モード。テンプレート画面では fixed_date は選択不可 */
+  deadline_mode: DeadlineMode;
+  /** 数値文字列、空 = 未設定 */
+  deadline_offset_days: string;
+  /** YYYY-MM-DD、空 = 未設定（テンプレートでは通常空のまま） */
+  fixed_deadline_date: string;
 }
 
 const EMPTY_STEP_FORM: StepFormState = {
@@ -50,6 +57,9 @@ const EMPTY_STEP_FORM: StepFormState = {
   requires_review: true,
   description: "",
   sort_order: "0",
+  deadline_mode: DeadlineMode.None,
+  deadline_offset_days: "",
+  fixed_deadline_date: "",
 };
 
 // ---------- main hook ----------
@@ -219,6 +229,10 @@ export function useSelectionFlowDetail(flowId: string) {
       requires_review: template.requires_review,
       description: template.description ?? "",
       sort_order: String(template.sort_order),
+      deadline_mode: template.deadline_mode as DeadlineMode,
+      deadline_offset_days:
+        template.deadline_offset_days != null ? String(template.deadline_offset_days) : "",
+      fixed_deadline_date: template.fixed_deadline_date ?? "",
     });
     setStepFormErrors({});
     setStepDialogOpen(true);
@@ -246,6 +260,15 @@ export function useSelectionFlowDetail(flowId: string) {
     const sortOrderNum = Number(stepForm.sort_order);
     const sortOrder = Number.isFinite(sortOrderNum) ? sortOrderNum : 0;
 
+    const deadlineResult = toDeadlineSettings(
+      stepForm.deadline_mode,
+      stepForm.deadline_offset_days,
+      stepForm.fixed_deadline_date
+    );
+    if (!deadlineResult.ok) {
+      return { success: false, error: deadlineResult.error };
+    }
+
     setStepSaving(true);
     try {
       const isScreening = stepForm.step_type === "screening";
@@ -262,6 +285,7 @@ export function useSelectionFlowDetail(flowId: string) {
           description: stepForm.description.trim() || null,
           sort_order: sortOrder,
           flow_id: stepForm.flow_id,
+          ...deadlineResult.value,
         });
       } else {
         await templateRepo.createTemplate(getSupabase(), {
@@ -274,6 +298,7 @@ export function useSelectionFlowDetail(flowId: string) {
           requires_review: stepForm.requires_review,
           description: stepForm.description.trim() || null,
           sort_order: sortOrder,
+          ...deadlineResult.value,
         });
       }
       setStepDialogOpen(false);

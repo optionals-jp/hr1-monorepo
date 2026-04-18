@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:hr1_employee_app/features/portal/presentation/screens/portal_screen.dart';
 import 'package:hr1_employee_app/features/auth/domain/entities/app_user.dart';
+import 'package:hr1_employee_app/features/auth/domain/entities/organization_ref.dart';
 import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hr1_employee_app/features/notifications/presentation/providers/notification_providers.dart';
 import 'package:hr1_employee_app/features/announcements/presentation/providers/announcement_providers.dart';
@@ -44,8 +45,8 @@ void main() {
       final testUser = AppUser(
         id: 'test-user',
         email: 'test@example.com',
-        organizationId: 'org-1',
-        organizationName: 'テスト企業',
+        organizations: const [OrganizationRef(id: 'org-1', name: 'テスト企業')],
+        activeOrganizationId: 'org-1',
       );
 
       await tester.pumpWidget(

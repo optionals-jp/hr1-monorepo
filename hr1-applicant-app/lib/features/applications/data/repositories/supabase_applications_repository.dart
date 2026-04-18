@@ -95,10 +95,17 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
           'screening_type': s['screening_type'],
           'requires_review': s['requires_review'] ?? false,
           'description': s['description'],
+          // HR-28: 期限モードは DB トリガが評価するため、3 カラムをそのままコピー
+          'deadline_mode': s['deadline_mode'] ?? 'none',
+          'deadline_offset_days': s['deadline_offset_days'],
+          'fixed_deadline_date': s['fixed_deadline_date'],
           'status': isFirst
               ? StepStatus.inProgress.value
               : StepStatus.pending.value,
           'started_at': isFirst ? DateTime.now().toIso8601String() : null,
+          // deadline_at は BEFORE INSERT トリガ
+          // (_hr28_compute_application_step_deadline) で
+          // deadline_mode と status / applied_at から自動計算される
         };
       }).toList();
 

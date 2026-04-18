@@ -61,3 +61,6 @@ package-lock.json
 .env
 .env.*
 .vercel
+
+# 一時ドキュメント・作業記録 (commit 対象外)
+docs/temp/

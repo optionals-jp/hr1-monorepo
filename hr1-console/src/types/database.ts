@@ -110,7 +110,9 @@ export interface EvaluationTemplate {
   target: "applicant" | "employee" | "both";
   evaluation_type: "single" | "multi_rater";
   anonymity_mode: "none" | "peer_only" | "full";
+  status: "draft" | "published" | "archived";
   created_at: string;
+  updated_at: string;
 }
 
 export interface EvaluationCriterion {
@@ -122,6 +124,8 @@ export interface EvaluationCriterion {
   options: string[] | null;
   sort_order: number;
   weight: number;
+  deleted_at: string | null;
+  updated_at: string;
 }
 
 export interface EvaluationAnchor {
@@ -130,6 +134,7 @@ export interface EvaluationAnchor {
   score_value: number;
   description: string;
   sort_order: number;
+  updated_at: string;
 }
 
 export interface EvaluationCycle {

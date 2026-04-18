@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hr1_employee_app/features/auth/domain/entities/app_user.dart';
+import 'package:hr1_employee_app/features/auth/domain/entities/organization_ref.dart';
 import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
 
 import '../../../../helpers/firebase_mock.dart';
@@ -26,8 +27,8 @@ void main() {
       final user = AppUser(
         id: 'test-id',
         email: 'test@example.com',
-        organizationId: 'org-1',
-        organizationName: 'テスト企業',
+        organizations: const [OrganizationRef(id: 'org-1', name: 'テスト企業')],
+        activeOrganizationId: 'org-1',
       );
 
       notifier.setUser(user);
@@ -41,8 +42,8 @@ void main() {
       final user = AppUser(
         id: 'test-id',
         email: 'test@example.com',
-        organizationId: 'org-1',
-        organizationName: 'テスト企業',
+        organizations: const [OrganizationRef(id: 'org-1', name: 'テスト企業')],
+        activeOrganizationId: 'org-1',
       );
 
       notifier.setUser(user);

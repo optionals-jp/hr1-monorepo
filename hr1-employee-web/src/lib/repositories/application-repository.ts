@@ -1,5 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Application, CustomForm, Interview, Job, Offer } from "@/types/database";
+import type {
+  Application,
+  CustomForm,
+  DeadlineSettings,
+  Interview,
+  Job,
+  Offer,
+} from "@/types/database";
 
 export async function fetchApplications(client: SupabaseClient, organizationId: string) {
   const { data } = await client
@@ -209,7 +216,7 @@ export async function insertAdHocStep(
     is_optional?: boolean;
     description?: string | null;
     created_by_user_id?: string | null;
-  }
+  } & Partial<DeadlineSettings>
 ) {
   return client
     .from("application_steps")
@@ -241,7 +248,7 @@ export async function updateAdHocStep(
     is_optional?: boolean;
     description?: string | null;
     step_order?: number;
-  }
+  } & Partial<DeadlineSettings>
 ) {
   return client.from("application_steps").update(data).eq("id", stepId);
 }

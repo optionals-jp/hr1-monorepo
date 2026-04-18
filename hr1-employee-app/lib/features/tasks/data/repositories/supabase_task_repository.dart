@@ -4,21 +4,14 @@ import 'package:hr1_employee_app/features/tasks/domain/repositories/task_reposit
 
 /// Supabase タスクリポジトリ実装
 class SupabaseTaskRepository implements TaskRepository {
-  SupabaseTaskRepository(this._client);
+  SupabaseTaskRepository(this._client, {required this.activeOrganizationId});
 
   final SupabaseClient _client;
 
-  String get _userId => _client.auth.currentUser!.id;
+  /// 現在アクティブな組織ID
+  final String activeOrganizationId;
 
-  Future<String> _getOrganizationId() async {
-    final userOrg = await _client
-        .from('user_organizations')
-        .select('organization_id')
-        .eq('user_id', _userId)
-        .limit(1)
-        .single();
-    return userOrg['organization_id'] as String;
-  }
+  String get _userId => _client.auth.currentUser!.id;
 
   @override
   Future<List<Task>> getTasks({bool includeCompleted = false}) async {
@@ -116,11 +109,9 @@ class SupabaseTaskRepository implements TaskRepository {
 
   @override
   Future<Task> createTask(Task task) async {
-    final orgId = await _getOrganizationId();
-
     final data = task.toJson();
     data['user_id'] = _userId;
-    data['organization_id'] = orgId;
+    data['organization_id'] = activeOrganizationId;
 
     final response = await _client
         .from('employee_tasks')

@@ -17,7 +17,7 @@ final messageThreadsProvider = FutureProvider.autoDispose<List<MessageThread>>((
   final currentUser = ref.watch(appUserProvider);
   if (currentUser == null) return [];
   final repo = ref.watch(messagesRepositoryProvider);
-  return repo.getThreads(currentUser.organizationId, currentUser.id);
+  return repo.getThreads(currentUser.activeOrganizationId, currentUser.id);
 });
 
 /// スレッドIDからメッセージ一覧を取得

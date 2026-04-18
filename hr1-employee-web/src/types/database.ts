@@ -55,7 +55,32 @@ export interface Job {
   created_at: string;
 }
 
-export interface JobStep {
+/**
+ * 選考ステップの期限モード。
+ *  - none                           : 期限なし
+ *  - days_from_application          : 応募日(JST)からの N 日
+ *  - days_from_step_start           : ステップが in_progress になってからの N 日
+ *  - days_from_previous_completion  : 前ステップ completed からの N 日 (第 1 ステップは応募日)
+ *  - fixed_date                     : 固定日付 (JST 23:59:59)
+ */
+export type DeadlineMode =
+  | "none"
+  | "days_from_application"
+  | "days_from_step_start"
+  | "days_from_previous_completion"
+  | "fixed_date";
+
+/**
+ * 期限モードに紐づく 3 カラムの共通形。
+ * CHECK 制約: none は offset/fixed 両方 NULL、fixed_date は fixed のみ、それ以外は offset のみ (1-365)。
+ */
+export interface DeadlineSettings {
+  deadline_mode: DeadlineMode;
+  deadline_offset_days: number | null;
+  fixed_deadline_date: string | null; // ISO date (YYYY-MM-DD)
+}
+
+export interface JobStep extends DeadlineSettings {
   id: string;
   job_id: string;
   step_type: string;
@@ -77,7 +102,7 @@ export interface SelectionFlow {
   updated_at: string;
 }
 
-export interface SelectionStepTemplate {
+export interface SelectionStepTemplate extends DeadlineSettings {
   id: string;
   organization_id: string;
   flow_id: string | null;
@@ -129,7 +154,7 @@ export interface Offer {
   updated_at: string;
 }
 
-export interface ApplicationStep {
+export interface ApplicationStep extends DeadlineSettings {
   id: string;
   application_id: string;
   step_type: string;
@@ -149,6 +174,12 @@ export interface ApplicationStep {
   created_by_user_id: string | null;
   is_optional: boolean;
   description: string | null;
+  /**
+   * 実際の期限日時 (JST 23:59:59 を timestamptz として保存)。
+   * DB トリガで deadline_mode / offset / fixed_date / status / applied_at から
+   * 決定論的に計算されるキャッシュ。アプリ側からの直接書込は禁止。
+   */
+  deadline_at: string | null;
 }
 
 export interface Interview {
@@ -904,20 +935,6 @@ export interface WikiPage {
   updated_at: string;
 }
 
-export interface CalendarEvent {
-  id: string;
-  type: string;
-  title: string;
-  startAt: string;
-  endAt: string;
-  durationMin: number;
-  applicantName?: string;
-  applicantEmail?: string;
-  jobTitle?: string;
-  location?: string;
-  status?: string;
-}
-
 export interface Notification {
   id: string;
   user_id: string;
@@ -1094,6 +1111,8 @@ export interface WorkflowRequest {
 // 評価
 // ==========================================================
 
+export type EvaluationTemplateStatus = "draft" | "published" | "archived";
+
 export interface EvaluationTemplate {
   id: string;
   organization_id: string;
@@ -1102,7 +1121,9 @@ export interface EvaluationTemplate {
   target: "applicant" | "employee" | "both";
   evaluation_type: "single" | "multi_rater";
   anonymity_mode: "none" | "peer_only" | "full";
+  status: EvaluationTemplateStatus;
   created_at: string;
+  updated_at: string;
 }
 
 export interface EvaluationCycle {
@@ -1141,6 +1162,8 @@ export interface EvaluationCriterion {
   options: string[] | null;
   sort_order: number;
   weight: number;
+  deleted_at: string | null;
+  updated_at: string;
 }
 
 export interface Evaluation {
@@ -1173,6 +1196,8 @@ export interface EvaluationAnchor {
   criterion_id: string;
   score_value: number;
   description: string;
+  sort_order: number;
+  updated_at: string;
 }
 
 // ==========================================================

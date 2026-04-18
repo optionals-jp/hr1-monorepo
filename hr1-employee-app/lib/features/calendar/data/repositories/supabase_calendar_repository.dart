@@ -4,21 +4,17 @@ import 'package:hr1_employee_app/features/calendar/domain/repositories/calendar_
 
 /// Supabase カレンダーリポジトリ実装
 class SupabaseCalendarRepository implements CalendarRepository {
-  SupabaseCalendarRepository(this._client);
+  SupabaseCalendarRepository(
+    this._client, {
+    required this.activeOrganizationId,
+  });
 
   final SupabaseClient _client;
 
-  String get _userId => _client.auth.currentUser!.id;
+  /// 現在アクティブな組織ID
+  final String activeOrganizationId;
 
-  Future<String> _getOrganizationId() async {
-    final userOrg = await _client
-        .from('user_organizations')
-        .select('organization_id')
-        .eq('user_id', _userId)
-        .limit(1)
-        .single();
-    return userOrg['organization_id'] as String;
-  }
+  String get _userId => _client.auth.currentUser!.id;
 
   @override
   Future<List<CalendarEvent>> getEvents({
@@ -51,11 +47,9 @@ class SupabaseCalendarRepository implements CalendarRepository {
 
   @override
   Future<CalendarEvent> createEvent(CalendarEvent event) async {
-    final orgId = await _getOrganizationId();
-
     final data = event.toJson();
     data['user_id'] = _userId;
-    data['organization_id'] = orgId;
+    data['organization_id'] = activeOrganizationId;
 
     final response = await _client
         .from('calendar_events')

@@ -8,6 +8,7 @@ import { useOrg } from "@/lib/org-context";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as repo from "@/lib/repositories/form-repository";
 import type { CustomForm, FormField } from "@/types/database";
+import { formatFormFieldValue } from "@/features/recruiting/form-field-format";
 
 export function useForms() {
   return useOrgQuery<CustomForm[]>("forms", (orgId) => repo.fetchForms(getSupabase(), orgId));
@@ -171,6 +172,11 @@ export async function loadFormDetail(
     repo.fetchResponses(client, id),
   ]);
 
+  const fieldTypeById = new Map<string, string>();
+  for (const f of fieldsData ?? []) {
+    fieldTypeById.set(f.id, f.type);
+  }
+
   const grouped: Record<string, ResponseRow> = {};
   for (const resp of responsesData ?? []) {
     const applicantId = resp.applicant_id as string;
@@ -182,9 +188,10 @@ export async function loadFormDetail(
         created_at: resp.submitted_at,
       };
     }
-    grouped[applicantId].answers[resp.field_id] = Array.isArray(resp.value)
-      ? (resp.value as string[]).join(", ")
-      : String(resp.value ?? "");
+    grouped[applicantId].answers[resp.field_id] = formatFormFieldValue(
+      resp.value,
+      fieldTypeById.get(resp.field_id)
+    );
   }
 
   const applicantIds = Object.keys(grouped);

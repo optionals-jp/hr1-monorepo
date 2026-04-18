@@ -1,6 +1,7 @@
 "use client";
 
 import { getSupabase } from "@/lib/supabase/browser";
+import { mapRpcError } from "@/lib/rpc-error";
 import * as repo from "@/lib/repositories/evaluation-repository";
 import type {
   EvaluationTemplate,
@@ -28,11 +29,15 @@ export interface TemplateDetailData {
   cycles: EvaluationCycle[];
 }
 
-export async function loadTemplateDetail(id: string, orgId: string): Promise<TemplateDetailData> {
+export async function loadTemplateDetail(
+  id: string,
+  orgId: string,
+  options?: { includeArchived?: boolean }
+): Promise<TemplateDetailData> {
   const client = getSupabase();
 
   const [{ data: tplData }, crData, { data: evalData }] = await Promise.all([
-    repo.fetchTemplateById(client, id, orgId),
+    repo.fetchTemplateById(client, id, orgId, options),
     repo.fetchCriteria(client, id),
     repo.fetchEvaluations(client, id, orgId),
   ]);
@@ -71,10 +76,26 @@ export async function loadTemplateDetail(id: string, orgId: string): Promise<Tem
   };
 }
 
+/**
+ * 評価テンプレートの一括編集 (hr1-console 詳細画面の「編集」ボタン由来)。
+ *
+ * テンプレ本体 / 新規 criterion / 更新 criterion / 削除 criterion のそれぞれを
+ * 対応する RPC (rpcUpdateEvaluationTemplate / rpcAddEvaluationCriterion /
+ * rpcUpdateEvaluationCriterion / rpcDeleteEvaluationCriterion) で1件ずつ処理する。
+ * 直接 DML は RLS (templates/criteria/anchors は SELECT のみ) で拒否される。
+ *
+ * anchors はこのフローでは扱わないため空配列を送る。hr1-console 側は従来から
+ * anchors UI を持っていないが、将来必要になれば per-criterion RPC 方式の UI
+ * (hr1-employee-web の useEvaluationTemplateDetail 相当) へ移行する。
+ *
+ * @param editTarget 現状 UI からは変更されない (target は create 時固定)。
+ *   差分チェックに含めるのみで RPC 側へは渡さない (update_evaluation_template は
+ *   target を更新しない — 既存スコアの集計と整合性が崩れるため)。
+ */
 export async function saveTemplateEdit(
   template: EvaluationTemplate,
   originalCriteria: EvaluationCriterion[],
-  organizationId: string,
+  _organizationId: string,
   editTitle: string,
   editTarget: string,
   editDescription: string,
@@ -96,9 +117,8 @@ export async function saveTemplateEdit(
       editTarget !== template.target ||
       editDescription !== (template.description ?? "")
     ) {
-      await repo.updateTemplate(client, template.id, organizationId, {
+      await repo.rpcUpdateEvaluationTemplate(client, template.id, {
         title: editTitle,
-        target: editTarget,
         description: editDescription || null,
       });
     }
@@ -106,29 +126,26 @@ export async function saveTemplateEdit(
     const existingIds = originalCriteria.map((c) => c.id);
     const editIds = editCriteria.filter((c) => !c.isNew).map((c) => c.id);
 
+    // 削除
     const deletedIds = existingIds.filter((cid) => !editIds.includes(cid));
-    if (deletedIds.length > 0) {
-      await repo.deleteCriteria(client, deletedIds);
+    for (const cid of deletedIds) {
+      await repo.rpcDeleteEvaluationCriterion(client, cid);
     }
 
-    const newCriteria = editCriteria.filter((c) => c.isNew);
-    if (newCriteria.length > 0) {
-      // id は evaluation_criteria.id の DEFAULT gen_random_uuid() に任せる。
-      // フロント採番は禁止（非 UUID 文字列を uuid カラムに投入するとキャストエラー）。
-      await repo.insertCriteria(
-        client,
-        newCriteria.map((c) => ({
-          template_id: template.id,
-          label: c.label,
-          description: c.description || null,
-          score_type: c.score_type,
-          options:
-            c.options && c.score_type === "select" ? c.options.split("\n").filter(Boolean) : null,
-          sort_order: c.sort_order,
-        }))
-      );
+    // 新規追加
+    for (const c of editCriteria.filter((x) => x.isNew)) {
+      const scoreType = c.score_type as repo.EvaluationCriterionInput["score_type"];
+      await repo.rpcAddEvaluationCriterion(client, template.id, {
+        label: c.label,
+        description: c.description || null,
+        score_type: scoreType,
+        options: c.options && scoreType === "select" ? c.options.split("\n").filter(Boolean) : null,
+        weight: 1,
+        anchors: [],
+      });
     }
 
+    // 既存項目の更新
     for (const ec of editCriteria.filter((c) => !c.isNew && existingIds.includes(c.id))) {
       const original = originalCriteria.find((c) => c.id === ec.id);
       if (!original) continue;
@@ -139,22 +156,37 @@ export async function saveTemplateEdit(
         ec.options !== (original.options?.join("\n") ?? "");
 
       if (changed) {
-        await repo.updateCriterion(client, ec.id, {
+        const scoreType = ec.score_type as repo.EvaluationCriterionInput["score_type"];
+        await repo.rpcUpdateEvaluationCriterion(client, ec.id, {
           label: ec.label,
           description: ec.description || null,
-          score_type: ec.score_type,
+          score_type: scoreType,
           options:
-            ec.options && ec.score_type === "select"
-              ? ec.options.split("\n").filter(Boolean)
-              : null,
-          sort_order: ec.sort_order,
+            ec.options && scoreType === "select" ? ec.options.split("\n").filter(Boolean) : null,
+          weight: original.weight,
+          anchors: [],
         });
       }
     }
 
+    // sort_order の変更分を一括採番
+    const reorderNeeded =
+      editCriteria.length > 0 &&
+      editCriteria.some((c, i) => {
+        const original = originalCriteria.find((o) => o.id === c.id);
+        return !c.isNew && original && original.sort_order !== i;
+      });
+    if (reorderNeeded) {
+      const orderedIds = editCriteria.filter((c) => !c.isNew).map((c) => c.id);
+      if (orderedIds.length > 0) {
+        await repo.rpcReorderEvaluationCriteria(client, template.id, orderedIds);
+      }
+    }
+
     return { success: true };
-  } catch {
-    return { success: false, error: "評価シートの更新に失敗しました" };
+  } catch (err) {
+    console.error("saveTemplateEdit failed", err);
+    return { success: false, error: mapRpcError(err, "評価シートの更新に失敗しました") };
   }
 }
 
@@ -421,6 +453,6 @@ export async function submitEvaluation(
     return { success: true };
   } catch (err) {
     console.error("submitEvaluation failed", err);
-    return { success: false, error: "評価の保存に失敗しました" };
+    return { success: false, error: mapRpcError(err, "評価の保存に失敗しました") };
   }
 }

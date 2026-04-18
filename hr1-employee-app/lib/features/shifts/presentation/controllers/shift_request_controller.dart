@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hr1_employee_app/core/organization/organization_context.dart';
 import 'package:hr1_employee_app/features/shifts/domain/entities/shift_type.dart';
 import 'package:hr1_employee_app/features/shifts/domain/entities/shift_request.dart';
 import 'package:hr1_employee_app/features/shifts/presentation/providers/shift_providers.dart';
@@ -30,7 +31,7 @@ class ShiftRequestController extends AutoDisposeNotifier<ShiftRequestState> {
     state = const ShiftRequestState(isSubmitting: true);
     try {
       final repo = ref.read(shiftRepositoryProvider);
-      final orgId = await repo.getOrganizationId();
+      final orgId = ref.read(activeOrganizationIdProvider);
       final userId = repo.userId;
 
       final requests = edits.entries.map((e) {

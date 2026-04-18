@@ -16,7 +16,14 @@ import {
   buildFormSheetFields,
   type FormSheetField,
 } from "@/features/recruiting/application-rules";
-import type { Application, ApplicationStep, CustomForm, Interview, Offer } from "@/types/database";
+import type {
+  Application,
+  ApplicationStep,
+  CustomForm,
+  DeadlineSettings,
+  Interview,
+  Offer,
+} from "@/types/database";
 
 export type ApplicationDetailTab = "dashboard" | "steps" | "evaluation" | "history";
 
@@ -420,18 +427,20 @@ export function useApplicationDetail(id: string) {
   );
 
   const saveAdHocStep = useCallback(
-    async (input: {
-      step_type: string;
-      label: string;
-      form_id?: string | null;
-      interview_id?: string | null;
-      screening_type?: string | null;
-      requires_review?: boolean;
-      is_optional?: boolean;
-      description?: string | null;
-      insert_after_step_id?: string | null;
-      insert_before_step_id?: string | null;
-    }): Promise<{ success: boolean; error?: string }> => {
+    async (
+      input: {
+        step_type: string;
+        label: string;
+        form_id?: string | null;
+        interview_id?: string | null;
+        screening_type?: string | null;
+        requires_review?: boolean;
+        is_optional?: boolean;
+        description?: string | null;
+        insert_after_step_id?: string | null;
+        insert_before_step_id?: string | null;
+      } & Partial<DeadlineSettings>
+    ): Promise<{ success: boolean; error?: string }> => {
       const client = getSupabase();
       const { insert_after_step_id, insert_before_step_id, ...rest } = input;
       try {

@@ -37,10 +37,12 @@ class SupabasePayslipRepository {
 
   /// 給与明細詳細を取得
   Future<Payslip?> getPayslipById(String id) async {
+    // HR-28: RLS に加えて user_id を明示フィルタ（defense-in-depth）
     final response = await _client
         .from('payslips')
         .select()
         .eq('id', id)
+        .eq('user_id', _userId)
         .maybeSingle();
     if (response == null) return null;
     return Payslip.fromJson(response);

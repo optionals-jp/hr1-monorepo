@@ -35,12 +35,12 @@ class PortalScreen extends ConsumerWidget {
         title: Row(
           children: [
             OrgIcon(
-              initial: (user?.organizationName ?? 'H').substring(0, 1),
+              initial: (user?.activeOrganizationName ?? 'H').substring(0, 1),
               size: 32,
             ),
             const SizedBox(width: 10),
             Text(
-              user?.organizationName ?? 'HR1',
+              user?.activeOrganizationName ?? 'HR1',
               style: AppTextStyles.title1.copyWith(letterSpacing: -0.2),
             ),
           ],

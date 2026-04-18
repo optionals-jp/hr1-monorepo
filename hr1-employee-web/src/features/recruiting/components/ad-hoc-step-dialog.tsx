@@ -16,14 +16,20 @@ import {
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
 import {
+  DeadlineMode,
   StepType,
   FORM_STEP_TYPES,
   selectableStepTypes,
   screeningTypeLabels,
   stepTypeLabels,
 } from "@/lib/constants";
-import type { ApplicationStep, CustomForm, Interview } from "@/types/database";
+import type { ApplicationStep, CustomForm, DeadlineSettings, Interview } from "@/types/database";
 import { ResourceSelectField } from "@/features/recruiting/components/resource-select-field";
+import {
+  DeadlineFieldGroup,
+  fromDeadlineSettings,
+  toDeadlineSettings,
+} from "@/features/recruiting/components/deadline-field-group";
 
 interface AdHocStepDialogProps {
   open: boolean;
@@ -35,18 +41,20 @@ interface AdHocStepDialogProps {
   forms: CustomForm[];
   interviews: Interview[];
   onLoadResources: () => Promise<void> | void;
-  onSubmit: (input: {
-    step_type: string;
-    label: string;
-    form_id?: string | null;
-    interview_id?: string | null;
-    screening_type?: string | null;
-    requires_review?: boolean;
-    is_optional?: boolean;
-    description?: string | null;
-    insert_after_step_id?: string | null;
-    insert_before_step_id?: string | null;
-  }) => Promise<{ success: boolean; error?: string }>;
+  onSubmit: (
+    input: {
+      step_type: string;
+      label: string;
+      form_id?: string | null;
+      interview_id?: string | null;
+      screening_type?: string | null;
+      requires_review?: boolean;
+      is_optional?: boolean;
+      description?: string | null;
+      insert_after_step_id?: string | null;
+      insert_before_step_id?: string | null;
+    } & Partial<DeadlineSettings>
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 interface FormState {
@@ -59,6 +67,12 @@ interface FormState {
   is_optional: boolean;
   description: string;
   insert_after_step_id: string | null; // null => 末尾
+  /** 期限モード */
+  deadline_mode: DeadlineMode;
+  /** 数値文字列、空 = 未設定 */
+  deadline_offset_days: string;
+  /** YYYY-MM-DD、空 = 未設定 */
+  fixed_deadline_date: string;
 }
 
 function buildInitialForm(editingStep: ApplicationStep | null): FormState {
@@ -73,8 +87,12 @@ function buildInitialForm(editingStep: ApplicationStep | null): FormState {
       is_optional: false,
       description: "",
       insert_after_step_id: null,
+      deadline_mode: DeadlineMode.None,
+      deadline_offset_days: "",
+      fixed_deadline_date: "",
     };
   }
+  const d = fromDeadlineSettings(editingStep);
   return {
     step_type: editingStep.step_type,
     label: editingStep.label,
@@ -85,6 +103,9 @@ function buildInitialForm(editingStep: ApplicationStep | null): FormState {
     is_optional: editingStep.is_optional,
     description: editingStep.description ?? "",
     insert_after_step_id: null, // 編集時は位置変更 UI を出さない（step_order は別途管理）
+    deadline_mode: d.mode,
+    deadline_offset_days: d.offsetDays,
+    fixed_deadline_date: d.fixedDate,
   };
 }
 
@@ -146,6 +167,17 @@ function AdHocStepDialogBody({
       setError("書類の種類を選択してください");
       return;
     }
+
+    const deadlineResult = toDeadlineSettings(
+      form.deadline_mode,
+      form.deadline_offset_days,
+      form.fixed_deadline_date
+    );
+    if (!deadlineResult.ok) {
+      setError(deadlineResult.error);
+      return;
+    }
+
     setSaving(true);
     setError(null);
     const result = await onSubmit({
@@ -159,6 +191,7 @@ function AdHocStepDialogBody({
       description: form.description.trim() ? form.description.trim() : null,
       insert_after_step_id: editingStep || insertBeforeStepId ? null : form.insert_after_step_id,
       insert_before_step_id: editingStep ? null : (insertBeforeStepId ?? null),
+      ...deadlineResult.value,
     });
     setSaving(false);
     if (!result.success) {
@@ -320,6 +353,19 @@ function AdHocStepDialogBody({
           </Select>
         </div>
       )}
+
+      <DeadlineFieldGroup
+        mode={form.deadline_mode}
+        offsetDays={form.deadline_offset_days}
+        fixedDate={form.fixed_deadline_date}
+        onChange={(patch) => {
+          if (patch.mode !== undefined) update("deadline_mode", patch.mode);
+          if (patch.offsetDays !== undefined) update("deadline_offset_days", patch.offsetDays);
+          if (patch.fixedDate !== undefined) update("fixed_deadline_date", patch.fixedDate);
+        }}
+        allowFixed
+        idPrefix="ad-hoc-deadline"
+      />
 
       <div className="flex items-start gap-2 pt-1">
         <Checkbox

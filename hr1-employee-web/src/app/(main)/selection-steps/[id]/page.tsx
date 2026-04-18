@@ -72,6 +72,7 @@ import {
   StepTypeBadge,
   type StepMetaItem,
 } from "@/features/recruiting/components/selection-step-card";
+import { DeadlineFieldGroup } from "@/features/recruiting/components/deadline-field-group";
 import {
   useSelectionFlowDetail,
   type TemplateWithCounts,
@@ -262,6 +263,19 @@ export default function SelectionFlowDetailPage({ params }: { params: Promise<{ 
             onChange={(e) => h.setStepFormField("description", e.target.value)}
             placeholder="このステップの目的や運用メモ"
             rows={3}
+          />
+          <DeadlineFieldGroup
+            mode={h.stepForm.deadline_mode}
+            offsetDays={h.stepForm.deadline_offset_days}
+            fixedDate={h.stepForm.fixed_deadline_date}
+            onChange={(patch) => {
+              if (patch.mode !== undefined) h.setStepFormField("deadline_mode", patch.mode);
+              if (patch.offsetDays !== undefined)
+                h.setStepFormField("deadline_offset_days", patch.offsetDays);
+              if (patch.fixedDate !== undefined)
+                h.setStepFormField("fixed_deadline_date", patch.fixedDate);
+            }}
+            idPrefix="template-deadline"
           />
           <FormInput
             label="並び順"

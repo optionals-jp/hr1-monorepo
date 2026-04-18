@@ -46,6 +46,9 @@ export * from "./components/layout/dashboard-layout";
 export * from "./components/evaluations/evaluation-form-dialog";
 export * from "./components/evaluations/template-select-dialog";
 
+// Calendar Components
+export * from "./components/calendar/month-calendar";
+
 // Hooks
 export * from "./lib/hooks/use-pagination";
 export * from "./lib/hooks/use-bulk-selection";

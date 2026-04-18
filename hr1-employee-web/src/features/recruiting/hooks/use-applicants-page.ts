@@ -44,6 +44,9 @@ export function useApplicantsPage() {
 
   const [search, setSearch] = useState("");
   const [filterHiringType, setFilterHiringType] = useState<string>("all");
+  const [filterApplicationStatus, setFilterApplicationStatus] = useState<
+    "all" | "applied" | "not_applied"
+  >("all");
   const [filterCreatedFrom, setFilterCreatedFrom] = useState<string>("");
   const [filterCreatedTo, setFilterCreatedTo] = useState<string>("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -152,12 +155,25 @@ export function useApplicantsPage() {
         const matchesHiringType =
           filterHiringType === "all" ||
           (filterHiringType === "none" ? !a.hiring_type : a.hiring_type === filterHiringType);
+        const matchesApplicationStatus =
+          filterApplicationStatus === "all" ||
+          (filterApplicationStatus === "applied" ? appliedIds.has(a.id) : !appliedIds.has(a.id));
         const matchesCreatedRange =
           (!filterCreatedFrom && !filterCreatedTo) ||
           isWithinJstDateRange(a.created_at, filterCreatedFrom, filterCreatedTo);
-        return matchesSearch && matchesHiringType && matchesCreatedRange;
+        return (
+          matchesSearch && matchesHiringType && matchesApplicationStatus && matchesCreatedRange
+        );
       }),
-    [applicants, search, filterHiringType, filterCreatedFrom, filterCreatedTo]
+    [
+      applicants,
+      search,
+      filterHiringType,
+      filterApplicationStatus,
+      appliedIds,
+      filterCreatedFrom,
+      filterCreatedTo,
+    ]
   );
 
   return {
@@ -171,6 +187,8 @@ export function useApplicantsPage() {
     setSearch,
     filterHiringType,
     setFilterHiringType,
+    filterApplicationStatus,
+    setFilterApplicationStatus,
     filterCreatedFrom,
     setFilterCreatedFrom,
     filterCreatedTo,

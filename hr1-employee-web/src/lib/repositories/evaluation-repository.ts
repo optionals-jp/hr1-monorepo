@@ -77,6 +77,7 @@ export async function fetchCriteriaForTemplate(client: SupabaseClient, templateI
     .from("evaluation_criteria")
     .select("*, evaluation_anchors(*)")
     .eq("template_id", templateId)
+    .is("deleted_at", null)
     .order("sort_order");
   if (error) throw error;
   return (data ?? []) as (EvaluationCriterion & {
@@ -256,44 +257,41 @@ export async function rpcSubmitAdHocEvaluation(
 export async function fetchTemplatesByTarget(
   client: SupabaseClient,
   orgId: string,
-  targets: string[]
+  targets: string[],
+  options?: { includeArchived?: boolean }
 ) {
-  const { data } = await client
+  let query = client
     .from("evaluation_templates")
     .select("*")
     .eq("organization_id", orgId)
-    .in("target", targets)
-    .order("created_at", { ascending: false });
+    .in("target", targets);
+
+  if (!options?.includeArchived) {
+    query = query.neq("status", "archived");
+  }
+
+  const { data } = await query.order("created_at", { ascending: false });
   return data ?? [];
 }
 
-/**
- * @deprecated `rpcCreateEvaluationTemplate` を使うこと。
- * 生の insert は uuid 採番・アトミシティの責務が呼び出し元にあり、非推奨。
- */
-export async function insertTemplate(client: SupabaseClient, row: Record<string, unknown>) {
-  return client.from("evaluation_templates").insert(row);
-}
+export async function fetchTemplateById(
+  client: SupabaseClient,
+  id: string,
+  orgId: string,
+  options?: { includeArchived?: boolean }
+) {
+  let query = client
+    .from("evaluation_templates")
+    .select("*")
+    .eq("id", id)
+    .eq("organization_id", orgId);
 
-/**
- * @deprecated `rpcCreateEvaluationTemplate` を使うこと。
- */
-export async function insertCriteria(client: SupabaseClient, rows: Record<string, unknown>[]) {
-  return client.from("evaluation_criteria").insert(rows);
-}
+  if (!options?.includeArchived) {
+    query = query.neq("status", "archived");
+  }
 
-/**
- * @deprecated `rpcCreateEvaluationTemplate` を使うこと。
- */
-export async function insertAnchors(client: SupabaseClient, rows: Record<string, unknown>[]) {
-  return client.from("evaluation_anchors").insert(rows);
-}
-
-/**
- * @deprecated RPC 化により補償 DELETE は不要。呼び出し元が残っていなければ削除予定。
- */
-export async function deleteTemplate(client: SupabaseClient, id: string, orgId: string) {
-  return client.from("evaluation_templates").delete().eq("id", id).eq("organization_id", orgId);
+  const { data } = await query.maybeSingle();
+  return data;
 }
 
 export async function fetchCriteria(client: SupabaseClient, templateId: string) {
@@ -301,6 +299,7 @@ export async function fetchCriteria(client: SupabaseClient, templateId: string) 
     .from("evaluation_criteria")
     .select("*")
     .eq("template_id", templateId)
+    .is("deleted_at", null)
     .order("sort_order");
   return (data ?? []) as EvaluationCriterion[];
 }
@@ -310,6 +309,7 @@ export async function fetchCriteriaByTemplates(client: SupabaseClient, templateI
     .from("evaluation_criteria")
     .select("*")
     .in("template_id", templateIds)
+    .is("deleted_at", null)
     .order("sort_order");
 }
 
@@ -329,7 +329,9 @@ export async function fetchEvaluationsByUser(
 ) {
   let query = client
     .from("evaluations")
-    .select("*, evaluation_templates(title), evaluator:evaluator_id(display_name, email)")
+    .select(
+      "*, evaluation_templates(title), evaluator:evaluator_id(display_name, email), evaluation_cycles(title), application:application_id(id, jobs(title))"
+    )
     .eq("organization_id", orgId)
     .eq("target_user_id", targetUserId);
 
@@ -344,38 +346,163 @@ export async function fetchScores(client: SupabaseClient, evaluationIds: string[
   return client.from("evaluation_scores").select("*").in("evaluation_id", evaluationIds);
 }
 
-/**
- * @deprecated `rpcSubmitAdHocEvaluation` を使うこと。
- * 生の insert は uuid 採番・evaluator_id 強制・スコア整合性の責務が呼び出し元にあり、非推奨。
- */
-export async function insertEvaluation(client: SupabaseClient, row: Record<string, unknown>) {
-  return client.from("evaluations").insert(row);
+// ─── Template edit RPCs (HR-28) ───
+//
+// 評価テンプレート詳細画面からの編集系は全て RPC 経由で実行する。
+// 直接 INSERT/UPDATE/DELETE を書かない（アトミシティ・権限・status 制御のため）。
+
+export interface EvaluationCriterionInput {
+  label: string;
+  description: string | null;
+  score_type: "five_star" | "ten_point" | "text" | "select";
+  options: string[] | null;
+  weight: number;
+  anchors: { score_value: number; description: string }[];
 }
 
 /**
- * @deprecated `rpcSubmitAdHocEvaluation` を使うこと。
+ * `public.add_evaluation_criterion` RPC を呼び、テンプレートに評価項目を1件追加する。
+ * 返り値は新しい criterion の id。
  */
-export async function updateEvaluationById(
+export async function rpcAddEvaluationCriterion(
   client: SupabaseClient,
-  id: string,
-  orgId: string,
-  data: Record<string, unknown>
-) {
-  return client.from("evaluations").update(data).eq("id", id).eq("organization_id", orgId);
+  templateId: string,
+  input: EvaluationCriterionInput
+): Promise<string> {
+  const { data, error } = await client.rpc("add_evaluation_criterion", {
+    p_template_id: templateId,
+    p_label: input.label,
+    p_description: input.description,
+    p_score_type: input.score_type,
+    p_options: input.options,
+    p_weight: input.weight,
+    p_anchors: input.anchors,
+  });
+  if (error) throw error;
+  if (!data) throw new Error("add_evaluation_criterion returned no id");
+  return data as string;
 }
 
 /**
- * @deprecated `rpcSubmitAdHocEvaluation` を使うこと。
+ * `public.update_evaluation_criterion` RPC を呼び、評価項目を編集する。
+ * published テンプレの既存スコア付き項目では score_type 変更が拒否される。
  */
-export async function insertScores(client: SupabaseClient, rows: Record<string, unknown>[]) {
-  return client.from("evaluation_scores").insert(rows);
+export async function rpcUpdateEvaluationCriterion(
+  client: SupabaseClient,
+  criterionId: string,
+  input: EvaluationCriterionInput
+): Promise<void> {
+  const { error } = await client.rpc("update_evaluation_criterion", {
+    p_criterion_id: criterionId,
+    p_label: input.label,
+    p_description: input.description,
+    p_score_type: input.score_type,
+    p_options: input.options,
+    p_weight: input.weight,
+    p_anchors: input.anchors,
+  });
+  if (error) throw error;
 }
 
 /**
- * @deprecated `rpcSubmitAdHocEvaluation` を使うこと。
- * evaluation_scores には DELETE ポリシーが無く、client からの直接 DELETE は
- * RLS で silent fail する。必ず RPC 経由で削除すること。
+ * `public.delete_evaluation_criterion` RPC を呼び、評価項目を削除する。
+ * 既存 evaluation_scores がある場合は論理削除（deleted_at セット）、
+ * ない場合は物理削除される。判断は RPC 内部で行う。
  */
-export async function deleteScoresByEvaluation(client: SupabaseClient, evaluationId: string) {
-  return client.from("evaluation_scores").delete().eq("evaluation_id", evaluationId);
+export async function rpcDeleteEvaluationCriterion(
+  client: SupabaseClient,
+  criterionId: string
+): Promise<void> {
+  const { error } = await client.rpc("delete_evaluation_criterion", {
+    p_criterion_id: criterionId,
+  });
+  if (error) throw error;
+}
+
+/**
+ * `public.reorder_evaluation_criteria` RPC を呼び、項目の並び順を更新する。
+ * 配列順に sort_order=0,1,2,... で採番される。
+ */
+export async function rpcReorderEvaluationCriteria(
+  client: SupabaseClient,
+  templateId: string,
+  criterionIds: string[]
+): Promise<void> {
+  const { error } = await client.rpc("reorder_evaluation_criteria", {
+    p_template_id: templateId,
+    p_criterion_ids: criterionIds,
+  });
+  if (error) throw error;
+}
+
+/**
+ * `public.update_evaluation_template` RPC を呼び、テンプレートのメタ情報を編集する。
+ * draft では evaluation_type / anonymity_mode も変更可能、published では
+ * title / description のみ。archived は拒否される。
+ */
+export async function rpcUpdateEvaluationTemplate(
+  client: SupabaseClient,
+  templateId: string,
+  input: {
+    title: string;
+    description: string | null;
+    evaluation_type?: "single" | "multi_rater";
+    anonymity_mode?: "none" | "peer_only" | "full";
+  }
+): Promise<void> {
+  const { error } = await client.rpc("update_evaluation_template", {
+    p_template_id: templateId,
+    p_title: input.title,
+    p_description: input.description,
+    p_evaluation_type: input.evaluation_type ?? null,
+    p_anonymity_mode: input.anonymity_mode ?? null,
+  });
+  if (error) throw error;
+}
+
+/**
+ * `public.publish_evaluation_template` RPC を呼び、draft → published へ遷移させる。
+ * 項目が1件も無い場合は拒否される。
+ */
+export async function rpcPublishEvaluationTemplate(
+  client: SupabaseClient,
+  templateId: string
+): Promise<void> {
+  const { error } = await client.rpc("publish_evaluation_template", {
+    p_template_id: templateId,
+  });
+  if (error) throw error;
+}
+
+/**
+ * `public.archive_evaluation_template` RPC を呼び、テンプレートをアーカイブする。
+ * 新規の評価サイクル割当を停止するが、過去データは保持される。
+ */
+export async function rpcArchiveEvaluationTemplate(
+  client: SupabaseClient,
+  templateId: string
+): Promise<void> {
+  const { error } = await client.rpc("archive_evaluation_template", {
+    p_template_id: templateId,
+  });
+  if (error) throw error;
+}
+
+/**
+ * `public.duplicate_evaluation_template` RPC を呼び、テンプレートを複製する。
+ * 複製先は常に draft。アクティブな項目のみがコピーされる。
+ * 返り値は複製で作成された新テンプレートの id。
+ */
+export async function rpcDuplicateEvaluationTemplate(
+  client: SupabaseClient,
+  templateId: string,
+  newTitle: string
+): Promise<string> {
+  const { data, error } = await client.rpc("duplicate_evaluation_template", {
+    p_template_id: templateId,
+    p_new_title: newTitle,
+  });
+  if (error) throw error;
+  if (!data) throw new Error("duplicate_evaluation_template returned no id");
+  return data as string;
 }
