@@ -44,8 +44,9 @@ class MenuRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textColor =
-        isDestructive ? AppColors.error : AppColors.textPrimary(context);
+    final textColor = isDestructive
+        ? AppColors.error
+        : AppColors.textPrimary(context);
     final hasLabel = label != null;
     final isEditable = onTap != null;
 

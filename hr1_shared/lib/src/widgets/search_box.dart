@@ -101,9 +101,6 @@ class SearchBox extends StatelessWidget {
 
     if (_isEditable) return box;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: box,
-    );
+    return GestureDetector(onTap: onTap, child: box);
   }
 }

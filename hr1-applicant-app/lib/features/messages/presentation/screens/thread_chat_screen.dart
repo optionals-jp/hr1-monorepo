@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -5,6 +6,7 @@ import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_prov
 import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_applicant_app/features/messages/domain/entities/message_thread.dart';
 import 'package:hr1_applicant_app/features/messages/presentation/controllers/thread_chat_controller.dart';
+import 'package:hr1_applicant_app/features/messages/presentation/providers/attachment_signed_url_provider.dart';
 
 class ThreadChatScreen extends HookConsumerWidget {
   const ThreadChatScreen({super.key, required this.thread});
@@ -45,19 +47,64 @@ class ThreadChatScreen extends HookConsumerWidget {
       };
     }, [scrollController, controller]);
 
-    Future<void> sendMessage() async {
+    Future<void> sendMessage({List<Map<String, dynamic>>? attachments}) async {
       final content = controller.text.trim();
-      if (content.isEmpty) return;
+      if (content.isEmpty && (attachments == null || attachments.isEmpty)) {
+        return;
+      }
 
       controller.clear();
 
       final success = await ref
           .read(threadChatControllerProvider(controllerArg).notifier)
-          .sendMessage(content: content);
+          .sendMessage(content: content, attachments: attachments);
 
       if (!success && context.mounted) {
         controller.text = content;
-        CommonSnackBar.error(context, 'メッセージの送信に失敗しました');
+      }
+    }
+
+    Future<void> pickAndSendAttachment() async {
+      try {
+        final result = await FilePicker.pickFiles(
+          withData: true,
+          type: FileType.any,
+        );
+        if (result == null || result.files.isEmpty) return;
+        final file = result.files.single;
+        if (file.bytes == null) return;
+
+        if (file.size > 25 * 1024 * 1024) {
+          if (context.mounted) {
+            CommonSnackBar.error(context, 'ファイルサイズは 25MB 以下にしてください');
+          }
+          return;
+        }
+
+        final mime = _guessMime(file.name, file.extension);
+        final storagePath = await ref
+            .read(threadChatControllerProvider(controllerArg).notifier)
+            .uploadAttachmentBytes(
+              organizationId: thread.organizationId,
+              bytes: file.bytes!,
+              fileName: file.name,
+              mimeType: mime,
+            );
+        if (storagePath == null) return;
+        await sendMessage(
+          attachments: [
+            {
+              'storage_path': storagePath,
+              'file_name': file.name,
+              'mime_type': mime,
+              'byte_size': file.size,
+            },
+          ],
+        );
+      } catch (e) {
+        if (context.mounted) {
+          CommonSnackBar.error(context, 'ファイルの添付に失敗しました');
+        }
       }
     }
 
@@ -84,8 +131,6 @@ class ThreadChatScreen extends HookConsumerWidget {
 
       if (success && context.mounted) {
         cancelEditing();
-      } else if (!success && context.mounted) {
-        CommonSnackBar.error(context, 'メッセージの編集に失敗しました');
       }
     }
 
@@ -99,16 +144,25 @@ class ThreadChatScreen extends HookConsumerWidget {
       );
 
       if (confirmed) {
-        final success = await ref
+        await ref
             .read(threadChatControllerProvider(controllerArg).notifier)
-            .deleteMessage(message.id);
-        if (!success && context.mounted) {
-          CommonSnackBar.error(context, 'メッセージの削除に失敗しました');
-        }
+            .softDeleteMessage(message.id);
       }
     }
 
+    Future<void> toggleReaction(String messageId, String emoji) async {
+      await ref
+          .read(threadChatControllerProvider(controllerArg).notifier)
+          .toggleReaction(messageId, emoji);
+    }
+
+    Future<void> openReactionPicker(String messageId) async {
+      final emoji = await EmojiPickerSheet.show(context);
+      if (emoji != null) await toggleReaction(messageId, emoji);
+    }
+
     void showMessageActions(Message message) {
+      final isSelf = message.senderId == currentUserId;
       showModalBottomSheet(
         context: context,
         builder: (context) => SafeArea(
@@ -116,24 +170,34 @@ class ThreadChatScreen extends HookConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.edit_outlined),
-                title: const Text('編集'),
+                leading: const Icon(Icons.add_reaction_outlined),
+                title: const Text('リアクション'),
                 onTap: () {
                   Navigator.pop(context);
-                  startEditing(message);
+                  openReactionPicker(message.id);
                 },
               ),
-              ListTile(
-                leading: Icon(Icons.delete_outline, color: AppColors.error),
-                title: Text(
-                  '削除',
-                  style: AppTextStyles.body2.copyWith(color: AppColors.error),
+              if (isSelf) ...[
+                ListTile(
+                  leading: const Icon(Icons.edit_outlined),
+                  title: const Text('編集'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    startEditing(message);
+                  },
                 ),
-                onTap: () {
-                  Navigator.pop(context);
-                  confirmDelete(message);
-                },
-              ),
+                ListTile(
+                  leading: Icon(Icons.delete_outline, color: AppColors.error),
+                  title: Text(
+                    '削除',
+                    style: AppTextStyles.body2.copyWith(color: AppColors.error),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    confirmDelete(message);
+                  },
+                ),
+              ],
             ],
           ),
         ),
@@ -190,29 +254,7 @@ class ThreadChatScreen extends HookConsumerWidget {
             child: chatState.isLoading
                 ? const LoadingIndicator()
                 : chatState.messages.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        UserAvatar(
-                          initial: displayName.isNotEmpty
-                              ? displayName[0]
-                              : '?',
-                          color: AppColors.brand,
-                          size: 64,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(displayName, style: AppTextStyles.callout),
-                        const SizedBox(height: 4),
-                        Text(
-                          'メッセージを送ってみましょう',
-                          style: AppTextStyles.caption1.copyWith(
-                            color: AppColors.textSecondary(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
+                ? _EmptyState(displayName: displayName)
                 : ListView.builder(
                     reverse: true,
                     controller: scrollController,
@@ -270,22 +312,34 @@ class ThreadChatScreen extends HookConsumerWidget {
                       }
 
                       return Column(
+                        crossAxisAlignment: isMe
+                            ? CrossAxisAlignment.end
+                            : CrossAxisAlignment.start,
                         children: [
                           if (dateSeparator != null) dateSeparator,
-                          GestureDetector(
-                            onLongPress: isMe
-                                ? () => showMessageActions(msg)
-                                : null,
-                            child: _MessageBubble(
-                              message: msg,
-                              isMe: isMe,
-                              isEditing: isEditing,
-                              editController: editController,
-                              onSaveEdit: () => saveEdit(msg),
-                              onCancelEdit: cancelEditing,
-                              isFirstInGroup: isFirstInGroup,
-                              isLastInGroup: isLastInGroup,
+                          Padding(
+                            padding: EdgeInsets.only(
+                              bottom: isLastInGroup ? 12.0 : 2.0,
+                              left: isMe ? 0 : 32,
                             ),
+                            child: isEditing
+                                ? _EditingBubble(
+                                    controller: editController,
+                                    onSave: () => saveEdit(msg),
+                                    onCancel: cancelEditing,
+                                  )
+                                : _MessageRow(
+                                    message: msg,
+                                    isMe: isMe,
+                                    isFirstInGroup: isFirstInGroup,
+                                    isLastInGroup: isLastInGroup,
+                                    currentUserId: currentUserId,
+                                    onLongPress: () => showMessageActions(msg),
+                                    onToggleReaction: (emoji) =>
+                                        toggleReaction(msg.id, emoji),
+                                    onAddReaction: () =>
+                                        openReactionPicker(msg.id),
+                                  ),
                           ),
                         ],
                       );
@@ -302,10 +356,199 @@ class ThreadChatScreen extends HookConsumerWidget {
               child: const _TypingIndicator(),
             ),
 
-          MessageInputBar(
+          _InputBar(
             controller: controller,
-            onSend: sendMessage,
-            isSending: chatState.isSending,
+            sending: chatState.isSending,
+            onSend: () => sendMessage(),
+            onPickAttachment: pickAndSendAttachment,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Input Bar
+// =============================================================================
+
+class _InputBar extends StatelessWidget {
+  const _InputBar({
+    required this.controller,
+    required this.sending,
+    required this.onSend,
+    required this.onPickAttachment,
+  });
+
+  final TextEditingController controller;
+  final bool sending;
+  final VoidCallback onSend;
+  final VoidCallback onPickAttachment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surface(context),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.sm,
+        MediaQuery.of(context).padding.bottom + AppSpacing.sm,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          IconButton(
+            icon: Icon(
+              Icons.attach_file_outlined,
+              color: AppColors.textSecondary(context),
+            ),
+            onPressed: sending ? null : onPickAttachment,
+          ),
+          Expanded(
+            child: MessageInputBar(
+              controller: controller,
+              onSend: onSend,
+              isSending: sending,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Message Row
+// =============================================================================
+
+class _MessageRow extends ConsumerWidget {
+  const _MessageRow({
+    required this.message,
+    required this.isMe,
+    required this.isFirstInGroup,
+    required this.isLastInGroup,
+    required this.currentUserId,
+    required this.onLongPress,
+    required this.onToggleReaction,
+    required this.onAddReaction,
+  });
+
+  final Message message;
+  final bool isMe;
+  final bool isFirstInGroup;
+  final bool isLastInGroup;
+  final String currentUserId;
+  final VoidCallback onLongPress;
+  final void Function(String emoji) onToggleReaction;
+  final VoidCallback onAddReaction;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (!isMe) ...[
+          if (isLastInGroup)
+            UserAvatar(
+              initial: (message.senderName?.isNotEmpty ?? false)
+                  ? message.senderName![0]
+                  : '?',
+              size: 24,
+              imageUrl: message.senderAvatarUrl,
+            )
+          else
+            const SizedBox(width: 24),
+          const SizedBox(width: 8),
+        ],
+        Flexible(
+          child: MessageBubble(
+            content: message.content,
+            isSelf: isMe,
+            isDeleted: message.isDeleted,
+            isFirstInGroup: isFirstInGroup,
+            isLastInGroup: isLastInGroup,
+            senderName: isMe ? null : message.senderName,
+            createdAtLabel: _formatTime(message),
+            isEdited: message.isEdited,
+            mentionsCurrentUser: message.mentionedUserIds.contains(
+              currentUserId,
+            ),
+            onLongPress: onLongPress,
+            attachments: message.attachments.isEmpty
+                ? null
+                : _AttachmentsList(attachments: message.attachments),
+            reactions: message.reactions.isEmpty
+                ? null
+                : MessageReactionBar(
+                    reactions: message.reactions,
+                    currentUserId: currentUserId,
+                    onToggle: onToggleReaction,
+                    onAddReaction: onAddReaction,
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatTime(Message msg) {
+    return '${msg.createdAt.toLocal().hour.toString().padLeft(2, '0')}:${msg.createdAt.toLocal().minute.toString().padLeft(2, '0')}';
+  }
+}
+
+class _AttachmentsList extends ConsumerWidget {
+  const _AttachmentsList({required this.attachments});
+
+  final List<MessageAttachment> attachments;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: attachments.map((a) {
+        final urlAsync = ref.watch(attachmentSignedUrlProvider(a.storagePath));
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: MessageAttachmentView(
+            attachment: a,
+            signedUrl: urlAsync.value,
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+// =============================================================================
+// Empty State
+// =============================================================================
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.displayName});
+
+  final String displayName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          UserAvatar(
+            initial: displayName.isNotEmpty ? displayName[0] : '?',
+            color: AppColors.brand,
+            size: 64,
+          ),
+          const SizedBox(height: 16),
+          Text(displayName, style: AppTextStyles.callout),
+          const SizedBox(height: 4),
+          Text(
+            'メッセージを送ってみましょう',
+            style: AppTextStyles.caption1.copyWith(
+              color: AppColors.textSecondary(context),
+            ),
           ),
         ],
       ),
@@ -339,184 +582,90 @@ class _DateSeparator extends StatelessWidget {
 }
 
 // =============================================================================
-// Message Bubble
+// Editing Bubble
 // =============================================================================
 
-class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({
-    required this.message,
-    required this.isMe,
-    this.isEditing = false,
-    this.editController,
-    this.onSaveEdit,
-    this.onCancelEdit,
-    this.isFirstInGroup = true,
-    this.isLastInGroup = true,
+class _EditingBubble extends StatelessWidget {
+  const _EditingBubble({
+    required this.controller,
+    required this.onSave,
+    required this.onCancel,
   });
 
-  final Message message;
-  final bool isMe;
-  final bool isEditing;
-  final TextEditingController? editController;
-  final VoidCallback? onSaveEdit;
-  final VoidCallback? onCancelEdit;
-  final bool isFirstInGroup;
-  final bool isLastInGroup;
+  final TextEditingController controller;
+  final VoidCallback onSave;
+  final VoidCallback onCancel;
 
   @override
   Widget build(BuildContext context) {
-    final bubbleColor = isMe
-        ? AppColors.brand
-        : AppColors.surfaceTertiary(context);
-    final textColor = isMe ? Colors.white : AppColors.textPrimary(context);
-
-    final bottomPadding = isLastInGroup ? 12.0 : 2.0;
-
-    const r = Radius.circular(18);
-    const rSmall = Radius.circular(4);
-    final borderRadius = isMe
-        ? BorderRadius.only(
-            topLeft: r,
-            topRight: isFirstInGroup ? r : rSmall,
-            bottomLeft: r,
-            bottomRight: isLastInGroup ? r : rSmall,
-          )
-        : BorderRadius.only(
-            topLeft: isFirstInGroup ? r : rSmall,
-            topRight: r,
-            bottomLeft: isLastInGroup ? r : rSmall,
-            bottomRight: r,
-          );
-
     return Padding(
-      padding: EdgeInsets.only(bottom: bottomPadding),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment: isMe
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          if (!isMe) ...[
-            if (isLastInGroup)
-              UserAvatar(
-                initial: (message.senderName ?? '?')[0],
-                color: AppColors.brand,
-                size: 24,
-              )
-            else
-              const SizedBox(width: 24),
-            const SizedBox(width: 8),
-          ],
           Flexible(
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.7,
               ),
-              child: Column(
-                crossAxisAlignment: isMe
-                    ? CrossAxisAlignment.end
-                    : CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isEditing
-                          ? bubbleColor.withValues(alpha: 0.7)
-                          : bubbleColor,
-                      borderRadius: borderRadius,
-                    ),
-                    child: isEditing
-                        ? _buildEditingContent(context)
-                        : Text(
-                            message.content,
-                            style: AppTextStyles.body1.copyWith(
-                              color: textColor,
-                            ),
-                          ),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.brand.withValues(alpha: 0.08),
+                  borderRadius: AppRadius.radius160,
+                  border: Border.all(
+                    color: AppColors.brand.withValues(alpha: 0.3),
                   ),
-                  if (isLastInGroup)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
-                      child: Text(
-                        _formatTime(message),
-                        style: AppTextStyles.caption2.copyWith(
-                          color: AppColors.textSecondary(context),
-                        ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    TextField(
+                      controller: controller,
+                      autofocus: true,
+                      maxLines: 4,
+                      minLines: 1,
+                      style: AppTextStyles.body1,
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
                       ),
                     ),
-                ],
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GestureDetector(
+                          onTap: onCancel,
+                          child: Text(
+                            'キャンセル',
+                            style: AppTextStyles.caption2.copyWith(
+                              color: AppColors.textSecondary(context),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        GestureDetector(
+                          onTap: onSave,
+                          child: Text(
+                            '保存',
+                            style: AppTextStyles.caption2.copyWith(
+                              color: AppColors.brand,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  String _formatTime(Message msg) {
-    final time =
-        '${msg.createdAt.hour.toString().padLeft(2, '0')}:${msg.createdAt.minute.toString().padLeft(2, '0')}';
-    if (msg.isEdited) return '$time · 編集済み';
-    return time;
-  }
-
-  Widget _buildEditingContent(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextField(
-          controller: editController,
-          autofocus: true,
-          maxLines: null,
-          style: AppTextStyles.body1.copyWith(
-            color: isMe ? Colors.white : AppColors.textPrimary(context),
-          ),
-          decoration: InputDecoration(
-            isDense: true,
-            contentPadding: EdgeInsets.zero,
-            border: InputBorder.none,
-            hintText: 'メッセージを編集...',
-            hintStyle: AppTextStyles.body1.copyWith(
-              color: isMe
-                  ? Colors.white.withValues(alpha: 0.6)
-                  : AppColors.textSecondary(context),
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            GestureDetector(
-              onTap: onCancelEdit,
-              child: Text(
-                'キャンセル',
-                style: AppTextStyles.caption2.copyWith(
-                  color: isMe
-                      ? Colors.white.withValues(alpha: 0.8)
-                      : AppColors.textSecondary(context),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            GestureDetector(
-              onTap: onSaveEdit,
-              child: Text(
-                '保存',
-                style: AppTextStyles.caption2.copyWith(
-                  color: isMe ? Colors.white : AppColors.brand,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }
@@ -593,5 +742,36 @@ class _TypingIndicatorState extends State<_TypingIndicator>
         ),
       ],
     );
+  }
+}
+
+String _guessMime(String fileName, String? extension) {
+  final ext = (extension ?? fileName.split('.').last).toLowerCase();
+  switch (ext) {
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'gif':
+      return 'image/gif';
+    case 'webp':
+      return 'image/webp';
+    case 'pdf':
+      return 'application/pdf';
+    case 'txt':
+      return 'text/plain';
+    case 'csv':
+      return 'text/csv';
+    case 'doc':
+      return 'application/msword';
+    case 'docx':
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    case 'xls':
+      return 'application/vnd.ms-excel';
+    case 'xlsx':
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    default:
+      return 'application/octet-stream';
   }
 }

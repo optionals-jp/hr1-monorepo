@@ -58,6 +58,9 @@ dependencies:
   # 画像選択
   image_picker: ^1.1.0
 
+  # ファイル選択（メッセージ添付）
+  file_picker: ^11.0.0
+
   # OCR（名刺読み取り）
   google_mlkit_text_recognition: ^0.14.0
 

@@ -72,7 +72,10 @@ class CommonButton extends StatelessWidget {
       ).copyWith(
         side: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.disabled)) {
-            return const BorderSide(color: AppColors.lightTextTertiary, width: 1);
+            return const BorderSide(
+              color: AppColors.lightTextTertiary,
+              width: 1,
+            );
           }
           return const BorderSide(color: AppColors.brand, width: 1);
         }),

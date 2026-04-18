@@ -23,5 +23,7 @@ class AppRadius {
   static final BorderRadius radius120 = BorderRadius.circular(cornerRadius120);
   static final BorderRadius radius160 = BorderRadius.circular(cornerRadius160);
   static final BorderRadius radius200 = BorderRadius.circular(cornerRadius200);
-  static final BorderRadius radiusCircular = BorderRadius.circular(cornerRadiusCircular);
+  static final BorderRadius radiusCircular = BorderRadius.circular(
+    cornerRadiusCircular,
+  );
 }

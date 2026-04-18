@@ -34,7 +34,9 @@ class CommonDialog {
           shape: RoundedRectangleBorder(borderRadius: AppRadius.radius200),
           content: Text(
             message,
-            style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary(context)),
+            style: AppTextStyles.body2.copyWith(
+              color: AppColors.textSecondary(context),
+            ),
             textAlign: TextAlign.center,
           ),
           actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
@@ -49,7 +51,10 @@ class CommonDialog {
                       side: const BorderSide(color: AppColors.brand),
                       shape: const StadiumBorder(),
                       minimumSize: const Size(0, 40),
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 16,
+                      ),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(cancelLabel),
@@ -60,12 +65,17 @@ class CommonDialog {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(ctx, true),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isDestructive ? AppColors.error : AppColors.brand,
+                      backgroundColor: isDestructive
+                          ? AppColors.error
+                          : AppColors.brand,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: const StadiumBorder(),
                       minimumSize: const Size(0, 40),
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 16,
+                      ),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(confirmLabel),
@@ -117,12 +127,20 @@ class CommonDialog {
             style: AppTextStyles.body2,
             decoration: InputDecoration(
               hintText: hintText,
-              hintStyle: AppTextStyles.body2.copyWith(color: AppColors.textSecondary(context)),
+              hintStyle: AppTextStyles.body2.copyWith(
+                color: AppColors.textSecondary(context),
+              ),
               suffixText: suffixText,
               filled: true,
               fillColor: AppColors.surfaceTertiary(context),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
             ),
           ),
           actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
@@ -137,7 +155,10 @@ class CommonDialog {
                       side: const BorderSide(color: AppColors.brand),
                       shape: const StadiumBorder(),
                       minimumSize: const Size(0, 40),
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 16,
+                      ),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(cancelLabel),
@@ -153,7 +174,10 @@ class CommonDialog {
                       elevation: 0,
                       shape: const StadiumBorder(),
                       minimumSize: const Size(0, 40),
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 16,
+                      ),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(confirmLabel),

@@ -82,6 +82,10 @@ export function useSelectionStepsPage() {
     mutate: mutateTemplates,
   } = useTemplatesList();
 
+  // --- search / filter ---
+  const [search, setSearch] = useState("");
+  const [filterStepCount, setFilterStepCount] = useState<"all" | "with" | "without">("all");
+
   // --- flow form ---
   const [flowDialogOpen, setFlowDialogOpen] = useState(false);
   const [flowForm, setFlowForm] = useState<FlowFormState>(EMPTY_FLOW_FORM);
@@ -106,6 +110,22 @@ export function useSelectionStepsPage() {
         .sort((a, b) => a.sort_order - b.sort_order),
     }));
   }, [flows, templates]);
+
+  const filteredFlows = useMemo<FlowWithSteps[]>(() => {
+    const keyword = search.trim().toLowerCase();
+    return flowsWithSteps.filter((flow) => {
+      if (keyword) {
+        const name = flow.name.toLowerCase();
+        const description = (flow.description ?? "").toLowerCase();
+        if (!name.includes(keyword) && !description.includes(keyword)) {
+          return false;
+        }
+      }
+      if (filterStepCount === "with" && flow.steps.length === 0) return false;
+      if (filterStepCount === "without" && flow.steps.length > 0) return false;
+      return true;
+    });
+  }, [flowsWithSteps, search, filterStepCount]);
 
   // ---------- flow CRUD ----------
 
@@ -318,8 +338,15 @@ export function useSelectionStepsPage() {
     mutateFlows,
     mutateTemplates,
 
+    // search / filter
+    search,
+    setSearch,
+    filterStepCount,
+    setFilterStepCount,
+
     // flows
     flowsWithSteps,
+    filteredFlows,
 
     // flow form
     flowDialogOpen,
