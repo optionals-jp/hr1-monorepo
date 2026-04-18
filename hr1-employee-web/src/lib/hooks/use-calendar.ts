@@ -3,7 +3,7 @@
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { getSupabase } from "@/lib/supabase/browser";
 import * as calendarRepository from "@/lib/repositories/calendar-repository";
-import type { CalendarEvent } from "@/types/database";
+import type { CalendarEvent, CalendarEventLink } from "@hr1/shared-ui";
 import { differenceInMinutes } from "date-fns";
 
 export function useCalendarEvents(rangeStart: string, rangeEnd: string) {
@@ -24,25 +24,37 @@ export function useCalendarEvents(rangeStart: string, rangeEnd: string) {
       } | null;
       const app = slot.applications as {
         id: string;
+        applicant_id: string | null;
         profiles: { display_name: string | null; email: string } | null;
         jobs: { title: string } | null;
       } | null;
+      const startAt = slot.start_at as string;
+      const endAt = slot.end_at as string;
+
+      const links: CalendarEventLink[] = [];
+      if (interview?.id) {
+        links.push({ label: "面接予定を開く", href: `/scheduling/${interview.id}` });
+      }
+      if (app?.id) {
+        links.push({ label: "応募情報を開く", href: `/applications/${app.id}` });
+      }
+      if (app?.applicant_id) {
+        links.push({ label: "応募者詳細を開く", href: `/applicants/${app.applicant_id}` });
+      }
 
       return {
         id: slot.id as string,
         type: "interview",
         title: interview?.title ?? "面接",
-        startAt: slot.start_at as string,
-        endAt: slot.end_at as string,
-        durationMin: differenceInMinutes(
-          new Date(slot.end_at as string),
-          new Date(slot.start_at as string)
-        ),
-        applicantName: app?.profiles?.display_name ?? undefined,
-        applicantEmail: app?.profiles?.email ?? undefined,
-        jobTitle: app?.jobs?.title ?? undefined,
-        location: interview?.location ?? undefined,
-        status: slot.is_selected ? "予約済" : "空き",
+        startAt,
+        endAt,
+        durationMin: differenceInMinutes(new Date(endAt), new Date(startAt)),
+        applicantName: app?.profiles?.display_name ?? null,
+        applicantEmail: app?.profiles?.email ?? null,
+        jobTitle: app?.jobs?.title ?? null,
+        location: interview?.location ?? null,
+        status: slot.is_selected ? "booked" : "available",
+        links,
       } satisfies CalendarEvent;
     });
   });

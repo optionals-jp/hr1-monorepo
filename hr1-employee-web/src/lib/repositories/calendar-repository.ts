@@ -14,6 +14,7 @@ export async function fetchInterviewSlots(
        applications:application_id(
          id,
          job_id,
+         applicant_id,
          profiles:applicant_id(display_name, email),
          jobs:job_id(title)
        )`

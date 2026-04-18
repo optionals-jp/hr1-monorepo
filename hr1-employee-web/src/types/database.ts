@@ -904,20 +904,6 @@ export interface WikiPage {
   updated_at: string;
 }
 
-export interface CalendarEvent {
-  id: string;
-  type: string;
-  title: string;
-  startAt: string;
-  endAt: string;
-  durationMin: number;
-  applicantName?: string;
-  applicantEmail?: string;
-  jobTitle?: string;
-  location?: string;
-  status?: string;
-}
-
 export interface Notification {
   id: string;
   user_id: string;
