@@ -588,30 +588,13 @@ class _DateSeparator extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Center(
         child: Text(
-          _format(date.toLocal()),
+          DateFormatter.toRelativeDate(date),
           style: AppTextStyles.caption2.copyWith(
             color: AppColors.textSecondary(context),
           ),
         ),
       ),
     );
-  }
-
-  String _format(DateTime dt) {
-    final now = DateTime.now();
-    if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
-      return '今日';
-    }
-    final yesterday = now.subtract(const Duration(days: 1));
-    if (dt.year == yesterday.year &&
-        dt.month == yesterday.month &&
-        dt.day == yesterday.day) {
-      return '昨日';
-    }
-    if (dt.year == now.year) {
-      return '${dt.month}月${dt.day}日';
-    }
-    return '${dt.year}年${dt.month}月${dt.day}日';
   }
 }
 

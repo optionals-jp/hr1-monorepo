@@ -14,6 +14,8 @@ import type {
   Message,
   MessageAttachment,
   MessageReactionSummary,
+  MessageSender,
+  ProfileRole,
 } from "@/types/database";
 import {
   Send,
@@ -59,7 +61,26 @@ type RpcMessageRow = {
   reply_count: number;
 };
 
+const VALID_ROLES: readonly ProfileRole[] = [
+  "admin",
+  "employee",
+  "applicant",
+  "manager",
+  "approver",
+  "hr1_admin",
+];
+
+function toProfileRole(value: string | null): ProfileRole {
+  return VALID_ROLES.includes(value as ProfileRole) ? (value as ProfileRole) : "employee";
+}
+
 function mapRpcRow(row: RpcMessageRow): Message {
+  const sender: MessageSender = {
+    id: row.sender_id,
+    display_name: row.sender_display_name,
+    avatar_url: row.sender_avatar_url,
+    role: toProfileRole(row.sender_role),
+  };
   return {
     id: row.id,
     thread_id: row.thread_id,
@@ -70,25 +91,7 @@ function mapRpcRow(row: RpcMessageRow): Message {
     created_at: row.created_at,
     deleted_at: row.deleted_at,
     parent_message_id: row.parent_message_id,
-    sender: {
-      id: row.sender_id,
-      email: "",
-      display_name: row.sender_display_name,
-      last_name: null,
-      first_name: null,
-      last_name_kana: null,
-      first_name_kana: null,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      role: (row.sender_role ?? "employee") as any,
-      avatar_url: row.sender_avatar_url,
-      position: null,
-      department: null,
-      name_kana: null,
-      phone: null,
-      hire_date: null,
-      birth_date: null,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any,
+    sender,
     attachments: row.attachments ?? [],
     reactions: row.reactions ?? [],
     mentions: row.mentions ?? [],

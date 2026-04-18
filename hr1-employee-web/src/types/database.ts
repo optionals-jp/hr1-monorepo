@@ -298,6 +298,14 @@ export interface ChannelMember {
   joined_at: string;
 }
 
+/** get_thread_messages RPC が返す送信者サマリ（Profile のサブセット） */
+export interface MessageSender {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  role: ProfileRole;
+}
+
 export interface Message {
   id: string;
   thread_id: string;
@@ -308,7 +316,7 @@ export interface Message {
   created_at: string;
   deleted_at?: string | null;
   parent_message_id?: string | null;
-  sender?: Profile;
+  sender?: MessageSender;
   attachments?: MessageAttachment[];
   reactions?: MessageReactionSummary[];
   mentions?: MessageMention[];

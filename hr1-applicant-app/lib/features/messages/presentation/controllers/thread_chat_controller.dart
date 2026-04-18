@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_applicant_app/features/auth/presentation/providers/auth_providers.dart';
@@ -153,8 +154,9 @@ class ThreadChatController
         merged.sort((a, b) => a.createdAt.compareTo(b.createdAt));
       }
       state = state.copyWith(messages: merged);
-    } catch (_) {
-      // refresh の失敗は黙って無視（次の UPDATE で再トリガー）
+    } catch (e, stack) {
+      debugPrint('refreshLatest failed: $e');
+      FlutterError.reportError(FlutterErrorDetails(exception: e, stack: stack));
     }
   }
 

@@ -6,6 +6,8 @@ import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
+import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { ConfirmDialog } from "@hr1/shared-ui/components/ui/confirm-dialog";
 import {
@@ -26,7 +28,8 @@ import {
 import { FormInput, FormTextarea } from "@hr1/shared-ui/components/ui/form-field";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
-import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { cn } from "@hr1/shared-ui/lib/utils";
+import { MoreVertical, Pencil, Trash2, SlidersHorizontal, X } from "lucide-react";
 import { useSelectionStepsPage } from "@/features/recruiting/hooks/use-selection-steps-page";
 import type { SelectionFlow } from "@/types/database";
 
@@ -68,6 +71,50 @@ export default function SelectionStepsPage() {
         }
       />
 
+      <StickyFilterBar>
+        <SearchBar value={h.search} onChange={h.setSearch} placeholder="フロー名・説明で検索" />
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
+            {h.filterStepCount !== "all" && (
+              <div className="flex items-center gap-1.5 overflow-x-auto">
+                <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                  ステップ：
+                  {h.filterStepCount === "with" ? "あり" : "なし"}
+                  <span
+                    role="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      h.setFilterStepCount("all");
+                    }}
+                    className="ml-0.5 hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </span>
+                </Badge>
+              </div>
+            )}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-auto py-2">
+            <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">ステップ数</div>
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterStepCount("all")}>
+              <span className={cn(h.filterStepCount === "all" && "font-medium")}>すべて</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterStepCount("with")}>
+              <span className={cn(h.filterStepCount === "with" && "font-medium")}>
+                ステップあり
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="py-2" onClick={() => h.setFilterStepCount("without")}>
+              <span className={cn(h.filterStepCount === "without" && "font-medium")}>
+                ステップなし
+              </span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </StickyFilterBar>
+
       <TableSection>
         <Table>
           <TableHeader>
@@ -82,10 +129,10 @@ export default function SelectionStepsPage() {
             <TableEmptyState
               colSpan={4}
               isLoading={h.isLoading}
-              isEmpty={h.flowsWithSteps.length === 0}
+              isEmpty={h.filteredFlows.length === 0}
               emptyMessage="選考フローがまだありません。「フローを追加」から作成してください"
             >
-              {h.flowsWithSteps.map((flow) => (
+              {h.filteredFlows.map((flow) => (
                 <TableRow
                   key={flow.id}
                   className="cursor-pointer"
