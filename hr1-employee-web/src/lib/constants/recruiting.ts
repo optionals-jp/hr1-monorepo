@@ -131,6 +131,30 @@ export const screeningTypeLabels: Record<string, string> = {
 export const RESOURCE_STEP_TYPES = [StepType.Form, StepType.Interview] as const;
 
 /* -------------------------------------------------------- */
+/*  選考ステップ期限モード                                    */
+/* -------------------------------------------------------- */
+
+export const DeadlineMode = {
+  None: "none",
+  DaysFromApplication: "days_from_application",
+  DaysFromStepStart: "days_from_step_start",
+  DaysFromPreviousCompletion: "days_from_previous_completion",
+  FixedDate: "fixed_date",
+} as const;
+export type DeadlineMode = (typeof DeadlineMode)[keyof typeof DeadlineMode];
+
+export const deadlineModeLabels: Record<string, string> = {
+  [DeadlineMode.None]: "期限なし",
+  [DeadlineMode.DaysFromApplication]: "応募日から",
+  [DeadlineMode.DaysFromStepStart]: "ステップ開始から",
+  [DeadlineMode.DaysFromPreviousCompletion]: "前ステップ完了から",
+  [DeadlineMode.FixedDate]: "固定日付",
+};
+
+/** `days_from_*` モードで受け付けるオフセット日数の上限。DB CHECK 制約と揃える */
+export const DEADLINE_OFFSET_DAYS_MAX = 365;
+
+/* -------------------------------------------------------- */
 /*  面接                                                     */
 /* -------------------------------------------------------- */
 

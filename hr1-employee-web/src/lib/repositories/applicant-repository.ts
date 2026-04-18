@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SUPABASE_FUNCTIONS } from "@hr1/shared-ui/lib/supabase-functions";
-import type { Profile, Application, Job } from "@/types/database";
+import type { DeadlineSettings, Profile, Application, Job } from "@/types/database";
 
 /**
  * 候補者を作成する（Supabase Edge Function `create-user` 経由）。
@@ -169,7 +169,7 @@ export async function createJob(
 
 export async function createJobSteps(
   client: SupabaseClient,
-  steps: {
+  steps: ({
     id: string;
     job_id: string;
     step_type: string;
@@ -179,7 +179,7 @@ export async function createJobSteps(
     screening_type: string | null;
     form_id: string | null;
     requires_review: boolean;
-  }[]
+  } & Partial<DeadlineSettings>)[]
 ) {
   return client.from("job_steps").insert(steps);
 }

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Job, JobStep, Application, Interview } from "@/types/database";
+import type { Job, JobStep, Application, Interview, DeadlineSettings } from "@/types/database";
 
 export interface JobDetailResult {
   job: Job | null;
@@ -78,8 +78,7 @@ export async function insertJobStep(
     template_id: string | null;
     screening_type?: string | null;
     requires_review?: boolean;
-    default_duration_days?: number | null;
-  }
+  } & Partial<DeadlineSettings>
 ) {
   return client.from("job_steps").insert(data);
 }
@@ -96,8 +95,7 @@ export async function updateJobStep(
     step_order?: number;
     screening_type?: string | null;
     requires_review?: boolean;
-    default_duration_days?: number | null;
-  }
+  } & Partial<DeadlineSettings>
 ) {
   return client
     .from("job_steps")

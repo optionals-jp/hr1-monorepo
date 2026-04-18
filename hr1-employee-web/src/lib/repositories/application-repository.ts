@@ -1,5 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Application, CustomForm, Interview, Job, Offer } from "@/types/database";
+import type {
+  Application,
+  CustomForm,
+  DeadlineSettings,
+  Interview,
+  Job,
+  Offer,
+} from "@/types/database";
 
 export async function fetchApplications(client: SupabaseClient, organizationId: string) {
   const { data } = await client
@@ -119,21 +126,6 @@ export async function updateStepStatus(
   return client.from("application_steps").update(data).eq("id", stepId);
 }
 
-/**
- * 選考ステップの期限 (deadline_at) を更新する。flow/ad_hoc を問わず全ステップで利用可能。
- *
- * null を渡すと期限をクリアする (期限なしに戻す)。
- * RLS は既存の app_steps_update_* ポリシーが ad_hoc 以外の flow ステップも許可しているため、
- * カラム単位ではなく行単位で評価される。
- */
-export async function updateStepDeadline(
-  client: SupabaseClient,
-  stepId: string,
-  deadlineAt: string | null
-) {
-  return client.from("application_steps").update({ deadline_at: deadlineAt }).eq("id", stepId);
-}
-
 export async function fetchForms(client: SupabaseClient, organizationId: string) {
   const { data } = await client
     .from("custom_forms")
@@ -224,9 +216,7 @@ export async function insertAdHocStep(
     is_optional?: boolean;
     description?: string | null;
     created_by_user_id?: string | null;
-    default_duration_days?: number | null;
-    deadline_at?: string | null;
-  }
+  } & Partial<DeadlineSettings>
 ) {
   return client
     .from("application_steps")
@@ -258,9 +248,7 @@ export async function updateAdHocStep(
     is_optional?: boolean;
     description?: string | null;
     step_order?: number;
-    default_duration_days?: number | null;
-    deadline_at?: string | null;
-  }
+  } & Partial<DeadlineSettings>
 ) {
   return client.from("application_steps").update(data).eq("id", stepId);
 }

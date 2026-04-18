@@ -12,7 +12,7 @@ import * as flowRepo from "@/lib/repositories/selection-flow-repository";
 import { validators, validateForm, type ValidationErrors } from "@hr1/shared-ui";
 import { StepType } from "@/lib/constants";
 
-import type { Job, SelectionFlow, SelectionStepTemplate } from "@/types/database";
+import type { DeadlineSettings, Job, SelectionFlow, SelectionStepTemplate } from "@/types/database";
 
 export const JOB_TAB_STATUSES: Record<string, string[]> = {
   active: ["open", "draft"],
@@ -83,7 +83,7 @@ export function useJobsPage() {
   };
 }
 
-export interface StepDraft {
+export interface StepDraft extends DeadlineSettings {
   tempId: string;
   step_type: string;
   label: string;
@@ -155,6 +155,9 @@ export function useNewJob() {
           screening_type: step.screeningType,
           form_id: step.formId,
           requires_review: step.requiresReview,
+          deadline_mode: step.deadline_mode,
+          deadline_offset_days: step.deadline_offset_days,
+          fixed_deadline_date: step.fixed_deadline_date,
         }))
       );
       if (stepsError) throw stepsError;
@@ -163,6 +166,12 @@ export function useNewJob() {
 
   return { createJob };
 }
+
+const NONE_DEADLINE: DeadlineSettings = {
+  deadline_mode: "none",
+  deadline_offset_days: null,
+  fixed_deadline_date: null,
+};
 
 const DEFAULT_STEPS: StepDraft[] = [
   {
@@ -173,6 +182,7 @@ const DEFAULT_STEPS: StepDraft[] = [
     formId: null,
     requiresReview: true,
     templateId: null,
+    ...NONE_DEADLINE,
   },
   {
     tempId: "2",
@@ -182,6 +192,7 @@ const DEFAULT_STEPS: StepDraft[] = [
     formId: null,
     requiresReview: false,
     templateId: null,
+    ...NONE_DEADLINE,
   },
   {
     tempId: "3",
@@ -191,6 +202,7 @@ const DEFAULT_STEPS: StepDraft[] = [
     formId: null,
     requiresReview: false,
     templateId: null,
+    ...NONE_DEADLINE,
   },
 ];
 
@@ -225,6 +237,7 @@ export function useNewJobPage() {
         formId: null,
         requiresReview: false,
         templateId: null,
+        ...NONE_DEADLINE,
       },
     ]);
   };
@@ -240,6 +253,9 @@ export function useNewJobPage() {
         formId: template.form_id,
         requiresReview: template.requires_review,
         templateId: template.id,
+        deadline_mode: template.deadline_mode,
+        deadline_offset_days: template.deadline_offset_days,
+        fixed_deadline_date: template.fixed_deadline_date,
       },
     ]);
   };
@@ -258,6 +274,9 @@ export function useNewJobPage() {
         formId: t.form_id,
         requiresReview: t.requires_review,
         templateId: t.id,
+        deadline_mode: t.deadline_mode,
+        deadline_offset_days: t.deadline_offset_days,
+        fixed_deadline_date: t.fixed_deadline_date,
       }))
     );
   };
@@ -345,6 +364,9 @@ export function useNewJobPage() {
             requires_review: step.requiresReview,
             description: null,
             sort_order: i,
+            deadline_mode: step.deadline_mode,
+            deadline_offset_days: step.deadline_offset_days,
+            fixed_deadline_date: step.fixed_deadline_date,
           });
           steps[i] = { ...step, templateId: created.id };
         }

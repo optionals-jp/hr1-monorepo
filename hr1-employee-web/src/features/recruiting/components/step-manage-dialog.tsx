@@ -13,8 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
-import type { JobStep, Interview } from "@/types/database";
+import type { DeadlineSettings, JobStep, Interview } from "@/types/database";
 import {
+  DeadlineMode,
   StepType,
   FORM_STEP_TYPES,
   stepTypeLabels,
@@ -22,6 +23,11 @@ import {
   screeningTypeLabels,
 } from "@/lib/constants";
 import { ResourceSelectField } from "@/features/recruiting/components/resource-select-field";
+import {
+  DeadlineFieldGroup,
+  fromDeadlineSettings,
+  toDeadlineSettings,
+} from "@/features/recruiting/components/deadline-field-group";
 import { GripVertical, Trash2, Plus } from "lucide-react";
 
 interface StepManageDialogProps {
@@ -32,15 +38,14 @@ interface StepManageDialogProps {
   interviews: Interview[];
   onSave: (
     updatedSteps: JobStep[],
-    newSteps: {
+    newSteps: ({
       step_type: string;
       label: string;
       form_id: string | null;
       interview_id: string | null;
       screening_type: string | null;
       requires_review: boolean;
-      default_duration_days: number | null;
-    }[],
+    } & DeadlineSettings)[],
     deletedIds: string[]
   ) => Promise<void>;
   saving: boolean;
@@ -55,8 +60,12 @@ interface EditableStep {
   screening_type: string | null;
   requires_review: boolean;
   step_order: number;
-  /** 空文字 = 未設定。数値文字列で保持し、保存時に数値化する */
-  default_duration_days: string;
+  /** 期限モード */
+  deadline_mode: DeadlineMode;
+  /** 数値文字列、空 = 未設定 */
+  deadline_offset_days: string;
+  /** YYYY-MM-DD、空 = 未設定 */
+  fixed_deadline_date: string;
   isNew?: boolean;
 }
 
@@ -72,19 +81,24 @@ export function StepManageDialog({
   const [editSteps, setEditSteps] = useState<EditableStep[]>(() =>
     initialSteps
       .filter((s) => s.step_type !== StepType.Offer)
-      .map((s) => ({
-        id: s.id,
-        step_type: s.step_type,
-        label: s.label,
-        form_id: s.form_id,
-        interview_id: s.interview_id,
-        screening_type: s.screening_type,
-        requires_review: s.requires_review,
-        step_order: s.step_order,
-        default_duration_days:
-          s.default_duration_days != null ? String(s.default_duration_days) : "",
-      }))
+      .map((s) => {
+        const d = fromDeadlineSettings(s);
+        return {
+          id: s.id,
+          step_type: s.step_type,
+          label: s.label,
+          form_id: s.form_id,
+          interview_id: s.interview_id,
+          screening_type: s.screening_type,
+          requires_review: s.requires_review,
+          step_order: s.step_order,
+          deadline_mode: d.mode,
+          deadline_offset_days: d.offsetDays,
+          fixed_deadline_date: d.fixedDate,
+        };
+      })
   );
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [deletedIds, setDeletedIds] = useState<string[]>([]);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -101,7 +115,9 @@ export function StepManageDialog({
         screening_type: null,
         requires_review: false,
         step_order: prev.length + 1,
-        default_duration_days: "",
+        deadline_mode: DeadlineMode.None,
+        deadline_offset_days: "",
+        fixed_deadline_date: "",
         isNew: true,
       },
     ]);
@@ -128,6 +144,23 @@ export function StepManageDialog({
     });
   };
 
+  const updateDeadline = (
+    index: number,
+    patch: Partial<{ mode: DeadlineMode; offsetDays: string; fixedDate: string }>
+  ) => {
+    setEditSteps((prev) => {
+      const next = [...prev];
+      const cur = next[index];
+      next[index] = {
+        ...cur,
+        deadline_mode: patch.mode ?? cur.deadline_mode,
+        deadline_offset_days: patch.offsetDays ?? cur.deadline_offset_days,
+        fixed_deadline_date: patch.fixedDate ?? cur.fixed_deadline_date,
+      };
+      return next;
+    });
+  };
+
   const handleDrop = () => {
     if (dragIndex === null || dragOverIndex === null || dragIndex === dragOverIndex) {
       setDragIndex(null);
@@ -147,22 +180,25 @@ export function StepManageDialog({
   const handleSave = async () => {
     let order = 0;
     const existing: typeof initialSteps = [];
-    const newSteps: {
+    const newSteps: ({
       step_type: string;
       label: string;
       form_id: string | null;
       interview_id: string | null;
       screening_type: string | null;
       requires_review: boolean;
-      default_duration_days: number | null;
-    }[] = [];
+    } & DeadlineSettings)[] = [];
 
-    for (const s of editSteps) {
+    for (let i = 0; i < editSteps.length; i++) {
+      const s = editSteps[i];
       order++;
-      const duration =
-        s.default_duration_days.trim() === "" ? null : Number(s.default_duration_days);
-      // バリデーション: 数値文字列が不正なら保存しない (UI 側で弾ければベター)
-      if (duration !== null && (!Number.isInteger(duration) || duration <= 0)) {
+      const deadlineResult = toDeadlineSettings(
+        s.deadline_mode,
+        s.deadline_offset_days,
+        s.fixed_deadline_date
+      );
+      if (!deadlineResult.ok) {
+        setSaveError(`${i + 1} 番目のステップ: ${deadlineResult.error}`);
         return;
       }
       if (s.isNew) {
@@ -174,7 +210,7 @@ export function StepManageDialog({
             interview_id: s.interview_id,
             screening_type: s.screening_type,
             requires_review: s.requires_review,
-            default_duration_days: duration,
+            ...deadlineResult.value,
           });
         }
       } else {
@@ -189,12 +225,13 @@ export function StepManageDialog({
             interview_id: s.interview_id,
             screening_type: s.screening_type,
             requires_review: s.requires_review,
-            default_duration_days: duration,
+            ...deadlineResult.value,
           });
         }
       }
     }
 
+    setSaveError(null);
     await onSave(existing, newSteps, deletedIds);
   };
 
@@ -269,16 +306,6 @@ export function StepManageDialog({
                   placeholder="ステップ名"
                   className="flex-1"
                 />
-                <Input
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={step.default_duration_days}
-                  onChange={(e) => updateStep(index, "default_duration_days", e.target.value)}
-                  placeholder="所要日数"
-                  className="w-24"
-                  title="ステップ開始から期限までの日数 (任意)"
-                />
                 {step.isNew && (
                   <Badge variant="outline" className="text-xs shrink-0">
                     新規
@@ -325,6 +352,14 @@ export function StepManageDialog({
                   placeholder="日程調整を選択（任意）"
                 />
               )}
+              <DeadlineFieldGroup
+                mode={step.deadline_mode}
+                offsetDays={step.deadline_offset_days}
+                fixedDate={step.fixed_deadline_date}
+                onChange={(patch) => updateDeadline(index, patch)}
+                allowFixed
+                idPrefix={`step-deadline-${step.id}`}
+              />
             </div>
             <Button
               variant="ghost"
@@ -341,6 +376,7 @@ export function StepManageDialog({
           <Plus className="size-4 mr-1.5" />
           ステップを追加
         </Button>
+        {saveError && <p className="text-sm text-destructive">{saveError}</p>}
       </div>
     </DialogPanel>
   );

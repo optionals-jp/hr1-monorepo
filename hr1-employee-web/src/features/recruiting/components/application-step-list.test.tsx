@@ -24,7 +24,9 @@ function makeStep(overrides: Partial<ApplicationStep> = {}): ApplicationStep {
     created_by_user_id: null,
     is_optional: false,
     description: null,
-    default_duration_days: null,
+    deadline_mode: "none",
+    deadline_offset_days: null,
+    fixed_deadline_date: null,
     deadline_at: null,
     ...overrides,
   };

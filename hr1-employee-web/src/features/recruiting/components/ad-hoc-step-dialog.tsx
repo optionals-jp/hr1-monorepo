@@ -16,14 +16,20 @@ import {
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
 import {
+  DeadlineMode,
   StepType,
   FORM_STEP_TYPES,
   selectableStepTypes,
   screeningTypeLabels,
   stepTypeLabels,
 } from "@/lib/constants";
-import type { ApplicationStep, CustomForm, Interview } from "@/types/database";
+import type { ApplicationStep, CustomForm, DeadlineSettings, Interview } from "@/types/database";
 import { ResourceSelectField } from "@/features/recruiting/components/resource-select-field";
+import {
+  DeadlineFieldGroup,
+  fromDeadlineSettings,
+  toDeadlineSettings,
+} from "@/features/recruiting/components/deadline-field-group";
 
 interface AdHocStepDialogProps {
   open: boolean;
@@ -35,20 +41,20 @@ interface AdHocStepDialogProps {
   forms: CustomForm[];
   interviews: Interview[];
   onLoadResources: () => Promise<void> | void;
-  onSubmit: (input: {
-    step_type: string;
-    label: string;
-    form_id?: string | null;
-    interview_id?: string | null;
-    screening_type?: string | null;
-    requires_review?: boolean;
-    is_optional?: boolean;
-    description?: string | null;
-    insert_after_step_id?: string | null;
-    insert_before_step_id?: string | null;
-    default_duration_days?: number | null;
-    deadline_at?: string | null;
-  }) => Promise<{ success: boolean; error?: string }>;
+  onSubmit: (
+    input: {
+      step_type: string;
+      label: string;
+      form_id?: string | null;
+      interview_id?: string | null;
+      screening_type?: string | null;
+      requires_review?: boolean;
+      is_optional?: boolean;
+      description?: string | null;
+      insert_after_step_id?: string | null;
+      insert_before_step_id?: string | null;
+    } & Partial<DeadlineSettings>
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 interface FormState {
@@ -61,19 +67,12 @@ interface FormState {
   is_optional: boolean;
   description: string;
   insert_after_step_id: string | null; // null => 末尾
-  /** 空文字 = 未設定。数値文字列で保持し、保存時に数値化する */
-  default_duration_days: string;
-  /** YYYY-MM-DD 形式。空文字 = 未設定。保存時に JST 23:59:59 の timestamptz に変換 */
-  deadline_date: string;
-}
-
-/** timestamptz (ISO) から YYYY-MM-DD (JST) の文字列へ変換する。null 安全。 */
-function isoToJstDate(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  // JST (UTC+9) オフセットを加算して日付部分だけ取り出す
-  const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
-  return jst.toISOString().slice(0, 10);
+  /** 期限モード */
+  deadline_mode: DeadlineMode;
+  /** 数値文字列、空 = 未設定 */
+  deadline_offset_days: string;
+  /** YYYY-MM-DD、空 = 未設定 */
+  fixed_deadline_date: string;
 }
 
 function buildInitialForm(editingStep: ApplicationStep | null): FormState {
@@ -88,10 +87,12 @@ function buildInitialForm(editingStep: ApplicationStep | null): FormState {
       is_optional: false,
       description: "",
       insert_after_step_id: null,
-      default_duration_days: "",
-      deadline_date: "",
+      deadline_mode: DeadlineMode.None,
+      deadline_offset_days: "",
+      fixed_deadline_date: "",
     };
   }
+  const d = fromDeadlineSettings(editingStep);
   return {
     step_type: editingStep.step_type,
     label: editingStep.label,
@@ -102,9 +103,9 @@ function buildInitialForm(editingStep: ApplicationStep | null): FormState {
     is_optional: editingStep.is_optional,
     description: editingStep.description ?? "",
     insert_after_step_id: null, // 編集時は位置変更 UI を出さない（step_order は別途管理）
-    default_duration_days:
-      editingStep.default_duration_days != null ? String(editingStep.default_duration_days) : "",
-    deadline_date: isoToJstDate(editingStep.deadline_at),
+    deadline_mode: d.mode,
+    deadline_offset_days: d.offsetDays,
+    fixed_deadline_date: d.fixedDate,
   };
 }
 
@@ -167,22 +168,14 @@ function AdHocStepDialogBody({
       return;
     }
 
-    // 既定所要日数のバリデーション (空なら null)
-    let durationDays: number | null = null;
-    if (form.default_duration_days.trim() !== "") {
-      const n = Number(form.default_duration_days);
-      if (!Number.isInteger(n) || n <= 0) {
-        setError("既定所要日数は正の整数で入力してください");
-        return;
-      }
-      durationDays = n;
-    }
-
-    // 期限日 (YYYY-MM-DD) を JST 23:59:59 の timestamptz に変換
-    let deadlineIso: string | null = null;
-    if (form.deadline_date.trim() !== "") {
-      // JST の 23:59:59 を UTC の ISO 文字列にする: JST = UTC+9 なので UTC は 14:59:59Z
-      deadlineIso = `${form.deadline_date}T14:59:59.000Z`;
+    const deadlineResult = toDeadlineSettings(
+      form.deadline_mode,
+      form.deadline_offset_days,
+      form.fixed_deadline_date
+    );
+    if (!deadlineResult.ok) {
+      setError(deadlineResult.error);
+      return;
     }
 
     setSaving(true);
@@ -198,8 +191,7 @@ function AdHocStepDialogBody({
       description: form.description.trim() ? form.description.trim() : null,
       insert_after_step_id: editingStep || insertBeforeStepId ? null : form.insert_after_step_id,
       insert_before_step_id: editingStep ? null : (insertBeforeStepId ?? null),
-      default_duration_days: durationDays,
-      deadline_at: deadlineIso,
+      ...deadlineResult.value,
     });
     setSaving(false);
     if (!result.success) {
@@ -362,35 +354,18 @@ function AdHocStepDialogBody({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label htmlFor="ad-hoc-step-duration">既定所要日数（任意）</Label>
-          <Input
-            id="ad-hoc-step-duration"
-            type="number"
-            min={1}
-            step={1}
-            value={form.default_duration_days}
-            onChange={(e) => update("default_duration_days", e.target.value)}
-            placeholder="例: 7"
-          />
-          <p className="text-xs text-muted-foreground">
-            ステップ開始時にこの日数後 (JST 23:59) を期限として自動設定します。
-          </p>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="ad-hoc-step-deadline">期限日（任意）</Label>
-          <Input
-            id="ad-hoc-step-deadline"
-            type="date"
-            value={form.deadline_date}
-            onChange={(e) => update("deadline_date", e.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">
-            手動で期限日を設定できます（所要日数より優先）。
-          </p>
-        </div>
-      </div>
+      <DeadlineFieldGroup
+        mode={form.deadline_mode}
+        offsetDays={form.deadline_offset_days}
+        fixedDate={form.fixed_deadline_date}
+        onChange={(patch) => {
+          if (patch.mode !== undefined) update("deadline_mode", patch.mode);
+          if (patch.offsetDays !== undefined) update("deadline_offset_days", patch.offsetDays);
+          if (patch.fixedDate !== undefined) update("fixed_deadline_date", patch.fixedDate);
+        }}
+        allowFixed
+        idPrefix="ad-hoc-deadline"
+      />
 
       <div className="flex items-start gap-2 pt-1">
         <Checkbox
