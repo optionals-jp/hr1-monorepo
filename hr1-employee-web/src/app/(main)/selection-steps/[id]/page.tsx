@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { Button } from "@hr1/shared-ui/components/ui/button";
+import { IconButton } from "@hr1/shared-ui/components/ui/icon-button";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
@@ -25,12 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@hr1/shared-ui/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@hr1/shared-ui/components/ui/dropdown-menu";
 import { FormField, FormInput, FormTextarea } from "@hr1/shared-ui/components/ui/form-field";
 import { TableSection } from "@hr1/shared-ui/components/layout/table-section";
 import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
@@ -40,13 +35,28 @@ import { EditPanel } from "@hr1/shared-ui/components/ui/edit-panel";
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import {
-  MoreVertical,
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   Pencil,
+  Plus,
   Trash2,
   FileText,
   ListOrdered,
   Briefcase,
   AlertCircle,
+  GripVertical,
+  ClipboardList,
+  UserCheck,
+  UserX,
 } from "lucide-react";
 import {
   stepTypeLabels,
@@ -55,6 +65,13 @@ import {
   jobStatusColors,
   screeningTypeLabels,
 } from "@/lib/constants";
+import {
+  StepCardShell,
+  StepMetaChips,
+  StepRow,
+  StepTypeBadge,
+  type StepMetaItem,
+} from "@/features/recruiting/components/selection-step-card";
 import {
   useSelectionFlowDetail,
   type TemplateWithCounts,
@@ -73,7 +90,6 @@ const tabs = [
 export default function SelectionFlowDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { showToast } = useToast();
-  const router = useRouter();
   const h = useSelectionFlowDetail(id);
   const [deleteStepTarget, setDeleteStepTarget] = useState<SelectionStepTemplate | null>(null);
 
@@ -127,13 +143,6 @@ export default function SelectionFlowDetailPage({ params }: { params: Promise<{ 
         sticky={false}
         border={false}
         breadcrumb={BREADCRUMB}
-        action={
-          h.activeTab === "steps" ? (
-            <Button variant="primary" onClick={h.openAddStepDialog}>
-              ステップを追加
-            </Button>
-          ) : undefined
-        }
       />
 
       {h.steps.length === 0 && (
@@ -160,7 +169,9 @@ export default function SelectionFlowDetailPage({ params }: { params: Promise<{ 
         <StepsTab
           steps={h.steps}
           onEdit={h.openEditStepDialog}
+          onAdd={h.openAddStepDialog}
           onDelete={setDeleteStepTarget}
+          onReorder={h.handleReorder}
           deletingId={h.stepDeletingId}
         />
       )}
@@ -202,7 +213,7 @@ export default function SelectionFlowDetailPage({ params }: { params: Promise<{ 
                 <SelectValue>{(v: string) => stepTypeLabels[v] ?? v}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={StepType.Screening}>書類選考</SelectItem>
+                <SelectItem value={StepType.Screening}>書類アップロード</SelectItem>
                 <SelectItem value={StepType.Form}>フォーム</SelectItem>
                 <SelectItem value={StepType.Interview}>面接</SelectItem>
                 <SelectItem value={StepType.ExternalTest}>外部テスト</SelectItem>
@@ -211,74 +222,25 @@ export default function SelectionFlowDetailPage({ params }: { params: Promise<{ 
             </Select>
           </FormField>
           {h.stepForm.step_type === StepType.Screening && (
-            <>
-              <FormField label="選考方法" required>
-                <Select
-                  value={h.stepForm.screening_type ? "file" : "form"}
-                  onValueChange={(v) => {
-                    if (v === "form") {
-                      h.setStepFormField("screening_type", null);
-                    } else {
-                      h.setStepFormField("form_id", null);
-                      if (!h.stepForm.screening_type) {
-                        h.setStepFormField("screening_type", "resume");
-                      }
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue>
-                      {(v: string) => (v === "form" ? "フォームから選考" : "ファイルアップロード")}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="form">フォームから選考</SelectItem>
-                    <SelectItem value="file">ファイルアップロード</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormField>
-              {!h.stepForm.screening_type ? (
-                <FormField label="フォーム" required>
-                  <Select
-                    value={h.stepForm.form_id ?? ""}
-                    onValueChange={(v) => h.setStepFormField("form_id", v || null)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="フォームを選択">
-                        {(v: string) => h.forms.find((f) => f.id === v)?.title ?? v}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {h.forms.map((form) => (
-                        <SelectItem key={form.id} value={form.id}>
-                          {form.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormField>
-              ) : (
-                <FormField label="書類種別" required>
-                  <Select
-                    value={h.stepForm.screening_type ?? ""}
-                    onValueChange={(v) => h.setStepFormField("screening_type", v || null)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="選択してください">
-                        {(v: string) => screeningTypeLabels[v] ?? v}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(screeningTypeLabels).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormField>
-              )}
-            </>
+            <FormField label="書類種別" required>
+              <Select
+                value={h.stepForm.screening_type ?? ""}
+                onValueChange={(v) => h.setStepFormField("screening_type", v || null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="選択してください">
+                    {(v: string) => screeningTypeLabels[v] ?? v}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(screeningTypeLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
           )}
           {h.stepForm.step_type !== StepType.Offer && (
             <div className="flex items-center justify-between rounded-lg border p-3">
@@ -401,36 +363,54 @@ function OverviewTab({
       </SectionCard>
 
       {/* 関連求人 */}
-      <SectionCard>
+      <div>
         <h3 className="text-sm font-semibold mb-3">関連する求人</h3>
-        {relatedJobs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">関連する求人はありません</p>
-        ) : (
-          <div className="divide-y divide-foreground/5">
-            {relatedJobs.map((job) => (
-              <Link
-                key={job.id}
-                href={`/jobs/${job.id}`}
-                className="flex items-center gap-3 py-3 hover:opacity-70 transition-opacity"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{job.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {[job.department, job.location].filter(Boolean).join(" / ") || "-"}
-                  </p>
-                </div>
+        <RelatedJobsTable jobs={relatedJobs} />
+      </div>
+    </div>
+  );
+}
+
+function RelatedJobsTable({ jobs }: { jobs: RelatedJob[] }) {
+  const router = useRouter();
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>求人名</TableHead>
+          <TableHead>部署 / 勤務地</TableHead>
+          <TableHead>ステータス</TableHead>
+          <TableHead className="text-right">応募数</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableEmptyState
+          colSpan={4}
+          isLoading={false}
+          isEmpty={jobs.length === 0}
+          emptyMessage="関連する求人はありません"
+        >
+          {jobs.map((job) => (
+            <TableRow
+              key={job.id}
+              className="cursor-pointer"
+              onClick={() => router.push(`/jobs/${job.id}`)}
+            >
+              <TableCell className="font-medium">{job.title}</TableCell>
+              <TableCell className="text-muted-foreground text-sm">
+                {[job.department, job.location].filter(Boolean).join(" / ") || "-"}
+              </TableCell>
+              <TableCell>
                 <Badge variant={jobStatusColors[job.status] ?? "outline"}>
                   {jobStatusLabels[job.status] ?? job.status}
                 </Badge>
-                <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                  {job.applicationCount}件応募
-                </span>
-              </Link>
-            ))}
-          </div>
-        )}
-      </SectionCard>
-    </div>
+              </TableCell>
+              <TableCell className="text-right tabular-nums">{job.applicationCount}</TableCell>
+            </TableRow>
+          ))}
+        </TableEmptyState>
+      </TableBody>
+    </Table>
   );
 }
 
@@ -439,83 +419,281 @@ function OverviewTab({
 function StepsTab({
   steps,
   onEdit,
+  onAdd,
   onDelete,
+  onReorder,
   deletingId,
 }: {
   steps: TemplateWithCounts[];
   onEdit: (t: SelectionStepTemplate) => void;
+  onAdd: () => void;
+  onDelete: (t: SelectionStepTemplate) => void;
+  onReorder: (oldIndex: number, newIndex: number) => void;
+  deletingId: string | null;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  if (steps.length === 0) {
+    return (
+      <div className="px-4 py-12 sm:px-6 md:px-8 text-center text-sm text-muted-foreground">
+        ステップがまだありません。
+        <Button variant="link" className="px-1" onClick={onAdd}>
+          ステップを追加
+        </Button>
+      </div>
+    );
+  }
+
+  if (isEditing) {
+    return (
+      <StepsEditMode
+        steps={steps}
+        onEdit={onEdit}
+        onAdd={onAdd}
+        onDelete={onDelete}
+        onReorder={onReorder}
+        onDone={() => setIsEditing(false)}
+        deletingId={deletingId}
+      />
+    );
+  }
+
+  return (
+    <div className="px-4 py-4 sm:px-6 md:px-8">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <p className="text-sm text-muted-foreground">
+          応募者がこのフローで通過する選考ステップの一覧です
+        </p>
+        <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+          <Pencil className="mr-1.5 h-3.5 w-3.5" />
+          ステップを編集
+        </Button>
+      </div>
+      <div>
+        {steps.map((step, index) => (
+          <StepCard key={step.id} step={step} index={index} isLast={index === steps.length - 1} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function getStepMetaItems(step: TemplateWithCounts): StepMetaItem[] {
+  const items: StepMetaItem[] = [];
+  if (step.step_type === StepType.Screening) {
+    if (step.form_id) {
+      items.push({ icon: ClipboardList, label: step.formTitle ?? "フォーム未設定" });
+    } else if (step.screening_type) {
+      items.push({
+        icon: FileText,
+        label: screeningTypeLabels[step.screening_type] ?? step.screening_type,
+      });
+    }
+  } else if (step.step_type === StepType.Form && step.form_id) {
+    items.push({ icon: ClipboardList, label: step.formTitle ?? "フォーム未設定" });
+  }
+  if (step.step_type !== StepType.Offer) {
+    items.push(
+      step.requires_review
+        ? { icon: UserCheck, label: "担当者確認あり" }
+        : { icon: UserX, label: "担当者確認なし" }
+    );
+  }
+  return items;
+}
+
+function StepCard({
+  step,
+  index,
+  isLast,
+}: {
+  step: TemplateWithCounts;
+  index: number;
+  isLast: boolean;
+}) {
+  return (
+    <StepRow index={index} isLast={isLast}>
+      <StepCardShell>
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-sm font-semibold truncate flex-1 leading-snug">{step.name}</h3>
+          <StepTypeBadge stepType={step.step_type} />
+        </div>
+        <StepMetaChips items={getStepMetaItems(step)} />
+        {step.description && (
+          <p className="text-sm text-muted-foreground mt-2.5 line-clamp-2">{step.description}</p>
+        )}
+        <div className="mt-3 flex items-center gap-5 text-xs text-muted-foreground tabular-nums">
+          <span>
+            進行中 <span className="font-semibold text-foreground">{step.inProgressCount}</span>
+          </span>
+          <span>
+            完了 <span className="font-semibold text-foreground">{step.completedCount}</span>
+          </span>
+        </div>
+      </StepCardShell>
+    </StepRow>
+  );
+}
+
+// ---------- Steps Edit Mode ----------
+
+function StepsEditMode({
+  steps,
+  onEdit,
+  onAdd,
+  onDelete,
+  onReorder,
+  onDone,
+  deletingId,
+}: {
+  steps: TemplateWithCounts[];
+  onEdit: (t: SelectionStepTemplate) => void;
+  onAdd: () => void;
+  onDelete: (t: SelectionStepTemplate) => void;
+  onReorder: (oldIndex: number, newIndex: number) => void;
+  onDone: () => void;
+  deletingId: string | null;
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = steps.findIndex((s) => s.id === active.id);
+    const newIndex = steps.findIndex((s) => s.id === over.id);
+    if (oldIndex !== -1 && newIndex !== -1) onReorder(oldIndex, newIndex);
+  };
+
+  return (
+    <div className="px-4 py-4 sm:px-6 md:px-8">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm text-muted-foreground">
+          ドラッグで並び替え、各ステップの編集・削除ができます
+        </p>
+        <Button variant="primary" size="sm" onClick={onDone}>
+          完了
+        </Button>
+      </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={steps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+          <div>
+            {steps.map((step, index) => (
+              <SortableStepCard
+                key={step.id}
+                step={step}
+                index={index}
+                isLast={false}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                deletingId={deletingId}
+              />
+            ))}
+            <AddStepRow index={steps.length} onAdd={onAdd} />
+          </div>
+        </SortableContext>
+      </DndContext>
+    </div>
+  );
+}
+
+function AddStepRow({ index, onAdd }: { index: number; onAdd: () => void }) {
+  return (
+    <div className="flex gap-3">
+      {/* spacer for drag handle column */}
+      <div className="w-4 shrink-0" />
+      <div className="flex flex-col items-center shrink-0 self-stretch">
+        <button
+          type="button"
+          onClick={onAdd}
+          aria-label="ステップを追加"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed border-border bg-background text-muted-foreground mt-3 transition-colors hover:border-foreground/30 hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Plus className="h-4 w-4" />
+          <span className="sr-only">{index + 1}</span>
+        </button>
+      </div>
+      <div className="flex-1 min-w-0">
+        <button
+          type="button"
+          onClick={onAdd}
+          className="flex w-full items-center gap-2 rounded-2xl sm:rounded-3xl border border-dashed border-border bg-background/40 p-4 sm:p-5 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:bg-muted/40 hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Plus className="h-4 w-4" />
+          ステップを追加
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SortableStepCard({
+  step,
+  index,
+  isLast,
+  onEdit,
+  onDelete,
+  deletingId,
+}: {
+  step: TemplateWithCounts;
+  index: number;
+  isLast: boolean;
+  onEdit: (t: SelectionStepTemplate) => void;
   onDelete: (t: SelectionStepTemplate) => void;
   deletingId: string | null;
 }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: step.id,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
   return (
-    <TableSection>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-16">順序</TableHead>
-            <TableHead>ステップ名</TableHead>
-            <TableHead>種別</TableHead>
-            <TableHead>説明</TableHead>
-            <TableHead className="text-right">進行中</TableHead>
-            <TableHead className="text-right">完了</TableHead>
-            <TableHead className="w-10" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableEmptyState
-            colSpan={7}
-            isLoading={false}
-            isEmpty={steps.length === 0}
-            emptyMessage="ステップがまだありません。「ステップを追加」から作成してください"
-          >
-            {steps.map((step) => (
-              <TableRow key={step.id} className="cursor-pointer" onClick={() => onEdit(step)}>
-                <TableCell className="tabular-nums text-muted-foreground">
-                  {step.sort_order}
-                </TableCell>
-                <TableCell className="font-medium">{step.name}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">
-                    {stepTypeLabels[step.step_type] ?? step.step_type}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground text-sm max-w-md truncate">
-                  {step.description ?? "-"}
-                </TableCell>
-                <TableCell className="text-right tabular-nums font-semibold">
-                  {step.inProgressCount}
-                </TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">
-                  {step.completedCount}
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={<Button variant="ghost" size="icon-sm" aria-label="操作メニュー" />}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEdit(step)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        編集
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => onDelete(step)}
-                        disabled={deletingId === step.id}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        削除
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableEmptyState>
-        </TableBody>
-      </Table>
-    </TableSection>
+    <div ref={setNodeRef} style={style} className="flex gap-3">
+      <button
+        type="button"
+        className="flex h-8 shrink-0 items-center cursor-grab touch-none mt-3"
+        {...attributes}
+        {...listeners}
+        aria-label="ドラッグして並び替え"
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </button>
+      <StepRow index={index} isLast={isLast}>
+        <StepCardShell className="flex items-start gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-sm font-semibold truncate flex-1 leading-snug">{step.name}</h3>
+              <StepTypeBadge stepType={step.step_type} />
+            </div>
+            <StepMetaChips items={getStepMetaItems(step)} />
+            {step.description && (
+              <p className="text-sm text-muted-foreground mt-2.5 line-clamp-2">
+                {step.description}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <IconButton onClick={() => onEdit(step)} aria-label="編集">
+              <Pencil />
+            </IconButton>
+            <IconButton
+              variant="destructive"
+              onClick={() => onDelete(step)}
+              disabled={deletingId === step.id}
+              aria-label="削除"
+            >
+              <Trash2 />
+            </IconButton>
+          </div>
+        </StepCardShell>
+      </StepRow>
+    </div>
   );
 }
 

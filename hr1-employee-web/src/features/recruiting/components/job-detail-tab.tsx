@@ -5,13 +5,13 @@ import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import type { Job, JobStep, Interview, Application } from "@/types/database";
 import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
 import { Users, CheckCircle2, Clock, XCircle, Pencil } from "lucide-react";
-import { format } from "date-fns";
+import { formatYmdSlash } from "@/lib/datetime-utils";
+import { StepType, screeningTypeLabels, jobStatusLabels as statusLabels } from "@/lib/constants";
 import {
-  StepType,
-  stepTypeLabels,
-  screeningTypeLabels,
-  jobStatusLabels as statusLabels,
-} from "@/lib/constants";
+  StepCardShell,
+  StepRow,
+  StepTypeBadge,
+} from "@/features/recruiting/components/selection-step-card";
 
 interface JobDetailTabProps {
   job: Job;
@@ -64,6 +64,18 @@ export function JobDetailTab({
             <span>{job.salary_range ?? "-"}</span>
           </div>
           <div className="flex gap-8">
+            <span className="text-muted-foreground w-20 shrink-0">応募期限</span>
+            <span>{job.closing_at ? formatYmdSlash(job.closing_at) : "締切なし"}</span>
+          </div>
+          <div className="flex gap-8">
+            <span className="text-muted-foreground w-20 shrink-0">募集人数</span>
+            <span>
+              {job.applicant_limit != null
+                ? `${applications.length} / ${job.applicant_limit} 名`
+                : `${applications.length} 名（上限なし）`}
+            </span>
+          </div>
+          <div className="flex gap-8">
             <span className="text-muted-foreground w-20 shrink-0">ステータス</span>
             <Badge
               variant={
@@ -79,7 +91,7 @@ export function JobDetailTab({
           </div>
           <div className="flex gap-8">
             <span className="text-muted-foreground w-20 shrink-0">作成日</span>
-            <span>{format(new Date(job.created_at), "yyyy/MM/dd")}</span>
+            <span>{formatYmdSlash(job.created_at)}</span>
           </div>
         </div>
         {job.description && (
@@ -143,67 +155,52 @@ export function JobDetailTab({
           </div>
 
           <div>
-            {steps
-              .filter((s) => s.step_type !== StepType.Offer)
-              .map((step, index, arr) => (
-                <div key={step.id}>
-                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white border">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary shrink-0">
-                      <span className="text-xs font-bold">{index + 1}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{step.label}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {stepTypeLabels[step.step_type] ?? step.step_type}
-                        {step.screening_type && (
-                          <>
-                            {" — "}
-                            <span>
-                              {screeningTypeLabels[step.screening_type] ?? step.screening_type}
-                            </span>
-                          </>
-                        )}
-                        {step.form_id && forms.find((f) => f.id === step.form_id) && (
-                          <>
-                            {" — "}
-                            <span>{forms.find((f) => f.id === step.form_id)!.title}</span>
-                          </>
-                        )}
-                        {step.interview_id &&
-                          (() => {
-                            const iv = interviews.find((i) => i.id === step.interview_id);
-                            if (!iv) return null;
-                            return (
-                              <>
-                                {" — "}
-                                <span>{iv.title}</span>
-                              </>
-                            );
-                          })()}
+            {(() => {
+              const visibleSteps = steps.filter((s) => s.step_type !== StepType.Offer);
+              const totalRows = visibleSteps.length + 1;
+              return (
+                <>
+                  {visibleSteps.map((step, index) => {
+                    const sub: string[] = [];
+                    if (step.screening_type)
+                      sub.push(screeningTypeLabels[step.screening_type] ?? step.screening_type);
+                    const form = step.form_id ? forms.find((f) => f.id === step.form_id) : null;
+                    if (form) sub.push(form.title);
+                    const iv = step.interview_id
+                      ? interviews.find((i) => i.id === step.interview_id)
+                      : null;
+                    if (iv) sub.push(iv.title);
+
+                    return (
+                      <StepRow key={step.id} index={index} isLast={false}>
+                        <StepCardShell>
+                          <div className="flex items-start justify-between gap-3">
+                            <h3 className="text-sm font-semibold truncate flex-1 leading-snug">
+                              {step.label}
+                            </h3>
+                            <StepTypeBadge stepType={step.step_type} />
+                          </div>
+                          {sub.length > 0 && (
+                            <p className="text-xs text-muted-foreground mt-2">{sub.join(" / ")}</p>
+                          )}
+                        </StepCardShell>
+                      </StepRow>
+                    );
+                  })}
+                  <StepRow index={totalRows - 1} isLast status="completed">
+                    <StepCardShell>
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="text-sm font-semibold truncate flex-1 leading-snug">内定</h3>
+                        <StepTypeBadge stepType={StepType.Offer} />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        すべてのステップ完了後に自動適用
                       </p>
-                    </div>
-                  </div>
-                  {index < arr.length - 1 && (
-                    <div className="flex justify-start pl-7">
-                      <div className="w-0.5 h-5 bg-primary/20" />
-                    </div>
-                  )}
-                </div>
-              ))}
-            {steps.filter((s) => s.step_type !== StepType.Offer).length > 0 && (
-              <div className="flex justify-start pl-7">
-                <div className="w-0.5 h-5 bg-muted-foreground/20" />
-              </div>
-            )}
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/60 border border-dashed">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-600 shrink-0">
-                <span className="text-xs font-bold">✓</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-muted-foreground">内定</p>
-                <p className="text-xs text-muted-foreground">すべてのステップ完了後に自動適用</p>
-              </div>
-            </div>
+                    </StepCardShell>
+                  </StepRow>
+                </>
+              );
+            })()}
           </div>
         </SectionCard>
       </div>

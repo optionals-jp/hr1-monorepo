@@ -756,6 +756,25 @@ class _StepCard extends StatelessWidget {
                           ),
                         ),
                       ),
+                      if (step.isAdHoc)
+                        Container(
+                          margin: const EdgeInsets.only(left: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.warning.withValues(alpha: 0.15),
+                            borderRadius: AppRadius.radius40,
+                          ),
+                          child: Text(
+                            '追加',
+                            style: AppTextStyles.caption2.copyWith(
+                              color: AppColors.warning,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       if (step.stepType == StepType.externalTest)
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -775,8 +794,51 @@ class _StepCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                      if (step.isOptional)
+                        Container(
+                          margin: const EdgeInsets.only(left: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.textSecondary(
+                              context,
+                            ).withValues(alpha: 0.1),
+                            borderRadius: AppRadius.radius40,
+                          ),
+                          child: Text(
+                            '任意',
+                            style: AppTextStyles.caption2.copyWith(
+                              color: AppColors.textSecondary(context),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
+                  if (step.description != null &&
+                      step.description!.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.textSecondary(
+                          context,
+                        ).withValues(alpha: 0.06),
+                        borderRadius: AppRadius.radius80,
+                      ),
+                      child: Text(
+                        step.description!,
+                        style: AppTextStyles.caption1.copyWith(
+                          color: AppColors.textPrimary(context),
+                        ),
+                      ),
+                    ),
+                  ],
                   if (step.requiresAction) ...[
                     const SizedBox(height: 4),
                     Row(
@@ -1080,7 +1142,7 @@ class _HistoryTab extends StatelessWidget {
 
   String _stepTypeLabel(StepType type) {
     return switch (type) {
-      StepType.screening => '書類選考',
+      StepType.screening => '書類アップロード',
       StepType.form => 'アンケート/フォーム',
       StepType.interview => '面接',
       StepType.externalTest => '外部テスト',

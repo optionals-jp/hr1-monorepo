@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
-import { format } from "date-fns";
+import { formatYmdSlash } from "@/lib/datetime-utils";
 import type { Offer } from "@/types/database";
 import { FileText, Calendar, Building2, Banknote, Clock } from "lucide-react";
 
@@ -55,13 +55,13 @@ export function OfferConditionsCard({ offer, applicationStatus }: OfferCondition
         <InfoRow
           icon={Calendar}
           label="入社予定日"
-          value={offer.start_date ? format(new Date(offer.start_date), "yyyy/MM/dd") : null}
+          value={offer.start_date ? formatYmdSlash(offer.start_date) : null}
         />
         <InfoRow icon={Building2} label="配属先" value={offer.department} />
         <InfoRow
           icon={Clock}
           label="回答期限"
-          value={offer.expires_at ? format(new Date(offer.expires_at), "yyyy/MM/dd") : null}
+          value={offer.expires_at ? formatYmdSlash(offer.expires_at) : null}
         />
         {offer.notes && (
           <div className="text-sm pt-1">

@@ -104,7 +104,7 @@ export const StepType = {
 export type StepType = (typeof StepType)[keyof typeof StepType];
 
 export const stepTypeLabels: Record<string, string> = {
-  [StepType.Screening]: "書類選考",
+  [StepType.Screening]: "書類アップロード",
   [StepType.Form]: "アンケート/フォーム",
   [StepType.Interview]: "面接",
   [StepType.ExternalTest]: "外部テスト",
@@ -112,13 +112,13 @@ export const stepTypeLabels: Record<string, string> = {
 };
 
 export const selectableStepTypes: Record<string, string> = {
-  [StepType.Screening]: "書類選考",
+  [StepType.Screening]: "書類アップロード",
   [StepType.Form]: "アンケート/フォーム",
   [StepType.Interview]: "面接",
   [StepType.ExternalTest]: "外部テスト",
 };
 
-export const FORM_STEP_TYPES: StepType[] = [StepType.Screening, StepType.Form];
+export const FORM_STEP_TYPES: StepType[] = [StepType.Form];
 
 export const screeningTypeLabels: Record<string, string> = {
   resume: "履歴書",
@@ -185,6 +185,7 @@ export const notificationTriggerEventLabels: Record<string, string> = {
   application_offer_accepted: "内定承諾",
   application_offer_declined: "内定辞退",
   application_withdrawn: "辞退",
+  step_added: "選考ステップ追加",
   step_in_progress: "選考ステップ開始",
   step_completed: "選考ステップ完了",
   step_skipped: "選考ステップスキップ",

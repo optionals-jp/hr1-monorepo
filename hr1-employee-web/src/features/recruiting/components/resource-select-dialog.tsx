@@ -11,7 +11,7 @@ import {
 } from "@hr1/shared-ui/components/ui/dialog";
 import type { ApplicationStep, CustomForm, Interview } from "@/types/database";
 import { StepType } from "@/lib/constants";
-import { format } from "date-fns";
+import { formatYmdSlash } from "@/lib/datetime-utils";
 
 interface ResourceSelectDialogProps {
   open: boolean;
@@ -71,7 +71,7 @@ export function ResourceSelectDialog({
                   <p className="text-xs text-muted-foreground mt-1 truncate">{form.description}</p>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  作成日: {format(new Date(form.created_at), "yyyy/MM/dd")}
+                  作成日: {formatYmdSlash(form.created_at)}
                 </p>
               </button>
             ))
@@ -100,7 +100,7 @@ export function ResourceSelectDialog({
                   <p className="text-xs text-muted-foreground mt-1">{interview.location}</p>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  作成日: {format(new Date(interview.created_at), "yyyy/MM/dd")}
+                  作成日: {formatYmdSlash(interview.created_at)}
                 </p>
               </button>
             ))

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
@@ -31,18 +31,53 @@ import {
 } from "@hr1/shared-ui/components/ui/select";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { cn } from "@hr1/shared-ui/lib/utils";
-import { Trash2, ChevronDown, Plus } from "lucide-react";
+import {
+  Trash2,
+  ChevronDown,
+  Plus,
+  LayoutList,
+  User,
+  Users,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import { scoreTypeLabels } from "@/lib/constants";
 import {
   useEvaluationSheetsPage,
   isNumericScoreType,
 } from "@/lib/hooks/use-evaluation-sheets-page";
+import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
+import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
+import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@hr1/shared-ui/components/ui/dropdown-menu";
+
+const evaluationTypeTabs = [
+  { value: "all", label: "すべて", icon: LayoutList },
+  { value: "single", label: "1人評価", icon: User },
+  { value: "multi_rater", label: "多面評価", icon: Users },
+];
+
+const anonymityModeLabels: Record<string, string> = {
+  all: "すべて",
+  none: "記名",
+  peer_only: "同僚のみ匿名",
+  full: "完全匿名",
+};
 
 export default function EvaluationSheetsPage() {
   const { showToast } = useToast();
   const h = useEvaluationSheetsPage();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [anonymityFilter, setAnonymityFilter] = useState<string>("all");
 
   // 他画面から ?new=1 で遷移してきた場合は作成ダイアログを自動で開く
   const openAddDialog = h.openAddDialog;
@@ -53,12 +88,26 @@ export default function EvaluationSheetsPage() {
     }
   }, [searchParams, openAddDialog, router]);
 
+  const filtered = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    return h.templates.filter((t) => {
+      if (typeFilter !== "all" && t.evaluation_type !== typeFilter) return false;
+      if (anonymityFilter !== "all" && t.anonymity_mode !== anonymityFilter) return false;
+      if (keyword) {
+        const haystack = [t.title, t.description ?? ""].join(" ").toLowerCase();
+        if (!haystack.includes(keyword)) return false;
+      }
+      return true;
+    });
+  }, [h.templates, search, typeFilter, anonymityFilter]);
+
   return (
     <div className="flex flex-col">
       <PageHeader
         title="評価テンプレート"
         description="評価する項目・基準・配点を定義するマスタ。評価サイクルで選択して使用します"
         sticky={false}
+        border={false}
         action={
           <Button variant="primary" onClick={h.openAddDialog}>
             テンプレートを作成
@@ -67,6 +116,42 @@ export default function EvaluationSheetsPage() {
       />
 
       <QueryErrorBanner error={h.error} onRetry={() => h.mutate()} />
+
+      <StickyFilterBar>
+        <TabBar tabs={evaluationTypeTabs} activeTab={typeFilter} onTabChange={setTypeFilter} />
+        <SearchBar value={search} onChange={setSearch} />
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
+            {anonymityFilter !== "all" && (
+              <div className="flex items-center gap-1.5 overflow-x-auto">
+                <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                  匿名モード：{anonymityModeLabels[anonymityFilter] ?? anonymityFilter}
+                  <span
+                    role="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAnonymityFilter("all");
+                    }}
+                    className="ml-0.5 hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </span>
+                </Badge>
+              </div>
+            )}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-auto py-2">
+            <p className="px-2 py-1 text-xs font-semibold text-muted-foreground">匿名モード</p>
+            {Object.entries(anonymityModeLabels).map(([key, label]) => (
+              <DropdownMenuItem key={key} className="py-2" onClick={() => setAnonymityFilter(key)}>
+                <span className={cn(anonymityFilter === key && "font-medium")}>{label}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </StickyFilterBar>
 
       <TableSection>
         <Table>
@@ -82,10 +167,10 @@ export default function EvaluationSheetsPage() {
             <TableEmptyState
               colSpan={4}
               isLoading={h.isLoading}
-              isEmpty={h.templates.length === 0}
+              isEmpty={filtered.length === 0}
               emptyMessage="評価テンプレートがありません。右上の「テンプレートを作成」から追加してください"
             >
-              {h.templates.map((t) => (
+              {filtered.map((t) => (
                 <TableRow key={t.id}>
                   <TableCell className="font-medium">{t.title}</TableCell>
                   <TableCell>

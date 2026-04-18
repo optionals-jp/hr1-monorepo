@@ -18,6 +18,15 @@ export function formatDateLocal(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+/** Date/ISO 文字列 → yyyy/MM/dd（表示用） */
+export function formatYmdSlash(d: string | Date): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${y}/${m}/${day}`;
+}
+
 /** ISO 文字列 → HH:mm */
 export function formatTime(iso: string | null): string {
   if (!iso) return "-";

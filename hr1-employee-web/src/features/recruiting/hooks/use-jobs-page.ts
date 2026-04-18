@@ -168,7 +168,7 @@ const DEFAULT_STEPS: StepDraft[] = [
   {
     tempId: "1",
     step_type: StepType.Screening,
-    label: "書類選考",
+    label: "書類アップロード",
     screeningType: "resume",
     formId: null,
     requiresReview: true,

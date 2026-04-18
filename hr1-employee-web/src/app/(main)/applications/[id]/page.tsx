@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useParams } from "next/navigation";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import {
@@ -26,8 +26,10 @@ import { OfferConditionsCard } from "@/features/recruiting/components/offer-cond
 import { RejectionReasonDialog } from "@/features/recruiting/components/rejection-reason-dialog";
 import { RejectionReasonCard } from "@/features/recruiting/components/rejection-reason-card";
 import { InterviewStartDialog } from "@/features/recruiting/components/interview-start-dialog";
+import { AdHocStepDialog } from "@/features/recruiting/components/ad-hoc-step-dialog";
 import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { ConfirmDialog } from "@hr1/shared-ui/components/ui/confirm-dialog";
 import { applicationStatusColors as statusColors } from "@/lib/constants";
 import { LayoutDashboard, ListChecks, ClipboardCheck, AlertCircle } from "lucide-react";
 import { StepStatus, StepType, stepTypeLabels } from "@/lib/constants";
@@ -50,6 +52,32 @@ export default function ApplicationDetailPage() {
     async (step: ApplicationStep) => {
       const result = await detail.unskipStep(step);
       if (!result.success) showToast(result.error!, "error");
+    },
+    [detail, showToast]
+  );
+
+  const [pendingDeleteAdHocStep, setPendingDeleteAdHocStep] = useState<ApplicationStep | null>(
+    null
+  );
+
+  const confirmDeleteAdHoc = useCallback(async () => {
+    if (!pendingDeleteAdHocStep) return;
+    const result = await detail.deleteAdHocStep(pendingDeleteAdHocStep);
+    if (!result.success) {
+      showToast(result.error ?? "削除に失敗しました", "error");
+    } else {
+      showToast("ステップを削除しました", "success");
+    }
+    setPendingDeleteAdHocStep(null);
+  }, [detail, pendingDeleteAdHocStep, showToast]);
+
+  const handleSaveAdHoc = useCallback(
+    async (input: Parameters<typeof detail.saveAdHocStep>[0]) => {
+      const result = await detail.saveAdHocStep(input);
+      if (!result.success && result.error) {
+        showToast(result.error, "error");
+      }
+      return result;
     },
     [detail, showToast]
   );
@@ -182,27 +210,27 @@ export default function ApplicationDetailPage() {
         )}
 
         {detail.activeTab === "steps" && (
-          <div className="space-y-6 max-w-3xl">
-            <div className="rounded-lg bg-white border">
-              <div className="px-5 pt-4 pb-2">
-                <h2 className="text-sm font-semibold text-muted-foreground">
-                  選考ステップ
-                  <span className="ml-1.5 text-xs font-normal">{detail.steps.length}</span>
-                </h2>
-              </div>
-              <div className="px-5 py-4 space-y-3">
-                <ApplicationStepList
-                  steps={detail.steps}
-                  canActOnStep={detail.canActOnStep}
-                  advanceStep={detail.advanceStep}
-                  skipStep={handleSkipStep}
-                  unskipStep={handleUnskipStep}
-                  onViewFormResponses={detail.openFormResponses}
-                  onOffer={() => detail.updateApplicationStatus("offered")}
-                  onReject={() => detail.updateApplicationStatus("rejected")}
-                />
-              </div>
-            </div>
+          <div className="max-w-3xl">
+            <p className="text-sm text-muted-foreground mb-3">
+              応募者の選考ステップの進行状況
+              <span className="ml-1.5 text-xs">（{detail.steps.length}件）</span>
+              <span className="ml-2 text-xs">
+                — 未完了ステップにマウスを乗せると「ここに追加」ボタンが表示されます
+              </span>
+            </p>
+            <ApplicationStepList
+              steps={detail.steps}
+              canActOnStep={detail.canActOnStep}
+              advanceStep={detail.advanceStep}
+              skipStep={handleSkipStep}
+              unskipStep={handleUnskipStep}
+              onViewFormResponses={detail.openFormResponses}
+              onOffer={() => detail.updateApplicationStatus("offered")}
+              onReject={() => detail.updateApplicationStatus("rejected")}
+              onEditAdHoc={detail.openEditAdHocStep}
+              onDeleteAdHoc={setPendingDeleteAdHocStep}
+              onAddBefore={(step) => detail.openAddAdHocStep(step.id)}
+            />
           </div>
         )}
       </div>
@@ -247,6 +275,28 @@ export default function ApplicationDetailPage() {
         open={detail.rejectionDialogOpen}
         onOpenChange={detail.setRejectionDialogOpen}
         onSubmit={detail.rejectApplicationWithReason}
+      />
+
+      <AdHocStepDialog
+        open={detail.adHocDialogOpen}
+        onOpenChange={detail.setAdHocDialogOpen}
+        editingStep={detail.editingAdHocStep}
+        insertBeforeStepId={detail.adHocInsertBeforeStepId}
+        existingSteps={detail.steps}
+        forms={detail.forms}
+        interviews={detail.interviews}
+        onLoadResources={detail.loadResourcesForAdHoc}
+        onSubmit={handleSaveAdHoc}
+      />
+
+      <ConfirmDialog
+        open={pendingDeleteAdHocStep !== null}
+        onOpenChange={(open) => !open && setPendingDeleteAdHocStep(null)}
+        title="ステップを削除しますか？"
+        description={`「${pendingDeleteAdHocStep?.label ?? ""}」を削除します。この操作は取り消せません。`}
+        confirmLabel="削除"
+        variant="destructive"
+        onConfirm={confirmDeleteAdHoc}
       />
     </>
   );

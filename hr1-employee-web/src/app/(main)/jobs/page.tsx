@@ -30,6 +30,11 @@ import {
   StepType,
 } from "@/lib/constants";
 import { Trash2, GripVertical, Briefcase, XCircle, Plus } from "lucide-react";
+import {
+  StepCardShell,
+  StepRow,
+  StepTypeBadge,
+} from "@/features/recruiting/components/selection-step-card";
 import { EditPanel, type EditPanelTab } from "@hr1/shared-ui/components/ui/edit-panel";
 import { FormInput, FormTextarea, FormField } from "@hr1/shared-ui/components/ui/form-field";
 import {
@@ -307,20 +312,22 @@ export default function JobsPage() {
                   </div>
                 )}
                 {newJob.selectedFlowId && newJob.steps.length > 0 && (
-                  <div className="space-y-1.5">
+                  <div>
                     {newJob.steps.map((step, index) => (
-                      <div
+                      <StepRow
                         key={step.tempId}
-                        className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2"
+                        index={index}
+                        isLast={index === newJob.steps.length - 1}
                       >
-                        <span className="text-xs font-medium text-muted-foreground w-5">
-                          {index + 1}
-                        </span>
-                        <span className="text-sm">{step.label}</span>
-                        <Badge variant="outline" className="text-[10px] ml-auto">
-                          {stepTypeLabels[step.step_type] ?? step.step_type}
-                        </Badge>
-                      </div>
+                        <StepCardShell>
+                          <div className="flex items-start justify-between gap-3">
+                            <h3 className="text-sm font-semibold truncate flex-1 leading-snug">
+                              {step.label}
+                            </h3>
+                            <StepTypeBadge stepType={step.step_type} />
+                          </div>
+                        </StepCardShell>
+                      </StepRow>
                     ))}
                   </div>
                 )}

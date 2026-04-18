@@ -94,6 +94,7 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
           'template_id': s['template_id'],
           'screening_type': s['screening_type'],
           'requires_review': s['requires_review'] ?? false,
+          'description': s['description'],
           'status': isFirst
               ? StepStatus.inProgress.value
               : StepStatus.pending.value,

@@ -28,7 +28,7 @@ abstract class ApplicationsRepository {
   /// 選考ステップを完了し、次のステップを自動的に開始する
   Future<void> completeStep(String stepId, String applicationId);
 
-  /// 書類選考ステップ: ファイルをアップロードしてステップを完了する
+  /// 書類アップロードステップ: ファイルをアップロードしてステップを完了する
   Future<String> uploadScreeningDocument({
     required String stepId,
     required String applicationId,

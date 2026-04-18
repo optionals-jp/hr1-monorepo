@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useOrg } from "@/lib/org-context";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { useQuery } from "@/lib/use-query";
@@ -20,6 +21,7 @@ export interface TemplateWithCounts extends SelectionStepTemplate {
   completedCount: number;
   pendingCount: number;
   totalCount: number;
+  formTitle: string | null;
 }
 
 export interface RelatedJob extends Job {
@@ -54,6 +56,8 @@ const EMPTY_STEP_FORM: StepFormState = {
 
 export function useSelectionFlowDetail(flowId: string) {
   const { organization } = useOrg();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   // --- data fetching ---
   const {
@@ -88,8 +92,21 @@ export function useSelectionFlowDetail(flowId: string) {
     (orgId) => jobRepo.fetchForms(getSupabase(), orgId)
   );
 
-  // --- tab state ---
-  const [activeTab, setActiveTab] = useState("overview");
+  // --- tab state (URL-based) ---
+  const activeTab = searchParams.get("tab") || "overview";
+  const setActiveTab = useCallback(
+    (tab: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (tab === "overview") {
+        params.delete("tab");
+      } else {
+        params.set("tab", tab);
+      }
+      const qs = params.toString();
+      router.replace(`/selection-steps/${flowId}${qs ? `?${qs}` : ""}`, { scroll: false });
+    },
+    [router, flowId, searchParams]
+  );
 
   // --- step form ---
   const [stepDialogOpen, setStepDialogOpen] = useState(false);
@@ -139,6 +156,8 @@ export function useSelectionFlowDetail(flowId: string) {
       }
     }
 
+    const formsById = new Map(forms.map((f) => [f.id, f.title]));
+
     return flowTemplates
       .map((t) => {
         const ip = inProgress.get(t.id) ?? 0;
@@ -150,10 +169,11 @@ export function useSelectionFlowDetail(flowId: string) {
           completedCount: cp,
           pendingCount: pd,
           totalCount: ip + cp + pd,
+          formTitle: t.form_id ? (formsById.get(t.form_id) ?? null) : null,
         };
       })
       .sort((a, b) => a.sort_order - b.sort_order);
-  }, [templates, flowApplications, flowId]);
+  }, [templates, flowApplications, flowId, forms]);
 
   // ---------- computed: related jobs ----------
 
@@ -267,6 +287,29 @@ export function useSelectionFlowDetail(flowId: string) {
     }
   }, [organization, stepForm, mutateTemplates]);
 
+  const handleReorder = useCallback(
+    async (oldIndex: number, newIndex: number) => {
+      if (!organization || oldIndex === newIndex) return;
+      const reordered = [...steps];
+      const [moved] = reordered.splice(oldIndex, 1);
+      reordered.splice(newIndex, 0, moved);
+
+      const orderMap = new Map(reordered.map((s, i) => [s.id, i]));
+      const optimistic = templates.map((t) =>
+        orderMap.has(t.id) ? { ...t, sort_order: orderMap.get(t.id)! } : t
+      );
+      mutateTemplates(optimistic, { revalidate: false });
+
+      const updates = reordered.map((s, i) => ({ id: s.id, sort_order: i }));
+      try {
+        await templateRepo.reorderTemplates(getSupabase(), organization.id, updates);
+      } catch {
+        mutateTemplates();
+      }
+    },
+    [organization, steps, templates, mutateTemplates]
+  );
+
   const handleStepDelete = useCallback(
     async (id: string): Promise<{ success: boolean; error?: string }> => {
       if (!organization) return { success: false, error: "組織が見つかりません" };
@@ -322,5 +365,6 @@ export function useSelectionFlowDetail(flowId: string) {
     openEditStepDialog,
     handleStepSave,
     handleStepDelete,
+    handleReorder,
   };
 }

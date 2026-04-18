@@ -152,6 +152,10 @@ export default function JobDetailPage() {
         setEditEmploymentType={h.setEditEmploymentType}
         editSalaryRange={h.editSalaryRange}
         setEditSalaryRange={h.setEditSalaryRange}
+        editClosingAt={h.editClosingAt}
+        setEditClosingAt={h.setEditClosingAt}
+        editApplicantLimit={h.editApplicantLimit}
+        setEditApplicantLimit={h.setEditApplicantLimit}
         savingInfo={h.savingInfo}
         saveInfo={h.saveInfo}
       />

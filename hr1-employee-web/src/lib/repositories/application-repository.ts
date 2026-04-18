@@ -188,6 +188,72 @@ export async function updateOffer(
   return client.from("offers").update(data).eq("id", offerId);
 }
 
+/**
+ * 個別応募にアドホックなステップを追加する。
+ *
+ * `source: 'ad_hoc'` を強制的に設定することで RLS の挿入ポリシーを通す。
+ * `step_order` は呼び出し側で前後ステップの中間値などを採番して渡すこと（例: 2 と 3 の間なら 2.5）。
+ * これにより既存ステップの再採番なしに任意位置へ挿入できる。
+ */
+export async function insertAdHocStep(
+  client: SupabaseClient,
+  data: {
+    application_id: string;
+    step_type: string;
+    label: string;
+    step_order: number;
+    form_id?: string | null;
+    interview_id?: string | null;
+    screening_type?: string | null;
+    requires_review?: boolean;
+    is_optional?: boolean;
+    description?: string | null;
+    created_by_user_id?: string | null;
+  }
+) {
+  return client
+    .from("application_steps")
+    .insert({
+      ...data,
+      source: "ad_hoc",
+      status: "pending",
+      requires_review: data.requires_review ?? false,
+      is_optional: data.is_optional ?? false,
+    })
+    .select()
+    .single();
+}
+
+/**
+ * アドホックなステップ（`source='ad_hoc'` かつ `status='pending'`）の編集。
+ * RLS によりサーバ側でも `ad_hoc + pending` 以外への UPDATE はブロックされる。
+ */
+export async function updateAdHocStep(
+  client: SupabaseClient,
+  stepId: string,
+  data: {
+    label?: string;
+    step_type?: string;
+    form_id?: string | null;
+    interview_id?: string | null;
+    screening_type?: string | null;
+    requires_review?: boolean;
+    is_optional?: boolean;
+    description?: string | null;
+    step_order?: number;
+  }
+) {
+  return client.from("application_steps").update(data).eq("id", stepId);
+}
+
+/**
+ * アドホックなステップの削除。
+ * RLS によりサーバ側でも `ad_hoc + pending` 以外の DELETE はブロックされる。
+ */
+export async function deleteAdHocStep(client: SupabaseClient, stepId: string) {
+  return client.from("application_steps").delete().eq("id", stepId);
+}
+
 export function subscribeToStepChanges(
   client: SupabaseClient,
   applicationId: string,

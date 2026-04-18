@@ -187,7 +187,7 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
   };
 
   return (
-    <div className="max-w-3xl space-y-4">
+    <div className="max-w-3xl mx-auto space-y-4">
       <TemplateSelectDialog
         open={templateDialogOpen}
         onOpenChange={setTemplateDialogOpen}
