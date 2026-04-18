@@ -101,10 +101,13 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<BcCompany?> getCompany(String id) async {
+    // HR-28: RLS に加えて organization_id を明示フィルタ（defense-in-depth）
+    final orgId = await _getOrganizationId();
     final result = await _client
         .from('crm_companies')
         .select()
         .eq('id', id)
+        .eq('organization_id', orgId)
         .maybeSingle();
     return result != null ? BcCompany.fromJson(result) : null;
   }
@@ -148,12 +151,24 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<void> updateCompany(String id, Map<String, dynamic> data) async {
-    await _client.from('crm_companies').update(data).eq('id', id);
+    // HR-28: defense-in-depth
+    final orgId = await _getOrganizationId();
+    await _client
+        .from('crm_companies')
+        .update(data)
+        .eq('id', id)
+        .eq('organization_id', orgId);
   }
 
   @override
   Future<void> deleteCompany(String id) async {
-    await _client.from('crm_companies').delete().eq('id', id);
+    // HR-28: defense-in-depth
+    final orgId = await _getOrganizationId();
+    await _client
+        .from('crm_companies')
+        .delete()
+        .eq('id', id)
+        .eq('organization_id', orgId);
   }
 
   // ==========================================================
@@ -187,10 +202,13 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<BcContact?> getContact(String id) async {
+    // HR-28: defense-in-depth
+    final orgId = await _getOrganizationId();
     final result = await _client
         .from('crm_contacts')
         .select('*, crm_companies(*)')
         .eq('id', id)
+        .eq('organization_id', orgId)
         .maybeSingle();
     return result != null ? BcContact.fromJson(result) : null;
   }
@@ -220,12 +238,24 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<void> updateContact(String id, Map<String, dynamic> data) async {
-    await _client.from('crm_contacts').update(data).eq('id', id);
+    // HR-28: defense-in-depth
+    final orgId = await _getOrganizationId();
+    await _client
+        .from('crm_contacts')
+        .update(data)
+        .eq('id', id)
+        .eq('organization_id', orgId);
   }
 
   @override
   Future<void> deleteContact(String id) async {
-    await _client.from('crm_contacts').delete().eq('id', id);
+    // HR-28: defense-in-depth
+    final orgId = await _getOrganizationId();
+    await _client
+        .from('crm_contacts')
+        .delete()
+        .eq('id', id)
+        .eq('organization_id', orgId);
   }
 
   // ==========================================================
@@ -249,10 +279,13 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<BcDeal?> getDeal(String id) async {
+    // HR-28: defense-in-depth
+    final orgId = await _getOrganizationId();
     final result = await _client
         .from('crm_deals')
         .select('*, crm_companies(*), crm_contacts(*)')
         .eq('id', id)
+        .eq('organization_id', orgId)
         .maybeSingle();
     return result != null ? BcDeal.fromJson(result) : null;
   }
@@ -270,12 +303,24 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<void> updateDeal(String id, Map<String, dynamic> data) async {
-    await _client.from('crm_deals').update(data).eq('id', id);
+    // HR-28: defense-in-depth
+    final orgId = await _getOrganizationId();
+    await _client
+        .from('crm_deals')
+        .update(data)
+        .eq('id', id)
+        .eq('organization_id', orgId);
   }
 
   @override
   Future<void> deleteDeal(String id) async {
-    await _client.from('crm_deals').delete().eq('id', id);
+    // HR-28: defense-in-depth
+    final orgId = await _getOrganizationId();
+    await _client
+        .from('crm_deals')
+        .delete()
+        .eq('id', id)
+        .eq('organization_id', orgId);
   }
 
   // ==========================================================
@@ -344,12 +389,24 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<void> updateActivity(String id, Map<String, dynamic> data) async {
-    await _client.from('crm_activities').update(data).eq('id', id);
+    // HR-28: defense-in-depth
+    final orgId = await _getOrganizationId();
+    await _client
+        .from('crm_activities')
+        .update(data)
+        .eq('id', id)
+        .eq('organization_id', orgId);
   }
 
   @override
   Future<void> deleteActivity(String id) async {
-    await _client.from('crm_activities').delete().eq('id', id);
+    // HR-28: defense-in-depth
+    final orgId = await _getOrganizationId();
+    await _client
+        .from('crm_activities')
+        .delete()
+        .eq('id', id)
+        .eq('organization_id', orgId);
   }
 
   // ==========================================================
@@ -406,23 +463,38 @@ class SupabaseBusinessCardRepository implements BusinessCardRepository {
 
   @override
   Future<void> updateTodo(String id, Map<String, dynamic> data) async {
-    await _client.from('crm_todos').update(data).eq('id', id);
+    // HR-28: defense-in-depth
+    final orgId = await _getOrganizationId();
+    await _client
+        .from('crm_todos')
+        .update(data)
+        .eq('id', id)
+        .eq('organization_id', orgId);
   }
 
   @override
   Future<void> toggleTodoComplete(String id, bool isCompleted) async {
+    // HR-28: defense-in-depth
+    final orgId = await _getOrganizationId();
     await _client
         .from('crm_todos')
         .update({
           'is_completed': isCompleted,
           'completed_at': isCompleted ? DateTime.now().toIso8601String() : null,
         })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', orgId);
   }
 
   @override
   Future<void> deleteTodo(String id) async {
-    await _client.from('crm_todos').delete().eq('id', id);
+    // HR-28: defense-in-depth
+    final orgId = await _getOrganizationId();
+    await _client
+        .from('crm_todos')
+        .delete()
+        .eq('id', id)
+        .eq('organization_id', orgId);
   }
 
   // ==========================================================

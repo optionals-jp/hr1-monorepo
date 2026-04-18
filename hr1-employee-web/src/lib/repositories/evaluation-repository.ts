@@ -267,6 +267,16 @@ export async function fetchTemplatesByTarget(
   return data ?? [];
 }
 
+export async function fetchTemplateById(client: SupabaseClient, id: string, orgId: string) {
+  const { data } = await client
+    .from("evaluation_templates")
+    .select("*")
+    .eq("id", id)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+  return data;
+}
+
 /**
  * @deprecated `rpcCreateEvaluationTemplate` を使うこと。
  * 生の insert は uuid 採番・アトミシティの責務が呼び出し元にあり、非推奨。
@@ -329,7 +339,9 @@ export async function fetchEvaluationsByUser(
 ) {
   let query = client
     .from("evaluations")
-    .select("*, evaluation_templates(title), evaluator:evaluator_id(display_name, email)")
+    .select(
+      "*, evaluation_templates(title), evaluator:evaluator_id(display_name, email), evaluation_cycles(title), application:application_id(id, jobs(title))"
+    )
     .eq("organization_id", orgId)
     .eq("target_user_id", targetUserId);
 

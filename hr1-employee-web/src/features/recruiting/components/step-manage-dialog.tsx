@@ -39,6 +39,7 @@ interface StepManageDialogProps {
       interview_id: string | null;
       screening_type: string | null;
       requires_review: boolean;
+      default_duration_days: number | null;
     }[],
     deletedIds: string[]
   ) => Promise<void>;
@@ -54,6 +55,8 @@ interface EditableStep {
   screening_type: string | null;
   requires_review: boolean;
   step_order: number;
+  /** 空文字 = 未設定。数値文字列で保持し、保存時に数値化する */
+  default_duration_days: string;
   isNew?: boolean;
 }
 
@@ -78,6 +81,8 @@ export function StepManageDialog({
         screening_type: s.screening_type,
         requires_review: s.requires_review,
         step_order: s.step_order,
+        default_duration_days:
+          s.default_duration_days != null ? String(s.default_duration_days) : "",
       }))
   );
   const [deletedIds, setDeletedIds] = useState<string[]>([]);
@@ -96,6 +101,7 @@ export function StepManageDialog({
         screening_type: null,
         requires_review: false,
         step_order: prev.length + 1,
+        default_duration_days: "",
         isNew: true,
       },
     ]);
@@ -148,10 +154,17 @@ export function StepManageDialog({
       interview_id: string | null;
       screening_type: string | null;
       requires_review: boolean;
+      default_duration_days: number | null;
     }[] = [];
 
     for (const s of editSteps) {
       order++;
+      const duration =
+        s.default_duration_days.trim() === "" ? null : Number(s.default_duration_days);
+      // バリデーション: 数値文字列が不正なら保存しない (UI 側で弾ければベター)
+      if (duration !== null && (!Number.isInteger(duration) || duration <= 0)) {
+        return;
+      }
       if (s.isNew) {
         if (s.label.trim()) {
           newSteps.push({
@@ -161,6 +174,7 @@ export function StepManageDialog({
             interview_id: s.interview_id,
             screening_type: s.screening_type,
             requires_review: s.requires_review,
+            default_duration_days: duration,
           });
         }
       } else {
@@ -175,6 +189,7 @@ export function StepManageDialog({
             interview_id: s.interview_id,
             screening_type: s.screening_type,
             requires_review: s.requires_review,
+            default_duration_days: duration,
           });
         }
       }
@@ -253,6 +268,16 @@ export function StepManageDialog({
                   onChange={(e) => updateStep(index, "label", e.target.value)}
                   placeholder="ステップ名"
                   className="flex-1"
+                />
+                <Input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={step.default_duration_days}
+                  onChange={(e) => updateStep(index, "default_duration_days", e.target.value)}
+                  placeholder="所要日数"
+                  className="w-24"
+                  title="ステップ開始から期限までの日数 (任意)"
                 />
                 {step.isNew && (
                   <Badge variant="outline" className="text-xs shrink-0">

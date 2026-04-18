@@ -11,12 +11,16 @@ import { cn } from "../../lib/utils";
  * - `label`: カード上部に表示するラベル
  * - `icon`: lucide-react のアイコン
  * - `iconClassName`: アイコンに付ける色クラスなど（例: `text-blue-600`）
+ * - `onClick`: 指定時にカードをタップ可能なボタンとして描画する
+ * - `active`: 選択中スタイル（border 強調）を適用する
  */
 export interface SummaryCardConfig<K extends string> {
   key: K;
   label: string;
   icon: LucideIcon;
   iconClassName?: string;
+  onClick?: () => void;
+  active?: boolean;
 }
 
 export interface SummaryCardsProps<K extends string> {
@@ -51,24 +55,53 @@ export function SummaryCards<K extends string>({
         // md 未満で 3 列に入らない（カード数 > 3）ときは 2 段目以降に折り返す。
         // 逆に 5 枚未満の場合でも `md:grid-cols-5` だと伸びすぎるので
         // 呼び出し側で `className` を渡して上書きできる。
-        className
+        className,
       )}
     >
       {cards.map((card) => {
         const Icon = card.icon;
         const value = values[card.key];
+        const clickable = typeof card.onClick === "function";
         return (
           // モバイルでは max-md: でデフォルトの padding/gap/font-size を縮めて
           // 1 枚あたりの高さを抑える。md+ では Card のデフォルトに戻す。
-          <Card key={card.key} className="max-md:py-2 max-md:gap-0.5">
+          <Card
+            key={card.key}
+            onClick={card.onClick}
+            role={clickable ? "button" : undefined}
+            tabIndex={clickable ? 0 : undefined}
+            aria-pressed={clickable ? !!card.active : undefined}
+            onKeyDown={
+              clickable
+                ? (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      card.onClick?.();
+                    }
+                  }
+                : undefined
+            }
+            className={cn(
+              "max-md:py-2 max-md:gap-0.5",
+              clickable &&
+                "cursor-pointer transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              card.active && "border-primary bg-primary/5",
+            )}
+          >
             <CardHeader className="max-md:px-3">
               <div className="flex items-center gap-2 max-md:gap-1.5">
-                <Icon className={cn("size-4 max-md:size-3", card.iconClassName)} />
-                <p className="text-xs text-muted-foreground max-md:text-[10px]">{card.label}</p>
+                <Icon
+                  className={cn("size-4 max-md:size-3", card.iconClassName)}
+                />
+                <p className="text-xs text-muted-foreground max-md:text-[10px]">
+                  {card.label}
+                </p>
               </div>
             </CardHeader>
             <CardContent className="max-md:px-3">
-              <p className="text-2xl font-bold tabular-nums max-md:text-base">{value}</p>
+              <p className="text-2xl font-bold tabular-nums max-md:text-base">
+                {value}
+              </p>
             </CardContent>
           </Card>
         );

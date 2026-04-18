@@ -95,10 +95,14 @@ class SupabaseApplicationsRepository implements ApplicationsRepository {
           'screening_type': s['screening_type'],
           'requires_review': s['requires_review'] ?? false,
           'description': s['description'],
+          'default_duration_days': s['default_duration_days'],
           'status': isFirst
               ? StepStatus.inProgress.value
               : StepStatus.pending.value,
           'started_at': isFirst ? DateTime.now().toIso8601String() : null,
+          // deadline_at は DB トリガ
+          // (trg_application_step_deadline_on_start) で
+          // status='in_progress' AND default_duration_days IS NOT NULL のとき自動設定される
         };
       }).toList();
 

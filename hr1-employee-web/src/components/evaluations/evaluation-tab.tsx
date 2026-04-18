@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@hr1/shared-ui/components/ui/button";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
+import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { cn } from "@hr1/shared-ui/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -28,7 +28,17 @@ import type {
   Evaluation,
   EvaluationScore,
 } from "@/types/database";
-import { Star, Plus, ClipboardCheck } from "lucide-react";
+import {
+  Star,
+  Plus,
+  ClipboardCheck,
+  TrendingUp,
+  TrendingDown,
+  Users,
+  CalendarDays,
+  Briefcase,
+  Zap,
+} from "lucide-react";
 import { TemplateSelectDialog, EvaluationFormDialog, type ScoreDraft } from "@hr1/shared-ui";
 
 interface EvaluationTabProps {
@@ -42,6 +52,26 @@ interface EvalWithDetails extends Evaluation {
   scores: EvaluationScore[];
   criteria: EvaluationCriterion[];
   template_title: string;
+  cycle_title: string | null;
+  job_title: string | null;
+}
+
+function normalizeScore(score: number, scoreType: string): number | null {
+  if (scoreType === "five_star") return score;
+  if (scoreType === "ten_point") return score / 2;
+  return null;
+}
+
+function scoreColorClass(score: number): string {
+  if (score >= 4) return "bg-emerald-500";
+  if (score >= 3) return "bg-amber-500";
+  return "bg-rose-500";
+}
+
+function scoreTextColorClass(score: number): string {
+  if (score >= 4) return "text-emerald-600";
+  if (score >= 3) return "text-amber-600";
+  return "text-rose-600";
 }
 
 export function EvaluationTab({ targetUserId, targetType, applicationId }: EvaluationTabProps) {
@@ -80,6 +110,62 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
       cancelled = true;
     };
   }, [organization, targetUserId, targetType, applicationId]);
+
+  const submittedEvaluations = useMemo(
+    () => evaluations.filter((ev) => ev.status === "submitted"),
+    [evaluations]
+  );
+
+  const summary = useMemo(() => {
+    const statusCount = { submitted: 0, draft: 0 };
+    const raterCount: Record<string, number> = {};
+    const numericValues: number[] = [];
+    // criterion_id -> { label, values[], scoreType }
+    const criterionMap = new Map<string, { label: string; scoreType: string; values: number[] }>();
+
+    for (const ev of evaluations) {
+      if (ev.status === "submitted") statusCount.submitted += 1;
+      else statusCount.draft += 1;
+      if (ev.rater_type) raterCount[ev.rater_type] = (raterCount[ev.rater_type] ?? 0) + 1;
+
+      if (ev.status !== "submitted") continue;
+
+      for (const c of ev.criteria) {
+        if (c.score_type !== "five_star" && c.score_type !== "ten_point") continue;
+        const scoreObj = ev.scores.find((s) => s.criterion_id === c.id);
+        if (scoreObj?.score == null) continue;
+        const normalized = normalizeScore(scoreObj.score, c.score_type);
+        if (normalized == null) continue;
+
+        numericValues.push(normalized);
+
+        const entry = criterionMap.get(c.id) ?? {
+          label: c.label,
+          scoreType: c.score_type,
+          values: [],
+        };
+        entry.values.push(normalized);
+        criterionMap.set(c.id, entry);
+      }
+    }
+
+    const overallAvg =
+      numericValues.length > 0
+        ? numericValues.reduce((a, b) => a + b, 0) / numericValues.length
+        : null;
+
+    const criterionAverages = Array.from(criterionMap.entries())
+      .map(([id, v]) => ({
+        id,
+        label: v.label,
+        scoreType: v.scoreType,
+        avg: v.values.reduce((a, b) => a + b, 0) / v.values.length,
+        count: v.values.length,
+      }))
+      .sort((a, b) => b.avg - a.avg);
+
+    return { statusCount, raterCount, overallAvg, criterionAverages };
+  }, [evaluations]);
 
   const loadData = async () => {
     if (!organization) return;
@@ -186,8 +272,14 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
     setShowForm(true);
   };
 
+  const topCriterion = summary.criterionAverages[0];
+  const bottomCriterion =
+    summary.criterionAverages.length > 1
+      ? summary.criterionAverages[summary.criterionAverages.length - 1]
+      : null;
+
   return (
-    <div className="max-w-3xl mx-auto space-y-4">
+    <div className="max-w-4xl space-y-4">
       <TemplateSelectDialog
         open={templateDialogOpen}
         onOpenChange={setTemplateDialogOpen}
@@ -227,83 +319,325 @@ export function EvaluationTab({ targetUserId, targetType, applicationId }: Evalu
           onAdd={() => setTemplateDialogOpen(true)}
         />
       ) : (
-        <div className="space-y-4">
-          {evaluations.map((ev) => (
-            <Card key={ev.id}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm">{ev.template_title}</CardTitle>
-                  <div className="flex items-center gap-2">
-                    {user?.id === ev.evaluator_id && (
-                      <Button variant="ghost" size="xs" onClick={() => handleEdit(ev)}>
-                        編集
-                      </Button>
-                    )}
-                    <Badge variant={evaluationStatusColors[ev.status]}>
-                      {evaluationStatusLabels[ev.status]}
-                    </Badge>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  評価者: {ev.evaluator_name}
-                  {ev.rater_type && (
-                    <span className="ml-1">
-                      ({raterTypeLabels[ev.rater_type] ?? ev.rater_type})
-                    </span>
-                  )}{" "}
-                  ・ {format(new Date(ev.submitted_at ?? ev.created_at), "yyyy/MM/dd")}
+        <>
+          {/* サマリーカード: 総合評価・評価数・評価者内訳 */}
+          <SectionCard>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-sm font-semibold">評価サマリー</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  提出済み評価 {summary.statusCount.submitted} 件の集計
                 </p>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {ev.criteria.map((c) => {
-                  const score = ev.scores.find((s) => s.criterion_id === c.id);
-                  return (
-                    <div key={c.id} className="flex items-start gap-3 text-sm">
-                      <span className="font-medium min-w-[120px] shrink-0">{c.label}</span>
-                      <div className="flex-1">
-                        {(c.score_type === "five_star" || c.score_type === "ten_point") &&
-                          score?.score != null && (
-                            <div className="flex items-center gap-1">
-                              {c.score_type === "five_star" ? (
-                                <>
-                                  {[1, 2, 3, 4, 5].map((n) => (
-                                    <Star
-                                      key={n}
-                                      className={cn(
-                                        "h-4 w-4",
-                                        n <= score.score!
-                                          ? "fill-amber-400 text-amber-400"
-                                          : "text-gray-200"
-                                      )}
-                                    />
-                                  ))}
-                                </>
-                              ) : (
-                                <span>{score.score}/10</span>
-                              )}
-                            </div>
-                          )}
-                        {(c.score_type === "text" || c.score_type === "select") && score?.value && (
-                          <span>{score.value}</span>
+              </div>
+              <Button variant="primary" size="sm" onClick={() => setTemplateDialogOpen(true)}>
+                <Plus className="size-4 mr-1" />
+                評価を追加
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* 総合スコア */}
+              <div className="rounded-xl bg-background/70 p-4 ring-1 ring-foreground/5">
+                <p className="text-xs text-muted-foreground mb-1">総合スコア</p>
+                {summary.overallAvg != null ? (
+                  <div className="flex items-end gap-2">
+                    <span
+                      className={cn(
+                        "text-3xl font-bold leading-none",
+                        scoreTextColorClass(summary.overallAvg)
+                      )}
+                    >
+                      {summary.overallAvg.toFixed(1)}
+                    </span>
+                    <span className="text-sm text-muted-foreground mb-0.5">/ 5.0</span>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">—</p>
+                )}
+                {summary.overallAvg != null && (
+                  <div className="flex items-center gap-0.5 mt-2">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star
+                        key={n}
+                        className={cn(
+                          "h-4 w-4",
+                          n <= Math.round(summary.overallAvg!)
+                            ? "fill-amber-400 text-amber-400"
+                            : "text-gray-200"
                         )}
-                        {score?.comment && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{score.comment}</p>
-                        )}
-                        {!score && <span className="text-muted-foreground">-</span>}
-                      </div>
-                    </div>
-                  );
-                })}
-                {ev.overall_comment && (
-                  <div className="pt-2 border-t">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">総合コメント</p>
-                    <p className="text-sm">{ev.overall_comment}</p>
+                      />
+                    ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </div>
+
+              {/* 評価件数 */}
+              <div className="rounded-xl bg-background/70 p-4 ring-1 ring-foreground/5">
+                <p className="text-xs text-muted-foreground mb-1">評価件数</p>
+                <div className="flex items-end gap-2">
+                  <span className="text-3xl font-bold leading-none">
+                    {summary.statusCount.submitted}
+                  </span>
+                  <span className="text-sm text-muted-foreground mb-0.5">件 提出済み</span>
+                </div>
+                {summary.statusCount.draft > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    下書き {summary.statusCount.draft} 件
+                  </p>
+                )}
+              </div>
+
+              {/* 評価者内訳 */}
+              <div className="rounded-xl bg-background/70 p-4 ring-1 ring-foreground/5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Users className="size-3.5 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">評価者内訳</p>
+                </div>
+                {Object.keys(summary.raterCount).length === 0 ? (
+                  <p className="text-sm text-muted-foreground mt-2">—</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {Object.entries(summary.raterCount).map(([type, count]) => (
+                      <Badge key={type} variant="secondary" className="font-normal">
+                        {raterTypeLabels[type] ?? type} {count}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 強み・弱み */}
+            {(topCriterion || bottomCriterion) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                {topCriterion && (
+                  <div className="flex items-center gap-3 rounded-lg bg-emerald-50 px-3 py-2 ring-1 ring-emerald-100">
+                    <TrendingUp className="size-4 text-emerald-600 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-emerald-700 font-medium">強み</p>
+                      <p className="text-sm font-medium truncate">{topCriterion.label}</p>
+                    </div>
+                    <span className="text-sm font-semibold text-emerald-700 shrink-0">
+                      {topCriterion.avg.toFixed(1)}
+                    </span>
+                  </div>
+                )}
+                {bottomCriterion && bottomCriterion.id !== topCriterion?.id && (
+                  <div className="flex items-center gap-3 rounded-lg bg-rose-50 px-3 py-2 ring-1 ring-rose-100">
+                    <TrendingDown className="size-4 text-rose-600 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-rose-700 font-medium">課題</p>
+                      <p className="text-sm font-medium truncate">{bottomCriterion.label}</p>
+                    </div>
+                    <span className="text-sm font-semibold text-rose-700 shrink-0">
+                      {bottomCriterion.avg.toFixed(1)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </SectionCard>
+
+          {/* 項目別平均スコア */}
+          {summary.criterionAverages.length > 0 && (
+            <SectionCard>
+              <h2 className="text-sm font-semibold mb-3">項目別平均スコア</h2>
+              <div className="space-y-2.5">
+                {summary.criterionAverages.map((c) => (
+                  <div key={c.id}>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span className="font-medium">{c.label}</span>
+                      <span className="text-xs text-muted-foreground">
+                        <span className={cn("font-semibold text-sm", scoreTextColorClass(c.avg))}>
+                          {c.avg.toFixed(1)}
+                        </span>
+                        <span className="mx-1">/ 5.0</span>
+                        <span>（{c.count}件）</span>
+                      </span>
+                    </div>
+                    <div className="h-2 rounded-full bg-foreground/5 overflow-hidden">
+                      <div
+                        className={cn("h-full rounded-full transition-all", scoreColorClass(c.avg))}
+                        style={{ width: `${(c.avg / 5) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          )}
+
+          {/* 最新の総合コメント */}
+          {submittedEvaluations.some((ev) => ev.overall_comment) && (
+            <SectionCard>
+              <h2 className="text-sm font-semibold mb-3">評価者コメント</h2>
+              <div className="space-y-3">
+                {submittedEvaluations
+                  .filter((ev) => ev.overall_comment)
+                  .slice(0, 3)
+                  .map((ev) => (
+                    <div key={ev.id} className="border-l-2 border-foreground/10 pl-3 text-sm">
+                      <p className="whitespace-pre-wrap">{ev.overall_comment}</p>
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5 flex-wrap">
+                        <span>— {ev.evaluator_name}</span>
+                        {ev.rater_type && (
+                          <span>({raterTypeLabels[ev.rater_type] ?? ev.rater_type})</span>
+                        )}
+                        <span>
+                          ・{format(new Date(ev.submitted_at ?? ev.created_at), "yyyy/MM/dd")}
+                        </span>
+                        {ev.cycle_title && (
+                          <span className="text-indigo-700">・評価サイクル: {ev.cycle_title}</span>
+                        )}
+                        {!ev.cycle_title && ev.job_title && (
+                          <span className="text-sky-700">・{ev.job_title}</span>
+                        )}
+                      </p>
+                    </div>
+                  ))}
+              </div>
+            </SectionCard>
+          )}
+
+          {/* 個別評価一覧 */}
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold px-1">個別評価（{evaluations.length}件）</h2>
+            {evaluations.map((ev) => {
+              const numericEntries = ev.criteria
+                .map((c) => {
+                  if (c.score_type !== "five_star" && c.score_type !== "ten_point") return null;
+                  const s = ev.scores.find((sc) => sc.criterion_id === c.id);
+                  if (s?.score == null) return null;
+                  const normalized = normalizeScore(s.score, c.score_type);
+                  return normalized == null ? null : { value: normalized };
+                })
+                .filter((x): x is { value: number } => x !== null);
+              const evAvg =
+                numericEntries.length > 0
+                  ? numericEntries.reduce((sum, n) => sum + n.value, 0) / numericEntries.length
+                  : null;
+
+              return (
+                <SectionCard key={ev.id}>
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-sm font-semibold">{ev.template_title}</h3>
+                        <Badge variant={evaluationStatusColors[ev.status]}>
+                          {evaluationStatusLabels[ev.status]}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                        {ev.cycle_title ? (
+                          <Badge
+                            variant="secondary"
+                            className="font-normal gap-1 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100"
+                          >
+                            <CalendarDays className="size-3" />
+                            評価サイクル: {ev.cycle_title}
+                          </Badge>
+                        ) : ev.job_title ? (
+                          <Badge
+                            variant="secondary"
+                            className="font-normal gap-1 bg-sky-50 text-sky-700 ring-1 ring-sky-100"
+                          >
+                            <Briefcase className="size-3" />
+                            {ev.job_title}
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="font-normal gap-1 text-muted-foreground"
+                          >
+                            <Zap className="size-3" />
+                            個別評価
+                          </Badge>
+                        )}
+                        {ev.rater_type && (
+                          <Badge variant="outline" className="font-normal">
+                            {raterTypeLabels[ev.rater_type] ?? ev.rater_type}評価
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1.5">
+                        {ev.evaluator_name}・
+                        {format(new Date(ev.submitted_at ?? ev.created_at), "yyyy/MM/dd")}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {evAvg != null && (
+                        <div className="flex items-center gap-1 text-sm">
+                          <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                          <span className={cn("font-semibold", scoreTextColorClass(evAvg))}>
+                            {evAvg.toFixed(1)}
+                          </span>
+                        </div>
+                      )}
+                      {user?.id === ev.evaluator_id && (
+                        <Button variant="ghost" size="xs" onClick={() => handleEdit(ev)}>
+                          編集
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {ev.criteria.map((c) => {
+                      const score = ev.scores.find((s) => s.criterion_id === c.id);
+                      return (
+                        <div
+                          key={c.id}
+                          className="flex items-start gap-3 text-sm py-1.5 border-b border-foreground/5 last:border-0"
+                        >
+                          <span className="font-medium min-w-35 shrink-0">{c.label}</span>
+                          <div className="flex-1 min-w-0">
+                            {(c.score_type === "five_star" || c.score_type === "ten_point") &&
+                              score?.score != null && (
+                                <div className="flex items-center gap-1">
+                                  {c.score_type === "five_star" ? (
+                                    <>
+                                      {[1, 2, 3, 4, 5].map((n) => (
+                                        <Star
+                                          key={n}
+                                          className={cn(
+                                            "h-4 w-4",
+                                            n <= score.score!
+                                              ? "fill-amber-400 text-amber-400"
+                                              : "text-gray-200"
+                                          )}
+                                        />
+                                      ))}
+                                    </>
+                                  ) : (
+                                    <span className="font-medium">{score.score}/10</span>
+                                  )}
+                                </div>
+                              )}
+                            {(c.score_type === "text" || c.score_type === "select") &&
+                              score?.value && <span>{score.value}</span>}
+                            {score?.comment && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {score.comment}
+                              </p>
+                            )}
+                            {!score && <span className="text-muted-foreground">-</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {ev.overall_comment && (
+                    <div className="pt-3 mt-2 border-t border-foreground/10">
+                      <p className="text-xs font-medium text-muted-foreground mb-1">総合コメント</p>
+                      <p className="text-sm whitespace-pre-wrap">{ev.overall_comment}</p>
+                    </div>
+                  )}
+                </SectionCard>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );

@@ -74,7 +74,7 @@ export async function fetchFormResponses(
 ) {
   const { data } = await client
     .from("form_responses")
-    .select("*, custom_forms!inner(title)")
+    .select("*, custom_forms!inner(title), form_fields(label, type, sort_order)")
     .eq("applicant_id", applicantId)
     .eq("custom_forms.organization_id", organizationId)
     .order("submitted_at", { ascending: false });

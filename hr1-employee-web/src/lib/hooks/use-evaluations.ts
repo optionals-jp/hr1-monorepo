@@ -17,6 +17,7 @@ import type {
   EvaluationTemplate,
   EvaluationCriterion,
   EvaluationScore,
+  EvaluationAnchor,
 } from "@/types/database";
 
 export function useEvaluationCycles() {
@@ -101,6 +102,8 @@ export async function loadEvaluationTabData(
     scores: EvaluationScore[];
     criteria: EvaluationCriterion[];
     template_title: string;
+    cycle_title: string | null;
+    job_title: string | null;
   })[] = [];
 
   if (evalData && evalData.length > 0) {
@@ -116,6 +119,8 @@ export async function loadEvaluationTabData(
       const ev = e as Evaluation & {
         evaluation_templates?: { title: string };
         evaluator?: { display_name: string | null; email: string };
+        evaluation_cycles?: { title: string } | null;
+        application?: { id: string; jobs?: { title: string } | null } | null;
       };
       return {
         ...e,
@@ -128,6 +133,8 @@ export async function loadEvaluationTabData(
           ev.evaluation_templates?.title ??
           templates.find((t) => t.id === e.template_id)?.title ??
           e.template_id,
+        cycle_title: ev.evaluation_cycles?.title ?? null,
+        job_title: ev.application?.jobs?.title ?? null,
       };
     });
   }
@@ -149,6 +156,33 @@ export async function loadTemplateCriteria(templateId: string) {
   }
 
   return { criteria: cr, anchors: anchors ?? [] };
+}
+
+/**
+ * 候補者向け評価テンプレートの詳細画面用ローダー。
+ * テンプレート本体 / 評価項目 / アンカーを並列に取得する。
+ */
+export async function loadApplicantTemplateDetail(orgId: string, templateId: string) {
+  const client = getSupabase();
+  const [template, criteria] = await Promise.all([
+    evalRepo.fetchTemplateById(client, templateId, orgId),
+    evalRepo.fetchCriteria(client, templateId),
+  ]);
+
+  let anchors: EvaluationAnchor[] = [];
+  if (criteria.length > 0) {
+    const { data: anchorData } = await evalRepo.fetchAnchors(
+      client,
+      criteria.map((c) => c.id)
+    );
+    anchors = (anchorData as EvaluationAnchor[] | null) ?? [];
+  }
+
+  return {
+    template: template as EvaluationTemplate | null,
+    criteria,
+    anchors,
+  };
 }
 
 /**

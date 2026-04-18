@@ -27,6 +27,7 @@ export async function createTemplate(
     requires_review: boolean;
     description: string | null;
     sort_order: number;
+    default_duration_days?: number | null;
   }
 ): Promise<SelectionStepTemplate> {
   const { data, error } = await client
@@ -51,6 +52,7 @@ export async function updateTemplate(
     description?: string | null;
     sort_order?: number;
     flow_id?: string | null;
+    default_duration_days?: number | null;
   }
 ): Promise<void> {
   const { error } = await client

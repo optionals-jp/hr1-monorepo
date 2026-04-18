@@ -21,6 +21,31 @@ function calculateGrantDays(hireDate: string): number {
   return 20;
 }
 
+/**
+ * HR-28: 認証方式を判定する。
+ * - `service_role`: cron/DB トリガー等、全組織一括実行が許可される。
+ * - `authenticated` かつ profiles.role = 'hr1_admin': 指定した 1 組織のみ実行可。
+ *   呼び出し時に body.organization_id が必須。
+ */
+type AuthContext =
+  | { kind: "service_role" }
+  | { kind: "hr1_admin"; userId: string; organizationId: string };
+
+function decodeJwt(authHeader: string | null): Record<string, unknown> | null {
+  if (!authHeader) return null;
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (!match) return null;
+  const parts = match[1].split(".");
+  if (parts.length !== 3) return null;
+  try {
+    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = payload + "=".repeat((4 - (payload.length % 4)) % 4);
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   // CORS preflight
   if (req.method === "OPTIONS") {
@@ -32,18 +57,79 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // HR-28: 認証チェック
+    const jwt = decodeJwt(req.headers.get("Authorization"));
+    if (!jwt) {
+      return errorResponse("Unauthorized: missing or malformed JWT", 401);
+    }
+
+    let body: Record<string, unknown> = {};
+    try {
+      body = await req.json();
+    } catch {
+      body = {};
+    }
+
+    let auth: AuthContext;
+    const role = typeof jwt.role === "string" ? jwt.role : "";
+    if (role === "service_role") {
+      auth = { kind: "service_role" };
+    } else if (role === "authenticated") {
+      const userId = typeof jwt.sub === "string" ? jwt.sub : null;
+      if (!userId) {
+        return errorResponse("Unauthorized: no sub claim", 401);
+      }
+      // hr1_admin ロールを profiles から検証
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .maybeSingle();
+      if (profileError || !profile || profile.role !== "hr1_admin") {
+        return errorResponse("Forbidden: hr1_admin role required", 403);
+      }
+      const organizationId = typeof body.organization_id === "string"
+        ? body.organization_id
+        : null;
+      if (!organizationId) {
+        return errorResponse(
+          "Bad Request: organization_id is required for hr1_admin",
+          400
+        );
+      }
+      auth = { kind: "hr1_admin", userId, organizationId };
+    } else {
+      return errorResponse("Forbidden: unsupported role", 403);
+    }
+
+    // 操作ログ (HR-28: audit_logs は CHECK 制約/schema 制約があるため stdout に出力)
+    console.log(
+      JSON.stringify({
+        event: "auto_grant_leave.invoke",
+        auth: auth.kind,
+        actor: auth.kind === "hr1_admin" ? auth.userId : null,
+        target_org: auth.kind === "hr1_admin" ? auth.organizationId : "*",
+        at: new Date().toISOString(),
+      })
+    );
+
     const currentYear = new Date().getFullYear();
     const grantDate = `${currentYear}-04-01`;
     const expiryDate = `${currentYear + 2}-03-31`;
 
-    // 全組織の全従業員を取得
-    const { data: employees, error: empError } = await supabase
+    // 対象従業員の取得: service_role は全組織、hr1_admin は指定組織のみ
+    let query = supabase
       .from("user_organizations")
       .select(
         "user_id, organization_id, profiles(id, display_name, hire_date, role)"
       )
       .not("profiles.hire_date", "is", null);
 
+    if (auth.kind === "hr1_admin") {
+      query = query.eq("organization_id", auth.organizationId);
+    }
+
+    const { data: employees, error: empError } = await query;
     if (empError) throw empError;
 
     let granted = 0;

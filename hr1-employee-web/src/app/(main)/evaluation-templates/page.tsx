@@ -171,7 +171,11 @@ export default function EvaluationSheetsPage() {
               emptyMessage="評価テンプレートがありません。右上の「テンプレートを作成」から追加してください"
             >
               {filtered.map((t) => (
-                <TableRow key={t.id}>
+                <TableRow
+                  key={t.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/evaluation-templates/${t.id}`)}
+                >
                   <TableCell className="font-medium">{t.title}</TableCell>
                   <TableCell>
                     <Badge variant="outline">候補者向け</Badge>

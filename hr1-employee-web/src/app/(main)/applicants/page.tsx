@@ -62,18 +62,75 @@ const addTabs: EditPanelTab[] = [
 
 type ApplicantsSummaryKey = "total" | "newGrad" | "midCareer" | "applied" | "notApplied";
 
-const summaryCards: readonly SummaryCardConfig<ApplicantsSummaryKey>[] = [
-  { key: "total", label: "候補者数", icon: Users, iconClassName: "text-slate-600" },
-  { key: "newGrad", label: "新卒", icon: GraduationCap, iconClassName: "text-blue-600" },
-  { key: "midCareer", label: "中途", icon: Briefcase, iconClassName: "text-indigo-600" },
-  { key: "applied", label: "応募済み", icon: ClipboardCheck, iconClassName: "text-emerald-600" },
-  { key: "notApplied", label: "未応募", icon: UserMinus, iconClassName: "text-slate-500" },
-];
-
 export default function ApplicantsPage() {
   const router = useRouter();
   const { showToast } = useToast();
   const h = useApplicantsPage();
+
+  // サマリカード：タップで単一メトリクスをフィルタ条件に設定する。
+  // active 判定は hiring_type / application_status のみで決まり、
+  // 検索語・登録日フィルタの有無には影響されない（別軸のフィルタのため）。
+  // 複数フィルタが組み合わさっている場合（例: 新卒 × 応募済み）はどのカードも非 active。
+  // total カードは hiring_type / application_status のみクリアし、
+  // 検索語・登録日はユーザが明示設定した条件のため温存する。
+  // NOTE: React Compiler が自動メモ化するため手動 useMemo は不要。
+  const summaryCards: readonly SummaryCardConfig<ApplicantsSummaryKey>[] = [
+    {
+      key: "total",
+      label: "候補者数",
+      icon: Users,
+      iconClassName: "text-slate-600",
+      onClick: () => {
+        h.setFilterHiringType("all");
+        h.setFilterApplicationStatus("all");
+      },
+      active: h.filterHiringType === "all" && h.filterApplicationStatus === "all",
+    },
+    {
+      key: "newGrad",
+      label: "新卒",
+      icon: GraduationCap,
+      iconClassName: "text-blue-600",
+      onClick: () => {
+        h.setFilterHiringType("new_grad");
+        h.setFilterApplicationStatus("all");
+      },
+      active: h.filterHiringType === "new_grad" && h.filterApplicationStatus === "all",
+    },
+    {
+      key: "midCareer",
+      label: "中途",
+      icon: Briefcase,
+      iconClassName: "text-indigo-600",
+      onClick: () => {
+        h.setFilterHiringType("mid_career");
+        h.setFilterApplicationStatus("all");
+      },
+      active: h.filterHiringType === "mid_career" && h.filterApplicationStatus === "all",
+    },
+    {
+      key: "applied",
+      label: "応募済み",
+      icon: ClipboardCheck,
+      iconClassName: "text-emerald-600",
+      onClick: () => {
+        h.setFilterHiringType("all");
+        h.setFilterApplicationStatus("applied");
+      },
+      active: h.filterHiringType === "all" && h.filterApplicationStatus === "applied",
+    },
+    {
+      key: "notApplied",
+      label: "未応募",
+      icon: UserMinus,
+      iconClassName: "text-slate-500",
+      onClick: () => {
+        h.setFilterHiringType("all");
+        h.setFilterApplicationStatus("not_applied");
+      },
+      active: h.filterHiringType === "all" && h.filterApplicationStatus === "not_applied",
+    },
+  ];
 
   return (
     <div className="flex flex-col">
@@ -107,7 +164,10 @@ export default function ApplicantsPage() {
           <DropdownMenuTrigger className="flex items-center gap-2 w-full h-12 bg-white px-4 sm:px-6 md:px-8 cursor-pointer">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="text-sm text-muted-foreground shrink-0">フィルター</span>
-            {(h.filterHiringType !== "all" || h.filterCreatedFrom || h.filterCreatedTo) && (
+            {(h.filterHiringType !== "all" ||
+              h.filterApplicationStatus !== "all" ||
+              h.filterCreatedFrom ||
+              h.filterCreatedTo) && (
               <div className="flex items-center gap-1.5 overflow-x-auto">
                 {h.filterHiringType !== "all" && (
                   <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
@@ -122,6 +182,22 @@ export default function ApplicantsPage() {
                       onClick={(e) => {
                         e.stopPropagation();
                         h.setFilterHiringType("all");
+                      }}
+                      className="ml-0.5 hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </span>
+                  </Badge>
+                )}
+                {h.filterApplicationStatus !== "all" && (
+                  <Badge variant="secondary" className="shrink-0 gap-1 text-sm py-3 px-3">
+                    応募状態：
+                    {h.filterApplicationStatus === "applied" ? "応募済み" : "未応募"}
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        h.setFilterApplicationStatus("all");
                       }}
                       className="ml-0.5 hover:text-foreground"
                     >

@@ -66,6 +66,7 @@ export interface JobStep {
   template_id: string | null;
   screening_type: string | null;
   requires_review: boolean;
+  default_duration_days: number | null;
 }
 
 export interface SelectionFlow {
@@ -88,6 +89,7 @@ export interface SelectionStepTemplate {
   requires_review: boolean;
   description: string | null;
   sort_order: number;
+  default_duration_days: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -149,6 +151,10 @@ export interface ApplicationStep {
   created_by_user_id: string | null;
   is_optional: boolean;
   description: string | null;
+  /** ステップ開始から N 日で期限となる既定日数 (NULL = 期限なし) */
+  default_duration_days: number | null;
+  /** 実際の期限日時 (JST 23:59:59 を timestamptz として保存) */
+  deadline_at: string | null;
 }
 
 export interface Interview {

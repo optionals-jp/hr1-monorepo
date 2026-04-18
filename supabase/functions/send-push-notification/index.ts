@@ -75,8 +75,40 @@ async function getAccessToken(): Promise<string> {
   return result.access_token;
 }
 
+/**
+ * HR-28: JWT の role クレームが `service_role` であることを検証する。
+ * 本関数は DB トリガー (notifications INSERT 時) からのみ呼ばれる前提であり、
+ * 認証済みユーザーや anon からの直接呼び出しでは任意の user_id に通知を
+ * 送れてしまうため、service_role 以外は 403 で拒否する。
+ * ゲートウェイの verify_jwt=true により署名検証は済んでいる前提。
+ */
+function extractRole(authHeader: string | null): string | null {
+  if (!authHeader) return null;
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (!match) return null;
+  const token = match[1];
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  try {
+    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = payload + "=".repeat((4 - (payload.length % 4)) % 4);
+    const decoded = JSON.parse(atob(padded));
+    return typeof decoded.role === "string" ? decoded.role : null;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   try {
+    const role = extractRole(req.headers.get("Authorization"));
+    if (role !== "service_role") {
+      return new Response(
+        JSON.stringify({ error: "Forbidden: service_role required" }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const payload: PushPayload = await req.json();
     const { user_id, title, body, action_url, data } = payload;
 
@@ -171,9 +203,13 @@ Deno.serve(async (req: Request) => {
                 d.errorCode === "UNREGISTERED"
             )
           ) {
+            // HR-28: user_id + token の複合スコープで削除。
+            // push_tokens には UNIQUE (user_id, token) があり、他ユーザーが
+            // 同一デバイストークンを保持するケースでも誤削除を防ぐ。
             await supabase
               .from("push_tokens")
               .delete()
+              .eq("user_id", user_id)
               .eq("token", token);
           }
           throw new Error(JSON.stringify(result.error));

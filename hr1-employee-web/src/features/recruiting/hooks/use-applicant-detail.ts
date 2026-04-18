@@ -7,6 +7,7 @@ import { getSupabase } from "@/lib/supabase/browser";
 import { useOrg } from "@/lib/org-context";
 
 import * as applicantRepo from "@/lib/repositories/applicant-repository";
+import { formatFormFieldValue } from "@/features/recruiting/form-field-format";
 import type { Profile, Application, ApplicationStep } from "@/types/database";
 import {
   applicationStatusLabels as statusLabels,
@@ -36,7 +37,7 @@ export function useApplicantDetailPage() {
       form_id: string;
       form_title: string;
       submitted_at: string;
-      fields: { label: string; value: string }[];
+      fields: { label: string; value: string; sort_order: number }[];
     }[]
   >([]);
   const [interviewSlots, setInterviewSlots] = useState<
@@ -81,7 +82,7 @@ export function useApplicantDetailPage() {
           form_id: string;
           form_title: string;
           submitted_at: string;
-          fields: { label: string; value: string }[];
+          fields: { label: string; value: string; sort_order: number }[];
         }
       >();
       for (const r of rawFormResponses) {
@@ -95,7 +96,20 @@ export function useApplicantDetailPage() {
             fields: [],
           });
         }
-        formMap.get(key)!.fields.push({ label: r.field_id, value: r.value });
+        const fieldMeta = (
+          r as unknown as {
+            form_fields?: { label: string; type: string; sort_order: number } | null;
+          }
+        ).form_fields;
+        formMap.get(key)!.fields.push({
+          label: fieldMeta?.label ?? r.field_id,
+          value: formatFormFieldValue(r.value, fieldMeta?.type),
+          sort_order: fieldMeta?.sort_order ?? 0,
+        });
+      }
+      // フィールドを sort_order 昇順で並べる
+      for (const entry of formMap.values()) {
+        entry.fields.sort((a, b) => a.sort_order - b.sort_order);
       }
 
       setProfile(profileData);

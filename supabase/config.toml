@@ -375,6 +375,14 @@ verify_jwt = false
 [functions.parse-business-card]
 verify_jwt = false
 
+# HR-28: 以下の関数は service_role / authenticated JWT 必須。
+# ゲートウェイでの JWT 検証を明示的に有効化 (default=true の明示化)。
+[functions.send-push-notification]
+verify_jwt = true
+
+[functions.auto-grant-leave]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

@@ -201,7 +201,7 @@ export default function ApplicantDetailPage() {
           ) : (
             <div className="space-y-4 max-w-3xl">
               {formResponses.map((form, i) => (
-                <div key={`${form.form_id}-${i}`} className="rounded-xl border p-4">
+                <SectionCard key={`${form.form_id}-${i}`}>
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-semibold">{form.form_title}</h3>
                     <span className="text-xs text-muted-foreground">
@@ -216,7 +216,7 @@ export default function ApplicantDetailPage() {
                       </div>
                     ))}
                   </div>
-                </div>
+                </SectionCard>
               ))}
             </div>
           )}

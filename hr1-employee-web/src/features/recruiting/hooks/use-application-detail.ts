@@ -431,6 +431,8 @@ export function useApplicationDetail(id: string) {
       description?: string | null;
       insert_after_step_id?: string | null;
       insert_before_step_id?: string | null;
+      default_duration_days?: number | null;
+      deadline_at?: string | null;
     }): Promise<{ success: boolean; error?: string }> => {
       const client = getSupabase();
       const { insert_after_step_id, insert_before_step_id, ...rest } = input;

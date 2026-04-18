@@ -78,6 +78,7 @@ export async function insertJobStep(
     template_id: string | null;
     screening_type?: string | null;
     requires_review?: boolean;
+    default_duration_days?: number | null;
   }
 ) {
   return client.from("job_steps").insert(data);
@@ -95,6 +96,7 @@ export async function updateJobStep(
     step_order?: number;
     screening_type?: string | null;
     requires_review?: boolean;
+    default_duration_days?: number | null;
   }
 ) {
   return client

@@ -186,8 +186,12 @@ export default function FormDetailPage() {
                   </TableHeader>
                   <TableBody>
                     {h.responses.map((row) => (
-                      <TableRow key={row.applicant_id}>
-                        <TableCell className="font-medium sticky left-0 bg-white">
+                      <TableRow
+                        key={row.applicant_id}
+                        className="group cursor-pointer"
+                        onClick={() => router.push(`/applicants/${row.applicant_id}?tab=forms`)}
+                      >
+                        <TableCell className="font-medium sticky left-0 bg-white group-hover:bg-muted/50">
                           {row.applicant_name}
                         </TableCell>
                         {h.fields.map((field) => (
