@@ -1098,6 +1098,7 @@ export interface EvaluationTemplate {
   anonymity_mode: "none" | "peer_only" | "full";
   status: EvaluationTemplateStatus;
   created_at: string;
+  updated_at: string;
 }
 
 export interface EvaluationCycle {
@@ -1137,6 +1138,7 @@ export interface EvaluationCriterion {
   sort_order: number;
   weight: number;
   deleted_at: string | null;
+  updated_at: string;
 }
 
 export interface Evaluation {
@@ -1169,6 +1171,8 @@ export interface EvaluationAnchor {
   criterion_id: string;
   score_value: number;
   description: string;
+  sort_order: number;
+  updated_at: string;
 }
 
 // ==========================================================

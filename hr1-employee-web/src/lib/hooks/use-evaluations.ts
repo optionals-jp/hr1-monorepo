@@ -9,6 +9,7 @@ import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
 import { useQuery } from "@/lib/use-query";
 import { getSupabase } from "@/lib/supabase/browser";
+import { mapRpcError } from "@/lib/rpc-error";
 import * as evalRepo from "@/lib/repositories/evaluation-repository";
 import type {
   EvaluationCycle,
@@ -78,7 +79,7 @@ export async function createApplicantTemplate(
     return { success: true };
   } catch (err) {
     console.error("createApplicantTemplate failed", err);
-    return { success: false, error: "評価シートの作成に失敗しました" };
+    return { success: false, error: mapRpcError(err, "評価シートの作成に失敗しました") };
   }
 }
 
@@ -229,6 +230,6 @@ export async function submitAdHocEvaluation(
     return { success: true };
   } catch (err) {
     console.error("submitAdHocEvaluation failed", err);
-    return { success: false, error: "評価の保存に失敗しました" };
+    return { success: false, error: mapRpcError(err, "評価の保存に失敗しました") };
   }
 }

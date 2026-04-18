@@ -274,13 +274,23 @@ export async function fetchTemplatesByTarget(
   return data ?? [];
 }
 
-export async function fetchTemplateById(client: SupabaseClient, id: string, orgId: string) {
-  const { data } = await client
+export async function fetchTemplateById(
+  client: SupabaseClient,
+  id: string,
+  orgId: string,
+  options?: { includeArchived?: boolean }
+) {
+  let query = client
     .from("evaluation_templates")
     .select("*")
     .eq("id", id)
-    .eq("organization_id", orgId)
-    .maybeSingle();
+    .eq("organization_id", orgId);
+
+  if (!options?.includeArchived) {
+    query = query.neq("status", "archived");
+  }
+
+  const { data } = await query.maybeSingle();
   return data;
 }
 

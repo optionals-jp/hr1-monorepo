@@ -43,7 +43,7 @@ export default function MessagesPage() {
   const listLoading = threadsLoading || channelsLoading;
 
   return (
-    <div className="flex flex-col h-full min-h-0 overflow-hidden">
+    <div className="flex flex-col h-[calc(100dvh-var(--header-height))] min-h-0 overflow-hidden">
       <QueryErrorBanner error={threadsError} onRetry={() => mutateThreads()} />
       <QueryErrorBanner error={channelsError} onRetry={() => mutateChannels()} />
       <PageHeader

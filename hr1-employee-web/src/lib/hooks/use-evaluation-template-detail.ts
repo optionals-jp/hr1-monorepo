@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSWRConfig } from "swr";
 import {
   type EvaluationCriterionDraft,
   createCriterionDraft,
@@ -10,6 +11,7 @@ import {
 import { useOrg } from "@/lib/org-context";
 import { useQuery } from "@/lib/use-query";
 import { getSupabase } from "@/lib/supabase/browser";
+import { mapRpcError } from "@/lib/rpc-error";
 import * as evalRepo from "@/lib/repositories/evaluation-repository";
 import { loadApplicantTemplateDetail } from "@/lib/hooks/use-evaluations";
 import type { EvaluationTemplate, EvaluationCriterion, EvaluationAnchor } from "@/types/database";
@@ -72,12 +74,28 @@ function draftFromCriterion(
  */
 export function useEvaluationTemplateDetail(templateId: string) {
   const { organization } = useOrg();
+  const { mutate: globalMutate } = useSWRConfig();
   const key =
     organization && templateId ? `eval-template-detail-${organization.id}-${templateId}` : null;
 
   const { data, isLoading, error, mutate } = useQuery<EvaluationTemplateDetail>(key, async () => {
     return await loadApplicantTemplateDetail(organization!.id, templateId);
   });
+
+  // 各 mutation 成功後にテンプレート一覧キャッシュも再取得させるヘルパ。
+  // `applicant-eval-templates[-all]` は `useOrgQuery` 内で内部的に
+  // 組織 ID プレフィックスを付与して SWR キーに落とされるため、部分一致で
+  // invalidate する (単一 key の直接 match ではヒットしない場合がある)。
+  const invalidateAll = useCallback(async () => {
+    await Promise.all([
+      mutate(),
+      globalMutate(
+        (k) =>
+          typeof k === "string" &&
+          (k.startsWith("applicant-eval-templates-all") || k.startsWith("applicant-eval-templates"))
+      ),
+    ]);
+  }, [mutate, globalMutate]);
 
   const template = data?.template ?? null;
   const criteria = useMemo(() => data?.criteria ?? [], [data]);
@@ -161,46 +179,43 @@ export function useEvaluationTemplateDetail(templateId: string) {
       } else {
         return { success: false, error: "ダイアログが開いていません" };
       }
-      await mutate();
+      await invalidateAll();
       closeDialog();
       return { success: true };
     } catch (err) {
       console.error("saveCriterionDialog failed", err);
-      const message = err instanceof Error ? err.message : "評価項目の保存に失敗しました";
-      return { success: false, error: message };
+      return { success: false, error: mapRpcError(err, "評価項目の保存に失敗しました") };
     } finally {
       setSaving(false);
     }
-  }, [draft, dialogMode, templateId, mutate, closeDialog]);
+  }, [draft, dialogMode, templateId, invalidateAll, closeDialog]);
 
   const deleteCriterion = useCallback(
     async (criterionId: string): Promise<MutationResult> => {
       try {
         await evalRepo.rpcDeleteEvaluationCriterion(getSupabase(), criterionId);
-        await mutate();
+        await invalidateAll();
         return { success: true };
       } catch (err) {
         console.error("deleteCriterion failed", err);
-        const message = err instanceof Error ? err.message : "評価項目の削除に失敗しました";
-        return { success: false, error: message };
+        return { success: false, error: mapRpcError(err, "評価項目の削除に失敗しました") };
       }
     },
-    [mutate]
+    [invalidateAll]
   );
 
   const reorderCriteria = useCallback(
     async (orderedIds: string[]): Promise<MutationResult> => {
       try {
         await evalRepo.rpcReorderEvaluationCriteria(getSupabase(), templateId, orderedIds);
-        await mutate();
+        await invalidateAll();
         return { success: true };
       } catch (err) {
         console.error("reorderCriteria failed", err);
-        const message = err instanceof Error ? err.message : "並び順の更新に失敗しました";
-        return { success: false, error: message };
+        return { success: false, error: mapRpcError(err, "並び順の更新に失敗しました") };
       }
     },
-    [templateId, mutate]
+    [templateId, invalidateAll]
   );
 
   const updateTemplateMeta = useCallback(
@@ -212,40 +227,37 @@ export function useEvaluationTemplateDetail(templateId: string) {
     }): Promise<MutationResult> => {
       try {
         await evalRepo.rpcUpdateEvaluationTemplate(getSupabase(), templateId, input);
-        await mutate();
+        await invalidateAll();
         return { success: true };
       } catch (err) {
         console.error("updateTemplateMeta failed", err);
-        const message = err instanceof Error ? err.message : "テンプレートの更新に失敗しました";
-        return { success: false, error: message };
+        return { success: false, error: mapRpcError(err, "テンプレートの更新に失敗しました") };
       }
     },
-    [templateId, mutate]
+    [templateId, invalidateAll]
   );
 
   const publishTemplate = useCallback(async (): Promise<MutationResult> => {
     try {
       await evalRepo.rpcPublishEvaluationTemplate(getSupabase(), templateId);
-      await mutate();
+      await invalidateAll();
       return { success: true };
     } catch (err) {
       console.error("publishTemplate failed", err);
-      const message = err instanceof Error ? err.message : "公開に失敗しました";
-      return { success: false, error: message };
+      return { success: false, error: mapRpcError(err, "公開に失敗しました") };
     }
-  }, [templateId, mutate]);
+  }, [templateId, invalidateAll]);
 
   const archiveTemplate = useCallback(async (): Promise<MutationResult> => {
     try {
       await evalRepo.rpcArchiveEvaluationTemplate(getSupabase(), templateId);
-      await mutate();
+      await invalidateAll();
       return { success: true };
     } catch (err) {
       console.error("archiveTemplate failed", err);
-      const message = err instanceof Error ? err.message : "アーカイブに失敗しました";
-      return { success: false, error: message };
+      return { success: false, error: mapRpcError(err, "アーカイブに失敗しました") };
     }
-  }, [templateId, mutate]);
+  }, [templateId, invalidateAll]);
 
   const duplicateTemplate = useCallback(
     async (newTitle: string): Promise<{ success: boolean; error?: string; newId?: string }> => {
@@ -255,14 +267,15 @@ export function useEvaluationTemplateDetail(templateId: string) {
           templateId,
           newTitle
         );
+        // 複製先は新規テンプレなので一覧キャッシュも更新する
+        await invalidateAll();
         return { success: true, newId };
       } catch (err) {
         console.error("duplicateTemplate failed", err);
-        const message = err instanceof Error ? err.message : "複製に失敗しました";
-        return { success: false, error: message };
+        return { success: false, error: mapRpcError(err, "複製に失敗しました") };
       }
     },
-    [templateId]
+    [templateId, invalidateAll]
   );
 
   // テンプレートが切り替わったら開いているダイアログを閉じる

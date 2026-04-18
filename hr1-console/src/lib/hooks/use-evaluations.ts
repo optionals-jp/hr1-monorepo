@@ -14,6 +14,7 @@ import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase/browser";
+import { mapRpcError } from "@/lib/rpc-error";
 import * as repo from "@/lib/repositories/evaluation-repository";
 import type { EvaluationTemplate, EvaluationCycle } from "@/types/database";
 
@@ -277,7 +278,7 @@ export async function createTemplate(
     return { success: true };
   } catch (err) {
     console.error("createTemplate failed", err);
-    return { success: false, error: "評価シートの作成に失敗しました" };
+    return { success: false, error: mapRpcError(err, "評価シートの作成に失敗しました") };
   }
 }
 
@@ -315,6 +316,6 @@ export async function createCycle(
     return { success: true, cycleId: (inserted as { id: string }).id };
   } catch (err) {
     console.error("createCycle failed", err);
-    return { success: false, error: "サイクルの作成に失敗しました" };
+    return { success: false, error: mapRpcError(err, "サイクルの作成に失敗しました") };
   }
 }

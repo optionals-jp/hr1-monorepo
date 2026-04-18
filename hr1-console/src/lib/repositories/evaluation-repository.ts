@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+// TODO(HR-28-followup): evaluation-repository を packages/ に共通化して
+// hr1-employee-web 側との重複を解消する。現状は同一シグネチャでコピーしている。
+
 // ─── Atomic RPCs (evaluation template + ad-hoc evaluation) ───
 
 /**
@@ -80,32 +83,51 @@ export async function rpcSubmitAdHocEvaluation(
 
 // ─── Templates ───
 
-export async function fetchTemplates(client: SupabaseClient, orgId: string) {
-  const { data } = await client
-    .from("evaluation_templates")
-    .select("*")
-    .eq("organization_id", orgId)
-    .order("created_at", { ascending: false });
+export async function fetchTemplates(
+  client: SupabaseClient,
+  orgId: string,
+  options?: { includeArchived?: boolean }
+) {
+  let query = client.from("evaluation_templates").select("*").eq("organization_id", orgId);
+  if (!options?.includeArchived) {
+    query = query.neq("status", "archived");
+  }
+  const { data } = await query.order("created_at", { ascending: false });
   return data ?? [];
 }
 
-export async function fetchMultiRaterTemplates(client: SupabaseClient, orgId: string) {
-  const { data } = await client
+export async function fetchMultiRaterTemplates(
+  client: SupabaseClient,
+  orgId: string,
+  options?: { includeArchived?: boolean }
+) {
+  let query = client
     .from("evaluation_templates")
     .select("*")
     .eq("organization_id", orgId)
-    .eq("evaluation_type", "multi_rater")
-    .order("created_at", { ascending: false });
+    .eq("evaluation_type", "multi_rater");
+  if (!options?.includeArchived) {
+    query = query.neq("status", "archived");
+  }
+  const { data } = await query.order("created_at", { ascending: false });
   return data ?? [];
 }
 
-export async function fetchTemplateById(client: SupabaseClient, id: string, orgId: string) {
-  return client
+export async function fetchTemplateById(
+  client: SupabaseClient,
+  id: string,
+  orgId: string,
+  options?: { includeArchived?: boolean }
+) {
+  let query = client
     .from("evaluation_templates")
     .select("*")
     .eq("id", id)
-    .eq("organization_id", orgId)
-    .single();
+    .eq("organization_id", orgId);
+  if (!options?.includeArchived) {
+    query = query.neq("status", "archived");
+  }
+  return query.maybeSingle();
 }
 
 export async function fetchTemplateTitles(client: SupabaseClient, templateIds: string[]) {
@@ -115,43 +137,19 @@ export async function fetchTemplateTitles(client: SupabaseClient, templateIds: s
 export async function fetchTemplatesByTarget(
   client: SupabaseClient,
   orgId: string,
-  targets: string[]
+  targets: string[],
+  options?: { includeArchived?: boolean }
 ) {
-  const { data } = await client
+  let query = client
     .from("evaluation_templates")
     .select("*")
     .eq("organization_id", orgId)
-    .in("target", targets)
-    .order("created_at", { ascending: false });
+    .in("target", targets);
+  if (!options?.includeArchived) {
+    query = query.neq("status", "archived");
+  }
+  const { data } = await query.order("created_at", { ascending: false });
   return data ?? [];
-}
-
-/**
- * @deprecated `rpcCreateEvaluationTemplate` を使うこと。
- * 生の insert は uuid 採番・アトミシティの責務が呼び出し元にあり、非推奨。
- */
-export async function insertTemplate(client: SupabaseClient, row: Record<string, unknown>) {
-  return client.from("evaluation_templates").insert(row);
-}
-
-/**
- * @deprecated RPC 化により補償 DELETE は不要。呼び出し元が残っていなければ削除予定。
- */
-export async function deleteTemplate(client: SupabaseClient, id: string, orgId: string) {
-  return client.from("evaluation_templates").delete().eq("id", id).eq("organization_id", orgId);
-}
-
-export async function updateTemplate(
-  client: SupabaseClient,
-  id: string,
-  organizationId: string,
-  data: Record<string, unknown>
-) {
-  return client
-    .from("evaluation_templates")
-    .update(data)
-    .eq("id", id)
-    .eq("organization_id", organizationId);
 }
 
 // ─── Criteria ───
@@ -161,6 +159,7 @@ export async function fetchCriteria(client: SupabaseClient, templateId: string) 
     .from("evaluation_criteria")
     .select("*")
     .eq("template_id", templateId)
+    .is("deleted_at", null)
     .order("sort_order");
   return data ?? [];
 }
@@ -170,37 +169,11 @@ export async function fetchCriteriaByTemplates(client: SupabaseClient, templateI
     .from("evaluation_criteria")
     .select("*")
     .in("template_id", templateIds)
+    .is("deleted_at", null)
     .order("sort_order");
 }
 
-/**
- * @deprecated 新規テンプレート作成は `rpcCreateEvaluationTemplate` を使うこと。
- * 既存テンプレートへの criterion 追加用途ではまだ使われている（将来は専用 RPC 化予定）。
- */
-export async function insertCriteria(client: SupabaseClient, rows: Record<string, unknown>[]) {
-  return client.from("evaluation_criteria").insert(rows);
-}
-
-export async function deleteCriteria(client: SupabaseClient, ids: string[]) {
-  return client.from("evaluation_criteria").delete().in("id", ids);
-}
-
-export async function updateCriterion(
-  client: SupabaseClient,
-  id: string,
-  data: Record<string, unknown>
-) {
-  return client.from("evaluation_criteria").update(data).eq("id", id);
-}
-
 // ─── Anchors ───
-
-/**
- * @deprecated `rpcCreateEvaluationTemplate` を使うこと。
- */
-export async function insertAnchors(client: SupabaseClient, rows: Record<string, unknown>[]) {
-  return client.from("evaluation_anchors").insert(rows);
-}
 
 export async function fetchAnchors(client: SupabaseClient, criterionIds: string[]) {
   return client
@@ -208,6 +181,133 @@ export async function fetchAnchors(client: SupabaseClient, criterionIds: string[
     .select("*")
     .in("criterion_id", criterionIds)
     .order("score_value");
+}
+
+// ─── Template edit RPCs (HR-28) ───
+//
+// 評価テンプレート詳細画面からの編集系は全て RPC 経由で実行する。
+// 直接 INSERT/UPDATE/DELETE は RLS で拒否される（templates/criteria/anchors は
+// authenticated には SELECT しか開かれていない）。
+
+export interface EvaluationCriterionInput {
+  label: string;
+  description: string | null;
+  score_type: "five_star" | "ten_point" | "text" | "select";
+  options: string[] | null;
+  weight: number;
+  anchors: { score_value: number; description: string }[];
+}
+
+export async function rpcAddEvaluationCriterion(
+  client: SupabaseClient,
+  templateId: string,
+  input: EvaluationCriterionInput
+): Promise<string> {
+  const { data, error } = await client.rpc("add_evaluation_criterion", {
+    p_template_id: templateId,
+    p_label: input.label,
+    p_description: input.description,
+    p_score_type: input.score_type,
+    p_options: input.options,
+    p_weight: input.weight,
+    p_anchors: input.anchors,
+  });
+  if (error) throw error;
+  if (!data) throw new Error("add_evaluation_criterion returned no id");
+  return data as string;
+}
+
+export async function rpcUpdateEvaluationCriterion(
+  client: SupabaseClient,
+  criterionId: string,
+  input: EvaluationCriterionInput
+): Promise<void> {
+  const { error } = await client.rpc("update_evaluation_criterion", {
+    p_criterion_id: criterionId,
+    p_label: input.label,
+    p_description: input.description,
+    p_score_type: input.score_type,
+    p_options: input.options,
+    p_weight: input.weight,
+    p_anchors: input.anchors,
+  });
+  if (error) throw error;
+}
+
+export async function rpcDeleteEvaluationCriterion(
+  client: SupabaseClient,
+  criterionId: string
+): Promise<void> {
+  const { error } = await client.rpc("delete_evaluation_criterion", {
+    p_criterion_id: criterionId,
+  });
+  if (error) throw error;
+}
+
+export async function rpcReorderEvaluationCriteria(
+  client: SupabaseClient,
+  templateId: string,
+  criterionIds: string[]
+): Promise<void> {
+  const { error } = await client.rpc("reorder_evaluation_criteria", {
+    p_template_id: templateId,
+    p_criterion_ids: criterionIds,
+  });
+  if (error) throw error;
+}
+
+export async function rpcUpdateEvaluationTemplate(
+  client: SupabaseClient,
+  templateId: string,
+  input: {
+    title: string;
+    description: string | null;
+    evaluation_type?: "single" | "multi_rater";
+    anonymity_mode?: "none" | "peer_only" | "full";
+  }
+): Promise<void> {
+  const { error } = await client.rpc("update_evaluation_template", {
+    p_template_id: templateId,
+    p_title: input.title,
+    p_description: input.description,
+    p_evaluation_type: input.evaluation_type ?? null,
+    p_anonymity_mode: input.anonymity_mode ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function rpcPublishEvaluationTemplate(
+  client: SupabaseClient,
+  templateId: string
+): Promise<void> {
+  const { error } = await client.rpc("publish_evaluation_template", {
+    p_template_id: templateId,
+  });
+  if (error) throw error;
+}
+
+export async function rpcArchiveEvaluationTemplate(
+  client: SupabaseClient,
+  templateId: string
+): Promise<void> {
+  const { error } = await client.rpc("archive_evaluation_template", {
+    p_template_id: templateId,
+  });
+  if (error) throw error;
+}
+
+export async function rpcDuplicateEvaluationTemplate(
+  client: SupabaseClient,
+  templateId: string,
+  newTitle: string
+): Promise<string> {
+  const { data, error } = await client.rpc("duplicate_evaluation_template", {
+    p_template_id: templateId,
+    p_new_title: newTitle,
+  });
+  if (error) throw error;
+  if (!data) throw new Error("duplicate_evaluation_template returned no id");
+  return data as string;
 }
 
 // ─── Evaluations ───
