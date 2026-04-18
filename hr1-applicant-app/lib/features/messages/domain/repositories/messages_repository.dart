@@ -43,4 +43,47 @@ abstract class MessagesRepository {
     required String userId,
     required String organizationId,
   });
+
+  // --- 製品レベル機能 (HR-27) ---
+
+  /// スレッドのメッセージ一覧を取得（添付・リアクション・返信数含む）
+  Future<List<Message>> getThreadMessagesV2(
+    String threadId, {
+    DateTime? before,
+    int limit = 30,
+  });
+
+  /// メッセージ送信（添付・メンション・返信を原子挿入）
+  Future<String> sendMessageV2({
+    required String threadId,
+    required String content,
+    String? parentMessageId,
+    List<String>? mentionedUserIds,
+    List<Map<String, dynamic>>? attachments,
+  });
+
+  /// スレッド全体を既読にする
+  Future<void> markThreadRead(String threadId);
+
+  /// リアクションの追加／解除
+  Future<String> toggleMessageReaction(String messageId, String emoji);
+
+  /// 添付ファイルをアップロード
+  Future<String> uploadAttachment({
+    required String organizationId,
+    required String threadId,
+    required String messageId,
+    required List<int> bytes,
+    required String fileName,
+    required String mimeType,
+  });
+
+  /// 添付ファイルの署名付きURLを生成
+  Future<String> createSignedAttachmentUrl(
+    String storagePath, {
+    int expiresInSeconds = 3600,
+  });
+
+  /// メッセージをソフトデリート
+  Future<void> softDeleteMessage(String messageId);
 }

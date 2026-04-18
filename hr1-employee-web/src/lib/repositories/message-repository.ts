@@ -40,64 +40,6 @@ export async function getChannelsWithDetails(client: SupabaseClient, orgId: stri
 
 // --- Messages ---
 
-export async function fetchMessages(
-  client: SupabaseClient,
-  threadId: string,
-  rangeStart: number,
-  rangeEnd: number
-) {
-  return client
-    .from("messages")
-    .select("*, sender:sender_id(id, display_name, avatar_url, role)", { count: "exact" })
-    .eq("thread_id", threadId)
-    .order("created_at", { ascending: false })
-    .range(rangeStart, rangeEnd);
-}
-
-export async function fetchMessagesSince(
-  client: SupabaseClient,
-  threadId: string,
-  sinceCreatedAt: string
-) {
-  return client
-    .from("messages")
-    .select("*, sender:sender_id(id, display_name, avatar_url, role)")
-    .eq("thread_id", threadId)
-    .gt("created_at", sinceCreatedAt)
-    .order("created_at", { ascending: true });
-}
-
-export async function fetchOlderMessages(
-  client: SupabaseClient,
-  threadId: string,
-  beforeCreatedAt: string,
-  rangeEnd: number
-) {
-  return client
-    .from("messages")
-    .select("*, sender:sender_id(id, display_name, avatar_url, role)")
-    .eq("thread_id", threadId)
-    .lt("created_at", beforeCreatedAt)
-    .order("created_at", { ascending: false })
-    .range(0, rangeEnd);
-}
-
-export async function markAsRead(client: SupabaseClient, threadId: string, currentUserId: string) {
-  return client
-    .from("messages")
-    .update({ read_at: new Date().toISOString() })
-    .eq("thread_id", threadId)
-    .neq("sender_id", currentUserId)
-    .is("read_at", null);
-}
-
-export async function sendMessage(
-  client: SupabaseClient,
-  data: { thread_id: string; content: string }
-) {
-  return client.from("messages").insert(data);
-}
-
 export async function editMessage(
   client: SupabaseClient,
   messageId: string,
@@ -109,23 +51,6 @@ export async function editMessage(
     .update({ content, edited_at: new Date().toISOString() })
     .eq("id", messageId)
     .eq("sender_id", senderId);
-}
-
-export async function deleteMessage(client: SupabaseClient, messageId: string, senderId: string) {
-  return client.from("messages").delete().eq("id", messageId).eq("sender_id", senderId);
-}
-
-// messages はorganization_idカラムを持たない（親テーブル message_threads 経由でテナント分離）
-export async function markSingleAsRead(client: SupabaseClient, messageId: string) {
-  return client.from("messages").update({ read_at: new Date().toISOString() }).eq("id", messageId);
-}
-
-export async function fetchSenderProfile(client: SupabaseClient, senderId: string) {
-  return client
-    .from("profiles")
-    .select("id, display_name, avatar_url, role")
-    .eq("id", senderId)
-    .single();
 }
 
 // --- New thread panel ---
@@ -243,4 +168,116 @@ export async function removeChannelMember(
   userId: string
 ) {
   return client.from("channel_members").delete().eq("thread_id", threadId).eq("user_id", userId);
+}
+
+// --- Production-level RPCs (HR-27) ---
+
+export interface AttachmentInput {
+  storage_path: string;
+  file_name: string;
+  mime_type: string;
+  byte_size: number;
+  width?: number | null;
+  height?: number | null;
+}
+
+export async function sendMessageV2(
+  client: SupabaseClient,
+  params: {
+    thread_id: string;
+    content: string;
+    parent_message_id?: string | null;
+    mentioned_user_ids?: string[];
+    attachments?: AttachmentInput[];
+  }
+) {
+  return client.rpc("send_message_v2", {
+    p_thread_id: params.thread_id,
+    p_content: params.content,
+    p_parent_message_id: params.parent_message_id ?? null,
+    p_mentioned_user_ids: params.mentioned_user_ids ?? null,
+    p_attachments: params.attachments ? JSON.stringify(params.attachments) : null,
+  });
+}
+
+export async function getThreadMessages(
+  client: SupabaseClient,
+  threadId: string,
+  opts?: { before?: string; limit?: number }
+) {
+  return client.rpc("get_thread_messages", {
+    p_thread_id: threadId,
+    p_before: opts?.before ?? null,
+    p_limit: opts?.limit ?? 30,
+  });
+}
+
+export async function markThreadRead(client: SupabaseClient, threadId: string) {
+  return client.rpc("mark_thread_read", { p_thread_id: threadId });
+}
+
+export async function toggleMessageReaction(
+  client: SupabaseClient,
+  messageId: string,
+  emoji: string
+) {
+  return client.rpc("toggle_message_reaction", {
+    p_message_id: messageId,
+    p_emoji: emoji,
+  });
+}
+
+export async function searchMessages(
+  client: SupabaseClient,
+  query: string,
+  opts?: { threadId?: string; limit?: number }
+) {
+  return client.rpc("search_messages", {
+    p_query: query,
+    p_thread_id: opts?.threadId ?? null,
+    p_limit: opts?.limit ?? 50,
+  });
+}
+
+export async function getUnreadMentionCount(client: SupabaseClient) {
+  return client.rpc("get_unread_mention_count");
+}
+
+export async function softDeleteMessage(
+  client: SupabaseClient,
+  messageId: string,
+  senderId: string
+) {
+  return client
+    .from("messages")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", messageId)
+    .eq("sender_id", senderId);
+}
+
+// --- Storage helper for attachment upload ---
+
+export async function uploadMessageAttachment(
+  client: SupabaseClient,
+  params: {
+    organizationId: string;
+    threadId: string;
+    messageId: string;
+    file: File;
+  }
+) {
+  const safeName = params.file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const path = `${params.organizationId}/${params.threadId}/${params.messageId}/${Date.now()}_${safeName}`;
+  return client.storage.from("message-attachments").upload(path, params.file, {
+    cacheControl: "3600",
+    upsert: false,
+  });
+}
+
+export async function createAttachmentSignedUrl(
+  client: SupabaseClient,
+  storagePath: string,
+  expiresInSeconds: number = 3600
+) {
+  return client.storage.from("message-attachments").createSignedUrl(storagePath, expiresInSeconds);
 }

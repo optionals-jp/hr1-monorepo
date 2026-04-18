@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useRef, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/browser";
 import { useOrg } from "@/lib/org-context";
 import { useAuth } from "@/lib/auth-context";
@@ -100,36 +100,51 @@ export function getSupabaseClient() {
   return getSupabase();
 }
 
-export async function fetchMessagesPage(threadId: string, rangeStart: number, rangeEnd: number) {
-  return messageRepo.fetchMessages(getSupabase(), threadId, rangeStart, rangeEnd);
-}
-
-export async function fetchMessagesSince(threadId: string, sinceCreatedAt: string) {
-  return messageRepo.fetchMessagesSince(getSupabase(), threadId, sinceCreatedAt);
-}
-
-export async function markAsRead(threadId: string, currentUserId: string) {
-  return messageRepo.markAsRead(getSupabase(), threadId, currentUserId);
-}
-
-export async function fetchOlderMessages(
-  threadId: string,
-  beforeCreatedAt: string,
-  rangeEnd: number
-) {
-  return messageRepo.fetchOlderMessages(getSupabase(), threadId, beforeCreatedAt, rangeEnd);
-}
-
-export async function sendMessage(data: { thread_id: string; content: string }) {
-  return messageRepo.sendMessage(getSupabase(), data);
-}
-
 export async function editMessage(messageId: string, senderId: string, content: string) {
   return messageRepo.editMessage(getSupabase(), messageId, senderId, content);
 }
 
-export async function deleteMessage(messageId: string, senderId: string) {
-  return messageRepo.deleteMessage(getSupabase(), messageId, senderId);
+// V2 API re-exports for compatibility with callers using the hook module
+export async function getThreadMessages(
+  threadId: string,
+  opts?: { before?: string; limit?: number }
+) {
+  return messageRepo.getThreadMessages(getSupabase(), threadId, opts);
+}
+
+export async function sendMessageV2(params: {
+  thread_id: string;
+  content: string;
+  parent_message_id?: string | null;
+  mentioned_user_ids?: string[];
+  attachments?: messageRepo.AttachmentInput[];
+}) {
+  return messageRepo.sendMessageV2(getSupabase(), params);
+}
+
+export async function markThreadRead(threadId: string) {
+  return messageRepo.markThreadRead(getSupabase(), threadId);
+}
+
+export async function toggleMessageReaction(messageId: string, emoji: string) {
+  return messageRepo.toggleMessageReaction(getSupabase(), messageId, emoji);
+}
+
+export async function softDeleteMessage(messageId: string, senderId: string) {
+  return messageRepo.softDeleteMessage(getSupabase(), messageId, senderId);
+}
+
+export async function searchMessages(query: string, opts?: { threadId?: string; limit?: number }) {
+  return messageRepo.searchMessages(getSupabase(), query, opts);
+}
+
+export function useUnreadMentionCount() {
+  const { user } = useAuth();
+  return useQuery<number>(user ? `unread-mention-count-${user.id}` : null, async () => {
+    const { data, error } = await messageRepo.getUnreadMentionCount(getSupabase());
+    if (error) return 0;
+    return Number(data ?? 0);
+  });
 }
 
 // --- New thread panel ---
@@ -274,22 +289,23 @@ export async function removeChannelMember(threadId: string, userId: string) {
   return messageRepo.removeChannelMember(getSupabase(), threadId, userId);
 }
 
-export async function fetchSenderProfile(senderId: string) {
-  return messageRepo.fetchSenderProfile(getSupabase(), senderId);
-}
-
-export async function markSingleAsRead(messageId: string) {
-  return messageRepo.markSingleAsRead(getSupabase(), messageId);
-}
-
 export function useMessagesPage() {
-  const searchParams = useSearchParams();
-  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(
-    searchParams.get("thread")
+  const params = useParams<{ slug?: string[] }>();
+  const router = useRouter();
+  const urlThreadId = params?.slug?.[0] ?? null;
+  const selectedThreadId = urlThreadId;
+  const setSelectedThreadId = useCallback(
+    (id: string | null) => {
+      if (id) {
+        router.push(`/messages/${id}`);
+      } else {
+        router.push(`/messages`);
+      }
+    },
+    [router]
   );
   const [search, setSearch] = useState("");
   const [showNewThread, setShowNewThread] = useState(false);
-  const [mainTab, setMainTab] = useState<"dm" | "channels">("dm");
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [showChannelMembers, setShowChannelMembers] = useState(false);
   const messageCache = useRef<MessageCache>(new Map());
@@ -308,25 +324,28 @@ export function useMessagesPage() {
     mutate: mutateChannels,
   } = useChannelsList();
 
-  const filtered = threads.filter((t) => {
+  // Unified list: DM threads + channels, sorted by latest activity desc
+  const combined = [...threads, ...channels].sort((a, b) => {
+    const ta = a.latest_message?.created_at ?? a.updated_at ?? a.created_at ?? "";
+    const tb = b.latest_message?.created_at ?? b.updated_at ?? b.created_at ?? "";
+    return tb.localeCompare(ta);
+  });
+
+  const filteredItems = combined.filter((item) => {
     if (!search) return true;
     const s = search.toLowerCase();
-    const name = t.participant?.display_name?.toLowerCase() ?? "";
-    const email = t.participant?.email?.toLowerCase() ?? "";
-    const jobTitles = t.job_titles?.toLowerCase() ?? "";
+    if (item.is_channel) {
+      return (item.channel_name?.toLowerCase() ?? "").includes(s);
+    }
+    const name = item.participant?.display_name?.toLowerCase() ?? "";
+    const email = item.participant?.email?.toLowerCase() ?? "";
+    const jobTitles = item.job_titles?.toLowerCase() ?? "";
     return name.includes(s) || email.includes(s) || jobTitles.includes(s);
   });
 
-  const filteredChannels = channels.filter((c) => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return (c.channel_name?.toLowerCase() ?? "").includes(s);
-  });
-
   const selectedThread =
-    mainTab === "dm"
-      ? threads.find((t) => t.id === selectedThreadId)
-      : channels.find((c) => c.id === selectedThreadId);
+    threads.find((t) => t.id === selectedThreadId) ??
+    channels.find((c) => c.id === selectedThreadId);
 
   return {
     selectedThreadId,
@@ -335,8 +354,6 @@ export function useMessagesPage() {
     setSearch,
     showNewThread,
     setShowNewThread,
-    mainTab,
-    setMainTab,
     showCreateChannel,
     setShowCreateChannel,
     showChannelMembers,
@@ -350,8 +367,7 @@ export function useMessagesPage() {
     channelsLoading,
     channelsError,
     mutateChannels,
-    filtered,
-    filteredChannels,
+    filteredItems,
     selectedThread,
   };
 }

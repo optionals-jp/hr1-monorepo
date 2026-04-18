@@ -249,6 +249,7 @@ export interface MessageThread {
   title: string | null;
   created_at: string;
   updated_at: string;
+  last_message_at?: string | null;
   is_channel?: boolean;
   channel_name?: string | null;
   channel_type?: "department" | "project" | "custom" | null;
@@ -268,6 +269,26 @@ export interface MessageThread {
   member_count?: number;
 }
 
+export interface MessageAttachment {
+  id: string;
+  storage_path: string;
+  file_name: string;
+  mime_type: string;
+  byte_size: number;
+  width: number | null;
+  height: number | null;
+}
+
+export interface MessageReactionSummary {
+  emoji: string;
+  user_ids: string[];
+  count: number;
+}
+
+export interface MessageMention {
+  user_id: string;
+}
+
 export interface ChannelMember {
   id: string;
   user_id: string;
@@ -285,7 +306,13 @@ export interface Message {
   read_at: string | null;
   edited_at: string | null;
   created_at: string;
+  deleted_at?: string | null;
+  parent_message_id?: string | null;
   sender?: Profile;
+  attachments?: MessageAttachment[];
+  reactions?: MessageReactionSummary[];
+  mentions?: MessageMention[];
+  reply_count?: number;
 }
 
 // ==========================================================

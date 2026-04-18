@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_employee_app/features/messages/domain/entities/message_thread.dart';
 import 'package:hr1_employee_app/features/messages/presentation/controllers/thread_chat_controller.dart';
 import 'package:hr1_employee_app/features/messages/presentation/controllers/thread_realtime_controller.dart';
+import 'package:hr1_employee_app/features/messages/presentation/providers/attachment_signed_url_provider.dart';
 
 class ThreadChatScreen extends HookConsumerWidget {
   const ThreadChatScreen({super.key, required this.thread});
@@ -20,7 +22,9 @@ class ThreadChatScreen extends HookConsumerWidget {
     final sending = useState(false);
     final editingMessageId = useState<String?>(null);
 
-    final currentUserId = ref.read(appUserProvider)?.id ?? '';
+    final currentUser = ref.read(appUserProvider);
+    final currentUserId = currentUser?.id ?? '';
+    final organizationId = currentUser?.organizationId ?? '';
     final realtimeArg = (threadId: thread.id, currentUserId: currentUserId);
 
     useEffect(() {
@@ -47,9 +51,13 @@ class ThreadChatScreen extends HookConsumerWidget {
       };
     }, [scrollController, controller]);
 
-    Future<void> sendMessage() async {
+    Future<void> sendMessage({List<Map<String, dynamic>>? attachments}) async {
       final content = controller.text.trim();
-      if (content.isEmpty || sending.value || content.length > 5000) return;
+      if ((content.isEmpty && (attachments == null || attachments.isEmpty)) ||
+          sending.value ||
+          content.length > 5000) {
+        return;
+      }
       sending.value = true;
       controller.clear();
       ref
@@ -58,10 +66,11 @@ class ThreadChatScreen extends HookConsumerWidget {
       try {
         await ref
             .read(threadChatControllerProvider.notifier)
-            .sendMessage(
+            .sendMessageV2(
               threadId: thread.id,
-              senderId: currentUserId,
               content: content,
+              mentionedUserIds: extractMentionedUserIds(content),
+              attachments: attachments,
             );
       } catch (e) {
         if (context.mounted) {
@@ -70,6 +79,56 @@ class ThreadChatScreen extends HookConsumerWidget {
         }
       }
       if (context.mounted) sending.value = false;
+    }
+
+    Future<void> pickAndSendAttachment() async {
+      try {
+        final result = await FilePicker.pickFiles(
+          withData: true,
+          type: FileType.any,
+        );
+        if (result == null || result.files.isEmpty) return;
+        final file = result.files.single;
+        if (file.bytes == null) return;
+
+        // 25MB 上限（MIME スキャンは DB 側 check で弾く）
+        if (file.size > 25 * 1024 * 1024) {
+          if (context.mounted) {
+            CommonSnackBar.error(context, 'ファイルサイズは 25MB 以下にしてください');
+          }
+          return;
+        }
+
+        sending.value = true;
+        // サーバー側で message_id を採番する前にアップロード先が必要なため、
+        // クライアント側で仮 ID を用い、message_id 確定後に metadata を紐づける運用にする。
+        // ただし現行 send_message_v2 は attachments メタを受け取って DB 側で message_attachments に INSERT するため、
+        // ここでは storage_path のみ先に確保する。
+        final tempMessageKey = DateTime.now().millisecondsSinceEpoch.toString();
+        final storagePath = await ref
+            .read(threadChatControllerProvider.notifier)
+            .uploadAttachment(
+              organizationId: organizationId,
+              threadId: thread.id,
+              messageId: tempMessageKey,
+              bytes: file.bytes!,
+              fileName: file.name,
+              mimeType: _guessMime(file.name, file.extension),
+            );
+        final attachmentMeta = {
+          'storage_path': storagePath,
+          'file_name': file.name,
+          'mime_type': _guessMime(file.name, file.extension),
+          'byte_size': file.size,
+        };
+        sending.value = false;
+        await sendMessage(attachments: [attachmentMeta]);
+      } catch (e) {
+        sending.value = false;
+        if (context.mounted) {
+          CommonSnackBar.error(context, 'ファイルの添付に失敗しました');
+        }
+      }
     }
 
     void startEditing(Message message) {
@@ -108,13 +167,31 @@ class ThreadChatScreen extends HookConsumerWidget {
       try {
         await ref
             .read(threadChatControllerProvider.notifier)
-            .deleteMessage(messageId);
+            .softDeleteMessage(messageId);
       } catch (e) {
         if (context.mounted) CommonSnackBar.error(context, 'メッセージの削除に失敗しました');
       }
     }
 
+    Future<void> toggleReaction(String messageId, String emoji) async {
+      try {
+        await ref
+            .read(threadChatControllerProvider.notifier)
+            .toggleReaction(messageId, emoji);
+      } catch (e) {
+        if (context.mounted) {
+          CommonSnackBar.error(context, 'リアクションの変更に失敗しました');
+        }
+      }
+    }
+
+    Future<void> openReactionPicker(String messageId) async {
+      final emoji = await EmojiPickerSheet.show(context);
+      if (emoji != null) await toggleReaction(messageId, emoji);
+    }
+
     void showMessageActions(Message message) {
+      final isSelf = message.senderId == currentUserId;
       showModalBottomSheet(
         context: context,
         builder: (ctx) => SafeArea(
@@ -132,28 +209,38 @@ class ThreadChatScreen extends HookConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.md),
               ListTile(
-                leading: const Icon(Icons.edit_outlined, size: 22),
-                title: const Text('編集'),
+                leading: const Icon(Icons.add_reaction_outlined, size: 22),
+                title: const Text('リアクション'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  startEditing(message);
+                  openReactionPicker(message.id);
                 },
               ),
-              ListTile(
-                leading: Icon(
-                  Icons.delete_outline,
-                  color: AppColors.error,
-                  size: 22,
+              if (isSelf) ...[
+                ListTile(
+                  leading: const Icon(Icons.edit_outlined, size: 22),
+                  title: const Text('編集'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    startEditing(message);
+                  },
                 ),
-                title: Text(
-                  '削除',
-                  style: AppTextStyles.body1.copyWith(color: AppColors.error),
+                ListTile(
+                  leading: Icon(
+                    Icons.delete_outline,
+                    color: AppColors.error,
+                    size: 22,
+                  ),
+                  title: Text(
+                    '削除',
+                    style: AppTextStyles.body1.copyWith(color: AppColors.error),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    deleteMessage(message.id);
+                  },
                 ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  deleteMessage(message.id);
-                },
-              ),
+              ],
             ],
           ),
         ),
@@ -174,22 +261,9 @@ class ThreadChatScreen extends HookConsumerWidget {
       appBar: AppBar(
         title: Row(
           children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: AppColors.brand,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  displayName.isNotEmpty ? displayName[0] : '?',
-                  style: AppTextStyles.caption1.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+            UserAvatar(
+              initial: displayName.isNotEmpty ? displayName[0] : '?',
+              size: 32,
             ),
             const SizedBox(width: 12),
             Text(displayName, style: AppTextStyles.headline),
@@ -203,39 +277,7 @@ class ThreadChatScreen extends HookConsumerWidget {
             child: loading
                 ? const LoadingIndicator()
                 : messages.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            color: AppColors.brand,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(
-                              displayName.isNotEmpty ? displayName[0] : '?',
-                              style: AppTextStyles.title2.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(displayName, style: AppTextStyles.callout),
-                        const SizedBox(height: 4),
-                        Text(
-                          'メッセージを送ってみましょう',
-                          style: AppTextStyles.caption1.copyWith(
-                            color: AppColors.textSecondary(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
+                ? _EmptyState(displayName: displayName)
                 : ListView.builder(
                     reverse: true,
                     controller: scrollController,
@@ -288,23 +330,33 @@ class ThreadChatScreen extends HookConsumerWidget {
                       }
 
                       return Column(
+                        crossAxisAlignment: isMe
+                            ? CrossAxisAlignment.end
+                            : CrossAxisAlignment.start,
                         children: [
                           if (dateSeparator != null) dateSeparator,
-                          GestureDetector(
-                            onLongPress: isMe
-                                ? () => showMessageActions(msg)
-                                : null,
+                          Padding(
+                            padding: EdgeInsets.only(
+                              bottom: isLastInGroup ? 12.0 : 2.0,
+                              left: isMe ? 0 : (isLastInGroup ? 32 : 32),
+                            ),
                             child: isEditing
                                 ? _EditingBubble(
                                     controller: editController,
                                     onSave: saveEdit,
                                     onCancel: cancelEditing,
                                   )
-                                : _MessageBubble(
+                                : _MessageRow(
                                     message: msg,
                                     isMe: isMe,
                                     isFirstInGroup: isFirstInGroup,
                                     isLastInGroup: isLastInGroup,
+                                    currentUserId: currentUserId,
+                                    onLongPress: () => showMessageActions(msg),
+                                    onToggleReaction: (emoji) =>
+                                        toggleReaction(msg.id, emoji),
+                                    onAddReaction: () =>
+                                        openReactionPicker(msg.id),
                                   ),
                           ),
                         ],
@@ -322,10 +374,198 @@ class ThreadChatScreen extends HookConsumerWidget {
               child: _TypingIndicator(),
             ),
 
-          MessageInputBar(
+          _InputBar(
             controller: controller,
-            onSend: sendMessage,
-            isSending: sending.value,
+            sending: sending.value,
+            onSend: () => sendMessage(),
+            onPickAttachment: pickAndSendAttachment,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Input Bar（添付ボタン付き）
+// =============================================================================
+
+class _InputBar extends StatelessWidget {
+  const _InputBar({
+    required this.controller,
+    required this.sending,
+    required this.onSend,
+    required this.onPickAttachment,
+  });
+
+  final TextEditingController controller;
+  final bool sending;
+  final VoidCallback onSend;
+  final VoidCallback onPickAttachment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surface(context),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.sm,
+        MediaQuery.of(context).padding.bottom + AppSpacing.sm,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          IconButton(
+            icon: Icon(
+              Icons.attach_file_outlined,
+              color: AppColors.textSecondary(context),
+            ),
+            onPressed: sending ? null : onPickAttachment,
+          ),
+          Expanded(
+            child: MessageInputBar(
+              controller: controller,
+              onSend: onSend,
+              isSending: sending,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Message Row（添付・リアクション統合）
+// =============================================================================
+
+class _MessageRow extends ConsumerWidget {
+  const _MessageRow({
+    required this.message,
+    required this.isMe,
+    required this.isFirstInGroup,
+    required this.isLastInGroup,
+    required this.currentUserId,
+    required this.onLongPress,
+    required this.onToggleReaction,
+    required this.onAddReaction,
+  });
+
+  final Message message;
+  final bool isMe;
+  final bool isFirstInGroup;
+  final bool isLastInGroup;
+  final String currentUserId;
+  final VoidCallback onLongPress;
+  final void Function(String emoji) onToggleReaction;
+  final VoidCallback onAddReaction;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (!isMe) ...[
+          if (isLastInGroup)
+            UserAvatar(
+              initial: (message.senderName?.isNotEmpty ?? false)
+                  ? message.senderName![0]
+                  : '?',
+              size: 24,
+              imageUrl: message.senderAvatarUrl,
+            )
+          else
+            const SizedBox(width: 24),
+          const SizedBox(width: 8),
+        ],
+        Flexible(
+          child: MessageBubble(
+            content: message.content,
+            isSelf: isMe,
+            isDeleted: message.isDeleted,
+            isFirstInGroup: isFirstInGroup,
+            isLastInGroup: isLastInGroup,
+            senderName: isMe ? null : message.senderName,
+            createdAtLabel: _formatTime(message),
+            isEdited: message.isEdited,
+            mentionsCurrentUser: message.mentionedUserIds.contains(
+              currentUserId,
+            ),
+            onLongPress: onLongPress,
+            attachments: message.attachments.isEmpty
+                ? null
+                : _AttachmentsList(attachments: message.attachments),
+            reactions: message.reactions.isEmpty
+                ? null
+                : MessageReactionBar(
+                    reactions: message.reactions,
+                    currentUserId: currentUserId,
+                    onToggle: onToggleReaction,
+                    onAddReaction: onAddReaction,
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatTime(Message msg) {
+    return '${msg.createdAt.toLocal().hour.toString().padLeft(2, '0')}:${msg.createdAt.toLocal().minute.toString().padLeft(2, '0')}';
+  }
+}
+
+class _AttachmentsList extends ConsumerWidget {
+  const _AttachmentsList({required this.attachments});
+
+  final List<MessageAttachment> attachments;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: attachments.map((a) {
+        final urlAsync = ref.watch(attachmentSignedUrlProvider(a.storagePath));
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: MessageAttachmentView(
+            attachment: a,
+            signedUrl: urlAsync.value,
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+// =============================================================================
+// Empty State
+// =============================================================================
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.displayName});
+
+  final String displayName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          UserAvatar(
+            initial: displayName.isNotEmpty ? displayName[0] : '?',
+            size: 64,
+          ),
+          const SizedBox(height: 16),
+          Text(displayName, style: AppTextStyles.callout),
+          const SizedBox(height: 4),
+          Text(
+            'メッセージを送ってみましょう',
+            style: AppTextStyles.caption1.copyWith(
+              color: AppColors.textSecondary(context),
+            ),
           ),
         ],
       ),
@@ -537,126 +777,33 @@ class _EditingBubble extends StatelessWidget {
   }
 }
 
-// =============================================================================
-// Message Bubble
-// =============================================================================
-
-class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({
-    required this.message,
-    required this.isMe,
-    this.isFirstInGroup = true,
-    this.isLastInGroup = true,
-  });
-
-  final Message message;
-  final bool isMe;
-  final bool isFirstInGroup;
-  final bool isLastInGroup;
-
-  @override
-  Widget build(BuildContext context) {
-    final bubbleColor = isMe
-        ? AppColors.brand
-        : AppColors.surfaceTertiary(context);
-    final textColor = isMe ? Colors.white : AppColors.textPrimary(context);
-
-    final bottomPadding = isLastInGroup ? 12.0 : 2.0;
-
-    const r = Radius.circular(18);
-    const rSmall = Radius.circular(4);
-    final borderRadius = isMe
-        ? BorderRadius.only(
-            topLeft: r,
-            topRight: isFirstInGroup ? r : rSmall,
-            bottomLeft: r,
-            bottomRight: isLastInGroup ? r : rSmall,
-          )
-        : BorderRadius.only(
-            topLeft: isFirstInGroup ? r : rSmall,
-            topRight: r,
-            bottomLeft: isLastInGroup ? r : rSmall,
-            bottomRight: r,
-          );
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomPadding),
-      child: Row(
-        mainAxisAlignment: isMe
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isMe) ...[
-            if (isLastInGroup)
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: AppColors.brand,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    (message.senderName ?? '?')[0],
-                    style: AppTextStyles.caption2.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              )
-            else
-              const SizedBox(width: 24),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.7,
-              ),
-              child: Column(
-                crossAxisAlignment: isMe
-                    ? CrossAxisAlignment.end
-                    : CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: bubbleColor,
-                      borderRadius: borderRadius,
-                    ),
-                    child: Text(
-                      message.content,
-                      style: AppTextStyles.body1.copyWith(color: textColor),
-                    ),
-                  ),
-                  if (isLastInGroup)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
-                      child: Text(
-                        _formatTime(message),
-                        style: AppTextStyles.caption2.copyWith(
-                          color: AppColors.textSecondary(context),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatTime(Message msg) {
-    final time =
-        '${msg.createdAt.hour.toString().padLeft(2, '0')}:${msg.createdAt.minute.toString().padLeft(2, '0')}';
-    if (msg.isEdited) return '$time · 編集済み';
-    return time;
+String _guessMime(String fileName, String? extension) {
+  final ext = (extension ?? fileName.split('.').last).toLowerCase();
+  switch (ext) {
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'gif':
+      return 'image/gif';
+    case 'webp':
+      return 'image/webp';
+    case 'pdf':
+      return 'application/pdf';
+    case 'txt':
+      return 'text/plain';
+    case 'csv':
+      return 'text/csv';
+    case 'doc':
+      return 'application/msword';
+    case 'docx':
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    case 'xls':
+      return 'application/vnd.ms-excel';
+    case 'xlsx':
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    default:
+      return 'application/octet-stream';
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_employee_app/features/messages/domain/entities/message_thread.dart';
@@ -160,5 +161,110 @@ class SupabaseMessagesRepository implements MessagesRepository {
         .select('id, display_name, role')
         .eq('id', senderId)
         .single();
+  }
+
+  // --- 製品レベル機能 (HR-27) ---
+
+  @override
+  Future<List<Message>> getThreadMessagesV2(
+    String threadId, {
+    DateTime? before,
+    int limit = 30,
+  }) async {
+    final response = await _client.rpc(
+      'get_thread_messages',
+      params: {
+        'p_thread_id': threadId,
+        'p_before': before?.toUtc().toIso8601String(),
+        'p_limit': limit,
+      },
+    );
+    final rows = response as List? ?? [];
+    return rows
+        .map((row) => Message.fromJson(Map<String, dynamic>.from(row)))
+        .toList();
+  }
+
+  @override
+  Future<String> sendMessageV2({
+    required String threadId,
+    required String content,
+    String? parentMessageId,
+    List<String>? mentionedUserIds,
+    List<Map<String, dynamic>>? attachments,
+  }) async {
+    final response = await _client.rpc(
+      'send_message_v2',
+      params: {
+        'p_thread_id': threadId,
+        'p_content': content,
+        'p_parent_message_id': parentMessageId,
+        'p_mentioned_user_ids': mentionedUserIds,
+        'p_attachments': attachments,
+      },
+    );
+    final rows = response as List? ?? [];
+    if (rows.isEmpty) {
+      throw Exception('send_message_v2 returned no rows');
+    }
+    final row = Map<String, dynamic>.from(rows.first as Map);
+    return row['id'] as String;
+  }
+
+  @override
+  Future<void> markThreadRead(String threadId) async {
+    await _client.rpc('mark_thread_read', params: {'p_thread_id': threadId});
+  }
+
+  @override
+  Future<String> toggleMessageReaction(String messageId, String emoji) async {
+    final response = await _client.rpc(
+      'toggle_message_reaction',
+      params: {'p_message_id': messageId, 'p_emoji': emoji},
+    );
+    final rows = response as List? ?? [];
+    if (rows.isEmpty) return 'noop';
+    final row = Map<String, dynamic>.from(rows.first as Map);
+    return row['action'] as String;
+  }
+
+  @override
+  Future<String> uploadAttachment({
+    required String organizationId,
+    required String threadId,
+    required String messageId,
+    required List<int> bytes,
+    required String fileName,
+    required String mimeType,
+  }) async {
+    final safeName = fileName.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+    final path =
+        '$organizationId/$threadId/$messageId/${DateTime.now().millisecondsSinceEpoch}_$safeName';
+    await _client.storage
+        .from('message-attachments')
+        .uploadBinary(
+          path,
+          Uint8List.fromList(bytes),
+          fileOptions: FileOptions(contentType: mimeType, upsert: false),
+        );
+    return path;
+  }
+
+  @override
+  Future<String> createSignedAttachmentUrl(
+    String storagePath, {
+    int expiresInSeconds = 3600,
+  }) async {
+    return _client.storage
+        .from('message-attachments')
+        .createSignedUrl(storagePath, expiresInSeconds);
+  }
+
+  @override
+  Future<void> softDeleteMessage(String messageId) async {
+    await _client
+        .from('messages')
+        .update({'deleted_at': DateTime.now().toUtc().toIso8601String()})
+        .eq('id', messageId);
   }
 }

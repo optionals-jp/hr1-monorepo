@@ -51,7 +51,8 @@ class ThreadChatState {
 
 /// スレッドチャットコントローラー
 ///
-/// メッセージ取得・送信・編集・削除、Realtime購読、Presence管理を統合。
+/// V2 RPC 経由でメッセージ取得・送信（添付・メンション）・リアクション・
+/// ソフトデリート・スレッド既読化を行う。Realtime と Presence もここで管理する。
 class ThreadChatController
     extends
         AutoDisposeFamilyNotifier<
@@ -64,6 +65,7 @@ class ThreadChatController
   RealtimeChannel? _channel;
   RealtimeChannel? _presenceChannel;
   Timer? _typingDebounceTimer;
+  Timer? _refreshDebounceTimer;
   bool _isTyping = false;
 
   String get _threadId => arg.threadId;
@@ -86,6 +88,7 @@ class ThreadChatController
 
   void _dispose() {
     _typingDebounceTimer?.cancel();
+    _refreshDebounceTimer?.cancel();
     if (_channel != null) {
       _supabaseClient.removeChannel(_channel!);
     }
@@ -100,7 +103,7 @@ class ThreadChatController
 
   Future<void> _loadMessages() async {
     try {
-      final messages = await _repo.getMessagesPaginated(
+      final messages = await _repo.getThreadMessagesV2(
         _threadId,
         limit: threadChatPageSize,
       );
@@ -109,7 +112,7 @@ class ThreadChatController
         isLoading: false,
         hasMore: messages.length >= threadChatPageSize,
       );
-      _repo.markAsRead(_threadId, _currentUserId);
+      await _repo.markThreadRead(_threadId);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: 'メッセージの読み込みに失敗しました');
     }
@@ -121,7 +124,7 @@ class ThreadChatController
     state = state.copyWith(isLoadingMore: true);
     try {
       final oldestCreatedAt = state.messages.first.createdAt;
-      final olderMessages = await _repo.getMessagesPaginated(
+      final olderMessages = await _repo.getThreadMessagesV2(
         _threadId,
         before: oldestCreatedAt,
         limit: threadChatPageSize,
@@ -136,12 +139,44 @@ class ThreadChatController
     }
   }
 
+  Future<void> _refreshLatest() async {
+    try {
+      final latest = await _repo.getThreadMessagesV2(
+        _threadId,
+        limit: threadChatPageSize,
+      );
+      if (latest.isEmpty) return;
+      final byId = {for (final m in latest) m.id: m};
+      final merged = state.messages.map((m) => byId.remove(m.id) ?? m).toList();
+      if (byId.isNotEmpty) {
+        merged.addAll(byId.values);
+        merged.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      }
+      state = state.copyWith(messages: merged);
+    } catch (_) {
+      // refresh の失敗は黙って無視（次の UPDATE で再トリガー）
+    }
+  }
+
+  void _scheduleRefresh() {
+    _refreshDebounceTimer?.cancel();
+    _refreshDebounceTimer = Timer(
+      const Duration(milliseconds: 250),
+      _refreshLatest,
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // メッセージ操作
   // ---------------------------------------------------------------------------
 
-  Future<bool> sendMessage({required String content}) async {
-    if (content.isEmpty || state.isSending || content.length > 5000) {
+  Future<bool> sendMessage({
+    required String content,
+    List<Map<String, dynamic>>? attachments,
+  }) async {
+    if ((content.isEmpty && (attachments == null || attachments.isEmpty)) ||
+        state.isSending ||
+        content.length > 5000) {
       return false;
     }
 
@@ -149,10 +184,11 @@ class ThreadChatController
     resetTyping();
 
     try {
-      await _repo.sendMessage(
+      await _repo.sendMessageV2(
         threadId: _threadId,
-        senderId: _currentUserId,
         content: content,
+        mentionedUserIds: extractMentionedUserIds(content),
+        attachments: attachments,
       );
       state = state.copyWith(isSending: false);
       return true;
@@ -178,16 +214,59 @@ class ThreadChatController
     }
   }
 
-  Future<bool> deleteMessage(String messageId) async {
+  Future<bool> softDeleteMessage(String messageId) async {
     try {
-      await _repo.deleteMessage(messageId);
+      await _repo.softDeleteMessage(messageId);
+      // Realtime UPDATE で deleted_at 反映。楽観的にも state を置換しておく。
       state = state.copyWith(
-        messages: state.messages.where((m) => m.id != messageId).toList(),
+        messages: state.messages.map((m) {
+          if (m.id == messageId) {
+            return m.copyWith(
+              deletedAt: DateTime.now().toUtc(),
+              content: '',
+              attachments: const [],
+              reactions: const [],
+            );
+          }
+          return m;
+        }).toList(),
       );
       return true;
     } catch (e) {
       state = state.copyWith(error: 'メッセージの削除に失敗しました');
       return false;
+    }
+  }
+
+  Future<bool> toggleReaction(String messageId, String emoji) async {
+    try {
+      await _repo.toggleMessageReaction(messageId, emoji);
+      return true;
+    } catch (e) {
+      state = state.copyWith(error: 'リアクションの変更に失敗しました');
+      return false;
+    }
+  }
+
+  Future<String?> uploadAttachmentBytes({
+    required String organizationId,
+    required List<int> bytes,
+    required String fileName,
+    required String mimeType,
+  }) async {
+    try {
+      final tempKey = DateTime.now().millisecondsSinceEpoch.toString();
+      return await _repo.uploadAttachment(
+        organizationId: organizationId,
+        threadId: _threadId,
+        messageId: tempKey,
+        bytes: bytes,
+        fileName: fileName,
+        mimeType: mimeType,
+      );
+    } catch (e) {
+      state = state.copyWith(error: 'ファイルの添付に失敗しました');
+      return null;
     }
   }
 
@@ -201,7 +280,7 @@ class ThreadChatController
 
   void _subscribeRealtime() {
     _channel = _supabaseClient
-        .channel('messages:$_threadId')
+        .channel(MessagesChannels.messages(_threadId))
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
           schema: 'public',
@@ -214,12 +293,10 @@ class ThreadChatController
           callback: (payload) async {
             final newMsg = payload.newRecord;
             if (newMsg.isEmpty) return;
-            final msg = await _buildMessageWithSender(newMsg);
-            if (!state.messages.any((m) => m.id == msg.id)) {
-              state = state.copyWith(messages: [...state.messages, msg]);
-            }
-            if (msg.senderId != _currentUserId) {
-              _repo.markAsRead(_threadId, _currentUserId);
+            if (state.messages.any((m) => m.id == newMsg['id'])) return;
+            _scheduleRefresh();
+            if ((newMsg['sender_id'] as String?) != _currentUserId) {
+              await _repo.markThreadRead(_threadId);
             }
           },
         )
@@ -232,44 +309,46 @@ class ThreadChatController
             column: 'thread_id',
             value: _threadId,
           ),
-          callback: (payload) async {
+          callback: (payload) {
             final updated = payload.newRecord;
             if (updated.isEmpty) return;
-            final msg = await _buildMessageWithSender(updated);
+
+            if (updated['deleted_at'] != null) {
+              state = state.copyWith(
+                messages: state.messages.map((m) {
+                  if (m.id == updated['id']) {
+                    return m.copyWith(
+                      deletedAt: DateTime.parse(
+                        updated['deleted_at'] as String,
+                      ),
+                      content: '',
+                      attachments: const [],
+                      reactions: const [],
+                    );
+                  }
+                  return m;
+                }).toList(),
+              );
+              return;
+            }
+
             state = state.copyWith(
               messages: state.messages.map((m) {
-                return m.id == msg.id ? msg : m;
+                if (m.id == updated['id']) {
+                  return m.copyWith(
+                    content: updated['content'] as String?,
+                    editedAt: updated['edited_at'] != null
+                        ? DateTime.parse(updated['edited_at'] as String)
+                        : null,
+                  );
+                }
+                return m;
               }).toList(),
             );
-          },
-        )
-        .onPostgresChanges(
-          event: PostgresChangeEvent.delete,
-          schema: 'public',
-          table: 'messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'thread_id',
-            value: _threadId,
-          ),
-          callback: (payload) {
-            final oldRecord = payload.oldRecord;
-            if (oldRecord.isEmpty) return;
-            final deletedId = oldRecord['id'] as String?;
-            if (deletedId == null) return;
-            state = state.copyWith(
-              messages: state.messages.where((m) => m.id != deletedId).toList(),
-            );
+            _scheduleRefresh();
           },
         )
         .subscribe();
-  }
-
-  Future<Message> _buildMessageWithSender(Map<String, dynamic> record) async {
-    final senderResponse = await _repo.getSenderProfile(
-      record['sender_id'] as String,
-    );
-    return Message.fromJson({...record, 'sender': senderResponse});
   }
 
   // ---------------------------------------------------------------------------
@@ -278,7 +357,7 @@ class ThreadChatController
 
   void _setupPresence() {
     _presenceChannel = _supabaseClient
-        .channel('typing:$_threadId')
+        .channel(MessagesChannels.typing(_threadId))
         .onPresenceSync((payload) {
           final presences = _presenceChannel?.presenceState();
           if (presences == null) return;
@@ -286,8 +365,9 @@ class ThreadChatController
           bool otherTyping = false;
           for (final s in presences) {
             for (final presence in s.presences) {
-              if (presence.payload['user_id'] != _currentUserId &&
-                  presence.payload['typing'] == true) {
+              if (presence.payload[MessagesChannels.payloadUserId] !=
+                      _currentUserId &&
+                  presence.payload[MessagesChannels.payloadIsTyping] == true) {
                 otherTyping = true;
                 break;
               }
@@ -299,8 +379,8 @@ class ThreadChatController
         .subscribe((status, [error]) async {
           if (status == RealtimeSubscribeStatus.subscribed) {
             await _presenceChannel?.track({
-              'user_id': _currentUserId,
-              'typing': false,
+              MessagesChannels.payloadUserId: _currentUserId,
+              MessagesChannels.payloadIsTyping: false,
             });
           }
         });
@@ -309,13 +389,19 @@ class ThreadChatController
   void onTextChanged(String text) {
     if (text.isNotEmpty && !_isTyping) {
       _isTyping = true;
-      _presenceChannel?.track({'user_id': _currentUserId, 'typing': true});
+      _presenceChannel?.track({
+        MessagesChannels.payloadUserId: _currentUserId,
+        MessagesChannels.payloadIsTyping: true,
+      });
     }
     _typingDebounceTimer?.cancel();
     _typingDebounceTimer = Timer(const Duration(seconds: 2), () {
       if (_isTyping) {
         _isTyping = false;
-        _presenceChannel?.track({'user_id': _currentUserId, 'typing': false});
+        _presenceChannel?.track({
+          MessagesChannels.payloadUserId: _currentUserId,
+          MessagesChannels.payloadIsTyping: false,
+        });
       }
     });
   }
@@ -323,7 +409,10 @@ class ThreadChatController
   void resetTyping() {
     _isTyping = false;
     _typingDebounceTimer?.cancel();
-    _presenceChannel?.track({'user_id': _currentUserId, 'typing': false});
+    _presenceChannel?.track({
+      MessagesChannels.payloadUserId: _currentUserId,
+      MessagesChannels.payloadIsTyping: false,
+    });
   }
 }
 
