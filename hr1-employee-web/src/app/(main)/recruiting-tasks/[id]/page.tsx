@@ -41,11 +41,7 @@ export default function RecruitingTaskDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20 text-muted-foreground">
-        読み込み中...
-      </div>
-    );
+    return <div className="py-12 text-center text-sm text-muted-foreground">読み込み中...</div>;
   }
 
   if (error) {
@@ -58,9 +54,7 @@ export default function RecruitingTaskDetailPage() {
 
   if (!data) {
     return (
-      <div className="flex items-center justify-center py-20 text-muted-foreground">
-        タスクが見つかりません
-      </div>
+      <div className="py-12 text-center text-sm text-muted-foreground">タスクが見つかりません</div>
     );
   }
 
@@ -213,7 +207,7 @@ export default function RecruitingTaskDetailPage() {
 
           <div>
             <h2 className="text-sm font-semibold mb-3">配信先の応募者</h2>
-            <TableSection>
+            <TableSection className="px-0 sm:px-0 md:px-0">
               <Table>
                 <TableHeader>
                   <TableRow>

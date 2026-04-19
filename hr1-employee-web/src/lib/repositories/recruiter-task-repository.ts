@@ -52,6 +52,13 @@ export interface RecruiterTaskTarget {
   due_date: string | null;
 }
 
+export interface RecruiterTaskPreviewTarget {
+  user_id: string;
+  display_name: string | null;
+  email: string;
+  avatar_url: string | null;
+}
+
 export interface RecruiterTaskDetail {
   task: RecruiterTask;
   targets: RecruiterTaskTarget[];
@@ -95,14 +102,14 @@ export async function previewRecruiterTaskTargets(
     target_mode: "individual" | "filter";
     target_criteria: RecruiterTaskCriteria;
   }
-): Promise<number> {
+): Promise<RecruiterTaskPreviewTarget[]> {
   const { data, error } = await client.rpc("preview_recruiter_task_targets", {
     p_organization_id: params.organization_id,
     p_target_mode: params.target_mode,
     p_target_criteria: params.target_criteria,
   });
   if (error) throw error;
-  return (data as number) ?? 0;
+  return (data ?? []) as RecruiterTaskPreviewTarget[];
 }
 
 export async function createRecruiterTask(

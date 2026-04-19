@@ -15,8 +15,7 @@ import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import { useCreateRecruiterTask } from "@/features/recruiting/hooks/use-recruiter-tasks";
 import { useForms } from "@/features/recruiting/hooks/use-forms";
 import { useSchedulingList } from "@/features/recruiting/hooks/use-scheduling";
-import { useOrgQuery } from "@/lib/hooks/use-org-query";
-import { getSupabase } from "@/lib/supabase/browser";
+import { useApplicantSurveys } from "@/features/recruiting/hooks/use-applicant-surveys";
 import type { RecruiterTaskActionType } from "@/lib/repositories/recruiter-task-repository";
 
 interface Props {
@@ -44,19 +43,7 @@ export function RecruiterTaskIndividualDialog({
 
   const { data: forms = [] } = useForms();
   const { data: interviews = [] } = useSchedulingList();
-  const { data: applicantSurveys = [] } = useOrgQuery<{ id: string; title: string }[]>(
-    "applicant-surveys",
-    async (orgId) => {
-      const { data } = await getSupabase()
-        .from("pulse_surveys")
-        .select("id, title")
-        .eq("organization_id", orgId)
-        .eq("status", "active")
-        .in("target", ["applicant", "both"])
-        .order("created_at", { ascending: false });
-      return (data ?? []) as { id: string; title: string }[];
-    }
-  );
+  const { data: applicantSurveys = [] } = useApplicantSurveys();
 
   const reset = () => {
     setTitle("");

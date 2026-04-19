@@ -18,6 +18,8 @@ import {
 } from "@hr1/shared-ui/components/ui/select";
 import { SearchBar } from "@hr1/shared-ui/components/ui/search-bar";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@hr1/shared-ui/components/ui/avatar";
+import { DialogPanel } from "@hr1/shared-ui/components/ui/dialog";
 import { useToast } from "@hr1/shared-ui/components/ui/toast";
 import {
   useCreateRecruiterTask,
@@ -27,8 +29,7 @@ import { useApplicantsList } from "@/features/recruiting/hooks/use-applicants-pa
 import { useJobsList } from "@/features/recruiting/hooks/use-jobs-page";
 import { useForms } from "@/features/recruiting/hooks/use-forms";
 import { useSchedulingList } from "@/features/recruiting/hooks/use-scheduling";
-import { useOrgQuery } from "@/lib/hooks/use-org-query";
-import { getSupabase } from "@/lib/supabase/browser";
+import { useApplicantSurveys } from "@/features/recruiting/hooks/use-applicant-surveys";
 import {
   applicationStatusLabels,
   stepTypeLabels,
@@ -77,19 +78,7 @@ export default function NewRecruitingTaskPage() {
   const { data: jobs = [] } = useJobsList();
   const { data: forms = [] } = useForms();
   const { data: interviews = [] } = useSchedulingList();
-  const { data: applicantSurveys = [] } = useOrgQuery<{ id: string; title: string }[]>(
-    "applicant-surveys",
-    async (orgId) => {
-      const { data } = await getSupabase()
-        .from("pulse_surveys")
-        .select("id, title")
-        .eq("organization_id", orgId)
-        .eq("status", "active")
-        .in("target", ["applicant", "both"])
-        .order("created_at", { ascending: false });
-      return (data ?? []) as { id: string; title: string }[];
-    }
-  );
+  const { data: applicantSurveys = [] } = useApplicantSurveys();
 
   const preview = usePreviewRecruiterTaskTargets();
   const { create, saving } = useCreateRecruiterTask();
@@ -136,14 +125,17 @@ export default function NewRecruitingTaskPage() {
     return actionRefId.length > 0;
   })();
 
-  const canSubmit =
-    title.trim().length > 0 &&
-    actionValid &&
-    (mode === "individual"
+  const hasTargetCriteria =
+    mode === "individual"
       ? selectedApplicantIds.size > 0
-      : Boolean(filterHiringType || filterJobId || filterAppStatus || stepEnabled));
+      : Boolean(filterHiringType || filterJobId || filterAppStatus || stepEnabled);
 
+  const canSubmit = title.trim().length > 0 && actionValid && hasTargetCriteria;
+  const canPreview = hasTargetCriteria;
+
+  const [previewOpen, setPreviewOpen] = useState(false);
   const handlePreview = () => {
+    setPreviewOpen(true);
     preview.preview({ target_mode: mode, target_criteria: criteria });
   };
 
@@ -346,6 +338,7 @@ export default function NewRecruitingTaskPage() {
                     value={applicantSearch}
                     onChange={setApplicantSearch}
                     placeholder="候補者を検索"
+                    className="bg-transparent p-0 sm:px-0 md:px-0"
                   />
                   <div className="rounded-xl border max-h-80 overflow-y-auto divide-y">
                     {filteredApplicants.length === 0 ? (
@@ -389,17 +382,20 @@ export default function NewRecruitingTaskPage() {
                       <SelectTrigger>
                         <SelectValue placeholder="指定なし">
                           {(v: string) =>
-                            v === "new_grad"
-                              ? "新卒"
-                              : v === "mid_career"
-                                ? "中途"
-                                : v === "none"
-                                  ? "未設定"
-                                  : v
+                            !v
+                              ? "指定なし"
+                              : v === "new_grad"
+                                ? "新卒"
+                                : v === "mid_career"
+                                  ? "中途"
+                                  : v === "none"
+                                    ? "未設定"
+                                    : v
                           }
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="">指定なし</SelectItem>
                         <SelectItem value="new_grad">新卒</SelectItem>
                         <SelectItem value="mid_career">中途</SelectItem>
                         <SelectItem value="none">未設定</SelectItem>
@@ -410,10 +406,13 @@ export default function NewRecruitingTaskPage() {
                     <Select value={filterJobId} onValueChange={(v) => setFilterJobId(v ?? "")}>
                       <SelectTrigger>
                         <SelectValue placeholder="指定なし">
-                          {(v: string) => jobs.find((j) => j.id === v)?.title ?? v}
+                          {(v: string) =>
+                            !v ? "指定なし" : (jobs.find((j) => j.id === v)?.title ?? v)
+                          }
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="">指定なし</SelectItem>
                         {jobs.map((j) => (
                           <SelectItem key={j.id} value={j.id}>
                             {j.title}
@@ -429,10 +428,11 @@ export default function NewRecruitingTaskPage() {
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="指定なし">
-                          {(v: string) => applicationStatusLabels[v] ?? v}
+                          {(v: string) => (!v ? "指定なし" : (applicationStatusLabels[v] ?? v))}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="">指定なし</SelectItem>
                         {Object.entries(applicationStatusLabels).map(([key, label]) => (
                           <SelectItem key={key} value={key}>
                             {label}
@@ -447,51 +447,60 @@ export default function NewRecruitingTaskPage() {
                         checked={stepEnabled}
                         onCheckedChange={(v) => setStepEnabled(Boolean(v))}
                       />
-                      <span className="text-sm font-medium">選考ステップで絞り込む</span>
+                      <span className="text-sm font-medium">選考の進捗で絞り込む</span>
                     </label>
                     {stepEnabled && (
                       <div className="space-y-3 pl-6">
-                        <SegmentControl<StepMode>
-                          value={stepMode}
-                          onChange={setStepMode}
-                          options={[
-                            { value: "current", label: "現在このステップに滞在中" },
-                            { value: "passed", label: "このステップ以上を通過済み" },
-                          ]}
-                        />
-                        <div className="grid grid-cols-2 gap-3">
-                          <FormField label="ステップ種別">
-                            <Select
-                              value={stepType}
-                              onValueChange={(v) => v && setStepType(v as SelectionStepType)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue>{(v: string) => stepTypeLabels[v] ?? v}</SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Object.entries(selectableStepTypes).map(([key, label]) => (
-                                  <SelectItem key={key} value={key}>
-                                    {label}
-                                  </SelectItem>
-                                ))}
-                                <SelectItem value={StepType.Offer}>内定</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormField>
-                          <FormField label="最小ステップ順序（任意）">
-                            <Input
-                              type="number"
-                              min="1"
-                              value={minStepOrder}
-                              onChange={(e) => setMinStepOrder(e.target.value)}
-                              placeholder="例: 2"
-                            />
-                          </FormField>
-                        </div>
                         <p className="text-xs text-muted-foreground">
-                          例: 「一次面接（順序 2）以上を通過済み」なら step_type=面接 + 最小順序=2 +
-                          通過済みモード。
+                          指定した選考段階にいる応募者、または通過済みの応募者を対象にします。
                         </p>
+                        <FormField label="対象の選考段階">
+                          <Select
+                            value={stepType}
+                            onValueChange={(v) => v && setStepType(v as SelectionStepType)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue>{(v: string) => stepTypeLabels[v] ?? v}</SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(selectableStepTypes).map(([key, label]) => (
+                                <SelectItem key={key} value={key}>
+                                  {label}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value={StepType.Offer}>内定</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormField>
+                        <FormField label="対象範囲">
+                          <SegmentControl<StepMode>
+                            value={stepMode}
+                            onChange={setStepMode}
+                            options={[
+                              { value: "current", label: "この段階にいる人" },
+                              { value: "passed", label: "この段階を通過した人" },
+                            ]}
+                          />
+                        </FormField>
+                        <details className="group">
+                          <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground select-none">
+                            詳細設定（同じ種別の段階が複数ある場合）
+                          </summary>
+                          <div className="mt-2 space-y-2">
+                            <FormField label="何段階目以降を対象にするか（任意）">
+                              <Input
+                                type="number"
+                                min="1"
+                                value={minStepOrder}
+                                onChange={(e) => setMinStepOrder(e.target.value)}
+                                placeholder="例: 2（二次面接以降を対象にする場合）"
+                              />
+                            </FormField>
+                            <p className="text-xs text-muted-foreground">
+                              例えば面接が複数回ある場合に「2」と指定すると、二次面接以降が対象になります。空欄なら同じ種別の全段階が対象です。
+                            </p>
+                          </div>
+                        </details>
                       </div>
                     )}
                   </div>
@@ -499,16 +508,9 @@ export default function NewRecruitingTaskPage() {
               )}
 
               <div className="flex items-center gap-3 pt-2">
-                <Button variant="outline" size="sm" onClick={handlePreview} disabled={!canSubmit}>
-                  対象人数をプレビュー
+                <Button variant="outline" size="sm" onClick={handlePreview} disabled={!canPreview}>
+                  対象をプレビュー
                 </Button>
-                {preview.loading ? (
-                  <span className="text-xs text-muted-foreground">計算中...</span>
-                ) : preview.error ? (
-                  <span className="text-xs text-destructive">{preview.error}</span>
-                ) : preview.count != null ? (
-                  <span className="text-sm font-medium">対象: {preview.count} 人</span>
-                ) : null}
               </div>
             </div>
           </SectionCard>
@@ -523,6 +525,58 @@ export default function NewRecruitingTaskPage() {
           </div>
         </div>
       </PageContent>
+
+      <DialogPanel
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        title="プレビュー"
+        description={
+          preview.loading
+            ? "計算中..."
+            : preview.error
+              ? undefined
+              : preview.targets != null
+                ? `対象: ${preview.targets.length} 人`
+                : undefined
+        }
+        size="lg"
+        footer={
+          <Button variant="outline" onClick={() => setPreviewOpen(false)}>
+            閉じる
+          </Button>
+        }
+        bodyClassName="p-0"
+      >
+        {preview.loading ? (
+          <p className="px-6 py-8 text-center text-sm text-muted-foreground">計算中...</p>
+        ) : preview.error ? (
+          <p className="px-6 py-8 text-center text-sm text-destructive">{preview.error}</p>
+        ) : preview.targets == null ? null : preview.targets.length === 0 ? (
+          <p className="px-6 py-8 text-center text-sm text-muted-foreground">
+            条件に該当する応募者がいません
+          </p>
+        ) : (
+          <ul className="divide-y">
+            {preview.targets.map((t) => (
+              <li key={t.user_id} className="flex items-center gap-3 px-6 py-2.5">
+                <Avatar className="h-8 w-8">
+                  {t.avatar_url ? (
+                    <AvatarImage src={t.avatar_url} alt={t.display_name ?? ""} />
+                  ) : (
+                    <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-medium">
+                      {(t.display_name ?? t.email)[0]}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium">{t.display_name ?? "-"}</div>
+                  <div className="truncate text-xs text-muted-foreground">{t.email}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </DialogPanel>
     </>
   );
 }

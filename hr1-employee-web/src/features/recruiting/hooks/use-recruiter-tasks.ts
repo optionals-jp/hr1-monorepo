@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSWRConfig } from "swr";
 import { useOrg } from "@/lib/org-context";
 import { useOrgQuery } from "@/lib/hooks/use-org-query";
 import { useQuery } from "@/lib/use-query";
@@ -11,6 +12,7 @@ import type {
   RecruiterTaskDetail,
   RecruiterTaskCriteria,
   RecruiterTaskActionType,
+  RecruiterTaskPreviewTarget,
   CreateRecruiterTaskResult,
 } from "@/lib/repositories/recruiter-task-repository";
 
@@ -29,7 +31,7 @@ export function useRecruiterTaskDetail(taskId: string | null) {
 
 export function usePreviewRecruiterTaskTargets() {
   const { organization } = useOrg();
-  const [count, setCount] = useState<number | null>(null);
+  const [targets, setTargets] = useState<RecruiterTaskPreviewTarget[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,24 +43,25 @@ export function usePreviewRecruiterTaskTargets() {
     setLoading(true);
     setError(null);
     try {
-      const n = await repo.previewRecruiterTaskTargets(getSupabase(), {
+      const rows = await repo.previewRecruiterTaskTargets(getSupabase(), {
         organization_id: organization.id,
         ...params,
       });
-      setCount(n);
+      setTargets(rows);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
-      setCount(null);
+      setTargets(null);
     } finally {
       setLoading(false);
     }
   };
 
-  return { count, loading, error, preview, reset: () => setCount(null) };
+  return { targets, loading, error, preview, reset: () => setTargets(null) };
 }
 
 export function useCreateRecruiterTask() {
   const { organization } = useOrg();
+  const { mutate } = useSWRConfig();
   const [saving, setSaving] = useState(false);
 
   const create = async (params: {
@@ -74,10 +77,12 @@ export function useCreateRecruiterTask() {
     if (!organization) throw new Error("organization not loaded");
     setSaving(true);
     try {
-      return await repo.createRecruiterTask(getSupabase(), {
+      const result = await repo.createRecruiterTask(getSupabase(), {
         organization_id: organization.id,
         ...params,
       });
+      await mutate(`recruiter-tasks-${organization.id}`);
+      return result;
     } finally {
       setSaving(false);
     }

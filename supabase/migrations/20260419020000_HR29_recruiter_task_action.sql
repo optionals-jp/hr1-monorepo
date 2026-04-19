@@ -191,50 +191,25 @@ BEGIN
      SET created_count = COALESCE(v_created_count, 0)
    WHERE id = v_task_id;
 
-  -- 通知
+  -- 通知: applicant_todos に保存された action_url を再利用（per-applicant 解決ロジックを単一化）。
+  -- 設計前提: notification.action_url と applicant_todo.action_url は常に一致する。
+  -- 別 URL に分離したいユースケースが出たら、ここで CASE を復活させる。
   IF v_created_user_ids IS NOT NULL AND array_length(v_created_user_ids, 1) > 0 THEN
     INSERT INTO public.notifications (
       organization_id, user_id, type, title, body, action_url, metadata
     )
     SELECT
       p_organization_id,
-      r.applicant_id,
+      t.user_id,
       'recruiter_task',
       p_title,
       p_description,
-      r.action_url,
+      t.action_url,
       jsonb_build_object('recruiter_task_id', v_task_id)
-      FROM (
-        SELECT
-          ar.applicant_id,
-          CASE p_action_type
-            WHEN 'none' THEN NULL
-            WHEN 'custom_url' THEN p_action_url
-            WHEN 'survey' THEN '/surveys/' || p_action_ref_id
-            WHEN 'announcement' THEN '/announcements'
-            WHEN 'form' THEN (
-              SELECT '/applications/' || a.id || '/form/' || p_action_ref_id
-                FROM public.applications a
-                JOIN public.application_steps s ON s.application_id = a.id
-               WHERE a.applicant_id = ar.applicant_id
-                 AND a.organization_id = p_organization_id
-                 AND s.form_id = p_action_ref_id
-               ORDER BY a.applied_at DESC NULLS LAST
-               LIMIT 1
-            )
-            WHEN 'interview' THEN (
-              SELECT '/applications/' || a.id || '/interview/' || p_action_ref_id
-                FROM public.applications a
-                JOIN public.application_steps s ON s.application_id = a.id
-               WHERE a.applicant_id = ar.applicant_id
-                 AND a.organization_id = p_organization_id
-                 AND s.interview_id = p_action_ref_id
-               ORDER BY a.applied_at DESC NULLS LAST
-               LIMIT 1
-            )
-          END AS action_url
-          FROM unnest(v_created_user_ids) AS ar(applicant_id)
-      ) r;
+      FROM public.applicant_todos t
+     WHERE t.source = 'recruiter_task'
+       AND t.source_id = v_task_id
+       AND t.user_id = ANY(v_created_user_ids);
   END IF;
 
   -- 監査ログ

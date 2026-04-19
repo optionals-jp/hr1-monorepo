@@ -36,18 +36,35 @@ END $$;
 
 -- ---------------------------------------------------------------------------
 -- 2. applicant_todos 既存ポリシーの命名規約統一（日本語 → 規約準拠）
+--
+-- FOR ALL ポリシーは PERMISSIVE 結合で DELETE 制限を OR で上書きするため使わない。
+-- 必要なアクションごとに SELECT / INSERT / UPDATE ポリシーを分割し、DELETE は既存の
+-- applicant_todos_delete_manual_only (source='manual' のみ) を唯一の DELETE 経路とする。
+-- これにより source='recruiter_task' の todo を応募者本人が直接 DELETE できない。
+-- source='recruiter_task' の INSERT/DELETE は create_recruiter_task / delete_recruiter_task
+-- の SECURITY DEFINER RPC 経由でのみ行われる。
 -- ---------------------------------------------------------------------------
 DROP POLICY IF EXISTS "自分のTODOを管理" ON public.applicant_todos;
 DROP POLICY IF EXISTS "自分のTODOを閲覧" ON public.applicant_todos;
 
-CREATE POLICY applicant_todos_all_self ON public.applicant_todos
-  USING (user_id = (auth.uid())::text)
-  WITH CHECK (user_id = (auth.uid())::text);
-
 CREATE POLICY applicant_todos_select_self ON public.applicant_todos
   FOR SELECT USING (user_id = (auth.uid())::text);
 
--- 既存の applicant_todos_delete_manual_only ポリシーは維持（規約準拠済み）
+CREATE POLICY applicant_todos_insert_self ON public.applicant_todos
+  FOR INSERT WITH CHECK (
+    user_id = (auth.uid())::text
+    AND source = 'manual'
+  );
+
+-- UPDATE は完了状態切替など応募者自身の操作を許可する。
+-- source / source_id の書き換えを厳密に禁止する制約は MVP では付けないが、
+-- クライアントは toJson() で元値を送る実装のため実害なし。必要になったら
+-- `WITH CHECK (... AND source = OLD.source)` 相当のトリガ制約を追加する。
+CREATE POLICY applicant_todos_update_self ON public.applicant_todos
+  FOR UPDATE USING (user_id = (auth.uid())::text)
+  WITH CHECK (user_id = (auth.uid())::text);
+
+-- DELETE は既存の applicant_todos_delete_manual_only (source='manual') のみ使用
 
 -- ---------------------------------------------------------------------------
 -- 3. recruiter_tasks テーブル作成
@@ -86,7 +103,7 @@ ALTER TABLE public.recruiter_tasks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY recruiter_tasks_select_org ON public.recruiter_tasks
   FOR SELECT USING (
     organization_id IN (SELECT public.get_my_organization_ids())
-    AND public.get_my_role() = 'employee'
+    AND public.get_my_role() IN ('employee', 'admin', 'manager', 'approver')
   );
 
 -- ---------------------------------------------------------------------------
@@ -115,7 +132,8 @@ CREATE TRIGGER recruiter_tasks_cleanup_todos
 
 -- ---------------------------------------------------------------------------
 -- 5. 内部ヘルパー: 採用担当権限チェック
---    MVP では role='employee' のみ。将来 permission key 導入時はここだけ差替え。
+--    hr1-employee-web の middleware.ts allowedRoles と揃える。
+--    将来 permission key 導入時はここだけ差替え。
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public._require_recruiter_task_manager(p_organization_id text)
 RETURNS void
@@ -133,13 +151,13 @@ BEGIN
   END IF;
 
   IF NOT (
-    public.get_my_role() = 'employee'
+    public.get_my_role() IN ('employee', 'admin', 'manager', 'approver')
     AND EXISTS (
       SELECT 1 FROM public.get_my_organization_ids() AS org_id
       WHERE org_id = p_organization_id
     )
   ) THEN
-    RAISE EXCEPTION 'forbidden: employee role required for organization %', p_organization_id
+    RAISE EXCEPTION 'forbidden: recruiter task manager role required for organization %', p_organization_id
       USING ERRCODE = '42501';
   END IF;
 END;
@@ -180,6 +198,7 @@ DECLARE
   v_step_mode text;
   v_step_type text;
   v_step_min_order int;
+  v_step_min_order_raw text;
   v_applicant_ids text[];
 BEGIN
   PERFORM public._require_recruiter_task_manager(p_organization_id);
@@ -216,7 +235,14 @@ BEGIN
   IF v_step IS NOT NULL AND jsonb_typeof(v_step) = 'object' THEN
     v_step_mode      := v_step->>'mode';
     v_step_type      := v_step->>'step_type';
-    v_step_min_order := NULLIF(v_step->>'min_step_order', '')::int;
+    v_step_min_order_raw := NULLIF(v_step->>'min_step_order', '');
+    IF v_step_min_order_raw IS NOT NULL THEN
+      IF v_step_min_order_raw !~ '^\d+$' THEN
+        RAISE EXCEPTION 'selection_step.min_step_order must be a non-negative integer: %',
+          v_step_min_order_raw USING ERRCODE = '22023';
+      END IF;
+      v_step_min_order := v_step_min_order_raw::int;
+    END IF;
 
     IF v_step_mode IS NOT NULL AND v_step_mode NOT IN ('current', 'passed') THEN
       RAISE EXCEPTION 'invalid selection_step.mode: %', v_step_mode USING ERRCODE = '22023';
@@ -278,24 +304,29 @@ REVOKE ALL ON FUNCTION public.resolve_recruiter_task_targets(text, text, jsonb) 
 GRANT EXECUTE ON FUNCTION public.resolve_recruiter_task_targets(text, text, jsonb) TO authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
--- 7. プレビュー用: 対象人数のみ返す
+-- 7. プレビュー用: 対象ユーザー一覧を返す (作成前確認に利用)
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.preview_recruiter_task_targets(
   p_organization_id text,
   p_target_mode text,
   p_target_criteria jsonb
 )
-RETURNS integer
+RETURNS TABLE (
+  user_id text,
+  display_name text,
+  email text,
+  avatar_url text
+)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
-DECLARE
-  v_count int;
 BEGIN
-  SELECT count(*)::int INTO v_count
-    FROM public.resolve_recruiter_task_targets(p_organization_id, p_target_mode, p_target_criteria) AS t;
-  RETURN COALESCE(v_count, 0);
+  RETURN QUERY
+  SELECT p.id AS user_id, p.display_name, p.email, p.avatar_url
+    FROM public.resolve_recruiter_task_targets(p_organization_id, p_target_mode, p_target_criteria) AS t(applicant_id)
+    JOIN public.profiles p ON p.id = t.applicant_id
+    ORDER BY p.display_name NULLS LAST, p.email;
 END;
 $$;
 

@@ -23,10 +23,10 @@ import {
   SummaryCards,
   type SummaryCardConfig,
 } from "@hr1/shared-ui/components/layout/summary-cards";
-import { ListTodo, CalendarClock, CalendarX, AlertTriangle } from "lucide-react";
+import { ListTodo, CalendarClock, CalendarX, SkipForward } from "lucide-react";
 import { useRecruiterTasks } from "@/features/recruiting/hooks/use-recruiter-tasks";
 
-type SummaryKey = "total" | "withDueDate" | "overdue" | "failed";
+type SummaryKey = "total" | "withDueDate" | "overdue" | "skipped";
 
 export default function RecruitingTasksPage() {
   const router = useRouter();
@@ -47,7 +47,7 @@ export default function RecruitingTasksPage() {
       total: tasks.length,
       withDueDate: tasks.filter((t) => t.due_date != null).length,
       overdue: tasks.filter((t) => t.due_date != null && t.due_date < today).length,
-      failed: tasks.filter((t) => t.target_count > 0 && t.created_count === 0).length,
+      skipped: tasks.filter((t) => t.created_count < t.target_count).length,
     };
   }, [tasks, today]);
 
@@ -61,9 +61,9 @@ export default function RecruitingTasksPage() {
     },
     { key: "overdue", label: "期限超過", icon: CalendarX, iconClassName: "text-red-600" },
     {
-      key: "failed",
-      label: "配信失敗",
-      icon: AlertTriangle,
+      key: "skipped",
+      label: "重複スキップ",
+      icon: SkipForward,
       iconClassName: "text-amber-600",
     },
   ];
