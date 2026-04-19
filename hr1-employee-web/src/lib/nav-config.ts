@@ -63,6 +63,7 @@ const recruitingSections: NavSection[] = [
       { href: "/scheduling", label: "日程調整", icon: CalendarClock },
       { href: "/forms", label: "フォーム", icon: FileText },
       { href: "/evaluation-templates", label: "評価テンプレート", icon: ClipboardCheck },
+      { href: "/recruiting-tasks", label: "応募者タスク", icon: ListTodo },
     ],
   },
   {

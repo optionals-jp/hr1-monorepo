@@ -18,7 +18,7 @@ import {
 import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { jobStatusLabels as statusLabels } from "@/lib/constants";
-import { FileText, Users, ScrollText } from "lucide-react";
+import { FileText, Users, ScrollText, ListTodo } from "lucide-react";
 import { useJobDetail } from "@/features/recruiting/hooks/use-job-detail";
 import { JobApplicantsTab } from "@/features/recruiting/components/job-applicants-tab";
 import { JobDetailTab } from "@/features/recruiting/components/job-detail-tab";
@@ -91,6 +91,14 @@ export default function JobDetailPage() {
                 <SelectItem value="closed">終了</SelectItem>
               </SelectContent>
             </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/recruiting-tasks/new?mode=filter&job_id=${h.job!.id}`)}
+            >
+              <ListTodo className="mr-1 h-4 w-4" />
+              タスクを配信
+            </Button>
             <Button
               variant="outline"
               size="sm"
