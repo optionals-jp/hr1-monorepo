@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { ProfileInfoList } from "@/features/recruiting/components/profile-info-list";
 import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
+import { Button } from "@hr1/shared-ui/components/ui/button";
 import {
   Table,
   TableBody,
@@ -18,7 +20,8 @@ import { TabBar } from "@hr1/shared-ui/components/layout/tab-bar";
 import { StickyFilterBar } from "@hr1/shared-ui/components/layout/sticky-filter-bar";
 import { TimelineTab } from "@/features/recruiting/components/timeline-tab";
 import { EvaluationTab } from "@/components/evaluations/evaluation-tab";
-import { FileText, User, ScrollText, ClipboardCheck } from "lucide-react";
+import { RecruiterTaskIndividualDialog } from "@/features/recruiting/components/recruiter-task-individual-dialog";
+import { FileText, User, ScrollText, ClipboardCheck, ListTodo } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import {
@@ -35,6 +38,7 @@ const tabs = [
 
 export default function ApplicantDetailPage() {
   const router = useRouter();
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const {
     profile,
     applications,
@@ -75,6 +79,12 @@ export default function ApplicantDetailPage() {
         breadcrumb={[{ label: "候補者", href: "/applicants" }]}
         sticky={false}
         border={false}
+        action={
+          <Button variant="outline" onClick={() => setTaskDialogOpen(true)}>
+            <ListTodo className="mr-1 h-4 w-4" />
+            タスクを送信
+          </Button>
+        }
       />
 
       <StickyFilterBar>
@@ -239,6 +249,13 @@ export default function ApplicantDetailPage() {
           setEventFilter={setEventFilter}
         />
       )}
+
+      <RecruiterTaskIndividualDialog
+        open={taskDialogOpen}
+        onOpenChange={setTaskDialogOpen}
+        applicantId={profile.id}
+        applicantName={profile.display_name ?? profile.email}
+      />
     </div>
   );
 }
