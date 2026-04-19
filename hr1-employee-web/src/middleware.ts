@@ -17,6 +17,7 @@ const ALLOWED_ROUTES: Record<Product, string[]> = {
     "/forms",
     "/evaluation-cycles",
     "/evaluation-templates",
+    "/recruiting-tasks",
     "/messages",
     "/calendar",
     "/tasks",
