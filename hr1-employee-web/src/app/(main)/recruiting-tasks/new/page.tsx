@@ -25,13 +25,20 @@ import {
 } from "@/features/recruiting/hooks/use-recruiter-tasks";
 import { useApplicantsList } from "@/features/recruiting/hooks/use-applicants-page";
 import { useJobsList } from "@/features/recruiting/hooks/use-jobs-page";
+import { useForms } from "@/features/recruiting/hooks/use-forms";
+import { useSchedulingList } from "@/features/recruiting/hooks/use-scheduling";
+import { useOrgQuery } from "@/lib/hooks/use-org-query";
+import { getSupabase } from "@/lib/supabase/browser";
 import {
   applicationStatusLabels,
   stepTypeLabels,
   selectableStepTypes,
   StepType,
 } from "@/lib/constants";
-import type { RecruiterTaskCriteria } from "@/lib/repositories/recruiter-task-repository";
+import type {
+  RecruiterTaskCriteria,
+  RecruiterTaskActionType,
+} from "@/lib/repositories/recruiter-task-repository";
 
 type TargetMode = "individual" | "filter";
 type HiringType = "new_grad" | "mid_career" | "none";
@@ -50,6 +57,8 @@ export default function NewRecruitingTaskPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [actionType, setActionType] = useState<RecruiterTaskActionType>("none");
+  const [actionRefId, setActionRefId] = useState("");
   const [actionUrl, setActionUrl] = useState("");
 
   const [mode, setMode] = useState<TargetMode>(initialMode);
@@ -66,6 +75,21 @@ export default function NewRecruitingTaskPage() {
 
   const { data: applicants = [] } = useApplicantsList();
   const { data: jobs = [] } = useJobsList();
+  const { data: forms = [] } = useForms();
+  const { data: interviews = [] } = useSchedulingList();
+  const { data: applicantSurveys = [] } = useOrgQuery<{ id: string; title: string }[]>(
+    "applicant-surveys",
+    async (orgId) => {
+      const { data } = await getSupabase()
+        .from("pulse_surveys")
+        .select("id, title")
+        .eq("organization_id", orgId)
+        .eq("status", "active")
+        .in("target", ["applicant", "both"])
+        .order("created_at", { ascending: false });
+      return (data ?? []) as { id: string; title: string }[];
+    }
+  );
 
   const preview = usePreviewRecruiterTaskTargets();
   const { create, saving } = useCreateRecruiterTask();
@@ -106,8 +130,15 @@ export default function NewRecruitingTaskPage() {
     minStepOrder,
   ]);
 
+  const actionValid = (() => {
+    if (actionType === "none" || actionType === "announcement") return true;
+    if (actionType === "custom_url") return actionUrl.trim().length > 0;
+    return actionRefId.length > 0;
+  })();
+
   const canSubmit =
     title.trim().length > 0 &&
+    actionValid &&
     (mode === "individual"
       ? selectedApplicantIds.size > 0
       : Boolean(filterHiringType || filterJobId || filterAppStatus || stepEnabled));
@@ -118,11 +149,15 @@ export default function NewRecruitingTaskPage() {
 
   const handleSubmit = async () => {
     try {
+      const needsRef =
+        actionType === "form" || actionType === "interview" || actionType === "survey";
       const result = await create({
         title: title.trim(),
         description: description.trim() || null,
         due_date: dueDate || null,
-        action_url: actionUrl.trim() || null,
+        action_type: actionType,
+        action_ref_id: needsRef ? actionRefId : null,
+        action_url: actionType === "custom_url" ? actionUrl.trim() : null,
         target_mode: mode,
         target_criteria: criteria,
       });
@@ -170,19 +205,125 @@ export default function NewRecruitingTaskPage() {
                 placeholder="タスクの詳細や背景情報"
                 rows={3}
               />
+              <FormField label="期日">
+                <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+              </FormField>
+
               <div className="grid grid-cols-2 gap-4">
-                <FormField label="期日">
-                  <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                <FormField label="アクション種別">
+                  <Select
+                    value={actionType}
+                    onValueChange={(v) => {
+                      if (!v) return;
+                      setActionType(v as RecruiterTaskActionType);
+                      setActionRefId("");
+                      setActionUrl("");
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue>
+                        {(v: string) =>
+                          ({
+                            none: "遷移先なし",
+                            form: "フォーム回答",
+                            interview: "面接日程予約",
+                            survey: "サーベイ回答",
+                            announcement: "お知らせ",
+                            custom_url: "URL直接指定",
+                          })[v] ?? v
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">遷移先なし</SelectItem>
+                      <SelectItem value="form">フォーム回答</SelectItem>
+                      <SelectItem value="interview">面接日程予約</SelectItem>
+                      <SelectItem value="survey">サーベイ回答</SelectItem>
+                      <SelectItem value="announcement">お知らせ</SelectItem>
+                      <SelectItem value="custom_url">URL直接指定</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </FormField>
-                <FormInput
-                  label="アクション URL"
-                  value={actionUrl}
-                  onChange={(e) => setActionUrl(e.target.value)}
-                  placeholder="/forms/xxx"
-                />
+
+                {actionType === "form" && (
+                  <FormField label="フォーム" required>
+                    <Select value={actionRefId} onValueChange={(v) => setActionRefId(v ?? "")}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="フォームを選択">
+                          {(v: string) => forms.find((f) => f.id === v)?.title ?? v}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {forms.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>
+                            {f.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                )}
+
+                {actionType === "interview" && (
+                  <FormField label="面接" required>
+                    <Select value={actionRefId} onValueChange={(v) => setActionRefId(v ?? "")}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="面接を選択">
+                          {(v: string) => interviews.find((i) => i.id === v)?.title ?? v}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {interviews.map((i) => (
+                          <SelectItem key={i.id} value={i.id}>
+                            {i.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                )}
+
+                {actionType === "survey" && (
+                  <FormField label="サーベイ" required>
+                    <Select value={actionRefId} onValueChange={(v) => setActionRefId(v ?? "")}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="サーベイを選択">
+                          {(v: string) => applicantSurveys.find((s) => s.id === v)?.title ?? v}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {applicantSurveys.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                )}
+
+                {actionType === "custom_url" && (
+                  <FormInput
+                    label="URL"
+                    required
+                    value={actionUrl}
+                    onChange={(e) => setActionUrl(e.target.value)}
+                    placeholder="https://example.com/..."
+                  />
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
-                アクション URL を指定すると、応募者アプリのタスクからそのページへ遷移できます。
+                {actionType === "none"
+                  ? "応募者タスクから遷移先が表示されません。"
+                  : actionType === "form"
+                    ? "応募者ごとに該当するフォーム回答ページへ自動で遷移します。"
+                    : actionType === "interview"
+                      ? "応募者ごとに該当する面接予約ページへ自動で遷移します。"
+                      : actionType === "survey"
+                        ? "選択したサーベイの回答ページへ遷移します。"
+                        : actionType === "announcement"
+                          ? "お知らせ一覧ページへ遷移します。"
+                          : "任意のURLへ遷移します。外部サイトへの連携にも利用できます。"}
               </p>
             </div>
           </SectionCard>

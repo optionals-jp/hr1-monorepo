@@ -127,8 +127,29 @@ export default function RecruitingTaskDetailPage() {
                 <span>{task.due_date ? format(new Date(task.due_date), "yyyy/MM/dd") : "-"}</span>
               </div>
               <div className="flex gap-8">
-                <span className="text-muted-foreground w-24 shrink-0">アクション URL</span>
-                <span className="font-mono text-xs break-all">{task.action_url ?? "-"}</span>
+                <span className="text-muted-foreground w-24 shrink-0">アクション</span>
+                <span>
+                  {
+                    {
+                      none: "遷移先なし",
+                      form: "フォーム回答",
+                      interview: "面接日程予約",
+                      survey: "サーベイ回答",
+                      announcement: "お知らせ",
+                      custom_url: "URL直接指定",
+                    }[task.action_type]
+                  }
+                  {task.action_type === "custom_url" && task.action_url && (
+                    <span className="ml-2 font-mono text-xs break-all text-muted-foreground">
+                      {task.action_url}
+                    </span>
+                  )}
+                  {task.action_ref_id && (
+                    <span className="ml-2 font-mono text-xs text-muted-foreground">
+                      (ref: {task.action_ref_id})
+                    </span>
+                  )}
+                </span>
               </div>
               <div className="flex gap-8">
                 <span className="text-muted-foreground w-24 shrink-0">作成日</span>

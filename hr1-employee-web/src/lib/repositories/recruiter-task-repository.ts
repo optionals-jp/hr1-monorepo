@@ -4,12 +4,22 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * 採用担当者が作成する応募者向け一括タスクの親レコード。
  * 子 applicant_todos は DB の RPC 経由で作成・削除され、直接触らない。
  */
+export type RecruiterTaskActionType =
+  | "none"
+  | "form"
+  | "interview"
+  | "survey"
+  | "announcement"
+  | "custom_url";
+
 export interface RecruiterTask {
   id: string;
   organization_id: string;
   title: string;
   description: string | null;
   due_date: string | null;
+  action_type: RecruiterTaskActionType;
+  action_ref_id: string | null;
   action_url: string | null;
   target_mode: "individual" | "filter";
   target_criteria: RecruiterTaskCriteria;
@@ -52,6 +62,8 @@ export interface CreateRecruiterTaskParams {
   title: string;
   description: string | null;
   due_date: string | null;
+  action_type: RecruiterTaskActionType;
+  action_ref_id: string | null;
   action_url: string | null;
   target_mode: "individual" | "filter";
   target_criteria: RecruiterTaskCriteria;
@@ -102,6 +114,8 @@ export async function createRecruiterTask(
     p_title: params.title,
     p_description: params.description,
     p_due_date: params.due_date,
+    p_action_type: params.action_type,
+    p_action_ref_id: params.action_ref_id,
     p_action_url: params.action_url,
     p_target_mode: params.target_mode,
     p_target_criteria: params.target_criteria,

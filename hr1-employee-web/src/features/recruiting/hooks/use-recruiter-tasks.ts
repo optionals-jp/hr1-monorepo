@@ -10,6 +10,7 @@ import type {
   RecruiterTask,
   RecruiterTaskDetail,
   RecruiterTaskCriteria,
+  RecruiterTaskActionType,
   CreateRecruiterTaskResult,
 } from "@/lib/repositories/recruiter-task-repository";
 
@@ -64,6 +65,8 @@ export function useCreateRecruiterTask() {
     title: string;
     description: string | null;
     due_date: string | null;
+    action_type: RecruiterTaskActionType;
+    action_ref_id: string | null;
     action_url: string | null;
     target_mode: "individual" | "filter";
     target_criteria: RecruiterTaskCriteria;
