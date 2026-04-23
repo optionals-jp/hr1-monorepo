@@ -181,6 +181,11 @@ export async function fetchOffer(client: SupabaseClient, applicationId: string) 
   return data as Offer | null;
 }
 
+export async function fetchOrgOffers(client: SupabaseClient, organizationId: string) {
+  const { data } = await client.from("offers").select("*").eq("organization_id", organizationId);
+  return (data ?? []) as Offer[];
+}
+
 export async function updateOffer(
   client: SupabaseClient,
   offerId: string,
