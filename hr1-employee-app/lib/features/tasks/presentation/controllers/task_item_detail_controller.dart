@@ -120,7 +120,7 @@ class TaskItemDetailController
       throw StateError('addComment requires an authenticated user');
     }
     final optimistic = TaskComment(
-      id: 'c-${DateTime.now().microsecondsSinceEpoch}',
+      id: 'optimistic-${DateTime.now().microsecondsSinceEpoch}',
       user: me,
       text: text,
       createdAt: DateTime.now(),

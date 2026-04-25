@@ -117,7 +117,6 @@ class _TaskNewFormState extends State<_TaskNewForm> {
     }
     setState(() => _submitting = true);
     final navigator = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
     try {
       await widget.onSubmit(
         title: title,
@@ -136,16 +135,8 @@ class _TaskNewFormState extends State<_TaskNewForm> {
       return;
     }
     if (!mounted) return;
+    CommonSnackBar.show(context, 'タスクを追加しました');
     navigator.pop();
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text('タスクを追加しました'),
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
   }
 
   @override

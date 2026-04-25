@@ -138,14 +138,3 @@ final taskDetailBundleProvider = FutureProvider.autoDispose
       final fetched = await repo.fetchByIds(ids.toList(growable: false));
       return TaskDetailBundle(byId: {for (final t in fetched) t.id: t});
     });
-
-final taskTitleSearchProvider = FutureProvider.autoDispose
-    .family<List<TaskItem>, ({String query, Set<String> excludeIds})>((
-      ref,
-      args,
-    ) async {
-      final q = args.query.trim();
-      if (q.isEmpty) return const [];
-      final repo = ref.watch(taskItemRepositoryProvider);
-      return repo.searchByTitle(query: q, excludeIds: args.excludeIds);
-    });

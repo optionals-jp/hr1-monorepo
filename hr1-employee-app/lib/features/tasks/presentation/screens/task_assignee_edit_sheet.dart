@@ -22,7 +22,6 @@ class TaskAssigneeEditSheet {
     // 候補が未ロードのまま空リストでシートを開かないよう、まず future を await。
     final candidates = await ref.read(assigneeCandidatesProvider.future);
     if (!context.mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
 
     Future<void> apply(String? userId) async {
       // userId == null は「未割り当て」、それ以外は候補から検索。
@@ -39,25 +38,11 @@ class TaskAssigneeEditSheet {
         await ref
             .read(taskItemDetailControllerProvider(task.id).notifier)
             .updateAssignee(next);
-        messenger
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(
-              content: Text('担当者を更新しました'),
-              duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+        if (!context.mounted) return;
+        CommonSnackBar.show(context, '担当者を更新しました');
       } catch (_) {
-        messenger
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(
-              content: Text('担当者の更新に失敗しました'),
-              duration: Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+        if (!context.mounted) return;
+        CommonSnackBar.error(context, '担当者の更新に失敗しました');
       }
     }
 

@@ -98,6 +98,49 @@ class _BodyState<T> extends State<_Body<T>> {
         .toList(growable: false);
   }
 
+  /// searchable は常にフル高さ占有するため [Expanded]、非 searchable は項目数
+  /// に合わせて縮めるため [Flexible]。
+  Widget _buildList() {
+    final filtered = _filteredOptions();
+    final Widget body;
+    if (widget.searchable && filtered.isEmpty) {
+      body = Center(
+        child: Padding(
+          padding: const EdgeInsetsDirectional.symmetric(
+            horizontal: AppSpacing.xl,
+            vertical: AppSpacing.lg,
+          ),
+          child: Text(
+            '該当する候補はありません',
+            style: AppTextStyles.body2.copyWith(
+              color: AppColors.textSecondary(context),
+            ),
+          ),
+        ),
+      );
+    } else {
+      body = Semantics(
+        container: true,
+        label: widget.title,
+        child: ListView.builder(
+          // searchable は親 Expanded から有限制約を受けるので shrinkWrap 不要。
+          shrinkWrap: !widget.searchable,
+          padding: EdgeInsets.zero,
+          itemCount: filtered.length,
+          itemBuilder: (context, i) {
+            final option = filtered[i];
+            return _OptionRow<T>(
+              option: option,
+              selected: _selected.contains(option.value),
+              onTap: () => _toggle(option.value),
+            );
+          },
+        ),
+      );
+    }
+    return widget.searchable ? Expanded(child: body) : Flexible(child: body);
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -125,7 +168,11 @@ class _BodyState<T> extends State<_Body<T>> {
               child: Material(
                 type: MaterialType.transparency,
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  // searchable はキーボード操作中もシートを安定表示させたいので
+                  // 常にフル高さ。非 searchable は項目数に合わせて縮める。
+                  mainAxisSize: widget.searchable
+                      ? MainAxisSize.max
+                      : MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Padding(
@@ -174,44 +221,7 @@ class _BodyState<T> extends State<_Body<T>> {
                           onClear: () => setState(() => _query = ''),
                         ),
                       ),
-                    Flexible(
-                      child: Builder(
-                        builder: (context) {
-                          final filtered = _filteredOptions();
-                          if (widget.searchable && filtered.isEmpty) {
-                            return Padding(
-                              padding: const EdgeInsetsDirectional.symmetric(
-                                horizontal: AppSpacing.xl,
-                                vertical: AppSpacing.lg,
-                              ),
-                              child: Text(
-                                '該当する候補はありません',
-                                style: AppTextStyles.body2.copyWith(
-                                  color: AppColors.textSecondary(context),
-                                ),
-                              ),
-                            );
-                          }
-                          return Semantics(
-                            container: true,
-                            label: widget.title,
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              padding: EdgeInsets.zero,
-                              itemCount: filtered.length,
-                              itemBuilder: (context, i) {
-                                final option = filtered[i];
-                                return _OptionRow<T>(
-                                  option: option,
-                                  selected: _selected.contains(option.value),
-                                  onTap: () => _toggle(option.value),
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                    _buildList(),
                     const SizedBox(height: AppSpacing.sm),
                   ],
                 ),

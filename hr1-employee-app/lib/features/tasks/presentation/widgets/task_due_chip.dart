@@ -21,13 +21,10 @@ class TaskDueChip extends ConsumerWidget {
   static const double chipHeight = 24;
 
   Future<void> _pickDate(BuildContext context, WidgetRef ref) async {
-    // showDatePicker の await 後に context を使うと analyzer が警告するため
-    // messenger / controller を先に取得しておく。
-    final messenger = ScaffoldMessenger.of(context);
     final controller = ref.read(
       taskItemDetailControllerProvider(task.id).notifier,
     );
-    final initial = _parseIso(task.due) ?? DateTime.now();
+    final initial = TaskMeta.parseIso(task.due) ?? DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -35,38 +32,23 @@ class TaskDueChip extends ConsumerWidget {
       lastDate: DateTime(2030),
     );
     if (picked == null) return;
-    final iso = _formatIso(picked);
+    final iso = TaskMeta.formatIso(picked);
     if (iso == task.due) return;
     try {
       await controller.updateDue(due: iso);
     } catch (_) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('期限の更新に失敗しました'),
-            duration: Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+      if (!context.mounted) return;
+      CommonSnackBar.error(context, '期限の更新に失敗しました');
       return;
     }
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text('期限を更新しました'),
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    if (!context.mounted) return;
+    CommonSnackBar.show(context, '期限を更新しました');
   }
 
   Future<void> _clear(BuildContext context, WidgetRef ref) async {
     final controller = ref.read(
       taskItemDetailControllerProvider(task.id).notifier,
     );
-    final messenger = ScaffoldMessenger.of(context);
     final originalDue = task.due;
     try {
       await controller.updateDue(due: null);
@@ -76,33 +58,19 @@ class TaskDueChip extends ConsumerWidget {
       return;
     }
     if (!context.mounted) return;
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: const Text('期限を解除しました'),
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          action: SnackBarAction(
-            label: '元に戻す',
-            onPressed: () async {
-              try {
-                await controller.updateDue(due: originalDue);
-              } catch (_) {
-                messenger
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    const SnackBar(
-                      content: Text('期限の復元に失敗しました'),
-                      duration: Duration(seconds: 3),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-              }
-            },
-          ),
-        ),
-      );
+    CommonSnackBar.show(
+      context,
+      '期限を解除しました',
+      actionLabel: '元に戻す',
+      onAction: () async {
+        try {
+          await controller.updateDue(due: originalDue);
+        } catch (_) {
+          if (!context.mounted) return;
+          CommonSnackBar.error(context, '期限の復元に失敗しました');
+        }
+      },
+    );
   }
 
   @override
@@ -146,16 +114,6 @@ class TaskDueChip extends ConsumerWidget {
       ),
     );
   }
-
-  static DateTime? _parseIso(String? iso) {
-    if (iso == null || iso.length < 10) return null;
-    return DateTime.tryParse(iso);
-  }
-
-  static String _formatIso(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-'
-      '${d.month.toString().padLeft(2, '0')}-'
-      '${d.day.toString().padLeft(2, '0')}';
 
   /// ISO 日付 (yyyy-MM-dd) を表示用 MM/dd に整形する。
   static String _formatDisplay(String iso) {
