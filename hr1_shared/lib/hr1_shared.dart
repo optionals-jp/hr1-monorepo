@@ -4,6 +4,7 @@ export 'src/utils/date_formatter.dart';
 export 'src/utils/month_utils.dart';
 export 'src/utils/query_utils.dart';
 export 'src/utils/mention_token.dart';
+export 'src/utils/app_font.dart';
 export 'src/entities/service_request.dart';
 export 'src/entities/announcement.dart';
 export 'src/entities/message.dart';

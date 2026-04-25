@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:hr1_shared/hr1_shared.dart';
 
 /// 共通ボタンコンポーネント — Fluent 2 iOS スタイル
@@ -48,7 +47,7 @@ class CommonButton extends StatelessWidget {
   final Widget child;
   final ButtonStyle? style;
 
-  static final _baseTextStyle = GoogleFonts.notoSansJp(
+  static final _baseTextStyle = appFont(
     fontSize: 16,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.2,

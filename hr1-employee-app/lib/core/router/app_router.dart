@@ -6,6 +6,7 @@ import 'package:hr1_employee_app/features/auth/presentation/screens/splash_scree
 import 'package:hr1_employee_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:hr1_employee_app/features/auth/presentation/screens/home_screen.dart';
 import 'package:hr1_employee_app/features/auth/presentation/screens/profile_edit_screen.dart';
+import 'package:hr1_employee_app/features/feed/presentation/screens/feed_screen.dart';
 import 'package:hr1_employee_app/features/portal/presentation/screens/portal_screen.dart';
 import 'package:hr1_employee_app/features/calendar/presentation/screens/calendar_screen.dart';
 import 'package:hr1_employee_app/features/messages/presentation/screens/messages_screen.dart';
@@ -70,6 +71,7 @@ class AppRoutes {
   static const String portal = '/portal';
   static const String calendar = '/calendar';
   static const String messages = '/messages';
+  static const String feed = '/feed';
   static const String tasks = '/tasks';
   static const String profile = '/profile';
   static const String crm = '/crm';
@@ -280,6 +282,26 @@ final routerProvider = Provider<GoRouter>((ref) {
           }
           return ThreadChatScreen(thread: thread);
         },
+      ),
+
+      /// メッセージ一覧（フルスクリーン — タブ廃止後はヘッダーのチャット
+      /// アイコンから push される）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.messages,
+        builder: (context, state) => const MessagesScreen(),
+        routes: [
+          GoRoute(
+            path: AppRoutes._thread,
+            builder: (context, state) {
+              final thread = state.extra as MessageThread?;
+              if (thread == null) {
+                return const MessagesScreen();
+              }
+              return ThreadChatScreen(thread: thread);
+            },
+          ),
+        ],
       ),
 
       /// スキル編集画面（フルスクリーン）
@@ -613,20 +635,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.messages,
-                builder: (context, state) => const MessagesScreen(),
-                routes: [
-                  GoRoute(
-                    path: AppRoutes._thread,
-                    builder: (context, state) {
-                      final thread = state.extra as MessageThread?;
-                      if (thread == null) {
-                        return const MessagesScreen();
-                      }
-                      return ThreadChatScreen(thread: thread);
-                    },
-                  ),
-                ],
+                path: AppRoutes.feed,
+                builder: (context, state) => const FeedScreen(),
               ),
             ],
           ),

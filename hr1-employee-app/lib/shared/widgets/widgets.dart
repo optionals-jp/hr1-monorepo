@@ -34,6 +34,7 @@ export 'package:hr1_shared/hr1_shared.dart'
 
 // アプリ固有ウィジェット
 export 'detail_row.dart';
+export 'filter_tabs_row.dart';
 export 'fluent_chip.dart';
 export 'loading.dart';
 export 'master_search_bar.dart';
