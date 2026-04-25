@@ -12,6 +12,7 @@ import 'package:hr1_employee_app/features/messages/presentation/screens/messages
 import 'package:hr1_employee_app/features/messages/presentation/screens/thread_chat_screen.dart';
 import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_employee_app/features/messages/domain/entities/message_thread.dart';
+import 'package:hr1_employee_app/features/tasks/presentation/screens/task_detail_screen.dart';
 import 'package:hr1_employee_app/features/tasks/presentation/screens/tasks_screen.dart';
 import 'package:hr1_employee_app/features/auth/presentation/screens/profile_screen.dart';
 import 'package:hr1_employee_app/features/attendance/presentation/screens/attendance_screen.dart';
@@ -111,6 +112,9 @@ class AppRoutes {
   static const String _bcActivityForm = 'bc-activity-form';
   static const String _bcTodoForm = 'bc-todo-form';
   static const String _bcContactForm = 'bc-contact-form';
+
+  // タスク詳細
+  static const String _taskDetail = 'task-detail';
   // フルパス（画面遷移用）
   static const String faq = '/$_faq';
   static const String wiki = '/$_wiki';
@@ -155,6 +159,8 @@ class AppRoutes {
   static const String bcActivityForm = '/$_bcActivityForm';
   static const String bcTodoForm = '/$_bcTodoForm';
   static const String bcContactForm = '/$_bcContactForm';
+
+  static const String taskDetail = '/$_taskDetail';
 }
 
 /// ルートナビゲーターキー（フルスクリーン遷移用 + プッシュ通知からの遷移用）
@@ -572,6 +578,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.profileFullscreen,
         builder: (context, state) => const ProfileScreen(),
+      ),
+
+      /// タスク詳細（フルスクリーン）— extra: String? taskId
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.taskDetail,
+        builder: (context, state) =>
+            TaskDetailScreen(taskId: state.extra as String?),
       ),
 
       /// メイン画面（ホーム / カレンダー / チャット / タスク / その他）

@@ -10,6 +10,7 @@ import 'package:hr1_employee_app/features/faq/presentation/providers/faq_provide
 import 'package:hr1_employee_app/features/shifts/presentation/controllers/shift_request_controller.dart';
 import 'package:hr1_employee_app/features/skills/presentation/providers/skills_providers.dart';
 import 'package:hr1_employee_app/features/surveys/presentation/providers/survey_providers.dart';
+import 'package:hr1_employee_app/features/tasks/presentation/providers/task_item_providers.dart';
 import 'package:hr1_employee_app/features/tasks/presentation/providers/task_providers.dart';
 import 'package:hr1_employee_app/features/wiki/presentation/providers/wiki_providers.dart';
 import 'package:hr1_employee_app/features/workflow/presentation/providers/workflow_providers.dart';
@@ -124,6 +125,8 @@ class AuthController extends AutoDisposeNotifier<AuthState> {
         ref.invalidate(skillsRepositoryProvider);
         ref.invalidate(surveyRepositoryProvider);
         ref.invalidate(taskRepositoryProvider);
+        ref.invalidate(taskItemRepositoryProvider);
+        ref.invalidate(pendingTaskIdsProvider);
         ref.invalidate(wikiRepositoryProvider);
         ref.invalidate(workflowRepositoryProvider);
         ref.invalidate(announcementsRepositoryProvider);

@@ -54,10 +54,19 @@ class _CommonSheetContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    // キーボード表示時は viewInsets 分だけシートを押し上げ、内側では
+    // bottom padding でキーボードに隠れないようコンテンツを確保する。
+    // 最大は画面の 95% までに制限（AppBar が画面外に出ないようにする）。
+    final keyboardInset = media.viewInsets.bottom;
+    final maxHeight = media.size.height * 0.95;
+    final base = media.size.height * heightFactor;
+    final sheetHeight = (base + keyboardInset).clamp(base, maxHeight);
     return SizedBox(
-      height: MediaQuery.of(context).size.height * heightFactor,
+      height: sheetHeight,
       child: Scaffold(
         backgroundColor: Colors.transparent,
+        resizeToAvoidBottomInset: false,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -75,7 +84,10 @@ class _CommonSheetContent extends StatelessWidget {
             ),
           ],
         ),
-        body: child,
+        body: Padding(
+          padding: EdgeInsets.only(bottom: keyboardInset),
+          child: child,
+        ),
         bottomNavigationBar: bottomAction != null
             ? SafeArea(
                 child: Padding(
