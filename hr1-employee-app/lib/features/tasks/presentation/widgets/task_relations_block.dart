@@ -26,10 +26,18 @@ class TaskRelationsBlock extends ConsumerWidget {
       final target = bundle?[r.id];
       if (target != null) raw.add((r, target));
     }
-    final rels = [for (final k in TaskMeta.relationKindOrder) ...raw.where((p) => p.$1.kind == k)];
+    final rels = [
+      for (final k in TaskMeta.relationKindOrder)
+        ...raw.where((p) => p.$1.kind == k),
+    ];
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.screenHorizontal, 16, AppSpacing.screenHorizontal, 4),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenHorizontal,
+        16,
+        AppSpacing.screenHorizontal,
+        4,
+      ),
       child: Column(
         // 中身が短くても CommonCard を画面横幅いっぱいまで広げるため stretch。
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -41,8 +49,14 @@ class TaskRelationsBlock extends ConsumerWidget {
               onTap: () => TaskRelationLinkSheet.show(context, ref, task: task),
               borderRadius: BorderRadius.circular(4),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
-                child: Text('+ 紐付け', style: AppTextStyles.label1.copyWith(color: AppColors.brand)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xs,
+                  vertical: 2,
+                ),
+                child: Text(
+                  '+ 紐付け',
+                  style: AppTextStyles.label1.copyWith(color: AppColors.brand),
+                ),
               ),
             ),
           ),
@@ -54,13 +68,19 @@ class TaskRelationsBlock extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Text(
                       '関連タスクはまだありません',
-                      style: AppTextStyles.body2.copyWith(color: AppColors.textTertiary(context)),
+                      style: AppTextStyles.body2.copyWith(
+                        color: AppColors.textTertiary(context),
+                      ),
                     ),
                   )
                 : Column(
                     children: [
                       for (int i = 0; i < rels.length; i++) ...[
-                        _RelationRow(task: task, rel: rels[i].$1, target: rels[i].$2),
+                        _RelationRow(
+                          task: task,
+                          rel: rels[i].$1,
+                          target: rels[i].$2,
+                        ),
                       ],
                     ],
                   ),
@@ -72,14 +92,20 @@ class TaskRelationsBlock extends ConsumerWidget {
 }
 
 class _RelationRow extends ConsumerWidget {
-  const _RelationRow({required this.task, required this.rel, required this.target});
+  const _RelationRow({
+    required this.task,
+    required this.rel,
+    required this.target,
+  });
 
   final TaskItem task;
   final TaskRelation rel;
   final TaskItem target;
 
   Future<void> _handleRemove(BuildContext context, WidgetRef ref) async {
-    final controller = ref.read(taskItemDetailControllerProvider(task.id).notifier);
+    final controller = ref.read(
+      taskItemDetailControllerProvider(task.id).notifier,
+    );
     try {
       await controller.removeRelation(target.id);
     } catch (_) {
@@ -118,7 +144,10 @@ class _RelationRow extends ConsumerWidget {
                 width: 24,
                 height: 24,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(4)),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(4),
+                ),
                 child: Icon(_relationIcon(rel.kind), size: 14, color: color),
               ),
             ),
@@ -130,7 +159,9 @@ class _RelationRow extends ConsumerWidget {
                 target.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.label1.copyWith(color: AppColors.textPrimary(context)),
+                style: AppTextStyles.label1.copyWith(
+                  color: AppColors.textPrimary(context),
+                ),
               ),
             ),
             const SizedBox(width: 6),
