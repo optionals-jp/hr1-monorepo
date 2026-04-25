@@ -169,7 +169,7 @@ export default function WorkflowsPage() {
                       <Label>申請種別</Label>
                       <Select value={requestType} onValueChange={handleTypeChange}>
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue>{resolveTypeLabel}</SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {/* 組み込み種別 */}
