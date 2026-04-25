@@ -27,7 +27,12 @@ class TaskSubtasksBlock extends ConsumerWidget {
     final progress = subs.isEmpty ? 0.0 : doneCount / subs.length;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.screenHorizontal, 16, AppSpacing.screenHorizontal, 4),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenHorizontal,
+        16,
+        AppSpacing.screenHorizontal,
+        4,
+      ),
       child: Column(
         // 中身が短くても CommonCard を画面横幅いっぱいまで広げるため stretch。
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -39,8 +44,14 @@ class TaskSubtasksBlock extends ConsumerWidget {
               onTap: () => TaskSubtaskAddSheet.show(context, ref, parent: task),
               borderRadius: BorderRadius.circular(4),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
-                child: Text('+ 追加', style: AppTextStyles.label1.copyWith(color: AppColors.brand)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xs,
+                  vertical: 2,
+                ),
+                child: Text(
+                  '+ 追加',
+                  style: AppTextStyles.label1.copyWith(color: AppColors.brand),
+                ),
               ),
             ),
           ),
@@ -52,7 +63,9 @@ class TaskSubtasksBlock extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Text(
                       'サブタスクはまだありません',
-                      style: AppTextStyles.body2.copyWith(color: AppColors.textTertiary(context)),
+                      style: AppTextStyles.body2.copyWith(
+                        color: AppColors.textTertiary(context),
+                      ),
                     ),
                   )
                 : Column(
@@ -65,7 +78,9 @@ class TaskSubtasksBlock extends ConsumerWidget {
                           value: progress,
                           minHeight: 3,
                           backgroundColor: AppColors.border(context),
-                          valueColor: const AlwaysStoppedAnimation(AppColors.successFilled),
+                          valueColor: const AlwaysStoppedAnimation(
+                            AppColors.successFilled,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
