@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader, PageContent } from "@hr1/shared-ui/components/layout/page-header";
 import { Button } from "@hr1/shared-ui/components/ui/button";
-import { SectionCard } from "@hr1/shared-ui/components/ui/section-card";
+import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/components/ui/card";
 import { FormField, FormInput, FormTextarea } from "@hr1/shared-ui/components/ui/form-field";
 import { Input } from "@hr1/shared-ui/components/ui/input";
 import { Checkbox } from "@hr1/shared-ui/components/ui/checkbox";
@@ -180,9 +180,11 @@ export default function NewRecruitingTaskPage() {
       />
       <PageContent>
         <div className="max-w-3xl space-y-6">
-          <SectionCard>
-            <h2 className="text-sm font-semibold mb-3">基本情報</h2>
-            <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>基本情報</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <FormInput
                 label="タイトル"
                 required
@@ -317,12 +319,14 @@ export default function NewRecruitingTaskPage() {
                           ? "お知らせ一覧ページへ遷移します。"
                           : "任意のURLへ遷移します。外部サイトへの連携にも利用できます。"}
               </p>
-            </div>
-          </SectionCard>
+            </CardContent>
+          </Card>
 
-          <SectionCard>
-            <h2 className="text-sm font-semibold mb-3">対象</h2>
-            <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>対象</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <SegmentControl<TargetMode>
                 value={mode}
                 onChange={setMode}
@@ -512,8 +516,8 @@ export default function NewRecruitingTaskPage() {
                   対象をプレビュー
                 </Button>
               </div>
-            </div>
-          </SectionCard>
+            </CardContent>
+          </Card>
 
           <div className="flex justify-end gap-3 pb-10">
             <Button variant="outline" onClick={() => router.push("/recruiting-tasks")}>
