@@ -111,6 +111,10 @@ class AppIcons {
       _svg('ic-sms', size: size, color: color);
   static Widget smsFill({double size = 24, Color? color}) =>
       _svg('ic-sms-fill', size: size, color: color);
+  static Widget messageText({double size = 24, Color? color}) =>
+      _svg('ic-message-text', size: size, color: color);
+  static Widget messageTextFill({double size = 24, Color? color}) =>
+      _svg('ic-message-text-fill', size: size, color: color);
 
   // ── アクション ──
   static Widget search({double size = 24, Color? color}) =>
@@ -133,6 +137,10 @@ class AppIcons {
       _svg('ic-clipboard-tick', size: size, color: color);
   static Widget clipboardTickFill({double size = 24, Color? color}) =>
       _svg('ic-clipboard-tick-fill', size: size, color: color);
+  static Widget arrow({double size = 24, Color? color}) =>
+      _svg('ic-arrow', size: size, color: color);
+  static Widget arrowFill({double size = 24, Color? color}) =>
+      _svg('ic-arrow-fill', size: size, color: color);
 
   // ── コンテンツ ──
   static Widget doc({double size = 24, Color? color}) =>

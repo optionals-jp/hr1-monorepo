@@ -52,9 +52,8 @@ class _FormState extends State<_Form> {
     }
     setState(() => _submitting = true);
     final parent = widget.parent;
-    final id = '#${DateTime.now().millisecondsSinceEpoch % 10000}';
     final subtask = TaskItem(
-      id: id,
+      id: 'optimistic-${DateTime.now().microsecondsSinceEpoch}',
       // `0` は「まだ DB 採番されていない」placeholder。
       // repo.addSubtask の戻り値で 1 以上の正規値に置換される。
       seq: 0,

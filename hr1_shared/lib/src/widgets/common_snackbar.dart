@@ -10,14 +10,35 @@ class CommonSnackBar {
 
   static OverlayEntry? _entry;
 
-  /// 成功・情報の SnackBar を表示
-  static void show(BuildContext context, String message) {
+  /// 成功・情報の SnackBar を表示。
+  ///
+  /// [actionLabel] と [onAction] を指定すると右側にアクションボタンを表示する
+  /// （Undo 等）。アクションタップで自動的に dismiss する。
+  static void show(
+    BuildContext context,
+    String message, {
+    String? actionLabel,
+    VoidCallback? onAction,
+    Duration duration = const Duration(seconds: 3),
+  }) {
     if (!context.mounted) return;
-    _showOverlay(context, child: Text(message, style: AppTextStyles.body2));
+    _showOverlay(
+      context,
+      child: Text(message, style: AppTextStyles.body2),
+      actionLabel: actionLabel,
+      onAction: onAction,
+      duration: duration,
+    );
   }
 
-  /// エラーの SnackBar を表示（赤系半透明背景 + アイコン）
-  static void error(BuildContext context, String message) {
+  /// エラーの SnackBar を表示（赤系半透明背景 + アイコン）。
+  static void error(
+    BuildContext context,
+    String message, {
+    String? actionLabel,
+    VoidCallback? onAction,
+    Duration duration = const Duration(seconds: 3),
+  }) {
     if (!context.mounted) return;
     _showOverlay(
       context,
@@ -38,6 +59,10 @@ class CommonSnackBar {
           ),
         ],
       ),
+      actionLabel: actionLabel,
+      onAction: onAction,
+      actionColor: AppColors.error,
+      duration: duration,
     );
   }
 
@@ -45,6 +70,10 @@ class CommonSnackBar {
     BuildContext context, {
     required Widget child,
     Color? backgroundColor,
+    String? actionLabel,
+    VoidCallback? onAction,
+    Color? actionColor,
+    Duration duration = const Duration(seconds: 3),
   }) {
     _entry?.remove();
     _entry = null;
@@ -55,6 +84,10 @@ class CommonSnackBar {
     entry = OverlayEntry(
       builder: (_) => _AnimatedSnackBar(
         backgroundColor: backgroundColor,
+        actionLabel: actionLabel,
+        onAction: onAction,
+        actionColor: actionColor,
+        duration: duration,
         onDismissed: () {
           entry.remove();
           if (_entry == entry) _entry = null;
@@ -73,11 +106,19 @@ class _AnimatedSnackBar extends StatefulWidget {
     required this.child,
     required this.onDismissed,
     this.backgroundColor,
+    this.actionLabel,
+    this.onAction,
+    this.actionColor,
+    this.duration = const Duration(seconds: 3),
   });
 
   final Widget child;
   final VoidCallback onDismissed;
   final Color? backgroundColor;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  final Color? actionColor;
+  final Duration duration;
 
   @override
   State<_AnimatedSnackBar> createState() => _AnimatedSnackBarState();
@@ -105,7 +146,7 @@ class _AnimatedSnackBarState extends State<_AnimatedSnackBar>
 
     _enterController.forward();
 
-    Future.delayed(const Duration(seconds: 3), _dismiss);
+    Future.delayed(widget.duration, _dismiss);
   }
 
   void _dismiss() {
@@ -164,14 +205,47 @@ class _AnimatedSnackBarState extends State<_AnimatedSnackBar>
           ),
           elevation: 0,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              14,
+              widget.actionLabel != null ? 8 : 20,
+              14,
+            ),
             child: DefaultTextStyle(
               style: AppTextStyles.body2.copyWith(
                 color: widget.backgroundColor != null
                     ? null
                     : AppColors.onInverseSurface(context),
               ),
-              child: widget.child,
+              child: widget.actionLabel == null
+                  ? widget.child
+                  : Row(
+                      children: [
+                        Expanded(child: widget.child),
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () {
+                            widget.onAction?.call();
+                            _dismiss();
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor:
+                                widget.actionColor ??
+                                AppColors.onInverseSurface(context),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            minimumSize: const Size(0, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            textStyle: AppTextStyles.body2.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          child: Text(widget.actionLabel!),
+                        ),
+                      ],
+                    ),
             ),
           ),
         ),

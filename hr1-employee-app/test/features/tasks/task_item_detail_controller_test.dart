@@ -5,7 +5,6 @@ import 'package:hr1_employee_app/features/tasks/domain/entities/task_item_page.d
 import 'package:hr1_employee_app/features/tasks/domain/repositories/task_item_repository.dart';
 import 'package:hr1_employee_app/features/tasks/presentation/controllers/task_item_detail_controller.dart';
 import 'package:hr1_employee_app/features/tasks/presentation/providers/task_item_providers.dart';
-import 'package:hr1_employee_app/features/tasks/presentation/screens/task_relation_link_sheet.dart';
 
 const _alice = TaskUser(
   id: 'u-alice',
@@ -241,42 +240,4 @@ void main() {
       expect(after.due, original.due, reason: 'due should roll back');
     },
   );
-
-  test('filterRelationCandidates excludes self / existing / applies query', () {
-    final me = _makeFixtureTask(
-      id: 't-me',
-      relations: const [
-        TaskRelation(id: 't-existing', kind: RelationKind.relatesTo),
-      ],
-    );
-    final all = [
-      me,
-      _makeFixtureTask(id: 't-existing'),
-      _makeFixtureTask(id: 't-alpha'),
-      _makeFixtureTask(id: 't-beta'),
-    ];
-    final existingIds = me.relations.map((r) => r.id).toSet();
-
-    final empty = filterRelationCandidates(
-      all: all,
-      currentTaskId: me.id,
-      existingRelationIds: existingIds,
-      query: '',
-    );
-    expect(empty.any((t) => t.id == me.id), isFalse, reason: 'self excluded');
-    expect(
-      empty.any((t) => existingIds.contains(t.id)),
-      isFalse,
-      reason: 'existing relations excluded',
-    );
-
-    final byId = filterRelationCandidates(
-      all: all,
-      currentTaskId: me.id,
-      existingRelationIds: const {},
-      query: empty.first.id,
-    );
-    expect(byId, isNotEmpty);
-    expect(byId.every((t) => t.id == empty.first.id), isTrue);
-  });
 }

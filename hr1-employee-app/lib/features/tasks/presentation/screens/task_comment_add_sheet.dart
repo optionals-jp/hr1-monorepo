@@ -49,23 +49,15 @@ class _CommentAddFormState extends ConsumerState<_CommentAddForm> {
       return;
     }
     setState(() => _submitting = true);
-    final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     try {
       await ref
           .read(taskItemDetailControllerProvider(widget.task.id).notifier)
           .addComment(text);
       if (!mounted) return;
+      // Overlay は navigator 共有のため pop 前に show しても snackbar は残る。
+      CommonSnackBar.show(context, 'コメントを追加しました');
       navigator.pop();
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('コメントを追加しました'),
-            duration: Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
     } catch (_) {
       if (!mounted) return;
       setState(() => _submitting = false);

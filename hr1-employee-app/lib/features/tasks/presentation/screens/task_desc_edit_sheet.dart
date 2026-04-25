@@ -45,23 +45,14 @@ class _DescFormState extends ConsumerState<_DescForm> {
 
   Future<void> _submit() async {
     setState(() => _submitting = true);
-    final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     try {
       await ref
           .read(taskItemDetailControllerProvider(widget.task.id).notifier)
           .updateDesc(_controller.text);
       if (!mounted) return;
+      CommonSnackBar.show(context, '説明を更新しました');
       navigator.pop();
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('説明を更新しました'),
-            duration: Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
     } catch (_) {
       if (!mounted) return;
       setState(() => _submitting = false);

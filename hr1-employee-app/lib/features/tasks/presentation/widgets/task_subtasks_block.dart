@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_employee_app/core/router/app_router.dart';
 import 'package:hr1_employee_app/features/tasks/domain/entities/task_item.dart';
 import 'package:hr1_employee_app/features/tasks/presentation/providers/task_item_providers.dart';
 import 'package:hr1_employee_app/features/tasks/presentation/screens/task_subtask_add_sheet.dart';
@@ -25,12 +27,7 @@ class TaskSubtasksBlock extends ConsumerWidget {
     final progress = subs.isEmpty ? 0.0 : doneCount / subs.length;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screenHorizontal,
-        16,
-        AppSpacing.screenHorizontal,
-        4,
-      ),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screenHorizontal, 16, AppSpacing.screenHorizontal, 4),
       child: Column(
         // 中身が短くても CommonCard を画面横幅いっぱいまで広げるため stretch。
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -42,46 +39,37 @@ class TaskSubtasksBlock extends ConsumerWidget {
               onTap: () => TaskSubtaskAddSheet.show(context, ref, parent: task),
               borderRadius: BorderRadius.circular(4),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xs,
-                  vertical: 2,
-                ),
-                child: Text(
-                  '+ 追加',
-                  style: AppTextStyles.label1.copyWith(color: AppColors.brand),
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
+                child: Text('+ 追加', style: AppTextStyles.label1.copyWith(color: AppColors.brand)),
               ),
             ),
           ),
           CommonCard(
             margin: EdgeInsets.zero,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: subs.isEmpty
-                ? Text(
-                    'サブタスクはまだありません',
-                    style: AppTextStyles.body2.copyWith(
-                      color: AppColors.textTertiary(context),
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      'サブタスクはまだありません',
+                      style: AppTextStyles.body2.copyWith(color: AppColors.textTertiary(context)),
                     ),
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const SizedBox(height: 8),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(2),
                         child: LinearProgressIndicator(
                           value: progress,
                           minHeight: 3,
                           backgroundColor: AppColors.border(context),
-                          valueColor: const AlwaysStoppedAnimation(
-                            AppColors.successFilled,
-                          ),
+                          valueColor: const AlwaysStoppedAnimation(AppColors.successFilled),
                         ),
                       ),
                       const SizedBox(height: 8),
-                      for (int i = 0; i < subs.length; i++) ...[
-                        if (i > 0)
-                          Divider(height: 1, color: AppColors.border(context)),
-                        _SubtaskRow(task: subs[i]),
-                      ],
+                      for (final sub in subs) _SubtaskRow(task: sub),
                     ],
                   ),
           ),
@@ -99,35 +87,38 @@ class _SubtaskRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDone = task.status == TaskStatus.done;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(
-        children: [
-          TaskIdText(id: '#${task.seq}'),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              task.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.body2.copyWith(
-                fontWeight: FontWeight.w500,
-                color: isDone
-                    ? AppColors.textPrimary(context).withValues(alpha: 0.55)
-                    : AppColors.textPrimary(context),
-                decoration: isDone ? TextDecoration.lineThrough : null,
+    return InkWell(
+      onTap: () => context.push(AppRoutes.taskDetail, extra: task.id),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            // 関連タスク行のアイコンチップ位置に対応する 24x24 リーディング枠。
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: Center(child: CommonCheckCircle(done: isDone, size: 18)),
+            ),
+            const SizedBox(width: 8),
+            TaskIdText(id: '#${task.seq}'),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                task.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.label1.copyWith(
+                  color: isDone
+                      ? AppColors.textPrimary(context).withValues(alpha: 0.55)
+                      : AppColors.textPrimary(context),
+                  decoration: isDone ? TextDecoration.lineThrough : null,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 6),
-          StatusChip(status: task.status, dense: true),
-          const SizedBox(width: 6),
-          UserAvatar(
-            initial: task.owner.avatar,
-            color: Color(task.owner.argb),
-            size: 18,
-          ),
-        ],
+            const SizedBox(width: 6),
+            StatusChip(status: task.status),
+          ],
+        ),
       ),
     );
   }

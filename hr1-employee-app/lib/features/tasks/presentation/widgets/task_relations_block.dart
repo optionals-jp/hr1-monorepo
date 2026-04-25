@@ -26,18 +26,10 @@ class TaskRelationsBlock extends ConsumerWidget {
       final target = bundle?[r.id];
       if (target != null) raw.add((r, target));
     }
-    final rels = [
-      for (final k in TaskMeta.relationKindOrder)
-        ...raw.where((p) => p.$1.kind == k),
-    ];
+    final rels = [for (final k in TaskMeta.relationKindOrder) ...raw.where((p) => p.$1.kind == k)];
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screenHorizontal,
-        16,
-        AppSpacing.screenHorizontal,
-        4,
-      ),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screenHorizontal, 16, AppSpacing.screenHorizontal, 4),
       child: Column(
         // 中身が短くても CommonCard を画面横幅いっぱいまで広げるため stretch。
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -49,36 +41,26 @@ class TaskRelationsBlock extends ConsumerWidget {
               onTap: () => TaskRelationLinkSheet.show(context, ref, task: task),
               borderRadius: BorderRadius.circular(4),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xs,
-                  vertical: 2,
-                ),
-                child: Text(
-                  '+ 紐付け',
-                  style: AppTextStyles.label1.copyWith(color: AppColors.brand),
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
+                child: Text('+ 紐付け', style: AppTextStyles.label1.copyWith(color: AppColors.brand)),
               ),
             ),
           ),
           CommonCard(
             margin: EdgeInsets.zero,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: rels.isEmpty
-                ? Text(
-                    '関連タスクはまだありません',
-                    style: AppTextStyles.body2.copyWith(
-                      color: AppColors.textTertiary(context),
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      '関連タスクはまだありません',
+                      style: AppTextStyles.body2.copyWith(color: AppColors.textTertiary(context)),
                     ),
                   )
                 : Column(
                     children: [
                       for (int i = 0; i < rels.length; i++) ...[
-                        if (i > 0)
-                          Divider(height: 1, color: AppColors.border(context)),
-                        _RelationRow(
-                          task: task,
-                          rel: rels[i].$1,
-                          target: rels[i].$2,
-                        ),
+                        _RelationRow(task: task, rel: rels[i].$1, target: rels[i].$2),
                       ],
                     ],
                   ),
@@ -90,21 +72,14 @@ class TaskRelationsBlock extends ConsumerWidget {
 }
 
 class _RelationRow extends ConsumerWidget {
-  const _RelationRow({
-    required this.task,
-    required this.rel,
-    required this.target,
-  });
+  const _RelationRow({required this.task, required this.rel, required this.target});
 
   final TaskItem task;
   final TaskRelation rel;
   final TaskItem target;
 
   Future<void> _handleRemove(BuildContext context, WidgetRef ref) async {
-    final controller = ref.read(
-      taskItemDetailControllerProvider(task.id).notifier,
-    );
-    final messenger = ScaffoldMessenger.of(context);
+    final controller = ref.read(taskItemDetailControllerProvider(task.id).notifier);
     try {
       await controller.removeRelation(target.id);
     } catch (_) {
@@ -113,33 +88,19 @@ class _RelationRow extends ConsumerWidget {
       return;
     }
     if (!context.mounted) return;
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: const Text('紐付けを解除しました'),
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          action: SnackBarAction(
-            label: '元に戻す',
-            onPressed: () async {
-              try {
-                await controller.addRelation(rel);
-              } catch (_) {
-                messenger
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    const SnackBar(
-                      content: Text('紐付けの復元に失敗しました'),
-                      duration: Duration(seconds: 3),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-              }
-            },
-          ),
-        ),
-      );
+    CommonSnackBar.show(
+      context,
+      '紐付けを解除しました',
+      actionLabel: '元に戻す',
+      onAction: () async {
+        try {
+          await controller.addRelation(rel);
+        } catch (_) {
+          if (!context.mounted) return;
+          CommonSnackBar.error(context, '紐付けの復元に失敗しました');
+        }
+      },
+    );
   }
 
   @override
@@ -148,24 +109,17 @@ class _RelationRow extends ConsumerWidget {
     return InkWell(
       onTap: () => context.push(AppRoutes.taskDetail, extra: target.id),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+        padding: const EdgeInsets.symmetric(vertical: 2),
         child: Row(
           children: [
-            Container(
-              width: 90,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: Text(
-                TaskMeta.relationLabel(rel.kind),
-                style: AppTextStyles.caption2.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
-                  color: color,
-                ),
+            Tooltip(
+              message: TaskMeta.relationLabel(rel.kind),
+              child: Container(
+                width: 24,
+                height: 24,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(4)),
+                child: Icon(_relationIcon(rel.kind), size: 14, color: color),
               ),
             ),
             const SizedBox(width: 8),
@@ -176,14 +130,11 @@ class _RelationRow extends ConsumerWidget {
                 target.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.body2.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary(context),
-                ),
+                style: AppTextStyles.label1.copyWith(color: AppColors.textPrimary(context)),
               ),
             ),
             const SizedBox(width: 6),
-            StatusChip(status: target.status, dense: true),
+            StatusChip(status: target.status),
             IconButton(
               icon: const Icon(Icons.close_rounded, size: 18),
               color: AppColors.textTertiary(context),
@@ -198,4 +149,12 @@ class _RelationRow extends ConsumerWidget {
       ),
     );
   }
+
+  static IconData _relationIcon(RelationKind k) => switch (k) {
+    RelationKind.blocks => Icons.block_rounded,
+    RelationKind.blockedBy => Icons.do_not_disturb_on_outlined,
+    RelationKind.relatesTo => Icons.link_rounded,
+    RelationKind.duplicates => Icons.content_copy_rounded,
+    RelationKind.duplicatedBy => Icons.copy_all_outlined,
+  };
 }

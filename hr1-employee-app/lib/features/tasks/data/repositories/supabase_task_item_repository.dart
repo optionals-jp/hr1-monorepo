@@ -111,15 +111,28 @@ class SupabaseTaskItemRepository implements TaskItemRepository {
     int limit = 50,
   }) async {
     final q = query.trim();
-    if (q.isEmpty) return const [];
-    // ILIKE 'q%' の前方一致。leading wildcard を使わず btree インデックスを
-    // 効かせる（trgm 導入は必要に応じて別チケット）。
-    final pattern = '${q.replaceAll('%', '\\%').replaceAll('_', '\\_')}%';
-    final rows = await _client
+    var query0 = _client
         .from('task_items')
         .select(_taskItemSelect)
-        .eq('organization_id', activeOrganizationId)
-        .ilike('title', pattern)
+        .eq('organization_id', activeOrganizationId);
+    if (q.isNotEmpty) {
+      // ILIKE のメタ文字 (\, %, _) は SQL レベルでエスケープして literal 化する。
+      final ilikeEscaped = q
+          .replaceAll(r'\', r'\\')
+          .replaceAll('%', r'\%')
+          .replaceAll('_', r'\_');
+      final pattern = '%$ilikeEscaped%';
+      // 数値 / `#数値` 入力時は seq 列も等価検索する。bigint カラムだが Dart の
+      // int は 64bit なので tryParse で OK（過剰桁は null フォールバック）。
+      final seqMatch = RegExp(r'^#?(\d+)$').firstMatch(q);
+      final seq = seqMatch != null ? int.tryParse(seqMatch.group(1)!) : null;
+      query0 = query0.or(
+        seq != null
+            ? 'title.ilike.$pattern,seq.eq.$seq'
+            : 'title.ilike.$pattern',
+      );
+    }
+    final rows = await query0
         .order('updated_at', ascending: false)
         // excludeIds が長いと URL サイズに影響するため、クライアント側で
         // フィルタする方針（limit を少し多めに取って後で削る）。

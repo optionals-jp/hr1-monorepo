@@ -20,8 +20,10 @@ abstract class TaskItemRepository {
   /// 詳細画面の親 / サブ / 関連を 1 RTT で hydrate するための一括取得。
   Future<List<TaskItem>> fetchByIds(List<String> ids);
 
-  /// クエリが空のときは空リストを返す（候補を露出しない方針）。
-  /// `excludeIds` はクライアント側でフィルタ（URL 上限回避）。
+  /// タイトル部分一致 + seq 等価で候補を返す。query が `^#?\d+$` パターンに
+  /// 一致する場合は seq 列も等価検索する。空クエリは最新更新順の候補一覧
+  /// （初期表示用）を返す。`excludeIds` はクライアント側でフィルタ
+  /// （URL 上限回避）。
   Future<List<TaskItem>> searchByTitle({
     required String query,
     Set<String> excludeIds = const {},

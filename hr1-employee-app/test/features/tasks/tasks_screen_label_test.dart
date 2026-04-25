@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hr1_employee_app/features/tasks/domain/entities/task_item.dart';
-import 'package:hr1_employee_app/features/tasks/presentation/screens/task_filter_label.dart';
+import 'package:hr1_employee_app/features/tasks/presentation/widgets/task_assignee_chip_label.dart';
 
 const _alice = TaskUser(
   id: 'u-alice',

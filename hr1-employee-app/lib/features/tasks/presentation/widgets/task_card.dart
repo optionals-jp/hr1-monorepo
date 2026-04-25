@@ -172,10 +172,28 @@ class _MetaRow extends ConsumerWidget {
       meta.add(_miniText(context, '⎘ ${task.subtasks.length}'));
     }
     if (task.relations.isNotEmpty) {
-      meta.add(_miniText(context, '⇄ ${task.relations.length}'));
+      meta.add(
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppIcons.arrowFill(size: 12),
+            const SizedBox(width: 3),
+            _miniText(context, '${task.relations.length}'),
+          ],
+        ),
+      );
     }
     if (task.commentCount > 0) {
-      meta.add(_miniText(context, '💬 ${task.commentCount}'));
+      meta.add(
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppIcons.messageTextFill(size: 12),
+            const SizedBox(width: 3),
+            _miniText(context, '${task.commentCount}'),
+          ],
+        ),
+      );
     }
     return Wrap(
       spacing: 10,

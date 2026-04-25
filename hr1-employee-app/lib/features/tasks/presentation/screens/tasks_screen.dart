@@ -12,7 +12,7 @@ import 'package:hr1_employee_app/features/tasks/domain/entities/task_item_page.d
 import 'package:hr1_employee_app/features/tasks/domain/entities/task_meta.dart';
 import 'package:hr1_employee_app/features/tasks/presentation/controllers/task_item_list_controller.dart';
 import 'package:hr1_employee_app/features/tasks/presentation/providers/task_item_providers.dart';
-import 'package:hr1_employee_app/features/tasks/presentation/screens/task_filter_label.dart';
+import 'package:hr1_employee_app/features/tasks/presentation/widgets/task_assignee_chip_label.dart';
 import 'package:hr1_employee_app/features/tasks/presentation/screens/task_new_sheet.dart';
 import 'package:hr1_employee_app/features/tasks/presentation/widgets/task_card.dart';
 import 'package:hr1_employee_app/features/tasks/presentation/widgets/task_chips.dart';
@@ -398,18 +398,11 @@ class _PaginatedTaskListState extends ConsumerState<_PaginatedTaskList> {
       return;
     }
     controller.scheduleToggleDone(task.id);
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text('タスクを完了しました: ${task.title}'),
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(
-          label: '元に戻す',
-          onPressed: () => controller.cancelPendingToggle(task.id),
-        ),
-      ),
+    CommonSnackBar.show(
+      context,
+      'タスクを完了しました: ${task.title}',
+      actionLabel: '元に戻す',
+      onAction: () => controller.cancelPendingToggle(task.id),
     );
   }
 }

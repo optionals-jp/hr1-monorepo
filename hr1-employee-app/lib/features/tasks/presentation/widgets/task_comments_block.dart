@@ -16,12 +16,7 @@ class TaskCommentsBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final comments = task.comments;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screenHorizontal,
-        16,
-        AppSpacing.screenHorizontal,
-        4,
-      ),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screenHorizontal, 16, AppSpacing.screenHorizontal, 4),
       child: Column(
         // 中身が短くても CommonCard を画面横幅いっぱいまで広げるため stretch。
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -29,19 +24,19 @@ class TaskCommentsBlock extends StatelessWidget {
           SectionHeader('コメント · ${comments.length}', prominent: true),
           CommonCard(
             margin: EdgeInsets.zero,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: comments.isEmpty
-                ? Text(
-                    'コメントはまだありません',
-                    style: AppTextStyles.body2.copyWith(
-                      color: AppColors.textTertiary(context),
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      'コメントはまだありません',
+                      style: AppTextStyles.body2.copyWith(color: AppColors.textTertiary(context)),
                     ),
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      for (int i = 0; i < comments.length; i++) ...[
-                        _CommentItem(comment: comments[i]),
-                      ],
+                      for (int i = 0; i < comments.length; i++) ...[_CommentItem(comment: comments[i])],
                     ],
                   ),
           ),
@@ -63,11 +58,7 @@ class _CommentItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserAvatar(
-            initial: comment.user.avatar,
-            color: Color(comment.user.argb),
-            size: 36,
-          ),
+          UserAvatar(initial: comment.user.avatar, color: Color(comment.user.argb), size: 36),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -87,28 +78,18 @@ class _CommentItem extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      '·',
-                      style: AppTextStyles.caption2.copyWith(
-                        color: AppColors.textTertiary(context),
-                      ),
-                    ),
+                    Text('·', style: AppTextStyles.caption2.copyWith(color: AppColors.textTertiary(context))),
                     const SizedBox(width: 6),
                     Text(
                       _formatTime(comment.createdAt),
-                      style: AppTextStyles.caption2.copyWith(
-                        color: AppColors.textTertiary(context),
-                      ),
+                      style: AppTextStyles.caption2.copyWith(color: AppColors.textTertiary(context)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(
                   comment.text,
-                  style: AppTextStyles.body2.copyWith(
-                    color: AppColors.textPrimary(context),
-                    height: 1.4,
-                  ),
+                  style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary(context), height: 1.4),
                 ),
               ],
             ),
