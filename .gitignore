@@ -64,3 +64,6 @@ package-lock.json
 
 # 一時ドキュメント・作業記録 (commit 対象外)
 docs/temp/
+
+# FVM Version Cache
+.fvm/

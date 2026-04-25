@@ -12,14 +12,14 @@ class AppShadows {
 
   static const List<BoxShadow> shadow2 = [
     BoxShadow(
-      color: Color.fromRGBO(0, 0, 0, 0.10),
+      color: Color.fromRGBO(0, 0, 0, 0.05),
       offset: Offset(0, 1),
-      blurRadius: 2,
+      blurRadius: 4,
     ),
     BoxShadow(
       color: Color.fromRGBO(0, 0, 0, 0.08),
       offset: Offset.zero,
-      blurRadius: 2,
+      blurRadius: 4,
     ),
   ];
 

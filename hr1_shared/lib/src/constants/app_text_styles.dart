@@ -59,6 +59,13 @@ class AppTextStyles {
     height: 1.29,
   );
 
+  /// 15pt Bold — Label 1
+  static TextStyle label1 = GoogleFonts.notoSansJp(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    height: 1.29,
+  );
+
   /// 17pt Regular — Body 1
   static TextStyle body1 = GoogleFonts.notoSansJp(
     fontSize: 17,

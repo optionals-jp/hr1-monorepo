@@ -1,1178 +1,496 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
 import 'package:hr1_employee_app/core/router/app_router.dart';
-import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
-import 'package:hr1_employee_app/features/tasks/domain/entities/task.dart';
-import 'package:hr1_employee_app/features/tasks/presentation/controllers/task_controller.dart';
-import 'package:hr1_employee_app/features/tasks/presentation/providers/task_providers.dart';
-import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_todo.dart';
-import 'package:hr1_employee_app/features/business_cards/presentation/providers/business_card_providers.dart';
+import 'package:hr1_employee_app/features/notifications/presentation/providers/notification_providers.dart';
+import 'package:hr1_employee_app/features/tasks/domain/entities/task_item.dart';
+import 'package:hr1_employee_app/features/tasks/domain/entities/task_item_page.dart';
+import 'package:hr1_employee_app/features/tasks/domain/entities/task_meta.dart';
+import 'package:hr1_employee_app/features/tasks/presentation/controllers/task_item_list_controller.dart';
+import 'package:hr1_employee_app/features/tasks/presentation/providers/task_item_providers.dart';
+import 'package:hr1_employee_app/features/tasks/presentation/screens/task_filter_label.dart';
+import 'package:hr1_employee_app/features/tasks/presentation/screens/task_new_sheet.dart';
+import 'package:hr1_employee_app/features/tasks/presentation/widgets/task_card.dart';
+import 'package:hr1_employee_app/features/tasks/presentation/widgets/task_chips.dart';
+import 'package:hr1_employee_app/shared/widgets/widgets.dart';
 
+/// 31 タスク一覧 — list mode per the `Flutter実装指示書_31タスク一覧.md` handoff.
 class TasksScreen extends HookConsumerWidget {
   const TasksScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final addController = useTextEditingController();
-    final addFocusNode = useFocusNode();
-    final showAddField = useState(false);
-
-    final filter = ref.watch(taskFilterProvider);
-    final tasksAsync = ref.watch(taskListControllerProvider);
+    final tabController = useTabController(initialLength: 2);
+    final source = ref.watch(taskSourceFilterProvider);
+    final countsAsync = ref.watch(taskCountsProvider(source));
+    final counts = countsAsync.valueOrNull ?? TaskItemCounts.zero;
     final user = ref.watch(appUserProvider);
 
-    Future<void> addTask() async {
-      final title = addController.text.trim();
-      if (title.isEmpty) return;
-      await ref.read(taskListControllerProvider.notifier).addTask(title);
-      addController.clear();
-    }
-
-    Future<void> toggleComplete(Task task) async {
-      await ref
-          .read(taskListControllerProvider.notifier)
-          .toggleComplete(task.id, task.isCompleted);
-    }
-
-    Future<void> toggleImportant(Task task) async {
-      await ref
-          .read(taskListControllerProvider.notifier)
-          .toggleImportant(task.id, task.isImportant);
-    }
-
-    Future<void> deleteTask(Task task) async {
-      await ref.read(taskListControllerProvider.notifier).deleteTask(task.id);
-    }
-
-    void showTaskDetail(Task task) {
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => _TaskDetailSheet(task: task)),
-      );
-    }
-
-    return CommonScaffold(
-      appBar: AppBar(
-        titleSpacing: AppSpacing.screenHorizontal,
-        title: Row(
-          children: [
-            OrgIcon(
-              initial: (user?.activeOrganizationName ?? 'H').substring(0, 1),
-              size: 32,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'タスク',
-              style: AppTextStyles.title1.copyWith(letterSpacing: -0.2),
-            ),
-          ],
-        ),
-        centerTitle: false,
-        actions: [
-          GestureDetector(
-            onTap: () => context.push(AppRoutes.profileFullscreen),
-            child: Padding(
-              padding: const EdgeInsets.only(
-                right: AppSpacing.screenHorizontal,
-              ),
-              child: UserAvatar(
-                initial: (user?.displayName ?? user?.email ?? 'U').substring(
-                  0,
-                  1,
-                ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.transparent,
+      ),
+      child: CommonScaffold(
+        backgroundColor: AppColors.surface(context),
+        appBar: AppBar(
+          titleSpacing: AppSpacing.screenHorizontal,
+          title: Row(
+            children: [
+              OrgIcon(
+                initial: (user?.activeOrganizationName ?? 'H').substring(0, 1),
                 size: 32,
-                imageUrl: user?.avatarUrl,
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          _FilterTabs(
-            selected: filter,
-            onSelected: (f) {
-              ref.read(taskFilterProvider.notifier).state = f;
-            },
-          ),
-          _FilterHeader(filter: filter),
-          Expanded(
-            child: filter == TaskFilter.crm
-                ? _CrmTodoList()
-                : tasksAsync.when(
-                    loading: () => const LoadingIndicator(),
-                    error: (e, _) => ErrorState(
-                      onRetry: () => ref.invalidate(taskListControllerProvider),
-                    ),
-                    data: (tasks) {
-                      final incomplete = tasks
-                          .where((t) => !t.isCompleted)
-                          .toList();
-                      final completed = tasks
-                          .where((t) => t.isCompleted)
-                          .toList();
-
-                      if (incomplete.isEmpty && completed.isEmpty) {
-                        return _EmptyTaskState(filter: filter);
-                      }
-
-                      return ListView(
-                        padding: const EdgeInsets.only(bottom: 100),
-                        children: [
-                          for (final task in incomplete)
-                            _TaskItem(
-                              task: task,
-                              onToggleComplete: () => toggleComplete(task),
-                              onToggleImportant: () => toggleImportant(task),
-                              onTap: () => showTaskDetail(task),
-                              onDismissed: () => deleteTask(task),
-                            ),
-                          if (completed.isNotEmpty)
-                            _CompletedSection(
-                              tasks: completed,
-                              onToggleComplete: toggleComplete,
-                              onToggleImportant: toggleImportant,
-                              onDelete: deleteTask,
-                              onTap: showTaskDetail,
-                            ),
-                        ],
-                      );
-                    },
-                  ),
-          ),
-          if (filter != TaskFilter.crm)
-            _AddTaskBar(
-              controller: addController,
-              focusNode: addFocusNode,
-              showField: showAddField.value,
-              onTap: () {
-                showAddField.value = true;
-                addFocusNode.requestFocus();
-              },
-              onSubmit: () async {
-                await addTask();
-                showAddField.value = false;
-              },
-              onCancel: () {
-                showAddField.value = false;
-                addController.clear();
-              },
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FilterTabs extends StatelessWidget {
-  const _FilterTabs({required this.selected, required this.onSelected});
-  final TaskFilter selected;
-  final ValueChanged<TaskFilter> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.screenHorizontal,
-        ),
-        children: TaskFilter.values.map((f) {
-          final isActive = f == selected;
-          final (icon, color) = switch (f) {
-            TaskFilter.myDay => (Icons.wb_sunny_outlined, AppColors.sunOrange),
-            TaskFilter.important => (
-              Icons.star_outline_rounded,
-              AppColors.error,
-            ),
-            TaskFilter.planned => (
-              Icons.calendar_today_rounded,
-              AppColors.success,
-            ),
-            TaskFilter.all => (Icons.list_rounded, AppColors.brand),
-            TaskFilter.crm => (Icons.credit_card_rounded, AppColors.warning),
-          };
-
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Material(
-              color: isActive
-                  ? color.withValues(alpha: 0.12)
-                  : AppColors.divider(context),
-
-              borderRadius: AppRadius.radiusCircular,
-              child: InkWell(
-                onTap: () => onSelected(f),
-                borderRadius: AppRadius.radiusCircular,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 4,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        icon,
-                        size: 16,
-                        color: isActive
-                            ? color
-                            : AppColors.textSecondary(context),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        f.label,
-                        style: AppTextStyles.caption2.copyWith(
-                          color: isActive
-                              ? color
-                              : AppColors.textSecondary(context),
-                          fontWeight: isActive
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _FilterHeader extends StatelessWidget {
-  const _FilterHeader({required this.filter});
-  final TaskFilter filter;
-
-  @override
-  Widget build(BuildContext context) {
-    final (title, subtitle) = switch (filter) {
-      TaskFilter.myDay => (
-        'My Day',
-        DateFormat('M月d日（E）', 'ja').format(DateTime.now()),
-      ),
-      TaskFilter.important => ('重要', null),
-      TaskFilter.planned => ('計画済み', null),
-      TaskFilter.all => ('すべてのタスク', null),
-      TaskFilter.crm => ('CRM TODO', null),
-    };
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screenHorizontal,
-        AppSpacing.md,
-        AppSpacing.screenHorizontal,
-        AppSpacing.sm,
-      ),
-      child: Row(
-        children: [
-          if (filter == TaskFilter.myDay)
-            Padding(
-              padding: const EdgeInsets.only(right: 10),
-              child: Icon(
-                Icons.wb_sunny_rounded,
-                size: 24,
-                color: AppColors.sunOrange,
-              ),
-            ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: AppTextStyles.title1),
-              if (subtitle != null)
-                Text(
-                  subtitle,
-                  style: AppTextStyles.caption2.copyWith(
-                    color: AppColors.textSecondary(context),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TaskItem extends StatelessWidget {
-  const _TaskItem({
-    required this.task,
-    required this.onToggleComplete,
-    required this.onToggleImportant,
-    required this.onTap,
-    required this.onDismissed,
-  });
-
-  final Task task;
-  final VoidCallback onToggleComplete;
-  final VoidCallback onToggleImportant;
-  final VoidCallback onTap;
-  final VoidCallback onDismissed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Dismissible(
-      key: ValueKey(task.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        color: AppColors.error,
-        child: AppIcons.trashFill(size: 24, color: Colors.white),
-      ),
-      onDismissed: (_) => onDismissed(),
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenHorizontal,
-            vertical: 10,
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: onToggleComplete,
-                child: Container(
-                  width: 22,
-                  height: 22,
-                  margin: const EdgeInsets.only(top: 1),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: task.isCompleted
-                          ? AppColors.brand
-                          : AppColors.textTertiary(context),
-                      width: 1.5,
-                    ),
-                    color: task.isCompleted
-                        ? AppColors.brand
-                        : Colors.transparent,
-                  ),
-                  child: task.isCompleted
-                      ? const Icon(
-                          Icons.check_rounded,
-                          size: 14,
-                          color: Colors.white,
-                        )
-                      : null,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      task.title,
-                      style: AppTextStyles.caption1.copyWith(
-                        decoration: task.isCompleted
-                            ? TextDecoration.lineThrough
-                            : null,
-                        color: task.isCompleted
-                            ? AppColors.textSecondary(context)
-                            : null,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (_hasMetadata) ...[
-                      const SizedBox(height: 3),
-                      _MetadataRow(task: task),
-                    ],
-                  ],
-                ),
-              ),
-              GestureDetector(
-                onTap: onToggleImportant,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 8, top: 1),
-                  child: Icon(
-                    task.isImportant
-                        ? Icons.star_rounded
-                        : Icons.star_outline_rounded,
-                    size: 22,
-                    color: task.isImportant
-                        ? AppColors.error
-                        : AppColors.textTertiary(context),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  bool get _hasMetadata =>
-      task.dueDate != null || task.isActiveMyDay || task.steps != null;
-}
-
-class _MetadataRow extends StatelessWidget {
-  const _MetadataRow({required this.task});
-  final Task task;
-
-  @override
-  Widget build(BuildContext context) {
-    final items = <Widget>[];
-
-    if (task.isActiveMyDay) {
-      items.add(
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.wb_sunny_outlined,
-              size: 12,
-              color: AppColors.textSecondary(context),
-            ),
-            const SizedBox(width: 3),
-            Text(
-              'My Day',
-              style: AppTextStyles.caption1.copyWith(
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary(context),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (task.dueDate != null) {
-      final isOverdue = task.isOverdue;
-      final label = _formatDueDate(task.dueDate!);
-      items.add(
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppIcons.calendar(
-              size: 12,
-              color: isOverdue
-                  ? AppColors.error
-                  : AppColors.textSecondary(context),
-            ),
-            const SizedBox(width: 3),
-            Text(
-              label,
-              style: AppTextStyles.caption1.copyWith(
-                fontWeight: FontWeight.w500,
-                color: isOverdue
-                    ? AppColors.error
-                    : AppColors.textSecondary(context),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (task.steps != null && task.steps!.isNotEmpty) {
-      final done = task.steps!.where((s) => s.isCompleted).length;
-      items.add(
-        Text(
-          '$done/${task.steps!.length}',
-          style: AppTextStyles.caption1.copyWith(
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary(context),
-          ),
-        ),
-      );
-    }
-
-    return Wrap(spacing: 10, children: items);
-  }
-
-  String _formatDueDate(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final d = DateTime(date.year, date.month, date.day);
-    final diff = d.difference(today).inDays;
-
-    if (diff < 0) return '期限切れ';
-    if (diff == 0) return '今日';
-    if (diff == 1) return '明日';
-    return DateFormat('M/d').format(date);
-  }
-}
-
-class _CompletedSection extends StatefulWidget {
-  const _CompletedSection({
-    required this.tasks,
-    required this.onToggleComplete,
-    required this.onToggleImportant,
-    required this.onDelete,
-    required this.onTap,
-  });
-
-  final List<Task> tasks;
-  final ValueChanged<Task> onToggleComplete;
-  final ValueChanged<Task> onToggleImportant;
-  final ValueChanged<Task> onDelete;
-  final ValueChanged<Task> onTap;
-
-  @override
-  State<_CompletedSection> createState() => _CompletedSectionState();
-}
-
-class _CompletedSectionState extends State<_CompletedSection> {
-  bool _isExpanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        InkWell(
-          onTap: () => setState(() => _isExpanded = !_isExpanded),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenHorizontal,
-              vertical: AppSpacing.md,
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  _isExpanded
-                      ? Icons.keyboard_arrow_down_rounded
-                      : Icons.keyboard_arrow_right_rounded,
-                  size: 20,
-                  color: AppColors.textSecondary(context),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '完了済み (${widget.tasks.length})',
-                  style: AppTextStyles.caption2.copyWith(
-                    color: AppColors.textSecondary(context),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (_isExpanded)
-          ...widget.tasks.map(
-            (task) => _TaskItem(
-              task: task,
-              onToggleComplete: () => widget.onToggleComplete(task),
-              onToggleImportant: () => widget.onToggleImportant(task),
-              onTap: () => widget.onTap(task),
-              onDismissed: () => widget.onDelete(task),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _AddTaskBar extends StatelessWidget {
-  const _AddTaskBar({
-    required this.controller,
-    required this.focusNode,
-    required this.showField,
-    required this.onTap,
-    required this.onSubmit,
-    required this.onCancel,
-  });
-
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final bool showField;
-  final VoidCallback onTap;
-  final VoidCallback onSubmit;
-  final VoidCallback onCancel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.screenHorizontal,
-        AppSpacing.sm,
-        AppSpacing.screenHorizontal,
-        MediaQuery.of(context).padding.bottom + AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        border: Border(
-          top: BorderSide(
-            color: AppColors.border(context),
-            width: AppStroke.strokeWidth05,
-          ),
-        ),
-        boxShadow: AppShadows.of4(context),
-      ),
-      child: showField
-          ? Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    style: AppTextStyles.caption1,
-                    onSubmitted: (_) => onSubmit(),
-                    decoration: InputDecoration(
-                      hintText: 'タスクを追加',
-                      hintStyle: AppTextStyles.caption1.copyWith(
-                        color: AppColors.textSecondary(context),
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.close_rounded,
-                    size: 20,
-                    color: AppColors.textSecondary(context),
-                  ),
-                  onPressed: onCancel,
-                ),
-                IconButton(
-                  icon: AppIcons.sendFill(size: 20, color: AppColors.brand),
-                  onPressed: onSubmit,
-                ),
-              ],
-            )
-          : InkWell(
-              onTap: onTap,
-              borderRadius: AppRadius.radius80,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Row(
-                  children: [
-                    Icon(Icons.add_rounded, size: 22, color: AppColors.brand),
-                    const SizedBox(width: 12),
-                    Text(
-                      'タスクを追加',
-                      style: AppTextStyles.caption1.copyWith(
-                        color: AppColors.brand,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-    );
-  }
-}
-
-class _EmptyTaskState extends StatelessWidget {
-  const _EmptyTaskState({required this.filter});
-  final TaskFilter filter;
-
-  @override
-  Widget build(BuildContext context) {
-    final emptyColor = AppColors.textTertiary(context);
-    final (icon, title, subtitle) = switch (filter) {
-      TaskFilter.myDay => (
-        Icon(Icons.wb_sunny_outlined, size: 48, color: emptyColor) as Widget,
-        '今日のタスクはありません',
-        'タスクを追加して今日の集中ポイントを設定しましょう',
-      ),
-      TaskFilter.important => (
-        Icon(Icons.star_outline_rounded, size: 48, color: emptyColor) as Widget,
-        '重要なタスクはありません',
-        'スターを付けたタスクがここに表示されます',
-      ),
-      TaskFilter.planned => (
-        AppIcons.calendar(size: 48, color: emptyColor),
-        '計画済みのタスクはありません',
-        '期限付きのタスクがここに表示されます',
-      ),
-      TaskFilter.all => (
-        AppIcons.tickCircle(size: 48, color: emptyColor),
-        'タスクはありません',
-        '下の「+ タスクを追加」から始めましょう',
-      ),
-      TaskFilter.crm => (
-        Icon(Icons.credit_card_rounded, size: 48, color: emptyColor) as Widget,
-        'CRM TODOはありません',
-        'CRM画面からTODOを追加できます',
-      ),
-    };
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            icon,
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              title,
-              style: AppTextStyles.headline,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              subtitle,
-              style: AppTextStyles.caption2.copyWith(
-                color: AppColors.textSecondary(context),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TaskDetailSheet extends HookConsumerWidget {
-  const _TaskDetailSheet({required this.task});
-  final Task task;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final titleController = useTextEditingController(text: task.title);
-    final noteController = useTextEditingController(text: task.note ?? '');
-    final stepController = useTextEditingController();
-    final isMyDay = useState(task.isActiveMyDay);
-    final dueDate = useState<DateTime?>(task.dueDate);
-    final isSaving = useState(false);
-
-    final stepsAsync = ref.watch(taskStepsProvider(task.id));
-
-    Future<void> save() async {
-      final title = titleController.text.trim();
-      if (title.isEmpty) return;
-
-      isSaving.value = true;
-      try {
-        final today = DateTime.now();
-        final todayStr =
-            '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-
-        await ref
-            .read(taskDetailControllerProvider(task.id).notifier)
-            .updateTask(
-              task.copyWith(
-                title: title,
-                note: noteController.text.trim().isEmpty
-                    ? null
-                    : noteController.text.trim(),
-                isMyDay: isMyDay.value,
-                myDayDate: isMyDay.value ? DateTime.parse(todayStr) : null,
-                dueDate: dueDate.value,
-              ),
-            );
-        if (context.mounted) Navigator.of(context).pop();
-      } catch (e) {
-        if (context.mounted) CommonSnackBar.error(context, 'エラー: $e');
-      } finally {
-        if (context.mounted) isSaving.value = false;
-      }
-    }
-
-    Future<void> pickDueDate() async {
-      final picked = await showDatePicker(
-        context: context,
-        initialDate: dueDate.value ?? DateTime.now(),
-        firstDate: DateTime(2020),
-        lastDate: DateTime(2030),
-      );
-      if (picked != null) {
-        dueDate.value = picked;
-      }
-    }
-
-    Future<void> addStep() async {
-      final title = stepController.text.trim();
-      if (title.isEmpty) return;
-
-      await ref
-          .read(taskDetailControllerProvider(task.id).notifier)
-          .addStep(task.id, title);
-      stepController.clear();
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('タスクの詳細'),
-        leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: isSaving.value ? null : save,
-            child: isSaving.value
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: LoadingIndicator(size: 16),
-                  )
-                : Text(
-                    '保存',
-                    style: AppTextStyles.caption1.copyWith(
-                      color: AppColors.brand,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-          ),
-          const SizedBox(width: 4),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
-        children: [
-          TextField(
-            controller: titleController,
-            style: AppTextStyles.title3,
-            decoration: InputDecoration(
-              hintText: 'タスク名',
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
-              hintStyle: AppTextStyles.title3.copyWith(
-                color: AppColors.textTertiary(context),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-
-          stepsAsync.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-            data: (steps) => Column(
-              children: [
-                for (final step in steps)
-                  _StepRow(
-                    step: step,
-                    onToggle: () => ref
-                        .read(taskDetailControllerProvider(task.id).notifier)
-                        .toggleStepComplete(step.id, step.isCompleted),
-                    onDelete: () => ref
-                        .read(taskDetailControllerProvider(task.id).notifier)
-                        .deleteStep(step.id),
-                  ),
-              ],
-            ),
-          ),
-          Row(
-            children: [
-              Icon(
-                Icons.add_rounded,
-                size: 18,
-                color: AppColors.textSecondary(context),
               ),
               const SizedBox(width: 10),
-              Expanded(
-                child: TextField(
-                  controller: stepController,
-                  style: AppTextStyles.caption1,
-                  onSubmitted: (_) => addStep(),
-                  decoration: InputDecoration(
-                    hintText: 'ステップを追加',
-                    hintStyle: AppTextStyles.caption1.copyWith(
-                      color: AppColors.textTertiary(context),
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
+              Text(
+                'タスク',
+                style: AppTextStyles.title1.copyWith(letterSpacing: -0.2),
               ),
             ],
           ),
-          const Divider(height: AppSpacing.xl),
-
-          _DetailActionRow(
-            icon: Icon(
-              Icons.wb_sunny_outlined,
-              size: 20,
-              color: isMyDay.value
-                  ? AppColors.brand
-                  : AppColors.textSecondary(context),
+          centerTitle: false,
+          actions: [
+            IconButton(
+              icon: Consumer(
+                builder: (context, ref, _) {
+                  final countAsync = ref.watch(unreadNotificationCountProvider);
+                  final count = countAsync.valueOrNull ?? 0;
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      AppIcons.notification(
+                        color: AppColors.textPrimary(context),
+                        size: 22,
+                      ),
+                      if (count > 0)
+                        Positioned(
+                          right: -6,
+                          top: -4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 1,
+                            ),
+                            decoration: const BoxDecoration(
+                              color: AppColors.error,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Center(
+                              child: Text(
+                                count > 99 ? '99+' : '$count',
+                                style: AppTextStyles.caption2.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.0,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+              onPressed: () => context.push(AppRoutes.notifications),
             ),
-            label: 'My Day に追加',
-            isActive: isMyDay.value,
-            onTap: () => isMyDay.value = !isMyDay.value,
-          ),
-
-          _DetailActionRow(
-            icon: AppIcons.calendar(
-              size: 20,
-              color: dueDate.value != null
-                  ? AppColors.brand
-                  : AppColors.textSecondary(context),
+            GestureDetector(
+              onTap: () => context.push(AppRoutes.profileFullscreen),
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  right: AppSpacing.screenHorizontal,
+                  left: AppSpacing.xs,
+                ),
+                child: UserAvatar(
+                  initial: (user?.displayName ?? user?.email ?? 'U').substring(
+                    0,
+                    1,
+                  ),
+                  size: 32,
+                  imageUrl: user?.avatarUrl,
+                ),
+              ),
             ),
-            label: dueDate.value != null
-                ? '期限: ${DateFormat('M/d').format(dueDate.value!)}'
-                : '期限日を追加',
-            isActive: dueDate.value != null,
-            onTap: pickDueDate,
-            trailing: dueDate.value != null
-                ? IconButton(
-                    icon: Icon(
-                      Icons.close_rounded,
-                      size: 16,
-                      color: AppColors.textSecondary(context),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => TaskNewSheet.show(context, ref),
+          backgroundColor: AppColors.brand,
+          foregroundColor: Colors.white,
+          elevation: 2,
+          child: const Icon(Icons.add_rounded),
+        ),
+        body: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screenHorizontal,
+                  AppSpacing.sm,
+                  AppSpacing.screenHorizontal,
+                  AppSpacing.xs,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: KpiTile(
+                        label: '超過',
+                        value: '${counts.overdue}',
+                        valueColor: AppColors.danger,
+                      ),
                     ),
-                    onPressed: () => dueDate.value = null,
-                  )
-                : null,
-          ),
-          const Divider(height: AppSpacing.xl),
-
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: KpiTile(
+                        label: '今日',
+                        value: '${counts.todayCount}',
+                        valueColor: AppColors.brand,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: _FilterTriggerRow(
+                onSourceTap: () => _SourceFilterSheet.show(context, ref),
+                onAssigneeTap: () => _AssigneeFilterSheet.show(context, ref),
+              ),
+            ),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _TaskTabBarDelegate(
+                TabBar(
+                  controller: tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  indicatorColor: AppColors.brand,
+                  indicatorWeight: 2,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  labelColor: AppColors.brand,
+                  unselectedLabelColor: AppColors.textSecondary(context),
+                  labelStyle: AppTextStyles.body2.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                  unselectedLabelStyle: AppTextStyles.body2.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                  labelPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                  ),
+                  // 区切り線は Stack 側で画面幅いっぱいに描画するため、
+                  // TabBar 本体の divider は無効化する。
+                  dividerHeight: 0,
+                  splashFactory: NoSplash.splashFactory,
+                  overlayColor: WidgetStateProperty.all(Colors.transparent),
+                  tabs: [
+                    Tab(text: 'アクティブ · ${counts.active}'),
+                    Tab(text: '完了 · ${counts.done}'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          body: TabBarView(
+            controller: tabController,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: AppIcons.doc(
-                  size: 20,
-                  color: AppColors.textSecondary(context),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: TextField(
-                  controller: noteController,
-                  style: AppTextStyles.caption1,
-                  maxLines: 6,
-                  minLines: 3,
-                  decoration: InputDecoration(
-                    hintText: 'メモを追加',
-                    hintStyle: AppTextStyles.caption1.copyWith(
-                      color: AppColors.textTertiary(context),
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
+              _TaskListView(showDone: false, source: source),
+              _TaskListView(showDone: true, source: source),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _StepRow extends StatelessWidget {
-  const _StepRow({
-    required this.step,
-    required this.onToggle,
-    required this.onDelete,
-  });
+/// アクティブ / 完了タブ内部のタスク一覧ビュー。
+/// `(showDone, source)` で paginated controller を引き、`ListView.builder` で
+/// 遅延描画する。スクロール末尾近くで `loadMore()` をトリガし、引き寄せで
+/// `refresh()` する。
+class _TaskListView extends ConsumerStatefulWidget {
+  const _TaskListView({required this.showDone, required this.source});
 
-  final TaskStep step;
-  final VoidCallback onToggle;
-  final VoidCallback onDelete;
+  final bool showDone;
+  final TaskSource? source;
+
+  @override
+  ConsumerState<_TaskListView> createState() => _TaskListViewState();
+}
+
+class _TaskListViewState extends ConsumerState<_TaskListView> {
+  TaskListKey get _key => (showDone: widget.showDone, source: widget.source);
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: onToggle,
-            child: Container(
-              width: 18,
-              height: 18,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: step.isCompleted
-                      ? AppColors.brand
-                      : AppColors.textTertiary(context),
-                  width: 1.5,
-                ),
-                color: step.isCompleted ? AppColors.brand : Colors.transparent,
-              ),
-              child: step.isCompleted
-                  ? const Icon(
-                      Icons.check_rounded,
-                      size: 12,
-                      color: Colors.white,
-                    )
-                  : null,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              step.title,
-              style: AppTextStyles.caption1.copyWith(
-                decoration: step.isCompleted
-                    ? TextDecoration.lineThrough
-                    : null,
-                color: step.isCompleted
-                    ? AppColors.textSecondary(context)
-                    : null,
-              ),
-            ),
-          ),
-          GestureDetector(
-            onTap: onDelete,
-            child: Icon(
-              Icons.close_rounded,
-              size: 16,
-              color: AppColors.textTertiary(context),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// =============================================================================
-// CRM TODO リスト
-// =============================================================================
-
-class _CrmTodoList extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final todosAsync = ref.watch(bcMyTodosProvider);
-
-    return todosAsync.when(
+    final pageAsync = ref.watch(taskItemListControllerProvider(_key));
+    return pageAsync.when(
+      skipLoadingOnReload: true,
       loading: () => const LoadingIndicator(),
-      error: (e, _) =>
-          ErrorState(onRetry: () => ref.invalidate(bcMyTodosProvider)),
-      data: (todos) {
-        final incomplete = todos.where((t) => !t.isCompleted).toList();
-        final completed = todos.where((t) => t.isCompleted).toList();
-
-        if (incomplete.isEmpty && completed.isEmpty) {
-          return const _EmptyTaskState(filter: TaskFilter.crm);
-        }
-
-        return ListView(
-          padding: const EdgeInsets.only(bottom: 100),
-          children: [
-            for (final todo in incomplete) _CrmTodoItem(todo: todo),
-            if (completed.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenHorizontal,
-                  vertical: AppSpacing.md,
-                ),
-                child: Text(
-                  '完了済み (${completed.length})',
-                  style: AppTextStyles.caption2.copyWith(
-                    color: AppColors.textSecondary(context),
-                    fontWeight: FontWeight.w600,
+      error: (_, _) => ErrorState(
+        onRetry: () => ref.invalidate(taskItemListControllerProvider(_key)),
+      ),
+      data: (page) {
+        if (page.items.isEmpty) {
+          return RefreshIndicator(
+            onRefresh: () => ref
+                .read(taskItemListControllerProvider(_key).notifier)
+                .refresh(),
+            child: ListView(
+              padding: const EdgeInsets.only(top: 80),
+              children: [
+                EmptyState(
+                  icon: Icon(
+                    Icons.task_alt_rounded,
+                    size: 48,
+                    color: AppColors.textTertiary(context),
                   ),
+                  title: '該当するタスクはありません',
                 ),
-              ),
-              for (final todo in completed) _CrmTodoItem(todo: todo),
-            ],
-          ],
+              ],
+            ),
+          );
+        }
+        return _PaginatedTaskList(
+          listKey: _key,
+          page: page,
+          showDone: widget.showDone,
         );
       },
     );
   }
 }
 
-class _CrmTodoItem extends StatelessWidget {
-  const _CrmTodoItem({required this.todo});
-  final BcTodo todo;
+/// 期限 bucket 見出しか TaskCard かを表す flat row entry。
+sealed class _Row {
+  const _Row();
+}
+
+class _BucketHeaderRow extends _Row {
+  const _BucketHeaderRow(this.label, this.count);
+  final String label;
+  final int count;
+}
+
+class _TaskCardRow extends _Row {
+  const _TaskCardRow(this.task);
+  final TaskItem task;
+}
+
+class _LoadMoreRow extends _Row {
+  const _LoadMoreRow();
+}
+
+/// `page.items` を bucket 単位の見出し + カードの flat list に展開する。
+/// items は `(due ASC NULLS LAST, id DESC)` で整列されているので 1 パスで
+/// bucket 境界が検出できる。最後に `hasMore` ならローディング sentinel を
+/// 1 行追加する。
+List<_Row> _buildRows(List<TaskItem> items, DateTime today, bool hasMore) {
+  final rows = <_Row>[];
+  String? currentBucket;
+  int? headerIndex;
+  int currentCount = 0;
+  for (final t in items) {
+    final bucket = TaskMeta.dueBucket(t.due, now: today);
+    if (bucket != currentBucket) {
+      if (headerIndex != null) {
+        rows[headerIndex] = _BucketHeaderRow(currentBucket!, currentCount);
+      }
+      rows.add(_BucketHeaderRow(bucket, 0));
+      headerIndex = rows.length - 1;
+      currentBucket = bucket;
+      currentCount = 0;
+    }
+    rows.add(_TaskCardRow(t));
+    currentCount++;
+  }
+  if (headerIndex != null) {
+    rows[headerIndex] = _BucketHeaderRow(currentBucket!, currentCount);
+  }
+  if (hasMore) rows.add(const _LoadMoreRow());
+  return rows;
+}
+
+class _PaginatedTaskList extends ConsumerStatefulWidget {
+  const _PaginatedTaskList({
+    required this.listKey,
+    required this.page,
+    required this.showDone,
+  });
+
+  final TaskListKey listKey;
+  final TaskItemPage page;
+  final bool showDone;
+
+  @override
+  ConsumerState<_PaginatedTaskList> createState() => _PaginatedTaskListState();
+}
+
+class _PaginatedTaskListState extends ConsumerState<_PaginatedTaskList> {
+  // スクロール末尾近くに来たら loadMore を呼ぶための Notification handler。
+  bool _onScrollNotification(ScrollNotification n) {
+    if (n.metrics.axis != Axis.vertical) return false;
+    if (n.metrics.pixels >= n.metrics.maxScrollExtent - 200 &&
+        widget.page.hasMore) {
+      // build 中の setState を避けるため microtask で次フレームに遅らせる。
+      Future.microtask(() {
+        ref
+            .read(taskItemListControllerProvider(widget.listKey).notifier)
+            .loadMore();
+      });
+    }
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final linkedParts = <String>[
-      if (todo.companyName != null) todo.companyName!,
-      if (todo.contactName != null) todo.contactName!,
-      if (todo.dealTitle != null) todo.dealTitle!,
-    ];
+    final today = ref.watch(taskTodayProvider);
+    final pendingIds = ref.watch(pendingTaskIdsProvider);
+    final rows = _buildRows(widget.page.items, today, widget.page.hasMore);
+    return RefreshIndicator(
+      onRefresh: () => ref
+          .read(taskItemListControllerProvider(widget.listKey).notifier)
+          .refresh(),
+      child: NotificationListener<ScrollNotification>(
+        onNotification: _onScrollNotification,
+        child: ListView.builder(
+          padding: const EdgeInsets.only(top: AppSpacing.xs, bottom: 80),
+          itemCount: rows.length,
+          itemBuilder: (context, i) {
+            final row = rows[i];
+            return switch (row) {
+              _BucketHeaderRow() => _BucketHeader(
+                label: row.label,
+                count: row.count,
+              ),
+              _TaskCardRow() => TaskCard(
+                task: row.task,
+                forceChecked: pendingIds.contains(row.task.id),
+                onTap: () =>
+                    context.push(AppRoutes.taskDetail, extra: row.task.id),
+                onToggleDone: () => _handleToggleDone(context, ref, row.task),
+              ),
+              _LoadMoreRow() => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(child: LoadingIndicator(size: 20)),
+              ),
+            };
+          },
+        ),
+      ),
+    );
+  }
 
+  void _handleToggleDone(BuildContext context, WidgetRef ref, TaskItem task) {
+    final controller = ref.read(
+      taskItemListControllerProvider(widget.listKey).notifier,
+    );
+    final isDone = task.status == TaskStatus.done;
+    if (isDone) {
+      // 完了済みを未完了に戻すのは即時反映。誤タップのリスクは小さい。
+      controller.scheduleToggleDone(task.id, delay: Duration.zero);
+      return;
+    }
+    controller.scheduleToggleDone(task.id);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('タスクを完了しました: ${task.title}'),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: '元に戻す',
+          onPressed: () => controller.cancelPendingToggle(task.id),
+        ),
+      ),
+    );
+  }
+}
+
+class _BucketHeader extends StatelessWidget {
+  const _BucketHeader({required this.label, required this.count});
+
+  final String label;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = label == '期限超過'
+        ? AppColors.danger
+        : AppColors.textSecondary(context);
+    final labelStyle = AppTextStyles.label1.copyWith(color: color);
+    final countStyle = AppTextStyles.label1.copyWith(
+      color: color.withValues(alpha: 0.7),
+    );
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenHorizontal,
-        vertical: 10,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenHorizontal,
+        AppSpacing.md,
+        AppSpacing.screenHorizontal,
+        AppSpacing.xs,
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 22,
-            height: 22,
-            margin: const EdgeInsets.only(top: 1),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: todo.isCompleted
-                    ? AppColors.brand
-                    : AppColors.textTertiary(context),
-                width: 1.5,
-              ),
-              color: todo.isCompleted ? AppColors.brand : Colors.transparent,
-            ),
-            child: todo.isCompleted
-                ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
-                : null,
+          Text(label, style: labelStyle),
+          const SizedBox(width: AppSpacing.xs),
+          Text('· $count', style: countStyle),
+        ],
+      ),
+    );
+  }
+}
+
+/// 種別フィルタ + 担当者フィルタの chip を横一列に並べる行。
+/// どちらも YouTube Studio 風の「選択中スタイル」で常時表示し、タップで
+/// 各々のシートが開く。
+class _FilterTriggerRow extends ConsumerWidget {
+  const _FilterTriggerRow({
+    required this.onSourceTap,
+    required this.onAssigneeTap,
+  });
+
+  final VoidCallback onSourceTap;
+  final VoidCallback onAssigneeTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final source = ref.watch(taskSourceFilterProvider);
+    final assignees = ref.watch(taskAssigneeFilterProvider);
+    // 候補ロード前は ID から名前を引けないので、それに合わせた fallback を
+    // ラベルで使う。ロード完了で chip が rebuild され正規名に置き換わる。
+    final candidates =
+        ref.watch(assigneeCandidatesProvider).valueOrNull ?? const <TaskUser>[];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenHorizontal,
+        AppSpacing.xs,
+        AppSpacing.screenHorizontal,
+        AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          _FilterChip(
+            // 未選択時は「すべて」、選択時はその種別ラベル。
+            // どちらも常に「選択中スタイル」(active=true)で表示する。
+            label: source == null ? 'すべて' : TaskMeta.sourceLabel(source),
+            accent: source == null ? null : taskSourceColor(source),
+            active: true,
+            onTap: onSourceTap,
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  todo.title,
-                  style: AppTextStyles.caption1.copyWith(
-                    decoration: todo.isCompleted
-                        ? TextDecoration.lineThrough
-                        : null,
-                    color: todo.isCompleted
-                        ? AppColors.textSecondary(context)
-                        : null,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (linkedParts.isNotEmpty || todo.dueDate != null) ...[
-                  const SizedBox(height: 3),
-                  Wrap(
-                    spacing: 10,
-                    children: [
-                      if (todo.dueDate != null)
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            AppIcons.calendar(
-                              size: 12,
-                              color: todo.isOverdue
-                                  ? AppColors.error
-                                  : AppColors.textSecondary(context),
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              DateFormat('M/d').format(todo.dueDate!),
-                              style: AppTextStyles.caption1.copyWith(
-                                fontWeight: FontWeight.w500,
-                                color: todo.isOverdue
-                                    ? AppColors.error
-                                    : AppColors.textSecondary(context),
-                              ),
-                            ),
-                          ],
-                        ),
-                      if (linkedParts.isNotEmpty)
-                        Text(
-                          linkedParts.join(' / '),
-                          style: AppTextStyles.caption1.copyWith(
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textSecondary(context),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
+          const SizedBox(width: 6),
+          _AssigneeFilterChip(
+            assignees: assignees,
+            candidates: candidates,
+            onTap: onAssigneeTap,
           ),
         ],
       ),
@@ -1180,45 +498,232 @@ class _CrmTodoItem extends StatelessWidget {
   }
 }
 
-class _DetailActionRow extends StatelessWidget {
-  const _DetailActionRow({
-    required this.icon,
+/// YouTube Studio 風のフィルタトリガ chip。
+/// 未選択時は薄いグレーで「すべて」、選択時はアクセント色を帯び、左に色
+/// ドット、右に下向き chevron を表示する。タップでシートを開く。
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
     required this.label,
-    required this.isActive,
+    required this.accent,
+    required this.active,
     required this.onTap,
-    this.trailing,
+    this.leading,
   });
 
-  final Widget icon;
   final String label;
-  final bool isActive;
+  final Color? accent;
+  final bool active;
   final VoidCallback onTap;
-  final Widget? trailing;
+
+  /// アクセントドットの代わりに表示する任意の widget（アバター等）。
+  /// 指定するとドットはレンダリングされない。
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
-          children: [
-            icon,
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                label,
-                style: AppTextStyles.caption1.copyWith(
-                  color: isActive
-                      ? AppColors.brand
-                      : AppColors.textPrimary(context),
+    final fg = active
+        ? (accent ?? AppColors.brand)
+        : AppColors.textSecondary(context);
+    final bg = active
+        ? (accent ?? AppColors.brand).withValues(alpha: 0.10)
+        : AppColors.surface(context);
+    final borderColor = active
+        ? (accent ?? AppColors.brand).withValues(alpha: 0.4)
+        : AppColors.border(context);
+    final base = AppTextStyles.label1;
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (leading != null) ...[
+                leading!,
+                const SizedBox(width: 6),
+              ] else if (active) ...[
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: accent ?? AppColors.brand,
+                    shape: BoxShape.circle,
+                  ),
                 ),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                label,
+                style: base.copyWith(fontWeight: FontWeight.w600, color: fg),
               ),
-            ),
-            if (trailing != null) trailing!,
-          ],
+              const SizedBox(width: 4),
+              Icon(Icons.expand_more_rounded, size: 16, color: fg),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+/// 担当者フィルタ chip。選択ユーザがいればその先頭ユーザのアバターを leading
+/// として表示し、ラベルは [taskAssigneeChipLabel] を使う。
+class _AssigneeFilterChip extends StatelessWidget {
+  const _AssigneeFilterChip({
+    required this.assignees,
+    required this.candidates,
+    required this.onTap,
+  });
+
+  final Set<String> assignees;
+  final List<TaskUser> candidates;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    TaskUser? firstSelected;
+    if (assignees.isNotEmpty) {
+      final byId = {for (final u in candidates) u.id: u};
+      for (final id in assignees) {
+        final u = byId[id];
+        if (u != null) {
+          firstSelected = u;
+          break;
+        }
+      }
+    }
+    return _FilterChip(
+      label: taskAssigneeChipLabel(assignees, candidates),
+      accent: null,
+      active: true,
+      leading: firstSelected != null
+          ? UserAvatar(
+              initial: firstSelected.avatar,
+              color: Color(firstSelected.argb),
+              size: 16,
+            )
+          : null,
+      onTap: onTap,
+    );
+  }
+}
+
+/// 種別フィルタを開くヘルパ。共通コンポーネント [CommonOptionSheet] を使う。
+class _SourceFilterSheet {
+  _SourceFilterSheet._();
+
+  static Future<void> show(BuildContext context, WidgetRef ref) {
+    final current = ref.read(taskSourceFilterProvider);
+    return CommonOptionSheet.show<TaskSource?>(
+      context: context,
+      title: '種別',
+      options: [
+        const CommonOption(value: null, label: 'すべて'),
+        for (final s in TaskMeta.userSelectableSources)
+          CommonOption(value: s, label: TaskMeta.sourceLabel(s)),
+      ],
+      selected: current,
+      onSelect: (v) => ref.read(taskSourceFilterProvider.notifier).state = v,
+    );
+  }
+}
+
+/// 担当者フィルタを開くヘルパ。共通コンポーネント [CommonMultiOptionSheet]
+/// を使う複数選択。候補（同一組織のメンバー）を 1 度ロードしてから開く。
+class _AssigneeFilterSheet {
+  _AssigneeFilterSheet._();
+
+  static Future<void> show(BuildContext context, WidgetRef ref) async {
+    // 候補が未ロードのまま空リストでシートを開かないよう、まず future を await。
+    final candidates = await ref.read(assigneeCandidatesProvider.future);
+    if (!context.mounted) return;
+    if (candidates.isEmpty) {
+      // 候補が見つからない時に黙って何もしないとタップが効いてないように
+      // 見えるので、SnackBar で明示する。
+      CommonSnackBar.show(context, '担当者候補が見つかりません');
+      return;
+    }
+    final current = ref.read(taskAssigneeFilterProvider);
+    return CommonMultiOptionSheet.show<String>(
+      context: context,
+      title: '担当者',
+      searchable: true,
+      searchHint: '名前で検索',
+      options: [
+        for (final user in candidates)
+          CommonOption(
+            value: user.id,
+            label: user.name,
+            leading: UserAvatar(
+              initial: user.avatar,
+              color: Color(user.argb),
+              size: 32,
+            ),
+            labelStyle: AppTextStyles.label1,
+          ),
+      ],
+      selected: current,
+      onChange: (next) =>
+          ref.read(taskAssigneeFilterProvider.notifier).replace(next),
+    );
+  }
+}
+
+/// [TabBar] を [NestedScrollView] のヘッダ内で pinned に保持するためのデリゲート。
+class _TaskTabBarDelegate extends SliverPersistentHeaderDelegate {
+  _TaskTabBarDelegate(this.tabBar);
+
+  final TabBar tabBar;
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    // タブの下線（区切り線）は画面幅いっぱいに、選択中の下線（インジケータ）
+    // は画面両端から 20px インセットした領域内に描画する。
+    // - 下段: 画面全幅の 1px 区切り線（Positioned + ColoredBox）
+    // - 上段: TabBar 本体を 20px の水平パディングで内側に寄せる。
+    //   TabBar 標準のインジケータ（2px）はこの padded 領域内のタブ下に
+    //   描画されるので、画面両端から常に 20px 以上のクリアランスを保つ。
+    return ColoredBox(
+      color: AppColors.surface(context),
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 1,
+            child: ColoredBox(color: AppColors.border(context)),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.screenHorizontal,
+            ),
+            child: tabBar,
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _TaskTabBarDelegate oldDelegate) =>
+      oldDelegate.tabBar != tabBar;
 }

@@ -40,9 +40,6 @@ class PushNotificationService {
     _navigatorKey = navigatorKey;
     _appType = appType;
 
-    // バックグラウンドハンドラ登録
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
     // 通知権限リクエスト
     final settings = await _messaging.requestPermission(
       alert: true,
@@ -50,6 +47,13 @@ class PushNotificationService {
       sound: true,
     );
     debugPrint('通知権限: ${settings.authorizationStatus}');
+
+    // アプリ停止中の通知タップ（cold-start deep link）
+    // APNs 待機より前に処理することで、通知からの起動時にディープリンクが遅延しない
+    final initialMessage = await _messaging.getInitialMessage();
+    if (initialMessage != null) {
+      _handleNotificationTap(initialMessage);
+    }
 
     // APNs トークン取得（iOS）— 準備完了まで待機
     if (Platform.isIOS) {
@@ -100,12 +104,6 @@ class PushNotificationService {
     // アプリ起動時の通知タップ
     FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
 
-    // アプリ停止中の通知タップ
-    final initialMessage = await _messaging.getInitialMessage();
-    if (initialMessage != null) {
-      _handleNotificationTap(initialMessage);
-    }
-
     // トークンリフレッシュ監視
     _messaging.onTokenRefresh.listen(
       (newToken) => _registerToken(token: newToken),
@@ -129,6 +127,8 @@ class PushNotificationService {
     if (Supabase.instance.client.auth.currentUser != null) {
       await _registerToken();
     }
+
+    debugPrint('プッシュ通知初期化完了');
   }
 
   /// FCM トークンを Supabase に登録

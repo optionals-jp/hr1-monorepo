@@ -1,0 +1,29 @@
+-- HR-34 ロールバック用 SQL（手動適用専用、`.skip` で migration ランナー対象外）。
+-- 本番に既にデータが入っている場合は事前に export すること。
+
+DROP TRIGGER IF EXISTS task_item_relations_mirror_ai ON public.task_item_relations;
+DROP TRIGGER IF EXISTS task_item_relations_mirror_au ON public.task_item_relations;
+DROP TRIGGER IF EXISTS task_item_relations_mirror_ad ON public.task_item_relations;
+DROP TRIGGER IF EXISTS task_items_cleanup_relations_bd ON public.task_items;
+DROP TRIGGER IF EXISTS task_item_comments_count_ai ON public.task_item_comments;
+DROP TRIGGER IF EXISTS task_item_comments_count_ad ON public.task_item_comments;
+DROP TRIGGER IF EXISTS task_items_check_no_cycle_biud ON public.task_items;
+DROP TRIGGER IF EXISTS set_task_items_updated_at ON public.task_items;
+DROP TRIGGER IF EXISTS set_task_item_checklist_items_updated_at ON public.task_item_checklist_items;
+DROP TRIGGER IF EXISTS set_task_item_attachments_updated_at ON public.task_item_attachments;
+DROP TRIGGER IF EXISTS set_task_item_comments_updated_at ON public.task_item_comments;
+DROP TRIGGER IF EXISTS set_task_item_reads_updated_at ON public.task_item_reads;
+
+DROP FUNCTION IF EXISTS public.task_item_relations_mirror_aiud();
+DROP FUNCTION IF EXISTS public.task_items_cleanup_relations_bd();
+DROP FUNCTION IF EXISTS public.task_item_comments_count_aiud();
+DROP FUNCTION IF EXISTS public.task_items_check_no_cycle();
+
+DROP TABLE IF EXISTS public.task_item_reads;
+DROP TABLE IF EXISTS public.task_item_relations;
+DROP TABLE IF EXISTS public.task_item_comments;
+DROP TABLE IF EXISTS public.task_item_attachments;
+DROP TABLE IF EXISTS public.task_item_checklist_items;
+DROP TABLE IF EXISTS public.task_items;
+
+ALTER TABLE public.profiles DROP COLUMN IF EXISTS avatar_color;

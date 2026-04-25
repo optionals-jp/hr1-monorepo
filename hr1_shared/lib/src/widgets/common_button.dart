@@ -58,7 +58,7 @@ class CommonButton extends StatelessWidget {
     borderRadius: BorderRadius.all(Radius.circular(12)),
   );
 
-  static const _baseSize = Size(double.infinity, 48);
+  static const _baseSize = Size(double.infinity, 44);
 
   static final ButtonStyle _outlineStyle =
       OutlinedButton.styleFrom(
@@ -74,7 +74,7 @@ class CommonButton extends StatelessWidget {
           if (states.contains(WidgetState.disabled)) {
             return const BorderSide(
               color: AppColors.lightTextTertiary,
-              width: 1,
+              width: 0.5,
             );
           }
           return const BorderSide(color: AppColors.brand, width: 1);
