@@ -70,6 +70,7 @@ export function AppHeader() {
           <button
             type="button"
             className="hidden sm:flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            onClick={() => router.push("/faqs")}
           >
             <HelpCircle className="h-4.5 w-4.5 text-muted-foreground" />
           </button>
