@@ -43,6 +43,7 @@ export default function RecruitingTasksPage() {
       result = result.filter((t) => t.due_date != null && t.due_date < today);
     else if (activeFilter === "skipped")
       result = result.filter((t) => t.created_count < t.target_count);
+    // "total" と null はどちらも全件表示
     const q = search.trim().toLowerCase();
     if (!q) return result;
     return result.filter(
@@ -59,7 +60,7 @@ export default function RecruitingTasksPage() {
   }, [tasks, today]);
 
   const toggleFilter = (key: SummaryKey) => {
-    setActiveFilter((prev) => (prev === key || key === "total" ? null : key));
+    setActiveFilter((prev) => (prev === key ? null : key));
   };
 
   const summaryCards: readonly SummaryCardConfig<SummaryKey>[] = [
@@ -69,7 +70,7 @@ export default function RecruitingTasksPage() {
       icon: ListTodo,
       iconClassName: "text-slate-600",
       onClick: () => toggleFilter("total"),
-      active: activeFilter === null,
+      active: activeFilter === "total",
     },
     {
       key: "withDueDate",
