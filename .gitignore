@@ -53,6 +53,15 @@ app.*.map.json
 **/*.tsbuildinfo
 package-lock.json
 
+# MCP (contains credentials)
+.mcp.json
+
+# Python
+__pycache__/
+*.egg-info/
+dist/
+.venv/
+
 # Misc
 *.log
 *.pyc
@@ -60,6 +69,7 @@ package-lock.json
 *.class
 .env
 .env.*
+!.env.example
 .vercel
 
 # 一時ドキュメント・作業記録 (commit 対象外)
