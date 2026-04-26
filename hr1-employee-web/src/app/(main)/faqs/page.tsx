@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@hr1/shared-ui/components/layout/page-header";
 import { Badge } from "@hr1/shared-ui/components/ui/badge";
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
@@ -25,7 +26,7 @@ import {
 } from "@hr1/shared-ui/components/ui/dropdown-menu";
 import { useFaqs } from "@/lib/hooks/use-faqs";
 import { cn } from "@hr1/shared-ui/lib/utils";
-import { ChevronDown, LayoutList, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, ChevronRight, LayoutList, SlidersHorizontal, X } from "lucide-react";
 
 const TARGET_LABELS: Record<"employee" | "both", string> = {
   employee: "社員のみ",
@@ -33,6 +34,7 @@ const TARGET_LABELS: Record<"employee" | "both", string> = {
 };
 
 export default function FaqsPage() {
+  const router = useRouter();
   const { data: faqs = [], isLoading, error, mutate } = useFaqs();
   const [search, setSearch] = useState("");
   const [categoryTab, setCategoryTab] = useState<string>("all");
@@ -131,31 +133,48 @@ export default function FaqsPage() {
                 const isExpanded = expandedId === faq.id;
                 return (
                   <Fragment key={faq.id}>
-                    <TableRow
-                      className="cursor-pointer"
-                      onClick={() => setExpandedId(isExpanded ? null : faq.id)}
-                    >
-                      <TableCell>
+                    <TableRow className="cursor-pointer">
+                      <TableCell onClick={() => router.push(`/faqs/${faq.id}`)}>
                         <span className="font-medium">{faq.question}</span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={() => router.push(`/faqs/${faq.id}`)}>
                         <Badge variant="outline">{faq.category}</Badge>
                       </TableCell>
                       <TableCell>
-                        <ChevronDown
-                          className={cn(
-                            "h-4 w-4 text-muted-foreground transition-transform",
-                            isExpanded && "rotate-180"
-                          )}
-                        />
+                        <button
+                          type="button"
+                          className="p-1 hover:text-foreground text-muted-foreground"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedId(isExpanded ? null : faq.id);
+                          }}
+                          aria-label={isExpanded ? "折りたたむ" : "回答を表示"}
+                        >
+                          <ChevronDown
+                            className={cn(
+                              "h-4 w-4 transition-transform",
+                              isExpanded && "rotate-180"
+                            )}
+                          />
+                        </button>
                       </TableCell>
                     </TableRow>
                     {isExpanded && (
                       <TableRow className="bg-muted/30 hover:bg-muted/30">
-                        <TableCell colSpan={3}>
+                        <TableCell colSpan={2}>
                           <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
                             {faq.answer}
                           </p>
+                        </TableCell>
+                        <TableCell>
+                          <button
+                            type="button"
+                            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-0.5 whitespace-nowrap"
+                            onClick={() => router.push(`/faqs/${faq.id}`)}
+                          >
+                            詳細
+                            <ChevronRight className="h-3 w-3" />
+                          </button>
                         </TableCell>
                       </TableRow>
                     )}

@@ -10,3 +10,9 @@ export function useFaqs() {
     faqRepository.fetchPublishedFaqs(getSupabase(), orgId)
   );
 }
+
+export function useFaq(id: string) {
+  return useOrgQuery<Faq>(`faqs/${id}`, (orgId) =>
+    faqRepository.fetchPublishedFaqById(getSupabase(), orgId, id)
+  );
+}
