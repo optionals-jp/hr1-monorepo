@@ -29,7 +29,7 @@ Monorepo with the following apps and packages:
 
 ### Shared / Other
 - `packages/shared-ui/` — Next.js 共有UIパッケージ (@hr1/shared-ui) — Button, Card, Dialog 等の基本コンポーネント
-- `hr1_shared/` — Flutter shared package (Dart) — 両Flutterアプリ共通のウィジェット・定数・サービス
+- `hr1-shared/` — Flutter shared package (Dart, package name は `hr1_shared`) — 両Flutterアプリ共通のウィジェット・定数・サービス
 - `supabase/` — Supabase migrations / Edge Functions
 - `scripts/` — ビルド・デプロイ用スクリプト
 - `docs/` — 設計ドキュメント・調査資料
