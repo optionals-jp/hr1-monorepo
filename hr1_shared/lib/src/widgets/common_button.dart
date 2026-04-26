@@ -54,7 +54,7 @@ class CommonButton extends StatelessWidget {
   );
 
   static const _baseShape = RoundedRectangleBorder(
-    borderRadius: BorderRadius.all(Radius.circular(12)),
+    borderRadius: BorderRadius.all(Radius.circular(16)),
   );
 
   static const _baseSize = Size(double.infinity, 44);
