@@ -115,7 +115,7 @@ export default function FaqsPage() {
             <TableRow>
               <TableHead>質問</TableHead>
               <TableHead>カテゴリ</TableHead>
-              <TableHead className="w-10" />
+              <TableHead className="w-24" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -133,48 +133,44 @@ export default function FaqsPage() {
                 const isExpanded = expandedId === faq.id;
                 return (
                   <Fragment key={faq.id}>
-                    <TableRow className="cursor-pointer">
-                      <TableCell onClick={() => router.push(`/faqs/${faq.id}`)}>
+                    <TableRow
+                      className="cursor-pointer"
+                      onClick={() => setExpandedId(isExpanded ? null : faq.id)}
+                    >
+                      <TableCell>
                         <span className="font-medium">{faq.question}</span>
                       </TableCell>
-                      <TableCell onClick={() => router.push(`/faqs/${faq.id}`)}>
+                      <TableCell>
                         <Badge variant="outline">{faq.category}</Badge>
                       </TableCell>
                       <TableCell>
-                        <button
-                          type="button"
-                          className="p-1 hover:text-foreground text-muted-foreground"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExpandedId(isExpanded ? null : faq.id);
-                          }}
-                          aria-label={isExpanded ? "折りたたむ" : "回答を表示"}
-                        >
-                          <ChevronDown
-                            className={cn(
-                              "h-4 w-4 transition-transform",
-                              isExpanded && "rotate-180"
-                            )}
-                          />
-                        </button>
-                      </TableCell>
-                    </TableRow>
-                    {isExpanded && (
-                      <TableRow className="bg-muted/30 hover:bg-muted/30">
-                        <TableCell colSpan={2}>
-                          <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                            {faq.answer}
-                          </p>
-                        </TableCell>
-                        <TableCell>
+                        <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
-                            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-0.5 whitespace-nowrap"
-                            onClick={() => router.push(`/faqs/${faq.id}`)}
+                            className="text-xs text-primary hover:underline flex items-center gap-0.5 whitespace-nowrap"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/faqs/${faq.id}`);
+                            }}
                           >
                             詳細
                             <ChevronRight className="h-3 w-3" />
                           </button>
+                          <ChevronDown
+                            className={cn(
+                              "h-4 w-4 text-muted-foreground transition-transform",
+                              isExpanded && "rotate-180"
+                            )}
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    {isExpanded && (
+                      <TableRow className="bg-muted/30 hover:bg-muted/30">
+                        <TableCell colSpan={3}>
+                          <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                            {faq.answer}
+                          </p>
                         </TableCell>
                       </TableRow>
                     )}
