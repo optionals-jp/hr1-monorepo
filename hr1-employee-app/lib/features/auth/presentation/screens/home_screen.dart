@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hr1_employee_app/core/constants/constants.dart';
+import 'package:hr1_shared/hr1_shared.dart' show CommonScaffold;
 
 /// ホーム画面（BottomNavigationBar付きのシェル）— Teams モバイルスタイル
 class HomeScreen extends ConsumerWidget {
@@ -12,7 +13,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
+    return CommonScaffold(
       body: navigationShell,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

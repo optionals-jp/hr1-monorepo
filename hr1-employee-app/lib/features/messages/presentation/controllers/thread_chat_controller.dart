@@ -1,6 +1,38 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hr1_shared/hr1_shared.dart';
+import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
+import 'package:hr1_employee_app/features/messages/domain/services/attachment_mime.dart';
 import 'package:hr1_employee_app/features/messages/presentation/providers/messages_providers.dart';
+
+/// 添付メッセージ送信のリクエスト DTO。
+class AttachmentInput {
+  const AttachmentInput({
+    required this.bytes,
+    required this.fileName,
+    required this.byteSize,
+    this.extension,
+  });
+
+  final Uint8List bytes;
+  final String fileName;
+  final int byteSize;
+  final String? extension;
+}
+
+/// 添付付き送信の結果。`oversize` の場合はアップロードを中止する。
+sealed class AttachmentSendResult {
+  const AttachmentSendResult();
+}
+
+class AttachmentSendOk extends AttachmentSendResult {
+  const AttachmentSendOk();
+}
+
+class AttachmentSendOversize extends AttachmentSendResult {
+  const AttachmentSendOversize();
+}
 
 /// スレッドチャット操作コントローラー
 ///
@@ -85,6 +117,58 @@ class ThreadChatController extends AutoDisposeNotifier<void> {
           fileName: fileName,
           mimeType: mimeType,
         );
+  }
+
+  /// 添付ファイルをアップロード→ メッセージ送信までの一連処理。
+  ///
+  /// サイズ上限を超えた場合は [AttachmentSendOversize] を返してアップロードを
+  /// 行わない。Screen 側ではこの戻り値だけを判定して UI を出し分ける。
+  Future<AttachmentSendResult> sendAttachmentMessage({
+    required String threadId,
+    required AttachmentInput attachment,
+  }) async {
+    if (attachment.byteSize > kMaxAttachmentBytes) {
+      return const AttachmentSendOversize();
+    }
+    final user = ref.read(appUserProvider);
+    if (user == null) {
+      throw StateError('sendAttachmentMessage requires an authenticated user');
+    }
+    final mimeType = guessAttachmentMime(
+      attachment.fileName,
+      attachment.extension,
+    );
+    // send_message_v2 は attachments メタを受け取って DB 側で
+    // message_attachments を INSERT する。Storage パスを先に確保するため
+    // クライアント側で仮 ID を採番する（DB 側で message_id 確定後に
+    // metadata を紐づける運用）。
+    // microsecondsSinceEpoch + ハッシュコードで連投時の衝突を回避する
+    // （高速タップで同一ミリ秒に入っても microseconds で分離可能）。
+    final now = DateTime.now();
+    final tempMessageKey =
+        '${now.microsecondsSinceEpoch}_'
+        '${identityHashCode(attachment).toRadixString(16)}';
+    final storagePath = await uploadAttachment(
+      organizationId: user.activeOrganizationId,
+      threadId: threadId,
+      messageId: tempMessageKey,
+      bytes: attachment.bytes,
+      fileName: attachment.fileName,
+      mimeType: mimeType,
+    );
+    await sendMessageV2(
+      threadId: threadId,
+      content: '',
+      attachments: [
+        {
+          'storage_path': storagePath,
+          'file_name': attachment.fileName,
+          'mime_type': mimeType,
+          'byte_size': attachment.byteSize,
+        },
+      ],
+    );
+    return const AttachmentSendOk();
   }
 }
 

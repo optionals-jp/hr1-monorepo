@@ -120,6 +120,10 @@ class _ThrowingRepository implements TaskItemRepository {
   Future<TaskItem> addComment(String taskId, String text) async {
     throw StateError('simulated failure');
   }
+
+  @override
+  Future<List<TaskUser>> fetchAssigneeCandidates({int limit = 500}) async =>
+      const [];
 }
 
 void main() {

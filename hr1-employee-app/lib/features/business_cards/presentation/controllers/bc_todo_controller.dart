@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_todo.dart';
 import 'package:hr1_employee_app/features/business_cards/presentation/providers/business_card_providers.dart';
 
@@ -17,9 +18,32 @@ class BcTodoController extends AutoDisposeAsyncNotifier<List<BcTodo>> {
     return repo.getMyTodos();
   }
 
-  Future<BcTodo> createTodo(Map<String, dynamic> data) async {
+  /// CRM TODO を新規登録する。Screen からは raw 入力を受け取り、
+  /// 期限日整形・assigned_to の解決はここで行う。
+  Future<BcTodo> createTodo({
+    required String title,
+    String? description,
+    DateTime? dueDate,
+    String? companyId,
+    String? contactId,
+    String? dealId,
+  }) async {
+    final user = ref.read(appUserProvider);
+    if (user == null) {
+      throw StateError('createTodo requires an authenticated user');
+    }
     final repo = ref.read(bcRepositoryProvider);
-    final todo = await repo.createTodo(data);
+    final todo = await repo.createTodo({
+      'title': title.trim(),
+      'description': (description == null || description.trim().isEmpty)
+          ? null
+          : description.trim(),
+      'due_date': dueDate?.toIso8601String().split('T').first,
+      'assigned_to': user.id,
+      'company_id': companyId,
+      'contact_id': contactId,
+      'deal_id': dealId,
+    });
     ref.invalidate(bcMyTodosProvider);
     ref.invalidateSelf();
     return todo;

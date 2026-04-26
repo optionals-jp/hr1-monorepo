@@ -393,7 +393,7 @@ class _PunchCorrectionRow extends StatelessWidget {
               ],
             ),
           ),
-          TextButton(onPressed: onEdit, child: const Text('変更')),
+          CompactTextAction(label: '変更', onPressed: onEdit),
           if (onClear != null)
             IconButton(
               icon: const Icon(Icons.close_rounded, size: 16),

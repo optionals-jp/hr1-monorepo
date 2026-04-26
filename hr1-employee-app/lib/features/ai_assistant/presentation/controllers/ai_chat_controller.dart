@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/entities/ai_message.dart';
-import '../providers/ai_assistant_providers.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_message.dart';
+import 'package:hr1_employee_app/features/ai_assistant/presentation/providers/ai_assistant_providers.dart';
 
 /// AI 応答に対するユーザーフィードバック。
 enum AiFeedback { none, good, bad }

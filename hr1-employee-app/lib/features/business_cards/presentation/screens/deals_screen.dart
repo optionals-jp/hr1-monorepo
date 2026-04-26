@@ -16,7 +16,7 @@ class BcDealsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dealsAsync = ref.watch(dealListControllerProvider);
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         title: const Text('商談'),
         actions: [

@@ -5,7 +5,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hr1_employee_app/features/business_cards/presentation/controllers/deal_controller.dart';
 import 'package:hr1_employee_app/features/business_cards/presentation/providers/business_card_providers.dart';
 import 'package:hr1_shared/hr1_shared.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// 商談登録画面
 class DealFormScreen extends HookConsumerWidget {
@@ -49,26 +48,17 @@ class DealFormScreen extends HookConsumerWidget {
 
       isSaving.value = true;
       try {
-        final controller = ref.read(dealListControllerProvider.notifier);
-        final userId = Supabase.instance.client.auth.currentUser!.id;
-
-        await controller.createDeal({
-          'title': titleCtl.text.trim(),
-          'amount': amountCtl.text.isNotEmpty
-              ? int.tryParse(amountCtl.text.replaceAll(',', ''))
-              : null,
-          'stage_id': selectedStageId.value,
-          'expected_close_date': closeDate.value
-              ?.toIso8601String()
-              .split('T')
-              .first,
-          'description': descriptionCtl.text.trim().isEmpty
-              ? null
-              : descriptionCtl.text.trim(),
-          'company_id': companyId,
-          'contact_id': contactId,
-          'assigned_to': userId,
-        });
+        await ref
+            .read(dealListControllerProvider.notifier)
+            .createDeal(
+              title: titleCtl.text,
+              amountInput: amountCtl.text,
+              stageId: selectedStageId.value,
+              expectedCloseDate: closeDate.value,
+              description: descriptionCtl.text,
+              companyId: companyId,
+              contactId: contactId,
+            );
 
         if (context.mounted) {
           CommonSnackBar.show(context, '商談を登録しました');
@@ -83,7 +73,7 @@ class DealFormScreen extends HookConsumerWidget {
       }
     }
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('商談登録')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.md),

@@ -18,7 +18,7 @@ class BcCompanyDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final companyAsync = ref.watch(companyDetailControllerProvider(companyId));
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('企業詳細')),
       body: companyAsync.when(
         loading: () => const LoadingIndicator(),

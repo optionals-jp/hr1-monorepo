@@ -147,9 +147,10 @@ class _SuggestionCard extends StatelessWidget {
                 ),
                 if (secondaryLabel != null) ...[
                   const SizedBox(width: 8),
-                  _SecondaryActionButton(
+                  CompactTextAction(
                     label: secondaryLabel!,
                     onPressed: () {},
+                    color: AppColors.textSecondary(context),
                   ),
                 ],
               ],
@@ -186,33 +187,6 @@ class _PrimaryActionButton extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           textStyle: AppTextStyles.caption1.copyWith(
             fontWeight: FontWeight.w600,
-          ),
-        ),
-        child: Text(label),
-      ),
-    );
-  }
-}
-
-class _SecondaryActionButton extends StatelessWidget {
-  const _SecondaryActionButton({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 32,
-      child: TextButton(
-        onPressed: onPressed,
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.textSecondary(context),
-          minimumSize: Size.zero,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          textStyle: AppTextStyles.caption1.copyWith(
-            fontWeight: FontWeight.w500,
           ),
         ),
         child: Text(label),

@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hr1_employee_app/features/business_cards/presentation/controllers/bc_todo_controller.dart';
 import 'package:hr1_shared/hr1_shared.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// CRM TODO登録画面
 class BcTodoFormScreen extends HookConsumerWidget {
@@ -44,20 +43,16 @@ class BcTodoFormScreen extends HookConsumerWidget {
 
       isSaving.value = true;
       try {
-        final controller = ref.read(bcTodoControllerProvider.notifier);
-        final userId = Supabase.instance.client.auth.currentUser!.id;
-
-        await controller.createTodo({
-          'title': titleCtl.text.trim(),
-          'description': descriptionCtl.text.trim().isEmpty
-              ? null
-              : descriptionCtl.text.trim(),
-          'due_date': dueDate.value?.toIso8601String().split('T').first,
-          'assigned_to': userId,
-          'company_id': companyId,
-          'contact_id': contactId,
-          'deal_id': dealId,
-        });
+        await ref
+            .read(bcTodoControllerProvider.notifier)
+            .createTodo(
+              title: titleCtl.text,
+              description: descriptionCtl.text,
+              dueDate: dueDate.value,
+              companyId: companyId,
+              contactId: contactId,
+              dealId: dealId,
+            );
 
         if (context.mounted) {
           CommonSnackBar.show(context, 'TODOを登録しました');
@@ -72,7 +67,7 @@ class BcTodoFormScreen extends HookConsumerWidget {
       }
     }
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('CRM TODO登録')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.md),

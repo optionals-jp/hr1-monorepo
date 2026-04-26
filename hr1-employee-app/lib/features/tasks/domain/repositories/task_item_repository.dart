@@ -56,4 +56,7 @@ abstract class TaskItemRepository {
 
   /// 投稿者は現在のログインユーザ、`createdAt` はサーバ側で確定する。
   Future<TaskItem> addComment(String taskId, String text);
+
+  /// 担当者候補（同じ組織のメンバー）。応募者ロールは除外。
+  Future<List<TaskUser>> fetchAssigneeCandidates({int limit = 500});
 }

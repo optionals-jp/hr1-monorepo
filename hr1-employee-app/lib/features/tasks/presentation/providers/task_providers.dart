@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_employee_app/core/organization/organization_context.dart';
+import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hr1_employee_app/features/tasks/data/repositories/supabase_task_repository.dart';
 import 'package:hr1_employee_app/features/tasks/domain/entities/task.dart';
 import 'package:hr1_employee_app/features/tasks/domain/repositories/task_repository.dart';
@@ -8,7 +8,7 @@ import 'package:hr1_employee_app/features/tasks/domain/repositories/task_reposit
 /// タスクリポジトリプロバイダー
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
   return SupabaseTaskRepository(
-    Supabase.instance.client,
+    ref.watch(supabaseClientProvider),
     activeOrganizationId: ref.watch(activeOrganizationIdProvider),
   );
 });
