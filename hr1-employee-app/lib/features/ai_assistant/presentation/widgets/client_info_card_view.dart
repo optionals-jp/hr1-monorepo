@@ -228,11 +228,9 @@ class _StageTone {
   final Color chipColor;
 
   /// グレー背景に重ねる用の、薄めたステータス色。
-  /// チップ色をそのまま敷くと主張が強すぎるため、低 alpha で
-  /// surfaceTertiary に滲ませる。ダーク側はベースが暗く tint が
-  /// 沈みやすいので、ライトより気持ち濃いめにする。
+  /// チップ色をそのまま敷くと主張が強すぎるため `surfaceTertiary` に滲ませる。
   Color gradientTint(BuildContext context) =>
-      chipColor.withValues(alpha: AppColors.isDark(context) ? 0.22 : 0.14);
+      AppColors.tintOnSurfaceTertiary(context, chipColor);
 
   factory _StageTone.fromStage(String stage) {
     if (stage.contains('受注') || stage.contains('成約')) {

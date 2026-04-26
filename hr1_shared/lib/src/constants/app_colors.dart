@@ -147,6 +147,15 @@ class AppColors {
   static Color onInverseSurface(BuildContext context) =>
       isDark(context) ? lightTextPrimary : darkTextPrimary;
 
+  /// `surfaceTertiary` のグレー背景にステータス色を薄くオーバーレイした色を返す。
+  ///
+  /// 用途は AI チャット内カードのステージ別グラデーション等、グレー素地の上に
+  /// チップ色を「滲ませる」表現に限定する想定。`surface` / `surfaceSecondary`
+  /// のような明るいベースに重ねると alpha が合わず色が浮くため流用しない。
+  /// ダーク側はベースが暗く tint が沈みやすいので、ライトより気持ち濃いめにする。
+  static Color tintOnSurfaceTertiary(BuildContext context, Color color) =>
+      color.withValues(alpha: isDark(context) ? 0.22 : 0.14);
+
   // =========================================================================
   // MaterialColor
   // =========================================================================

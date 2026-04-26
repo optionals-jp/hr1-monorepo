@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/ai_message.dart';
@@ -72,23 +73,7 @@ class AiChatController extends AutoDisposeNotifier<AiChatState> {
       isAssistantTyping: true,
     );
 
-    try {
-      final reply = await ref
-          .read(aiAssistantRepositoryProvider)
-          .sendMessage(text: trimmed, history: state.messages);
-      // 画面離脱で AutoDispose されたら state 代入をスキップ。
-      // disposed Notifier への代入は例外になる。
-      if (_disposed) return;
-      state = state.copyWith(
-        messages: [...state.messages, reply],
-        isAssistantTyping: false,
-      );
-    } catch (_) {
-      if (_disposed) return;
-      state = state.copyWith(isAssistantTyping: false);
-      ref.read(aiChatErrorEventProvider.notifier).state =
-          DateTime.now().microsecondsSinceEpoch;
-    }
+    await _requestReply(trimmed);
   }
 
   /// 会話をリセット（ヘッダーの新規会話アイコン用）。
@@ -116,17 +101,30 @@ class AiChatController extends AutoDisposeNotifier<AiChatState> {
       isAssistantTyping: true,
     );
 
+    await _requestReply(prev.text);
+  }
+
+  /// `state.messages` を履歴として AI 応答を取得し、成功時は末尾に追記する。
+  /// 失敗時は typing を解除し、`aiChatErrorEventProvider` に発火イベントを流す。
+  ///
+  /// 呼び出し元は事前に `state.copyWith(isAssistantTyping: true)` で
+  /// メッセージリストを確定させてから呼ぶこと（`state.messages` を信頼するため）。
+  Future<void> _requestReply(String prompt) async {
+    final history = state.messages;
     try {
       final reply = await ref
           .read(aiAssistantRepositoryProvider)
-          .sendMessage(text: prev.text, history: newMessages);
+          .sendMessage(text: prompt, history: history);
+      // 画面離脱で AutoDispose されたら state 代入をスキップ。
+      // disposed Notifier への代入は例外になる。
       if (_disposed) return;
       state = state.copyWith(
-        messages: [...newMessages, reply],
+        messages: [...history, reply],
         isAssistantTyping: false,
       );
-    } catch (_) {
+    } catch (e, st) {
       if (_disposed) return;
+      debugPrint('AI sendMessage failed: $e\n$st');
       state = state.copyWith(isAssistantTyping: false);
       ref.read(aiChatErrorEventProvider.notifier).state =
           DateTime.now().microsecondsSinceEpoch;

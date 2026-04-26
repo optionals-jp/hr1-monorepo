@@ -178,7 +178,7 @@ class _DailyBreakdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final maxHours = entries.fold<double>(
-      0.1,
+      0,
       (acc, e) => e.hours > acc ? e.hours : acc,
     );
     return SizedBox(
@@ -204,7 +204,12 @@ class _DailyBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ratio = (entry.hours / maxHours).clamp(0.0, 1.0);
+    // maxHours が 0 のとき（全エントリ 0h）はゼロ除算を避けて 0 比率にする。
+    // _DailyBar の高さは下限 2px（`28 * 0 + 2`）なので「データなし」が
+    // フラットな最小バーで視覚化される。
+    final ratio = maxHours <= 0
+        ? 0.0
+        : (entry.hours / maxHours).clamp(0.0, 1.0);
     final barColor = entry.isToday
         ? AppColors.brand
         : AppColors.brand.withValues(alpha: 0.35);

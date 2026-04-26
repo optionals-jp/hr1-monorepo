@@ -7,7 +7,7 @@ import '../../domain/entities/ai_card.dart';
 import '../../domain/entities/ai_message.dart';
 import '../controllers/ai_chat_controller.dart';
 import 'ai_action_button_row.dart';
-import 'ai_reference_chip.dart';
+import 'ai_reference_list.dart';
 import 'client_info_card_view.dart';
 import 'overtime_summary_card_view.dart';
 import 'workflow_suggestion_card_view.dart';
