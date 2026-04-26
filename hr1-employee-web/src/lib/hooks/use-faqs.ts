@@ -12,7 +12,7 @@ export function useFaqs() {
 }
 
 export function useFaq(id: string) {
-  return useOrgQuery<Faq>(`faqs/${id}`, (orgId) =>
+  return useOrgQuery<Faq | null>(`faq-${id}`, (orgId) =>
     faqRepository.fetchPublishedFaqById(getSupabase(), orgId, id)
   );
 }

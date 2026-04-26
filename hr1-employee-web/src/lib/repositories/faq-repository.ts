@@ -18,7 +18,7 @@ export async function fetchPublishedFaqById(
   client: SupabaseClient,
   organizationId: string,
   id: string
-) {
+): Promise<Faq | null> {
   const { data, error } = await client
     .from("faqs")
     .select("*")
@@ -27,6 +27,9 @@ export async function fetchPublishedFaqById(
     .eq("is_published", true)
     .in("target", ["employee", "both"])
     .single();
-  if (error) throw error;
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    throw error;
+  }
   return data as Faq;
 }

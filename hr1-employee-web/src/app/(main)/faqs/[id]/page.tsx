@@ -9,11 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@hr1/shared-ui/compone
 import { QueryErrorBanner } from "@hr1/shared-ui/components/ui/query-error-banner";
 import { MessageSquare, ChevronRight } from "lucide-react";
 import { useFaq, useFaqs } from "@/lib/hooks/use-faqs";
-
-const TARGET_LABELS: Record<string, string> = {
-  employee: "社員のみ",
-  both: "社員・応募者",
-};
+import { faqTargetLabels } from "@/lib/constants";
 
 export default function FaqDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -37,7 +33,9 @@ export default function FaqDetailPage({ params }: { params: Promise<{ id: string
       <PageContent>
         {isLoading ? (
           <div className="py-12 text-center text-sm text-muted-foreground">読み込み中...</div>
-        ) : !faq ? null : (
+        ) : !faq ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">FAQが見つかりません</div>
+        ) : (
           <div className="max-w-2xl space-y-6">
             <Card>
               <CardHeader>
@@ -46,13 +44,13 @@ export default function FaqDetailPage({ params }: { params: Promise<{ id: string
                     <CardTitle className="text-base leading-relaxed">{faq.question}</CardTitle>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">{faq.category}</Badge>
-                      <Badge variant="secondary">{TARGET_LABELS[faq.target] ?? faq.target}</Badge>
+                      <Badge variant="secondary">{faqTargetLabels[faq.target] ?? faq.target}</Badge>
                     </div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+                <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-foreground">
                   {faq.answer}
                 </p>
               </CardContent>
