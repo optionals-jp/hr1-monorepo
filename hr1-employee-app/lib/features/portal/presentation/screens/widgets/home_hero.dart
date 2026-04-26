@@ -296,7 +296,11 @@ class _UpperContent extends StatelessWidget {
         children: [
           _GreetingRow(initial: initial, displayName: displayName),
           const SizedBox(height: AppSpacing.md),
-          _AiPromptCard(onTap: () => context.push(AppRoutes.search)),
+          _AiPromptCard(
+            onTap: () => context.push(AppRoutes.aiChat),
+            onChipTap: (prompt) =>
+                context.push(AppRoutes.aiChat, extra: prompt),
+          ),
           const SizedBox(height: AppSpacing.md),
           const _ExpandedAttendance(),
         ],
@@ -378,10 +382,15 @@ class _GreetingRow extends ConsumerWidget {
 }
 
 /// AI 入力プロンプトカード。チップは横スクロールで textScaler の影響を受けない。
+///
+/// - カード本体タップ: AI チャット画面を開く（[onTap]）
+/// - チップタップ: そのチップ文言を AI チャット画面に prefill する
+///   ([onChipTap]、自動送信はしない — 取り消し可能性のため)
 class _AiPromptCard extends StatelessWidget {
-  const _AiPromptCard({required this.onTap});
+  const _AiPromptCard({required this.onTap, required this.onChipTap});
 
   final VoidCallback onTap;
+  final void Function(String prompt) onChipTap;
 
   static const _prompts = ['有給を申請', '今週の残業時間は？', '田中さんを探して', '出張規程は？'];
 
@@ -421,7 +430,8 @@ class _AiPromptCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final prompt in _prompts) _PromptChip(label: prompt),
+                for (final prompt in _prompts)
+                  _PromptChip(label: prompt, onTap: () => onChipTap(prompt)),
               ],
             ),
           ],
@@ -432,24 +442,29 @@ class _AiPromptCard extends StatelessWidget {
 }
 
 class _PromptChip extends StatelessWidget {
-  const _PromptChip({required this.label});
+  const _PromptChip({required this.label, required this.onTap});
 
   final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: _heroChipBg,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _heroChipBorder),
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.caption1.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.w500,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: _heroChipBg,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: _heroChipBorder),
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.caption1.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );

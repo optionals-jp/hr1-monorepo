@@ -74,12 +74,11 @@ class MessageInputBar extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Center(
-                    child: Icon(
-                      Icons.send,
+                    child: AppIcons.sendFill(
                       color: isSending
                           ? AppColors.textTertiary(context)
                           : Colors.white,
-                      size: 22,
+                      size: 18,
                     ),
                   ),
                 ),

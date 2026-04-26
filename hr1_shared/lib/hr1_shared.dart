@@ -32,6 +32,7 @@ export 'src/widgets/skeleton.dart';
 export 'src/widgets/empty_state.dart';
 export 'src/widgets/grouped_section.dart';
 export 'src/widgets/common_label.dart';
+export 'src/widgets/common_inline_notice.dart';
 export 'src/widgets/common_snackbar.dart';
 export 'src/widgets/common_dialog.dart';
 export 'src/widgets/common_sheet.dart';

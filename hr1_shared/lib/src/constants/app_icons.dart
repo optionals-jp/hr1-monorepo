@@ -119,6 +119,14 @@ class AppIcons {
       _svg('ic-messages', size: size, color: color);
   static Widget messagesFill({double size = 24, Color? color}) =>
       _svg('ic-messages-fill', size: size, color: color);
+  static Widget messageAdd({double size = 24, Color? color}) =>
+      _svg('ic-message-add', size: size, color: color);
+  static Widget messageAddFill({double size = 24, Color? color}) =>
+      _svg('ic-message-add-fill', size: size, color: color);
+  static Widget messageEdit({double size = 24, Color? color}) =>
+      _svg('ic-message-edit', size: size, color: color);
+  static Widget messageEditFill({double size = 24, Color? color}) =>
+      _svg('ic-message-edit-fill', size: size, color: color);
 
   // ── アクション ──
   static Widget search({double size = 24, Color? color}) =>
@@ -145,6 +153,26 @@ class AppIcons {
       _svg('ic-arrow', size: size, color: color);
   static Widget arrowFill({double size = 24, Color? color}) =>
       _svg('ic-arrow-fill', size: size, color: color);
+  static Widget refresh2({double size = 24, Color? color}) =>
+      _svg('ic-refresh2', size: size, color: color);
+  static Widget refresh2Fill({double size = 24, Color? color}) =>
+      _svg('ic-refresh2-fill', size: size, color: color);
+  static Widget export({double size = 24, Color? color}) =>
+      _svg('ic-export', size: size, color: color);
+  static Widget exportFill({double size = 24, Color? color}) =>
+      _svg('ic-export-fill', size: size, color: color);
+  static Widget documentCopy({double size = 24, Color? color}) =>
+      _svg('ic-document-copy', size: size, color: color);
+  static Widget documentCopyFill({double size = 24, Color? color}) =>
+      _svg('ic-document-copy-fill', size: size, color: color);
+  static Widget like({double size = 24, Color? color}) =>
+      _svg('ic-like', size: size, color: color);
+  static Widget likeFill({double size = 24, Color? color}) =>
+      _svg('ic-like-fill', size: size, color: color);
+  static Widget dislike({double size = 24, Color? color}) =>
+      _svg('ic-dislike', size: size, color: color);
+  static Widget dislikeFill({double size = 24, Color? color}) =>
+      _svg('ic-dislike-fill', size: size, color: color);
 
   // ── コンテンツ ──
   static Widget doc({double size = 24, Color? color}) =>

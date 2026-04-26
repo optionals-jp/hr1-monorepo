@@ -57,6 +57,7 @@ import 'package:hr1_employee_app/features/business_cards/presentation/screens/de
 import 'package:hr1_employee_app/features/business_cards/presentation/screens/deal_form_screen.dart';
 import 'package:hr1_employee_app/features/business_cards/presentation/screens/activity_form_screen.dart';
 import 'package:hr1_employee_app/features/business_cards/presentation/screens/bc_todo_form_screen.dart';
+import 'package:hr1_employee_app/features/ai_assistant/presentation/screens/ai_chat_screen.dart';
 import 'package:hr1_employee_app/shared/screens/search_screen.dart';
 
 /// 開発モードフラグ（trueの場合、認証ガードをスキップ）
@@ -116,6 +117,9 @@ class AppRoutes {
   static const String _bcTodoForm = 'bc-todo-form';
   static const String _bcContactForm = 'bc-contact-form';
 
+  // AIアシスタント
+  static const String _aiChat = 'ai-chat';
+
   // タスク詳細
   static const String _taskDetail = 'task-detail';
   // フィード詳細
@@ -167,6 +171,9 @@ class AppRoutes {
 
   static const String taskDetail = '/$_taskDetail';
   static const String feedDetail = '/$_feedDetail';
+
+  // AIアシスタント（フルスクリーン）
+  static const String aiChat = '/$_aiChat';
 }
 
 /// ルートナビゲーターキー（フルスクリーン遷移用 + プッシュ通知からの遷移用）
@@ -620,6 +627,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.feedDetail,
         builder: (context, state) =>
             FeedDetailScreen(postId: state.extra as String?),
+      ),
+
+      /// AIアシスタント会話画面（フルスクリーン）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.aiChat,
+        builder: (context, state) {
+          final initialMessage = state.extra as String?;
+          return AiChatScreen(initialMessage: initialMessage);
+        },
       ),
 
       /// メイン画面（ホーム / カレンダー / チャット / タスク / その他）

@@ -25,18 +25,20 @@ void main() {
   });
 
   group('ポータル画面の AI プロンプトカード', () {
-    testWidgets('AI プロンプトカードをタップすると検索画面に遷移する', (tester) async {
+    testWidgets('AI プロンプトカードをタップすると AI チャット画面に遷移する', (tester) async {
       String? pushedPath;
+      Object? pushedExtra;
 
       final mockRouter = GoRouter(
         initialLocation: '/',
         routes: [
           GoRoute(path: '/', builder: (context, state) => const PortalScreen()),
           GoRoute(
-            path: AppRoutes.search,
+            path: AppRoutes.aiChat,
             builder: (context, state) {
-              pushedPath = AppRoutes.search;
-              return const Scaffold(body: Text('検索画面'));
+              pushedPath = AppRoutes.aiChat;
+              pushedExtra = state.extra;
+              return const Scaffold(body: Text('AIチャット画面'));
             },
           ),
         ],
@@ -83,8 +85,68 @@ void main() {
 
       expect(
         pushedPath,
-        equals(AppRoutes.search),
-        reason: 'AI プロンプトカードタップで /search に遷移すること',
+        equals(AppRoutes.aiChat),
+        reason: 'AI プロンプトカードタップで /ai-chat に遷移すること',
+      );
+      expect(pushedExtra, isNull, reason: 'カード本体タップでは extra (prefill) は渡らないこと');
+    });
+
+    testWidgets('プロンプトチップをタップすると文言を extra として AI チャット画面に渡す', (tester) async {
+      Object? pushedExtra;
+
+      final mockRouter = GoRouter(
+        initialLocation: '/',
+        routes: [
+          GoRoute(path: '/', builder: (context, state) => const PortalScreen()),
+          GoRoute(
+            path: AppRoutes.aiChat,
+            builder: (context, state) {
+              pushedExtra = state.extra;
+              return const Scaffold(body: Text('AIチャット画面'));
+            },
+          ),
+        ],
+      );
+
+      final testUser = AppUser(
+        id: 'test-user',
+        email: 'test@example.com',
+        organizations: const [OrganizationRef(id: 'org-1', name: 'テスト企業')],
+        activeOrganizationId: 'org-1',
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appUserProvider.overrideWith((_) {
+              final notifier = AppUserNotifier();
+              notifier.setUser(testUser);
+              return notifier;
+            }),
+            pinnedAnnouncementsProvider.overrideWith((ref) => Future.value([])),
+            unreadNotificationCountProvider.overrideWith((ref) => 0),
+            myComplianceAlertsProvider.overrideWith((ref) => Future.value([])),
+            latestNotificationsProvider.overrideWith((ref) => Future.value([])),
+            todayRecordProvider.overrideWith((ref) => Future.value(null)),
+            todayPunchesProvider.overrideWith((ref) => Future.value([])),
+            myDayTasksProvider.overrideWith((ref) => Future.value([])),
+            pendingSurveysProvider.overrideWith((ref) => Future.value([])),
+          ],
+          child: MaterialApp.router(routerConfig: mockRouter),
+        ),
+      );
+
+      await tester.pump();
+
+      final chip = find.text('今週の残業時間は？');
+      expect(chip, findsOneWidget);
+      await tester.tap(chip);
+      await tester.pump();
+
+      expect(
+        pushedExtra,
+        equals('今週の残業時間は？'),
+        reason: 'チップタップではタップした文言が extra として渡ること（prefill 用）',
       );
     });
   });
