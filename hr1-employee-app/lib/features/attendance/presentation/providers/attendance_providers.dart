@@ -211,17 +211,23 @@ final workStateProvider = Provider<WorkState>((ref) {
       if (record == null) return WorkState.notStarted;
       if (record.clockOut != null) return WorkState.finished;
 
-      // 休憩中かどうか打刻履歴で判定
+      // 休憩中の判定: punch を時刻順に traverse し、最後の break_start に
+      // 対応する break_end が無ければ「休憩中」。単純な count 比較は管理者が
+      // punch を直接編集した場合等に崩れるため使わない。
       return punchesAsync.when(
         data: (punches) {
-          final breakStarts = punches
-              .where((p) => p.punchType == PunchType.breakStart)
-              .length;
-          final breakEnds = punches
-              .where((p) => p.punchType == PunchType.breakEnd)
-              .length;
-          if (breakStarts > breakEnds) return WorkState.onBreak;
-          return WorkState.working;
+          DateTime? lastBreakStart;
+          for (final p in punches) {
+            if (p.punchType == PunchType.breakStart) {
+              lastBreakStart = p.punchedAt;
+            } else if (p.punchType == PunchType.breakEnd) {
+              if (lastBreakStart != null &&
+                  !p.punchedAt.isBefore(lastBreakStart)) {
+                lastBreakStart = null;
+              }
+            }
+          }
+          return lastBreakStart != null ? WorkState.onBreak : WorkState.working;
         },
         loading: () => WorkState.working,
         error: (_, __) => WorkState.working,

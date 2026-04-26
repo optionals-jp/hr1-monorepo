@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:hr1_shared/hr1_shared.dart'
-    show AppColors, AppRadius, AppSpacing, AppStroke;
+    show AppColors, AppRadius, AppSpacing, AppStroke, appFont, appFontTextTheme;
 
 /// HR1 応募者アプリテーマ定義
 class AppTheme {
@@ -70,7 +69,7 @@ class AppTheme {
       scaffoldBackgroundColor: background,
 
       // テキストテーマ
-      textTheme: GoogleFonts.notoSansJpTextTheme(
+      textTheme: appFontTextTheme(
         isDark ? ThemeData.dark().textTheme : ThemeData.light().textTheme,
       ),
 
@@ -84,7 +83,7 @@ class AppTheme {
         systemOverlayStyle: isDark
             ? SystemUiOverlayStyle.light
             : SystemUiOverlayStyle.dark,
-        titleTextStyle: GoogleFonts.notoSansJp(
+        titleTextStyle: appFont(
           fontSize: 17,
           fontWeight: FontWeight.w600,
           color: textPrimary,
@@ -101,10 +100,7 @@ class AppTheme {
           minimumSize: const Size(double.infinity, 48),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.radius80),
           elevation: 0,
-          textStyle: GoogleFonts.notoSansJp(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: appFont(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
 
@@ -118,10 +114,7 @@ class AppTheme {
                 .withValues(alpha: 0.3),
           ),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.radius80),
-          textStyle: GoogleFonts.notoSansJp(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: appFont(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
 
@@ -129,10 +122,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.brand,
-          textStyle: GoogleFonts.notoSansJp(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: appFont(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
 
@@ -163,8 +153,8 @@ class AppTheme {
             width: AppStroke.strokeWidth05,
           ),
         ),
-        labelStyle: GoogleFonts.notoSansJp(fontSize: 14, color: textSecondary),
-        hintStyle: GoogleFonts.notoSansJp(
+        labelStyle: appFont(fontSize: 14, color: textSecondary),
+        hintStyle: appFont(
           fontSize: 14,
           color: textSecondary.withValues(alpha: 0.7),
         ),
@@ -194,11 +184,8 @@ class AppTheme {
         unselectedItemColor: textSecondary,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-        selectedLabelStyle: GoogleFonts.notoSansJp(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-        ),
-        unselectedLabelStyle: GoogleFonts.notoSansJp(
+        selectedLabelStyle: appFont(fontSize: 10, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: appFont(
           fontSize: 10,
           fontWeight: FontWeight.w400,
         ),
@@ -220,7 +207,7 @@ class AppTheme {
       // Dialog テーマ
       dialogTheme: DialogThemeData(
         shape: RoundedRectangleBorder(borderRadius: AppRadius.radius160),
-        titleTextStyle: GoogleFonts.notoSansJp(
+        titleTextStyle: appFont(
           fontSize: 17,
           fontWeight: FontWeight.w600,
           color: textPrimary,

@@ -115,6 +115,10 @@ class AppIcons {
       _svg('ic-message-text', size: size, color: color);
   static Widget messageTextFill({double size = 24, Color? color}) =>
       _svg('ic-message-text-fill', size: size, color: color);
+  static Widget messages({double size = 24, Color? color}) =>
+      _svg('ic-messages', size: size, color: color);
+  static Widget messagesFill({double size = 24, Color? color}) =>
+      _svg('ic-messages-fill', size: size, color: color);
 
   // ── アクション ──
   static Widget search({double size = 24, Color? color}) =>

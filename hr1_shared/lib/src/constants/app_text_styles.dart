@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
+import '../utils/app_font.dart';
 
 /// HR1 テキストスタイル定数 — Fluent 2 iOS Typography 準拠
 ///
 /// https://fluent2.microsoft.design/typography
-/// SF Pro の仕様を Noto Sans JP で再現。
+/// iOS は OS 標準（SF Pro / Hiragino Sans）、それ以外は Noto Sans JP を使用。
 class AppTextStyles {
   AppTextStyles._();
 
   // ─── Display ───────────────────────────────────────────────────
   /// 48pt ExtraLight — 時刻・カウンター等の数値表示
-  static TextStyle display = GoogleFonts.notoSansJp(
+  static TextStyle display = appFont(
     fontSize: 48,
     fontWeight: FontWeight.w200,
     height: 1.08,
@@ -19,7 +20,7 @@ class AppTextStyles {
 
   // ─── Large Title ───────────────────────────────────────────────
   /// 34pt Regular — Large Title
-  static TextStyle largeTitle = GoogleFonts.notoSansJp(
+  static TextStyle largeTitle = appFont(
     fontSize: 34,
     fontWeight: FontWeight.w700,
     height: 1.21,
@@ -28,7 +29,7 @@ class AppTextStyles {
 
   // ─── Title ─────────────────────────────────────────────────────
   /// 28pt Regular — Title 1
-  static TextStyle title1 = GoogleFonts.notoSansJp(
+  static TextStyle title1 = appFont(
     fontSize: 28,
     fontWeight: FontWeight.w700,
     height: 1.21,
@@ -36,7 +37,7 @@ class AppTextStyles {
   );
 
   /// 22pt Regular — Title 2
-  static TextStyle title2 = GoogleFonts.notoSansJp(
+  static TextStyle title2 = appFont(
     fontSize: 22,
     fontWeight: FontWeight.w700,
     height: 1.27,
@@ -44,7 +45,7 @@ class AppTextStyles {
   );
 
   /// 20pt Regular — Title 3
-  static TextStyle title3 = GoogleFonts.notoSansJp(
+  static TextStyle title3 = appFont(
     fontSize: 20,
     fontWeight: FontWeight.w700,
     height: 1.25,
@@ -53,28 +54,28 @@ class AppTextStyles {
 
   // ─── Body ──────────────────────────────────────────────────────
   /// 17pt Semibold — Headline
-  static TextStyle headline = GoogleFonts.notoSansJp(
+  static TextStyle headline = appFont(
     fontSize: 17,
     fontWeight: FontWeight.w600,
     height: 1.29,
   );
 
   /// 15pt Bold — Label 1
-  static TextStyle label1 = GoogleFonts.notoSansJp(
+  static TextStyle label1 = appFont(
     fontSize: 15,
     fontWeight: FontWeight.w600,
     height: 1.29,
   );
 
   /// 17pt Regular — Body 1
-  static TextStyle body1 = GoogleFonts.notoSansJp(
+  static TextStyle body1 = appFont(
     fontSize: 17,
     fontWeight: FontWeight.w400,
     height: 1.29,
   );
 
   /// 16pt Regular — Callout
-  static TextStyle callout = GoogleFonts.notoSansJp(
+  static TextStyle callout = appFont(
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 1.31,
@@ -82,7 +83,7 @@ class AppTextStyles {
   );
 
   /// 15pt Regular — Body 2 / Subheadline
-  static TextStyle body2 = GoogleFonts.notoSansJp(
+  static TextStyle body2 = appFont(
     fontSize: 15,
     fontWeight: FontWeight.w400,
     height: 1.33,
@@ -90,7 +91,7 @@ class AppTextStyles {
 
   // ─── Caption ───────────────────────────────────────────────────
   /// 13pt Regular — Footnote
-  static TextStyle footnote = GoogleFonts.notoSansJp(
+  static TextStyle footnote = appFont(
     fontSize: 13,
     fontWeight: FontWeight.w400,
     height: 1.38,
@@ -98,7 +99,7 @@ class AppTextStyles {
   );
 
   /// 12pt Regular — Caption 1
-  static TextStyle caption1 = GoogleFonts.notoSansJp(
+  static TextStyle caption1 = appFont(
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 1.33,
@@ -106,7 +107,7 @@ class AppTextStyles {
   );
 
   /// 11pt Regular — Caption 2
-  static TextStyle caption2 = GoogleFonts.notoSansJp(
+  static TextStyle caption2 = appFont(
     fontSize: 11,
     fontWeight: FontWeight.w400,
     height: 1.18,

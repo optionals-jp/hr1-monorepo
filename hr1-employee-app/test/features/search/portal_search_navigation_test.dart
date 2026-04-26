@@ -24,8 +24,8 @@ void main() {
     await Firebase.initializeApp();
   });
 
-  group('ポータル画面の検索ボックス', () {
-    testWidgets('検索ボックスをタップすると検索画面に遷移する', (tester) async {
+  group('ポータル画面の AI プロンプトカード', () {
+    testWidgets('AI プロンプトカードをタップすると検索画面に遷移する', (tester) async {
       String? pushedPath;
 
       final mockRouter = GoRouter(
@@ -70,19 +70,21 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      // ヒーローのグラデーションが repeat() で動き続けるため pumpAndSettle は使えない。
+      // 1 フレーム描画させる程度で十分。
+      await tester.pump();
 
-      // SearchBox を探してタップ
-      final searchBox = find.text('検索');
-      expect(searchBox, findsOneWidget, reason: '検索ボックスが表示されていること');
+      // AI プロンプトカードを探してタップ
+      final promptCard = find.text('申請・検索・依頼を聞いてみる');
+      expect(promptCard, findsOneWidget, reason: 'AI プロンプトカードが表示されていること');
 
-      await tester.tap(searchBox);
-      await tester.pumpAndSettle();
+      await tester.tap(promptCard);
+      await tester.pump();
 
       expect(
         pushedPath,
         equals(AppRoutes.search),
-        reason: '検索ボックスタップで /search に遷移すること',
+        reason: 'AI プロンプトカードタップで /search に遷移すること',
       );
     });
   });

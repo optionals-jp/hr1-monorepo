@@ -6,6 +6,8 @@ import 'package:hr1_employee_app/features/auth/presentation/screens/splash_scree
 import 'package:hr1_employee_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:hr1_employee_app/features/auth/presentation/screens/home_screen.dart';
 import 'package:hr1_employee_app/features/auth/presentation/screens/profile_edit_screen.dart';
+import 'package:hr1_employee_app/features/feed/presentation/screens/feed_detail_screen.dart';
+import 'package:hr1_employee_app/features/feed/presentation/screens/feed_screen.dart';
 import 'package:hr1_employee_app/features/portal/presentation/screens/portal_screen.dart';
 import 'package:hr1_employee_app/features/calendar/presentation/screens/calendar_screen.dart';
 import 'package:hr1_employee_app/features/messages/presentation/screens/messages_screen.dart';
@@ -70,6 +72,7 @@ class AppRoutes {
   static const String portal = '/portal';
   static const String calendar = '/calendar';
   static const String messages = '/messages';
+  static const String feed = '/feed';
   static const String tasks = '/tasks';
   static const String profile = '/profile';
   static const String crm = '/crm';
@@ -115,6 +118,8 @@ class AppRoutes {
 
   // タスク詳細
   static const String _taskDetail = 'task-detail';
+  // フィード詳細
+  static const String _feedDetail = 'feed-detail';
   // フルパス（画面遷移用）
   static const String faq = '/$_faq';
   static const String wiki = '/$_wiki';
@@ -161,6 +166,7 @@ class AppRoutes {
   static const String bcContactForm = '/$_bcContactForm';
 
   static const String taskDetail = '/$_taskDetail';
+  static const String feedDetail = '/$_feedDetail';
 }
 
 /// ルートナビゲーターキー（フルスクリーン遷移用 + プッシュ通知からの遷移用）
@@ -280,6 +286,26 @@ final routerProvider = Provider<GoRouter>((ref) {
           }
           return ThreadChatScreen(thread: thread);
         },
+      ),
+
+      /// メッセージ一覧（フルスクリーン — タブ廃止後はヘッダーのチャット
+      /// アイコンから push される）
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.messages,
+        builder: (context, state) => const MessagesScreen(),
+        routes: [
+          GoRoute(
+            path: AppRoutes._thread,
+            builder: (context, state) {
+              final thread = state.extra as MessageThread?;
+              if (thread == null) {
+                return const MessagesScreen();
+              }
+              return ThreadChatScreen(thread: thread);
+            },
+          ),
+        ],
       ),
 
       /// スキル編集画面（フルスクリーン）
@@ -588,6 +614,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             TaskDetailScreen(taskId: state.extra as String?),
       ),
 
+      /// フィード投稿詳細（フルスクリーン）— extra: String? postId
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.feedDetail,
+        builder: (context, state) =>
+            FeedDetailScreen(postId: state.extra as String?),
+      ),
+
       /// メイン画面（ホーム / カレンダー / チャット / タスク / その他）
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -613,20 +647,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.messages,
-                builder: (context, state) => const MessagesScreen(),
-                routes: [
-                  GoRoute(
-                    path: AppRoutes._thread,
-                    builder: (context, state) {
-                      final thread = state.extra as MessageThread?;
-                      if (thread == null) {
-                        return const MessagesScreen();
-                      }
-                      return ThreadChatScreen(thread: thread);
-                    },
-                  ),
-                ],
+                path: AppRoutes.feed,
+                builder: (context, state) => const FeedScreen(),
               ),
             ],
           ),

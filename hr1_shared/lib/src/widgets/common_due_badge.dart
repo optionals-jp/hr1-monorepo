@@ -41,7 +41,7 @@ class CommonDueBadge extends StatelessWidget {
         Text(
           '${due.month}/${due.day}',
           style: AppTextStyles.caption2.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: color,
           ),
         ),
