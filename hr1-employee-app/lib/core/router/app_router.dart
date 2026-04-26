@@ -6,6 +6,7 @@ import 'package:hr1_employee_app/features/auth/presentation/screens/splash_scree
 import 'package:hr1_employee_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:hr1_employee_app/features/auth/presentation/screens/home_screen.dart';
 import 'package:hr1_employee_app/features/auth/presentation/screens/profile_edit_screen.dart';
+import 'package:hr1_employee_app/features/feed/presentation/screens/feed_detail_screen.dart';
 import 'package:hr1_employee_app/features/feed/presentation/screens/feed_screen.dart';
 import 'package:hr1_employee_app/features/portal/presentation/screens/portal_screen.dart';
 import 'package:hr1_employee_app/features/calendar/presentation/screens/calendar_screen.dart';
@@ -117,6 +118,8 @@ class AppRoutes {
 
   // タスク詳細
   static const String _taskDetail = 'task-detail';
+  // フィード詳細
+  static const String _feedDetail = 'feed-detail';
   // フルパス（画面遷移用）
   static const String faq = '/$_faq';
   static const String wiki = '/$_wiki';
@@ -163,6 +166,7 @@ class AppRoutes {
   static const String bcContactForm = '/$_bcContactForm';
 
   static const String taskDetail = '/$_taskDetail';
+  static const String feedDetail = '/$_feedDetail';
 }
 
 /// ルートナビゲーターキー（フルスクリーン遷移用 + プッシュ通知からの遷移用）
@@ -608,6 +612,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.taskDetail,
         builder: (context, state) =>
             TaskDetailScreen(taskId: state.extra as String?),
+      ),
+
+      /// フィード投稿詳細（フルスクリーン）— extra: String? postId
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.feedDetail,
+        builder: (context, state) =>
+            FeedDetailScreen(postId: state.extra as String?),
       ),
 
       /// メイン画面（ホーム / カレンダー / チャット / タスク / その他）

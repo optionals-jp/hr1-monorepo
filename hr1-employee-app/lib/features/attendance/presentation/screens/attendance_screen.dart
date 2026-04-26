@@ -13,16 +13,9 @@ import 'package:hr1_employee_app/features/attendance/presentation/providers/atte
 class AttendanceScreen extends ConsumerWidget {
   const AttendanceScreen({super.key});
 
-  Future<void> _handlePunch(
-    BuildContext context,
-    WidgetRef ref,
-    String action,
-  ) async {
-    await ref.read(attendanceControllerProvider.notifier).punch(action);
-    final error = ref.read(attendanceControllerProvider).error;
-    if (error != null && context.mounted) {
-      CommonSnackBar.error(context, 'エラーが発生しました: $error');
-    }
+  Future<void> _handlePunch(WidgetRef ref, String action) {
+    // SnackBar 表示は ref.listen 側に集約 (home_hero と二重表示しない)。
+    return ref.read(attendanceControllerProvider.notifier).punch(action);
   }
 
   @override
@@ -31,6 +24,16 @@ class AttendanceScreen extends ConsumerWidget {
     final workState = ref.watch(workStateProvider);
     final todayRecord = ref.watch(todayRecordProvider);
     final todayPunches = ref.watch(todayPunchesProvider);
+
+    // この画面表示中の SnackBar はここで listen。home_hero 側 listen は
+    // collapsed ヘッダーが表示されているときのみ発火するので二重にならない。
+    ref.listen<PunchState>(attendanceControllerProvider, (prev, next) {
+      final justSettled =
+          prev?.pendingAction != null && next.pendingAction == null;
+      if (justSettled && next.errorMessage != null) {
+        CommonSnackBar.error(context, next.errorMessage!);
+      }
+    });
 
     return CommonScaffold(
       appBar: AppBar(
@@ -81,7 +84,7 @@ class AttendanceScreen extends ConsumerWidget {
             _PunchButtons(
               workState: workState,
               isLoading: punchState.isLoading,
-              onPunch: (action) => _handlePunch(context, ref, action),
+              onPunch: (action) => _handlePunch(ref, action),
             ),
             const SizedBox(height: AppSpacing.xxl),
 

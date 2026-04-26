@@ -66,6 +66,7 @@ class HomeTodayTasks extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SizedBox(height: AppSpacing.xl),
           _SectionHeaderRow(
             title: '今日のタスク',
             actionLabel: '$_totalCount件',

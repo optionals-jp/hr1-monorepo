@@ -1,7 +1,26 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_employee_app/features/attendance/domain/entities/attendance_record.dart';
 
+/// 打刻 RPC が業務上の状態違反を理由に拒否したことを示す例外。
+///
+/// [code] は DB 側 `RAISE EXCEPTION ... USING detail = '...'` の detail 文字列。
+/// クライアント側のメッセージ分岐に使う (i18n される MESSAGE には依存しない)。
+class PunchException implements Exception {
+  PunchException(this.code, [this.message]);
+  final String code;
+  final String? message;
+
+  @override
+  String toString() =>
+      'PunchException($code)${message != null ? ': $message' : ''}';
+}
+
 /// 勤怠データのSupabaseリポジトリ
+///
+/// 打刻系 (clockIn / clockOut / breakStart / breakEnd) は DB の SECURITY DEFINER
+/// RPC (`punch_*`) に委譲する。サーバ側で行ロック + 状態整合性チェック + 並行
+/// 実行直列化が行われ、クライアント / ネットワーク事情に依存せず不変条件を
+/// 保つ。
 class SupabaseAttendanceRepository {
   SupabaseAttendanceRepository(
     this._client, {
@@ -25,17 +44,13 @@ class SupabaseAttendanceRepository {
     return id;
   }
 
-  /// サーバ側の現在時刻を取得
-  Future<DateTime> _serverNow() async {
-    final response = await _client.rpc('get_server_now');
-    return DateTime.parse(response as String);
-  }
-
-  /// サーバ時刻ベースのローカル日付文字列（yyyy-MM-dd）を取得
+  /// サーバ側の今日 (Asia/Tokyo) を YYYY-MM-DD で取得。
+  /// クライアント TZ や `get_server_now` の応答フォーマット差異を排除するため
+  /// DB の `get_server_today_jst()` RPC をそのまま使う (打刻 RPC が使う日付計算
+  /// と完全一致)。
   Future<String> _serverToday() async {
-    final now = await _serverNow();
-    final local = now.toLocal();
-    return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
+    final response = await _client.rpc('get_server_today_jst');
+    return response as String;
   }
 
   /// 今日の勤怠レコードを取得
@@ -72,17 +87,22 @@ class SupabaseAttendanceRepository {
 
   /// 今日の打刻履歴を取得
   Future<List<AttendancePunch>> getTodayPunches() async {
-    // サーバ時刻ベースの今日の開始・終了をUTCに変換してクエリ
-    final now = (await _serverNow()).toLocal();
-    final todayStart = DateTime(now.year, now.month, now.day);
-    final tomorrowStart = todayStart.add(const Duration(days: 1));
+    // 今日 (JST) の 00:00 〜 翌 00:00 を UTC に変換してクエリ
+    final today = await _serverToday();
+    final parts = today.split('-').map(int.parse).toList();
+    final dayStartJst = DateTime.utc(
+      parts[0],
+      parts[1],
+      parts[2],
+    ).subtract(const Duration(hours: 9));
+    final dayEndJst = dayStartJst.add(const Duration(days: 1));
 
     final response = await _client
         .from('attendance_punches')
         .select()
         .eq('user_id', _userId)
-        .gte('punched_at', todayStart.toUtc().toIso8601String())
-        .lt('punched_at', tomorrowStart.toUtc().toIso8601String())
+        .gte('punched_at', dayStartJst.toIso8601String())
+        .lt('punched_at', dayEndJst.toIso8601String())
         .order('punched_at', ascending: true);
 
     return (response as List)
@@ -108,266 +128,67 @@ class SupabaseAttendanceRepository {
         .toList();
   }
 
-  /// 出勤打刻
-  Future<AttendanceRecord> clockIn({String? note}) async {
-    final now = await _serverNow();
-    final today = await _serverToday();
-    final nowUtc = now.toUtc().toIso8601String();
-    final orgId = activeOrganizationId;
-
-    // 勤怠レコードを作成または更新
-    final record = await _client
-        .from('attendance_records')
-        .upsert({
-          'user_id': _userId,
-          'organization_id': orgId,
-          'date': today,
-          'clock_in': nowUtc,
-          'status': 'present',
-          'note': note,
-        }, onConflict: 'user_id,date')
-        .select()
-        .single();
-
-    // 打刻履歴に記録
-    await _client.from('attendance_punches').insert({
-      'user_id': _userId,
-      'organization_id': orgId,
-      'record_id': record['id'],
-      'punch_type': PunchType.clockIn,
-      'punched_at': nowUtc,
-      'note': note,
-    });
-
-    return AttendanceRecord.fromJson(record);
+  /// 出勤打刻 — DB の `punch_clock_in` RPC に委譲。
+  /// 既出勤等の状態違反は [PunchException] を投げる。
+  Future<AttendanceRecord> clockIn() {
+    return _invokeRecordRpc('punch_clock_in');
   }
 
-  /// 退勤打刻
-  Future<AttendanceRecord> clockOut({String? note}) async {
-    final now = await _serverNow();
-    final today = await _serverToday();
-    final nowUtc = now.toUtc().toIso8601String();
-    final orgId = activeOrganizationId;
-
-    // 勤怠設定を取得して残業・深夜時間を計算
-    final settings = await getSettings();
-    final currentRecord = await _client
-        .from('attendance_records')
-        .select('clock_in, break_minutes')
-        .eq('user_id', _userId)
-        .eq('date', today)
-        .single();
-
-    final clockInRaw = currentRecord['clock_in'] as String?;
-    if (clockInRaw == null) {
-      throw StateError('出勤打刻がありません');
-    }
-    final clockInTime = DateTime.parse(clockInRaw).toLocal();
-    final clockOutTime = now.toLocal();
-    final breakMins = currentRecord['break_minutes'] as int? ?? 0;
-
-    final overtime = _calcOvertimeMinutes(
-      clockIn: clockInTime,
-      clockOut: clockOutTime,
-      breakMinutes: breakMins,
-      workStartTime: settings.workStartTime,
-      workEndTime: settings.workEndTime,
-    );
-    final lateNight = _calcLateNightMinutes(
-      clockIn: clockInTime,
-      clockOut: clockOutTime,
-    );
-
-    // 今日のレコードを更新
-    final record = await _client
-        .from('attendance_records')
-        .update({
-          'clock_out': nowUtc,
-          'overtime_minutes': overtime,
-          'late_night_minutes': lateNight,
-        })
-        .eq('user_id', _userId)
-        .eq('date', today)
-        .select()
-        .single();
-
-    // 打刻履歴に記録
-    await _client.from('attendance_punches').insert({
-      'user_id': _userId,
-      'organization_id': orgId,
-      'record_id': record['id'],
-      'punch_type': PunchType.clockOut,
-      'punched_at': nowUtc,
-      'note': note,
-    });
-
-    return AttendanceRecord.fromJson(record);
+  /// 退勤打刻 — DB の `punch_clock_out` RPC に委譲。
+  /// 出勤前 / 既退勤 / 休憩中 等は [PunchException] を投げる。
+  Future<AttendanceRecord> clockOut() {
+    return _invokeRecordRpc('punch_clock_out');
   }
 
-  /// 残業時間（分）を計算
-  /// 定時後の勤務時間 + 定時前の早出時間 - 休憩時間（実勤務 - 所定勤務が正の場合）
-  int _calcOvertimeMinutes({
-    required DateTime clockIn,
-    required DateTime clockOut,
-    required int breakMinutes,
-    required String workStartTime,
-    required String workEndTime,
-  }) {
-    final startParts = workStartTime.split(':');
-    final endParts = workEndTime.split(':');
-    final workStart = DateTime(
-      clockIn.year,
-      clockIn.month,
-      clockIn.day,
-      int.parse(startParts[0]),
-      int.parse(startParts[1]),
-    );
-    final workEnd = DateTime(
-      clockIn.year,
-      clockIn.month,
-      clockIn.day,
-      int.parse(endParts[0]),
-      int.parse(endParts[1]),
-    );
-
-    // 所定勤務時間
-    final scheduledMinutes = workEnd.difference(workStart).inMinutes;
-    // 実勤務時間（休憩除く）
-    final actualMinutes = clockOut.difference(clockIn).inMinutes - breakMinutes;
-    // 残業 = 実勤務 - 所定勤務（負の場合は0）
-    final overtime = actualMinutes - scheduledMinutes;
-    return overtime > 0 ? overtime : 0;
-  }
-
-  /// 深夜時間（分）を計算: 22:00〜翌5:00 の勤務時間
-  int _calcLateNightMinutes({
-    required DateTime clockIn,
-    required DateTime clockOut,
-  }) {
-    final baseDate = DateTime(clockIn.year, clockIn.month, clockIn.day);
-    final nextDate = baseDate.add(const Duration(days: 1));
-
-    // 深夜帯1: 当日 22:00〜翌5:00
-    final night1Start = DateTime(
-      baseDate.year,
-      baseDate.month,
-      baseDate.day,
-      22,
-    );
-    final night1End = DateTime(nextDate.year, nextDate.month, nextDate.day, 5);
-
-    int total = _overlapMinutes(clockIn, clockOut, night1Start, night1End);
-
-    // 深夜帯2: 出勤が5時前の場合 0:00〜5:00
-    if (clockIn.hour < 5) {
-      final night2Start = baseDate;
-      final night2End = DateTime(
-        baseDate.year,
-        baseDate.month,
-        baseDate.day,
-        5,
-      );
-      total += _overlapMinutes(clockIn, clockOut, night2Start, night2End);
-    }
-    return total;
-  }
-
-  /// 2つの時間帯の重複（分）を計算
-  int _overlapMinutes(
-    DateTime aStart,
-    DateTime aEnd,
-    DateTime bStart,
-    DateTime bEnd,
-  ) {
-    final start = aStart.isAfter(bStart) ? aStart : bStart;
-    final end = aEnd.isBefore(bEnd) ? aEnd : bEnd;
-    if (start.isBefore(end)) {
-      return end.difference(start).inMinutes;
-    }
-    return 0;
-  }
-
-  /// 休憩開始打刻
+  /// 休憩開始打刻 — DB の `punch_break_start` RPC に委譲。
   Future<void> breakStart() async {
-    final now = await _serverNow();
-    final today = await _serverToday();
-    final nowUtc = now.toUtc().toIso8601String();
-    final orgId = activeOrganizationId;
-
-    // 今日のレコードIDを取得
-    final record = await _client
-        .from('attendance_records')
-        .select('id')
-        .eq('user_id', _userId)
-        .eq('date', today)
-        .single();
-
-    await _client.from('attendance_punches').insert({
-      'user_id': _userId,
-      'organization_id': orgId,
-      'record_id': record['id'],
-      'punch_type': PunchType.breakStart,
-      'punched_at': nowUtc,
-    });
+    await _invokeVoidRpc('punch_break_start');
   }
 
-  /// 休憩終了打刻
-  Future<void> breakEnd() async {
-    final now = await _serverNow();
-    final today = await _serverToday();
-    final nowUtc = now.toUtc().toIso8601String();
-    final orgId = activeOrganizationId;
+  /// 休憩終了打刻 — DB の `punch_break_end` RPC に委譲。
+  Future<AttendanceRecord> breakEnd() {
+    return _invokeRecordRpc('punch_break_end');
+  }
 
-    final record = await _client
-        .from('attendance_records')
-        .select('id')
-        .eq('user_id', _userId)
-        .eq('date', today)
-        .single();
+  Future<AttendanceRecord> _invokeRecordRpc(String fnName) async {
+    try {
+      final response = await _client.rpc(
+        fnName,
+        params: {'p_organization_id': activeOrganizationId},
+      );
+      // RETURNS attendance_records はオブジェクトで返る
+      return AttendanceRecord.fromJson(
+        Map<String, dynamic>.from(response as Map),
+      );
+    } on PostgrestException catch (e) {
+      throw _toPunchException(e);
+    }
+  }
 
-    // 休憩開始時刻を取得して休憩時間を計算
-    final breakStartPunch = await _client
-        .from('attendance_punches')
-        .select('punched_at')
-        .eq('record_id', record['id'])
-        .eq('punch_type', PunchType.breakStart)
-        .order('punched_at', ascending: false)
-        .limit(1)
-        .single();
+  Future<void> _invokeVoidRpc(String fnName) async {
+    try {
+      await _client.rpc(
+        fnName,
+        params: {'p_organization_id': activeOrganizationId},
+      );
+    } on PostgrestException catch (e) {
+      throw _toPunchException(e);
+    }
+  }
 
-    final breakStartTime = DateTime.parse(
-      breakStartPunch['punched_at'] as String,
-    );
-    // 両方UTCで統一して差分を計算（nowは既にサーバ時刻）
-    final breakDuration = now
-        .toUtc()
-        .difference(breakStartTime.toUtc())
-        .inMinutes;
-
-    // 休憩時間を加算
-    final currentRecord = await _client
-        .from('attendance_records')
-        .select('break_minutes')
-        .eq('id', record['id'])
-        .single();
-    final currentBreak = currentRecord['break_minutes'] as int? ?? 0;
-
-    await _client
-        .from('attendance_records')
-        .update({'break_minutes': currentBreak + breakDuration})
-        .eq('id', record['id'])
-        .eq('user_id', _userId)
-        .select()
-        .single();
-
-    // 打刻履歴に記録
-    await _client.from('attendance_punches').insert({
-      'user_id': _userId,
-      'organization_id': orgId,
-      'record_id': record['id'],
-      'punch_type': PunchType.breakEnd,
-      'punched_at': nowUtc,
-    });
+  /// 業務エラー (`P0001` / `42501` / `28000`) は [PunchException] に詰め替える。
+  /// それ以外 (ネットワーク / 内部エラー) はそのまま再 throw する。
+  ///
+  /// 依存仕様: PostgREST は plpgsql の `RAISE EXCEPTION ... USING DETAIL = 'x'`
+  /// を error JSON の `details` フィールドにマッピングし、supabase_flutter は
+  /// それを [PostgrestException.details] として公開する。PostgREST の major
+  /// アップデートでマッピングが変わった場合はここを修正する必要がある。
+  Exception _toPunchException(PostgrestException e) {
+    final code = e.details?.toString();
+    if (code != null && code.isNotEmpty) {
+      return PunchException(code, e.message);
+    }
+    return e;
   }
 
   /// 勤怠設定を取得

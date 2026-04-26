@@ -54,6 +54,7 @@ class HomeTodaySchedule extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SizedBox(height: AppSpacing.xl),
           _SectionHeaderRow(
             title: '今日の予定',
             actionLabel: 'カレンダー',

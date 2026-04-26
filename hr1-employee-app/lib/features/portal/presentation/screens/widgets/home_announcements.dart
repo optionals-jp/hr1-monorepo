@@ -56,6 +56,7 @@ class HomeAnnouncements extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SizedBox(height: AppSpacing.xl),
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.screenHorizontal,

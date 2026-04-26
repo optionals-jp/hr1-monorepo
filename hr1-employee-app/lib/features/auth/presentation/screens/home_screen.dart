@@ -72,7 +72,7 @@ class HomeScreen extends ConsumerWidget {
                     padding: const EdgeInsets.only(bottom: 2),
                     child: AppIcons.noteFill(color: selectedColor, size: 24),
                   ),
-                  label: '掲示板',
+                  label: '社内掲示板',
                 ),
                 BottomNavigationBarItem(
                   icon: Padding(

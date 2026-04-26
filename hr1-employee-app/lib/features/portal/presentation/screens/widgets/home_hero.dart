@@ -197,6 +197,17 @@ class HomeHeroContent extends ConsumerWidget {
     final displayName = user?.displayName ?? '匠';
     final initial = displayName.substring(0, 1);
 
+    // 打刻エラー（業務違反 / リポジトリ例外）はトーストで通知する。
+    // 「処理中 → 終了 + errorMessage あり」の遷移で検出するので、同じエラーが
+    // 連続で発生してもその度に SnackBar が出る。
+    ref.listen<PunchState>(attendanceControllerProvider, (prev, next) {
+      final justSettled =
+          prev?.pendingAction != null && next.pendingAction == null;
+      if (justSettled && next.errorMessage != null) {
+        CommonSnackBar.error(context, next.errorMessage!);
+      }
+    });
+
     final scrollRange = maxExtent - minExtent;
     final clamped = shrinkOffset.clamp(0.0, scrollRange);
     // 0..1 の進捗。expanded=0、collapsed=1。
@@ -358,7 +369,7 @@ class _GreetingRow extends ConsumerWidget {
         IconButton(
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-          icon: AppIcons.messageText(size: 24, color: Colors.white),
+          icon: AppIcons.messages(size: 24, color: Colors.white),
           onPressed: () => context.push(AppRoutes.messages),
         ),
       ],
@@ -454,7 +465,6 @@ class _ExpandedAttendance extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final workState = ref.watch(workStateProvider);
     final record = ref.watch(todayRecordProvider).valueOrNull;
-    final punchState = ref.watch(attendanceControllerProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -504,13 +514,7 @@ class _ExpandedAttendance extends ConsumerWidget {
                 ],
               ),
             ),
-            _AttendanceActionButton(
-              workState: workState,
-              loading: punchState.isLoading,
-              onPunch: (action) =>
-                  ref.read(attendanceControllerProvider.notifier).punch(action),
-              compact: false,
-            ),
+            _AttendanceActionButton(workState: workState, compact: false),
           ],
         ),
       ],
@@ -563,9 +567,13 @@ class _CompactAttendanceBar extends ConsumerWidget {
       1,
     );
     final workState = ref.watch(workStateProvider);
-    final punchState = ref.watch(attendanceControllerProvider);
+    // 勤務中はボタンが 2 個並ぶため、横幅確保のためステータス文言を省略する。
+    final showStateLabel = workState != WorkState.working;
 
     return Padding(
+      // ボタン視覚 (白ボックス) の右端を画面端から AppSpacing.screenHorizontal
+      // と揃えるため、padding は左右対称。ヒット領域の透明部分はその内側
+      // (左方向) に伸びる。
       padding: EdgeInsets.fromLTRB(
         AppSpacing.screenHorizontal,
         safeAreaTop,
@@ -581,43 +589,47 @@ class _CompactAttendanceBar extends ConsumerWidget {
           IconButton(
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-            icon: AppIcons.messageText(size: 22, color: Colors.white),
+            icon: AppIcons.messages(size: 22, color: Colors.white),
             onPressed: () => context.push(AppRoutes.messages),
           ),
           const Spacer(),
           // 右: 勤務状態 + 時計 + ボタン
           _StatusDot(workState: workState),
-          const SizedBox(width: 6),
-          Text(
-            _stateLabel(workState),
-            style: AppTextStyles.label1.copyWith(color: Colors.white),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+          if (showStateLabel) ...[
+            const SizedBox(width: 6),
+            Text(
+              _stateLabel(workState),
+              style: AppTextStyles.label1.copyWith(color: Colors.white),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
           const SizedBox(width: 8),
           // 1Hz の clock 更新は Consumer でこの Text だけ局所化。
-          // 時計は AppBar 内でも視認性を保つため title2 (22pt) を使用。
-          Consumer(
-            builder: (context, ref, _) {
-              final clockAsync = ref.watch(homeClockProvider);
-              final now = clockAsync.valueOrNull ?? DateTime.now();
-              return Text(
-                DateFormat('HH:mm:ss').format(now),
-                style: AppTextStyles.title1.copyWith(
-                  color: Colors.white,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              );
-            },
+          // working 時に 2 ボタンを並べる関係で、compact では title2 (22pt) を
+          // 採用し、さらに FittedBox で iPhone SE (320pt) 等の狭幅でも縮小して
+          // overflow しないようにする。
+          Flexible(
+            child: Consumer(
+              builder: (context, ref, _) {
+                final clockAsync = ref.watch(homeClockProvider);
+                final now = clockAsync.valueOrNull ?? DateTime.now();
+                return FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    DateFormat('HH:mm:ss').format(now),
+                    style: AppTextStyles.title1.copyWith(
+                      color: Colors.white,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          _AttendanceActionButton(
-            workState: workState,
-            loading: punchState.isLoading,
-            onPunch: (action) =>
-                ref.read(attendanceControllerProvider.notifier).punch(action),
-            compact: true,
-          ),
+          _AttendanceActionButton(workState: workState, compact: true),
         ],
       ),
     );
@@ -658,56 +670,269 @@ class _StatusDot extends StatelessWidget {
   }
 }
 
-class _AttendanceActionButton extends StatelessWidget {
+/// 勤怠状態に応じて 1〜2 個の打刻ボタンを横並びで描画するコンテナ。
+///
+/// - working 時のみ `[休憩][退勤]` の 2 ボタンを並べる。
+/// - その他の状態は単一ボタン (出勤 / 休憩終了 / 完了)。
+/// - `compact` 時は 32×32 のアイコンのみボタン (ヒット領域は 44×44 確保)、
+///   それ以外はアイコン + ラベル付きの白塗りボタン。
+/// - loading / disabled は [PunchState.pendingAction] から導出する。
+class _AttendanceActionButton extends ConsumerWidget {
   const _AttendanceActionButton({
     required this.workState,
-    required this.loading,
-    required this.onPunch,
     required this.compact,
   });
 
   final WorkState workState;
-  final bool loading;
-  final void Function(String action) onPunch;
-
-  /// `true` で compact (高 32) AppBar 用、`false` で expanded (高 40) 大時計用。
   final bool compact;
 
   @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final actions = _resolveActions(workState);
+    final pending = ref.watch(
+      attendanceControllerProvider.select((s) => s.pendingAction),
+    );
+
+    // compact は 44×44 ヒット領域の中に 32×32 の視覚アイコンを描くため、
+    // gap=0 でも tile 同士は 12px (6+6 の hit padding) 空く。expanded は
+    // ボタン同士が密着しないよう 8px 入れる。
+    final gap = compact ? 0.0 : 8.0;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < actions.length; i++) ...[
+          if (i > 0) SizedBox(width: gap),
+          _AttendanceActionTile(
+            descriptor: actions[i],
+            compact: compact,
+            loading: pending == actions[i].action,
+            // 何らかの punch 処理中なら全ボタン disable。DB が「休憩中の退勤」
+            // 等を弾く現仕様では並行許容は不要 (誤誘導の元となる)。
+            disabledByOther: pending != null && pending != actions[i].action,
+            onPressed: () => ref
+                .read(attendanceControllerProvider.notifier)
+                .punch(actions[i].action),
+          ),
+        ],
+      ],
+    );
+  }
+
+  static List<_ActionDescriptor> _resolveActions(WorkState state) {
+    switch (state) {
+      case WorkState.notStarted:
+        return const [_ActionDescriptor.clockIn];
+      case WorkState.working:
+        return const [_ActionDescriptor.breakStart, _ActionDescriptor.clockOut];
+      case WorkState.onBreak:
+        return const [_ActionDescriptor.breakEnd];
+      case WorkState.finished:
+        return const [_ActionDescriptor.finished];
+    }
+  }
+}
+
+/// 1 つの打刻アクションのメタデータ。
+///
+/// `terminal=true` は表示専用で押下不可（退勤済み時の「完了」インジケータ）。
+class _ActionDescriptor {
+  const _ActionDescriptor._({
+    required this.label,
+    required this.action,
+    required this.iconAsset,
+    this.terminal = false,
+  });
+
+  final String label;
+  final String action;
+  final String iconAsset;
+  final bool terminal;
+
+  static const clockIn = _ActionDescriptor._(
+    label: '出勤',
+    action: 'clock_in',
+    iconAsset: 'ic-login',
+  );
+  static const clockOut = _ActionDescriptor._(
+    label: '退勤',
+    action: 'clock_out',
+    iconAsset: 'ic-logout',
+  );
+  static const breakStart = _ActionDescriptor._(
+    label: '休憩',
+    action: 'break_start',
+    iconAsset: 'ic-coffee',
+  );
+  // 休憩終了 = 業務復帰なので「ログイン」アイコンで「戻る」を示す。
+  static const breakEnd = _ActionDescriptor._(
+    label: '休憩終了',
+    action: 'break_end',
+    iconAsset: 'ic-login',
+  );
+  static const finished = _ActionDescriptor._(
+    label: '完了',
+    action: '',
+    iconAsset: 'ic-tick-circle',
+    terminal: true,
+  );
+}
+
+class _AttendanceActionTile extends StatelessWidget {
+  const _AttendanceActionTile({
+    required this.descriptor,
+    required this.compact,
+    required this.loading,
+    required this.disabledByOther,
+    required this.onPressed,
+  });
+
+  final _ActionDescriptor descriptor;
+  final bool compact;
+  final bool loading;
+  final bool disabledByOther;
+  final VoidCallback onPressed;
+
+  @override
   Widget build(BuildContext context) {
-    final (label, action, fg) = switch (workState) {
-      WorkState.notStarted => ('出勤', 'clock_in', _heroIndigo),
-      WorkState.working => ('退勤', 'clock_out', _heroIndigo),
-      WorkState.onBreak => ('休憩終了', 'break_end', _heroIndigo),
-      WorkState.finished => ('完了', '', AppColors.textTertiary(context)),
-    };
-
-    final disabled = workState == WorkState.finished;
-    final height = compact ? 32.0 : 40.0;
-    final minWidth = compact ? 64.0 : 80.0;
-    final hPadding = compact ? 14.0 : 18.0;
-
-    return SizedBox(
-      height: height,
-      child: CommonButton(
-        onPressed: disabled || loading ? null : () => onPunch(action),
+    final isDisabled = descriptor.terminal || disabledByOther;
+    final fg = descriptor.terminal
+        ? AppColors.textTertiary(context)
+        : _heroIndigo;
+    if (compact) {
+      return _CompactIconTile(
+        descriptor: descriptor,
         loading: loading,
-        enabled: !disabled,
+        isDisabled: isDisabled,
+        fg: fg,
+        onPressed: onPressed,
+      );
+    }
+    return _ExpandedLabelTile(
+      descriptor: descriptor,
+      loading: loading,
+      isDisabled: isDisabled,
+      fg: fg,
+      onPressed: onPressed,
+    );
+  }
+}
+
+/// expanded（大時計エリア）用: 白塗りボタン + アイコン + ラベル。
+class _ExpandedLabelTile extends StatelessWidget {
+  const _ExpandedLabelTile({
+    required this.descriptor,
+    required this.loading,
+    required this.isDisabled,
+    required this.fg,
+    required this.onPressed,
+  });
+
+  final _ActionDescriptor descriptor;
+  final bool loading;
+  final bool isDisabled;
+  final Color fg;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: CommonButton(
+        onPressed: isDisabled || loading ? null : onPressed,
+        loading: loading,
+        enabled: !isDisabled,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.white,
           foregroundColor: fg,
           disabledBackgroundColor: Colors.white.withValues(alpha: 0.4),
           disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
-          minimumSize: Size(minWidth, height),
-          padding: EdgeInsets.symmetric(horizontal: hPadding),
+          minimumSize: const Size(80, 40),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(compact ? 8 : 10),
+            borderRadius: BorderRadius.circular(10),
           ),
-          textStyle: compact
-              ? AppTextStyles.caption1.copyWith(fontWeight: FontWeight.w700)
-              : AppTextStyles.label1,
+          textStyle: AppTextStyles.label1,
         ),
-        child: Text(label),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppIcons.svg(descriptor.iconAsset, size: 18, color: fg),
+            const SizedBox(width: 6),
+            Text(descriptor.label),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// compact（AppBar 内）用: アイコンのみのボタン。
+/// 視覚は [_boxSize]×[_boxSize] の白ボックスに [_iconSize] アイコンを Center。
+/// ヒット領域は [_hitSize]×[_hitSize]、Tooltip + Semantics で a11y を担保。
+class _CompactIconTile extends StatelessWidget {
+  const _CompactIconTile({
+    required this.descriptor,
+    required this.loading,
+    required this.isDisabled,
+    required this.fg,
+    required this.onPressed,
+  });
+
+  static const double _iconSize = 18.0;
+  static const double _boxSize = 32.0;
+  static const double _hitSize = 44.0;
+
+  final _ActionDescriptor descriptor;
+  final bool loading;
+  final bool isDisabled;
+  final Color fg;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = isDisabled ? Colors.white.withValues(alpha: 0.5) : Colors.white;
+    return Tooltip(
+      message: descriptor.label,
+      child: Semantics(
+        button: true,
+        label: descriptor.label,
+        // 視覚アイコンはヒット領域の右端に寄せる。
+        // ボタンが 1 個でも 2 個でも、最右の視覚アイコンが行の右端に揃う。
+        child: SizedBox(
+          width: _hitSize,
+          height: _hitSize,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Material(
+              color: bg,
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(
+                onTap: isDisabled || loading ? null : onPressed,
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: _boxSize,
+                  height: _boxSize,
+                  child: Center(
+                    child: loading
+                        ? SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: fg,
+                            ),
+                          )
+                        : AppIcons.svg(
+                            descriptor.iconAsset,
+                            size: _iconSize,
+                            color: fg,
+                          ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -1,29 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hr1_employee_app/features/attendance/data/repositories/supabase_attendance_repository.dart';
 import 'package:hr1_employee_app/features/attendance/domain/entities/attendance_record.dart';
 import 'package:hr1_employee_app/features/attendance/presentation/providers/attendance_providers.dart';
 
-/// 打刻操作の状態
+/// 打刻操作の状態。
+///
+/// [pendingAction] は現在進行中の打刻アクション名 (`clock_in` / `clock_out` /
+/// `break_start` / `break_end`)。null なら待機中。
+///
+/// [errorMessage] はユーザーに表示する日本語の打刻失敗理由。失敗時のみ非 null。
 class PunchState {
-  const PunchState({this.isLoading = false, this.error});
-  final bool isLoading;
-  final String? error;
+  const PunchState({this.pendingAction, this.errorMessage});
+  final String? pendingAction;
+  final String? errorMessage;
 
-  PunchState copyWith({bool? isLoading, String? error}) {
-    return PunchState(isLoading: isLoading ?? this.isLoading, error: error);
-  }
+  bool get isLoading => pendingAction != null;
 }
 
 /// 勤怠打刻コントローラー
 ///
 /// 打刻操作（出勤・退勤・休憩開始・休憩終了）のビジネスロジックを管理する。
+/// 不変条件 (二重出勤・休憩中の退勤・出勤前の休憩 等) は DB の SECURITY
+/// DEFINER RPC が atomic に弾く。ここでは「処理中なら新規 punch を受け付け
+/// ない」UI ガードのみを担う。
 class AttendanceController extends AutoDisposeNotifier<PunchState> {
   @override
   PunchState build() => const PunchState();
 
-  /// 打刻実行
+  /// 打刻実行。何らかの punch が処理中なら拒否 (UI ガード)。
+  /// 業務上の状態違反は DB 由来の [PunchException] を日本語に変換して
+  /// [PunchState.errorMessage] にセットする。
   Future<void> punch(String action) async {
-    state = state.copyWith(isLoading: true, error: null);
+    if (state.isLoading) return;
+    state = PunchState(pendingAction: action);
     try {
       final repo = ref.read(attendanceRepositoryProvider);
       switch (action) {
@@ -39,8 +49,39 @@ class AttendanceController extends AutoDisposeNotifier<PunchState> {
       ref.invalidate(todayRecordProvider);
       ref.invalidate(todayPunchesProvider);
       state = const PunchState();
-    } catch (e) {
-      state = PunchState(error: e.toString());
+    } on PunchException catch (e) {
+      // 失敗時もサーバ最新状態を反映 (UI を真の状態に戻す)。
+      ref.invalidate(todayRecordProvider);
+      ref.invalidate(todayPunchesProvider);
+      state = PunchState(errorMessage: _messageFromCode(e.code));
+    } catch (_) {
+      ref.invalidate(todayRecordProvider);
+      ref.invalidate(todayPunchesProvider);
+      state = const PunchState(errorMessage: '打刻に失敗しました');
+    }
+  }
+
+  /// RPC の `detail` コードを日本語メッセージに変換。
+  static String _messageFromCode(String code) {
+    switch (code) {
+      case 'unauthenticated':
+        return 'ログインし直してください';
+      case 'forbidden_organization':
+        return '組織を切り替えてから再度お試しください';
+      case 'already_clocked_in':
+        return 'すでに出勤済みです';
+      case 'not_clocked_in':
+        return '出勤打刻がありません';
+      case 'already_clocked_out':
+        return 'すでに退勤済みです';
+      case 'on_break_cannot_clock_out':
+        return '休憩中は退勤できません。先に休憩を終了してください';
+      case 'already_on_break':
+        return 'すでに休憩中です';
+      case 'not_on_break':
+        return '休憩中ではありません';
+      default:
+        return '打刻に失敗しました';
     }
   }
 
