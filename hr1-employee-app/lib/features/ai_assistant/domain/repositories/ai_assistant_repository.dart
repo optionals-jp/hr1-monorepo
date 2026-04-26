@@ -1,4 +1,4 @@
-import '../entities/ai_message.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_message.dart';
 
 /// AIアシスタントのデータソース抽象。
 ///

@@ -54,7 +54,7 @@ class SurveyAnswerScreen extends HookConsumerWidget {
     }
 
     if (survey.questions.isEmpty) {
-      return Scaffold(
+      return CommonScaffold(
         appBar: AppBar(
           title: Text(survey.title, style: AppTextStyles.headline),
         ),

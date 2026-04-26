@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hr1_shared/hr1_shared.dart';
 import 'package:intl/intl.dart';
 
-import '../../domain/entities/ai_card.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_card.dart';
 
 /// 取引先情報カード Widget。
 ///

@@ -1,5 +1,6 @@
 import 'package:hr1_shared/hr1_shared.dart';
 import 'package:hr1_employee_app/features/messages/domain/entities/message_thread.dart';
+import 'package:hr1_employee_app/features/messages/domain/repositories/message_thread_realtime.dart';
 
 /// メッセージリポジトリインターフェース（社員向け）
 abstract class MessagesRepository {
@@ -77,4 +78,16 @@ abstract class MessagesRepository {
 
   /// メッセージをソフトデリート
   Future<void> softDeleteMessage(String messageId);
+
+  /// 全スレッドの messages テーブル変更を購読する。
+  /// スレッド一覧の自動更新用。`Stream<void>` はイベント発火だけを通知し、
+  /// 中身は呼び出し元が再フェッチする。
+  Stream<void> watchAllThreadMessages();
+
+  /// スレッド詳細画面の Realtime / Presence セッションを開く。
+  /// 戻り値の [MessageThreadRealtime.dispose] でチャネルを解放する。
+  MessageThreadRealtime openThreadRealtime({
+    required String threadId,
+    required String currentUserId,
+  });
 }

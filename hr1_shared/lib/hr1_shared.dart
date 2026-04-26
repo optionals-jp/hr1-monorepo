@@ -21,6 +21,7 @@ export 'src/constants/app_icons.dart';
 export 'src/constants/common_emojis.dart';
 export 'src/constants/messages_channels.dart';
 export 'src/widgets/common_button.dart';
+export 'src/widgets/compact_text_action.dart';
 export 'src/widgets/common_check_circle.dart';
 export 'src/widgets/common_due_badge.dart';
 export 'src/widgets/common_select_pill.dart';

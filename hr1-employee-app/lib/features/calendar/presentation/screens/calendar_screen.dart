@@ -217,21 +217,10 @@ class CalendarScreen extends HookConsumerWidget {
         ),
         centerTitle: false,
         actions: [
-          TextButton(
+          CompactTextAction(
+            label: '今日',
             onPressed: () =>
                 ref.read(calendarControllerProvider.notifier).goToToday(),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              '今日',
-              style: AppTextStyles.caption2.copyWith(
-                color: AppColors.brand,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
           ),
           PopupMenuButton<CalendarViewMode>(
             icon: AppIcons.nemuBoard(
@@ -669,7 +658,7 @@ class _EventFormSheet extends HookConsumerWidget {
       }
     }
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         title: Text(isEditing ? '予定の編集' : '新しい予定'),
         leading: IconButton(
@@ -679,22 +668,7 @@ class _EventFormSheet extends HookConsumerWidget {
         actions: [
           if (isEditing)
             IconButton(icon: AppIcons.trash(size: 24), onPressed: delete),
-          TextButton(
-            onPressed: isSaving ? null : save,
-            child: isSaving
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: LoadingIndicator(size: 16),
-                  )
-                : Text(
-                    '保存',
-                    style: AppTextStyles.caption1.copyWith(
-                      color: AppColors.brand,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-          ),
+          CompactTextAction(label: '保存', onPressed: save, loading: isSaving),
           const SizedBox(width: 4),
         ],
       ),

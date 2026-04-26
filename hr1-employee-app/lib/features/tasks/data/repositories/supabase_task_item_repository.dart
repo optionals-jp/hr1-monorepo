@@ -562,4 +562,34 @@ reporter:profiles!reporter_id(id, display_name, avatar_color)
   static String _relationKindToDb(RelationKind k) => k.name;
   static RelationKind _relationKindFromDb(String s) =>
       RelationKind.values.firstWhere((v) => v.name == s);
+
+  @override
+  Future<List<TaskUser>> fetchAssigneeCandidates({int limit = 500}) async {
+    // `!inner` で profiles 行が無い user_organizations を弾き、role でサーバ
+    // フィルタ。SELECT に role を含めてクライアント側でも防御。
+    final rows = await _client
+        .from('user_organizations')
+        .select(
+          'user_id, profiles!user_id!inner(id, display_name, avatar_color, role)',
+        )
+        .eq('organization_id', activeOrganizationId)
+        .neq('profiles.role', 'applicant')
+        .limit(limit);
+
+    final users = <TaskUser>[];
+    for (final r in List<Map<String, dynamic>>.from(rows)) {
+      final p = r['profiles'] as Map<String, dynamic>?;
+      if (p == null) continue;
+      if ((p['role'] as String?) == 'applicant') continue;
+      users.add(
+        TaskUser.fromProfile(
+          id: p['id'] as String? ?? '',
+          displayName: p['display_name'] as String?,
+          avatarColorHex: p['avatar_color'] as String?,
+        ),
+      );
+    }
+    users.sort((a, b) => a.name.compareTo(b.name));
+    return users;
+  }
 }

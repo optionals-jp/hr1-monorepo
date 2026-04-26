@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_employee_app/core/organization/organization_context.dart';
+import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hr1_employee_app/features/business_cards/data/repositories/supabase_business_card_repository.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_activity.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_card.dart';
@@ -14,7 +14,7 @@ import 'package:hr1_employee_app/features/business_cards/domain/repositories/bus
 /// リポジトリプロバイダー
 final bcRepositoryProvider = Provider<BusinessCardRepository>((ref) {
   return SupabaseBusinessCardRepository(
-    Supabase.instance.client,
+    ref.watch(supabaseClientProvider),
     activeOrganizationId: ref.watch(activeOrganizationIdProvider),
   );
 });

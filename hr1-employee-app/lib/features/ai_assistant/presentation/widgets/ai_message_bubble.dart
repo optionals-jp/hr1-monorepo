@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:hr1_shared/hr1_shared.dart';
 import 'package:intl/intl.dart';
 
-import '../../domain/entities/ai_action.dart';
-import '../../domain/entities/ai_card.dart';
-import '../../domain/entities/ai_message.dart';
-import '../controllers/ai_chat_controller.dart';
-import 'ai_action_button_row.dart';
-import 'ai_reference_list.dart';
-import 'client_info_card_view.dart';
-import 'overtime_summary_card_view.dart';
-import 'workflow_suggestion_card_view.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_action.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_card.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_message.dart';
+import 'package:hr1_employee_app/features/ai_assistant/presentation/controllers/ai_chat_controller.dart';
+import 'package:hr1_employee_app/features/ai_assistant/presentation/widgets/ai_action_button_row.dart';
+import 'package:hr1_employee_app/features/ai_assistant/presentation/widgets/ai_reference_list.dart';
+import 'package:hr1_employee_app/features/ai_assistant/presentation/widgets/client_info_card_view.dart';
+import 'package:hr1_employee_app/features/ai_assistant/presentation/widgets/overtime_summary_card_view.dart';
+import 'package:hr1_employee_app/features/ai_assistant/presentation/widgets/workflow_suggestion_card_view.dart';
 
 /// 1 メッセージ分の描画。
 ///
@@ -348,7 +348,7 @@ class _AssistantBody extends StatelessWidget {
       spans.add(
         TextSpan(
           text: match.group(1),
-          style: const TextStyle(fontWeight: FontWeight.w700),
+          style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700),
         ),
       );
       lastEnd = match.end;

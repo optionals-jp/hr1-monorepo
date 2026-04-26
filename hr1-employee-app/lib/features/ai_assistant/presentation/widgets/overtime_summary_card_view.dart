@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hr1_shared/hr1_shared.dart';
 
-import '../../domain/entities/ai_card.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_card.dart';
 
 /// 残業時間サマリカード Widget。
 ///
@@ -113,29 +113,11 @@ class _BigStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 数字は letterSpacing を負値にしてタイトに（Noto Sans JP の全角寄り
-    // グリフでも欧文っぽく見えるよう調整）。tabularFigures で 6 と 3 の
-    // 字幅も揃える。
-    final valueStyle = TextStyle(
-      fontSize: 30,
-      height: 1.0,
-      fontWeight: FontWeight.w700,
-      letterSpacing: -0.8,
-      color: valueColor,
-      fontFeatures: const [FontFeature.tabularFigures()],
-    );
-    final unitStyle = TextStyle(
-      fontSize: 14,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0,
+    final valueStyle = AppTextStyles.statValue.copyWith(color: valueColor);
+    final unitStyle = AppTextStyles.statUnit.copyWith(
       color: valueColor.withValues(alpha: 0.85),
     );
-    final prefixStyle = TextStyle(
-      fontSize: 14,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0,
-      color: valueColor.withValues(alpha: 0.85),
-    );
+    final prefixStyle = unitStyle;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -25,7 +25,7 @@ class CardScanScreen extends StatelessWidget {
       }
     }
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('名刺スキャン')),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),

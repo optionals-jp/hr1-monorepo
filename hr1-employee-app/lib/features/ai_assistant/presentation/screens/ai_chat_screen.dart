@@ -7,11 +7,11 @@ import 'package:hr1_employee_app/core/router/app_router.dart';
 import 'package:hr1_employee_app/features/workflow/domain/entities/workflow_request.dart';
 import 'package:hr1_shared/hr1_shared.dart';
 
-import '../../domain/entities/ai_action.dart';
-import '../../domain/entities/ai_message.dart';
-import '../controllers/ai_chat_controller.dart';
-import '../widgets/ai_message_bubble.dart';
-import '../widgets/ai_typing_indicator.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_action.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_message.dart';
+import 'package:hr1_employee_app/features/ai_assistant/presentation/controllers/ai_chat_controller.dart';
+import 'package:hr1_employee_app/features/ai_assistant/presentation/widgets/ai_message_bubble.dart';
+import 'package:hr1_employee_app/features/ai_assistant/presentation/widgets/ai_typing_indicator.dart';
 
 /// AIアシスタント会話画面（フルスクリーン）。
 ///
@@ -116,7 +116,7 @@ class AiChatScreen extends HookConsumerWidget {
       ref.read(aiChatControllerProvider.notifier).toggleFeedback(messageId, fb);
     }
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: _AiChatAppBar(
         onClearPressed: () =>
             ref.read(aiChatControllerProvider.notifier).clearConversation(),

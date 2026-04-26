@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/repositories/mock_ai_assistant_repository.dart';
-import '../../domain/repositories/ai_assistant_repository.dart';
+import 'package:hr1_employee_app/features/ai_assistant/data/repositories/mock_ai_assistant_repository.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/repositories/ai_assistant_repository.dart';
 
 /// AI アシスタントの Repository。
 ///

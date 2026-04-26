@@ -5,11 +5,10 @@ import 'package:hr1_employee_app/features/tasks/data/repositories/supabase_task_
 import 'package:hr1_employee_app/features/tasks/domain/entities/task_item.dart';
 import 'package:hr1_employee_app/features/tasks/domain/entities/task_item_page.dart';
 import 'package:hr1_employee_app/features/tasks/domain/repositories/task_item_repository.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 final taskItemRepositoryProvider = Provider<TaskItemRepository>((ref) {
   return SupabaseTaskItemRepository(
-    Supabase.instance.client,
+    ref.watch(supabaseClientProvider),
     activeOrganizationId: ref.watch(activeOrganizationIdProvider),
   );
 });
@@ -17,33 +16,8 @@ final taskItemRepositoryProvider = Provider<TaskItemRepository>((ref) {
 /// 担当者候補（同じ組織のメンバー）。応募者ロールは除外。
 final assigneeCandidatesProvider = FutureProvider.autoDispose<List<TaskUser>>((
   ref,
-) async {
-  final orgId = ref.watch(activeOrganizationIdProvider);
-  // `!inner` で profiles 行が無い user_organizations を弾き、role でサーバ
-  // フィルタ。SELECT に role を含めてクライアント側でも防御。
-  final rows = await Supabase.instance.client
-      .from('user_organizations')
-      .select(
-        'user_id, profiles!user_id!inner(id, display_name, avatar_color, role)',
-      )
-      .eq('organization_id', orgId)
-      .neq('profiles.role', 'applicant')
-      .limit(500);
-  final users = <TaskUser>[];
-  for (final r in List<Map<String, dynamic>>.from(rows)) {
-    final p = r['profiles'] as Map<String, dynamic>?;
-    if (p == null) continue;
-    if ((p['role'] as String?) == 'applicant') continue;
-    users.add(
-      TaskUser.fromProfile(
-        id: p['id'] as String? ?? '',
-        displayName: p['display_name'] as String?,
-        avatarColorHex: p['avatar_color'] as String?,
-      ),
-    );
-  }
-  users.sort((a, b) => a.name.compareTo(b.name));
-  return users;
+) {
+  return ref.watch(taskItemRepositoryProvider).fetchAssigneeCandidates();
 });
 
 /// `DateTime.now()` を分単位で丸めてメモ化（毎秒 rebuild させないため）。

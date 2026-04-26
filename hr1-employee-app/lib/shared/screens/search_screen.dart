@@ -68,7 +68,7 @@ class SearchScreen extends HookConsumerWidget {
       });
     }
 
-    return Scaffold(
+    return CommonScaffold(
       body: SafeArea(
         child: Column(
           children: [

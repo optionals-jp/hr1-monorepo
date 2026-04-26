@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_employee_app/core/organization/organization_context.dart';
+import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hr1_employee_app/features/skills/data/repositories/supabase_skills_repository.dart';
 import 'package:hr1_employee_app/features/skills/domain/entities/certification_master.dart';
 import 'package:hr1_employee_app/features/skills/domain/entities/employee_certification.dart';
@@ -11,7 +11,7 @@ import 'package:hr1_employee_app/features/skills/domain/repositories/skills_repo
 /// スキルリポジトリプロバイダー
 final skillsRepositoryProvider = Provider<SkillsRepository>((ref) {
   return SupabaseSkillsRepository(
-    Supabase.instance.client,
+    ref.watch(supabaseClientProvider),
     activeOrganizationId: ref.watch(activeOrganizationIdProvider),
   );
 });
@@ -20,16 +20,18 @@ final skillsRepositoryProvider = Provider<SkillsRepository>((ref) {
 final mySkillsProvider = FutureProvider.autoDispose<List<EmployeeSkill>>((
   ref,
 ) async {
+  final userId = ref.watch(appUserProvider.select((u) => u?.id));
+  if (userId == null) return const [];
   final repo = ref.watch(skillsRepositoryProvider);
-  final userId = Supabase.instance.client.auth.currentUser!.id;
   return repo.getSkills(userId);
 });
 
 /// 自分の資格一覧
 final myCertificationsProvider =
     FutureProvider.autoDispose<List<EmployeeCertification>>((ref) async {
+      final userId = ref.watch(appUserProvider.select((u) => u?.id));
+      if (userId == null) return const [];
       final repo = ref.watch(skillsRepositoryProvider);
-      final userId = Supabase.instance.client.auth.currentUser!.id;
       return repo.getCertifications(userId);
     });
 

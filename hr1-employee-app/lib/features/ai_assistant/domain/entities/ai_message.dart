@@ -1,6 +1,6 @@
-import 'ai_action.dart';
-import 'ai_card.dart';
-import 'ai_reference.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_action.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_card.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_reference.dart';
 
 /// AIアシスタント会話における 1 メッセージ。
 ///

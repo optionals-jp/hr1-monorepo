@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hr1_shared/hr1_shared.dart';
 
-import '../../domain/entities/ai_action.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_action.dart';
 
 /// AI 応答に付随するクイックアクションボタンの行。
 ///

@@ -26,7 +26,7 @@ class BcContactsScreen extends HookConsumerWidget {
       });
     }
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(
         title: const Text('連絡先'),
         actions: [

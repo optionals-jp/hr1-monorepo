@@ -1,10 +1,10 @@
 import 'package:hr1_employee_app/features/workflow/domain/entities/workflow_request.dart';
 
-import '../../domain/entities/ai_action.dart';
-import '../../domain/entities/ai_card.dart';
-import '../../domain/entities/ai_message.dart';
-import '../../domain/entities/ai_reference.dart';
-import '../../domain/repositories/ai_assistant_repository.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_action.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_card.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_message.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_reference.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/repositories/ai_assistant_repository.dart';
 
 /// AIアシスタントの仮データ実装。
 ///

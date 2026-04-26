@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hr1_shared/hr1_shared.dart';
 
-import '../../domain/entities/ai_card.dart';
+import 'package:hr1_employee_app/features/ai_assistant/domain/entities/ai_card.dart';
 
 /// ワークフロー提案カード Widget。
 ///

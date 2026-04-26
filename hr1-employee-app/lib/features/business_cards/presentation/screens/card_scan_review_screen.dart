@@ -5,7 +5,6 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hr1_employee_app/features/business_cards/presentation/controllers/card_scan_controller.dart';
-import 'package:hr1_employee_app/features/business_cards/presentation/providers/business_card_providers.dart';
 import 'package:hr1_shared/hr1_shared.dart';
 
 /// 名刺情報の確認・手動入力画面
@@ -47,38 +46,30 @@ class CardScanReviewScreen extends HookConsumerWidget {
 
       isSaving.value = true;
       try {
-        // 画像がある場合はアップロード
-        String imageUrl = '';
-        if (hasImage) {
-          final repo = ref.read(bcRepositoryProvider);
-          imageUrl = await repo.uploadCardImage(imagePath!);
-        }
-
-        final controller = ref.read(cardScanControllerProvider.notifier);
-        final result = await controller.saveContact(
-          imageUrl: imageUrl,
-          companyName: companyNameCtl.text.trim(),
-          companyNameKana: companyNameKanaCtl.text.trim(),
-          corporateNumber: corporateNumberCtl.text.trim(),
-          companyPostalCode: postalCodeCtl.text.trim(),
-          companyAddress: addressCtl.text.trim(),
-          companyPhone: phoneCtl.text.trim(),
-          companyWebsite: websiteCtl.text.trim(),
-          lastName: lastNameCtl.text.trim(),
-          firstName: firstNameCtl.text.trim(),
-          lastNameKana: lastNameKanaCtl.text.trim(),
-          firstNameKana: firstNameKanaCtl.text.trim(),
-          department: departmentCtl.text.trim(),
-          position: positionCtl.text.trim(),
-          email: emailCtl.text.trim(),
-          phone: phoneCtl.text.trim(),
-          mobilePhone: mobilePhoneCtl.text.trim(),
-        );
+        final result = await ref
+            .read(cardScanControllerProvider.notifier)
+            .saveContact(
+              imagePath: hasImage ? imagePath : null,
+              companyName: companyNameCtl.text.trim(),
+              companyNameKana: companyNameKanaCtl.text.trim(),
+              corporateNumber: corporateNumberCtl.text.trim(),
+              companyPostalCode: postalCodeCtl.text.trim(),
+              companyAddress: addressCtl.text.trim(),
+              companyPhone: phoneCtl.text.trim(),
+              companyWebsite: websiteCtl.text.trim(),
+              lastName: lastNameCtl.text.trim(),
+              firstName: firstNameCtl.text.trim(),
+              lastNameKana: lastNameKanaCtl.text.trim(),
+              firstNameKana: firstNameKanaCtl.text.trim(),
+              department: departmentCtl.text.trim(),
+              position: positionCtl.text.trim(),
+              email: emailCtl.text.trim(),
+              phone: phoneCtl.text.trim(),
+              mobilePhone: mobilePhoneCtl.text.trim(),
+            );
 
         if (context.mounted && result != null) {
           CommonSnackBar.show(context, '連絡先を登録しました');
-          ref.invalidate(bcContactsProvider);
-          ref.invalidate(bcCompaniesProvider);
           if (hasImage) {
             // スキャン画面まで戻る
             context.pop();
@@ -96,7 +87,7 @@ class CardScanReviewScreen extends HookConsumerWidget {
       }
     }
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: Text(hasImage ? '名刺情報を入力' : '連絡先を登録')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.md),
