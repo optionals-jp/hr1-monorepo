@@ -24,7 +24,6 @@ class ThreadChatScreen extends HookConsumerWidget {
 
     final currentUser = ref.read(appUserProvider);
     final currentUserId = currentUser?.id ?? '';
-    final organizationId = currentUser?.activeOrganizationId ?? '';
     final realtimeArg = (threadId: thread.id, currentUserId: currentUserId);
 
     useEffect(() {
@@ -91,43 +90,27 @@ class ThreadChatScreen extends HookConsumerWidget {
         final file = result.files.single;
         if (file.bytes == null) return;
 
-        // 25MB 上限（MIME スキャンは DB 側 check で弾く）
-        if (file.size > 25 * 1024 * 1024) {
-          if (context.mounted) {
-            CommonSnackBar.error(context, 'ファイルサイズは 25MB 以下にしてください');
-          }
-          return;
-        }
-
         sending.value = true;
-        // サーバー側で message_id を採番する前にアップロード先が必要なため、
-        // クライアント側で仮 ID を用い、message_id 確定後に metadata を紐づける運用にする。
-        // ただし現行 send_message_v2 は attachments メタを受け取って DB 側で message_attachments に INSERT するため、
-        // ここでは storage_path のみ先に確保する。
-        final tempMessageKey = DateTime.now().millisecondsSinceEpoch.toString();
-        final storagePath = await ref
+        final outcome = await ref
             .read(threadChatControllerProvider.notifier)
-            .uploadAttachment(
-              organizationId: organizationId,
+            .sendAttachmentMessage(
               threadId: thread.id,
-              messageId: tempMessageKey,
-              bytes: file.bytes!,
-              fileName: file.name,
-              mimeType: _guessMime(file.name, file.extension),
+              attachment: AttachmentInput(
+                bytes: file.bytes!,
+                fileName: file.name,
+                byteSize: file.size,
+                extension: file.extension,
+              ),
             );
-        final attachmentMeta = {
-          'storage_path': storagePath,
-          'file_name': file.name,
-          'mime_type': _guessMime(file.name, file.extension),
-          'byte_size': file.size,
-        };
-        sending.value = false;
-        await sendMessage(attachments: [attachmentMeta]);
+        if (outcome is AttachmentSendOversize && context.mounted) {
+          CommonSnackBar.error(context, 'ファイルサイズは 25MB 以下にしてください');
+        }
       } catch (e) {
-        sending.value = false;
         if (context.mounted) {
           CommonSnackBar.error(context, 'ファイルの添付に失敗しました');
         }
+      } finally {
+        sending.value = false;
       }
     }
 
@@ -757,36 +740,5 @@ class _EditingBubble extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-String _guessMime(String fileName, String? extension) {
-  final ext = (extension ?? fileName.split('.').last).toLowerCase();
-  switch (ext) {
-    case 'jpg':
-    case 'jpeg':
-      return 'image/jpeg';
-    case 'png':
-      return 'image/png';
-    case 'gif':
-      return 'image/gif';
-    case 'webp':
-      return 'image/webp';
-    case 'pdf':
-      return 'application/pdf';
-    case 'txt':
-      return 'text/plain';
-    case 'csv':
-      return 'text/csv';
-    case 'doc':
-      return 'application/msword';
-    case 'docx':
-      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    case 'xls':
-      return 'application/vnd.ms-excel';
-    case 'xlsx':
-      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    default:
-      return 'application/octet-stream';
   }
 }

@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hr1_employee_app/features/notifications/data/repositories/supabase_notification_repository.dart';
 import 'package:hr1_employee_app/features/notifications/domain/entities/notification_item.dart';
 
 /// リポジトリプロバイダー
 final notificationRepositoryProvider = Provider<SupabaseNotificationRepository>(
   (ref) {
-    return SupabaseNotificationRepository(Supabase.instance.client);
+    return SupabaseNotificationRepository(ref.watch(supabaseClientProvider));
   },
 );
 

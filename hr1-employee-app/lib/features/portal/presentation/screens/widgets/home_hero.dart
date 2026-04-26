@@ -929,14 +929,7 @@ class _CompactIconTile extends StatelessWidget {
                   height: _boxSize,
                   child: Center(
                     child: loading
-                        ? SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: fg,
-                            ),
-                          )
+                        ? LoadingIndicator(size: 14, color: fg)
                         : AppIcons.svg(
                             descriptor.iconAsset,
                             size: _iconSize,

@@ -39,25 +39,13 @@ class AttendanceScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('勤怠'),
         actions: [
-          TextButton(
+          CompactTextAction(
+            label: '明細',
             onPressed: () => context.push(AppRoutes.attendanceDetail),
-            child: Text(
-              '明細',
-              style: AppTextStyles.caption1.copyWith(
-                color: AppColors.brand,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
           ),
-          TextButton(
+          CompactTextAction(
+            label: '修正依頼',
             onPressed: () => context.push(AppRoutes.correction),
-            child: Text(
-              '修正依頼',
-              style: AppTextStyles.caption1.copyWith(
-                color: AppColors.brand,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
           ),
           const SizedBox(width: 4),
         ],

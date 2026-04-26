@@ -3,7 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hr1_employee_app/features/business_cards/domain/entities/bc_activity.dart';
-import 'package:hr1_employee_app/features/business_cards/presentation/providers/business_card_providers.dart';
+import 'package:hr1_employee_app/features/business_cards/presentation/controllers/activity_controller.dart';
 import 'package:hr1_shared/hr1_shared.dart';
 
 /// 活動（アポ・メモ等）登録画面
@@ -39,28 +39,17 @@ class ActivityFormScreen extends HookConsumerWidget {
 
       isSaving.value = true;
       try {
-        final repo = ref.read(bcRepositoryProvider);
-        await repo.createActivity({
-          'activity_type': selectedType.value.name,
-          'title': titleCtl.text.trim(),
-          'description': descriptionCtl.text.trim().isEmpty
-              ? null
-              : descriptionCtl.text.trim(),
-          'activity_date': activityDate.value?.toIso8601String(),
-          'company_id': companyId,
-          'contact_id': contactId,
-          'deal_id': dealId,
-        });
-
-        if (contactId != null) {
-          ref.invalidate(bcActivitiesByContactProvider(contactId!));
-        }
-        if (companyId != null) {
-          ref.invalidate(bcActivitiesByCompanyProvider(companyId!));
-        }
-        if (dealId != null) {
-          ref.invalidate(bcActivitiesByDealProvider(dealId!));
-        }
+        await ref
+            .read(activityControllerProvider.notifier)
+            .createActivity(
+              type: selectedType.value,
+              title: titleCtl.text,
+              description: descriptionCtl.text,
+              activityDate: activityDate.value,
+              companyId: companyId,
+              contactId: contactId,
+              dealId: dealId,
+            );
 
         if (context.mounted) {
           CommonSnackBar.show(context, '活動を登録しました');
@@ -101,7 +90,7 @@ class ActivityFormScreen extends HookConsumerWidget {
       }
     }
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('活動登録')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.md),

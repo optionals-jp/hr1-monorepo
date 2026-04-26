@@ -113,4 +113,22 @@ class AppTextStyles {
     height: 1.18,
     letterSpacing: 0.07,
   );
+
+  // ─── Stats / Numeric ───────────────────────────────────────────
+  /// 30pt Bold — 統計カードの大きな数値（残業時間など）。
+  /// `tabularFigures` で字幅を揃え、`letterSpacing` を負値で
+  /// タイトに調整する。
+  static TextStyle statValue = appFont(
+    fontSize: 30,
+    fontWeight: FontWeight.w700,
+    height: 1.0,
+    letterSpacing: -0.8,
+  ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
+
+  /// 14pt SemiBold — `statValue` に付随する単位やプレフィクス（h, 残, など）。
+  static TextStyle statUnit = appFont(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0,
+  );
 }

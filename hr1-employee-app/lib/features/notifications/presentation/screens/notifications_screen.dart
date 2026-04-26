@@ -19,7 +19,8 @@ class NotificationsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text('通知', style: AppTextStyles.headline),
         actions: [
-          TextButton(
+          CompactTextAction(
+            label: 'すべて既読',
             onPressed: () async {
               try {
                 await ref
@@ -31,13 +32,6 @@ class NotificationsScreen extends ConsumerWidget {
                 }
               }
             },
-            child: Text(
-              'すべて既読',
-              style: AppTextStyles.caption1.copyWith(
-                color: AppColors.brand,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
           ),
           const SizedBox(width: 4),
         ],

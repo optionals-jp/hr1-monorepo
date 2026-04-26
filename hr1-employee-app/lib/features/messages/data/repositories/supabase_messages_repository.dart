@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hr1_shared/hr1_shared.dart';
+import 'package:hr1_employee_app/features/messages/domain/entities/message_realtime_event.dart';
 import 'package:hr1_employee_app/features/messages/domain/entities/message_thread.dart';
+import 'package:hr1_employee_app/features/messages/domain/repositories/message_thread_realtime.dart';
 import 'package:hr1_employee_app/features/messages/domain/repositories/messages_repository.dart';
 
 /// MessagesRepository の Supabase 実装（社員向け）
@@ -266,5 +269,180 @@ class SupabaseMessagesRepository implements MessagesRepository {
         .from('messages')
         .update({'deleted_at': DateTime.now().toUtc().toIso8601String()})
         .eq('id', messageId);
+  }
+
+  @override
+  Stream<void> watchAllThreadMessages() {
+    final controller = StreamController<void>.broadcast();
+    final channel = _client
+        .channel('message_threads_realtime')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'messages',
+          callback: (_) => controller.add(null),
+        )
+        .subscribe();
+    controller.onCancel = () async {
+      await _client.removeChannel(channel);
+      await controller.close();
+    };
+    return controller.stream;
+  }
+
+  @override
+  MessageThreadRealtime openThreadRealtime({
+    required String threadId,
+    required String currentUserId,
+  }) {
+    return _SupabaseMessageThreadRealtime(
+      client: _client,
+      threadId: threadId,
+      currentUserId: currentUserId,
+    );
+  }
+}
+
+/// MessageThreadRealtime の Supabase 実装。
+///
+/// PostgresChanges（INSERT/UPDATE）と Presence（タイピング）を
+/// 1 つの Stream に統合して配信する。チャネル lifecycle は本クラスが所有。
+class _SupabaseMessageThreadRealtime implements MessageThreadRealtime {
+  _SupabaseMessageThreadRealtime({
+    required SupabaseClient client,
+    required String threadId,
+    required String currentUserId,
+  }) : _client = client,
+       _threadId = threadId,
+       _currentUserId = currentUserId {
+    _start();
+  }
+
+  final SupabaseClient _client;
+  final String _threadId;
+  final String _currentUserId;
+
+  final StreamController<MessageRealtimeEvent> _controller =
+      StreamController<MessageRealtimeEvent>.broadcast();
+  RealtimeChannel? _messagesChannel;
+  RealtimeChannel? _presenceChannel;
+  bool _presenceSubscribed = false;
+
+  @override
+  Stream<MessageRealtimeEvent> get events => _controller.stream;
+
+  void _start() {
+    _messagesChannel = _client
+        .channel(MessagesChannels.messages(_threadId))
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'thread_id',
+            value: _threadId,
+          ),
+          callback: (payload) {
+            final newMsg = payload.newRecord;
+            if (newMsg.isEmpty) return;
+            _controller.add(
+              MessageInserted(
+                messageId: newMsg['id'] as String,
+                senderId: newMsg['sender_id'] as String?,
+              ),
+            );
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'thread_id',
+            value: _threadId,
+          ),
+          callback: (payload) {
+            final updated = payload.newRecord;
+            if (updated.isEmpty) return;
+            final messageId = updated['id'] as String;
+            if (updated['deleted_at'] != null) {
+              _controller.add(
+                MessageSoftDeleted(
+                  messageId: messageId,
+                  deletedAt: DateTime.parse(updated['deleted_at'] as String),
+                ),
+              );
+              return;
+            }
+            _controller.add(
+              MessageEdited(
+                messageId: messageId,
+                content: updated['content'] as String?,
+                editedAt: updated['edited_at'] != null
+                    ? DateTime.parse(updated['edited_at'] as String)
+                    : null,
+              ),
+            );
+            // updated_at bump によるリアクション・添付の派生変更にも追従するため
+            // refresh も併発する。
+            _controller.add(const MessageRefreshNeeded());
+          },
+        )
+        .subscribe();
+
+    _presenceChannel = _client
+        .channel(MessagesChannels.typing(_threadId))
+        .onPresenceSync((_) {
+          final presences = _presenceChannel!.presenceState();
+          var otherTyping = false;
+          for (final s in presences) {
+            for (final presence in s.presences) {
+              if (presence.payload[MessagesChannels.payloadUserId] !=
+                      _currentUserId &&
+                  presence.payload[MessagesChannels.payloadIsTyping] == true) {
+                otherTyping = true;
+                break;
+              }
+            }
+            if (otherTyping) break;
+          }
+          _controller.add(TypingStateChanged(otherUserTyping: otherTyping));
+        })
+        .subscribe((status, [error]) async {
+          if (status == RealtimeSubscribeStatus.subscribed) {
+            _presenceSubscribed = true;
+            await _presenceChannel!.track({
+              MessagesChannels.payloadUserId: _currentUserId,
+              MessagesChannels.payloadIsTyping: false,
+            });
+          }
+        });
+  }
+
+  @override
+  Future<void> updateTyping({required bool isTyping}) async {
+    // subscribed 状態に達する前の `track` は realtime-dart 側で例外になる。
+    // 入力タイミングと subscribe の競合に備えて未subscribe時は no-op。
+    if (!_presenceSubscribed) return;
+    await _presenceChannel?.track({
+      MessagesChannels.payloadUserId: _currentUserId,
+      MessagesChannels.payloadIsTyping: isTyping,
+    });
+  }
+
+  @override
+  Future<void> dispose() async {
+    if (_messagesChannel != null) {
+      await _client.removeChannel(_messagesChannel!);
+      _messagesChannel = null;
+    }
+    if (_presenceChannel != null) {
+      await _client.removeChannel(_presenceChannel!);
+      _presenceChannel = null;
+      _presenceSubscribed = false;
+    }
+    await _controller.close();
   }
 }

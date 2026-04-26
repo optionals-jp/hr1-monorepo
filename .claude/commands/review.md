@@ -60,7 +60,7 @@ Push前のコードレビューを実施してください。
 1. **変更箇所のロジックを抽出**: 追加/変更された関数・コンポーネント・ユーティリティを列挙する
 2. **既存の共通実装を検索**: 以下の場所で類似実装がないか grep で必ず確認する
    - **Next.js 系**: `packages/shared-ui/src/`, `hr1-console/src/lib/`, `hr1-console/src/components/ui/`, 対象アプリの `src/lib/`, `src/components/`, `src/features/*/rules.ts`
-   - **Flutter 系**: `hr1_shared/lib/src/widgets/`, `hr1_shared/lib/src/utils/`, `hr1_shared/lib/src/constants/`, 対象アプリの `lib/core/`, `lib/shared/`
+   - **Flutter 系**: `hr1-shared/lib/src/widgets/`, `hr1-shared/lib/src/utils/`, `hr1-shared/lib/src/constants/`, 対象アプリの `lib/core/`, `lib/shared/`
 3. **類似度の判定**: 関数名・シグネチャ・処理の骨格（3行以上の類似ロジック、同じ正規表現、同じバリデーションルール、同じ日付フォーマット等）を比較する
 4. **類似が見つかった場合**: 既存実装を使うよう修正を提案する。既存実装が不十分な場合は既存側を拡張する方針を提案する（新規作成ではなく）
 
@@ -80,7 +80,7 @@ Push前のコードレビューを実施してください。
 - **共通ウィジェット再発明**: `CommonButton`, `CommonCard`, `CommonDialog`, `CommonSheet`, `CommonSnackBar`, `EmptyState`, `ErrorState`, `LoadingIndicator`, `MenuRow`, `SearchBox`, `UserAvatar`, `OrgIcon`, `SkeletonBone` 等を `hr1_shared` から使わずローカルで作っていないか
 - **デザイントークン**: `AppTextStyles`, `AppColors`, `AppSpacing` を使わず `TextStyle()` / `theme.colorScheme` / マジックナンバーを直接書いていないか
 - **AsyncValue.when パターン**: `Scaffold → body → state.when(data/loading/error)` の構造を各画面で独自に書き直していないか
-- **両アプリ共通ロジック**: hr1-applicant-app と hr1-employee-app に同じバリデーション/日付処理/サニタイズが存在していないか → `hr1_shared/lib/src/utils/` に集約
+- **両アプリ共通ロジック**: hr1-applicant-app と hr1-employee-app に同じバリデーション/日付処理/サニタイズが存在していないか → `hr1-shared/lib/src/utils/` に集約
 
 #### 判定ガイドライン
 

@@ -17,7 +17,7 @@ class BcDealDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dealAsync = ref.watch(dealDetailControllerProvider(dealId));
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('商談詳細')),
       body: dealAsync.when(
         loading: () => const LoadingIndicator(),

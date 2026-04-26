@@ -51,8 +51,11 @@ class CardScanController extends AutoDisposeAsyncNotifier<ScanResult?> {
   }
 
   /// 確認済みデータを保存（重複チェック付き）
+  ///
+  /// [imagePath] が指定されている場合は画像を Storage にアップロードして
+  /// その URL を `bc_cards.image_url` として保存する。
   Future<({BcContact contact, BcCompany? company})?> saveContact({
-    required String imageUrl,
+    String? imagePath,
     String? rawText,
     // 企業情報
     String? companyName,
@@ -73,6 +76,9 @@ class CardScanController extends AutoDisposeAsyncNotifier<ScanResult?> {
     String? phone,
     String? mobilePhone,
   }) async {
+    final imageUrl = (imagePath != null && imagePath.isNotEmpty)
+        ? await _repo.uploadCardImage(imagePath)
+        : '';
     // 1. 企業の重複チェック・作成
     BcCompany? company;
     if (companyName != null && companyName.isNotEmpty) {

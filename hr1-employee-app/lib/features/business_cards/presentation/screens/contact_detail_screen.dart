@@ -21,7 +21,7 @@ class BcContactDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final contactAsync = ref.watch(contactDetailControllerProvider(contactId));
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('連絡先詳細')),
       body: contactAsync.when(
         loading: () => const LoadingIndicator(),

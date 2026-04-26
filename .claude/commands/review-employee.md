@@ -44,7 +44,7 @@ hr1-employee-app（Flutter社員アプリ）のコードレビューを実施し
 - **AsyncValue.when パターン**: Screen が Scaffold → body → `state.when(data: _Body(), loading: LoadingIndicator(), error: ErrorState())` の構造パターンに従っているか。bottomNavigationBar 等の常時表示要素は when の外に配置されているか
 
 ### hr1_shared との共通化
-- **重複ロジック**: hr1-applicant-app と同じロジック（バリデーション、日付フォーマット、サニタイズ等）がアプリ内に書かれていないか → `hr1_shared/lib/src/utils/` に入れるべき
+- **重複ロジック**: hr1-applicant-app と同じロジック（バリデーション、日付フォーマット、サニタイズ等）がアプリ内に書かれていないか → `hr1-shared/lib/src/utils/` に入れるべき
 - **重複ウィジェット**: 新しいウィジェットが `hr1_shared` の既存ウィジェット（CommonButton, CommonCard, CommonDialog, CommonSheet, EmptyState, ErrorState, LoadingIndicator, MenuRow, SearchBox, UserAvatar, OrgIcon, SkeletonBone 等）と重複していないか
 - **共通化候補**: アプリ固有の `lib/core/utils/` や `lib/shared/` に両アプリ共通化できるコードが放置されていないか
 

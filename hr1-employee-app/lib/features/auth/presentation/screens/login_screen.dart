@@ -200,9 +200,9 @@ class LoginScreen extends HookConsumerWidget {
                     const SizedBox(height: AppSpacing.md),
 
                     Center(
-                      child: TextButton(
+                      child: CompactTextAction(
+                        label: 'メールアドレスを変更',
                         onPressed: isLoading ? null : backToEmail,
-                        child: const Text('メールアドレスを変更'),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xl),

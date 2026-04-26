@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hr1_employee_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:hr1_employee_app/features/auth/presentation/screens/splash_screen.dart';
 import 'package:hr1_employee_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:hr1_employee_app/features/auth/presentation/screens/home_screen.dart';
@@ -188,8 +188,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     /// 認証ガード
     redirect: (BuildContext context, GoRouterState state) {
-      final session = Supabase.instance.client.auth.currentSession;
-      final isLoggedIn = session != null;
+      final isLoggedIn = ref.read(authRepositoryProvider).hasSession;
       final isAuthRoute =
           state.matchedLocation == AppRoutes.splash ||
           state.matchedLocation == AppRoutes.login;
@@ -276,7 +275,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final contact = state.extra as EmployeeContact?;
           if (contact == null) {
-            return const Scaffold(body: ErrorState(message: '社員情報が見つかりません'));
+            return const CommonScaffold(
+              body: ErrorState(message: '社員情報が見つかりません'),
+            );
           }
           return EmployeeDetailScreen(contact: contact);
         },
@@ -289,7 +290,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final thread = state.extra as MessageThread?;
           if (thread == null) {
-            return const Scaffold(body: ErrorState(message: 'スレッド情報が見つかりません'));
+            return const CommonScaffold(
+              body: ErrorState(message: 'スレッド情報が見つかりません'),
+            );
           }
           return ThreadChatScreen(thread: thread);
         },
@@ -377,7 +380,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final page = state.extra as WikiPage?;
           if (page == null) {
-            return const Scaffold(body: ErrorState(message: 'ページが見つかりません'));
+            return const CommonScaffold(
+              body: ErrorState(message: 'ページが見つかりません'),
+            );
           }
           return WikiDetailScreen(page: page);
         },
@@ -449,7 +454,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final request = state.extra as WorkflowRequest?;
           if (request == null) {
-            return const Scaffold(body: ErrorState(message: '申請情報が見つかりません'));
+            return const CommonScaffold(
+              body: ErrorState(message: '申請情報が見つかりません'),
+            );
           }
           return WorkflowDetailScreen(request: request);
         },
@@ -476,7 +483,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final payslip = state.extra as Payslip?;
           if (payslip == null) {
-            return const Scaffold(body: ErrorState(message: '給与明細が見つかりません'));
+            return const CommonScaffold(
+              body: ErrorState(message: '給与明細が見つかりません'),
+            );
           }
           return PayslipDetailScreen(payslip: payslip);
         },
@@ -518,7 +527,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final contactId = state.extra as String?;
           if (contactId == null) {
-            return const Scaffold(body: ErrorState(message: '連絡先IDが見つかりません'));
+            return const CommonScaffold(
+              body: ErrorState(message: '連絡先IDが見つかりません'),
+            );
           }
           return BcContactDetailScreen(contactId: contactId);
         },
@@ -538,7 +549,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final companyId = state.extra as String?;
           if (companyId == null) {
-            return const Scaffold(body: ErrorState(message: '企業IDが見つかりません'));
+            return const CommonScaffold(
+              body: ErrorState(message: '企業IDが見つかりません'),
+            );
           }
           return BcCompanyDetailScreen(companyId: companyId);
         },
@@ -558,7 +571,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final dealId = state.extra as String?;
           if (dealId == null) {
-            return const Scaffold(body: ErrorState(message: '商談IDが見つかりません'));
+            return const CommonScaffold(
+              body: ErrorState(message: '商談IDが見つかりません'),
+            );
           }
           return BcDealDetailScreen(dealId: dealId);
         },
@@ -702,14 +717,14 @@ class _SurveyLoaderScreen extends ConsumerWidget {
     final surveyAsync = ref.watch(surveyByIdProvider(surveyId));
 
     return surveyAsync.when(
-      loading: () => const Scaffold(body: LoadingIndicator()),
-      error: (_, __) => Scaffold(
+      loading: () => const CommonScaffold(body: LoadingIndicator()),
+      error: (_, __) => CommonScaffold(
         appBar: AppBar(),
         body: const ErrorState(message: 'サーベイの読み込みに失敗しました'),
       ),
       data: (survey) {
         if (survey == null) {
-          return Scaffold(
+          return CommonScaffold(
             appBar: AppBar(),
             body: const ErrorState(message: 'サーベイが見つかりません'),
           );

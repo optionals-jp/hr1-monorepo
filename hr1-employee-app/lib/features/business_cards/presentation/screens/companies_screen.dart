@@ -26,7 +26,7 @@ class BcCompaniesScreen extends HookConsumerWidget {
       });
     }
 
-    return Scaffold(
+    return CommonScaffold(
       appBar: AppBar(title: const Text('取引先企業')),
       body: Column(
         children: [
