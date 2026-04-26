@@ -1223,25 +1223,6 @@ export interface AttendanceCorrection {
 }
 
 // ==========================================================
-// ダッシュボードウィジェット設定
-// ==========================================================
-
-export interface DashboardWidgetConfig {
-  widget_id: string;
-  visible: boolean;
-  sort_order: number;
-}
-
-export interface DashboardWidgetPreference {
-  id: string;
-  user_id: string;
-  organization_id: string;
-  product_tab: "recruiting" | "workspace" | "client";
-  widget_config: DashboardWidgetConfig[];
-  updated_at: string;
-}
-
-// ==========================================================
 // ワークフローテンプレート
 // ==========================================================
 
