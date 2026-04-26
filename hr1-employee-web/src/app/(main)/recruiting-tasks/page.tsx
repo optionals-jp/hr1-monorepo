@@ -32,16 +32,24 @@ export default function RecruitingTasksPage() {
   const router = useRouter();
   const { data: tasks = [], isLoading, error, mutate } = useRecruiterTasks();
   const [search, setSearch] = useState("");
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return tasks;
-    return tasks.filter(
-      (t) => t.title.toLowerCase().includes(q) || (t.description ?? "").toLowerCase().includes(q)
-    );
-  }, [tasks, search]);
+  const [activeFilter, setActiveFilter] = useState<SummaryKey | null>(null);
 
   const today = new Date().toISOString().slice(0, 10);
+
+  const filtered = useMemo(() => {
+    let result = tasks;
+    if (activeFilter === "withDueDate") result = result.filter((t) => t.due_date != null);
+    else if (activeFilter === "overdue")
+      result = result.filter((t) => t.due_date != null && t.due_date < today);
+    else if (activeFilter === "skipped")
+      result = result.filter((t) => t.created_count < t.target_count);
+    // "total" と null はどちらも全件表示
+    const q = search.trim().toLowerCase();
+    if (!q) return result;
+    return result.filter(
+      (t) => t.title.toLowerCase().includes(q) || (t.description ?? "").toLowerCase().includes(q)
+    );
+  }, [tasks, search, activeFilter, today]);
   const summary: Record<SummaryKey, number> = useMemo(() => {
     return {
       total: tasks.length,
@@ -51,20 +59,42 @@ export default function RecruitingTasksPage() {
     };
   }, [tasks, today]);
 
+  const toggleFilter = (key: SummaryKey) => {
+    setActiveFilter((prev) => (prev === key ? null : key));
+  };
+
   const summaryCards: readonly SummaryCardConfig<SummaryKey>[] = [
-    { key: "total", label: "タスク数", icon: ListTodo, iconClassName: "text-slate-600" },
+    {
+      key: "total",
+      label: "タスク数",
+      icon: ListTodo,
+      iconClassName: "text-slate-600",
+      onClick: () => toggleFilter("total"),
+      active: activeFilter === "total",
+    },
     {
       key: "withDueDate",
       label: "期限あり",
       icon: CalendarClock,
       iconClassName: "text-blue-600",
+      onClick: () => toggleFilter("withDueDate"),
+      active: activeFilter === "withDueDate",
     },
-    { key: "overdue", label: "期限超過", icon: CalendarX, iconClassName: "text-red-600" },
+    {
+      key: "overdue",
+      label: "期限超過",
+      icon: CalendarX,
+      iconClassName: "text-red-600",
+      onClick: () => toggleFilter("overdue"),
+      active: activeFilter === "overdue",
+    },
     {
       key: "skipped",
       label: "重複スキップ",
       icon: SkipForward,
       iconClassName: "text-amber-600",
+      onClick: () => toggleFilter("skipped"),
+      active: activeFilter === "skipped",
     },
   ];
 
